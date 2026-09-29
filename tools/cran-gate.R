@@ -327,6 +327,11 @@ main <- function(args) {
   }
   failed <- names(statuses)[statuses == "FAIL"]
   cli::cat_line("Log: ", log)
+  if (length(failed) > 0 && identical(Sys.getenv("CI"), "true")) {
+    # On CI the log file isn't visible afterwards, so show it.
+    cli::cat_line("---- log ----")
+    cli::cat_line(readLines(log, warn = FALSE))
+  }
   if (length(failed) > 0) {
     cli::cat_line("FAILED: ", paste(failed, collapse = ", "))
     quit(status = 1)

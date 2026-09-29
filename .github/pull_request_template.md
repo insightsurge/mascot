@@ -8,6 +8,8 @@ Closes #
 ## What changed
 
 ## Checks
+<!-- Only checks anyone can re-run from the repo (the gate, CI, committed test scripts). One-off manual checks go
+in a short Notes line under this list, not here. -->
 - [ ] `Rscript tools/cran-gate.R` (fast) passes: format, docs in sync, lint, `@returns`, spelling, R CMD check 0/0/0
 - [ ] `Rscript tools/cran-gate.R tests` passes: tests and coverage of at least 90%, not lower than `main`
 - [ ] New behaviour has BDD-style tests (`describe()` / `it()`); Shiny behaviour has shinytest2 tests

@@ -91,7 +91,9 @@ changelog.
 - **Same PR:** every user-facing change adds its bullet to `NEWS.md` in the PR that makes it. Internal changes
   (CI, refactors, tests) are left out unless users notice them.
 - **Headings:** `# mascot (development version)` at the top while developing; `usethis::use_version()` turns it
-  into `# mascot x.y.z` at release. Never edit a released section except to fix a typo.
+  into `# mascot x.y.z` at release. Never edit a released section except to fix a typo. **Until 0.1.0** the
+  heading is `# mascot 0.0.0.9000`: R CMD check needs a version number in at least one NEWS heading ("No news
+  entries found"), so the 0.1.0 release PR renames it to `# mascot 0.1.0` by hand.
 - **Bullets:** one change per bullet, written for users, present tense, starting with the function or feature
   (`` `updateMascot()` gains a `message` argument for a speech bubble (#30).``). End with the issue or PR
   number in parentheses; credit outside contributors with their handle (`(@user, #123)`).

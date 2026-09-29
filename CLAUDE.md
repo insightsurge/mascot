@@ -58,6 +58,25 @@ In `DESCRIPTION`: `person("Harsh", "Verma", email = "analyticswithharsh@gmail.co
   labels, grouped by `.github/release.yml`). Then bump back to `.9000`.
 - GitHub milestones are releases (`0.1.0 Live mascot`, `0.2.0 ...`, `Later`); epics are the M0-M6 work areas.
 
+## NEWS.md (the changelog)
+Follow the tidyverse style for NEWS files; `NEWS.md` is the source of each GitHub release and the website's
+changelog.
+- **Same PR:** every user-facing change adds its bullet to `NEWS.md` in the PR that makes it. Internal changes
+  (CI, refactors, tests) are left out unless users notice them.
+- **Headings:** `# mascot (development version)` at the top while developing; `usethis::use_version()` turns it
+  into `# mascot x.y.z` at release. Never edit a released section except to fix a typo.
+- **Bullets:** one change per bullet, written for users, present tense, starting with the function or feature
+  (`` `updateMascot()` gains a `message` argument for a speech bubble (#30).``). End with the issue or PR
+  number in parentheses; credit outside contributors with their handle (`(@user, #123)`).
+- **Order:** once a release has more than a handful of bullets, group them under `## Breaking changes` (first,
+  with what users must change), `## New features`, `## Minor improvements and fixes`; alphabetical by function
+  name within a group.
+- **Before a release:** read the section as a user would; merge duplicates; make sure every breaking change says
+  what to do instead.
+
+## Package website
+Quarto website (via altdoc) or pkgdown: to decide in #25. Until then, the pkgdown notes below apply.
+
 ## pkgdown
 - Keep `_pkgdown.yml` current: every export in the reference index (`pkgdown::check_pkgdown()`), articles for the
   vignettes, the README as the home page. Build locally (`pkgdown::build_site()`) before any PR that changes docs,

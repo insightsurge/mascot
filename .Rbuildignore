@@ -1,0 +1,16 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^\.claude$
+^\.agents$
+^CLAUDE\.md$
+^AGENTS\.md$
+^dev$
+^docs$
+^air\.toml$
+^\.lintr$
+^_pkgdown\.yml$
+^pkgdown$
+^cran-comments\.md$
+^CRAN-SUBMISSION$
+^LICENSE\.md$

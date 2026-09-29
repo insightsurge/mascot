@@ -1,0 +1,11 @@
+name: Idea
+description: Not planned yet; for discussion
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What, for whom, and why.
+    validations:
+      required: true

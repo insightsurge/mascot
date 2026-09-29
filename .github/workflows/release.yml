@@ -1,0 +1,39 @@
+name: release
+
+# Tags vX.Y.Z and creates a GitHub release when DESCRIPTION on main carries a release version (X.Y.Z, not a
+# development version like X.Y.Z.9000). Notes: the NEWS.md section for that version, then notes generated from
+# PR labels (.github/release.yml).
+
+on:
+  push:
+    branches: [main]
+    paths: [DESCRIPTION]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-26.04  # pinned, like gitleaks
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Tag and release a new version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -f DESCRIPTION ]; then echo "No DESCRIPTION yet: nothing to release"; exit 0; fi
+          ver=$(sed -n 's/^Version:[[:space:]]*//p' DESCRIPTION | tr -d '[:space:]')
+          if ! printf '%s' "$ver" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Version $ver is a development version: no release"; exit 0
+          fi
+          tag="v$ver"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then echo "$tag already exists"; exit 0; fi
+          notes=""
+          if [ -f NEWS.md ]; then
+            notes=$(awk -v v="$ver" '/^# /{ if (p) exit; if ($3 == v) { p = 1; next } } p' NEWS.md)
+          fi
+          gh release create "$tag" --target "$GITHUB_SHA" --title "mascot $ver" \
+            --notes "${notes:-mascot $ver}" --generate-notes

@@ -1,0 +1,17 @@
+# R
+.Rproj.user/
+.Rhistory
+.RData
+.Renviron
+
+# OS
+.DS_Store
+
+# Local-only working notes (see .claude/skills/handoff)
+dev/handoffs/
+
+# Claude Code: personal settings stay local
+.claude/settings.local.json
+
+# Codex: project config with this machine's paths stays local
+.codex/

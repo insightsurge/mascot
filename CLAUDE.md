@@ -42,12 +42,39 @@ In `DESCRIPTION`: `person("Harsh", "Verma", email = "analyticswithharsh@gmail.co
   convention for `mascotOutput()`, `renderMascot()`, `updateMascot()`; `use_*()` only for project setup
   (usethis style); otherwise short verbs without a prefix when they can't clash (`moods()`, `characters()`,
   `run_gallery()`, `watch_validator()`). Check a new name against base R, shiny, bslib and ggplot2 first.
-- Messages and errors with `cli`; argument checks up front with clear, actionable errors.
-- Tests: testthat 3rd edition; snapshot tests for output; shinytest2 for Shiny behaviour; every bug fix gets a test.
+- **Every function checks its arguments first with checkmate** (exported and internal alike): the first lines of
+  the body are `checkmate::assert_*()` calls, one per argument, before any other work. Pick the strictest check
+  that fits (`assert_string()`, `assert_flag()`, `assert_count()`, `assert_number(lower =, upper =)`,
+  `assert_choice(mood, moods())`, `assert_character(min.chars = 1, any.missing = FALSE)`, `assert_class()`,
+  `assert_function()`, `assert_list(names = "unique")`, `assert_file_exists()`, `assert_path_for_output()`), and
+  say what `NULL` means with `null.ok = TRUE`. Several arguments can be collected with
+  `checkmate::makeAssertCollection()` and `reportAssertions()`. checkmate is an `Imports` dependency. Other
+  messages, warnings and errors (not argument checks) use `cli`. Every assertion has a test that it fails with a
+  clear message.
 - The engine (JavaScript in `inst/`): deterministic (seeded RNG, no `Math.random` or clock time), drawn in code in
   the theme's colours, no AI images, no external requests. Moods must never carry meaning alone: status text
   sits beside them; `prefers-reduced-motion` is honoured.
-- Before a PR that touches R: `air format .`, `lintr::lint_package()`, `devtools::test()`, `devtools::check()`.
+- Before a PR that touches R: `air format .`, `lintr::lint_package()`, `devtools::test()`,
+  `covr::package_coverage()` (at least 90%), `devtools::check(args = "--as-cran")`.
+
+## Testing (non-negotiable)
+- **Coverage: at least 90%** of lines, measured with `covr::package_coverage()`, locally before a PR and in CI
+  (the job fails under 90%). A PR never lowers coverage. `# nocov` only for code that truly can't run in a test
+  (say why in a comment next to it); never to reach the number.
+- **Unit tests in BDD style** (testthat 3rd edition): one test file per R file (`R/mood.R` →
+  `tests/testthat/test-mood.R`); `describe("updateMascot()", { it("changes the mood after the wiggle", { ... }) })`,
+  with `describe()` naming the function or behaviour and `it()` stating the expected behaviour in plain words.
+  Arrange, act, assert inside each `it()`; comments `# Given / # When / # Then` where it helps. Cover the happy path,
+  every argument check (checkmate errors), edge cases and every bug fix.
+- **Shiny: shinytest2** for every Shiny behaviour a user can see (the widget renders, a mood change, the bubble,
+  validator reactions, busy, placement, dismiss, light/dark): `AppDriver` apps under `tests/testthat/apps/`,
+  expectations on values and on the widget's DOM state, not screenshots alone. Server logic also gets
+  `shiny::testServer()` tests. shinytest2 tests need Chrome: `skip_on_cran()` and skip when
+  `chromote::find_chrome()` finds none; they run in CI.
+- **Snapshots** (`expect_snapshot()`, `expect_snapshot_file()`) for printed output, generated HTML and drawings;
+  review every snapshot change in the PR like code.
+- **JavaScript** in `inst/` is tested through shinytest2 and the widget's rendered output (deterministic frames make
+  pixel checks possible); keep JS logic small and push decisions into R where they can be unit-tested.
 - Wording in docs and UI: no hype; say "built for GxP work", never "validated" or "GxP compliant"; never name an
   employer, client or internal system; no unmeasured numbers.
 

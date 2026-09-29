@@ -21,8 +21,8 @@ a character drawn in code shows a mood and animates when the mood changes. What 
 1. **Start with an issue.** State the goal and a "done when" checklist. Ask first if the change is large.
 2. **Make a branch** from `main` for that issue.
 3. **Commit with Conventional Commits**, short: `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `ci:`, `refactor:`.
-4. **Open a pull request** whose description says `Closes #n`, where `n` is the issue number. Fill in the checklist
-   in the template.
+4. **Open a pull request** that starts with an "In brief" section (one plain sentence and a few bullets, for a reader
+   with no context), says `Closes #n` (`n` is the issue number), and fills in the checklist in the template.
 5. **Label the pull request** with one type (`enhancement`, `bug`, `documentation`, `chore`) and one or more
    `area: *` labels. The release notes are built from these labels.
 6. **The maintainer merges** once CI is green.

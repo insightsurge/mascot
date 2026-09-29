@@ -1,3 +1,8 @@
+## In brief
+<!-- For a reader with no context: one plain sentence on what this PR does and why it matters, then 3-6 bullets on
+what changes for users or contributors. Plain words first, with a light technical touch (a file, a command) where
+it helps. No jargon without a short explanation. -->
+
 Closes #
 
 ## What changed

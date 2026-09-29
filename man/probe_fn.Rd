@@ -16,5 +16,5 @@ A number.
 Probe a suggested package
 }
 \examples{
-\n#' probe_fn(covr::percent_coverage)\n#' @export
+probe_fn(covr::percent_coverage(list()))
 }

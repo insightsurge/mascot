@@ -2,8 +2,10 @@
 #'
 #' @param x A number.
 #' @returns A number.
-#' @examples\n#' probe_fn(covr::percent_coverage)\n#' @export
+#' @examples
+#' probe_fn(covr::percent_coverage(list()))
+#' @export
 probe_fn <- function(x) {
-  invisible(x)
+  checkmate::assert_number(x)
   x
 }

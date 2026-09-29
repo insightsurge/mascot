@@ -44,6 +44,9 @@ lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line
 - New spelling words go into `inst/WORDLIST` only after the founder agrees (`--update-wordlist`).
 - CI must be green: R-CMD-check (5 platforms, fails on notes), test-coverage (90%, Chrome tests), lint (the gate),
   check-no-suggests, gitleaks. Never `continue-on-error` or weaken a check to get green.
+- Claude Code hooks (`.claude/settings.json`) format and lint each file you edit and report problems (fix them
+  before moving on), and block force-push, commits or pushes on `main`, `gh pr merge`, `--no-verify`, AI
+  attribution and hand edits to generated files. They are fast feedback, not the gate; never work around them.
 - In a git worktree, set `R_LIBS` to what `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout (renv
   keeps a package project's library outside the repo).
 

@@ -280,7 +280,7 @@ run it:
 
 | Layer | When it runs | Status |
 |---|---|---|
-| Claude Code hooks | While an agent edits: fast feedback on formatting and lints, and blocks on risky commands and generated files | Planned (a later PR) |
+| Claude Code hooks (`.claude/settings.json`, `.claude/hooks/`) | While an agent edits: formats and lints each changed file and reports problems; blocks force-push, pushes and commits on `main`, `gh pr merge`, `--no-verify`, AI attribution, and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE` | In place; self-tested in the lint job |
 | The gate, `Rscript tools/cran-gate.R` | On demand, by a person or an agent, before a commit or PR | In place |
 | CI | On every PR and push to `main`; it cannot be skipped | In place |
 

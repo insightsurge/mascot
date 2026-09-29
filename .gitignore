@@ -15,3 +15,12 @@ dev/handoffs/
 
 # Codex: project config with this machine's paths stays local
 .codex/
+
+# Local renv: dev packages for working on mascot; the package itself doesn't use renv
+renv/
+renv.lock
+.Rprofile
+
+# R CMD build and check output
+*.Rcheck/
+mascot_*.tar.gz

@@ -1,5 +1,7 @@
 # mascot
 
+[![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml)
+
 Live, mood-driven mascots for R: a character drawn in code that shows a mood in your Shiny app or Quarto site and
 animates when the mood changes. It reacts to form validation, shows a busy mood while your app computes, follows
 light and dark mode, and takes its colours from your brand. No AI needed to use it.
@@ -9,3 +11,17 @@ light and dark mode, and takes its colours from your brand. No AI needed to use 
 - Scope, users and planned releases: [`docs/scope.md`](docs/scope.md)
 - Known users: [`docs/consumers.md`](docs/consumers.md)
 - Plan: the milestones and the epic tree under issue #1
+
+## Installation
+
+mascot is not on CRAN yet, and its GitHub repository is private for now. Once it is public, install the
+development version with:
+
+```r
+# install.packages("pak")
+pak::pak("insightsurge/mascot")
+```
+
+## Licence
+
+MIT © Harsh Verma. See [`LICENSE.md`](LICENSE.md).

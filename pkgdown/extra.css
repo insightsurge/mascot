@@ -1,0 +1,173 @@
+/* The R Engineering Playbook's look for the pkgdown site (#25).
+   Fonts: self-hosted latin subsets (SIL Open Font License 1.1; texts in fonts/OFL-*.txt).
+   Aurora: ported from the playbook's styles.scss ("Site-wide aurora background"); colours from its _brand.yml. */
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("fonts/space-grotesk-latin.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/jetbrains-mono-latin.woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+code,
+pre {
+  font-variant-ligatures: none;
+}
+
+/* Dark palette (the playbook's dark roles). Bootstrap's own dark mode supplies the rest. */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #0f1512;
+  --bs-body-color: #e7ece8;
+  --bs-emphasis-color: #e7ece8;
+  --bs-secondary-color: #a2aea7;
+  --bs-link-color: #8fd6b1;
+  --bs-link-color-rgb: 143, 214, 177;
+  --bs-link-hover-color: #b5e6cb;
+  --bs-link-hover-color-rgb: 181, 230, 203;
+  --bs-primary: #e7ece8;
+  --bs-primary-rgb: 231, 236, 232;
+}
+
+/* ---- Aurora background ------------------------------------------------------------------------------- */
+body {
+  --aurora-1: color-mix(in srgb, #7fcba4 60%, transparent);
+  --aurora-2: color-mix(in srgb, #d9b35c 55%, transparent);
+  --aurora-3: color-mix(in srgb, #c3d9cb 85%, transparent);
+  --aurora-wash: color-mix(in srgb, #eff5f1 55%, var(--bs-body-bg));
+  --aurora-grain: color-mix(in srgb, #16201b 22%, transparent);
+  /* A stacking context keeps the fixed layer (z-index: -1) above the body's background, below content. */
+  isolation: isolate;
+}
+
+[data-bs-theme="dark"] body {
+  --aurora-1: color-mix(in srgb, #7fcba4 22%, transparent);
+  --aurora-2: color-mix(in srgb, #d9b35c 23%, transparent);
+  --aurora-3: color-mix(in srgb, #c3d9cb 19%, transparent);
+  --aurora-wash: color-mix(in srgb, #1e3329 30%, var(--bs-body-bg));
+  --aurora-grain: color-mix(in srgb, #e7ece8 20%, transparent);
+}
+
+.site-aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(160deg, var(--bs-body-bg) 20%, var(--aurora-wash) 100%);
+}
+
+.site-aurora-bg__glows {
+  position: absolute;
+  inset: 0;
+  animation: site-aurora-breathe 10s ease-in-out infinite alternate;
+  transform-origin: 60% 40%;
+}
+
+/* Three glows: forest top right, ochre top left, mint lower right. */
+.site-aurora__glow,
+.site-aurora__glow::before,
+.site-aurora__glow::after {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+.site-aurora__glow {
+  right: -10%;
+  top: -20%;
+  width: 60%;
+  height: 75%;
+  background: radial-gradient(ellipse at center, var(--aurora-1), transparent 68%);
+  animation: site-aurora-drift 18s ease-in-out infinite alternate;
+}
+
+.site-aurora__glow::before {
+  content: "";
+  left: -85%;
+  top: 10%;
+  width: 85%;
+  height: 80%;
+  background: radial-gradient(ellipse at center, var(--aurora-2), transparent 68%);
+  animation: site-aurora-drift 22s ease-in-out -9s infinite alternate-reverse;
+}
+
+.site-aurora__glow::after {
+  content: "";
+  right: 5%;
+  top: 90%;
+  width: 90%;
+  height: 75%;
+  background: radial-gradient(ellipse at center, var(--aurora-3), transparent 70%);
+  animation: site-aurora-drift 26s ease-in-out -4s infinite alternate;
+}
+
+.site-aurora__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(circle, var(--aurora-grain) 0.5px, transparent 0.8px);
+  background-size: 5px 5px;
+  mask-image: linear-gradient(90deg, transparent 25%, #000 100%);
+}
+
+@keyframes site-aurora-breathe {
+  from {
+    opacity: 0.7;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes site-aurora-drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-4%, 3%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-aurora-bg__glows,
+  .site-aurora__glow,
+  .site-aurora__glow::before,
+  .site-aurora__glow::after {
+    animation: none;
+  }
+}
+
+@media print {
+  .site-aurora-bg {
+    display: none;
+  }
+}
+
+/* Page areas paint no background of their own; the navbar and footer are frosted over the aurora. */
+body > .container,
+.template-home,
+main {
+  background: transparent;
+}
+
+.navbar,
+footer {
+  background-color: color-mix(in srgb, var(--bs-body-bg) 70%, transparent) !important;
+  backdrop-filter: saturate(1.4) blur(12px);
+}
+
+.navbar {
+  border-bottom: 1px solid color-mix(in srgb, var(--bs-border-color) 60%, transparent);
+}

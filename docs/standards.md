@@ -327,6 +327,7 @@ Notes:
 | `test-coverage.yaml` | covr on Ubuntu with `NOT_CRAN=true`, so Chrome tests count | Coverage under 90 percent; no code yet means no gate yet |
 | `lint.yaml` | Air 0.11.0, Biome 2.5.14, then `Rscript tools/cran-gate.R lint` | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
 | `check-no-suggests.yaml` | `R CMD check --as-cran` with only hard dependencies installed (plus testthat, knitr and rmarkdown) and a step that prints which `Suggests` are installed | Any unguarded use of a `Suggests` package; CRAN runs this check too |
+| `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build (`tools/build-site.R`), uploaded as an artifact | A broken site configuration or build; no deploy until the repo is public |
 | `gitleaks.yml` | Secret scan over the full history | A committed secret |
 | `release.yml` | On a change to `DESCRIPTION` on `main`: tags `vx.y.z` and creates a GitHub release from the `NEWS.md` section | Nothing; it does nothing for a development version |
 

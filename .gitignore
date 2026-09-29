@@ -27,3 +27,7 @@ mascot_*.tar.gz
 
 # Python bytecode (Claude Code hooks)
 __pycache__/
+
+# pkgdown site (built into site/, not docs/)
+site/
+.*.md.hold

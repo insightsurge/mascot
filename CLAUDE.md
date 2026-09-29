@@ -91,7 +91,8 @@ goes elsewhere.
   `consumer-impact`, `skip-release-notes`. Label PRs too: release notes are built from PR labels.
 - Branch → PR → CI green → **ask before merging** (unless the founder said to merge that PR). The PR description
   starts with **"In brief"**: one plain sentence on what it does and why, then a few bullets for a reader with no
-  context (plain words, a light technical touch); then `Closes #<n>`, what changed and the checks. Stacked PRs
+  context (plain words, a light technical touch); then `Closes #<n>`, what changed and the checks (only checks
+  anyone can re-run from the repo; one-off manual checks go in a short Notes line). Stacked PRs
   are fine (base on the branch below). Conventional Commits, short messages, **no AI attribution** anywhere.
   Commit or push only when asked.
 - `gh` must run as `insightsurge`: `GH_CONFIG_DIR=/Users/harshverma/Documents/Projects/InsightSurge/.config/gh`;

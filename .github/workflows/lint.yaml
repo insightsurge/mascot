@@ -43,6 +43,6 @@ jobs:
       - name: Gate (lint mode)
         run: Rscript tools/cran-gate.R lint
 
-      # The Claude Code hooks (.claude/hooks/) get their own self-test: block/allow on sample inputs.
+      # The editor hooks in .claude/hooks/ get their own self-test: block/allow on sample inputs.
       - name: Hook self-test
         run: python3 .claude/hooks/test-hooks.py

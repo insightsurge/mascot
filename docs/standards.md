@@ -1,7 +1,7 @@
 # mascot engineering standards
 
 This page records the rules that `mascot` follows to be accepted on CRAN and to stay easy to review, and the reasons
-for them. It is the long version. Short rule files for coding agents live in `.claude/rules/` and link back here.
+for them. It is the long version. Short rule files live in `.claude/rules/` and link back here.
 
 Each rule carries a label:
 
@@ -280,8 +280,7 @@ run it:
 
 | Layer | When it runs | Status |
 |---|---|---|
-| Claude Code hooks (`.claude/settings.json`, `.claude/hooks/`) | While an agent edits: formats and lints each changed file and reports problems; blocks force-push, pushes and commits on `main`, `gh pr merge`, `--no-verify`, AI attribution, and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE` | In place; self-tested in the lint job |
-| The gate, `Rscript tools/cran-gate.R` | On demand, by a person or an agent, before a commit or PR | In place |
+| Editor hooks (`.claude/settings.json`, `.claude/hooks/`) | While files are edited: format and lint each changed file and report problems; block force-push, pushes and commits on `main`, `gh pr merge`, `--no-verify`, attribution trailers, and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE` | In place; self-tested in the lint job |
 | CI | On every PR and push to `main`; it cannot be skipped | In place |
 
 Hooks are optional and local, and are fast feedback rather than enforcement. CI is the gate. There is no pre-commit

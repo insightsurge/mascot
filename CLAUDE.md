@@ -48,8 +48,9 @@ lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line
   platforms on `main`, weekly and on demand), and docs-only PRs skip the R jobs. When the repo goes public, before the
   CRAN submission, these workarounds are removed and every PR runs the full matrix (#115).
 - After editing R files, run `air format .` (the gate fails on unformatted code). `.claude/settings.json` denies
-  force-push, pushes to `main`, `gh pr merge`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/` and
-  `LICENSE`, and turns off attribution lines. It's a guard rail, not the gate; never work around it.
+  force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/` and `LICENSE`, makes
+  `gh pr merge` ask the founder for confirmation each time, and turns off attribution lines. It's a guard rail, not
+  the gate; never work around it.
 - In a git worktree, set `R_LIBS` to what `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout (renv
   keeps a package project's library outside the repo).
 

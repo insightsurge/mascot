@@ -1,10 +1,35 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (check-standard.yaml).
 # The repo rule is 0 errors, 0 warnings, 0 notes, so any note fails the check.
+#
+# TEMPORARY while the repo is private (#113): to save Actions minutes (macOS counts 10x and Windows 2x on a private
+# repo), pull requests run one platform (Ubuntu, R release). The full matrix runs on pushes to main, every Monday, and
+# on demand (workflow_dispatch): run it by hand on a PR branch before a release or when a change is platform-sensitive.
+# When the repo goes public (before the CRAN submission), pull requests run the full matrix again and the
+# paths-ignore filter below goes away: see #115.
 on:
   push:
     branches: [main]
   pull_request:
+    # Changes that can't affect the package skip this job (project docs, agent files, templates, the site's theme).
+    # Temporary, like the slim matrix (see the header).
+    paths-ignore:
+      - "docs/**"
+      - "dev/**"
+      - ".claude/**"
+      - ".agents/**"
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - "LICENSE.md"
+      - ".github/CONTRIBUTING.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/pull_request_template.md"
+      - ".github/release.yml"
+      - "pkgdown/**"
+      - "_pkgdown.yml"
+      - "tools/build-site.R"
   workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"   # Mondays 05:00 UTC: catches changes in R-devel and in dependencies
 
 name: R-CMD-check
 
@@ -23,13 +48,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-          # Ubuntu pinned like the repo's other workflows: moved deliberately, not by the ubuntu-latest rollout.
-          - {os: ubuntu-26.04,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-26.04,   r: 'release'}
-          - {os: ubuntu-26.04,   r: 'oldrel-1'}
+        # Ubuntu is pinned like the repo's other workflows: moved deliberately, not by the ubuntu-latest rollout.
+        # One long line on purpose: the expression must stay a single scalar.
+        config: ${{ fromJSON(github.event_name == 'pull_request' && '[{"os":"ubuntu-26.04","r":"release"}]' || '[{"os":"macos-latest","r":"release"},{"os":"windows-latest","r":"release"},{"os":"ubuntu-26.04","r":"devel","http-user-agent":"release"},{"os":"ubuntu-26.04","r":"release"},{"os":"ubuntu-26.04","r":"oldrel-1"}]') }}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

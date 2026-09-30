@@ -281,9 +281,9 @@ run it:
 
 | Layer | When it runs | Status |
 |---|---|---|
-| Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `gh pr merge`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
+| Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; merging a PR (`gh pr merge`) asks the maintainer for confirmation each time; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
 | The gate, `Rscript tools/cran-gate.R` | On demand, before a commit or PR | In place |
-| CI | On every PR and push to `main`; it cannot be skipped | In place |
+| CI | On every PR and push to `main` (the full platform matrix on `main`, weekly and on demand); it cannot be skipped | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
 framework for now (section 8). The repository is private on a plan without branch protection, so the rule is: CI
@@ -323,9 +323,16 @@ Notes:
 
 ### 7.3 CI workflows
 
+
+**Temporary while the repo is private (#113).** Private repos get a limited number of Actions minutes (macOS counts
+10x, Windows 2x), and on 2026-09-30 they ran out. Until the repo is public, pull requests run `R CMD check` on Ubuntu
+only, docs-only changes skip the R jobs, and the site builds only when something it shows changes. When the repo goes
+public, before the CRAN submission, these workarounds are removed and every pull request runs all five platforms
+again (#115).
+
 | Workflow file | What it runs | What it blocks |
 |---|---|---|
-| `R-CMD-check.yaml` | `R CMD check --as-cran` on macOS and Windows (release), Ubuntu (R-devel, release, oldrel-1); `error-on: note`; `NOT_CRAN` unset, so Chrome tests skip as on CRAN | Any error, warning or note on any of the five platforms, including R-devel |
+| `R-CMD-check.yaml` | `R CMD check --as-cran`: Ubuntu (R release) on pull requests; macOS and Windows (release) and Ubuntu (R-devel, release, oldrel-1) on pushes to `main`, every Monday and on demand, to save Actions minutes; `error-on: note`; `NOT_CRAN` unset, so Chrome tests skip as on CRAN | Any error, warning or note (on a PR: Ubuntu release; on `main` and weekly: all five platforms, including R-devel) |
 | `test-coverage.yaml` | covr on Ubuntu with `NOT_CRAN=true`, so Chrome tests count | Coverage under 90 percent; no code yet means no gate yet |
 | `lint.yaml` | Air 0.11.0, Biome 2.5.14, then `Rscript tools/cran-gate.R lint` | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
 | `check-no-suggests.yaml` | `R CMD check --as-cran` with only hard dependencies installed (plus testthat, knitr and rmarkdown) and a step that prints which `Suggests` are installed | Any unguarded use of a `Suggests` package; CRAN runs this check too |
@@ -393,7 +400,8 @@ Run these before submitting to CRAN:
 6. `cran-comments.md` lists test environments and results, explains GxP, and says there are no reverse dependencies.
 7. The `NEWS.md` heading is `# mascot 0.1.0` and the version is set with `usethis::use_version()`.
 8. `inst/COPYRIGHTS`, each `OFL.txt` and the `cph` entries agree with what is in `inst/`.
-9. The repository is public, `URL` and `BugReports` resolve, and the website is live.
+9. The repository is public, `URL` and `BugReports` resolve, and the website is live. CI runs the full platform
+   matrix on every pull request again (the private-repo workarounds are removed, #115).
 10. `riskmetric` has been run on the package and the score recorded.
 11. Submit with `devtools::submit_cran()`. After acceptance: the release workflow tags the release, then bump back to a
     `.9000` development version.

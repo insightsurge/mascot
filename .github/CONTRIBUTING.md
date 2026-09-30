@@ -2,7 +2,7 @@
 
 Thank you for helping with mascot. It is an R package for live, mood-driven mascots in Shiny apps and Quarto sites:
 a character drawn in code shows a mood and animates when the mood changes. What is in scope, and what is not, is in
-[`docs/scope.md`](../docs/scope.md). To report a bug or suggest an idea, open an issue with one of the issue forms.
+[`docs/scope.md`](https://github.com/insightsurge/mascot/blob/main/docs/scope.md). To report a bug or suggest an idea, open an issue with one of the issue forms.
 
 ## Setup
 
@@ -56,7 +56,7 @@ does not replace CI.
 
 ## Code in short
 
-The full list, with reasons, is in [`docs/standards.md`](../docs/standards.md).
+The full list, with reasons, is in [`docs/standards.md`](https://github.com/insightsurge/mascot/blob/main/docs/standards.md).
 
 - Every function starts by checking its arguments with checkmate, one check per argument.
 - Messages, warnings and errors use cli.
@@ -92,7 +92,7 @@ tests.
 
 ## Known users
 
-Known users of mascot, current and planned, are listed in [`docs/consumers.md`](../docs/consumers.md), with a way to
+Known users of mascot, current and planned, are listed in [`docs/consumers.md`](https://github.com/insightsurge/mascot/blob/main/docs/consumers.md), with a way to
 check that each still works. Read it before you change anything that is exported or that a user can see: moods,
 arguments, defaults, colours, sizes. If a change may affect a known user, add the `consumer-impact` label and say in
 the pull request how you checked.
@@ -100,7 +100,7 @@ the pull request how you checked.
 ## Licence of contributions
 
 Contributions are made under the package's MIT licence. Do not add third-party code, fonts or images without recording
-their licence. See the section on bundled files in [`docs/standards.md`](../docs/standards.md).
+their licence. See the section on bundled files in [`docs/standards.md`](https://github.com/insightsurge/mascot/blob/main/docs/standards.md).
 
 ## Conduct and data
 

@@ -8,8 +8,8 @@ light and dark mode, and takes its colours from your brand. No AI needed to use 
 
 **Status:** early development, before 0.1.0. Not on CRAN yet.
 
-- Scope, users and planned releases: [`docs/scope.md`](docs/scope.md)
-- Known users: [`docs/consumers.md`](docs/consumers.md)
+- Scope, users and planned releases: [`docs/scope.md`](https://github.com/insightsurge/mascot/blob/main/docs/scope.md)
+- Known users: [`docs/consumers.md`](https://github.com/insightsurge/mascot/blob/main/docs/consumers.md)
 - Plan: the milestones and the epic tree under issue #1
 
 ## Installation
@@ -25,7 +25,7 @@ pak::pak("insightsurge/mascot")
 ## Development
 
 How to set up, the workflow and the checks every change passes: [`CONTRIBUTING.md`](.github/CONTRIBUTING.md).
-The engineering standards, with the CRAN rules and our own: [`docs/standards.md`](docs/standards.md).
+The engineering standards, with the CRAN rules and our own: [`docs/standards.md`](https://github.com/insightsurge/mascot/blob/main/docs/standards.md).
 
 ## Licence
 

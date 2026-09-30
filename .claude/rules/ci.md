@@ -19,6 +19,8 @@ Reasons and sources: `docs/standards.md`.
   - `lint.yaml`: the gate's lint mode with Air and Biome at pinned versions (keep them equal to the local installs
     and `biome.json`'s schema).
   - `check-no-suggests.yaml`: R CMD check with hard dependencies only (CRAN checks without Suggests too).
+  - `pkgdown.yaml`: `check_pkgdown()` and the site build (`tools/build-site.R`), uploaded as an artifact; no deploy
+    until the repo is public.
   - `gitleaks.yml` (secrets), `release.yml` (tag and GitHub release from `NEWS.md`), dependabot (action updates).
 - Every workflow: `permissions: read-all` (or narrower), a `concurrency` group with `cancel-in-progress`, Ubuntu
   pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions outside

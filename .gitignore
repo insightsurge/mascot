@@ -24,3 +24,7 @@ renv.lock
 # R CMD build and check output
 *.Rcheck/
 mascot_*.tar.gz
+
+# pkgdown site (built into site/, not docs/)
+site/
+.*.md.hold

@@ -24,3 +24,4 @@
 ^mascot_.*\.tar\.gz$
 ^tools$
 ^biome\.json$
+^site$

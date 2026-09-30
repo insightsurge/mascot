@@ -8,7 +8,7 @@ Description: Adds a character drawn in code to 'Shiny' apps and 'Quarto'
     follows light and dark mode, and takes its colours from the theme. It
     works offline and uses no AI-generated images.
 License: MIT + file LICENSE
-URL: https://github.com/insightsurge/mascot
+URL: https://insightsurge.github.io/mascot/, https://github.com/insightsurge/mascot
 BugReports: https://github.com/insightsurge/mascot/issues
 Depends: 
     R (>= 4.1.0)

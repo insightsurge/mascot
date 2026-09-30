@@ -11,6 +11,7 @@ Adds a character drawn in code to 'Shiny' apps and 'Quarto' sites. The character
 \seealso{
 Useful links:
 \itemize{
+  \item \url{https://insightsurge.github.io/mascot/}
   \item \url{https://github.com/insightsurge/mascot}
   \item Report bugs at \url{https://github.com/insightsurge/mascot/issues}
 }

@@ -49,6 +49,9 @@ Rscript tools/cran-gate.R full     # everything, including the built tarball: ru
   `inst/WORDLIST` with `Rscript tools/cran-gate.R --update-wordlist`. Do not add a misspelling.
 - The docs step runs `devtools::document()`, so it may rewrite `man/`, `NAMESPACE` or `DESCRIPTION`. If it fails,
   review the regenerated files and commit them; the next run passes.
+- If you change the gate itself (`tools/cran-gate.R`, `.lintr`, `air.toml` or `biome.json`), also run
+  `Rscript tools/test-cran-gate.R`. It plants one defect per step in a temporary copy of the package and checks that
+  the gate fails for each.
 
 CI runs these workflows, and all of them must be green: `R-CMD-check` (Ubuntu on pull requests; macOS, Windows, R-devel
 and the previous R release as well on `main`, weekly and on demand), `check-no-suggests`, `lint`,

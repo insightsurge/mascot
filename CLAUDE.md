@@ -42,6 +42,8 @@ lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line
 - `fast` (default) before every commit; `tests` (tests + coverage) before a PR that touches `R/` or `tests/`;
   `full` before a release; `lint` reproduces CI's lint job.
 - New spelling words go into `inst/WORDLIST` only after the founder agrees (`--update-wordlist`).
+- The gate has its own test: after changing `tools/cran-gate.R`, `.lintr`, `air.toml` or `biome.json`, run
+  `Rscript tools/test-cran-gate.R` (one planted defect per step, on a copy in `tempdir()`); a new step needs a probe.
 - CI must be green: R-CMD-check (fails on notes), test-coverage (90%, Chrome tests), lint (the gate),
   check-no-suggests, pkgdown, gitleaks. Never `continue-on-error` or weaken a check to get green.
 - **Temporary while the repo is private** (limited Actions minutes, #113): PRs run R-CMD-check on Ubuntu only (all 5

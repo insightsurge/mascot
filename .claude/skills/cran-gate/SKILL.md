@@ -48,6 +48,11 @@ Rscript tools/cran-gate.R [fast|tests|full|lint] [--update-wordlist]
 good. Show the founder the unknown words and run `--update-wordlist` only for the ones they agree are real (names
 like Neer, technical terms), then commit `inst/WORDLIST`.
 
+## Changing the gate itself
+After editing `tools/cran-gate.R`, `.lintr`, `air.toml` or `biome.json`, run `Rscript tools/test-cran-gate.R`
+(`static` for the quick steps only). It plants one defect per step in a copy of the package and must end with "All
+probes behaved as expected"; a new step needs a new probe there.
+
 ## Reporting
 Say which modes ran and what they found, in the PR template's terms, for example: "`/cran-gate` fast: all passed
 (biome skipped: no JS/CSS yet; check 0/0/0). `/cran-gate tests`: 42 expectations, coverage 96.3%." Name anything

@@ -269,8 +269,8 @@ widget's rendered output (section 6).
   the shinytest2 behaviour tests. A PR never lowers coverage. `# nocov` is only for code that cannot run in a test,
   with a comment saying why.
 - **No jest or vitest for now.** If pure JS functions grow (colour maths, easing), `node --test` needs no dependency.
-- **Guardrails are tested too.** Each new gate is shown failing on a planted defect and passing on clean `main`
-  (section 7).
+- **Guardrails are tested too.** Each gate step has a probe in `tools/test-cran-gate.R` that plants a defect and
+  expects the step to fail, and a clean copy must pass (section 7.2).
 
 ## 7. The quality pipeline
 
@@ -321,6 +321,15 @@ Notes:
   The `tools` step prints which library is in use.
 - `/cran-gate` is the project skill (`.claude/skills/cran-gate/`) that runs the script and reads only its summary.
 
+**The gate's self-test.** A check that cannot fail protects nothing, so the gate has its own test:
+`Rscript tools/test-cran-gate.R [all|static|heavy]`. Each probe copies the package to `tempdir()`, plants one defect
+(an unformatted file, `print()` in package code, a misspelt word, a failing test, untested code, a check note, a file
+in `inst/` that the build leaves out, a missing tool) and runs the gate on the copy. The probe passes when the gate
+exits 1 with `FAIL` for the step that should catch the defect; a clean copy must pass. One probe also shows that the
+`tests` step runs with `NOT_CRAN=true` and the CRAN-like check with `NOT_CRAN=false`. The repository is never changed.
+Run it after changing the gate, `.lintr`, `air.toml` or `biome.json`; a new gate step gets its probe in the same pull
+request. `static` takes seconds, `all` about a minute today.
+
 ### 7.3 CI workflows
 
 
@@ -335,6 +344,7 @@ again (#115).
 | `R-CMD-check.yaml` | `R CMD check --as-cran`: Ubuntu (R release) on pull requests; macOS and Windows (release) and Ubuntu (R-devel, release, oldrel-1) on pushes to `main`, every Monday and on demand, to save Actions minutes; `error-on: note`; `NOT_CRAN` unset, so Chrome tests skip as on CRAN | Any error, warning or note (on a PR: Ubuntu release; on `main` and weekly: all five platforms, including R-devel) |
 | `test-coverage.yaml` | covr on Ubuntu with `NOT_CRAN=true`, so Chrome tests count | Coverage under 90 percent; no code yet means no gate yet |
 | `lint.yaml` | Air 0.11.0, Biome 2.5.14, then `Rscript tools/cran-gate.R lint` | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
+| `gate-self-test.yaml` | `Rscript tools/test-cran-gate.R all`, only when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change, and on demand | A gate step that no longer fails on the defect it exists to catch |
 | `check-no-suggests.yaml` | `R CMD check --as-cran` with only hard dependencies installed (plus testthat, knitr and rmarkdown) and a step that prints which `Suggests` are installed | Any unguarded use of a `Suggests` package; CRAN runs this check too |
 | `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build (`tools/build-site.R`), uploaded as an artifact | A broken site configuration or build; no deploy until the repo is public |
 | `gitleaks.yml` | Secret scan over the full history | A committed secret |
@@ -344,7 +354,7 @@ Ubuntu runners are pinned (`ubuntu-26.04`; macOS and Windows use `-latest`), all
 (gitleaks and release ask for the little more they need), and cancel superseded runs. Actions from `actions/` and
 `r-lib/` are pinned by major tag; other third-party actions by full commit SHA with a `# vX.Y.Z` comment, because a tag
 can be moved and a SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep the Air and Biome
-versions in `lint.yaml` in step with the local installs and with `biome.json`.
+versions in `lint.yaml` and `gate-self-test.yaml` in step with the local installs and with `biome.json`.
 
 ### 7.4 Tools
 

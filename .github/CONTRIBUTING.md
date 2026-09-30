@@ -34,10 +34,12 @@ Stacked pull requests are fine. Base the second one on the branch below it, and 
 Run the gate from the package root:
 
 ```sh
-Rscript tools/cran-gate.R          # fast: run before every commit
-Rscript tools/cran-gate.R tests    # tests and coverage: run before a pull request that touches R/ or tests/
-Rscript tools/cran-gate.R full     # everything, including the built tarball: run before a release
+Rscript .claude/skills/cran-gate/scripts/cran-gate.R          # fast: before every commit
+Rscript .claude/skills/cran-gate/scripts/cran-gate.R tests    # tests and coverage: before a pull request that touches R/ or tests/
+Rscript .claude/skills/cran-gate/scripts/cran-gate.R full     # everything, including the built tarball: before a release
 ```
+
+The gate lives in a skill folder because coding assistants use it too; it is plain R and runs without one.
 
 - `fast` checks formatting (Air and Biome), that `man/` and `NAMESPACE` match the roxygen2 comments, lint, that every
   export has `@returns`, spelling, and `R CMD check --as-cran` without the tests.
@@ -46,12 +48,13 @@ Rscript tools/cran-gate.R full     # everything, including the built tarball: ru
 - The gate prints one `PASS`, `FAIL` or `SKIP` line for each step, then a summary. It exits with status 1 if any
   step fails. The detailed output goes to a log file, and the path is printed. Open the log only for a failing step.
 - **Spelling**: unknown words fail the gate. Check that a word is correct (a name or a technical term), then add it to
-  `inst/WORDLIST` with `Rscript tools/cran-gate.R --update-wordlist`. Do not add a misspelling.
+  `inst/WORDLIST` by running the gate with `--update-wordlist`. Do not add a misspelling.
 - The docs step runs `devtools::document()`, so it may rewrite `man/`, `NAMESPACE` or `DESCRIPTION`. If it fails,
   review the regenerated files and commit them; the next run passes.
-- If you change the gate itself (`tools/cran-gate.R`, `.lintr`, `air.toml` or `biome.json`), also run
-  `Rscript tools/test-cran-gate.R`. It plants one defect per step in a temporary copy of the package and checks that
-  the gate fails for each.
+- If you change the gate itself (the script, `.lintr`, `air.toml` or `biome.json`), also run
+  `Rscript .claude/skills/cran-gate/scripts/test-cran-gate.R`. It plants one defect per step in a temporary copy
+  of the package and checks that the gate fails for each. The skill folder is generic (other packages use it as it
+  is), so keep anything specific to mascot out of it.
 
 CI runs these workflows, and all of them must be green: `R-CMD-check` (Ubuntu on pull requests; macOS, Windows, R-devel
 and the previous R release as well on `main`, weekly and on demand), `check-no-suggests`, `lint`,

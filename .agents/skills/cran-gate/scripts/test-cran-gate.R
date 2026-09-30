@@ -1,24 +1,49 @@
 #!/usr/bin/env Rscript
-# Self-test for the CRAN gate (tools/cran-gate.R): a check that can't fail protects nothing.
+# Self-test for the CRAN gate (cran-gate.R, in the same folder): a check that can't fail protects nothing.
 #
-#   Rscript tools/test-cran-gate.R [all|static|heavy]
+#   Rscript <path to this file> [all|static|heavy]
 #
-#   static          a clean copy must pass; then one planted defect per lint-mode step (tools, air, biome, docs,
-#                   lintr, value, spelling) must make that step FAIL
-#   heavy           the same for check_fast, tests, coverage, check_full and tarball (several minutes)
+#   static          a clean copy of the package must pass; then one planted defect per quick step (settings,
+#                   tools, air, biome, docs, lintr, value, spelling) must make that step FAIL
+#   heavy           the same for check_fast, tests, coverage, check_full and tarball (a minute or more)
 #   all   (default) both
 #
-# Each probe copies the package (tracked and new files; nothing git ignores) to tempdir(), plants one defect there
-# and runs the gate on the copy. PASS means the gate did what the probe expects: exit 1 with FAIL for the named
-# step (exit 0 for the clean copy). Exits 1 if any probe isn't caught. The repo itself is never changed.
+# Run it from the root of a package that passes the gate. Each probe copies the package to tempdir() (tracked and
+# new files in a git repository; nothing git ignores), plants one defect in the copy and runs the gate on it. PASS
+# means the gate did what the probe expects: exit 1 with FAIL for the named step (exit 0 for the clean copy). A
+# probe for a step this package doesn't use (no air.toml, no .lintr, no tests...) is skipped. Exits 1 if the gate
+# misses a defect. The package itself is never changed.
 #
-# Run from the package root with the gate's setup (see tools/cran-gate.R). Run it after changing the gate, .lintr,
-# air.toml or biome.json; a new gate step gets a probe here in the same PR.
+# Run it after changing the gate or the settings it reads (.lintr, air.toml, biome.json, the Config/cran-gate
+# fields); a new gate step gets a probe here at the same time.
 
 groups <- c("all", "static", "heavy")
 rscript <- file.path(R.home("bin"), "Rscript")
 
-# Environment for child processes: this session's library paths (a copy has no renv), plus a probe's own changes.
+# The gate is the file next to this one, wherever the skill is installed.
+gate_path <- function() {
+  file_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+  if (length(file_arg) == 0) {
+    cli::cli_abort("Run this file with Rscript, so it can find cran-gate.R beside it.")
+  }
+  file.path(dirname(normalizePath(sub("^--file=", "", file_arg[1]))), "cran-gate.R")
+}
+
+# What this package uses (the same tests as the gate), which decides the probes that apply.
+package_uses <- function() {
+  fields <- read.dcf("DESCRIPTION", fields = c("Roxygen", "RoxygenNote", "Config/roxygen2/version"))
+  coverage <- read.dcf("DESCRIPTION", fields = "Config/cran-gate/coverage")[[1]]
+  list(
+    air = any(file.exists(c("air.toml", ".air.toml"))),
+    lintr = any(file.exists(c(".lintr", ".lintr.R"))),
+    biome = any(file.exists(c("biome.json", "biome.jsonc"))),
+    roxygen = !all(is.na(fields)),
+    testthat = dir.exists("tests/testthat"),
+    coverage_limit = is.na(coverage) || !identical(as.numeric(coverage), 0)
+  )
+}
+
+# Environment for child processes: this session's library paths (a copy may have no renv), plus a probe's own changes.
 child_env <- function(extra = character()) {
   checkmate::assert_character(extra, any.missing = FALSE, names = "unique")
   vars <- c(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
@@ -27,7 +52,12 @@ child_env <- function(extra = character()) {
 }
 
 package_files <- function() {
-  files <- system2("git", c("ls-files", "--cached", "--others", "--exclude-standard"), stdout = TRUE)
+  if (dir.exists(".git") || file.exists(".git")) {
+    files <- system2("git", c("ls-files", "--cached", "--others", "--exclude-standard"), stdout = TRUE)
+  } else {
+    files <- list.files(".", recursive = TRUE, all.files = TRUE)
+    files <- files[!grepl("^(renv|\\.Rproj\\.user)/|\\.Rcheck/", files)]
+  }
   files[file.exists(files)]
 }
 
@@ -64,7 +94,7 @@ roxygen_function <- function(title, returns = TRUE) {
     "#' @param x A number.",
     if (returns) "#' @returns A number.",
     "#' @export",
-    "probe <- function(x) {",
+    "gate_probe <- function(x) {",
     "  x",
     "}"
   )
@@ -86,6 +116,7 @@ document <- function(dir) {
 }
 
 # A probe: the gate mode to run, the defect to plant, and the steps that must FAIL (none: the gate must pass).
+# `skip` is a reason not to run it here (NULL: run it).
 probe <- function(
   name,
   group,
@@ -95,7 +126,7 @@ probe <- function(
   expect_pass = character(),
   detail = NULL,
   env = character(),
-  skip = function() NULL
+  skip = NULL
 ) {
   checkmate::assert_string(name)
   checkmate::assert_choice(group, c("static", "heavy"))
@@ -105,7 +136,7 @@ probe <- function(
   checkmate::assert_character(expect_pass, any.missing = FALSE)
   checkmate::assert_string(detail, null.ok = TRUE)
   checkmate::assert_character(env, names = "unique")
-  checkmate::assert_function(skip)
+  checkmate::assert_string(skip, null.ok = TRUE)
   list(
     name = name,
     group = group,
@@ -140,10 +171,25 @@ gate_packages_still_found <- function() {
   !identical(run$stdout, "FALSE")
 }
 
-static_probes <- function() {
+static_probes <- function(uses) {
+  checkmate::assert_list(uses, types = "logical")
   has_biome <- nzchar(Sys.which("biome"))
+  air_in_bare_path <- any(file.exists(file.path(strsplit(bare_path, ":", fixed = TRUE)[[1]], "air")))
+  no_roxygen <- if (!uses$roxygen) "the package doesn't use roxygen2"
   list(
     probe("clean copy passes", "static", "lint", function(dir) NULL),
+    probe(
+      "settings: a tarball limit above 9 MB",
+      "static",
+      "lint",
+      function(dir) {
+        desc <- readLines(file.path(dir, "DESCRIPTION"), warn = FALSE)
+        desc <- c(desc[!grepl("^Config/cran-gate/tarball-mb:", desc)], "Config/cran-gate/tarball-mb: 12")
+        plant(dir, "DESCRIPTION", desc)
+      },
+      expect_fail = "settings",
+      detail = "tarball-mb"
+    ),
     probe(
       "tools: the gate's own packages are missing",
       "static",
@@ -151,9 +197,7 @@ static_probes <- function() {
       function(dir) NULL,
       expect_fail = "tools",
       env = no_packages_env(),
-      skip = function() {
-        if (gate_packages_still_found()) "checkmate or cli is in R's own library here; can't hide them"
-      }
+      skip = if (gate_packages_still_found()) "checkmate or cli is in R's own library here; can't hide them"
     ),
     probe(
       "tools: Air isn't on the PATH",
@@ -163,85 +207,94 @@ static_probes <- function() {
       expect_fail = "tools",
       detail = "missing: air",
       env = c(PATH = bare_path),
-      skip = function() {
-        if (any(file.exists(file.path(strsplit(bare_path, ":", fixed = TRUE)[[1]], "air")))) {
-          "Air is installed in /usr/bin or /bin here; can't hide it"
-        }
+      skip = if (!uses$air) {
+        "the package doesn't use Air (no air.toml)"
+      } else if (air_in_bare_path) {
+        "Air is installed in /usr/bin or /bin here; can't hide it"
       }
     ),
     probe(
       "air: an unformatted R file",
       "static",
       "lint",
-      function(dir) plant(dir, "R/probe.R", "f <- function(x){x+1}"),
-      expect_fail = "air"
+      function(dir) plant(dir, "R/zz-gate-probe.R", "gate_probe <- function(x){x+1}"),
+      expect_fail = "air",
+      skip = if (!uses$air) "the package doesn't use Air (no air.toml)"
     ),
     # With Biome installed the biome step must fail; without it the tools step must (JS present, no Biome).
     probe(
       if (has_biome) "biome: an unformatted JS file" else "tools: JS in inst/ but Biome isn't installed",
       "static",
       "lint",
-      function(dir) plant(dir, "inst/www/probe.js", c("var a=1", "function f( x ){return x}")),
-      expect_fail = if (has_biome) "biome" else "tools"
+      function(dir) plant(dir, "inst/www/gate-probe.js", c("var a=1", "function f( x ){return x}")),
+      expect_fail = if (has_biome) "biome" else "tools",
+      skip = if (!uses$biome) "the package doesn't use Biome (no biome.json)"
     ),
     probe(
       "docs: roxygen comments changed, document() not run",
       "static",
       "lint",
-      function(dir) plant(dir, "R/probe.R", roxygen_function("Probe")),
-      expect_fail = "docs"
+      function(dir) plant(dir, "R/zz-gate-probe.R", roxygen_function("Probe")),
+      expect_fail = "docs",
+      skip = no_roxygen
     ),
+    # Several lints at once (= for assignment, a semicolon, T for TRUE, trailing spaces), so at least one is caught
+    # whatever the package's .lintr turns off.
     probe(
-      "lintr: print() in package code",
+      "lintr: code with lints",
       "static",
       "lint",
-      function(dir) plant(dir, "R/probe.R", c("probe <- function(x) {", "  print(x)", "}")),
-      expect_fail = "lintr"
+      function(dir) plant(dir, "R/zz-gate-probe.R", c("gate_probe = function(x) {", "  y = x; T  ", "}")),
+      expect_fail = "lintr",
+      skip = if (!uses$lintr) "the package doesn't use lintr (no .lintr)"
     ),
     probe(
       "value: an exported function without @returns",
       "static",
       "lint",
       function(dir) {
-        plant(dir, "R/probe.R", roxygen_function("Probe", returns = FALSE))
+        plant(dir, "R/zz-gate-probe.R", roxygen_function("Probe", returns = FALSE))
         document(dir)
       },
       expect_fail = "value",
-      expect_pass = "docs"
+      expect_pass = "docs",
+      detail = "gate_probe",
+      skip = no_roxygen
     ),
     probe(
       "spelling: a misspelt word in a help page",
       "static",
       "lint",
       function(dir) {
-        plant(dir, "R/probe.R", roxygen_function("Probe the mascott"))
+        plant(dir, "R/zz-gate-probe.R", roxygen_function("Probe the speling"))
         document(dir)
       },
       expect_fail = "spelling",
-      detail = "mascott",
-      expect_pass = "docs"
+      detail = "speling",
+      expect_pass = "docs",
+      skip = no_roxygen
     )
   )
 }
 
-heavy_probes <- function() {
-  # Enough untested lines to pull any coverage under 90%, however large the package gets.
+heavy_probes <- function(uses) {
+  checkmate::assert_list(uses, types = "logical")
+  # Enough untested lines to pull any coverage under the limit, however large the package gets.
   r_lines <- sum(lengths(lapply(list.files("R", full.names = TRUE), readLines, warn = FALSE)))
-  untested <- c("probe <- function(x) {", rep("  x <- x + 1", max(50, r_lines)), "  x", "}")
+  untested <- c("gate_probe <- function(x) {", rep("  x <- x + 1", max(50, 10 * r_lines)), "  x", "}")
   needs_not_cran <- c(
-    "describe(\"the gate's tests step\", {",
-    "  it(\"runs with NOT_CRAN=true\", {",
-    "    expect_identical(Sys.getenv(\"NOT_CRAN\"), \"true\")",
-    "  })",
+    "test_that(\"the gate's tests step runs with NOT_CRAN=true\", {",
+    "  expect_identical(Sys.getenv(\"NOT_CRAN\"), \"true\")",
     "})"
   )
-  failing_test <- c("describe(\"probe\", {", "  it(\"fails\", {", "    expect_true(FALSE)", "  })", "})")
+  failing_test <- c("test_that(\"the gate probe fails\", {", "  expect_true(FALSE)", "})")
+  no_testthat <- if (!uses$testthat) "the package has no tests/testthat"
   list(
     probe(
       "check_fast: a note (unexpected top-level file)",
       "heavy",
       "fast",
-      function(dir) plant(dir, "probe-note.txt", "x"),
+      function(dir) plant(dir, "gate-probe-note.txt", "x"),
       expect_fail = "check_fast",
       detail = "0 errors, 0 warnings, " # so the FAIL is for a note alone
     ),
@@ -249,30 +302,42 @@ heavy_probes <- function() {
       "tests: a failing test",
       "heavy",
       "tests",
-      function(dir) plant(dir, "tests/testthat/test-probe.R", failing_test),
-      expect_fail = "tests"
+      function(dir) plant(dir, "tests/testthat/test-zz-gate-probe.R", failing_test),
+      expect_fail = "tests",
+      skip = no_testthat
     ),
     probe(
       "coverage: untested code",
       "heavy",
       "tests",
-      function(dir) plant(dir, "R/probe.R", untested),
+      function(dir) plant(dir, "R/zz-gate-probe.R", untested),
       expect_fail = "coverage",
-      expect_pass = "tests"
+      expect_pass = "tests",
+      skip = if (!uses$testthat) {
+        no_testthat
+      } else if (!uses$coverage_limit) {
+        "the coverage limit is set to 0"
+      }
     ),
     # One full run, two defects: a test that only passes with NOT_CRAN=true (so it passes in the tests step and
     # fails in the CRAN-like check), and a file in inst/ that .Rbuildignore keeps out of the tarball.
     probe(
-      "check_full and tarball: a test that needs NOT_CRAN; an inst/ file left out of the build",
+      if (uses$testthat) {
+        "check_full and tarball: a test that needs NOT_CRAN; an inst/ file left out of the build"
+      } else {
+        "tarball: an inst/ file left out of the build"
+      },
       "heavy",
       "full",
       function(dir) {
-        plant(dir, "tests/testthat/test-probe.R", needs_not_cran)
-        plant(dir, "inst/probe-secret.txt", "x")
-        plant(dir, ".Rbuildignore", "^inst/probe-secret\\.txt$", append = TRUE)
+        if (uses$testthat) {
+          plant(dir, "tests/testthat/test-zz-gate-probe.R", needs_not_cran)
+        }
+        plant(dir, "inst/gate-probe-secret.txt", "x")
+        plant(dir, ".Rbuildignore", "^inst/gate-probe-secret\\.txt$", append = TRUE)
       },
-      expect_fail = c("check_full", "tarball"),
-      expect_pass = "tests"
+      expect_fail = c(if (uses$testthat) "check_full", "tarball"),
+      expect_pass = if (uses$testthat) "tests" else character()
     )
   )
 }
@@ -316,19 +381,19 @@ problems <- function(probe, status, lines) {
   out
 }
 
-run_probe <- function(probe, files) {
+run_probe <- function(probe, files, gate) {
   checkmate::assert_list(probe)
   checkmate::assert_character(files, min.len = 1, any.missing = FALSE)
-  reason <- probe$skip()
-  if (!is.null(reason)) {
-    return(list(status = "SKIP", detail = reason, output = ""))
+  checkmate::assert_file_exists(gate)
+  if (!is.null(probe$skip)) {
+    return(list(status = "SKIP", detail = probe$skip, output = ""))
   }
   dir <- fresh_copy(files)
   on.exit(unlink(dir, recursive = TRUE))
   probe$plant(dir)
   run <- processx::run(
     rscript,
-    c("tools/cran-gate.R", probe$mode),
+    c(gate, probe$mode),
     wd = dir,
     env = child_env(probe$env),
     error_on_status = FALSE,
@@ -348,12 +413,14 @@ main <- function(args) {
   checkmate::assert_character(args, any.missing = FALSE, max.len = 1)
   group <- if (length(args) == 0) "all" else args
   checkmate::assert_choice(group, groups, .var.name = "group")
-  if (!file.exists("DESCRIPTION") || !file.exists("tools/cran-gate.R")) {
-    cli::cli_abort("Run the self-test from the package root (no gate in {.path {getwd()}}).")
+  if (!file.exists("DESCRIPTION")) {
+    cli::cli_abort("Run the self-test from the package root (no DESCRIPTION in {.path {getwd()}}).")
   }
+  gate <- gate_path()
+  uses <- package_uses()
   probes <- c(
-    if (group %in% c("all", "static")) static_probes(),
-    if (group %in% c("all", "heavy")) heavy_probes()
+    if (group %in% c("all", "static")) static_probes(uses),
+    if (group %in% c("all", "heavy")) heavy_probes(uses)
   )
   files <- package_files()
   cli::cli_h1("CRAN gate self-test: {group} ({length(probes)} probes)")
@@ -361,7 +428,7 @@ main <- function(args) {
   for (probe in probes) {
     started <- Sys.time()
     res <- tryCatch(
-      run_probe(probe, files),
+      run_probe(probe, files, gate),
       error = function(e) list(status = "FAIL", detail = conditionMessage(e), output = "")
     )
     secs <- as.numeric(difftime(Sys.time(), started, units = "secs"))
@@ -380,6 +447,9 @@ main <- function(args) {
       length(probes),
       " probes."
     )
+    if (identical(unname(statuses["clean copy passes"]), "FAIL")) {
+      cli::cat_line("The clean copy didn't pass: make the gate pass on the package first, then run the self-test.")
+    }
     quit(status = 1)
   }
   cli::cat_line("All probes behaved as expected (", sum(statuses == "SKIP"), " skipped).")

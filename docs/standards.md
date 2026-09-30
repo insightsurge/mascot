@@ -269,7 +269,7 @@ widget's rendered output (section 6).
   the shinytest2 behaviour tests. A PR never lowers coverage. `# nocov` is only for code that cannot run in a test,
   with a comment saying why.
 - **No jest or vitest for now.** If pure JS functions grow (colour maths, easing), `node --test` needs no dependency.
-- **Guardrails are tested too.** Each gate step has a probe in `tools/test-cran-gate.R` that plants a defect and
+- **Guardrails are tested too.** Each gate step has a probe in the gate's self-test that plants a defect and
   expects the step to fail, and a clean copy must pass (section 7.2).
 
 ## 7. The quality pipeline
@@ -282,7 +282,7 @@ run it:
 | Layer | When it runs | Status |
 |---|---|---|
 | Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; merging a PR (`gh pr merge`) asks the maintainer for confirmation each time; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
-| The gate, `Rscript tools/cran-gate.R` | On demand, before a commit or PR | In place |
+| The gate (`/cran-gate`, section 7.2) | On demand, before a commit or PR | In place |
 | CI | On every PR and push to `main` (the full platform matrix on `main`, weekly and on demand); it cannot be skipped | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
@@ -291,25 +291,38 @@ green, then ask before merging.
 
 ### 7.2 The gate
 
-`Rscript tools/cran-gate.R [fast|tests|full|lint] [--update-wordlist]`, run from the package root. Each step prints
-`PASS`, `FAIL` or `SKIP` with a detail. Full output goes to a log file in `tempdir()`, whose path is printed. The
-script exits with status 1 if any step fails. A missing tool is a failure, never a silent skip. The script checks its
-own arguments with checkmate and is linted like any other code.
+```sh
+Rscript .claude/skills/cran-gate/scripts/cran-gate.R [fast|tests|full|lint] [--update-wordlist]
+```
+
+Run it from the package root. Each step prints `PASS`, `FAIL` or `SKIP` with a detail. Full output goes to a log file
+in `tempdir()`, whose path is printed. The script exits with status 1 if any step fails. A missing tool is a failure,
+never a silent skip. The script checks its own arguments with checkmate and is linted like any other code.
+
+**The gate is a generic, self-contained skill.** The folder `.claude/skills/cran-gate/` (instructions, the script and
+its self-test; the same copy in `.agents/skills/` for Codex and Gemini) names nothing about mascot, so another R
+package can copy it as it is. What is specific to a package is kept out of the skill:
+
+- CRAN checks always run. Style checks run when the package has the tool's settings file (`air.toml`, `.lintr`,
+  `biome.json`) and are skipped with a reason otherwise. mascot has all three.
+- Settings are `Config/cran-gate/*` fields in `DESCRIPTION`: `coverage` (default 80; mascot sets 90), `tarball-mb`
+  (default 5, at most 9 because CRAN's limit is 10; mascot keeps 5) and `extra-dirs` (more folders to format-check
+  and lint; mascot lists `tools` and the gate's own scripts).
 
 | Step | fast | tests | full | lint | What it does |
 |---|---|---|---|---|---|
-| `tools` | yes | yes | yes | yes | Checks that Air, the needed R packages and (when `inst/` has JS or CSS) Biome are installed; prints `.libPaths()[1]` |
-| `air` | yes |  | yes | yes | `air format --check .` |
+| `tools` | yes | yes | yes | yes | Checks that the needed R packages, Air (when there is an `air.toml`) and Biome (when there is a `biome.json` and `inst/` has JS or CSS) are installed; prints `.libPaths()[1]` |
+| `air` | yes |  | yes | yes | `air format --check` on the package and the extra folders |
 | `biome` | yes |  | yes | yes | `biome ci inst`; SKIP only while `inst/` has no JS or CSS |
 | `docs` | yes |  | yes | yes | Runs `devtools::document()` and fails if `man/`, `NAMESPACE` or `DESCRIPTION` changed (the roxygen version fields are ignored) |
-| `lintr` | yes |  | yes | yes | `lintr::lint_package()` and `lintr::lint_dir("tools")`; any lint fails |
-| `value` | yes |  | yes | yes | Fails for any exported function whose help page has no `\value` |
+| `lintr` | yes |  | yes | yes | `lintr::lint_package()` and `lintr::lint_dir()` on each extra folder; any lint fails |
+| `value` | yes |  | yes | yes | Fails for any exported function of the package that has no help page or no `\value` |
 | `spelling` | yes |  | yes | yes | `spelling::spell_check_package()`; any unknown word fails |
 | `check_fast` | yes |  |  |  | `R CMD check --as-cran --no-tests` with `NOT_CRAN=false`; fails on any error, warning or note |
 | `tests` |  | yes | yes |  | `devtools::test()` with `NOT_CRAN=true`, so Chrome tests run |
-| `coverage` |  | yes | yes |  | `covr::package_coverage()`; fails under 90 percent |
+| `coverage` |  | yes | yes |  | `covr::package_coverage()`; fails under the limit in `DESCRIPTION` (90 percent here) |
 | `check_full` |  |  | yes |  | CRAN-like `R CMD check --as-cran` with tests and `NOT_CRAN=false`; fails on any error, warning or note |
-| `tarball` |  |  | yes |  | Builds the tarball; fails over 5 MB or if any `inst/` file is missing from it |
+| `tarball` |  |  | yes |  | Builds the tarball; fails over the size limit (5 MB here) or if any `inst/` file is missing from it |
 
 Notes:
 
@@ -319,15 +332,15 @@ Notes:
   `DESCRIPTION` (the step then fails and names the files), and `--update-wordlist` rewrites `inst/WORDLIST`.
 - In a git worktree, set `R_LIBS` to the main checkout's library, since renv keeps that library outside the repo.
   The `tools` step prints which library is in use.
-- `/cran-gate` is the project skill (`.claude/skills/cran-gate/`) that runs the script and reads only its summary.
+- A setting outside its range (for example `tarball-mb: 12`) stops the gate with `FAIL settings`.
 
 **The gate's self-test.** A check that cannot fail protects nothing, so the gate has its own test:
-`Rscript tools/test-cran-gate.R [all|static|heavy]`. Each probe copies the package to `tempdir()`, plants one defect
-(an unformatted file, `print()` in package code, a misspelt word, a failing test, untested code, a check note, a file
+`test-cran-gate.R [all|static|heavy]`, beside the gate. Each probe copies the package to `tempdir()`, plants one defect
+(an unformatted file, code with lints, a misspelt word, a failing test, untested code, a check note, a file
 in `inst/` that the build leaves out, a missing tool) and runs the gate on the copy. The probe passes when the gate
 exits 1 with `FAIL` for the step that should catch the defect; a clean copy must pass. One probe also shows that the
 `tests` step runs with `NOT_CRAN=true` and the CRAN-like check with `NOT_CRAN=false`. The repository is never changed.
-Run it after changing the gate, `.lintr`, `air.toml` or `biome.json`; a new gate step gets its probe in the same pull
+Probes for steps a package does not use are skipped, so the self-test works in any package. Run it after changing the gate, `.lintr`, `air.toml` or `biome.json`; a new gate step gets its probe in the same pull
 request. `static` takes seconds, `all` about a minute today.
 
 ### 7.3 CI workflows
@@ -343,8 +356,8 @@ again (#115).
 |---|---|---|
 | `R-CMD-check.yaml` | `R CMD check --as-cran`: Ubuntu (R release) on pull requests; macOS and Windows (release) and Ubuntu (R-devel, release, oldrel-1) on pushes to `main`, every Monday and on demand, to save Actions minutes; `error-on: note`; `NOT_CRAN` unset, so Chrome tests skip as on CRAN | Any error, warning or note (on a PR: Ubuntu release; on `main` and weekly: all five platforms, including R-devel) |
 | `test-coverage.yaml` | covr on Ubuntu with `NOT_CRAN=true`, so Chrome tests count | Coverage under 90 percent; no code yet means no gate yet |
-| `lint.yaml` | Air 0.11.0, Biome 2.5.14, then `Rscript tools/cran-gate.R lint` | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
-| `gate-self-test.yaml` | `Rscript tools/test-cran-gate.R all`, only when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change, and on demand | A gate step that no longer fails on the defect it exists to catch |
+| `lint.yaml` | Air 0.11.0, Biome 2.5.14, then the gate in `lint` mode | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
+| `gate-self-test.yaml` | The gate's self-test (`all`), only when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change, and on demand | A gate step that no longer fails on the defect it exists to catch |
 | `check-no-suggests.yaml` | `R CMD check --as-cran` with only hard dependencies installed (plus testthat, knitr and rmarkdown) and a step that prints which `Suggests` are installed | Any unguarded use of a `Suggests` package; CRAN runs this check too |
 | `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build (`tools/build-site.R`), uploaded as an artifact | A broken site configuration or build; no deploy until the repo is public |
 | `gitleaks.yml` | Secret scan over the full history | A committed secret |
@@ -401,7 +414,7 @@ Ubuntu runners are pinned (`ubuntu-26.04`; macOS and Windows use `-latest`), all
 
 Run these before submitting to CRAN:
 
-1. `Rscript tools/cran-gate.R full` passes.
+1. The gate's `full` mode passes (`/cran-gate full`).
 2. `urlchecker::url_check()` reports nothing.
 3. `spelling::spell_check_package()` reports nothing.
 4. `devtools::check(remote = TRUE, manual = TRUE)` gives 0 errors, 0 warnings and 0 notes apart from the expected

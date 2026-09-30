@@ -2,6 +2,7 @@
 paths:
   - "R/**/*.R"
   - "tools/**/*.R"
+  - ".claude/skills/**/*.R"
 ---
 
 # R code

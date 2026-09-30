@@ -24,6 +24,3 @@ renv.lock
 # R CMD build and check output
 *.Rcheck/
 mascot_*.tar.gz
-
-# Python bytecode (Claude Code hooks)
-__pycache__/

@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    # Only when something the site shows has changed.
+    # Only when something the site shows has changed (to save minutes while the repo is private; revisit in #115).
     paths:
       - "README.md"
       - "NEWS.md"

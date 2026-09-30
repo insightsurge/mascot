@@ -27,8 +27,10 @@ Reasons and sources: `docs/standards.md`.
 - Every workflow: `permissions: read-all` (or narrower), a `concurrency` group with `cancel-in-progress`, Ubuntu
   pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions outside
   `actions/` and `r-lib/` by commit SHA with a version comment.
-- Minutes are limited on a private repo (macOS counts 10x, Windows 2x): PRs that only touch project docs, agent
-  files or templates skip the R jobs (`paths-ignore`), and the site builds only when something it shows changes. Keep
-  new jobs on Ubuntu unless the platform is the point.
+- **Temporary while the repo is private (#113):** the slim PR matrix, the `paths-ignore` filters and the site's path
+  filter are workarounds for limited Actions minutes. When the repo goes public (before the CRAN submission) they are
+  removed and every PR runs all five platforms again (#115). Until then, minutes are limited (macOS counts 10x,
+  Windows 2x): PRs that only touch project docs, agent files or templates skip the R jobs (`paths-ignore`), and the
+  site builds only when something it shows changes. Keep new jobs on Ubuntu unless the platform is the point.
 - Never `continue-on-error`, never weaken a check to get green: fix the cause, or ask the founder.
 - A new check goes into the gate first, is shown failing on a planted defect, then runs in CI.

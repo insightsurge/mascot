@@ -42,9 +42,11 @@ lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line
 - `fast` (default) before every commit; `tests` (tests + coverage) before a PR that touches `R/` or `tests/`;
   `full` before a release; `lint` reproduces CI's lint job.
 - New spelling words go into `inst/WORDLIST` only after the founder agrees (`--update-wordlist`).
-- CI must be green: R-CMD-check (fails on notes; Ubuntu on PRs, all 5 platforms on `main`, weekly and on demand),
-  test-coverage (90%, Chrome tests), lint (the gate), check-no-suggests, pkgdown, gitleaks. Never
-  `continue-on-error` or weaken a check to get green.
+- CI must be green: R-CMD-check (fails on notes), test-coverage (90%, Chrome tests), lint (the gate),
+  check-no-suggests, pkgdown, gitleaks. Never `continue-on-error` or weaken a check to get green.
+- **Temporary while the repo is private** (limited Actions minutes, #113): PRs run R-CMD-check on Ubuntu only (all 5
+  platforms on `main`, weekly and on demand), and docs-only PRs skip the R jobs. When the repo goes public, before the
+  CRAN submission, these workarounds are removed and every PR runs the full matrix (#115).
 - After editing R files, run `air format .` (the gate fails on unformatted code). `.claude/settings.json` denies
   force-push, pushes to `main`, `gh pr merge`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/` and
   `LICENSE`, and turns off attribution lines. It's a guard rail, not the gate; never work around it.

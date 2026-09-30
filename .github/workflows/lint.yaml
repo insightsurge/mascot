@@ -4,7 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
-    # Changes that can't affect the package skip this job (project docs, agent files, templates, the site's theme).
+    # TEMPORARY while the repo is private (#113; removed when it goes public, #115): changes that can't affect the
+    # package skip this job (project docs, agent files, templates, the site's theme).
     paths-ignore:
       - "docs/**"
       - "dev/**"

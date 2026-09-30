@@ -58,5 +58,5 @@ app with a character chooser.
   never replace or hide an error message.
 - Quiet by default: nothing pops up uninvited.
 - The package never calls an AI model; skills are files the user's own agent runs.
-- Tested and defensive: at least 90% test coverage, shinytest2 for Shiny behaviour, arguments checked with checkmate.
+- Tested and defensive: at least 70% test coverage, shinytest2 for Shiny behaviour, arguments checked with checkmate.
 - Wording: "built for GxP work", never "validated" or "compliant".

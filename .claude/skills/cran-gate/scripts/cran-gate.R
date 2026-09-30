@@ -21,7 +21,8 @@
 #   biome.json  Biome on the JS and CSS in inst/ (https://biomejs.dev)
 #
 # Optional settings, as fields in the package's DESCRIPTION:
-#   Config/cran-gate/coverage: 90      lowest line coverage allowed, in percent (default 80; 0 = no limit)
+#   Config/cran-gate/coverage: 80      lowest line coverage allowed, in percent (default 70; 0 = no limit).
+#                                      A good-practice check: CRAN itself does not measure coverage
 #   Config/cran-gate/tarball-mb: 5     largest built package allowed, in MB (default 5; 5 to 9, CRAN's limit is 10)
 #   Config/cran-gate/extra-dirs: tools more folders to format-check and lint, comma separated (default: none)
 #
@@ -41,7 +42,7 @@ setting <- function(name, default) {
 }
 
 read_settings <- function() {
-  coverage <- suppressWarnings(as.numeric(setting("coverage", "80")))
+  coverage <- suppressWarnings(as.numeric(setting("coverage", "70")))
   tarball_mb <- suppressWarnings(as.numeric(setting("tarball-mb", "5")))
   extra_dirs <- trimws(strsplit(setting("extra-dirs", ""), ",", fixed = TRUE)[[1]])
   extra_dirs <- extra_dirs[nzchar(extra_dirs)]

@@ -19,7 +19,7 @@ Reasons and sources: `docs/standards.md`.
     on a PR branch before a release or for a platform-sensitive change); fails on any note
     (`error-on: '"note"'`); mimics CRAN (`NOT_CRAN` unset, so Chrome tests skip); only the remote CRAN-incoming
     checks are off.
-  - `test-coverage.yaml`: tests with `NOT_CRAN: true` (Chrome tests run) and a 90% line-coverage gate; no Codecov
+  - `test-coverage.yaml`: tests with `NOT_CRAN: true` (Chrome tests run) and a 70% line-coverage gate (the limit is read from `DESCRIPTION`); no Codecov
     while the repo is private.
   - `lint.yaml`: the gate's lint mode with Air and Biome at pinned versions (keep them equal to the local installs
     and `biome.json`'s schema).

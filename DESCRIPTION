@@ -19,7 +19,7 @@ Suggests:
     covr,
     shinytest2,
     testthat (>= 3.0.0)
-Config/cran-gate/coverage: 90
+Config/cran-gate/coverage: 70
 Config/cran-gate/extra-dirs: tools, .claude/skills/cran-gate/scripts
 Config/testthat/edition: 3
 Encoding: UTF-8

@@ -44,7 +44,7 @@ The gate lives in a skill folder because coding assistants use it too; it is pla
 - `fast` checks formatting (Air and Biome), that `man/` and `NAMESPACE` match the roxygen2 comments, lint, that every
   export has `@returns`, spelling, and `R CMD check --as-cran` without the tests.
 - `tests` runs the tests with `NOT_CRAN=true`, so the Chrome tests run, and then measures coverage. Coverage must be
-  at least 90%.
+  at least 70%.
 - The gate prints one `PASS`, `FAIL` or `SKIP` line for each step, then a summary. It exits with status 1 if any
   step fails. The detailed output goes to a log file, and the path is printed. Open the log only for a failing step.
 - **Spelling**: unknown words fail the gate. Check that a word is correct (a name or a technical term), then add it to
@@ -83,7 +83,7 @@ The full list, with reasons, is in [`docs/standards.md`](https://github.com/insi
 - Cover the happy path, every argument check, edge cases and every bug fix.
 - Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN.
 - Use `shiny::testServer()` for server logic.
-- Coverage must be at least 90%, and a pull request must not lower it.
+- Coverage must be at least 70%, and a pull request must not lower it.
 
 ## NEWS.md
 

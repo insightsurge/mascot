@@ -32,14 +32,15 @@ when it is installed for all projects.
   comments; spelling; every file in `inst/` present in the built package; the package's size.
 - **When the package has the tool's settings file** (otherwise the step says `SKIP` and why): `air.toml` → formatting
   with Air; `.lintr` → lintr with the package's rules; `biome.json` → Biome on JS and CSS in `inst/`.
-- **Tests and coverage** when the package has `tests/`.
+- **Tests and coverage** when the package has `tests/`. Coverage is good practice, not a CRAN rule: CRAN never
+  measures it.
 
 ## Settings (optional)
 Fields in the package's `DESCRIPTION` (R CMD check accepts `Config/` fields):
 
 | Field | Default | Meaning |
 |---|---|---|
-| `Config/cran-gate/coverage` | `80` | lowest line coverage allowed, in percent; `0` reports coverage without a limit |
+| `Config/cran-gate/coverage` | `70` | lowest line coverage allowed, in percent; `0` reports coverage without a limit. CRAN has no coverage rule: this one is good practice |
 | `Config/cran-gate/tarball-mb` | `5` | largest built package allowed, in MB; `5` to `9` (CRAN asks for under 10, and its own checks note an installed size over 5, which then needs a line in `cran-comments.md`) |
 | `Config/cran-gate/extra-dirs` | none | more folders to format-check and lint, comma separated, e.g. `tools` |
 

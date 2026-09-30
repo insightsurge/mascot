@@ -86,7 +86,7 @@ claim about the package's status.
 | No Chrome (chromote or shinytest2) on CRAN: `skip_on_cran()` and a skip when `chromote::find_chrome()` returns `NULL` | CRAN | shinytest2 docs |
 | CRAN checks with only the declared packages and also checks without `Suggests`; every use of a `Suggests` package is guarded | CRAN | INTS |
 | Tests that write files use `withr::local_tempdir()` and leave nothing behind | CRAN | INTS |
-| Coverage of R code is at least 90 percent | house | - |
+| Coverage of R code is at least 70 percent (CRAN does not measure coverage) | house | - |
 
 ### 1.6 JavaScript, CSS, fonts and third-party files
 
@@ -265,9 +265,10 @@ widget's rendered output (section 6).
 - **Skips.** Every shinytest2 file starts with `skip_on_cran()`, `skip_if_not_installed("shinytest2")` and a skip
   when `chromote::find_chrome()` returns `NULL`, and stops the app with `withr::defer(app$stop())`.
 - **Files.** Tests that write files use `withr::local_tempdir()`.
-- **Coverage is at least 90 percent, measured with covr on R code only.** covr does not see JS, so JS is covered by
-  the shinytest2 behaviour tests. A PR never lowers coverage. `# nocov` is only for code that cannot run in a test,
-  with a comment saying why.
+- **Coverage is at least 70 percent, measured with covr on R code only.** This is our rule: CRAN's policy and
+  `R CMD check` say nothing about coverage. The limit is `Config/cran-gate/coverage` in `DESCRIPTION`. covr does not
+  see JS, so JS is covered by the shinytest2 behaviour tests. A PR never lowers coverage. `# nocov` is only for code
+  that cannot run in a test, with a comment saying why.
 - **No jest or vitest for now.** If pure JS functions grow (colour maths, easing), `node --test` needs no dependency.
 - **Guardrails are tested too.** Each gate step has a probe in the gate's self-test that plants a defect and
   expects the step to fail, and a clean copy must pass (section 7.2).
@@ -305,7 +306,7 @@ package can copy it as it is. What is specific to a package is kept out of the s
 
 - CRAN checks always run. Style checks run when the package has the tool's settings file (`air.toml`, `.lintr`,
   `biome.json`) and are skipped with a reason otherwise. mascot has all three.
-- Settings are `Config/cran-gate/*` fields in `DESCRIPTION`: `coverage` (default 80; mascot sets 90), `tarball-mb`
+- Settings are `Config/cran-gate/*` fields in `DESCRIPTION`: `coverage` (default 70, which mascot uses), `tarball-mb`
   (default 5, at most 9 because CRAN's limit is 10; mascot keeps 5) and `extra-dirs` (more folders to format-check
   and lint; mascot lists `tools` and the gate's own scripts).
 
@@ -320,7 +321,7 @@ package can copy it as it is. What is specific to a package is kept out of the s
 | `spelling` | yes |  | yes | yes | `spelling::spell_check_package()`; any unknown word fails |
 | `check_fast` | yes |  |  |  | `R CMD check --as-cran --no-tests` with `NOT_CRAN=false`; fails on any error, warning or note |
 | `tests` |  | yes | yes |  | `devtools::test()` with `NOT_CRAN=true`, so Chrome tests run |
-| `coverage` |  | yes | yes |  | `covr::package_coverage()`; fails under the limit in `DESCRIPTION` (90 percent here) |
+| `coverage` |  | yes | yes |  | `covr::package_coverage()`; fails under the limit in `DESCRIPTION` (70 percent here) |
 | `check_full` |  |  | yes |  | CRAN-like `R CMD check --as-cran` with tests and `NOT_CRAN=false`; fails on any error, warning or note |
 | `tarball` |  |  | yes |  | Builds the tarball; fails over the size limit (5 MB here) or if any `inst/` file is missing from it |
 
@@ -355,7 +356,7 @@ again (#115).
 | Workflow file | What it runs | What it blocks |
 |---|---|---|
 | `R-CMD-check.yaml` | `R CMD check --as-cran`: Ubuntu (R release) on pull requests; macOS and Windows (release) and Ubuntu (R-devel, release, oldrel-1) on pushes to `main`, every Monday and on demand, to save Actions minutes; `error-on: note`; `NOT_CRAN` unset, so Chrome tests skip as on CRAN | Any error, warning or note (on a PR: Ubuntu release; on `main` and weekly: all five platforms, including R-devel) |
-| `test-coverage.yaml` | covr on Ubuntu with `NOT_CRAN=true`, so Chrome tests count | Coverage under 90 percent; no code yet means no gate yet |
+| `test-coverage.yaml` | covr on Ubuntu with `NOT_CRAN=true`, so Chrome tests count | Coverage under the limit in `DESCRIPTION` (70 percent); no code yet means no gate yet |
 | `lint.yaml` | Air 0.11.0, Biome 2.5.14, then the gate in `lint` mode | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
 | `gate-self-test.yaml` | The gate's self-test (`all`), only when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change, and on demand | A gate step that no longer fails on the defect it exists to catch |
 | `check-no-suggests.yaml` | `R CMD check --as-cran` with only hard dependencies installed (plus testthat, knitr and rmarkdown) and a step that prints which `Suggests` are installed | Any unguarded use of a `Suggests` package; CRAN runs this check too |
@@ -402,7 +403,7 @@ versions in `lint.yaml` and `gate-self-test.yaml` in step with the local install
 | Left out | Why |
 |---|---|
 | Pre-commit framework | One maintainer and no shared clone yet; it needs a Python tool. The gate and CI cover the same checks. Revisit when others commit |
-| Codecov | The repository is private. The 90 percent gate runs inside the coverage workflow. Optional once public |
+| Codecov | The repository is private. The 70 percent gate runs inside the coverage workflow. Optional once public |
 | Screenshot tests | They differ between operating systems and Chrome versions. Values, DOM state and draw-call hashes are stable |
 | jest or vitest | JS logic is kept small and tested through shinytest2. `node --test` is the fallback if pure functions grow |
 | TypeScript and a build step | Only needed for TypeScript or npm libraries. Plain JS is its own source and needs no Node in CI |

@@ -1,0 +1,27 @@
+---
+paths:
+  - ".github/**"
+  - "tools/cran-gate.R"
+---
+
+# CI and the gate
+
+Reasons and sources: `docs/standards.md`.
+
+- The gate (`tools/cran-gate.R`, skill `/cran-gate`) is the single source of the lint steps: CI's lint job runs
+  `Rscript tools/cran-gate.R lint`. Change a check in the script, not in a workflow.
+- Workflows and what each blocks:
+  - `R-CMD-check.yaml`: `--as-cran` on macOS/Windows release and Ubuntu devel/release/oldrel-1; fails on any note
+    (`error-on: '"note"'`); mimics CRAN (`NOT_CRAN` unset, so Chrome tests skip); only the remote CRAN-incoming
+    checks are off.
+  - `test-coverage.yaml`: tests with `NOT_CRAN: true` (Chrome tests run) and a 90% line-coverage gate; no Codecov
+    while the repo is private.
+  - `lint.yaml`: the gate's lint mode with Air and Biome at pinned versions (keep them equal to the local installs
+    and `biome.json`'s schema).
+  - `check-no-suggests.yaml`: R CMD check with hard dependencies only (CRAN checks without Suggests too).
+  - `gitleaks.yml` (secrets), `release.yml` (tag and GitHub release from `NEWS.md`), dependabot (action updates).
+- Every workflow: `permissions: read-all` (or narrower), a `concurrency` group with `cancel-in-progress`, Ubuntu
+  pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions outside
+  `actions/` and `r-lib/` by commit SHA with a version comment.
+- Never `continue-on-error`, never weaken a check to get green: fix the cause, or ask the founder.
+- A new check goes into the gate first, is shown failing on a planted defect, then runs in CI.

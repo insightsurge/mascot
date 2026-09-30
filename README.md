@@ -22,6 +22,11 @@ development version with:
 pak::pak("insightsurge/mascot")
 ```
 
+## Development
+
+How to set up, the workflow and the checks every change passes: [`CONTRIBUTING.md`](.github/CONTRIBUTING.md).
+The engineering standards, with the CRAN rules and our own: [`docs/standards.md`](docs/standards.md).
+
 ## Licence
 
 MIT © Harsh Verma. See [`LICENSE.md`](LICENSE.md).

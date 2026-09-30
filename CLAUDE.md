@@ -3,10 +3,49 @@
 An R package for **live, mood-driven mascots** in Shiny apps and Quarto sites: a character drawn in code shows a
 mood and animates when the mood changes (a short wiggle, then the new face). Later: avatars and hex stickers, a
 character builder, and trailers. Scope, target users and releases: `docs/scope.md`. Status: before 0.1.0; the
-repo is private.
+repo is private and goes public before the CRAN submission.
 
 Author, maintainer and copyright holder: **Harsh Verma** (analyticswithharsh@gmail.com; GitHub `insightsurge`).
 In `DESCRIPTION`: `person("Harsh", "Verma", email = "analyticswithharsh@gmail.com", role = c("aut", "cre", "cph"))`.
+
+## Rules: where they live
+The detailed rules are in `.claude/rules/` (they load when you read a matching file) and, with reasons and
+sources, in `docs/standards.md`. Each rule is **CRAN** (policy, Writing R Extensions, R CMD check) or **house**
+(ours; a justified exception needs a comment saying why). **Before creating a file** in `R/`, `tests/`, `inst/` or
+`.github/`, read the matching rules file, because a new file doesn't trigger it:
+- `r-code.md` (`R/`, `tools/`): checkmate, cli, dependencies, behaviour, names
+- `roxygen.md` (`R/`, `man/`, `NAMESPACE`): documentation and examples
+- `tests.md` (`tests/`): BDD tests, shinytest2, skips, coverage
+- `js-css.md` (`inst/` JS, CSS, Lua): the UI engine, theming, accessibility
+- `bundled-files.md` (`inst/`): licences, fonts, the acceptance checklist for shipped files
+- `description-news.md` (`DESCRIPTION`, `NEWS.md`, `cran-comments.md`)
+- `ci.md` (`.github/`, the gate)
+
+## Rules that always apply
+- **CRAN:** 0 errors, 0 warnings, 0 notes. No network in code, examples, tests or vignettes; write only to
+  `tempdir()` or a path the user passes; no side effects on load; restore anything you change (options, working
+  directory, graphics state). Everything the package draws with ships in `inst/`; no CDN.
+- **house:** every function starts with `checkmate::assert_*()` for each argument; other messages and errors use
+  cli; call other packages as `pkg::fn()`; no `library()`, `print()` or `cat()` in package code.
+- **CRAN/house:** roxygen2 with markdown; every export has `@returns` and offline `@examples`; never edit `man/` or
+  `NAMESPACE` by hand.
+- **house:** tests in BDD style (`describe()`/`it()`), one test file per R file, every checkmate assertion tested,
+  shinytest2 for what a user sees (skipped on CRAN), coverage at least 90%.
+- **house:** the engine is plain, unminified JS/CSS in `inst/www/`, deterministic (seeded, no clock), with status
+  text beside every mascot (the mood never carries meaning alone) and `prefers-reduced-motion` honoured.
+- **house:** wording in docs and UI: no hype; "built for GxP work", never "validated" or "GxP compliant"; never name
+  an employer, client or internal system; no unmeasured numbers; British English.
+
+## Quality gate
+Run `/cran-gate` (`Rscript tools/cran-gate.R [fast|tests|full|lint]`) instead of calling `devtools::check()`,
+lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line per step.
+- `fast` (default) before every commit; `tests` (tests + coverage) before a PR that touches `R/` or `tests/`;
+  `full` before a release; `lint` reproduces CI's lint job.
+- New spelling words go into `inst/WORDLIST` only after the founder agrees (`--update-wordlist`).
+- CI must be green: R-CMD-check (5 platforms, fails on notes), test-coverage (90%, Chrome tests), lint (the gate),
+  check-no-suggests, gitleaks. Never `continue-on-error` or weaken a check to get green.
+- In a git worktree, set `R_LIBS` to what `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout (renv
+  keeps a package project's library outside the repo).
 
 ## Known users: never break them
 - **Every known user is listed in `docs/consumers.md`**: what it uses, since which version, and how to check it
@@ -23,98 +62,22 @@ In `DESCRIPTION`: `person("Harsh", "Verma", email = "analyticswithharsh@gmail.co
   affected user was checked. A change to the public API gets `breaking-change`, a `NEWS.md` entry and a
   deprecation first (`lifecycle::deprecate_warn()` for at least one release) unless the API is still before 0.1.0.
 
-## CRAN rules (non-negotiable)
-- Before every PR: `devtools::check(args = "--as-cran")` (or `rcmdcheck::rcmdcheck(args = "--as-cran")`) with
-  **0 errors, 0 warnings, 0 notes**. Explain any note that truly can't be removed in `cran-comments.md`; never
-  ignore one.
-- No network in examples, tests or vignettes. No writing outside `tempdir()` or a path the user passes; no side
-  effects on load; no changing the user's options, working directory or graphics state without restoring them.
-- Optional features use `Suggests` (chromote, av, shinyvalidate, shinytest2, quarto) and check with
-  `rlang::check_installed()` or `requireNamespace()`. Tests that need Chrome skip when `chromote::find_chrome()`
-  finds none (there is no `chromote::has_chrome()`). Keep examples fast (under a few seconds) and tests economical.
-- Bundle everything the package draws with (JS, fonts) inside `inst/`, with licences recorded (OFL fonts); no CDN.
-  Source tarball under 10 MB if at all possible.
-- Documentation: roxygen2 with markdown; every export has `@examples` that run offline; `@returns` on every
-  function.
-
-## Package code
-- **Few exports.** Prefer an argument over a new function. Names: `mascot()` is the main object; Shiny's
-  convention for `mascotOutput()`, `renderMascot()`, `updateMascot()`; `use_*()` only for project setup
-  (usethis style); otherwise short verbs without a prefix when they can't clash (`moods()`, `characters()`,
-  `run_gallery()`, `watch_validator()`). Check a new name against base R, shiny, bslib and ggplot2 first.
-- **Every function checks its arguments first with checkmate** (exported and internal alike): the first lines of
-  the body are `checkmate::assert_*()` calls, one per argument, before any other work. Pick the strictest check
-  that fits (`assert_string()`, `assert_flag()`, `assert_count()`, `assert_number(lower =, upper =)`,
-  `assert_choice(mood, moods())`, `assert_character(min.chars = 1, any.missing = FALSE)`, `assert_class()`,
-  `assert_function()`, `assert_list(names = "unique")`, `assert_file_exists()`, `assert_path_for_output()`), and
-  say what `NULL` means with `null.ok = TRUE`. Several arguments can be collected with
-  `checkmate::makeAssertCollection()` and `reportAssertions()`. checkmate is an `Imports` dependency. Other
-  messages, warnings and errors (not argument checks) use `cli`. Every assertion has a test that it fails with a
-  clear message.
-- The engine (JavaScript in `inst/`): deterministic (seeded RNG, no `Math.random` or clock time), drawn in code in
-  the theme's colours, no AI images, no external requests. Moods must never carry meaning alone: status text
-  sits beside them; `prefers-reduced-motion` is honoured.
-- Before a PR that touches R: `air format .`, `lintr::lint_package()`, `devtools::test()`,
-  `covr::package_coverage()` (at least 90%), `devtools::check(args = "--as-cran")`.
-
-## Testing (non-negotiable)
-- **Coverage: at least 90%** of lines, measured with `covr::package_coverage()`, locally before a PR and in CI
-  (the job fails under 90%). A PR never lowers coverage. `# nocov` only for code that truly can't run in a test
-  (say why in a comment next to it); never to reach the number.
-- **Unit tests in BDD style** (testthat 3rd edition): one test file per R file (`R/mood.R` →
-  `tests/testthat/test-mood.R`); `describe("updateMascot()", { it("changes the mood after the wiggle", { ... }) })`,
-  with `describe()` naming the function or behaviour and `it()` stating the expected behaviour in plain words.
-  Arrange, act, assert inside each `it()`; comments `# Given / # When / # Then` where it helps. Cover the happy path,
-  every argument check (checkmate errors), edge cases and every bug fix.
-- **Shiny: shinytest2** for every Shiny behaviour a user can see (the widget renders, a mood change, the bubble,
-  validator reactions, busy, placement, dismiss, light/dark): `AppDriver` apps under `tests/testthat/apps/`,
-  expectations on values and on the widget's DOM state, not screenshots alone. Server logic also gets
-  `shiny::testServer()` tests. shinytest2 tests need Chrome: `skip_on_cran()` and skip when
-  `chromote::find_chrome()` finds none; they run in CI.
-- **Snapshots** (`expect_snapshot()`, `expect_snapshot_file()`) for printed output, generated HTML and drawings;
-  review every snapshot change in the PR like code.
-- **JavaScript** in `inst/` is tested through shinytest2 and the widget's rendered output (deterministic frames make
-  pixel checks possible); keep JS logic small and push decisions into R where they can be unit-tested.
-- Wording in docs and UI: no hype; say "built for GxP work", never "validated" or "GxP compliant"; never name an
-  employer, client or internal system; no unmeasured numbers.
-
-## Versions and releases
+## Versions, releases and NEWS
 - `main` carries a development version (`0.0.0.9000`, later `x.y.z.9000`). A release is a PR that sets a release
   version (`usethis::use_version()`) and its `NEWS.md` section (`# mascot x.y.z`). When that reaches `main`, the
   `release` workflow tags `vx.y.z` and creates a GitHub release (the NEWS section plus notes generated from PR
   labels, grouped by `.github/release.yml`). Then bump back to `.9000`.
+- Every user-facing change adds its `NEWS.md` bullet in the same PR (tidyverse style; details and the numbered
+  heading until 0.1.0 in `.claude/rules/description-news.md`).
 - GitHub milestones are releases (`0.1.0 Live mascot`, `0.2.0 ...`, `Later`); epics are the M0-M6 work areas.
 
-## NEWS.md (the changelog)
-Follow the tidyverse style for NEWS files; `NEWS.md` is the source of each GitHub release and the website's
-changelog.
-- **Same PR:** every user-facing change adds its bullet to `NEWS.md` in the PR that makes it. Internal changes
-  (CI, refactors, tests) are left out unless users notice them.
-- **Headings:** `# mascot (development version)` at the top while developing; `usethis::use_version()` turns it
-  into `# mascot x.y.z` at release. Never edit a released section except to fix a typo. **Until 0.1.0** the
-  heading is `# mascot 0.0.0.9000`: R CMD check needs a version number in at least one NEWS heading ("No news
-  entries found"), so the 0.1.0 release PR renames it to `# mascot 0.1.0` by hand.
-- **Bullets:** one change per bullet, written for users, present tense, starting with the function or feature
-  (`` `updateMascot()` gains a `message` argument for a speech bubble (#30).``). End with the issue or PR
-  number in parentheses; credit outside contributors with their handle (`(@user, #123)`).
-- **Order:** once a release has more than a handful of bullets, group them under `## Breaking changes` (first,
-  with what users must change), `## New features`, `## Minor improvements and fixes`; alphabetical by function
-  name within a group.
-- **Before a release:** read the section as a user would; merge duplicates; make sure every breaking change says
-  what to do instead.
-
 ## Package website
-Quarto website (via altdoc) or pkgdown: to decide in #25. Until then, the pkgdown notes below apply.
-
-## pkgdown
-- Keep `_pkgdown.yml` current: every export in the reference index (`pkgdown::check_pkgdown()`), articles for the
-  vignettes, the README as the home page. Build locally (`pkgdown::build_site()`) before any PR that changes docs,
-  exports or examples, and look at it (light and dark).
-- Theme: the playbook site's look (brand colours and fonts), method to settle in #25 (bslib variables in
-  `_pkgdown.yml` or its `_brand.yml`). The brand's source of truth is the website repo's `brand/`; don't copy
-  values by hand without recording where they came from.
-- Deploy to GitHub Pages from CI once the repo is public (Pages on a private repo needs a paid plan). Our own
-  project docs live in `docs/`, so set pkgdown's `destination` elsewhere or build in CI only.
+pkgdown with the playbook site's look ported (colours, fonts, the aurora background via `pkgdown/extra.scss` and
+`includes`; dark mode on `[data-bs-theme="dark"]`), to confirm in #25. Keep `_pkgdown.yml` current
+(`pkgdown::check_pkgdown()`) and look at the built site in light and dark before a PR that changes docs, exports or
+examples. The brand's source of truth is the website repo's `brand/`; record where copied values came from. Deploy
+to GitHub Pages from CI once the repo is public; our own project docs live in `docs/`, so pkgdown's `destination`
+goes elsewhere.
 
 ## Workflow
 - **Every change starts with an issue** (goal + "done when" checklist, labels, milestone) placed in the epic tree:
@@ -126,29 +89,27 @@ Quarto website (via altdoc) or pkgdown: to decide in #25. Until then, the pkgdow
 - Labels: one type (`enhancement`, `bug`, `documentation`, `chore`, `idea`, `question`, `Epic`), one or more
   `area: *`, a `priority: *` for planned work, `status: *` when blocked or waiting, plus `breaking-change`,
   `consumer-impact`, `skip-release-notes`. Label PRs too: release notes are built from PR labels.
-- Branch → PR whose description says `Closes #<n>` → CI green → **ask before merging** (unless the founder
-  said to merge that PR). Conventional Commits, short messages, **no AI attribution** anywhere. Commit or push
-  only when asked.
+- Branch → PR → CI green → **ask before merging** (unless the founder said to merge that PR). The PR description
+  starts with **"In brief"**: one plain sentence on what it does and why, then a few bullets for a reader with no
+  context (plain words, a light technical touch); then `Closes #<n>`, what changed and the checks (only checks
+  anyone can re-run from the repo; one-off manual checks go in a short Notes line). Stacked PRs
+  are fine (base on the branch below). Conventional Commits, short messages, **no AI attribution** anywhere.
+  Commit or push only when asked.
 - `gh` must run as `insightsurge`: `GH_CONFIG_DIR=/Users/harshverma/Documents/Projects/InsightSurge/.config/gh`;
   check `gh api user --jq .login` before any GitHub action.
 
 ## Delegation
-Claude orchestrates, reviews and verifies. Never trust a self-reported pass: run check, tests and the examples
-yourself, and look at the output (screenshots for visual work).
-- **Codex CLI** (default for R code, tests, refactors, CI and check fixes), in its own worktree and branch:
-  `codex exec -C <worktree> -m gpt-6-sol -c 'model_reasoning_effort="medium"' -s workspace-write -o <out.md> "<task>" < /dev/null`.
-  Use `model_reasoning_effort="high"` for hard design or debugging. Give it the issue, the files and the checks
-  to run; review the diff.
-- **Gemini** via `agy-delegate --model "Gemini 3.8 Flash (High)" --dir <repo> [--yolo] -` (prompt on stdin):
-  UI and UX direction, CSS, visual design of characters and theme packs, docs drafts, research.
-  (`--tier flash` is broken on this machine.)
-- **Claude Sonnet sub-agents** for drawing work in the JS engine (characters, moods, props) and parallel drafts.
-- For visual work, offer a two-model bake-off (e.g. Sonnet and Gemini) and let the founder pick.
+The main Claude session (Opus) owns the package foundation (M0: skeleton, gate, CI, rules, hooks) and writes the
+judgement-heavy parts itself. Small, well-scoped tasks (a doc drafted from given sources, a test script) may go to
+Claude Sonnet sub-agents with a precise brief. Codex (`codex exec -C <worktree> -m gpt-6-sol ...`) or Gemini
+(`agy-delegate --model "Gemini 3.8 Flash (High)"`) only when the founder asks for them (for example a named
+review). Feature work may be delegated more widely later, with the founder's agreement. Whoever did the work, never
+trust a self-reported pass: run the gate and CI, and look at the output (screenshots for visual work).
 
 ## Handoffs
 - Local, gitignored working notes in `dev/handoffs/`, managed with the `/handoff` skill
-  (`.claude/skills/handoff/`; Codex and Gemini read `.agents/skills/handoff/`: keep them identical with
-  `diff -r`, change `.claude/` first, then copy).
+  (`.claude/skills/handoff/`; Codex and Gemini read `.agents/skills/`: keep them identical with `diff -r`, change
+  `.claude/` first, then copy).
 - Start a session with `dev/handoffs/README.md` and `bash .claude/skills/handoff/scripts/handoff.sh status`, then
   `package/`. Update the handoff before a PR, before a compaction and at the end of a session; run
   `handoff.sh check`. Log the founder's asks and decisions (`overview/decisions.md`); durable material goes into

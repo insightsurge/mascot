@@ -341,8 +341,10 @@ again (#115).
 | `release.yml` | On a change to `DESCRIPTION` on `main`: tags `vx.y.z` and creates a GitHub release from the `NEWS.md` section | Nothing; it does nothing for a development version |
 
 Ubuntu runners are pinned (`ubuntu-26.04`; macOS and Windows use `-latest`), all workflows use `permissions: read-all`
-(gitleaks and release ask for the little more they need), and cancel superseded runs. Keep the Air and Biome versions in
-`lint.yaml` in step with the local installs and with `biome.json`.
+(gitleaks and release ask for the little more they need), and cancel superseded runs. Actions from `actions/` and
+`r-lib/` are pinned by major tag; other third-party actions by full commit SHA with a `# vX.Y.Z` comment, because a tag
+can be moved and a SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep the Air and Biome
+versions in `lint.yaml` in step with the local installs and with `biome.json`.
 
 ### 7.4 Tools
 

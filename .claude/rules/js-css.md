@@ -11,7 +11,8 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 
 - **CRAN:** source for everything: plain, readable, unminified JS and CSS in `inst/www/`; no build step, no bundler,
   no `node_modules`, no minified files without their source. Everything ships in the package: no CDN, no requests
-  to other sites, fonts from the package via `@font-face`.
+  to other sites. **house:** no bundled fonts in 0.1.0: text (status line, speech bubble) uses the host page's font
+  (the Shiny app's bslib theme, the Quarto or pkgdown site), read from the page, like the colours.
 - **house:** deterministic drawing: seeded RNG, no `Math.random()`, no clock-driven drawing; drawn in code in the
   theme's colours; no AI-generated images.
 - **house:** wiring: `htmltools::htmlDependency()` (built at runtime, `version` = package version) + a Shiny output

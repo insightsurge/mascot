@@ -179,8 +179,8 @@ The engine is most of what a user sees, so it has its own rules. All of these ar
   `--bs-body-bg`, `--bs-primary`, `--bs-border-color`), with `--mascot-*` variables as the fallback. This works with
   bslib, in Quarto (also Bootstrap 5) and on plain pages.
 - Follow dark mode by watching `data-bs-theme` and the system preference.
-- bslib is in `Suggests`, never `Imports`. Fonts load through `@font-face` from the package, never from a font
-  service.
+- bslib is in `Suggests`, never `Imports`. 0.1.0 ships no fonts: the status text and speech bubble use the host
+  page's font (the app's bslib theme, the Quarto or pkgdown site), never a font service.
 
 **Accessibility**
 
@@ -204,7 +204,8 @@ widget's rendered output (section 6).
 ## 4. Bundled files and licences
 
 - `inst/COPYRIGHTS` lists every bundled file: what it is, where it came from, who holds the copyright and under which
-  licence. It records the engine (Harsh Verma, MIT, born in the playbook site's `tools/animate/`) and each font.
+  licence. It records the engine (Harsh Verma, MIT, born in the playbook site's `tools/animate/`) and, once any are
+  bundled, each font. 0.1.0 bundles no fonts; they may come with static images and trailers (later releases).
   `inst/COPYRIGHTS` is the file Writing R Extensions names (**CRAN**).
 - Each font folder has its own `OFL.txt`. Both fonts are under the SIL Open Font Licence 1.1 and have no Reserved
   Font Name (checked 2026-09-29), so subset files keep their names.

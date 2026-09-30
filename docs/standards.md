@@ -282,6 +282,7 @@ run it:
 | Layer | When it runs | Status |
 |---|---|---|
 | Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `gh pr merge`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
+| The gate, `Rscript tools/cran-gate.R` | On demand, before a commit or PR | In place |
 | CI | On every PR and push to `main`; it cannot be skipped | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit

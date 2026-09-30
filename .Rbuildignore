@@ -22,3 +22,5 @@
 ^\.Rprofile$
 ^.*\.Rcheck$
 ^mascot_.*\.tar\.gz$
+^tools$
+^biome\.json$

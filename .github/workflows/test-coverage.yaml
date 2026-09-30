@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # Run the tests CRAN skips (shinytest2 needs Chrome, which the runner has), so they count towards coverage.
+      NOT_CRAN: true
 
     steps:
       - uses: actions/checkout@v7

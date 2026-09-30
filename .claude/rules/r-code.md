@@ -9,6 +9,9 @@ paths:
 Labels: **CRAN** = CRAN policy, Writing R Extensions or R CMD check; **house** = our standard (a justified
 exception is fine with a comment saying why). Reasons and sources: `docs/standards.md`.
 
+## Formatting
+- **house:** after editing R files, run `air format .`; the gate's `air` step fails on unformatted code.
+
 ## Arguments and messages
 - **house:** every function (exported and internal) starts with `checkmate::assert_*()` calls, one per argument,
   before any other work. Use the strictest check that fits (`assert_string()`, `assert_flag()`, `assert_count()`,

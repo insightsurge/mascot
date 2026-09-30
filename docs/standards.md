@@ -281,11 +281,11 @@ run it:
 
 | Layer | When it runs | Status |
 |---|---|---|
-| Editor hooks (`.claude/`) | While files are edited: fast feedback on formatting and lints, and blocks on risky commands and generated files | Planned (a later PR) |
+| Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `gh pr merge`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
 | The gate, `Rscript tools/cran-gate.R` | On demand, before a commit or PR | In place |
 | CI | On every PR and push to `main`; it cannot be skipped | In place |
 
-Hooks are optional and local, and are fast feedback rather than enforcement. CI is the gate. There is no pre-commit
+The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
 framework for now (section 8). The repository is private on a plan without branch protection, so the rule is: CI
 green, then ask before merging.
 

@@ -44,6 +44,9 @@ lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line
 - New spelling words go into `inst/WORDLIST` only after the founder agrees (`--update-wordlist`).
 - CI must be green: R-CMD-check (5 platforms, fails on notes), test-coverage (90%, Chrome tests), lint (the gate),
   check-no-suggests, gitleaks. Never `continue-on-error` or weaken a check to get green.
+- After editing R files, run `air format .` (the gate fails on unformatted code). `.claude/settings.json` denies
+  force-push, pushes to `main`, `gh pr merge`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/` and
+  `LICENSE`, and turns off attribution lines. It's a guard rail, not the gate; never work around it.
 - In a git worktree, set `R_LIBS` to what `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout (renv
   keeps a package project's library outside the repo).
 
@@ -99,7 +102,7 @@ goes elsewhere.
   check `gh api user --jq .login` before any GitHub action.
 
 ## Delegation
-The main Claude session (Opus) owns the package foundation (M0: skeleton, gate, CI, rules, hooks) and writes the
+The main Claude session (Opus) owns the package foundation (M0: skeleton, gate, CI, rules, editor settings) and writes the
 judgement-heavy parts itself. Small, well-scoped tasks (a doc drafted from given sources, a test script) may go to
 Claude Sonnet sub-agents with a precise brief. Codex (`codex exec -C <worktree> -m gpt-6-sol ...`) or Gemini
 (`agy-delegate --model "Gemini 3.8 Flash (High)"`) only when the founder asks for them (for example a named

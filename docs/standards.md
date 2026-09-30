@@ -283,7 +283,7 @@ run it:
 |---|---|---|
 | Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `gh pr merge`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
 | The gate, `Rscript tools/cran-gate.R` | On demand, before a commit or PR | In place |
-| CI | On every PR and push to `main`; it cannot be skipped | In place |
+| CI | On every PR and push to `main` (the full platform matrix on `main`, weekly and on demand); it cannot be skipped | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
 framework for now (section 8). The repository is private on a plan without branch protection, so the rule is: CI
@@ -325,7 +325,7 @@ Notes:
 
 | Workflow file | What it runs | What it blocks |
 |---|---|---|
-| `R-CMD-check.yaml` | `R CMD check --as-cran` on macOS and Windows (release), Ubuntu (R-devel, release, oldrel-1); `error-on: note`; `NOT_CRAN` unset, so Chrome tests skip as on CRAN | Any error, warning or note on any of the five platforms, including R-devel |
+| `R-CMD-check.yaml` | `R CMD check --as-cran`: Ubuntu (R release) on pull requests; macOS and Windows (release) and Ubuntu (R-devel, release, oldrel-1) on pushes to `main`, every Monday and on demand, to save Actions minutes; `error-on: note`; `NOT_CRAN` unset, so Chrome tests skip as on CRAN | Any error, warning or note (on a PR: Ubuntu release; on `main` and weekly: all five platforms, including R-devel) |
 | `test-coverage.yaml` | covr on Ubuntu with `NOT_CRAN=true`, so Chrome tests count | Coverage under 90 percent; no code yet means no gate yet |
 | `lint.yaml` | Air 0.11.0, Biome 2.5.14, then `Rscript tools/cran-gate.R lint` | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
 | `check-no-suggests.yaml` | `R CMD check --as-cran` with only hard dependencies installed (plus testthat, knitr and rmarkdown) and a step that prints which `Suggests` are installed | Any unguarded use of a `Suggests` package; CRAN runs this check too |

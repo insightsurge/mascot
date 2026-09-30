@@ -50,7 +50,8 @@ Rscript tools/cran-gate.R full     # everything, including the built tarball: ru
 - The docs step runs `devtools::document()`, so it may rewrite `man/`, `NAMESPACE` or `DESCRIPTION`. If it fails,
   review the regenerated files and commit them; the next run passes.
 
-CI runs these workflows, and all of them must be green: `R-CMD-check` (five platforms), `check-no-suggests`, `lint`,
+CI runs these workflows, and all of them must be green: `R-CMD-check` (Ubuntu on pull requests; macOS, Windows, R-devel
+and the previous R release as well on `main`, weekly and on demand), `check-no-suggests`, `lint`,
 `test-coverage` and `gitleaks`. `R CMD check` must give 0 errors, 0 warnings and 0 notes. Passing the gate locally
 does not replace CI.
 

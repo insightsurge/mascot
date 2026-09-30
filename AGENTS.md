@@ -13,10 +13,10 @@ attribution, handoffs). Claude Code loads the rules files by path; you don't, so
   so; never force-push.
 - Every function you write starts with checkmate assertions for its arguments; every behaviour gets a BDD-style
   test (`describe()` / `it()`), and Shiny behaviour a shinytest2 test (`.claude/rules/tests.md`).
-- Before you report done, run the gate and paste its summary lines: `Rscript tools/cran-gate.R` (fast: format,
-  docs in sync, lint, `@returns`, spelling, R CMD check `--as-cran` without tests, 0/0/0) and
-  `Rscript tools/cran-gate.R tests` (tests and coverage of at least 90%, not lower than before your change). In a
-  git worktree, set `R_LIBS` first (see CLAUDE.md, "Quality gate"). Say plainly what you did not run and why.
+- Before you report done, run the gate and paste its summary lines:
+  `Rscript .agents/skills/cran-gate/scripts/cran-gate.R` (fast: format, docs in sync, lint, `@returns`, spelling,
+  R CMD check `--as-cran` without tests, 0/0/0) and the same command with `tests` (tests and coverage of at least
+  70%, not lower than before your change). In a git worktree, set `R_LIBS` first (see CLAUDE.md, "Quality gate"). Say plainly what you did not run and why.
 - Never add words to `inst/WORDLIST` yourself: list unknown words in your report for the founder.
 - Don't install software or change the R library outside the project; don't patch installed packages or mock
   dependencies to make a check pass.

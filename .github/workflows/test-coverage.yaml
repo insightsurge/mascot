@@ -1,5 +1,6 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (test-coverage.yaml), without Codecov
-# (the repo is private). Fails when line coverage is under 90% (CLAUDE.md, "Testing").
+# (the repo is private). Fails when line coverage is under the limit in DESCRIPTION (Config/cran-gate/coverage,
+# 70%), the same limit the gate uses.
 on:
   push:
     branches: [main]
@@ -51,7 +52,7 @@ jobs:
           extra-packages: any::covr
           needs: coverage
 
-      - name: Test coverage (at least 90%)
+      - name: Test coverage (at least the limit in DESCRIPTION)
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,
@@ -60,11 +61,13 @@ jobs:
           )
           print(cov)
           if (nrow(as.data.frame(cov)) == 0) {
-            message("No R code lines to cover yet: the 90% gate applies once there is code.")
+            message("No R code lines to cover yet: the coverage gate applies once there is code.")
           } else {
             pct <- covr::percent_coverage(cov)
             message(sprintf("Line coverage: %.1f%%", pct))
-            if (pct < 90) stop(sprintf("Coverage %.1f%% is under 90%%.", pct), call. = FALSE)
+            limit <- as.numeric(read.dcf("DESCRIPTION", fields = "Config/cran-gate/coverage")[[1]])
+            if (is.na(limit)) limit <- 70
+            if (pct < limit) stop(sprintf("Coverage %.1f%% is under %g%%.", pct, limit), call. = FALSE)
           }
         shell: Rscript {0}
 

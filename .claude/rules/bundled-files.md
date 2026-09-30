@@ -19,7 +19,7 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   size and that every `inst/` file is in the tarball.
 
 ## Acceptance checklist for the engine port (#9) and every new asset
-- [ ] The file is in the built tarball (`Rscript tools/cran-gate.R full`, step `tarball`).
+- [ ] The file is in the built tarball (`/cran-gate full`, step `tarball`).
 - [ ] It is listed in `inst/COPYRIGHTS` with its origin (the engine: Harsh Verma, MIT, first written in the
       playbook's `tools/animate/`), holder and licence; third parties have `cph`/`ctb` entries.
 - [ ] It loads offline from the installed package (no network, no CDN).

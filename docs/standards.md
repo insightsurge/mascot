@@ -280,10 +280,10 @@ run it:
 
 | Layer | When it runs | Status |
 |---|---|---|
-| Editor hooks (`.claude/settings.json`, `.claude/hooks/`) | While files are edited: format and lint each changed file and report problems; block force-push, pushes and commits on `main`, `gh pr merge`, `--no-verify`, attribution trailers, and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE` | In place; self-tested in the lint job |
+| Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `gh pr merge`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
 | CI | On every PR and push to `main`; it cannot be skipped | In place |
 
-Hooks are optional and local, and are fast feedback rather than enforcement. CI is the gate. There is no pre-commit
+The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
 framework for now (section 8). The repository is private on a plan without branch protection, so the rule is: CI
 green, then ask before merging.
 

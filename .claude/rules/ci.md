@@ -17,7 +17,7 @@ Reasons and sources: `docs/standards.md`.
   - `test-coverage.yaml`: tests with `NOT_CRAN: true` (Chrome tests run) and a 90% line-coverage gate; no Codecov
     while the repo is private.
   - `lint.yaml`: the gate's lint mode with Air and Biome at pinned versions (keep them equal to the local installs
-    and `biome.json`'s schema), then the Claude Code hook self-test (`python3 .claude/hooks/test-hooks.py`).
+    and `biome.json`'s schema).
   - `check-no-suggests.yaml`: R CMD check with hard dependencies only (CRAN checks without Suggests too).
   - `pkgdown.yaml`: `check_pkgdown()` and the site build (`tools/build-site.R`), uploaded as an artifact; no deploy
     until the repo is public.
@@ -26,5 +26,4 @@ Reasons and sources: `docs/standards.md`.
   pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions outside
   `actions/` and `r-lib/` by commit SHA with a version comment.
 - Never `continue-on-error`, never weaken a check to get green: fix the cause, or ask the founder.
-- A change to a hook in `.claude/hooks/` comes with a case in `test-hooks.py`.
 - A new check goes into the gate first, is shown failing on a planted defect, then runs in CI.

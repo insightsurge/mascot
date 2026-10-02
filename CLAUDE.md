@@ -87,8 +87,8 @@ skill is generic (any R package can use the folder as it is); mascot's choices a
 pkgdown with the playbook site's look (#25): brand colours as bslib variables in `_pkgdown.yml`; self-hosted Space
 Grotesk and JetBrains Mono, the aurora background and the dark palette in `pkgdown/extra.css`; the aurora layer via
 `template: includes`. Build with `Rscript tools/build-site.R` (into `site/`, because `docs/` holds our project notes;
-it keeps `CLAUDE.md` and `AGENTS.md` out of the site). CI builds it on every PR and uploads it as an artifact; deploy
-to GitHub Pages once the repo is public. Keep `_pkgdown.yml` current (`pkgdown::check_pkgdown()`) and look at the site
+it keeps `CLAUDE.md` and `AGENTS.md` out of the site). CI builds it **from `main` only, never on pull requests** (a rule, #127), and uploads it as
+an artifact; deploy to GitHub Pages once the repo is public. Keep `_pkgdown.yml` current (`pkgdown::check_pkgdown()`) and look at the site
 in light and dark before a PR that changes docs, exports or examples. Link to files in `docs/` with full GitHub URLs
 (they aren't part of the site). The brand's source of truth is the website repo's `brand/`; record where copied values
 came from.

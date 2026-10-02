@@ -10,7 +10,7 @@ Closes #
 ## Checks
 <!-- Only checks anyone can re-run from the repo (the gate, CI, committed test scripts). One-off manual checks go
 in a short Notes line under this list, not here. -->
-- [ ] The gate's `fast` mode passes (`Rscript .claude/skills/cran-gate/scripts/cran-gate.R`): format, docs in sync, lint, `@returns`, spelling, R CMD check 0/0/0
+- [ ] The gate's `fast` mode passes (`Rscript tools/cran-gate.R`): format, docs in sync, lint, `@returns`, spelling, R CMD check 0/0/0
 - [ ] The gate's `tests` mode passes (same command with `tests`): tests and coverage of at least 70%, not lower than `main`
 - [ ] New behaviour has BDD-style tests (`describe()` / `it()`); Shiny behaviour has shinytest2 tests
 - [ ] Every new or changed function checks its arguments with checkmate, and those checks are tested

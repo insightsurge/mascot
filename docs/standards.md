@@ -293,22 +293,22 @@ green, then ask before merging.
 ### 7.2 The gate
 
 ```sh
-Rscript .claude/skills/cran-gate/scripts/cran-gate.R [fast|tests|full|lint] [--update-wordlist]
+Rscript tools/cran-gate.R [fast|tests|full|lint] [--update-wordlist]
 ```
 
 Run it from the package root. Each step prints `PASS`, `FAIL` or `SKIP` with a detail. Full output goes to a log file
 in `tempdir()`, whose path is printed. The script exits with status 1 if any step fails. A missing tool is a failure,
 never a silent skip. The script checks its own arguments with checkmate and is linted like any other code.
 
-**The gate is a generic, self-contained skill.** The folder `.claude/skills/cran-gate/` (instructions, the script and
-its self-test; the same copy in `.agents/skills/` for Codex and Gemini) names nothing about mascot, so another R
-package can copy it as it is. What is specific to a package is kept out of the skill:
+**The gate is a generic, self-contained script.** `tools/cran-gate.R` and its self-test `tools/test-cran-gate.R`
+name nothing about mascot, so another R package can copy them as they are. What is specific to a package is kept
+out of the script:
 
 - CRAN checks always run. Style checks run when the package has the tool's settings file (`air.toml`, `.lintr`,
   `biome.json`) and are skipped with a reason otherwise. mascot has all three.
 - Settings are `Config/cran-gate/*` fields in `DESCRIPTION`: `coverage` (default 70, which mascot uses), `tarball-mb`
   (default 5, at most 9 because CRAN's limit is 10; mascot keeps 5) and `extra-dirs` (more folders to format-check
-  and lint; mascot lists `tools` and the gate's own scripts).
+  and lint; mascot lists `tools`, which holds the gate itself).
 
 | Step | fast | tests | full | lint | What it does |
 |---|---|---|---|---|---|

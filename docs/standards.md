@@ -349,7 +349,7 @@ request. `static` takes seconds, `all` about a minute today.
 
 **Temporary while the repo is private (#113).** Private repos get a limited number of Actions minutes (macOS counts
 10x, Windows 2x), and on 2026-09-30 they ran out. Until the repo is public, pull requests run `R CMD check` on Ubuntu
-only, docs-only changes skip the R jobs, and the site builds only when something it shows changes. When the repo goes
+only, and docs-only changes skip the R jobs. When the repo goes
 public, before the CRAN submission, these workarounds are removed and every pull request runs all five platforms
 again (#115).
 
@@ -360,7 +360,7 @@ again (#115).
 | `lint.yaml` | Air 0.11.0, Biome 2.5.14, then the gate in `lint` mode | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
 | `gate-self-test.yaml` | The gate's self-test (`all`), only when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change, and on demand | A gate step that no longer fails on the defect it exists to catch |
 | `check-no-suggests.yaml` | `R CMD check --as-cran` with only hard dependencies installed (plus testthat, knitr and rmarkdown) and a step that prints which `Suggests` are installed | Any unguarded use of a `Suggests` package; CRAN runs this check too |
-| `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build (`tools/build-site.R`), uploaded as an artifact | A broken site configuration or build; no deploy until the repo is public |
+| `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build (`tools/build-site.R`), uploaded as an artifact; from `main` only (pushes and by hand), never on pull requests, because the site will need a private theme package that outside contributors can't install | A broken site configuration or build; no deploy until the repo is public |
 | `gitleaks.yml` | Secret scan over the full history | A committed secret |
 | `release.yml` | On a change to `DESCRIPTION` on `main`: tags `vx.y.z` and creates a GitHub release from the `NEWS.md` section | Nothing; it does nothing for a development version |
 

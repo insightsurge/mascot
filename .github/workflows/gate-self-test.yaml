@@ -1,11 +1,11 @@
-# Tests the gate itself (test-cran-gate.R in the cran-gate skill): plants one defect per gate step in a copy of the
+# Tests the gate itself (tools/test-cran-gate.R): plants one defect per gate step in a copy of the
 # package and fails unless the gate reports FAIL for that step. Runs only when the gate or the settings it reads
 # change, and on demand.
 on:
   pull_request:
     paths:
-      - ".claude/skills/cran-gate/**"
-      - ".agents/skills/cran-gate/**"
+      - "tools/cran-gate.R"
+      - "tools/test-cran-gate.R"
       - ".lintr"
       - "air.toml"
       - "biome.json"
@@ -48,8 +48,5 @@ jobs:
             any::devtools, any::roxygen2, any::lintr, any::spelling, any::checkmate, any::cli, any::covr,
             any::withr, any::pkgbuild, any::processx
 
-      - name: The skill's two copies are identical (.claude for Claude, .agents for Codex and Gemini)
-        run: diff -r .claude/skills/cran-gate .agents/skills/cran-gate
-
       - name: Gate self-test (every step must fail on its planted defect)
-        run: Rscript .claude/skills/cran-gate/scripts/test-cran-gate.R all
+        run: Rscript tools/test-cran-gate.R all

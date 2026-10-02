@@ -1,4 +1,4 @@
-# Runs the gate's lint mode (cran-gate.R in the cran-gate skill): Air formatting, Biome on JS/CSS in inst/, docs in
+# Runs the gate's lint mode (tools/cran-gate.R): Air formatting, Biome on JS/CSS in inst/, docs in
 # sync with roxygen, lintr, \value on exported functions, spelling. R CMD check doesn't cover these.
 on:
   push:
@@ -58,4 +58,4 @@ jobs:
           needs: lint
 
       - name: Gate (lint mode)
-        run: Rscript .claude/skills/cran-gate/scripts/cran-gate.R lint
+        run: Rscript tools/cran-gate.R lint

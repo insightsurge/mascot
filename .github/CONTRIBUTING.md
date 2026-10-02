@@ -34,12 +34,12 @@ Stacked pull requests are fine. Base the second one on the branch below it, and 
 Run the gate from the package root:
 
 ```sh
-Rscript .claude/skills/cran-gate/scripts/cran-gate.R          # fast: before every commit
-Rscript .claude/skills/cran-gate/scripts/cran-gate.R tests    # tests and coverage: before a pull request that touches R/ or tests/
-Rscript .claude/skills/cran-gate/scripts/cran-gate.R full     # everything, including the built tarball: before a release
+Rscript tools/cran-gate.R          # fast: before every commit
+Rscript tools/cran-gate.R tests    # tests and coverage: before a pull request that touches R/ or tests/
+Rscript tools/cran-gate.R full     # everything, including the built tarball: before a release
 ```
 
-The gate lives in a skill folder because coding assistants use it too; it is plain R and runs without one.
+The gate is a plain R script in `tools/`; it needs nothing else installed beyond the package's development tools.
 
 - `fast` checks formatting (Air and Biome), that `man/` and `NAMESPACE` match the roxygen2 comments, lint, that every
   export has `@returns`, spelling, and `R CMD check --as-cran` without the tests.
@@ -52,9 +52,9 @@ The gate lives in a skill folder because coding assistants use it too; it is pla
 - The docs step runs `devtools::document()`, so it may rewrite `man/`, `NAMESPACE` or `DESCRIPTION`. If it fails,
   review the regenerated files and commit them; the next run passes.
 - If you change the gate itself (the script, `.lintr`, `air.toml` or `biome.json`), also run
-  `Rscript .claude/skills/cran-gate/scripts/test-cran-gate.R`. It plants one defect per step in a temporary copy
-  of the package and checks that the gate fails for each. The skill folder is generic (other packages use it as it
-  is), so keep anything specific to mascot out of it.
+  `Rscript tools/test-cran-gate.R`. It plants one defect per step in a temporary copy
+  of the package and checks that the gate fails for each. The gate is generic (other packages use it as it is),
+  so keep anything specific to mascot out of it.
 
 CI runs these workflows, and all of them must be green: `R-CMD-check` (Ubuntu on pull requests; macOS, Windows, R-devel
 and the previous R release as well on `main`, weekly and on demand), `check-no-suggests`, `lint`,

@@ -20,7 +20,8 @@
 
   const cases = [];
   const add = (name, pose, frame) => cases.push({ name, pose, frame: frame || 0 });
-  for (const [m, pose] of Object.entries(MOODS)) add(`mood ${m}`, pose);
+  // Mood cases: the playbook gets the pose above, the package only the mood's name (its pose comes from the data).
+  for (const [m, pose] of Object.entries(MOODS)) cases.push({ name: `mood ${m}`, pose, mood: m, frame: 0 });
   for (const v of ['open', 'wide', 'happy', 'blink', 'wink', 'focused', 'worried']) add(`eyes ${v}`, { eyes: v });
   for (const v of ['smile', 'grin', 'o', 'flat', 'determined', 'proud', 'smirk']) add(`mouth ${v}`, { mouth: v });
   for (const v of ['none', 'neutral', 'raised', 'frown', 'worried', 'determined']) add(`brows ${v}`, { brows: v });
@@ -55,13 +56,14 @@
   };
   const context = (c) => c.getContext('2d', { willReadFrequently: true });
 
+  const tessa = window.mascot.readCharacter('tessa');
   const rows = [];
   const results = [];
   for (const k of cases) {
     const a = canvas();
     const b = canvas();
     window.Engine.drawTessa(context(a), X, BASE_Y, Object.assign({}, k.pose, { t: k.frame / FPS }));
-    window.mascot.draw(context(b), 'tessa', X, BASE_Y, k.pose, k.frame);
+    window.mascot.draw(context(b), tessa, X, BASE_Y, k.mood ? { mood: k.mood } : k.pose, k.frame);
     const da = context(a).getImageData(0, 0, SIZE, SIZE).data;
     const db = context(b).getImageData(0, 0, SIZE, SIZE).data;
     const d = canvas();

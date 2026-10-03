@@ -62,18 +62,10 @@
     }
   },
   "anchors": {
-    "head": {
-      "x": 15,
-      "y": -65
-    },
     "face": {
       "x": 18,
       "y": -5,
       "scale": 0.7
-    },
-    "body": {
-      "x": 0,
-      "y": 40
     },
     "shoulders": {
       "x": 65,
@@ -82,6 +74,46 @@
     "feet": {
       "x": 23,
       "y": 75
+    },
+    "hair": {
+      "x": 15,
+      "y": -65
+    },
+    "waist": {
+      "x": 0,
+      "y": 40
+    },
+    "crown": {
+      "x": 0,
+      "y": -70
+    },
+    "forehead": {
+      "x": 18,
+      "y": -40
+    },
+    "eyes": {
+      "x": 18,
+      "y": -13.4
+    },
+    "upperLip": {
+      "x": 18,
+      "y": 10.4
+    },
+    "chin": {
+      "x": 0,
+      "y": 65
+    },
+    "neck": {
+      "x": 0,
+      "y": 75
+    },
+    "chest": {
+      "x": 0,
+      "y": 30
+    },
+    "back": {
+      "x": 0,
+      "y": 0
     }
   },
   "moods": {
@@ -111,5 +143,19 @@
       "lift": 15,
       "rot": 0.12
     }
+  },
+  "small": {
+    "faceScale": 2,
+    "minLineWidth": 1.5,
+    "hide": [
+      "lashes",
+      "highlight",
+      "blush",
+      "sweat",
+      "accessories",
+      "shadow",
+      "sparkle",
+      "brows"
+    ]
   }
 }

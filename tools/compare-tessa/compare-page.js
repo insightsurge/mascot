@@ -63,7 +63,7 @@
     const a = canvas();
     const b = canvas();
     window.Engine.drawTessa(context(a), X, BASE_Y, Object.assign({}, k.pose, { t: k.frame / FPS }));
-    window.mascot.draw(context(b), tessa, X, BASE_Y, k.mood ? { mood: k.mood } : k.pose, k.frame);
+    window.mascot.draw(context(b), tessa, { x: X, baseY: BASE_Y, pose: k.mood ? { mood: k.mood } : k.pose, frame: k.frame });
     const da = context(a).getImageData(0, 0, SIZE, SIZE).data;
     const db = context(b).getImageData(0, 0, SIZE, SIZE).data;
     const d = canvas();

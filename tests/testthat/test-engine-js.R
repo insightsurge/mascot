@@ -29,7 +29,7 @@ local_engine_page <- function(env = parent.frame()) {
     ),
     page
   )
-  session <- chromote::ChromoteSession$new()
+  session <- chromote::ChromoteSession$new(parent = test_browser())
   withr::defer(session$close(), envir = env)
   loaded <- session$Page$loadEventFired(wait_ = FALSE)
   session$Page$navigate(paste0("file://", normalizePath(page, winslash = "/")), wait_ = FALSE)

@@ -28,7 +28,7 @@
   "body": [
     { "shape": "hexagon", "r": 92, "corner": 12, "fill": "rim", "stroke": "outline", "lineWidth": 3 },
     { "shape": "hexagon", "r": 81, "corner": 8, "fill": "body" },
-    { "shape": "path", "d": "M0 -81 L26 -65 L-26 -65 Z", "fill": "bodyHighlight", "alpha": 0.35 }
+    { "shape": "path", "d": "M0 -81 L26 -65 L-26 -65 Z", "fill": "bodyHighlight", "alpha": 0.35, "detail": "full" }
   ],
   "shadow": { "rx": 62, "ry": 9, "alpha": 0.32 },
   "feet": {
@@ -46,6 +46,9 @@
     "blush": { "x": 36, "y": 18, "rx": 13, "ry": 7, "alpha": 0.45, "strongAlpha": 0.55 }
   },
   "anchors": {
+    "face": { "x": 0, "y": 0, "scale": 1 },
+    "body": { "x": 0, "y": 60 },
+    "feet": { "x": 23, "y": 104 },
     "head": { "x": -47, "y": -54, "rotate": -0.5, "scale": 1.2 },
     "sparkle": { "x": 56, "y": -33 },
     "sweat": { "x": 58, "y": -46 },

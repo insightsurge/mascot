@@ -74,6 +74,10 @@
   const isLetter = (token) => /^[A-Za-z]$/.test(token);
   function svgPath(ctx, d) {
     const tokens = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) || [];
+    if (d.replace(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g, '').replace(/[\s,]/g, '')) {
+      throw new Error(`mascot: invalid path text in '${d}'`);
+    }
+    if (tokens[0] !== 'M') throw new Error(`mascot: path must start with M in '${d}'`);
     ctx.beginPath();
     let i = 0;
     while (i < tokens.length) {
@@ -85,6 +89,7 @@
         ctx.closePath();
         continue;
       }
+      if (i >= tokens.length || isLetter(tokens[i])) throw new Error(`mascot: '${cmd}' needs ${n} numbers in '${d}'`);
       // Numbers after a command repeat it, as in SVG (after M they draw lines).
       let first = true;
       while (i < tokens.length && !isLetter(tokens[i])) {
@@ -162,6 +167,7 @@
 
   // Pose fields every character understands; a character's own `pose` and `moods` change them.
   const DEFAULT_POSE = {
+    detail: 'full',
     scale: 1,
     sx: 1,
     sy: 1,
@@ -187,13 +193,63 @@
     t: 0,
   };
 
+  // Each layer has its own place; a later gesture layer belongs between the mood and the explicit pose.
+  function resolvePose(ch, given = {}, frame) {
+    const mood = given.mood === undefined ? {} : Object.hasOwn(ch.moods, given.mood) ? ch.moods[given.mood] : null;
+    if (!mood) throw new Error(`mascot: the character '${ch.id}' has no mood '${given.mood}'`);
+    const p = Object.assign({}, DEFAULT_POSE, ch.pose || {}, mood, given);
+    if (frame !== undefined) p.t = frame / ns.fps;
+    return p;
+  }
+
+  const FACE_STYLE = {
+    open: { ew: 16.5, eh: 19.5, pr: 10 },
+    wide: { ew: 19, eh: 24, pr: 7.5 },
+    worried: { ew: 16.5, eh: 21, pr: 8.5, pupilY: -2 },
+    focused: { ew: 16.5, eh: 19.5, pr: 10, lid: 0.42, slant: 3 },
+    happy: { r: 15, y: 2, start: 1.15, end: 1.85, lineWidth: 5.5, lashY: 9, lashW: 15, lashH: 6 },
+    closed: { r: 14, y: -6, start: 0.18, end: 0.82, lineWidth: 5, lashY: 2, lashW: 15, lashH: 3 },
+    pupil: { lookX: 7, lookY: 7 },
+    lashes: { two: [-32, -62], three: [-20, -45, -70], length: 7, lineWidth: 3 },
+    brows: {
+      offset: 25,
+      wideOffset: 30,
+      outer: 18,
+      inner: 16,
+      high: 2,
+      low: 10,
+      neutralWidth: 14,
+      neutralY: 6,
+      neutralControlY: 1,
+      raisedWidth: 15,
+      raisedY: 5,
+      raisedControlY: -6,
+      lineWidth: 5,
+      neutralLineWidth: 3.5,
+    },
+  };
+
+  function faceStyle(style = {}) {
+    return Object.fromEntries(Object.entries(FACE_STYLE).map(([key, value]) => [key, { ...value, ...style[key] }]));
+  }
+
+  const visible = (part, p) => p.detail !== 'simple' || (part.detail !== 'full' && part.fill !== 'bodyHighlight');
+
+  function armAngles(ch, p) {
+    const preset = ch.arms.presets[p.arms];
+    if (!preset) throw new Error(`mascot: pose.arms '${p.arms}' is not an arm preset`);
+    const jit = Math.sin(p.t * 26) * p.armJitter;
+    return { L: (p.armL === null ? preset.L : p.armL) + jit, R: (p.armR === null ? preset.R : p.armR) - jit };
+  }
+
   // ---- face pieces ------------------------------------------------------------------------------
   // Soft eyelashes: `n` short strokes at the outer top corner of an eye (s = -1 left, +1 right).
-  function lashes(g, c, s, cx, cy, ew, eh, n) {
-    g.strokeStyle = c.feature;
-    g.lineWidth = 3;
+  function lashes(g, f, s, cx, cy, ew, eh, n) {
+    g.strokeStyle = f.c.feature;
+    g.lineWidth = f.style.lashes.lineWidth;
     g.lineCap = 'round';
-    const angs = n === 2 ? [-32, -62] : [-20, -45, -70];
+    const style = f.style.lashes;
+    const angs = n === 2 ? style.two : style.three;
     for (const deg of angs) {
       const th = (deg * Math.PI) / 180;
       const ux = Math.cos(th) * s;
@@ -202,29 +258,31 @@
       const ey = cy + Math.sin(th) * eh;
       g.beginPath();
       g.moveTo(ex, ey);
-      g.lineTo(ex + ux * 7, ey + uy * 7);
+      g.lineTo(ex + ux * style.length, ey + uy * style.length);
       g.stroke();
     }
   }
 
   function eyeHappy(g, f, s, cx, cy) {
+    const style = f.style.happy;
     g.strokeStyle = f.c.feature;
-    g.lineWidth = 5.5;
+    g.lineWidth = style.lineWidth;
     g.lineCap = 'round';
     g.beginPath();
-    g.arc(cx, cy + 2, 15, Math.PI * 1.15, Math.PI * 1.85, false);
+    g.arc(cx, cy + style.y, style.r, Math.PI * style.start, Math.PI * style.end, false);
     g.stroke();
-    if (f.lashes) lashes(g, f.c, s, cx, cy + 9, 15, 6, 2);
+    if (f.lashes) lashes(g, f, s, cx, cy + style.lashY, style.lashW, style.lashH, 2);
   }
 
   function eyeClosed(g, f, s, cx, cy) {
+    const style = f.style.closed;
     g.strokeStyle = f.c.feature;
-    g.lineWidth = 5;
+    g.lineWidth = style.lineWidth;
     g.lineCap = 'round';
     g.beginPath();
-    g.arc(cx, cy - 6, 14, Math.PI * 0.18, Math.PI * 0.82, false);
+    g.arc(cx, cy + style.y, style.r, Math.PI * style.start, Math.PI * style.end, false);
     g.stroke();
-    if (f.lashes) lashes(g, f.c, s, cx, cy + 2, 15, 3, 2);
+    if (f.lashes) lashes(g, f, s, cx, cy + style.lashY, style.lashW, style.lashH, 2);
   }
 
   function eyeOpen(g, f, s, cx, cy, o) {
@@ -268,7 +326,7 @@
       g.stroke();
     }
     g.restore();
-    if (f.lashes) lashes(g, c, s, cx, cy, o.ew, o.eh, 3);
+    if (f.lashes) lashes(g, f, s, cx, cy, o.ew, o.eh, 3);
   }
 
   function drawEyes(g, f, p) {
@@ -283,17 +341,17 @@
       eyeClosed(g, f, -1, -SP, EY);
       eyeClosed(g, f, 1, SP, EY);
     } else {
-      const wide = kind === 'wide';
       const worried = kind === 'worried';
       const focused = kind === 'focused';
+      const style = f.style[['wide', 'worried', 'focused'].includes(kind) ? kind : 'open'];
       const o = {
-        ew: wide ? 19 : 16.5,
-        eh: wide ? 24 : worried ? 21 : 19.5,
-        pr: wide ? 7.5 : worried ? 8.5 : 10,
-        px: clamp(p.look, -1, 1) * 7,
-        py: clamp(p.lookY, -1, 1) * 7 + (worried ? -2 : 0),
-        lid: focused ? Math.max(0.42, blink) : blink,
-        slant: focused ? 3 : 0,
+        ew: style.ew,
+        eh: style.eh,
+        pr: style.pr,
+        px: clamp(p.look, -1, 1) * f.style.pupil.lookX,
+        py: clamp(p.lookY, -1, 1) * f.style.pupil.lookY + (worried ? style.pupilY : 0),
+        lid: focused ? Math.max(style.lid, blink) : blink,
+        slant: focused ? style.slant : 0,
       };
       if (kind === 'wink') {
         eyeOpen(g, f, -1, -SP, EY, o);
@@ -307,24 +365,25 @@
     if (br === null || br === undefined) br = kind === 'worried' ? 'worried' : kind === 'focused' ? 'frown' : 'none';
     if (br && br !== 'none' && kind !== 'happy') {
       g.strokeStyle = f.c.feature;
-      g.lineWidth = br === 'neutral' ? 3.5 : 5;
+      const b = f.style.brows;
+      g.lineWidth = br === 'neutral' ? b.neutralLineWidth : b.lineWidth;
       g.lineCap = 'round';
-      const yy = EY - (kind === 'wide' ? 30 : 25);
+      const yy = EY - (kind === 'wide' ? b.wideOffset : b.offset);
       for (const s of [-1, 1]) {
         g.beginPath();
         if (br === 'determined' || br === 'angry' || br === 'frown') {
-          g.moveTo(s * (SP + 18), yy + 2);
-          g.lineTo(s * (SP - 16), yy + 10);
+          g.moveTo(s * (SP + b.outer), yy + b.high);
+          g.lineTo(s * (SP - b.inner), yy + b.low);
         } else if (br === 'worried' || br === 'sad') {
-          g.moveTo(s * (SP + 18), yy + 10);
-          g.lineTo(s * (SP - 16), yy + 2);
+          g.moveTo(s * (SP + b.outer), yy + b.low);
+          g.lineTo(s * (SP - b.inner), yy + b.high);
         } else if (br === 'neutral') {
-          g.moveTo(s * (SP + 14), yy + 6);
-          g.quadraticCurveTo(s * SP, yy + 1, s * (SP - 14), yy + 6);
+          g.moveTo(s * (SP + b.neutralWidth), yy + b.neutralY);
+          g.quadraticCurveTo(s * SP, yy + b.neutralControlY, s * (SP - b.neutralWidth), yy + b.neutralY);
         } else {
           // raised
-          g.moveTo(s * (SP + 15), yy + 5);
-          g.quadraticCurveTo(s * SP, yy - 6, s * (SP - 15), yy + 5);
+          g.moveTo(s * (SP + b.raisedWidth), yy + b.raisedY);
+          g.quadraticCurveTo(s * SP, yy + b.raisedControlY, s * (SP - b.raisedWidth), yy + b.raisedY);
         }
         g.stroke();
       }
@@ -416,10 +475,12 @@
     g.closePath();
     g.fill();
     g.stroke();
-    g.fillStyle = c.shine;
-    g.beginPath();
-    g.arc(2.5, 2.5, 2.2, 0, 7);
-    g.fill();
+    if (p.detail !== 'simple') {
+      g.fillStyle = c.shine;
+      g.beginPath();
+      g.arc(2.5, 2.5, 2.2, 0, 7);
+      g.fill();
+    }
     g.restore();
   }
 
@@ -440,12 +501,14 @@
   }
 
   // A head accessory: the character's own parts, placed at its head anchor.
-  function drawAccessory(g, c, at, parts) {
+  function drawAccessory(g, c, at, parts, p) {
     g.save();
     g.translate(at.x, at.y);
-    g.rotate(at.rotate);
-    g.scale(at.scale, at.scale);
-    for (const part of parts) drawPart(g, c, part);
+    g.rotate(at.rotate || 0);
+    g.scale(at.scale === undefined ? 1 : at.scale, at.scale === undefined ? 1 : at.scale);
+    for (const part of parts) {
+      if (visible(part, p)) drawPart(g, c, part);
+    }
     g.restore();
   }
 
@@ -460,17 +523,80 @@
   }
 
   /**
+   * anchors(ch, pose): canvas points, using pose.x and pose.baseY (both default 0) as the draw origin.
+   * Paired shoulders, feet and hands have L/R points. Head, face and body have one point each.
+   * pose.frame supplies arm jitter's frame (otherwise pose.t defaults to 0). Coordinates follow the same
+   * transforms as drawing; face.scale affects the face, not its origin. A missing face anchor is the body origin.
+   */
+  function anchors(ch, pose = {}) {
+    const errors = ns.validateCharacter(ch);
+    if (errors.length) throw new Error(`mascot: ${errors[0]}`);
+    const p = resolvePose(ch, pose, pose.frame);
+    const point = (x, y) => {
+      const rx = x * Math.cos(p.rot) - y * Math.sin(p.rot);
+      const ry = x * Math.sin(p.rot) + y * Math.cos(p.rot) - ch.centreHeight;
+      return {
+        x: (pose.x || 0) + rx * p.flip * p.scale * p.sx,
+        y: (pose.baseY || 0) - p.lift + ry * p.scale * p.sy,
+      };
+    };
+    const result = {};
+    for (const [name, at] of Object.entries(ch.anchors || {})) {
+      if (name === 'shoulders' || name === 'feet') {
+        result[name] = { L: point(-at.x, at.y), R: point(at.x, at.y) };
+      } else result[name] = point(at.x, at.y);
+    }
+    if (!result.face) result.face = point(0, 0);
+    if (ch.feet && result.feet && (p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6))) {
+      const ft = ch.feet.tuck;
+      for (const [name, s] of [
+        ['L', -1],
+        ['R', 1],
+      ]) {
+        const angle = -s * ft.rotate;
+        const x = ft.rect.x + ft.rect.w / 2;
+        const y = ft.rect.y + ft.rect.h;
+        result.feet[name] = point(
+          s * ft.x + x * Math.cos(angle) - y * Math.sin(angle),
+          ft.y + x * Math.sin(angle) + y * Math.cos(angle),
+        );
+      }
+    }
+    if (ch.arms) {
+      const angles = armAngles(ch, p);
+      const at = ch.anchors.shoulders;
+      result.hands = {};
+      for (const [name, s] of [
+        ['L', -1],
+        ['R', 1],
+      ]) {
+        result.hands[name] = point(
+          s * at.x + Math.cos(angles[name]) * ch.arms.paw.offset,
+          at.y + Math.sin(angles[name]) * ch.arms.paw.offset,
+        );
+      }
+    }
+    return result;
+  }
+
+  /**
    * character(ctx, ch, x, baseY, p): draws the character described by `ch` with its feet on baseY, in pose `p`
    * (already merged with the defaults, the character's pose and its mood).
    */
-  function character(ctx, ch, x, baseY, p) {
+  function character(ctx, ch, x, baseY, p, colours) {
     const g = ctx;
-    const c = ch.colours;
+    const c = colours || ch.colours;
     const sc = p.scale;
-    const face = { c, eyes: ch.face.eyes, mouth: ch.face.mouth, lashes: ch.face.lashes };
+    const face = {
+      c,
+      eyes: ch.face.eyes,
+      mouth: ch.face.mouth,
+      lashes: ch.face.lashes && p.detail !== 'simple',
+      style: faceStyle(ch.face.style),
+    };
 
     // ground shadow (not affected by squash, shrinks and fades with height)
-    if (p.shadow) {
+    if (p.shadow && ch.shadow && visible(ch.shadow, p)) {
       const shade = ch.shadow;
       const k = 1 / (1 + p.lift / 200);
       g.save();
@@ -489,68 +615,81 @@
 
     // A. feet
     const feet = ch.feet;
-    const tuck = p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6);
-    g.fillStyle = c.limb;
-    g.strokeStyle = c.outline;
-    g.lineWidth = feet.lineWidth;
-    if (tuck) {
-      const ft = feet.tuck;
-      for (const s of [-1, 1]) {
-        g.save();
-        g.translate(s * ft.x, ft.y);
-        g.rotate(-s * ft.rotate);
-        g.beginPath();
-        g.roundRect(ft.rect.x, ft.rect.y, ft.rect.w, ft.rect.h, ft.rect.r);
-        g.fill();
-        g.stroke();
-        g.restore();
-      }
-    } else {
-      for (const f of feet.stand) {
-        g.beginPath();
-        g.roundRect(f.x, f.y, f.w, f.h, f.r);
-        g.fill();
-        g.stroke();
+    if (feet && visible(feet, p)) {
+      const tuck = p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6);
+      g.fillStyle = c.limb;
+      g.strokeStyle = c.outline;
+      g.lineWidth = feet.lineWidth;
+      if (tuck && visible(feet.tuck, p) && visible(feet.tuck.rect, p)) {
+        const ft = feet.tuck;
+        for (const s of [-1, 1]) {
+          g.save();
+          g.translate(s * ft.x, ft.y);
+          g.rotate(-s * ft.rotate);
+          g.beginPath();
+          g.roundRect(ft.rect.x, ft.rect.y, ft.rect.w, ft.rect.h, ft.rect.r);
+          g.fill();
+          g.stroke();
+          g.restore();
+        }
+      } else if (!tuck) {
+        for (const f of feet.stand) {
+          if (!visible(f, p)) continue;
+          g.beginPath();
+          g.roundRect(f.x, f.y, f.w, f.h, f.r);
+          g.fill();
+          g.stroke();
+        }
       }
     }
 
     // B. body
-    for (const part of ch.body) drawPart(g, c, part);
-    if (p.blush) drawBlush(g, c, ch.face.blush, p.blush);
+    for (const part of ch.body) {
+      if (visible(part, p)) drawPart(g, c, part);
+    }
 
     // C. face
+    const at = ch.anchors?.face || {};
+    const faceScale = at.scale === undefined ? 1 : at.scale;
+    const framed = (at.x || 0) !== 0 || (at.y || 0) !== 0 || faceScale !== 1;
+    if (framed) {
+      g.save();
+      g.translate(at.x || 0, at.y || 0);
+      g.scale(faceScale, faceScale);
+    }
+    if (p.blush && ch.face.blush && p.detail !== 'simple') drawBlush(g, c, ch.face.blush, p.blush);
     drawEyes(g, face, p);
     drawMouth(g, face, p);
+    if (framed) g.restore();
 
     // D. accessory, sparkle, sweat
-    if (p.accessory && p.accessory !== 'none') {
+    if (ch.accessories && ch.anchors?.head && p.accessory && p.accessory !== 'none') {
       const parts = ch.accessories?.[p.accessory];
       if (!parts) throw new Error(`mascot: the character has no accessory '${p.accessory}'`);
-      drawAccessory(g, c, ch.anchors.head, parts);
+      drawAccessory(g, c, ch.anchors.head, parts, p);
     }
-    if (p.sparkle) drawSparkle(g, c, ch.anchors.sparkle, p);
-    drawSweat(g, c, ch.anchors.sweat, p);
+    if (p.sparkle && ch.anchors?.sparkle && visible(ch.anchors.sparkle, p)) drawSparkle(g, c, ch.anchors.sparkle, p);
+    if (ch.anchors?.sweat && visible(ch.anchors.sweat, p)) drawSweat(g, c, ch.anchors.sweat, p);
 
     // E. arms
     const arms = ch.arms;
-    const preset = arms.presets[p.arms] || arms.presets.idle;
-    const jit = Math.sin(p.t * 26) * p.armJitter;
-    const aL = (p.armL === null ? preset.L : p.armL) + jit;
-    const aR = (p.armR === null ? preset.R : p.armR) - jit;
-    const shoulder = ch.anchors.shoulders;
-    const arm = (ax, ay, a) => {
-      g.save();
-      g.translate(ax, ay);
-      g.rotate(a);
-      rr(g, 0, -arms.width / 2, arms.length, arms.width, arms.width / 2);
-      fs(g, c.sleeve, 2.5, c.outline);
-      paw(g, c, arms.paw.offset, 0, arms.paw.r);
-      g.restore();
-    };
-    arm(-shoulder.x, shoulder.y, aL);
-    arm(shoulder.x, shoulder.y, aR);
+    if (arms && visible(arms, p)) {
+      const angles = armAngles(ch, p);
+      const shoulder = ch.anchors.shoulders;
+      const arm = (ax, ay, a) => {
+        g.save();
+        g.translate(ax, ay);
+        g.rotate(a);
+        rr(g, 0, -arms.width / 2, arms.length, arms.width, arms.width / 2);
+        fs(g, c.sleeve, 2.5, c.outline);
+        paw(g, c, arms.paw.offset, 0, arms.paw.r);
+        g.restore();
+      };
+      arm(-shoulder.x, shoulder.y, angles.L);
+      arm(shoulder.x, shoulder.y, angles.R);
+    }
     g.restore();
   }
 
-  ns.drawing = { character, defaultPose: DEFAULT_POSE, hexPath, svgPath };
+  ns.drawing = { character, defaultPose: DEFAULT_POSE, faceStyle: FACE_STYLE, resolvePose, anchors, hexPath, svgPath };
 })();

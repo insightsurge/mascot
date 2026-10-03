@@ -1,0 +1,115 @@
+{
+  "id": "blob",
+  "name": "Blob",
+  "centreHeight": 80,
+  "colours": {
+    "body": "#9d7ad4",
+    "outline": "#332747",
+    "feature": "#231832",
+    "eyeWhite": "#faf5ff",
+    "shine": "#faf5ff",
+    "teeth": "#faf5ff",
+    "eyelid": "#9d7ad4",
+    "tongue": "#c35686"
+  },
+  "body": [
+    {
+      "shape": "path",
+      "d": "M-65 15 C-95 -35 -35 -85 15 -65 C65 -75 98 -10 65 40 C35 85 -40 85 -65 15 Z",
+      "fill": "body",
+      "stroke": "outline",
+      "lineWidth": 3,
+      "round": true
+    }
+  ],
+  "face": {
+    "eyes": {
+      "y": -12,
+      "spacing": 25
+    },
+    "mouth": {
+      "y": 22
+    },
+    "lashes": false,
+    "style": {
+      "open": {
+        "ew": 14,
+        "eh": 17,
+        "pr": 8
+      },
+      "wide": {
+        "ew": 16,
+        "eh": 21,
+        "pr": 6
+      },
+      "worried": {
+        "ew": 14,
+        "eh": 18,
+        "pr": 7
+      },
+      "focused": {
+        "ew": 14,
+        "eh": 17,
+        "pr": 8
+      },
+      "pupil": {
+        "lookX": 5,
+        "lookY": 4
+      },
+      "brows": {
+        "offset": 23
+      }
+    }
+  },
+  "anchors": {
+    "head": {
+      "x": 15,
+      "y": -65
+    },
+    "face": {
+      "x": 18,
+      "y": -5,
+      "scale": 0.7
+    },
+    "body": {
+      "x": 0,
+      "y": 40
+    },
+    "shoulders": {
+      "x": 65,
+      "y": 5
+    },
+    "feet": {
+      "x": 23,
+      "y": 75
+    }
+  },
+  "moods": {
+    "idle": {
+      "eyes": "open",
+      "mouth": "smile"
+    },
+    "thinking": {
+      "eyes": "focused",
+      "mouth": "flat",
+      "brows": "raised",
+      "look": 0.6,
+      "lookY": -0.6
+    },
+    "happy": {
+      "eyes": "happy",
+      "mouth": "grin"
+    },
+    "worried": {
+      "eyes": "worried",
+      "mouth": "o",
+      "brows": "worried"
+    },
+    "celebrating": {
+      "eyes": "happy",
+      "mouth": "grin",
+      "lift": 15,
+      "rot": 0.12
+    }
+  }
+}

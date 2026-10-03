@@ -107,8 +107,10 @@ came from.
   `consumer-impact`, `skip-release-notes`. Label PRs too: release notes are built from PR labels.
 - Branch → PR → CI green → **ask before merging** (unless the founder said to merge that PR). The PR description
   starts with **"In brief"**: one plain sentence on what it does and why, then a few bullets for a reader with no
-  context (plain words, a light technical touch); then `Closes #<n>`, what changed and the checks (only checks
-  anyone can re-run from the repo; one-off manual checks go in a short Notes line). Stacked PRs
+  context (plain words, a light technical touch); then `Closes #<n>` and the template's sections: what's new and
+  what's fixed (plain words first, then function and file names), before and after, try it (scenarios to run),
+  details, not in this PR, and the checks (only checks anyone can re-run from the repo; one-off manual checks go in
+  a short Notes line). Delete sections that do not apply. Stacked PRs
   are fine (base on the branch below). Conventional Commits, short messages, **no AI attribution** anywhere.
   Commit or push only when asked.
 - `gh` must run as `insightsurge`: check `gh api user --jq .login` before any GitHub action.

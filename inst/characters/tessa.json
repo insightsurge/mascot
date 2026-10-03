@@ -353,18 +353,5 @@
       "lift": 10
     }
   },
-  "small": {
-    "faceScale": 1.6,
-    "minLineWidth": 1.5,
-    "hide": [
-      "lashes",
-      "highlight",
-      "blush",
-      "sweat",
-      "accessories",
-      "shadow",
-      "sparkle",
-      "brows"
-    ]
-  }
+  "small": { "faceScale": 1.6, "minLineWidth": 1, "hide": ["lashes", "highlight", "blush", "sweat", "shadow", "sparkle", "brows"] }
 }

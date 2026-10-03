@@ -25,25 +25,117 @@
     return JSON.parse(el.textContent);
   };
 
-  /**
-   * draw(ctx, character, x, baseY, pose, frame): draws one frame of a character with its feet on baseY.
-   * character: a parsed description (inst/characters/<id>.json). pose: optional fields, including `mood`, which
-   * applies the character's own pose for that mood first. frame: a whole number (default 0).
-   */
-  ns.draw = (ctx, character, x, baseY, pose, frame) => {
-    if (!character || typeof character !== 'object' || !character.colours) {
-      throw new Error('mascot: draw() needs a character description');
+  const checked = new WeakSet();
+
+  /** Thin browser guard; R owns types and numeric ranges. Descriptions are immutable after first use. */
+  ns.validateCharacter = (ch) => {
+    if (!ch || typeof ch !== 'object') return ['character: draw() needs a character description object'];
+    if (checked.has(ch)) return [];
+    const errors = [];
+    for (const field of ['id', 'name', 'centreHeight', 'colours', 'body', 'face', 'moods', 'small']) {
+      if (!Object.hasOwn(ch, field)) errors.push(`${field} is missing`);
     }
-    const given = pose || {};
-    let mood = {};
-    if (given.mood !== undefined) {
-      if (!character.moods || !Object.hasOwn(character.moods, given.mood)) {
-        throw new Error(`mascot: the character '${character.id}' has no mood '${given.mood}'`);
+    if (errors.length) return errors;
+    for (const field of ['eyes', 'mouth']) if (!Object.hasOwn(ch.face, field)) errors.push(`face.${field} is missing`);
+    const role = (name, field) => {
+      if (!Object.hasOwn(ch.colours, name)) errors.push(`${field}: colour role '${name}' is not in colours`);
+    };
+    for (const name of ['body', 'outline', 'feature', 'eyeWhite', 'shine', 'teeth', 'eyelid', 'tongue']) {
+      if (!Object.hasOwn(ch.colours, name)) errors.push(`colours.${name} is missing`);
+    }
+    const parts = (items, field) =>
+      items.forEach((part, i) => {
+        const at = `${field}[${i}]`;
+        if (!ns.drawing.names.shape.includes(part.shape)) errors.push(`${at}.shape: unknown shape '${part.shape}'`);
+        if (part.shape === 'rect' && part.stroke !== undefined) errors.push(`${at}.stroke: rect is fill-only`);
+        for (const key of ['fill', 'stroke']) if (part[key] !== undefined) role(part[key], `${at}.${key}`);
+        if (part.shape === 'path') {
+          try {
+            ns.drawing.svgPath(ns.drawing.pathGuard, part.d);
+          } catch (e) {
+            errors.push(`${at}.d: ${e.message}`);
+          }
+        }
+      });
+    for (const name of ch.small.hide || []) {
+      if (!ns.drawing.names.hide.includes(name)) errors.push(`small.hide: unknown name '${name}'`);
+    }
+    for (const field of ['faceScale', 'minLineWidth', 'hide']) {
+      if (!Object.hasOwn(ch.small, field)) errors.push(`small.${field} is missing`);
+    }
+    for (const [group, fields] of Object.entries(ch.face.style || {})) {
+      if (!Object.hasOwn(ns.drawing.faceStyle, group)) {
+        errors.push(`face.style.${group}: unknown group '${group}'`);
+        continue;
       }
-      mood = character.moods[given.mood];
+      for (const key of Object.keys(fields))
+        if (!Object.hasOwn(ns.drawing.faceStyle[group], key))
+          errors.push(`face.style.${group}.${key}: unknown field '${key}'`);
     }
-    const t = (frame || 0) / ns.fps;
-    const p = Object.assign({}, ns.drawing.defaultPose, character.pose || {}, mood, given, { t });
-    ns.drawing.character(ctx, character, x, baseY, p);
+    for (const [key, value] of Object.entries(ch.face.outline || {})) {
+      const choices = key === 'join' ? ['miter', 'round', 'bevel'] : ['butt', 'round', 'square'];
+      if (!['leftCap', 'rightCap', 'join'].includes(key) || !choices.includes(value))
+        errors.push(`face.outline.${key}: unknown name '${value}'`);
+    }
+    for (const [field, roles] of [
+      ['shadow', ['shadow']],
+      ['arms', ['limb', 'sleeve']],
+      ['feet', ['limb']],
+    ]) {
+      if (ch[field]) for (const name of roles) role(name, field);
+    }
+    if (ch.face.blush) for (const name of ['blush', 'blushStrong']) role(name, 'face.blush');
+    if (Object.hasOwn(ch.anchors || {}, 'sweat')) role('sweat', 'anchors.sweat');
+    if (Object.hasOwn(ch.anchors || {}, 'sparkle'))
+      for (const name of ['sparkle', 'sparkleOutline']) role(name, 'anchors.sparkle');
+    parts(ch.body, 'body');
+    for (const name of Object.keys(ch.anchors || {})) {
+      if (!ns.drawing.names.anchor.includes(name)) errors.push(`anchors.${name}: unknown anchor '${name}'`);
+    }
+    if (ch.arms) {
+      for (const field of ['presets', 'paw'])
+        if (!Object.hasOwn(ch.arms, field)) errors.push(`arms.${field} is missing`);
+      if (!Object.hasOwn(ch.anchors || {}, 'shoulders')) errors.push('anchors.shoulders is missing for arms');
+    }
+    for (const [name, item] of Object.entries(ch.accessories || {})) {
+      const at = `accessories.${name}`;
+      if (!Object.hasOwn(item, 'parts')) {
+        errors.push(`${at}.parts is missing`);
+        continue;
+      }
+      if (!Object.hasOwn(item, 'slot')) errors.push(`${at}.slot is missing`);
+      if (!ns.drawing.names.anchor.includes(item.anchor || 'hair'))
+        errors.push(`${at}.anchor: unknown anchor '${item.anchor}'`);
+      for (const key of Object.keys(item.colours || {})) role(key, `${at}.colours`);
+      parts(item.parts, `${at}.parts`);
+      try {
+        ns.drawing.guardPose(ch, { accessory: name }, at);
+      } catch (e) {
+        errors.push(e.message.replace('mascot: ', ''));
+      }
+    }
+    for (const [field, pose] of [
+      ['pose', ch.pose || {}],
+      ...Object.entries(ch.moods).map(([name, pose]) => [`moods.${name}`, pose]),
+    ]) {
+      try {
+        ns.drawing.guardPose(ch, pose, field);
+      } catch (e) {
+        errors.push(e.message.replace('mascot: ', ''));
+      }
+    }
+    if (!errors.length) checked.add(ch);
+    return errors;
+  };
+
+  /** draw(ctx, character, { x, baseY, pose, frame, colours }): one deterministic frame. */
+  ns.draw = (ctx, character, { x = 0, baseY = 0, pose = {}, frame = 0, colours } = {}) => {
+    const errors = ns.validateCharacter(character);
+    if (errors.length) throw new Error(`mascot: ${errors[0]}`);
+    const p = ns.drawing.resolvePose(character, pose, frame);
+    for (const role of Object.keys(colours || {})) {
+      if (!Object.hasOwn(character.colours, role)) throw new Error(`mascot: colours: unknown role '${role}'`);
+    }
+    ns.drawing.character(ctx, character, x, baseY, p, { ...character.colours, ...colours });
   };
 })();

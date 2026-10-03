@@ -1,0 +1,11 @@
+Copyright and licence of the files that mascot ships, other than its R code.
+
+The package as a whole: Copyright (c) Harsh Verma; MIT licence (see LICENSE).
+No third-party JavaScript, CSS or fonts are bundled.
+
+inst/www/mascot.js
+inst/www/mascot-draw.js
+    Source: drawing code first written by Harsh Verma for the R Engineering Playbook's trailer engine
+    (https://github.com/insightsurge/r-engineering-playbook, tools/animate/engine.js, commit bf1aa9a),
+    copied and adapted for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.

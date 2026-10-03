@@ -1,6 +1,6 @@
 Package: mascot
 Title: Live Mood-Driven Mascots for 'Shiny' Apps and 'Quarto' Sites
-Version: 0.0.0.9000
+Version: 0.0.0.9001
 Authors@R: 
     person("Harsh", "Verma", , "analyticswithharsh@gmail.com", role = c("aut", "cre", "cph"))
 Description: Adds a character drawn in code to 'Shiny' apps and 'Quarto'
@@ -16,9 +16,11 @@ Imports:
     checkmate,
     cli
 Suggests: 
+    chromote,
     covr,
     shinytest2,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    withr
 Config/cran-gate/coverage: 70
 Config/cran-gate/extra-dirs: tools
 Config/testthat/edition: 3

@@ -123,6 +123,11 @@ self-reported pass: run the gate and CI, and look at the output (screenshots for
 - Start a session with `dev/handoffs/README.md` and the skill's `status`, then `package/`. Update the handoff
   before a PR, before a compaction and at the end of a session; run the skill's `check`. Log the founder's asks and decisions (`overview/decisions.md`); durable material goes into
   git (issues, `docs/`, ADRs).
+- **External notes:** related repositories leave this one ideas, decisions and updates in
+  `dev/handoffs/external-notes.md`. Triage them with the skill's inbox steps at the start of a session and in every
+  handoff update: verify each entry, spread what holds into the areas here, open an issue for agreed work, and
+  record the outcome (`handoff.sh set`). To tell another repository something, add an entry to its inbox
+  (`handoff.sh note`); never edit its other notes, and touch its issues and PRs only when the founder asks.
 - Work that spans both repos: also read `../r-engineering-playbook/dev/handoffs/README.md`.
 
 ## Working as an agent

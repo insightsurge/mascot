@@ -1,7 +1,7 @@
 # mascot 0.0.0.9001
 
-* The drawing engine starts: Tessa, the R Engineering Playbook's hexagon character, is drawn in the
-  browser exactly as on the playbook site. No exported functions yet (#9, #24).
+* The drawing engine starts: Tessa, a hexagon character first drawn for an earlier project, is drawn in
+  the browser exactly as there. No exported functions yet (#9, #24).
 
 # mascot 0.0.0.9000
 

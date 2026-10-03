@@ -6,7 +6,7 @@
   `inst/characters/tessa.json`, and the engine draws a character from such a description (#66).
 * The engine draws any character from its description: optional arms and feet, a face that can sit
   anywhere, shared attachment points, several accessories at once, colours set per drawing (hex or
-  `rgb()`), and a small-size drawing that keeps the mood readable at 48 px (#52).
+  `rgb()`), and a small-size drawing that keeps the mood readable at 48 pixels (#52).
 
 # mascot 0.0.0.9000
 

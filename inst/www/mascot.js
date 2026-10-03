@@ -16,15 +16,34 @@
   ns.fps = 30;
 
   /**
+   * readCharacter(id, doc): the character description that the page carries in
+   * <script type="application/json" data-mascot-character="id">, parsed. doc defaults to document.
+   */
+  ns.readCharacter = (id, doc) => {
+    const el = (doc || document).querySelector(`script[type="application/json"][data-mascot-character="${id}"]`);
+    if (!el) throw new Error(`mascot: no description of the character '${id}' on this page`);
+    return JSON.parse(el.textContent);
+  };
+
+  /**
    * draw(ctx, character, x, baseY, pose, frame): draws one frame of a character with its feet on baseY.
-   * character: 'tessa' for now. frame: a whole number (default 0).
+   * character: a parsed description (inst/characters/<id>.json). pose: optional fields, including `mood`, which
+   * applies the character's own pose for that mood first. frame: a whole number (default 0).
    */
   ns.draw = (ctx, character, x, baseY, pose, frame) => {
-    const characters = ns.drawing ? ns.drawing.characters : {};
-    if (!Object.hasOwn(characters, character)) {
-      throw new Error(`mascot: unknown character '${character}'`);
+    if (!character || typeof character !== 'object' || !character.colours) {
+      throw new Error('mascot: draw() needs a character description');
+    }
+    const given = pose || {};
+    let mood = {};
+    if (given.mood !== undefined) {
+      if (!character.moods || !Object.hasOwn(character.moods, given.mood)) {
+        throw new Error(`mascot: the character '${character.id}' has no mood '${given.mood}'`);
+      }
+      mood = character.moods[given.mood];
     }
     const t = (frame || 0) / ns.fps;
-    characters[character](ctx, x, baseY, Object.assign({}, pose || {}, { t }));
+    const p = Object.assign({}, ns.drawing.defaultPose, character.pose || {}, mood, given, { t });
+    ns.drawing.character(ctx, character, x, baseY, p);
   };
 })();

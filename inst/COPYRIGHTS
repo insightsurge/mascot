@@ -9,3 +9,8 @@ inst/www/mascot-draw.js
     (https://github.com/insightsurge/r-engineering-playbook, tools/animate/engine.js, commit bf1aa9a),
     copied and adapted for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/characters/tessa.json
+    Source: Tessa's design (shape, colours, face, arms, bow and clip, mood poses), first drawn by Harsh Verma in
+    the same playbook engine (drawTessa(), commit bf1aa9a) and written here as data.
+    Copyright (c) Harsh Verma. Licence: MIT.

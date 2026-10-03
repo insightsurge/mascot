@@ -1,9 +1,10 @@
 /**
  * mascot drawing code (canvas 2D, no dependencies).
  *
- * First written for the R Engineering Playbook's trailer engine (tools/animate/engine.js, commit bf1aa9a) and
- * copied here with the same drawing calls in the same order, so the package draws Tessa pixel for pixel like the
- * playbook. Only what draws the character is here: no outfits, held items, backdrops, props or video tools.
+ * First written for the R Engineering Playbook's trailer engine (tools/animate/engine.js, commit bf1aa9a). Here
+ * the drawing is generic: a character is data (inst/characters/<id>.json: colours, body parts, anchors, arms,
+ * accessories, moods), and these functions draw any character from it. The calls and their order are kept from
+ * the playbook, so Tessa's data draws her pixel for pixel like the playbook does.
  *
  * Every function is a pure function of its arguments: no clock, no randomness. Time enters only as `pose.t`
  * (seconds), which mascot.draw() computes from a frame number.
@@ -17,20 +18,6 @@
   const ns = window.mascot || {};
   window.mascot = ns;
   if (ns.drawing) return;
-
-  // Tessa's colours (the playbook's palette, only the entries her drawing uses).
-  const C = {
-    paper: '#f5f6f4',
-    stone4: '#a2aea7',
-    dark: '#26312b',
-    ink: '#16201b',
-    green4: '#7fcba4',
-    green5: '#3f8a66',
-    ochre2: '#d9b35c',
-    ochre3: '#7a5a12',
-    fail: '#a33a30',
-    sky: '#9dc3e6',
-  };
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -79,12 +66,48 @@
     ctx.closePath();
   }
 
+  /**
+   * Starts a new path from an SVG-style path string. Absolute commands only (M, L, Q, C, Z), numbers separated by
+   * spaces or commas: a subset any SVG editor can write, so a character's parts can be drawn as SVG later.
+   */
+  const PATH_ARGS = { M: 2, L: 2, Q: 4, C: 6, Z: 0 };
+  const isLetter = (token) => /^[A-Za-z]$/.test(token);
+  function svgPath(ctx, d) {
+    const tokens = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) || [];
+    ctx.beginPath();
+    let i = 0;
+    while (i < tokens.length) {
+      const cmd = tokens[i];
+      if (!Object.hasOwn(PATH_ARGS, cmd)) throw new Error(`mascot: unsupported path command '${cmd}' in '${d}'`);
+      const n = PATH_ARGS[cmd];
+      i += 1;
+      if (n === 0) {
+        ctx.closePath();
+        continue;
+      }
+      // Numbers after a command repeat it, as in SVG (after M they draw lines).
+      let first = true;
+      while (i < tokens.length && !isLetter(tokens[i])) {
+        const v = tokens.slice(i, i + n).map(Number);
+        if (v.length < n || v.some((x) => !Number.isFinite(x))) {
+          throw new Error(`mascot: '${cmd}' needs ${n} numbers in '${d}'`);
+        }
+        if (cmd === 'M' && first) ctx.moveTo(v[0], v[1]);
+        else if (cmd === 'M' || cmd === 'L') ctx.lineTo(v[0], v[1]);
+        else if (cmd === 'Q') ctx.quadraticCurveTo(v[0], v[1], v[2], v[3]);
+        else ctx.bezierCurveTo(v[0], v[1], v[2], v[3], v[4], v[5]);
+        first = false;
+        i += n;
+      }
+    }
+  }
+
   function rr(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, r);
   }
 
-  /** Fill plus a dark cartoon outline for the current path. */
+  /** Fill plus a cartoon outline for the current path. */
   function fs(ctx, fill, lw, stroke) {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -93,27 +116,51 @@
       ctx.fill();
     }
     ctx.lineWidth = lw === undefined ? 2.5 : lw;
-    ctx.strokeStyle = stroke || C.dark;
+    ctx.strokeStyle = stroke;
     ctx.stroke();
   }
 
-  // ---- Tessa's body -----------------------------------------------------------------------------
-  const R = 92;
-  const RIM = 11;
-  const FOOT = 12;
-  const HW = (R * Math.sqrt(3)) / 2;
+  /** A colour from the character's colours, by role, with an optional alpha. */
+  function colour(c, role, alpha) {
+    const hex = c[role];
+    if (hex === undefined) throw new Error(`mascot: the character has no colour '${role}'`);
+    return alpha === undefined ? hex : rgba(hex, alpha);
+  }
 
-  const ARM_PRESETS = {
-    idle: { L: 1.85, R: 1.25 },
-    up: { L: -2.25, R: -0.85 },
-    shock: { L: -2.45, R: -0.65 },
-    type: { L: 2.55, R: 2.35 },
-    hold: { L: -2.79, R: -0.35 },
-    wave: { L: 1.85, R: -1.0 },
-    point: { L: 1.85, R: -0.15 },
-    hips: { L: 2.35, R: 0.8 },
-  };
+  /**
+   * Draws one part described as data: { shape, ..., fill, stroke, lineWidth, alpha, round }.
+   * shape: 'hexagon' (r, corner), 'path' (d), 'circle' (x, y, r), 'roundRect' (x, y, w, h, r), 'rect' (x, y, w, h;
+   * fill only). round: true sets round joins and caps first, like a cartoon outline.
+   */
+  function drawPart(g, c, part) {
+    if (part.shape === 'rect') {
+      g.fillStyle = colour(c, part.fill, part.alpha);
+      g.fillRect(part.x, part.y, part.w, part.h);
+      return;
+    }
+    if (part.shape === 'hexagon') hexPath(g, 0, 0, part.r, part.corner);
+    else if (part.shape === 'path') svgPath(g, part.d);
+    else if (part.shape === 'circle') {
+      g.beginPath();
+      g.arc(part.x, part.y, part.r, 0, 7);
+    } else if (part.shape === 'roundRect') rr(g, part.x, part.y, part.w, part.h, part.r);
+    else throw new Error(`mascot: unknown part shape '${part.shape}'`);
+    if (part.round) {
+      g.lineJoin = 'round';
+      g.lineCap = 'round';
+    }
+    if (part.fill) {
+      g.fillStyle = colour(c, part.fill, part.alpha);
+      g.fill();
+    }
+    if (part.stroke) {
+      g.strokeStyle = colour(c, part.stroke);
+      g.lineWidth = part.lineWidth === undefined ? 2.5 : part.lineWidth;
+      g.stroke();
+    }
+  }
 
+  // Pose fields every character understands; a character's own `pose` and `moods` change them.
   const DEFAULT_POSE = {
     scale: 1,
     sx: 1,
@@ -130,7 +177,7 @@
     sweat: 0,
     blush: true,
     sparkle: false,
-    accessory: 'bow',
+    accessory: 'none',
     armL: null,
     armR: null,
     arms: 'idle',
@@ -142,8 +189,8 @@
 
   // ---- face pieces ------------------------------------------------------------------------------
   // Soft eyelashes: `n` short strokes at the outer top corner of an eye (s = -1 left, +1 right).
-  function lashes(g, s, cx, cy, ew, eh, n) {
-    g.strokeStyle = C.ink;
+  function lashes(g, c, s, cx, cy, ew, eh, n) {
+    g.strokeStyle = c.feature;
     g.lineWidth = 3;
     g.lineCap = 'round';
     const angs = n === 2 ? [-32, -62] : [-20, -45, -70];
@@ -160,34 +207,35 @@
     }
   }
 
-  function eyeHappy(g, s, cx, cy) {
-    g.strokeStyle = C.ink;
+  function eyeHappy(g, f, s, cx, cy) {
+    g.strokeStyle = f.c.feature;
     g.lineWidth = 5.5;
     g.lineCap = 'round';
     g.beginPath();
     g.arc(cx, cy + 2, 15, Math.PI * 1.15, Math.PI * 1.85, false);
     g.stroke();
-    lashes(g, s, cx, cy + 9, 15, 6, 2);
+    if (f.lashes) lashes(g, f.c, s, cx, cy + 9, 15, 6, 2);
   }
 
-  function eyeClosed(g, s, cx, cy) {
-    g.strokeStyle = C.ink;
+  function eyeClosed(g, f, s, cx, cy) {
+    g.strokeStyle = f.c.feature;
     g.lineWidth = 5;
     g.lineCap = 'round';
     g.beginPath();
     g.arc(cx, cy - 6, 14, Math.PI * 0.18, Math.PI * 0.82, false);
     g.stroke();
-    lashes(g, s, cx, cy + 2, 15, 3, 2);
+    if (f.lashes) lashes(g, f.c, s, cx, cy + 2, 15, 3, 2);
   }
 
-  function eyeOpen(g, s, cx, cy, o) {
+  function eyeOpen(g, f, s, cx, cy, o) {
+    const c = f.c;
     g.save();
     g.translate(cx, cy);
     g.beginPath();
     g.ellipse(0, 0, o.ew, o.eh, 0, 0, 7);
-    g.fillStyle = C.paper;
+    g.fillStyle = c.eyeWhite;
     g.fill();
-    g.strokeStyle = C.ink;
+    g.strokeStyle = c.feature;
     g.lineWidth = 2.5;
     g.stroke();
     g.beginPath();
@@ -196,11 +244,11 @@
     const px = o.px;
     const py = o.py;
     const pr = o.pr;
-    g.fillStyle = C.ink;
+    g.fillStyle = c.feature;
     g.beginPath();
     g.arc(px, py, pr, 0, 7);
     g.fill();
-    g.fillStyle = C.paper;
+    g.fillStyle = c.shine;
     g.beginPath();
     g.arc(px + pr * 0.35, py - pr * 0.35, pr * 0.4, 0, 7);
     g.fill();
@@ -210,9 +258,9 @@
     if (o.lid > 0) {
       // half-lid (focused) or blink
       const ly = -o.eh * 1.2 + o.eh * 2.4 * o.lid;
-      g.fillStyle = C.green5;
+      g.fillStyle = c.eyelid;
       g.fillRect(-o.ew * 1.2, -o.eh * 1.2, o.ew * 2.4, ly + o.eh * 1.2);
-      g.strokeStyle = C.dark;
+      g.strokeStyle = c.outline;
       g.lineWidth = 2.2;
       g.beginPath();
       g.moveTo(-o.ew * 1.2, ly + s * (o.slant || 0));
@@ -220,20 +268,20 @@
       g.stroke();
     }
     g.restore();
-    lashes(g, s, cx, cy, o.ew, o.eh, 3);
+    if (f.lashes) lashes(g, c, s, cx, cy, o.ew, o.eh, 3);
   }
 
-  function drawEyes(g, p) {
-    const EY = -12;
-    const SP = 30;
+  function drawEyes(g, f, p) {
+    const EY = f.eyes.y;
+    const SP = f.eyes.spacing;
     const kind = p.eyes;
     const blink = clamp(p.blink, 0, 1);
     if (kind === 'happy') {
-      eyeHappy(g, -1, -SP, EY);
-      eyeHappy(g, 1, SP, EY);
+      eyeHappy(g, f, -1, -SP, EY);
+      eyeHappy(g, f, 1, SP, EY);
     } else if (kind === 'blink' || blink > 0.96) {
-      eyeClosed(g, -1, -SP, EY);
-      eyeClosed(g, 1, SP, EY);
+      eyeClosed(g, f, -1, -SP, EY);
+      eyeClosed(g, f, 1, SP, EY);
     } else {
       const wide = kind === 'wide';
       const worried = kind === 'worried';
@@ -248,17 +296,17 @@
         slant: focused ? 3 : 0,
       };
       if (kind === 'wink') {
-        eyeOpen(g, -1, -SP, EY, o);
-        eyeHappy(g, 1, SP, EY);
+        eyeOpen(g, f, -1, -SP, EY, o);
+        eyeHappy(g, f, 1, SP, EY);
       } else {
-        eyeOpen(g, -1, -SP, EY, o);
-        eyeOpen(g, 1, SP, EY, o);
+        eyeOpen(g, f, -1, -SP, EY, o);
+        eyeOpen(g, f, 1, SP, EY, o);
       }
     }
     let br = p.brows;
     if (br === null || br === undefined) br = kind === 'worried' ? 'worried' : kind === 'focused' ? 'frown' : 'none';
     if (br && br !== 'none' && kind !== 'happy') {
-      g.strokeStyle = C.ink;
+      g.strokeStyle = f.c.feature;
       g.lineWidth = br === 'neutral' ? 3.5 : 5;
       g.lineCap = 'round';
       const yy = EY - (kind === 'wide' ? 30 : 25);
@@ -283,11 +331,12 @@
     }
   }
 
-  function drawMouth(g, p) {
-    const my = 24;
+  function drawMouth(g, f, p) {
+    const c = f.c;
+    const my = f.mouth.y;
     g.save();
-    g.strokeStyle = C.ink;
-    g.fillStyle = C.ink;
+    g.strokeStyle = c.feature;
+    g.fillStyle = c.feature;
     g.lineWidth = 3.5;
     g.lineCap = 'round';
     const m = p.mouth;
@@ -326,7 +375,7 @@
       g.beginPath();
       g.ellipse(0, my + 5, 10, 15, 0, 0, 7);
       g.fill();
-      g.fillStyle = C.fail;
+      g.fillStyle = c.tongue;
       g.beginPath();
       g.ellipse(0, my + 13, 7, 5, 0, 0, 7);
       g.fill();
@@ -336,20 +385,29 @@
       g.closePath();
       g.fill();
       g.stroke();
-      g.fillStyle = C.paper;
+      g.fillStyle = c.teeth;
       g.fillRect(-13, my, 26, 6);
     }
     g.restore();
   }
 
-  function drawSweat(g, p) {
+  function drawBlush(g, c, b, kind) {
+    g.fillStyle = kind === 'strong' ? rgba(c.blushStrong, b.strongAlpha) : rgba(c.blush, b.alpha);
+    g.beginPath();
+    g.ellipse(-b.x, b.y, b.rx, b.ry, 0, 0, 7);
+    g.moveTo(b.x + b.rx, b.y);
+    g.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, 7);
+    g.fill();
+  }
+
+  function drawSweat(g, c, at, p) {
     const u = p.sweat === true ? 0.5 : clamp(p.sweat, 0, 1);
     if (u <= 0) return;
     g.save();
-    g.translate(58 + Math.sin(u * 12) * 2, -46 + u * 26);
+    g.translate(at.x + Math.sin(u * 12) * 2, at.y + u * 26);
     g.globalAlpha = u < 0.9 ? 1 : (1 - u) * 10;
-    g.fillStyle = C.sky;
-    g.strokeStyle = C.ink;
+    g.fillStyle = c.sweat;
+    g.strokeStyle = c.feature;
     g.lineWidth = 1.5;
     g.beginPath();
     g.moveTo(0, -11);
@@ -358,17 +416,17 @@
     g.closePath();
     g.fill();
     g.stroke();
-    g.fillStyle = C.paper;
+    g.fillStyle = c.shine;
     g.beginPath();
     g.arc(2.5, 2.5, 2.2, 0, 7);
     g.fill();
     g.restore();
   }
 
-  function drawSparkle(g, p) {
+  function drawSparkle(g, c, at, p) {
     const k = 1 + 0.18 * Math.sin(p.t * 9);
     g.save();
-    g.translate(56, -33);
+    g.translate(at.x, at.y);
     g.scale(k, k);
     g.beginPath();
     for (let i = 0; i < 8; i++) {
@@ -377,77 +435,48 @@
       g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
     }
     g.closePath();
-    fs(g, C.paper, 1.6, C.ochre2);
+    fs(g, c.sparkle, 1.6, c.sparkleOutline);
     g.restore();
   }
 
-  // Head accessory: small ochre hair bow (default) or clip on the upper left of the head.
-  function drawAccessory(g, kind) {
+  // A head accessory: the character's own parts, placed at its head anchor.
+  function drawAccessory(g, c, at, parts) {
     g.save();
-    g.translate(-47, -54);
-    g.rotate(-0.5);
-    g.scale(1.2, 1.2);
-    if (kind === 'clip') {
-      rr(g, -15, -5, 30, 10, 5);
-      fs(g, C.ochre2, 2.2);
-      g.fillStyle = C.ochre3;
-      g.fillRect(-5, -4, 3, 8);
-      g.fillRect(3, -4, 3, 8);
-      g.fillStyle = rgba(C.paper, 0.7);
-      g.fillRect(-12, -3, 5, 2);
-    } else {
-      for (const s of [-1, 1]) {
-        g.beginPath();
-        g.moveTo(0, 0);
-        g.quadraticCurveTo(s * 10, -13, s * 21, -8);
-        g.quadraticCurveTo(s * 25, 0, s * 21, 8);
-        g.quadraticCurveTo(s * 10, 13, 0, 0);
-        g.closePath();
-        fs(g, C.ochre2, 2.2);
-        g.strokeStyle = C.ochre3;
-        g.lineWidth = 1.6;
-        g.beginPath();
-        g.moveTo(s * 7, -1);
-        g.lineTo(s * 17, -3);
-        g.moveTo(s * 7, 2);
-        g.lineTo(s * 17, 3);
-        g.stroke();
-      }
-      g.beginPath();
-      g.arc(0, 0, 5.5, 0, 7);
-      fs(g, C.ochre2, 2.2);
-    }
+    g.translate(at.x, at.y);
+    g.rotate(at.rotate);
+    g.scale(at.scale, at.scale);
+    for (const part of parts) drawPart(g, c, part);
     g.restore();
   }
 
-  function paw(g, x, y) {
-    g.fillStyle = C.ochre2;
-    g.strokeStyle = C.dark;
+  function paw(g, c, x, y, r) {
+    g.fillStyle = c.limb;
+    g.strokeStyle = c.outline;
     g.lineWidth = 2.5;
     g.beginPath();
-    g.arc(x, y, 15 * 0.45, 0, 7);
+    g.arc(x, y, r, 0, 7);
     g.fill();
     g.stroke();
   }
 
   /**
-   * tessa(ctx, x, baseY, pose): draws Tessa with her feet on baseY.
-   * Pose fields as in the playbook's drawTessa(), without outfits and held items: scale, sx, sy, lift, rot, flip,
-   * t (seconds), look, lookY, eyes, blink, brows, mouth, sweat, blush, sparkle, accessory, arms, armL, armR,
-   * armJitter, feet, shadow.
+   * character(ctx, ch, x, baseY, p): draws the character described by `ch` with its feet on baseY, in pose `p`
+   * (already merged with the defaults, the character's pose and its mood).
    */
-  function tessa(ctx, x, baseY, pose) {
-    const p = Object.assign({}, DEFAULT_POSE, pose || {});
+  function character(ctx, ch, x, baseY, p) {
     const g = ctx;
+    const c = ch.colours;
     const sc = p.scale;
+    const face = { c, eyes: ch.face.eyes, mouth: ch.face.mouth, lashes: ch.face.lashes };
 
     // ground shadow (not affected by squash, shrinks and fades with height)
     if (p.shadow) {
+      const shade = ch.shadow;
       const k = 1 / (1 + p.lift / 200);
       g.save();
-      g.fillStyle = rgba(C.stone4, 0.32 * k);
+      g.fillStyle = rgba(c.shadow, shade.alpha * k);
       g.beginPath();
-      g.ellipse(x, baseY - 1, 62 * sc * k * (0.6 + 0.4 * p.sx), 9 * sc * k, 0, 0, 7);
+      g.ellipse(x, baseY - 1, shade.rx * sc * k * (0.6 + 0.4 * p.sx), shade.ry * sc * k, 0, 0, 7);
       g.fill();
       g.restore();
     }
@@ -455,89 +484,73 @@
     g.save();
     g.translate(x, baseY - p.lift);
     g.scale(p.flip * sc * p.sx, sc * p.sy);
-    g.translate(0, -(R + FOOT));
+    g.translate(0, -ch.centreHeight);
     g.rotate(p.rot);
 
     // A. feet
+    const feet = ch.feet;
     const tuck = p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6);
-    g.fillStyle = C.ochre2;
-    g.strokeStyle = C.dark;
-    g.lineWidth = 2.5;
+    g.fillStyle = c.limb;
+    g.strokeStyle = c.outline;
+    g.lineWidth = feet.lineWidth;
     if (tuck) {
+      const ft = feet.tuck;
       for (const s of [-1, 1]) {
         g.save();
-        g.translate(s * 24, R - 14);
-        g.rotate(-s * 0.25);
+        g.translate(s * ft.x, ft.y);
+        g.rotate(-s * ft.rotate);
         g.beginPath();
-        g.roundRect(-12, -6, 24, 14, 7);
+        g.roundRect(ft.rect.x, ft.rect.y, ft.rect.w, ft.rect.h, ft.rect.r);
         g.fill();
         g.stroke();
         g.restore();
       }
     } else {
-      g.beginPath();
-      g.roundRect(-38, R - 4, 30, 16, [6, 6, 8, 8]);
-      g.fill();
-      g.stroke();
-      g.beginPath();
-      g.roundRect(8, R - 4, 30, 16, [6, 6, 8, 8]);
-      g.fill();
-      g.stroke();
+      for (const f of feet.stand) {
+        g.beginPath();
+        g.roundRect(f.x, f.y, f.w, f.h, f.r);
+        g.fill();
+        g.stroke();
+      }
     }
 
-    // B. body: ochre rim, dark outline, green face, highlight
-    hexPath(g, 0, 0, R, 12);
-    g.fillStyle = C.ochre2;
-    g.fill();
-    g.strokeStyle = C.dark;
-    g.lineWidth = 3;
-    g.stroke();
-    hexPath(g, 0, 0, R - RIM, 8);
-    g.fillStyle = C.green5;
-    g.fill();
-    g.fillStyle = rgba(C.green4, 0.35);
-    g.beginPath();
-    g.moveTo(0, -(R - RIM));
-    g.lineTo(26, -(R - RIM) + 16);
-    g.lineTo(-26, -(R - RIM) + 16);
-    g.closePath();
-    g.fill();
-    if (p.blush) {
-      g.fillStyle = p.blush === 'strong' ? rgba(C.ochre2, 0.55) : rgba(C.green4, 0.45);
-      g.beginPath();
-      g.ellipse(-36, 18, 13, 7, 0, 0, 7);
-      g.moveTo(49, 18);
-      g.ellipse(36, 18, 13, 7, 0, 0, 7);
-      g.fill();
-    }
+    // B. body
+    for (const part of ch.body) drawPart(g, c, part);
+    if (p.blush) drawBlush(g, c, ch.face.blush, p.blush);
 
     // C. face
-    drawEyes(g, p);
-    drawMouth(g, p);
+    drawEyes(g, face, p);
+    drawMouth(g, face, p);
 
     // D. accessory, sparkle, sweat
-    if (p.accessory && p.accessory !== 'none') drawAccessory(g, p.accessory);
-    if (p.sparkle) drawSparkle(g, p);
-    drawSweat(g, p);
+    if (p.accessory && p.accessory !== 'none') {
+      const parts = ch.accessories?.[p.accessory];
+      if (!parts) throw new Error(`mascot: the character has no accessory '${p.accessory}'`);
+      drawAccessory(g, c, ch.anchors.head, parts);
+    }
+    if (p.sparkle) drawSparkle(g, c, ch.anchors.sparkle, p);
+    drawSweat(g, c, ch.anchors.sweat, p);
 
     // E. arms
-    const preset = ARM_PRESETS[p.arms] || ARM_PRESETS.idle;
+    const arms = ch.arms;
+    const preset = arms.presets[p.arms] || arms.presets.idle;
     const jit = Math.sin(p.t * 26) * p.armJitter;
     const aL = (p.armL === null ? preset.L : p.armL) + jit;
     const aR = (p.armR === null ? preset.R : p.armR) - jit;
-    const arm = (sx, sy, a) => {
+    const shoulder = ch.anchors.shoulders;
+    const arm = (ax, ay, a) => {
       g.save();
-      g.translate(sx, sy);
+      g.translate(ax, ay);
       g.rotate(a);
-      rr(g, 0, -7.5, 42, 15, 7.5);
-      fs(g, C.green5);
-      paw(g, 39, 0);
+      rr(g, 0, -arms.width / 2, arms.length, arms.width, arms.width / 2);
+      fs(g, c.sleeve, 2.5, c.outline);
+      paw(g, c, arms.paw.offset, 0, arms.paw.r);
       g.restore();
     };
-    arm(-HW + 10, 8, aL);
-    arm(HW - 10, 8, aR);
+    arm(-shoulder.x, shoulder.y, aL);
+    arm(shoulder.x, shoulder.y, aR);
     g.restore();
   }
 
-  ns.drawing = { characters: { tessa }, hexPath, armPresets: ARM_PRESETS };
+  ns.drawing = { character, defaultPose: DEFAULT_POSE, hexPath, svgPath };
 })();

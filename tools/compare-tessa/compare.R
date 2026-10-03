@@ -6,14 +6,16 @@
 # Run it from the package root. Defaults: ../r-engineering-playbook/tools/animate/engine.js and a new folder in
 # tempdir(). One headless Chrome page (chromote) loads the playbook's engine.js from its own folder (read only) and the
 # package's inst/www/ files, draws every case of compare-page.js with both on canvases of the same size, and counts
-# the differing pixels. Writes summary.csv and sheet.png (playbook | package | differences) to the output folder and
-# exits 1 if any case differs. It also checks that the playbook's engine.js is the same file before and after.
+# the differing pixels. The package draws Tessa from her description, inst/characters/tessa.json. Writes summary.csv
+# and sheet.png (playbook | package | differences) to the output folder and exits 1 if any case differs. It also
+# checks that the playbook's engine.js is the same file before and after.
 #
 # Needs the R packages checkmate, cli, chromote and jsonlite, and Chrome or Chromium. Not part of the built package.
 
 engine_default <- "../r-engineering-playbook/tools/animate/engine.js"
 package_js <- c("inst/www/mascot.js", "inst/www/mascot-draw.js")
 page_js <- "tools/compare-tessa/compare-page.js"
+character_json <- "inst/characters/tessa.json"
 
 file_url <- function(path) {
   checkmate::assert_file_exists(path)
@@ -36,6 +38,9 @@ write_page <- function(engine, out_dir) {
   page <- c(
     "<!doctype html>",
     "<html lang=\"en\"><head><meta charset=\"utf-8\"><title>Tessa: playbook and package</title></head><body>",
+    "<script type=\"application/json\" data-mascot-character=\"tessa\">",
+    readLines(character_json, encoding = "UTF-8"),
+    "</script>",
     sprintf("<script src=\"%s\"></script>", scripts),
     "</body></html>"
   )
@@ -75,7 +80,7 @@ main <- function(args) {
   engine <- if (length(args) >= 1) args[[1]] else engine_default
   out_dir <- if (length(args) >= 2) args[[2]] else tempfile("compare-tessa-")
   checkmate::assert_file_exists(engine, extension = "js")
-  for (path in c(package_js, page_js)) {
+  for (path in c(package_js, page_js, character_json)) {
     checkmate::assert_file_exists(path)
   }
   dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)

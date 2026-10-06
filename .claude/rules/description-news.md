@@ -21,11 +21,12 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 ## NEWS.md (tidyverse style; the source of each GitHub release)
 - **house:** every user-facing change adds its bullet in the same PR; internal changes (CI, refactors, tests) are
   left out unless users notice them.
-- **CRAN:** R CMD check needs a version number in at least one heading, so **until 0.1.0** each heading is a
-  development version (`# mascot 0.0.0.9001`, `.9002`, ...). New work goes under the current one; a new version
-  (with `Version` in `DESCRIPTION`) only when the founder asks, or an agent suggests one and the founder agrees, and the 0.1.0 release PR collects them under `# mascot 0.1.0` by hand. After that:
-  `# mascot (development version)` at the top; `usethis::use_version()` turns it into `# mascot x.y.z`.
-  Never edit a released section except to fix a typo.
+- **CRAN:** R CMD check needs a version number in at least one heading, so **until 0.1.0** each milestone has its own
+  release heading (`# mascot 0.0.2`, `# mascot 0.0.3`, ...) and work between milestones goes under a
+  `# mascot 0.0.x.9000` heading on top, which the milestone's release PR renames; a new milestone only when the founder
+  decides, or an agent suggests one and the founder agrees; the 0.1.0 release PR gathers the user-facing changes under
+  `# mascot 0.1.0`. After that: `# mascot (development version)` at the top; `usethis::use_version()` turns it into
+  `# mascot x.y.z`. Never edit a released section except to fix a typo.
 - **house:** one change per bullet, written for users, present tense, starting with the function or feature,
   ending with the issue or PR number: `` `updateMascot()` gains a `message` argument for a speech bubble (#30).``
   Credit outside contributors (`(@user, #123)`). With more than a handful of bullets, group under

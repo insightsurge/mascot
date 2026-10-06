@@ -77,10 +77,12 @@ package can use it as it is); mascot's choices are in `DESCRIPTION`
   deprecation first (`lifecycle::deprecate_warn()` for at least one release) unless the API is still before 0.1.0.
 
 ## Versions, releases and NEWS
-- `main` carries a development version (`0.0.0.9000`, later `x.y.z.9000`). A release is a PR that sets a release
-  version (`usethis::use_version()`) and its `NEWS.md` section (`# mascot x.y.z`). When that reaches `main`, the
-  `release` workflow tags `vx.y.z` and creates a GitHub release (the NEWS section plus notes generated from PR
-  labels, grouped by `.github/release.yml`). Then bump back to `.9000`.
+- Before 0.1.0, each milestone is a release `0.0.x` (0.0.1 skeleton, 0.0.2 engine, 0.0.3 R interface, ...) made only
+  when the founder decides; between milestones `main` carries `0.0.x.9000`; 0.1.0 is the first CRAN release; after that
+  the existing x.y.z / .9000 practice continues. A release is a PR that sets a release version
+  (`usethis::use_version()`) and its `NEWS.md` section (`# mascot x.y.z`). When that reaches `main`, the `release`
+  workflow tags `vx.y.z` and creates a GitHub release (the NEWS section plus notes generated from PR labels, grouped by
+  `.github/release.yml`). Then bump back to `.9000`.
 - Every user-facing change adds its `NEWS.md` bullet in the same PR (tidyverse style; details and the numbered
   heading until 0.1.0 in `.claude/rules/description-news.md`).
 - GitHub milestones are releases (`0.1.0 Live mascot`, `0.2.0 ...`, `Later`); epics are the M0-M6 work areas.

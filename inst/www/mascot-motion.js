@@ -40,6 +40,41 @@
  * stops RAF. New actions restart it, unless paused. Colours/reduction changes and seek do not reset
  * activity. Enabling reduced motion discards activity (activeAt: null); turning it off cannot replay
  * an old action. Held pose overrides mood, gestures and idle motion, including while resting.
+ *
+ * Character swaps: update({ character }) selects an immutable description. A different id resets
+ * mood to its first described mood and colours to {}, unless supplied in that patch. Held fields
+ * carry over except arms/armL/armR/armJitter without arms, unavailable arm presets, feet without
+ * feet, shadow without a shadow, sweat/sparkle without those anchors, blush without face.blush,
+ * and unavailable accessories (arrays retain available entries). Explicit patch fields are guarded.
+ * Dropped held fields are not resurrected by a later swap back.
+ * The same id keeps the mounted description and is an ordinary update, even for a different object.
+ * swap defaults to true; swapTiming = { outFrames: 30, inFrames: 30 } is a mount option.
+ * Positive finite durations are rounded to whole frames (at least one), individually capped at 150,
+ * then proportionally fitted to the incoming whole-frame activity budget (at most 150).
+ * Swap completion (swap.until) and activity completion (activeUntil) are computed once and stored.
+ * frame(character, state, n) adds a pure, seekable selection of character, pose, colours and opacity.
+ * SwapState retains the outgoing snapshot, so seeking backwards never depends on previous draws.
+ * Each phase reuses the wave timeline; held fields still win. Idle starts at the swap's action frame
+ * and ends within that character's activity window, including the swap itself.
+ * Retargeting snapshots the visible character, resolved pose and opacity. During fade-out it keeps the
+ * remaining exit time; during fade-in it exits in outFrames * current opacity. Returning to the
+ * exiting character reverses directly into an entrance lasting inFrames * (1 - current opacity).
+ * Recovery can extend that entrance enough to keep numeric steps within the target wave's speed;
+ * fields the wave does not move use change.frames, always within the activity budget.
+ * A reversal interpolates the captured numeric pose back to rest; other exits start their wave
+ * at the captured pose. A retarget during either wave preserves its phase and speed, even with
+ * only a few exit frames left. Pending targets never appear. Mood/pose/colour updates affect only the incoming character;
+ * mood updates during the swap commit without a wiggle, and valid gestures are dropped.
+ * These updates and play during a swap do not extend its window. Pause freezes absolute frames.
+ * Reduction or swap:false finishes immediately on the target; later enabling either motion setting
+ * never replays a discarded swap. current() reports the displayed id/mood and whether it is swapping.
+ * Swap frames use a private canvas before compositing once with globalAlpha, so part-specific alpha
+ * cannot bypass the fade. Canvas transforms/styles are saved/restored and clearing uses identity.
+ * onChange(snapshot) receives the initial current() snapshot, then once per change of id, shown mood
+ * or swapping, after player actions/ticks/seek (never pure pose/frame). Exceptions are reported once
+ * per player via console.error and cannot stop it. No notifications follow destroy().
+ * redraw() repeats the current drawing, including at rest, without changing time/state or RAF.
+ * It is inert after destroy(). Hosts use it after canvas resize or a drawing-transform change.
  */
 /**
  * Character data; only top-level fields are described here. Immutable after first use.
@@ -70,9 +105,24 @@
  * @property {string} [gesture] One-off gesture name; absent means none.
  * @property {number} [gestureAt] Gesture's start frame.
  * @property {number|null} [activeAt=0] Last action's frame; null means activity was discarded.
+ * @property {number|null} [activeUntil] Stored activity deadline; defaults to activeAt + idle.frames.
  * @property {number} [seed=0] Unsigned 32-bit seed.
  * @property {boolean} [reduced=false] Skip motion.
  * @property {Object} [pose={}] Held explicit fields, applied last.
+ * @property {Object<string, string>} [colours={}] Target colour overrides (used by frame()).
+ * @property {SwapState} [swap] Retained swap timeline (used by frame()).
+ */
+
+/**
+ * @typedef {Object} SwapState
+ * @property {number} at Start frame.
+ * @property {number} until Explicit absolute completion frame, computed once from whole durations.
+ * @property {number} outFrames Exit duration; zero for a reversal.
+ * @property {number} inFrames Entrance duration.
+ * @property {number} opacity Visible opacity at the start.
+ * @property {Object} outgoing Snapshot with character, resolved pose, held, colours and optional wave
+ *   continuation { at, frames, pose, start }; start overrides the original wave's first endpoint.
+ *   A recovery continuation { at, frames, pose, target } retains a reversal interrupted by a retarget.
  */
 
 /**
@@ -83,26 +133,34 @@
  * @property {number} [seed=0] Unsigned 32-bit seed.
  * @property {Object<string, string>|null} [colours] Initial colour overrides; defaults to none.
  * @property {boolean|null} [reduced=null] Force reduction, or follow the media preference.
+ * @property {boolean} [swap=true] Animate character swaps.
+ * @property {Object} [swapTiming] Positive finite outFrames/inFrames rounded to whole frames; defaults 30/30.
+ * @property {function(Object):void} [onChange] Initial and changed { character, mood, swapping } snapshots.
  */
 
 /**
- * Omitted fields stay unchanged. Null clears individual pose/colour keys, or their entire block.
+ * Omitted fields stay unchanged, except mood/colours reset on a different character id.
+ * Null clears individual pose/colour keys, or their entire block.
  * @typedef {Object} UpdatePatch
  * @property {string} [mood] Target mood, with the same change behaviour as setMood().
  * @property {Object|null} [pose] Merge drawing fields except mood/t; null clears every held field.
  * @property {Object<string, string|null>|null} [colours] Merge colour roles; null clears all.
  * @property {boolean|null} [reduced] Force reduction, or null to follow the media preference.
+ * @property {CharacterDescription} [character] Target description; identity is its id.
+ * @property {boolean} [swap] Animate future swaps; false also finishes a running swap.
  */
 
 /**
  * @typedef {Object} MotionController
  * @property {function(number):void} seek Draw and move to an absolute frame (no activity reset).
+ * @property {function():void} redraw Draw the current frame without changing state/time/activity/RAF.
  * @property {function(UpdatePatch):void} update Validate and apply an atomic patch.
  * @property {function(string):void} setMood Shortcut for update({ mood: name }).
  * @property {function(string):void} gesture Replace the current action with a one-off gesture.
  * @property {function():void} pause Freeze elapsed frames.
- * @property {function():void} play Resume after pause and begin a new activity window.
+ * @property {function():void} play Resume frozen frames; renew activity unless a swap is running.
  * @property {function():void} destroy Stop permanently and remove the media listener.
+ * @property {function():Object} current Fresh snapshot { character: id, mood, swapping }.
  */
 
 (() => {
@@ -142,7 +200,7 @@
   };
   const styles = ['wiggle', 'hop'];
   const configs = new WeakMap();
-  const checked = new WeakSet();
+  const checked = new WeakMap();
 
   /**
    * Thin motion-name guard used by validateCharacter(), including after late script loading.
@@ -150,7 +208,7 @@
    * @returns {string[]} Name errors; an empty array means no name errors. R owns types/ranges.
    */
   function validate(ch) {
-    if (checked.has(ch)) return [];
+    if (checked.has(ch)) return [...checked.get(ch)];
     const errors = [];
     const keys = (value, allowed, at) => {
       for (const key of Object.keys(value || {}))
@@ -181,7 +239,7 @@
         }
       }
     }
-    if (!errors.length) checked.add(ch);
+    checked.set(ch, [...errors]);
     return errors;
   }
 
@@ -263,12 +321,12 @@
     return p;
   }
 
-  function gesturePose(ch, base, gesture, progress) {
+  function gesturePose(ch, base, gesture, progress, start) {
     const points = gesture.timeline;
     const right = points.findIndex((point) => point.at > progress);
     if (right === -1) return keyframe(ch, base, points[points.length - 1]);
     const left = Math.max(0, right - 1);
-    const a = keyframe(ch, base, points[left]);
+    const a = start && left === 0 ? start : keyframe(ch, base, points[left]);
     const b = keyframe(ch, base, points[right]);
     const span = points[right].at - points[left].at;
     const mix = span ? Math.max(0, Math.min(1, (progress - points[left].at) / span)) : 0;
@@ -291,9 +349,10 @@
     if (state.gesture !== undefined && state.gesture !== null) named(state.gesture, gestures, 'gesture');
     const activeAt = state.activeAt === undefined ? 0 : state.activeAt;
     const elapsedIdle = frame - activeAt;
+    const activeUntil = state.activeUntil === undefined ? activeAt + idle.frames : state.activeUntil;
     const target = named(state.mood === undefined ? Object.keys(ch.moods)[0] : state.mood, ch.moods, 'mood');
     const mood = shownMood(ch, state, frame, change);
-    if (state.reduced || activeAt === null || elapsedIdle >= idle.frames) return { mood: target, ...state.pose };
+    if (state.reduced || activeAt === null || frame >= activeUntil) return { mood: target, ...state.pose };
     if (elapsedIdle < 0) return { mood, ...state.pose };
     const base = ns.drawing.resolvePose(ch, { mood });
     let p = { ...base, mood };
@@ -325,20 +384,79 @@
     p.sx *= 1 - breathe;
     p.sy *= 1 + breathe;
     p.blink = Math.max(p.blink, blink(state.seed === undefined ? 0 : state.seed, elapsedIdle, idle));
-    const held = { ...p, ...state.pose };
+    return heldPose(ch, p, state.pose);
+  }
+
+  function heldPose(ch, p, explicit) {
+    const held = { ...p, ...explicit };
     // A held arm preset wins over arm angles a gesture produced; held angles still win over the preset.
-    if (ch.arms && Object.hasOwn(state.pose || {}, 'arms'))
+    if (ch.arms && Object.hasOwn(explicit || {}, 'arms'))
       for (const [field, side] of [
         ['armL', 'L'],
         ['armR', 'R'],
       ])
-        if (!Object.hasOwn(state.pose, field)) held[field] = ch.arms.presets[state.pose.arms][side];
+        if (!Object.hasOwn(explicit, field)) held[field] = ch.arms.presets[explicit.arms][side];
     return held;
   }
 
-  const patchFields = ['mood', 'pose', 'colours', 'reduced'];
-  // The colour forms the drawing code reads: #RGB, #RRGGBB, rgb(r, g, b) and rgba(r, g, b, a).
-  const colourForm = /^(#([0-9a-f]{3}|[0-9a-f]{6})|rgba?\(\s*[\d.]+\s*(,\s*[\d.]+\s*){2,3}\))$/i;
+  /**
+   * Select exactly one character and compute its drawing fields, without mutation or a clock.
+   * @param {CharacterDescription} ch Target immutable description.
+   * @param {MotionState} [state={}] Target state, optionally with an outgoing swap snapshot.
+   * @param {number} [n=0] Absolute frame.
+   * @returns {Object} { character, pose, colours, opacity, swapping }; character is a description.
+   */
+  function sceneFrame(ch, state = {}, n = 0) {
+    const swap = state.swap;
+    const elapsed = swap ? n - swap.at : 0;
+    const swapping = Boolean(swap && !state.reduced && n < swap.until);
+    if (!swapping)
+      return { character: ch, pose: pose(ch, state, n), colours: state.colours || {}, opacity: 1, swapping: false };
+    if (swap.outFrames > 0 && elapsed < swap.outFrames) {
+      const out = swap.outgoing;
+      const progress = Math.max(0, elapsed / swap.outFrames);
+      const wave = out.wave;
+      const recovery = out.recovery;
+      const waveProgress = wave ? Math.max(0, Math.min(1, (n - wave.at) / wave.frames)) : progress;
+      return {
+        character: out.character,
+        pose: heldPose(
+          out.character,
+          recovery
+            ? recoverPose(recovery.pose, recovery.target, Math.max(0, Math.min(1, (n - recovery.at) / recovery.frames)))
+            : gesturePose(
+                out.character,
+                wave ? wave.pose : out.pose,
+                config(out.character).gestures.wave,
+                waveProgress,
+                wave ? wave.start : out.pose,
+              ),
+          out.held,
+        ),
+        colours: out.colours,
+        opacity: swap.opacity * (1 - progress),
+        swapping: true,
+      };
+    }
+    const progress = Math.max(0, Math.min(1, (elapsed - swap.outFrames) / swap.inFrames));
+    const base = pose(ch, state, n);
+    const resolved = ns.drawing.resolvePose(ch, base);
+    // A reversal recovers directly from the displayed pose to rest, without restarting the wave.
+    // Interpolate all numeric fields, including resolved arm angles; no numeric jump at progress zero.
+    const returning = swap.outFrames === 0 && swap.outgoing.character.id === ch.id;
+    const incoming = returning
+      ? recoverPose(swap.outgoing.pose, keyframe(ch, resolved, { pose: {} }), progress)
+      : gesturePose(ch, resolved, config(ch).gestures.wave, progress);
+    return {
+      character: ch,
+      pose: heldPose(ch, incoming, state.pose),
+      colours: state.colours || {},
+      opacity: swap.outFrames === 0 ? swap.opacity + (1 - swap.opacity) * progress : progress,
+      swapping: true,
+    };
+  }
+
+  const patchFields = ['mood', 'pose', 'colours', 'reduced', 'character', 'swap'];
   const poseFields = () => Object.keys(ns.drawing.defaultPose).filter((key) => key !== 't');
 
   function object(value, field) {
@@ -370,6 +488,20 @@
           `mascot: update.${key}: unknown field '${key}' (value '${String(value)}'); valid names: ${patchFields.join(', ')}`,
         );
     const next = { ...current };
+    if (Object.hasOwn(patch, 'character')) {
+      try {
+        config(patch.character);
+      } catch (e) {
+        throw new Error(`mascot: update.character: ${e.message.replace('mascot: ', '')}`);
+      }
+      if (patch.character.id !== ch.id) {
+        ch = patch.character;
+        next.character = ch;
+        next.mood = Object.keys(ch.moods)[0];
+        next.colours = {};
+        next.pose = carryPose(ch, current.pose);
+      }
+    }
     if (Object.hasOwn(patch, 'mood')) {
       try {
         next.mood = named(patch.mood, ch.moods, 'mood');
@@ -377,12 +509,12 @@
         throw new Error(`mascot: update.mood: ${e.message.replace('mascot: ', '')}`);
       }
     }
-    if (Object.hasOwn(patch, 'pose')) next.pose = overrides(current.pose, patch.pose, poseFields(), 'update.pose');
+    if (Object.hasOwn(patch, 'pose')) next.pose = overrides(next.pose, patch.pose, poseFields(), 'update.pose');
     ns.drawing.guardPose(ch, next.pose, 'update.pose');
     if (Object.hasOwn(patch, 'colours'))
-      next.colours = overrides(current.colours, patch.colours, Object.keys(ch.colours), 'update.colours');
+      next.colours = overrides(next.colours, patch.colours, Object.keys(ch.colours), 'update.colours');
     for (const [role, value] of Object.entries(next.colours || {}))
-      if (typeof value !== 'string' || !colourForm.test(value))
+      if (!ns.validColour(value))
         throw new Error(
           `mascot: update.colours.${role}: invalid colour '${String(value)}'; use #RGB, #RRGGBB, rgb() or rgba()`,
         );
@@ -392,7 +524,75 @@
         throw new Error(`mascot: update.reduced: invalid value '${String(value)}'; valid values: true, false, null`);
       next.reduced = value;
     }
+    if (Object.hasOwn(patch, 'swap')) {
+      if (typeof patch.swap !== 'boolean')
+        throw new Error(`mascot: update.swap: invalid value '${String(patch.swap)}'; valid values: true, false`);
+      next.swap = patch.swap;
+    }
     return next;
+  }
+
+  function carryPose(ch, current) {
+    const p = { ...current };
+    if (!ch.arms) for (const key of ['arms', 'armL', 'armR', 'armJitter']) delete p[key];
+    else if (p.arms !== undefined && !Object.hasOwn(ch.arms.presets, p.arms)) delete p.arms;
+    for (const [field, usable] of [
+      ['feet', ch.feet],
+      ['shadow', ch.shadow],
+      ['sweat', ch.anchors?.sweat],
+      ['sparkle', ch.anchors?.sparkle],
+      ['blush', ch.face.blush],
+    ])
+      if (!usable) delete p[field];
+    if (p.accessory !== undefined) {
+      const available = (name) => name === 'none' || Object.hasOwn(ch.accessories || {}, name);
+      if (Array.isArray(p.accessory)) p.accessory = p.accessory.filter(available);
+      else if (!available(p.accessory)) delete p.accessory;
+    }
+    return p;
+  }
+
+  function swapTiming(value = {}) {
+    object(value, 'swapTiming');
+    const timing = { outFrames: 30, inFrames: 30 };
+    for (const [key, frames] of Object.entries(value)) {
+      if (!Object.hasOwn(timing, key)) throw new Error(`mascot: swapTiming.${key}: unknown field '${key}'`);
+      if (!Number.isFinite(frames) || frames <= 0)
+        throw new Error(`mascot: swapTiming.${key}: expected a positive finite frame duration`);
+      timing[key] = Math.max(1, Math.round(Math.min(150, frames)));
+    }
+    return timing;
+  }
+
+  function recoverPose(from, to, progress) {
+    const result = { ...to };
+    for (const [key, value] of Object.entries(from))
+      if (key !== 't' && typeof value === 'number' && typeof to[key] === 'number')
+        result[key] = value + (to[key] - value) * progress;
+    return result;
+  }
+
+  // A very early reversal may reset a different mood's arm angles. Give that recovery enough
+  // whole frames to stay within the target wave's numeric speed, rather than snapping at completion.
+  // Fields the wave does not move recover over the ordinary mood-change duration. The activity cap wins.
+  function recoveryFrames(ch, from, next) {
+    const { gestures, change } = config(ch);
+    const base = keyframe(ch, ns.drawing.resolvePose(ch, { mood: next.mood, ...next.pose }), { pose: {} });
+    const points = gestures.wave.timeline.map((point) => keyframe(ch, base, point));
+    let frames = 0;
+    for (const [key, value] of Object.entries(from)) {
+      if (key === 't' || typeof value !== 'number' || typeof base[key] !== 'number') continue;
+      const distance = Math.abs(value - base[key]);
+      if (distance < 1e-12) continue;
+      let rate = 0;
+      for (let i = 1; i < points.length; i++) {
+        const span = gestures.wave.frames * (gestures.wave.timeline[i].at - gestures.wave.timeline[i - 1].at);
+        if (typeof points[i][key] === 'number' && typeof points[i - 1][key] === 'number')
+          rate = Math.max(rate, Math.abs(points[i][key] - points[i - 1][key]) / span);
+      }
+      frames = Math.max(frames, rate ? distance / rate : change.frames);
+    }
+    return Math.ceil(frames - 1e-9);
   }
 
   function same(a, b) {
@@ -412,14 +612,20 @@
    * Start a bounded player. The host owns canvas dimensions, status text and accessibility.
    * @param {HTMLCanvasElement} canvas Canvas to clear and draw.
    * @param {CharacterDescription} ch Immutable character description.
-   * @param {MountOptions} [options={}] Position, initial mood, seed, colours and reduction preference.
-   * @returns {MotionController} Per-canvas controller; all methods are inert after destroy().
+   * @param {MountOptions} [options={}] Position, mood, seed, colours, reduction, swap settings and change callback.
+   * @returns {MotionController} Per-canvas controller; mutations are inert after destroy().
    */
   function mount(canvas, ch, options = {}) {
-    const settings = config(ch);
-    const initial = { mood: Object.keys(ch.moods)[0], pose: {}, colours: {}, reduced: null };
+    let settings = config(ch);
+    const timing = swapTiming(options.swapTiming);
+    if (options.onChange !== undefined && typeof options.onChange !== 'function')
+      throw new Error('mascot: onChange: expected a function');
+    const onChange = options.onChange;
+    const initial = { character: ch, mood: Object.keys(ch.moods)[0], pose: {}, colours: {}, reduced: null, swap: true };
     const initialPatch = Object.fromEntries(
-      ['mood', 'colours', 'reduced'].filter((key) => options[key] !== undefined).map((key) => [key, options[key]]),
+      ['mood', 'colours', 'reduced', 'swap']
+        .filter((key) => options[key] !== undefined)
+        .map((key) => [key, options[key]]),
     );
     let values = preparePatch(ch, initial, initialPatch);
     const ctx = canvas.getContext('2d');
@@ -427,7 +633,9 @@
     const state = {
       mood: values.mood,
       pose: values.pose,
+      colours: values.colours,
       activeAt: 0,
+      activeUntil: Math.floor(settings.idle.frames),
       seed: options.seed === undefined ? 0 : options.seed,
       reduced: values.reduced === null ? media.matches : values.reduced,
     };
@@ -438,25 +646,70 @@
     let startFrame = 0;
     let paused = false;
     let destroyed = false;
+    let layer = null;
+    let notified = null;
+    let callbackErrorReported = false;
+
+    function notifyChange() {
+      if (destroyed || !onChange) return;
+      const snapshot = controller.current();
+      if (notified && same(notified, snapshot)) return;
+      notified = { ...snapshot };
+      try {
+        onChange(snapshot);
+      } catch (error) {
+        if (!callbackErrorReported) {
+          callbackErrorReported = true;
+          console.error('mascot: onChange callback failed', error);
+        }
+      }
+    }
 
     function moving() {
-      return (
-        !state.reduced &&
-        state.activeAt !== null &&
-        frame >= state.activeAt &&
-        frame < state.activeAt + settings.idle.frames
-      );
+      return !state.reduced && state.activeAt !== null && frame >= state.activeAt && frame < state.activeUntil;
     }
     function drawFrame() {
       if (destroyed) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ns.draw(ctx, ch, {
-        x: options.x,
-        baseY: options.baseY,
-        colours: values.colours,
-        pose: pose(ch, state, frame),
-        frame,
-      });
+      const visible = sceneFrame(ch, state, frame);
+      ctx.save();
+      try {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Ordinary frames retain the host's drawing transform and alpha, as before.
+      } finally {
+        ctx.restore();
+      }
+      const drawing = { x: options.x, baseY: options.baseY, colours: visible.colours, pose: visible.pose, frame };
+      if (!visible.swapping) {
+        ctx.save();
+        try {
+          ns.draw(ctx, visible.character, drawing);
+        } finally {
+          ctx.restore();
+        }
+        return;
+      }
+      if (!layer) layer = canvas.ownerDocument.createElement('canvas');
+      if (layer.width !== canvas.width) layer.width = canvas.width;
+      if (layer.height !== canvas.height) layer.height = canvas.height;
+      const buffer = layer.getContext('2d');
+      buffer.clearRect(0, 0, layer.width, layer.height);
+      buffer.save();
+      try {
+        const transform = ctx.getTransform();
+        buffer.setTransform(transform.a, transform.b, transform.c, transform.d, transform.e, transform.f);
+        ns.draw(buffer, visible.character, drawing);
+      } finally {
+        buffer.restore();
+      }
+      ctx.save();
+      try {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha *= visible.opacity;
+        ctx.drawImage(layer, 0, 0);
+      } finally {
+        ctx.restore();
+      }
     }
     function stopLoop() {
       if (request !== null) window.cancelAnimationFrame(request);
@@ -477,19 +730,18 @@
         origin = timestamp;
         startFrame = frame;
       }
-      const next = Math.min(
-        state.activeAt + settings.idle.frames,
-        startFrame + Math.floor(((timestamp - origin) * ns.fps) / 1000),
-      );
+      const next = Math.min(state.activeUntil, startFrame + Math.floor(((timestamp - origin) * ns.fps) / 1000));
       // Screens refresh faster than 30 fps: draw only when the frame number moves on.
       if (next !== frame) {
         frame = next;
         drawFrame();
       }
       schedule();
+      notifyChange();
     }
     function activate() {
       state.activeAt = state.reduced ? null : frame;
+      state.activeUntil = state.reduced ? null : frame + Math.floor(settings.idle.frames);
       origin = null;
     }
     function settle() {
@@ -497,7 +749,9 @@
       delete state.changedAt;
       delete state.gesture;
       delete state.gestureAt;
+      delete state.swap;
       state.activeAt = null;
+      state.activeUntil = null;
     }
     function preference(event) {
       if (destroyed || values.reduced !== null || state.reduced === event.matches) return;
@@ -505,8 +759,15 @@
       if (state.reduced) settle();
       drawFrame();
       schedule();
+      notifyChange();
     }
     const controller = {
+      /** Draw the current frame again without moving time, renewing activity or scheduling RAF.
+       * @returns {void}
+       */
+      redraw() {
+        drawFrame();
+      },
       /**
        * Draw and move to a frame; it does not count as a new action.
        * @param {number} n Absolute frame, at mascot.fps (30 by default).
@@ -518,6 +779,7 @@
         origin = null;
         drawFrame();
         schedule();
+        notifyChange();
       },
       /**
        * Validate the whole patch, then apply it atomically. Held pose fields are merged last.
@@ -527,30 +789,103 @@
       update(patch) {
         if (destroyed) return;
         const next = preparePatch(ch, values, patch);
+        const characterChanged = next.character !== ch;
+        const wasSwapping = sceneFrame(ch, state, frame).swapping;
         const moodChanged = next.mood !== values.mood;
         const poseChanged = !same(next.pose, values.pose);
         const reduced = next.reduced === null ? media.matches : next.reduced;
         const changed =
+          characterChanged ||
           moodChanged ||
           poseChanged ||
           !same(next.colours, values.colours) ||
           next.reduced !== values.reduced ||
+          next.swap !== values.swap ||
           reduced !== state.reduced;
         if (!changed) return;
-        if (moodChanged) {
+        if (characterChanged) {
+          const visible = sceneFrame(ch, state, frame);
+          const outgoing = {
+            character: visible.character,
+            pose: keyframe(visible.character, ns.drawing.resolvePose(visible.character, visible.pose, frame), {
+              pose: {},
+            }),
+            held: visible.character === ch ? values.pose : state.swap.outgoing.held,
+            colours: visible.colours,
+          };
+          // Keep an already visible wave's phase and speed when tabs retarget it. Only its
+          // opacity timeline changes; restarting a wave in the remaining exit time would jerk.
+          if (wasSwapping) {
+            if (
+              state.swap.outFrames > 0 &&
+              frame < state.swap.at + state.swap.outFrames &&
+              state.swap.outgoing.recovery
+            )
+              outgoing.recovery = state.swap.outgoing.recovery;
+            else if (state.swap.outFrames > 0 && frame < state.swap.at + state.swap.outFrames)
+              outgoing.wave = state.swap.outgoing.wave || {
+                at: state.swap.at,
+                frames: state.swap.outFrames,
+                pose: state.swap.outgoing.pose,
+                start: state.swap.outgoing.pose,
+              };
+            else if (state.swap.outgoing.character.id !== ch.id)
+              outgoing.wave = {
+                at: state.swap.at + state.swap.outFrames,
+                frames: state.swap.inFrames,
+                pose: ns.drawing.resolvePose(ch, pose(ch, state, frame), frame),
+              };
+            else
+              outgoing.recovery = {
+                at: frame,
+                frames: state.swap.until - frame,
+                pose: outgoing.pose,
+                target: keyframe(ch, ns.drawing.resolvePose(ch, pose(ch, state, frame), frame), { pose: {} }),
+              };
+          }
+          const returning = visible.character.id === next.character.id;
+          let outFrames = returning ? 0 : timing.outFrames * visible.opacity;
+          if (wasSwapping && state.swap.outFrames > 0 && frame < state.swap.at + state.swap.outFrames && !returning)
+            outFrames = state.swap.at + state.swap.outFrames - frame;
+          let inFrames = timing.inFrames * (returning ? 1 - visible.opacity : 1);
+          ch = next.character;
+          settings = config(ch);
+          if (returning) inFrames = Math.max(inFrames, recoveryFrames(ch, outgoing.pose, next));
+          // Quantise once. Both completion and activity use stored absolute deadlines.
+          const total = Math.min(Math.floor(settings.idle.frames), Math.round(outFrames + inFrames));
+          outFrames =
+            outFrames === 0 || total < 2
+              ? 0
+              : Math.max(1, Math.min(total - 1, Math.round((outFrames * total) / (outFrames + inFrames))));
+          inFrames = total - outFrames;
+          state.mood = next.mood;
+          state.previous = next.mood;
+          delete state.changedAt;
+          delete state.gesture;
+          delete state.gestureAt;
+          delete state.swap;
+          if (!reduced && next.swap && outFrames + inFrames > 0)
+            state.swap = { at: frame, until: frame + total, outFrames, inFrames, opacity: visible.opacity, outgoing };
+        } else if (moodChanged) {
           state.previous = shownMood(ch, state, frame, settings.change);
           state.mood = next.mood;
-          state.changedAt = frame;
+          if (wasSwapping) {
+            state.previous = next.mood;
+            delete state.changedAt;
+          } else state.changedAt = frame;
           delete state.gesture;
           delete state.gestureAt;
         }
         values = next;
         state.pose = next.pose;
+        state.colours = next.colours;
         state.reduced = reduced;
-        if (moodChanged || poseChanged) activate();
+        if (characterChanged || (!wasSwapping && (moodChanged || poseChanged))) activate();
+        if (!next.swap) delete state.swap;
         if (state.reduced) settle();
         drawFrame();
         schedule();
+        notifyChange();
       },
       /**
        * Shortcut for update({ mood: name }); repeating the target mood is a no-op.
@@ -568,6 +903,7 @@
       gesture(name) {
         if (destroyed) return;
         named(name, settings.gestures, 'gesture');
+        if (sceneFrame(ch, state, frame).swapping) return;
         delete state.changedAt;
         state.previous = state.mood;
         state.gesture = name;
@@ -576,6 +912,7 @@
         if (state.reduced) settle();
         drawFrame();
         schedule();
+        notifyChange();
       },
       /**
        * Freeze elapsed frames, including after the player has automatically rested.
@@ -587,16 +924,17 @@
         stopLoop();
       },
       /**
-       * Resume after pause without catching up; start a new activity window at this frame.
+       * Resume after pause without catching up; renew activity unless a swap is still running.
        * Calling play while already playing (including automatic rest) is a no-op.
        * @returns {void}
        */
       play() {
         if (destroyed || !paused) return;
         paused = false;
-        activate();
+        if (!sceneFrame(ch, state, frame).swapping) activate();
         drawFrame();
         schedule();
+        notifyChange();
       },
       /**
        * Stop permanently and remove the media listener; safe to call repeatedly.
@@ -607,14 +945,25 @@
         destroyed = true;
         stopLoop();
         media.removeEventListener('change', preference);
+        layer = null;
+      },
+      /**
+       * Read the displayed state; changing the returned object cannot affect the player.
+       * Remains readable at the final frozen frame after destroy().
+       * @returns {Object} { character: string, mood: string, swapping: boolean }.
+       */
+      current() {
+        const visible = sceneFrame(ch, state, frame);
+        return { character: visible.character.id, mood: visible.pose.mood, swapping: visible.swapping };
       },
     };
     drawFrame();
     media.addEventListener('change', preference);
     schedule();
+    notifyChange();
     return controller;
   }
 
-  ns.motion = { pose, validate };
+  ns.motion = { pose, frame: sceneFrame, validate };
   ns.mount = mount;
 })();

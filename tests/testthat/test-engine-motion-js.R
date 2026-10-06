@@ -257,7 +257,7 @@ describe("seekable mood motion", {
         "{ change: { angl: 0.1 } }",
         "{ gestures: { clap: {} } }",
         "{ gestures: { nod: { duration: 3 } } }",
-        "{ gestures: { nod: { timeline: [{ when: 0, pose: {} }] } } }",
+        "{ gestures: { nod: { timeline: [{ at: 0, when: 0, pose: {} }] } } }",
         "{ gestures: { nod: { timeline: [{ at: 0, pose: { rotate: 1 } }] } } }"
       )) {
         expect_match(
@@ -528,7 +528,7 @@ describe("the canvas motion controller", {
       ))
       expect_identical(
         r,
-        "mascot: update.typo: unknown field 'typo' (value '42'); valid names: mood, pose, colours, reduced"
+        "mascot: update.typo: unknown field 'typo' (value '42'); valid names: mood, pose, colours, reduced, character, swap"
       )
     }
   })

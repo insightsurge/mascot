@@ -10,6 +10,10 @@ inst/www/mascot-draw.js
     copied and adapted for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
+inst/www/mascot-motion.js
+    Source: motion and canvas player written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
 inst/characters/tessa.json
     Source: Tessa's design (shape, colours, face, arms, bow and clip, mood poses), first drawn by Harsh Verma in
     the same playbook engine (drawTessa(), commit bf1aa9a) and written here as data.

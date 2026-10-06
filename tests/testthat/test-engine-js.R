@@ -292,7 +292,14 @@ describe("the drawing engine (inst/www)", {
       "accessory 'bow': missing anchor 'hair'",
       fixed = TRUE
     )
-    expect_match(js(error_js("ch.body[0].shape = 'rect'; mascot.draw(null, ch)")), "rect is fill-only", fixed = TRUE)
+    # A complete rect (the structure check runs first), so the only fault left is its stroke.
+    expect_match(
+      js(error_js(
+        "ch.body[0] = { shape: 'rect', x: 0, y: 0, w: 10, h: 10, fill: 'body', stroke: 'outline' }; mascot.draw(null, ch)"
+      )),
+      "rect is fill-only",
+      fixed = TRUE
+    )
   })
 
   it("keeps every simple stroke at least the description's minimum screen width", {

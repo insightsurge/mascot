@@ -11,6 +11,10 @@
   blinks and breathes for up to five seconds after each change, then rests; it can nod and wave; and
   with reduced motion switched on, the face simply changes. A held pose (for example looking up) stays
   until cleared (#27).
+* Characters can be swapped with a short hand-over: the old character waves and fades out, then the
+  new one fades in and waves (about two seconds; a plain swap with reduced motion or when switched off).
+  Quick repeated swaps end on the newest character only, and a swap that cannot be drawn changes
+  nothing (#147).
 
 # mascot 0.0.0.9000
 

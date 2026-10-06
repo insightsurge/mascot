@@ -30,8 +30,8 @@
   /** Thin browser guard; R owns types and numeric ranges. Descriptions are immutable after first use. */
   ns.validateCharacter = (ch) => {
     if (!ch || typeof ch !== 'object') return ['character: draw() needs a character description object'];
-    if (checked.has(ch)) return [];
-    const errors = [];
+    const errors = ns.motion ? ns.motion.validate(ch) : [];
+    if (checked.has(ch)) return errors;
     for (const field of ['id', 'name', 'centreHeight', 'colours', 'body', 'face', 'moods', 'small']) {
       if (!Object.hasOwn(ch, field)) errors.push(`${field} is missing`);
     }

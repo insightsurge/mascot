@@ -9,7 +9,7 @@
  * Every function is a pure function of its arguments: no clock, no randomness. Time enters only as `pose.t`
  * (seconds), which mascot.draw() computes from a frame number.
  *
- * Namespace: window.mascot.drawing
+ * Namespace: window.mascot.drawing (internal implementation, not a supported API).
  */
 (() => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: loaded with a <script> tag (a classic script, not a module)

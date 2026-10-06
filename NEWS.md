@@ -7,6 +7,10 @@
 * The engine draws any character from its description: optional arms and feet, a face that can sit
   anywhere, shared attachment points, several accessories at once, colours set per drawing (hex or
   `rgb()`), and a small-size drawing that keeps the mood readable at 48 pixels (#52).
+* Moods move: after a change of mood the character wiggles (or hops) and the face changes halfway; it
+  blinks and breathes for up to five seconds after each change, then rests; it can nod and wave; and
+  with reduced motion switched on, the face simply changes. A held pose (for example looking up) stays
+  until cleared (#27).
 
 # mascot 0.0.0.9000
 

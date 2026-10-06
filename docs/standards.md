@@ -51,6 +51,7 @@ claim about the package's status.
 | Send no data about the user's session anywhere | CRAN | POL |
 | Every function, exported or internal, checks its arguments first with checkmate | house | - |
 | Other messages, warnings and errors use cli | house | - |
+| Every top-level `mascot()` argument takes a plain shortcut or a `mascot_*()` helper (bslib style); every helper and listing function uses `mascot_` for autocomplete and to avoid clashes. Check new exports against base R, shiny, bslib and ggplot2 | house | - |
 
 ### 1.3 Files and size
 
@@ -162,10 +163,10 @@ The engine is most of what a user sees, so it has its own rules. All of these ar
 **Architecture**
 
 - Three layers: an `htmltools::htmlDependency()` built inside a function at run time (never with `system.file()` at
-  build time), with `version` equal to the package version so browsers fetch new files after an upgrade; a Shiny
-  output binding registered once under a package-qualified name for `mascotOutput()` and `renderMascot()`; and custom
-  messages (for example `mascot:update`) for `updateMascot()`, addressed by the module-namespaced id and queued in JS
-  until the element is bound.
+  build time), with `version` equal to the package version; a Shiny input binding registered once as `mascot.mascot`,
+  mounting on subscribe and cleaning up on unsubscribe; and custom messages (`mascot:update`) addressed by the
+  module-namespaced id and queued in JS until the element is bound. Only input bindings have these lifecycle hooks,
+  and Shiny's duplicate-id check then covers mascots. No `mascotOutput()` or `renderMascot()`.
 - No htmlwidgets. It adds a dependency built around plots, and its Shiny proxy pattern is custom messages anyway.
   Revisit only if a standalone viewer or print method is wanted.
 - One namespace, `window.mascot`. Guard against double loading, keep state per element, support several mascots on

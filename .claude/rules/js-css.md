@@ -15,9 +15,10 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   (the Shiny app's bslib theme, the Quarto or pkgdown site), read from the page, like the colours.
 - **house:** deterministic drawing: seeded RNG, no `Math.random()`, no clock-driven drawing; drawn in code in the
   theme's colours; no AI-generated images.
-- **house:** wiring: `htmltools::htmlDependency()` (built at runtime, `version` = package version) + a Shiny output
-  binding registered once under a package-qualified name + custom messages (`mascot:update`) for
-  `updateMascot()`, addressed by (namespaced) id and queued until the element is bound. No htmlwidgets.
+- **house:** wiring: `htmltools::htmlDependency()` (built at runtime, `version` = package version) + a Shiny input
+  binding `mascot.mascot` (mount on subscribe, clean up on unsubscribe; Shiny then checks duplicate ids) + custom
+  messages (`mascot:update`) for `updateMascot()`, addressed by (namespaced) id and queued until the element is bound.
+  No `mascotOutput()`/`renderMascot()`, no htmlwidgets.
 - **house:** one global namespace (`window.mascot`), guard against loading twice, state kept per element, several
   mascots per page, no listeners left behind.
 - **house:** configuration through `data-*` attributes or a `<script type="application/json">` block. No `eval`,

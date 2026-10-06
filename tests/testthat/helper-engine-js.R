@@ -58,3 +58,49 @@ error_js <- function(code) {
     code
   )
 }
+
+# Host integration page: real packaged assets and real markup, with motion reduced before navigation.
+local_host_page <- function(env = parent.frame()) {
+  dir <- withr::local_tempdir(.local_envir = env)
+  www <- system.file("www", package = "mascot")
+  scripts <- file.path(www, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
+  page <- file.path(dir, "host.html")
+  writeLines(
+    c(
+      '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>host</title>',
+      sprintf('<link rel="stylesheet" href="file://%s">', normalizePath(file.path(www, "mascot.css"))),
+      '</head><body>',
+      as.character(mascot(id = "a")),
+      '<script type="application/json" data-mascot-character="blob">',
+      readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
+      '</script>',
+      sprintf('<script src="file://%s"></script>', normalizePath(scripts)),
+      '</body></html>'
+    ),
+    page
+  )
+  session <- chromote::ChromoteSession$new(parent = test_browser())
+  withr::defer(session$close(), envir = env)
+  session$Emulation$setEmulatedMedia(features = list(list(name = "prefers-reduced-motion", value = "reduce")))
+  loaded <- session$Page$loadEventFired(wait_ = FALSE)
+  session$Page$navigate(paste0("file://", normalizePath(page)), wait_ = FALSE)
+  session$wait_for(loaded)
+  function(js) {
+    result <- session$Runtime$evaluate(js, returnByValue = TRUE)
+    if (!is.null(result$exceptionDetails)) {
+      stop(result$exceptionDetails$exception$description)
+    }
+    result$result$value
+  }
+}
+
+# Start shinytest2 with its temporary browser files inside R's temporary directory.
+local_shiny_browser <- function(env = parent.frame()) {
+  testthat::skip_on_cran()
+  testthat::skip_if_not_installed("shinytest2")
+  testthat::skip_if_not_installed("chromote")
+  testthat::skip_if_not_installed("withr")
+  testthat::skip_if(is.null(chromote::find_chrome()), "no Chrome or Chromium found")
+  tmp <- withr::local_tempdir(.local_envir = env)
+  withr::local_envvar(c(TMPDIR = tmp), .local_envir = env)
+}

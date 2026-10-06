@@ -2,7 +2,6 @@
 % Please edit documentation in R/mascot-package.R
 \docType{package}
 \name{mascot-package}
-\alias{mascot}
 \alias{mascot-package}
 \title{mascot: Live Mood-Driven Mascots for 'Shiny' Apps and 'Quarto' Sites}
 \description{

@@ -9,13 +9,13 @@ The idea and the engine come from the R Engineering Playbook site, where the cha
 trailers. That site is the package's first user (`docs/consumers.md`).
 
 ## The characters
-Two built-in characters in the first release (Neer and Tessa), then more in later releases, each with its own
-shape, colours, personality and voice, all drawn on one multi-character engine. Moods, light and dark mode and (from 0.2.0) a shared wardrobe work for every character.
+Two built-in characters in the first release (Tessa, the default, and Neer), then more in later releases, each with
+its own shape, colours, personality and voice, all drawn on one multi-character engine. Moods, light and dark mode and (from 0.2.0) a shared wardrobe work for every character.
 
 | Character | Meaning | Nature | Look (picks for now) | Release |
 |---|---|---|---|---|
-| **Neer** (नीर), she/her | water | calm, observant, clear, welcoming; says in few words what changed | a wave crest with small arms and feet, water blues | 0.1.0, the default |
-| **Tessa**, she/her | from tessellation | calm, hardworking, always learning; the maker | the R hex sticker in forest green with an ochre rim (decided: the playbook's character) | 0.1.0 |
+| **Neer** (नीर), she/her | water | calm, observant, clear, welcoming; says in few words what changed | a wave crest with small arms and feet, water blues | 0.1.0 |
+| **Tessa**, she/her | from tessellation | calm, hardworking, always learning; the maker | the R hex sticker in forest green with an ochre rim (decided: the playbook's character) | 0.1.0, the default |
 | **Ojas** (ओजस्), he/him | vitality, radiance | shiny, forgiving, bright, wise; says a mistake can be mended | sunrise gold with arms and feet; shape still open | 0.3.0 |
 
 The full design of each character (options, colour themes with contrast, moods, accessories, motion, voices,

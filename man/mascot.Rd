@@ -4,7 +4,15 @@
 \alias{mascot}
 \title{Add a mascot to a page}
 \usage{
-mascot(character = "tessa", id, mood = "idle", status = NULL, bubble = NULL)
+mascot(
+  character = "tessa",
+  id,
+  mood = "idle",
+  status = NULL,
+  bubble = NULL,
+  size = 160,
+  placement = "inline"
+)
 }
 \arguments{
 \item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object. Defaults
@@ -25,6 +33,15 @@ default) follows the mood. Text is escaped, including \code{\link[htmltools:HTML
 default) shows no bubble. A string uses the helper's five-second duration
 and close button. Plain text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply
 HTML. Tags with dependencies or head content are not supported.}
+
+\item{size}{A finite number of CSS pixels (at least \code{24}), a positive percentage
+string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} object. Defaults to \code{160}.
+Percentages follow the parent width when inline and window width when floating,
+with a 24-pixel floor. \code{NULL} is not accepted.}
+
+\item{placement}{\code{"inline"} (the default), \code{"floating"} (bottom-right), a corner
+such as \code{"top-left"}, a named list such as \code{list(floating = TRUE, position = "top-left")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object. Explicit \code{position} or
+\code{minimise} options require floating. \code{NULL} is not accepted.}
 }
 \value{
 An \code{htmltools} tag with its engine dependency attached.
@@ -39,6 +56,9 @@ Use the always visible status line for a short description of the current state.
 Use a bubble for a message about something that happened; it may time out.
 Use \code{mascot_bubble(..., duration = Inf)} for a message the user must act on,
 such as an invalid form, because a timed message can vanish before it is read.
+
+When minimised, the status remains available to screen readers. See
+\code{\link[=mascot_placement]{mascot_placement()}} for restore controls and message timing.
 
 In Shiny the mascot uses an input binding with a \code{NULL} input value.
 A module can put the mascot in its UI and update it from its server:
@@ -56,6 +76,8 @@ helper_server <- function(id) \{
 }
 \examples{
 mascot(id = "helper", mood = "happy")
+mascot(id = "small", size = 96, placement = "bottom-right")
+mascot(id = "responsive", size = mascot_size(120, small_screen = 48))
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   ui = shiny::fluidPage(mascot(id = "helper")),

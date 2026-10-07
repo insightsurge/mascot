@@ -248,7 +248,7 @@ describe("mascot.host bubbles", {
       bubbleClock.advance(1000);
       send({text:'<b>New</b>',html:true,closable:false,duration:null});
       const html=el.querySelector('.mascot-bubble-text').innerHTML, second=mascot.host.state(el).bubble,
-        buttons=el.querySelectorAll('button').length, timers=bubbleClock.count();
+        buttons=el.querySelectorAll('.mascot-bubble button').length, timers=bubbleClock.count();
       bubbleClock.tick(100000);
       const stays=mascot.host.state(el).bubble;
       send({clear:true});
@@ -722,5 +722,432 @@ describe("host review regressions", {
     expect_lt(result$right, 12)
     expect_gt(result$bottom, 24)
     expect_false(result$overlap)
+  })
+})
+
+
+describe("mascot.host responsive size", {
+  it("uses the parent's content width, follows resizing and floors percentages at 24 pixels", {
+    skip_without_chrome()
+    js <- local_host_page(size = "20%")
+    js(
+      "window.el = document.getElementById('a'); window.parentBox = document.createElement('div');
+      parentBox.style.cssText = 'width:500px;padding:20px;border:2px solid;box-sizing:border-box';
+      el.before(parentBox); parentBox.append(el);"
+    )
+    # The parent's content width is 500 - 40 padding - 4 border = 456.
+    expect_equal(
+      host_layout(js, "return el.querySelector('canvas').getBoundingClientRect().width;"),
+      91.2,
+      tolerance = 0.03
+    )
+    js("parentBox.style.width = '300px'")
+    expect_equal(
+      host_layout(js, "return el.querySelector('canvas').getBoundingClientRect().width;"),
+      51.2,
+      tolerance = 0.03
+    )
+    js("parentBox.style.width = '100px'")
+    result <- host_layout(
+      js,
+      "return {css:el.querySelector('canvas').getBoundingClientRect().width,
+      backing:el.querySelector('canvas').width, detail:mascot.host.state(el).detail};"
+    )
+    expect_equal(result$css, 24)
+    expect_equal(result$backing, 24)
+    expect_identical(result$detail, "simple")
+  })
+  it("keeps a usable backing size while hidden and redraws at double density on return", {
+    skip_without_chrome()
+    js <- local_host_page(size = "20%", viewport = c(800, 800), density = 2)
+    js(
+      "window.el = document.getElementById('a'); window.box = document.createElement('div');
+      box.style.width = '400px'; el.before(box); box.append(el);"
+    )
+    expect_equal(host_layout(js, "return el.querySelector('canvas').width;"), 160)
+    js("box.style.display = 'none'; box.style.width = '600px'")
+    expect_equal(host_layout(js, "return el.querySelector('canvas').width;"), 160)
+    js("box.style.display = 'block'")
+    result <- host_layout(
+      js,
+      "const c=el.querySelector('canvas'); return {css:c.getBoundingClientRect().width,
+      backing:c.width, transform:c.getContext('2d').getTransform().a};"
+    )
+    expect_equal(result$css, 120)
+    expect_equal(result$backing, 240)
+    expect_equal(result$transform, 240 / 300, tolerance = 1e-6)
+    # Also mount a fresh element inside an initially hidden container.
+    js(
+      "window.late = el.cloneNode(true); late.id='hidden'; box.style.display='none'; box.append(late);
+      mascot.host.mount(late)"
+    )
+    expect_equal(host_layout(js, "return late.querySelector('canvas').width;"), 320)
+    js("box.style.display='block'")
+    expect_equal(host_layout(js, "return late.querySelector('canvas').width;"), 240)
+  })
+  it("uses the CSS narrow-screen breakpoint and preserves the controller when density changes", {
+    skip_without_chrome()
+    js <- local_host_page(size = mascot_size(120, 48), viewport = c(576, 800))
+    expect_equal(host_layout(js, "return document.querySelector('canvas').getBoundingClientRect().width;"), 120)
+    session <- attr(js, "session")
+    session$Emulation$setDeviceMetricsOverride(width = 575L, height = 800L, deviceScaleFactor = 1, mobile = FALSE)
+    expect_equal(host_layout(js, "return document.querySelector('canvas').getBoundingClientRect().width;"), 48)
+    js(
+      "window.mountCount=0; const originalMount=mascot.mount;
+      mascot.mount=(...args)=>{mountCount++;return originalMount(...args);};
+      mascot.host.receive({id:'a',patch:{mood:'happy'}})"
+    )
+    session$Emulation$setDeviceMetricsOverride(width = 800L, height = 800L, deviceScaleFactor = 2, mobile = FALSE)
+    result <- host_layout(
+      js,
+      "return {width:document.querySelector('canvas').width, mounts:mountCount,
+      mood:mascot.host.state(document.getElementById('a')).current.mood};"
+    )
+    expect_equal(result$width, 240)
+    expect_equal(result$mounts, 0)
+    expect_identical(result$mood, "happy")
+  })
+  it("passes simple detail to the real drawing path only below 72 pixels unless disabled", {
+    skip_without_chrome()
+    js <- local_host_page()
+    js(
+      "window.lastPose=null; const draw=mascot.draw;
+      mascot.draw=(ctx,ch,options)=>{lastPose=options.pose;return draw(ctx,ch,options);};
+      window.resizeTo = (size,simplify=true) => mascot.host.receive({id:'a',patch:{size:{size,
+        small_screen:null,simplify_when_small:simplify}}});"
+    )
+    for (size in c(48, 32, 24, 71.5)) {
+      js(sprintf("resizeTo(%s)", size))
+      expect_identical(host_layout(js, "return lastPose.detail;"), "simple")
+    }
+    js("resizeTo(72)")
+    expect_identical(host_layout(js, "return lastPose.detail;"), "full")
+    js("resizeTo(48,false)")
+    expect_identical(host_layout(js, "return lastPose.detail;"), "full")
+  })
+})
+
+
+describe("mascot.host floating placement", {
+  it("pins all four corners, sizes against the window and opens bubbles towards the centre in both themes", {
+    skip_without_chrome()
+    for (scheme in c("light", "dark")) {
+      js <- local_host_page(
+        size = "20%",
+        placement = "bottom-right",
+        viewport = c(800, 800),
+        scheme = scheme,
+        bubble = mascot_bubble("Ready", Inf)
+      )
+      for (corner in c("top-left", "top-right", "bottom-left", "bottom-right")) {
+        js(sprintf(
+          "mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'%s',minimise:false}}})",
+          corner
+        ))
+        result <- host_layout(
+          js,
+          "const el=document.getElementById('a'), r=el.getBoundingClientRect(),
+          b=el.querySelector('.mascot-bubble').getBoundingClientRect();
+          return {x:r.x,y:r.y,right:innerWidth-r.right,bottom:innerHeight-r.bottom,
+          size:el.querySelector('canvas').getBoundingClientRect().width,
+          bubbleTop:b.top,bubbleBottom:b.bottom,mascotTop:r.top,mascotBottom:r.bottom,
+          bubbleLeft:b.left,bubbleRight:b.right, bg:getComputedStyle(el.querySelector('.mascot-bubble')).backgroundColor};"
+        )
+        expect_equal(result$size, 160)
+        if (grepl("left", corner)) {
+          expect_equal(result$x, 16)
+        } else {
+          expect_equal(result$right, 16)
+        }
+        if (grepl("top", corner)) {
+          expect_equal(result$y, 16)
+          expect_gt(result$bubbleTop, result$mascotBottom)
+        } else {
+          expect_equal(result$bottom, 16)
+          expect_lt(result$bubbleBottom, result$mascotTop)
+        }
+        expect_gte(result$bubbleLeft, 0)
+        expect_lte(result$bubbleRight, 800)
+        expect_identical(result$bg, if (scheme == "light") "rgb(255, 255, 255)" else "rgb(33, 37, 41)")
+      }
+    }
+  })
+  it("moves above a live Shiny notification panel, follows its height and returns when it clears", {
+    skip_without_chrome()
+    js <- local_host_page(placement = "bottom-right", viewport = c(800, 800))
+    js(
+      "window.panel=document.createElement('div');panel.id='shiny-notification-panel';
+      panel.style.cssText='position:fixed;bottom:0;right:0;width:250px';
+      panel.innerHTML='<div style=\"height:100px\">Notice</div>';document.body.append(panel)"
+    )
+    result <- host_layout(
+      js,
+      "return {bottom:document.getElementById('a').getBoundingClientRect().bottom,
+      panel:panel.getBoundingClientRect().top};"
+    )
+    expect_equal(result$bottom, result$panel - 16)
+    js("panel.firstChild.style.height='150px'")
+    expect_equal(host_layout(js, "return document.getElementById('a').getBoundingClientRect().bottom;"), 634)
+    js("panel.firstChild.hidden=true")
+    expect_equal(host_layout(js, "return document.getElementById('a').getBoundingClientRect().bottom;"), 784)
+    js("panel.remove()")
+    expect_equal(host_layout(js, "return document.getElementById('a').getBoundingClientRect().bottom;"), 784)
+  })
+  it("minimises with a native control, retains updates and messages, and restores without remounting", {
+    skip_without_chrome()
+    js <- local_host_page(placement = mascot_placement(TRUE, minimise = TRUE), bubble = mascot_bubble("Before", Inf))
+    js(
+      "window.el=document.getElementById('a');window.mountCount=0;const mount=mascot.mount;
+      mascot.mount=(...args)=>{mountCount++;return mount(...args);}; el.querySelector('.mascot-minimise').click();
+      mascot.host.receive({id:'a',patch:{mood:'happy',size:{size:64,small_screen:null,simplify_when_small:true},
+      bubble:{text:'While minimised',html:false,duration:0.01,closable:true}}})"
+    )
+    result <- host_layout(
+      js,
+      "const s=mascot.host.state(el), button=el.querySelector('.mascot-restore');
+      return {minimised:s.minimised,bubble:s.bubble.text,remaining:s.bubble.remaining,
+      current:s.current.mood,canvas:el.querySelector('canvas').hidden,focused:document.activeElement===button,
+      label:button.getAttribute('aria-label'),colour:getComputedStyle(button).backgroundColor,
+      status:el.querySelector('.mascot-status').textContent};"
+    )
+    expect_true(result$minimised)
+    expect_true(result$canvas)
+    expect_true(result$focused)
+    expect_identical(result$bubble, "While minimised")
+    expect_equal(result$remaining, 0.01)
+    expect_identical(result$current, "happy")
+    expect_match(result$label, "Tessa, happy", fixed = TRUE)
+    expect_identical(result$status, "Happy")
+    expect_identical(result$colour, "rgb(63, 138, 102)")
+    js("el.querySelector('.mascot-restore').click()")
+    result <- host_layout(
+      js,
+      "return {minimised:mascot.host.state(el).minimised,
+      css:el.querySelector('canvas').getBoundingClientRect().width,
+      focused:document.activeElement===el.querySelector('.mascot-minimise'),mounts:mountCount};"
+    )
+    expect_false(result$minimised)
+    expect_true(result$focused)
+    expect_equal(result$css, 64)
+    expect_equal(result$mounts, 0)
+    js(
+      "el.querySelector('.mascot-minimise').click();mascot.host.receive({id:'a',patch:{placement:{
+      floating:false,position:'bottom-right',minimise:false}}})"
+    )
+    expect_false(host_layout(js, "return mascot.host.state(el).minimised;"))
+    expect_identical(js("getComputedStyle(el).position"), "relative")
+    expect_true(js("document.activeElement===el.querySelector('canvas')"))
+  })
+  it("rejects malformed layout patches atomically, including queued ones", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => {const el=document.getElementById('a'), before=JSON.stringify(mascot.host.state(el));
+      const warnings=[]; console.warn=x=>warnings.push(x);
+      for(const bad of [{size:23,small_screen:null,simplify_when_small:true},
+        {size:'0%',small_screen:null,simplify_when_small:true}, {size:48,small_screen:null,simplify_when_small:true,typo:1}])
+        mascot.host.receive({id:'a',patch:{size:bad,mood:'happy'}});
+      mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'top-left',minimise:false},mood:'happy'}});
+      mascot.host.receive({id:'late-layout',patch:{size:{size:1,small_screen:null,simplify_when_small:true},mood:'happy'}});
+      mascot.host.receive({id:'late-layout',patch:{size:{size:48,small_screen:null,simplify_when_small:true},
+        placement:{floating:true,position:'top-left',minimise:false}}});
+      const next=el.cloneNode(true);next.id='late-layout';document.body.append(next);mascot.host.mount(next);
+      return {same:before===JSON.stringify(mascot.host.state(el)), warnings:warnings.length,
+        mood:mascot.host.state(next).mood,size:mascot.host.state(next).size.size,
+        corner:mascot.host.state(next).placement.position};})()"
+    )
+    expect_true(result$same)
+    expect_equal(result$warnings, 5)
+    expect_identical(result$mood, "idle")
+    expect_equal(result$size, 48)
+    expect_identical(result$corner, "top-left")
+  })
+  it("observes notification size only while a bottom-right floating mascot needs it", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => {const el=document.getElementById('a');mascot.host.unmount(el);
+      const panel=document.createElement('div');panel.id='shiny-notification-panel';
+      panel.append(document.createElement('div'));document.body.append(panel);
+      const Native=ResizeObserver,watched=new Map();
+      window.ResizeObserver=class extends Native{
+        constructor(fn){super(fn);watched.set(this,new Set());}
+        observe(target){watched.get(this).add(target);super.observe(target);}
+        disconnect(){watched.get(this).clear();super.disconnect();}};
+      const count=()=>[...watched.values()].filter(targets=>targets.has(panel)).length;
+      mascot.host.mount(el);const inline=count();
+      const placement=(floating,position='bottom-right')=>
+        mascot.host.receive({id:'a',patch:{placement:{floating,position,minimise:false}}});
+      placement(true);const bottom=count();placement(true,'top-right');const top=count();
+      placement(true);const again=count();placement(false);const restored=count();
+      const state=mascot.host.state(el);mascot.host.unmount(el);
+      return {inline,bottom,top,again,restored,gone:count(),state};})()"
+    )
+    expect_equal(result$inline, 0)
+    expect_equal(result$bottom, 1)
+    expect_equal(result$top, 0)
+    expect_equal(result$again, 1)
+    expect_equal(result$restored, 0)
+    expect_equal(result$gone, 0)
+    expect_false(result$state$placement$floating)
+  })
+  it("disconnects every observer and shared listener on final unmount, including a failed mount", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => {const el=document.getElementById('a');mascot.host.unmount(el);
+      const NativeResize=ResizeObserver,NativeMutation=MutationObserver;
+      const observers=new Set();window.ResizeObserver=class extends NativeResize{
+        constructor(fn){super(fn);observers.add(this);}disconnect(){super.disconnect();observers.delete(this);}};
+      window.MutationObserver=class extends NativeMutation{
+        constructor(fn){super(fn);observers.add(this);}disconnect(){super.disconnect();observers.delete(this);}};
+      let mediaListeners=0;const match=window.matchMedia;
+      window.matchMedia=(...args)=>{const media=match(...args),add=media.addEventListener.bind(media),
+        remove=media.removeEventListener.bind(media);
+        media.addEventListener=(...values)=>{mediaListeners++;return add(...values);};
+        media.removeEventListener=(...values)=>{mediaListeners--;return remove(...values);};return media;};
+      let listener=0;const add=window.addEventListener,remove=window.removeEventListener;
+      window.addEventListener=function(name,fn,...rest){if(name==='resize')listener++;return add.call(this,name,fn,...rest);};
+      window.removeEventListener=function(name,fn,...rest){if(name==='resize')listener--;return remove.call(this,name,fn,...rest);};
+      el.dataset.floating='true';el.dataset.minimise='true';mascot.host.mount(el);
+      const active=observers.size;const second=el.cloneNode(true);second.id='second';document.body.append(second);
+      mascot.host.mount(second);const shared=listener;mascot.host.unmount(el);const kept=listener;
+      mascot.host.unmount(second);const gone=observers.size;
+      const observe=ResizeObserver.prototype.observe;ResizeObserver.prototype.observe=function(){throw new Error('observer failed');};
+      let failed=false;try{mascot.host.mount(el);}catch(e){failed=e.message==='observer failed';}
+      ResizeObserver.prototype.observe=observe;
+      return {active,shared,kept,gone,afterFailure:observers.size,listener,mediaListeners,failed,
+        state:mascot.host.state(el),buttons:el.querySelectorAll('.mascot-minimise,.mascot-restore').length};})()"
+    )
+    expect_gte(result$active, 3)
+    expect_equal(result$shared, 1)
+    expect_equal(result$kept, 1)
+    expect_equal(result$gone, 0)
+    expect_equal(result$afterFailure, 0)
+    expect_equal(result$listener, 0)
+    expect_equal(result$mediaListeners, 0)
+    expect_true(result$failed)
+    expect_null(result$state)
+    expect_equal(result$buttons, 0)
+  })
+})
+
+
+describe("mascot.host restore feedback", {
+  it("glows and grows on keyboard focus, with glow only under reduced motion", {
+    skip_without_chrome()
+    for (reduced in c(FALSE, TRUE)) {
+      js <- local_host_page(reduced = reduced, placement = mascot_placement(TRUE, minimise = TRUE))
+      js(
+        "const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
+        window.restore=el.querySelector('.mascot-restore');restore.focus();"
+      )
+      # Finish the CSS transition without waiting for elapsed wall time.
+      result <- host_layout(
+        js,
+        "restore.getAnimations().forEach(animation=>animation.finish());
+        const style=getComputedStyle(restore);return {transform:style.transform,shadow:style.boxShadow,
+        focus:restore.matches(':focus-visible'),diameter:restore.offsetWidth};"
+      )
+      expect_true(result$focus)
+      expect_equal(result$diameter, 48)
+      expect_false(identical(result$shadow, "none"))
+      expect_identical(result$transform, if (reduced) "none" else "matrix(1.08, 0, 0, 1.08, 0, 0)")
+    }
+  })
+})
+
+
+describe("size and placement review regressions", {
+  it("S3-R1 keeps small inline bubbles inside either viewport edge and preserves reserved space", {
+    skip_without_chrome()
+    for (size in list(48, mascot_size(120, 48))) {
+      js <- local_host_page(size = size, viewport = c(575, 800), bubble = mascot_bubble("Read this message", Inf))
+      js(
+        "window.el=document.getElementById('a');window.edge=document.createElement('div');
+        edge.style.cssText='position:absolute;left:0;top:0';el.before(edge);edge.append(el)"
+      )
+      for (side in c("left", "right")) {
+        js(sprintf(
+          "edge.style.left='%s';edge.style.right='%s'",
+          if (side == "left") "0" else "auto",
+          if (side == "right") "0" else "auto"
+        ))
+        result <- host_layout(
+          js,
+          "const b=el.querySelector('.mascot-bubble').getBoundingClientRect();
+          return {left:b.left,right:b.right,width:el.querySelector('canvas').getBoundingClientRect().width,
+          canvasY:el.querySelector('canvas').getBoundingClientRect().top,statusY:el.querySelector('.mascot-status').getBoundingClientRect().top};"
+        )
+        expect_gte(result$left, 15.99)
+        expect_lte(result$right, 559.01)
+        expect_equal(result$width, 48)
+      }
+      js("mascot.host.receive({id:'a',patch:{bubble:{clear:true}}})")
+      after <- host_layout(
+        js,
+        "return {canvasY:el.querySelector('canvas').getBoundingClientRect().top,
+        statusY:el.querySelector('.mascot-status').getBoundingClientRect().top};"
+      )
+      expect_equal(after$canvasY, result$canvasY)
+      expect_equal(after$statusY, result$statusY)
+    }
+  })
+  it("S3-R2 moves focus before hiding a placement control without stealing focus elsewhere", {
+    skip_without_chrome()
+    js <- local_host_page(placement = mascot_placement(TRUE, minimise = TRUE))
+    for (floating in c(TRUE, FALSE)) {
+      js(
+        "window.el=document.getElementById('a');mascot.host.receive({id:'a',patch:{placement:{
+        floating:true,position:'bottom-right',minimise:true}}});el.querySelector('.mascot-minimise').focus()"
+      )
+      js(sprintf(
+        "mascot.host.receive({id:'a',patch:{placement:{floating:%s,position:'bottom-right',minimise:false}}})",
+        tolower(as.character(floating))
+      ))
+      expect_true(host_layout(js, "return document.activeElement===el.querySelector('canvas');"))
+    }
+    js(
+      "window.other=document.createElement('button');other.textContent='Elsewhere';document.body.append(other);
+      other.focus();mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'top-left',minimise:false}}})"
+    )
+    expect_true(host_layout(js, "return document.activeElement===other;"))
+  })
+  it("S3-R3 escapes transformed parents, follows their visibility and theme, and returns inline to its source", {
+    skip_without_chrome()
+    js <- local_host_page(viewport = c(800, 800), bubble = mascot_bubble("Ready", Inf))
+    js(
+      "window.el=document.getElementById('a');window.box=document.createElement('div');
+      box.style.cssText='transform:translateZ(0);position:relative;width:400px;height:400px;margin:100px';
+      box.dataset.bsTheme='dark';el.before(box);box.append(el);
+      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'bottom-right',minimise:true}}})"
+    )
+    result <- host_layout(
+      js,
+      "const r=el.getBoundingClientRect();return {right:r.right,bottom:r.bottom,
+      parent:el.parentElement.tagName,bg:getComputedStyle(el.querySelector('.mascot-bubble')).backgroundColor};"
+    )
+    expect_equal(result$right, 784)
+    expect_equal(result$bottom, 784)
+    expect_identical(result$parent, "BODY")
+    expect_identical(result$bg, "rgb(33, 37, 41)")
+    js("box.hidden=true")
+    expect_equal(host_layout(js, "return el.querySelector('canvas').getBoundingClientRect().width;"), 0)
+    js("box.hidden=false")
+    expect_equal(host_layout(js, "return el.querySelector('canvas').getBoundingClientRect().width;"), 160)
+    js("box.dataset.bsTheme='light'")
+    expect_identical(
+      host_layout(js, "return getComputedStyle(el.querySelector('.mascot-bubble')).backgroundColor;"),
+      "rgb(255, 255, 255)"
+    )
+    js("box.removeAttribute('data-bs-theme');document.documentElement.dataset.bsTheme='dark'")
+    expect_identical(
+      host_layout(js, "return getComputedStyle(el.querySelector('.mascot-bubble')).backgroundColor;"),
+      "rgb(33, 37, 41)"
+    )
+    js("mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'bottom-right',minimise:false}}})")
+    expect_true(host_layout(js, "return el.parentElement===box;"))
+    expect_equal(js("document.querySelectorAll('.mascot-source').length"), 0)
+    expect_false(js("el.hasAttribute('data-shiny-no-bind-input')"))
   })
 })

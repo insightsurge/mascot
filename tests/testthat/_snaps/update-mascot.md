@@ -16,7 +16,7 @@
     Condition
       Error in `updateMascot()`:
       ! Unexpected arguments: "typo".
-      i Use `id`, `character`, `mood`, `status`, `bubble`, `gesture` and `session`; `gesture` and `session` must be named.
+      i Use `id`, `character`, `mood`, `status`, `bubble`, `size`, `placement`, `gesture` and `session`; `gesture` and `session` must be named.
 
 ---
 
@@ -24,6 +24,5 @@
       updateMascot("helper", NULL, NULL, NULL, NULL, session)
     Condition
       Error in `updateMascot()`:
-      ! Unexpected arguments: "unnamed".
-      i Use `id`, `character`, `mood`, `status`, `bubble`, `gesture` and `session`; `gesture` and `session` must be named.
+      ! `session` must be named; a Shiny session was supplied to `size`.
 

@@ -60,7 +60,16 @@ error_js <- function(code) {
 }
 
 # Host integration page: real packaged assets and real markup, with motion reduced before navigation.
-local_host_page <- function(env = parent.frame(), bubble = NULL, reduced = TRUE, scheme = "light") {
+local_host_page <- function(
+  env = parent.frame(),
+  bubble = NULL,
+  reduced = TRUE,
+  scheme = "light",
+  size = 160,
+  placement = "inline",
+  viewport = NULL,
+  density = 1
+) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
   scripts <- file.path(www, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
@@ -70,7 +79,7 @@ local_host_page <- function(env = parent.frame(), bubble = NULL, reduced = TRUE,
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>host</title>',
       sprintf('<link rel="stylesheet" href="file://%s">', normalizePath(file.path(www, "mascot.css"))),
       '</head><body>',
-      as.character(mascot(id = "a", bubble = bubble)),
+      as.character(mascot(id = "a", bubble = bubble, size = size, placement = placement)),
       '<script type="application/json" data-mascot-character="blob">',
       readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
       '</script>',
@@ -87,16 +96,26 @@ local_host_page <- function(env = parent.frame(), bubble = NULL, reduced = TRUE,
       list(name = "prefers-color-scheme", value = scheme)
     )
   )
+  if (!is.null(viewport)) {
+    session$Emulation$setDeviceMetricsOverride(
+      width = viewport[[1]],
+      height = viewport[[2]],
+      deviceScaleFactor = density,
+      mobile = FALSE
+    )
+  }
   loaded <- session$Page$loadEventFired(wait_ = FALSE)
   session$Page$navigate(paste0("file://", normalizePath(page)), wait_ = FALSE)
   session$wait_for(loaded)
-  function(js) {
-    result <- session$Runtime$evaluate(js, returnByValue = TRUE)
+  evaluate <- function(js) {
+    result <- session$Runtime$evaluate(js, returnByValue = TRUE, awaitPromise = TRUE)
     if (!is.null(result$exceptionDetails)) {
       stop(result$exceptionDetails$exception$description)
     }
     result$result$value
   }
+  attr(evaluate, "session") <- session
+  evaluate
 }
 
 # Start shinytest2 with its temporary browser files inside R's temporary directory.
@@ -108,4 +127,14 @@ local_shiny_browser <- function(env = parent.frame()) {
   testthat::skip_if(is.null(chromote::find_chrome()), "no Chrome or Chromium found")
   tmp <- withr::local_tempdir(.local_envir = env)
   withr::local_envvar(c(TMPDIR = tmp), .local_envir = env)
+}
+
+# Read layout after both style resolution and ResizeObserver delivery.
+host_layout <- function(js, code) {
+  js(paste0(
+    "(async () => { await new Promise(resolve => requestAnimationFrame(() => ",
+    "requestAnimationFrame(resolve))); ",
+    code,
+    " })()"
+  ))
 }

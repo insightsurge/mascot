@@ -387,3 +387,258 @@ describe("update review regressions", {
     expect_match(text, '"wave"', fixed = TRUE)
   })
 })
+
+
+describe("updateMascot() size and placement", {
+  it("sends complete normalised objects, adds the module namespace once and leaves NULL alone", {
+    captured <- new.env(parent = emptyenv())
+    captured$messages <- list()
+    local_mocked_bindings(send_update = function(session, id, patch) {
+      captured$messages[[length(captured$messages) + 1L]] <- list(id = session$ns(id), patch = patch)
+    })
+    module <- function(id) {
+      shiny::moduleServer(id, function(input, output, session) {
+        shiny::observeEvent(input$layout, {
+          updateMascot("helper", size = "20%", placement = list(floating = TRUE, position = "top-left"))
+        })
+      })
+    }
+    shiny::testServer(module, {
+      session$setInputs(layout = 1)
+      expect_identical(
+        captured$messages[[1]],
+        list(
+          id = "proxy1-helper",
+          patch = list(
+            size = list(size = "20%", small_screen = NULL, simplify_when_small = TRUE),
+            placement = list(floating = TRUE, position = "top-left", minimise = FALSE)
+          )
+        )
+      )
+      updateMascot("helper", size = mascot_size(120, 48, FALSE), placement = "inline", session = session)
+      expect_identical(
+        captured$messages[[2]]$patch,
+        list(
+          size = list(size = 120, small_screen = 48, simplify_when_small = FALSE),
+          placement = list(floating = FALSE, position = "bottom-right", minimise = FALSE)
+        )
+      )
+      updateMascot("helper", size = NULL, placement = NULL)
+      expect_length(captured$messages, 2)
+      expect_error(updateMascot("helper", NULL, NULL, NULL, NULL, session), "session.*must be named")
+      expect_error(updateMascot("helper", NULL, NULL, NULL, NULL, NULL, session), "session.*must be named")
+    })
+  })
+  it("warns atomically for bad values and malformed helpers, with a dev-mode problem only", {
+    captured <- new.env(parent = emptyenv())
+    captured$patches <- list()
+    local_mocked_bindings(
+      send_update = function(session, id, patch) {
+        captured$patches[[length(captured$patches) + 1L]] <- patch
+      },
+      dev_mode = function() FALSE
+    )
+    shiny::testServer(function(input, output, session) {}, {
+      bad_size <- mascot_size()
+      bad_size$small_screen <- "0%"
+      bad_flag <- mascot_size()
+      bad_flag$simplify_when_small <- NA
+      bad_place <- mascot_placement()
+      bad_place$minimise <- TRUE
+      for (x in list(23, Inf, "24px", bad_size, bad_flag)) {
+        expect_warning(updateMascot("a", size = x, mood = "happy"), "unchanged")
+      }
+      for (x in list("fixed", list(floating = TRUE, snap = TRUE), bad_place)) {
+        expect_warning(updateMascot("a", placement = x, status = "Saved"), "unchanged")
+      }
+      expect_length(captured$patches, 0)
+      local_mocked_bindings(dev_mode = function() TRUE)
+      expect_warning(updateMascot("a", size = 1, placement = "fixed", mood = "happy"), "unchanged")
+      expect_named(captured$patches[[1]], "problem")
+      expect_match(captured$patches[[1]]$problem, "size.*placement")
+    })
+  })
+})
+
+
+describe("size and placement in a Shiny browser", {
+  it("floats, minimises and restores with mouse, Enter and Space while retaining server updates", {
+    local_shiny_browser()
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      shiny::shinyApp(
+        shiny::fluidPage(
+          mascot(id = "helper", size = 96, placement = mascot_placement(TRUE, minimise = TRUE)),
+          shiny::actionButton("change", "Change"),
+          shiny::actionButton("inline", "Inline"),
+          shiny::actionButton("notice", "Notice"),
+          shiny::actionButton("remove_notice", "Remove notice")
+        ),
+        function(input, output, session) {
+          shiny::observeEvent(
+            input$change,
+            updateMascot(
+              "helper",
+              size = 64,
+              mood = "happy",
+              placement = mascot_placement(TRUE, "top-left", TRUE),
+              bubble = mascot_bubble("Saved", Inf)
+            )
+          )
+          shiny::observeEvent(input$inline, updateMascot("helper", size = 120, placement = "inline"))
+          shiny::observeEvent(input$notice, shiny::showNotification("Saved", id = "mascot-notice", duration = NULL))
+          shiny::observeEvent(input$remove_notice, shiny::removeNotification("mascot-notice"))
+        }
+      )
+    })
+    withr::defer(app$stop())
+    app$wait_for_js("document.querySelector('#helper canvas').width === 96 * devicePixelRatio")
+    app$click("notice")
+    app$wait_for_js("document.getElementById('shiny-notification-mascot-notice') !== null")
+    app$wait_for_js(
+      "document.getElementById('helper').getBoundingClientRect().bottom <
+      document.getElementById('shiny-notification-panel').getBoundingClientRect().top"
+    )
+    expect_true(app$get_js(
+      "document.getElementById('helper').getBoundingClientRect().bottom <=
+      document.getElementById('shiny-notification-panel').getBoundingClientRect().top -
+      parseFloat(getComputedStyle(document.documentElement).fontSize) + 0.1"
+    ))
+    app$click("remove_notice")
+    app$wait_for_js("document.getElementById('shiny-notification-mascot-notice') === null")
+    app$run_js(
+      "window.mounts=0; const mount=mascot.mount;
+      mascot.mount=(...args)=>{mounts++;return mount(...args);};"
+    )
+    app$click(selector = "#helper .mascot-minimise")
+    app$wait_for_js("document.querySelector('#helper').dataset.minimised === 'true'")
+    app$click("change")
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).mood === 'happy'")
+    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.text"), "Saved")
+    app$click(selector = "#helper .mascot-restore")
+    app$wait_for_js("document.querySelector('#helper canvas').width === 64 * devicePixelRatio")
+    expect_identical(app$get_js("document.querySelector('#helper').dataset.position"), "top-left")
+    app$wait_for_js("document.querySelector('#helper').dataset.shownMood === 'happy'")
+    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Happy")
+    # Native button activation must work for both keyboard keys, not just synthetic click events.
+    browser <- app$get_chromote_session()
+    for (key in c("Enter", " ")) {
+      app$click(selector = "#helper .mascot-minimise")
+      app$wait_for_js("document.querySelector('#helper').dataset.minimised === 'true'")
+      app$run_js("document.querySelector('#helper .mascot-restore').focus()")
+      code <- if (key == "Enter") "Enter" else "Space"
+      number <- if (key == "Enter") 13L else 32L
+      browser$Input$dispatchKeyEvent(
+        type = "keyDown",
+        key = key,
+        code = code,
+        windowsVirtualKeyCode = number,
+        text = if (key == "Enter") "\r" else " "
+      )
+      browser$Input$dispatchKeyEvent(type = "keyUp", key = key, code = code, windowsVirtualKeyCode = number)
+      app$wait_for_js("document.querySelector('#helper').dataset.minimised === 'false'")
+      expect_true(app$get_js("document.activeElement===document.querySelector('#helper .mascot-minimise')"))
+    }
+    app$click("inline")
+    app$wait_for_js("document.querySelector('#helper').dataset.floating === 'false'")
+    expect_equal(app$get_js("document.querySelector('#helper canvas').getBoundingClientRect().width"), 120)
+    expect_equal(app$get_js("mounts"), 0)
+    expect_true(app$get_js("document.querySelector('#helper .mascot-minimise').hidden"))
+  })
+  it("measures a module mascot when its hidden tab opens and accepts a local-id layout update", {
+    local_shiny_browser()
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      module_ui <- function(id) {
+        ns <- shiny::NS(id)
+        shiny::tags$div(
+          style = "width:400px",
+          mascot(id = ns("helper"), size = "20%"),
+          shiny::actionButton(ns("change"), "Change")
+        )
+      }
+      module_server <- function(id) {
+        shiny::moduleServer(id, function(input, output, session) {
+          shiny::observeEvent(input$change, updateMascot("helper", size = 48, placement = "top-right"))
+        })
+      }
+      shiny::shinyApp(
+        shiny::fluidPage(shiny::tabsetPanel(
+          id = "tabs",
+          shiny::tabPanel("Home", "Start"),
+          shiny::tabPanel("Helper", module_ui("mod"))
+        )),
+        function(input, output, session) module_server("mod")
+      )
+    })
+    withr::defer(app$stop())
+    app$wait_for_js("mascot.host.state(document.getElementById('mod-helper')) !== null")
+    expect_equal(app$get_js("document.querySelector('#mod-helper canvas').getBoundingClientRect().width"), 0)
+    app$set_inputs(tabs = "Helper")
+    app$wait_for_js("document.querySelector('#mod-helper canvas').getBoundingClientRect().width === 80")
+    app$click("mod-change")
+    app$wait_for_js("document.querySelector('#mod-helper').dataset.position === 'top-right'")
+    expect_equal(app$get_js("document.querySelector('#mod-helper canvas').getBoundingClientRect().width"), 48)
+    expect_identical(app$get_js("mascot.host.state(document.getElementById('mod-helper')).detail"), "simple")
+  })
+})
+
+
+describe("floating mascots in dynamic module UI", {
+  it("S3-R3 preserves tab visibility, avoids duplicate bindings and tears down the original controller on replacement", {
+    local_shiny_browser()
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      module_ui <- function(id) {
+        ns <- shiny::NS(id)
+        shiny::tagList(shiny::actionButton(ns("replace"), "Replace"), shiny::uiOutput(ns("dynamic")))
+      }
+      module_server <- function(id) {
+        shiny::moduleServer(id, function(input, output, session) {
+          output$dynamic <- shiny::renderUI({
+            shiny::tags$div(
+              `data-generation` = input$replace,
+              style = "transform:translateZ(0);width:300px;height:300px",
+              mascot(id = session$ns("helper"), size = 64, placement = mascot_placement(TRUE, minimise = TRUE))
+            )
+          })
+        })
+      }
+      shiny::shinyApp(
+        shiny::fluidPage(
+          mascot(id = "loader", size = 24),
+          shiny::tabsetPanel(id = "tabs", shiny::tabPanel("Home", "Home"), shiny::tabPanel("Helper", module_ui("mod")))
+        ),
+        function(input, output, session) module_server("mod")
+      )
+    })
+    withr::defer(app$stop())
+    app$click(selector = "a[data-value='Helper']")
+    app$wait_for_js("Shiny.shinyapp.$inputValues['.clientdata_output_mod-dynamic_hidden'] === false", timeout = 15000)
+    app$wait_for_js("document.querySelector('#mod-helper canvas')?.getBoundingClientRect().width === 64")
+    app$run_js("window.old=document.getElementById('mod-helper')")
+    expect_true(app$get_js("old.parentElement===document.body"))
+    expect_equal(app$get_js("document.querySelectorAll('.mascot-source.shiny-bound-input').length"), 1)
+    expect_false(app$get_js("old.classList.contains('shiny-bound-input')"))
+    app$click(selector = "#mod-replace")
+    app$wait_for_js(
+      "document.getElementById('mod-helper') !== old && mascot.host.state(old) === null",
+      timeout = 15000
+    )
+    expect_equal(app$get_js("document.querySelectorAll('#mod-helper').length"), 1)
+    expect_equal(app$get_js("document.querySelectorAll('.mascot-source.shiny-bound-input').length"), 1)
+    expect_false(app$get_js("old.isConnected"))
+    # Hidden tab, then shown again: checked through the mascot itself (its canvas collapses and comes back). Shiny's
+    # own output-hidden flag can stay stale after a second tab switch in headless Chrome (seen with an inline mascot
+    # too), so the replacement above runs while the tab is still open.
+    app$click(selector = "a[data-value='Home']")
+    app$wait_for_js("document.querySelector('#mod-helper canvas').getBoundingClientRect().width === 0")
+    app$click(selector = "a[data-value='Helper']")
+    app$wait_for_js("document.querySelector('#mod-helper canvas').getBoundingClientRect().width === 64")
+    app$run_js(
+      "window.current=document.getElementById('mod-helper');Shiny.unbindAll(document.getElementById('mod-dynamic'))"
+    )
+    app$wait_for_js("mascot.host.state(current) === null")
+    expect_equal(app$get_js("document.querySelectorAll('.mascot-source').length"), 0)
+  })
+})

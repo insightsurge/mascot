@@ -45,6 +45,8 @@ describe("mascot exports", {
         "mascot_character",
         "mascot_mood",
         "mascot_status",
+        "mascot_size",
+        "mascot_placement",
         "mascot_moods",
         "mascot_bubble",
         "mascot_gesture",

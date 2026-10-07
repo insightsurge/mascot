@@ -733,3 +733,84 @@ describe("theme in a Shiny browser", {
     expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Idle")
   })
 })
+
+describe("updateMascot() motion", {
+  it("sends a safe motion patch once per module update and leaves NULL unchanged", {
+    captured <- new.env(parent = emptyenv())
+    captured$patches <- list()
+    local_mocked_bindings(send_update = function(session, id, patch) {
+      captured$patches[[length(captured$patches) + 1L]] <- list(id = session$ns(id), patch = patch)
+    })
+    module <- function(id) shiny::moduleServer(id, function(input, output, session) {})
+    shiny::testServer(module, {
+      for (motion in list(TRUE, FALSE, mascot_motion(swap = FALSE), mascot_motion(FALSE, FALSE))) {
+        expect_invisible(updateMascot("helper", motion = motion, mood = "happy", session = session))
+        sent <- tail(captured$patches, 1)[[1]]
+        expect_identical(sent$id, session$ns("helper"))
+        expect_named(sent$patch, c("mood", "motion"))
+        expect_false(identical(sent$patch$motion$reduced, FALSE))
+      }
+      expect_identical(captured$patches[[1]]$patch$motion, list(reduced = NULL, swap = TRUE))
+      expect_identical(captured$patches[[2]]$patch$motion, list(reduced = TRUE, swap = TRUE))
+      expect_identical(captured$patches[[3]]$patch$motion, list(reduced = NULL, swap = FALSE))
+      updateMascot("helper", motion = NULL, session = session)
+      expect_length(captured$patches, 4)
+      expect_error(updateMascot("helper", motion = session), "session.*must be named")
+    })
+    expect_identical(tail(names(formals(updateMascot)), 5), c("theme", "motion", "...", "gesture", "session"))
+  })
+  it("rejects the whole update with a warning and sends only development problems", {
+    captured <- new.env(parent = emptyenv())
+    captured$patches <- list()
+    local_mocked_bindings(
+      send_update = function(session, id, patch) {
+        captured$patches[[length(captured$patches) + 1L]] <- patch
+      },
+      dev_mode = function() FALSE
+    )
+    shiny::testServer(function(input, output, session) {}, {
+      for (motion in list(NA, 1, "auto", list(animate = TRUE), structure(list(), class = "mascot_motion"))) {
+        expect_warning(updateMascot("helper", mood = "happy", status = "Saved", motion = motion), "unchanged")
+      }
+      expect_length(captured$patches, 0)
+      local_mocked_bindings(dev_mode = function() TRUE)
+      expect_warning(updateMascot("helper", motion = "auto", size = 96), "motion.*TRUE, FALSE")
+      expect_named(captured$patches[[1]], "problem")
+      expect_match(captured$patches[[1]]$problem, 'got "auto"')
+      updateMascot("helper", motion = FALSE)
+      expect_identical(captured$patches[[2]], list(motion = list(reduced = TRUE, swap = TRUE)))
+    })
+  })
+})
+
+describe("motion in a Shiny browser", {
+  it("M5 changes motion from an app setting without replacing the canvas", {
+    local_shiny_browser()
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      shiny::shinyApp(
+        shiny::fluidPage(
+          mascot(id = "helper"),
+          shiny::checkboxInput("animate", "Animate mascot", TRUE),
+          shiny::actionButton("happy", "Happy")
+        ),
+        function(input, output, session) {
+          shiny::observeEvent(input$animate, updateMascot("helper", motion = input$animate))
+          shiny::observeEvent(input$happy, updateMascot("helper", mood = "happy"))
+        }
+      )
+    })
+    withr::defer(app$stop())
+    app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper')) !== null")
+    app$run_js("window.originalCanvas=document.querySelector('#helper canvas')")
+    app$set_inputs(animate = FALSE)
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).motion.reduced === true")
+    app$click("happy")
+    app$wait_for_js("document.getElementById('helper').dataset.shownMood === 'happy'")
+    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Happy")
+    expect_true(app$get_js("document.querySelector('#helper canvas') === originalCanvas"))
+    app$set_inputs(animate = TRUE)
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).motion.reduced === null")
+    expect_identical(app$get_js("document.getElementById('helper').dataset.reduced"), "auto")
+  })
+})

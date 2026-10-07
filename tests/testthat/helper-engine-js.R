@@ -70,7 +70,8 @@ local_host_page <- function(
   viewport = NULL,
   density = 1,
   theme = NULL,
-  record_colours = FALSE
+  record_colours = FALSE,
+  motion = TRUE
 ) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
@@ -81,7 +82,14 @@ local_host_page <- function(
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>host</title>',
       sprintf('<link rel="stylesheet" href="file://%s">', normalizePath(file.path(www, "mascot.css"))),
       '</head><body>',
-      as.character(mascot(id = "a", bubble = bubble, size = size, placement = placement, theme = theme)),
+      as.character(mascot(
+        id = "a",
+        bubble = bubble,
+        size = size,
+        placement = placement,
+        theme = theme,
+        motion = motion
+      )),
       '<script type="application/json" data-mascot-character="blob">',
       readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
       '</script>',
@@ -148,4 +156,29 @@ host_layout <- function(js, code) {
     code,
     " })()"
   ))
+}
+
+# Real host and canvas, with a deterministic frame queue around one remount.
+host_motion_js <- function(code) {
+  paste0(
+    "(() => {const el=document.getElementById('a');mascot.host.unmount(el);
+",
+    "const mount=mascot.mount,draw=mascot.draw,raf=window.requestAnimationFrame,cancel=window.cancelAnimationFrame;
+",
+    "const queued=new Map(),calls=[],players=[];let id=0;
+",
+    "window.requestAnimationFrame=fn=>{queued.set(++id,fn);return id;};window.cancelAnimationFrame=n=>queued.delete(n);
+",
+    "mascot.draw=(ctx,ch,options)=>{calls.push({character:ch.id,...options});return draw(ctx,ch,options);};
+",
+    "mascot.mount=(...args)=>{const p=mount(...args);players.push(p);return p;};
+",
+    "const send=patch=>mascot.host.receive({id:'a',patch}),state=()=>mascot.host.state(el);
+",
+    "const fire=t=>{const batch=[...queued.values()];queued.clear();batch.forEach(fn=>fn(t));};
+",
+    "try{mascot.host.mount(el);const controller=players[0];",
+    code,
+    "}finally{mascot.host.unmount(el);mascot.mount=mount;mascot.draw=draw;window.requestAnimationFrame=raf;window.cancelAnimationFrame=cancel;}})()"
+  )
 }

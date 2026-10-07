@@ -16,7 +16,9 @@ describe("mascot()", {
         `data-simplify-when-small` = "true",
         `data-floating` = "false",
         `data-position` = "bottom-right",
-        `data-minimise` = "false"
+        `data-minimise` = "false",
+        `data-reduced` = "auto",
+        `data-swap` = "true"
       )
     )
     html <- sub('(?s)(<script[^>]*>).*?(</script>)', '\\1[character JSON]\\2', as.character(tag), perl = TRUE)
@@ -197,5 +199,22 @@ describe("mascot() themes", {
       fixed = TRUE
     )
     expect_snapshot(error = TRUE, mascot(id = "bad", theme = list(bdoy = "blue")))
+  })
+})
+
+describe("mascot() motion", {
+  it("serialises motion for static pages and keeps shortcuts equivalent to helpers", {
+    expect_identical(mascot(id = "a")$attribs$`data-reduced`, "auto")
+    expect_identical(mascot(id = "a", motion = FALSE)$attribs$`data-reduced`, "true")
+    expect_identical(mascot(id = "a", motion = mascot_motion(swap = FALSE))$attribs$`data-swap`, "false")
+    for (value in c(TRUE, FALSE)) {
+      expect_identical(
+        as.character(mascot(id = "a", motion = value)),
+        as.character(mascot(id = "a", motion = mascot_motion(value)))
+      )
+    }
+    expect_error(mascot(id = "a", motion = "auto"), 'motion.*got "auto"')
+    expect_error(mascot(id = "a", motion = NULL), 'motion.*got NULL')
+    expect_identical(tail(names(formals(mascot)), 2), c("theme", "motion"))
   })
 })

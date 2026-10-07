@@ -126,6 +126,11 @@
   }
 }
 
+/* App-level motion controls also apply to the bubble and restore button. */
+.mascot[data-reduced="true"] .mascot-bubble {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mascot-bubble {
     animation: none;
@@ -287,4 +292,13 @@
 
 .mascot[data-floating="true"][data-source-hidden="true"] {
   display: none;
+}
+
+.mascot[data-reduced="true"] .mascot-restore {
+  transition: none;
+}
+
+.mascot[data-reduced="true"] .mascot-restore:hover,
+.mascot[data-reduced="true"] .mascot-restore:focus-visible {
+  transform: none;
 }

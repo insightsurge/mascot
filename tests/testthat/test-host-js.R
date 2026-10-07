@@ -705,4 +705,22 @@ describe("host review regressions", {
       expect_gte(size$height, 24)
     }
   })
+  it("puts the close button in the bubble's top-right corner, clear of the text", {
+    skip_without_chrome()
+    js <- local_host_page(bubble = mascot_bubble(paste(rep("A longer message that wraps.", 3), collapse = " "), Inf))
+    result <- js(
+      "(() => {
+      const el=document.getElementById('a'), bubble=el.querySelector('.mascot-bubble').getBoundingClientRect();
+      const button=el.querySelector('.mascot-bubble-close').getBoundingClientRect();
+      const text=el.querySelector('.mascot-bubble-text').getBoundingClientRect();
+      return {top:button.top-bubble.top, right:bubble.right-button.right, bottom:bubble.bottom-button.bottom,
+        overlap:text.right > button.left && text.top < button.bottom};
+    })()"
+    )
+    # Near the top and right edges, well away from the bottom (the text wraps over several lines).
+    expect_lt(result$top, 12)
+    expect_lt(result$right, 12)
+    expect_gt(result$bottom, 24)
+    expect_false(result$overlap)
+  })
 })

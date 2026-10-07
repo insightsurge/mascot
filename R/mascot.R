@@ -18,6 +18,14 @@
 #'   default) shows no bubble. A string uses the helper's five-second duration
 #'   and close button. Plain text is escaped; [htmltools::HTML()] or tags supply
 #'   HTML. Tags with dependencies or head content are not supported.
+#' @param size A finite number of CSS pixels (at least `24`), a positive percentage
+#'   string such as `"20%"`, or a [mascot_size()] object. Defaults to `160`.
+#'   Percentages follow the parent width when inline and window width when floating,
+#'   with a 24-pixel floor. `NULL` is not accepted.
+#' @param placement `"inline"` (the default), `"floating"` (bottom-right), a corner
+#'   such as `"top-left"`, a named list such as `list(floating = TRUE, position =
+#'   "top-left")`, or a [mascot_placement()] object. Explicit `position` or
+#'   `minimise` options require floating. `NULL` is not accepted.
 #' @returns An `htmltools` tag with its engine dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]
@@ -26,6 +34,9 @@
 #' Use a bubble for a message about something that happened; it may time out.
 #' Use `mascot_bubble(..., duration = Inf)` for a message the user must act on,
 #' such as an invalid form, because a timed message can vanish before it is read.
+#'
+#' When minimised, the status remains available to screen readers. See
+#' [mascot_placement()] for restore controls and message timing.
 #'
 #' In Shiny the mascot uses an input binding with a `NULL` input value.
 #' A module can put the mascot in its UI and update it from its server:
@@ -43,17 +54,29 @@
 #' @export
 #' @examples
 #' mascot(id = "helper", mood = "happy")
+#' mascot(id = "small", size = 96, placement = "bottom-right")
+#' mascot(id = "responsive", size = mascot_size(120, small_screen = 48))
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   ui = shiny::fluidPage(mascot(id = "helper")),
 #'   server = function(input, output, session) {}
 #' )
-mascot <- function(character = "tessa", id, mood = "idle", status = NULL, bubble = NULL) {
+mascot <- function(
+  character = "tessa",
+  id,
+  mood = "idle",
+  status = NULL,
+  bubble = NULL,
+  size = 160,
+  placement = "inline"
+) {
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   character <- as_character_arg(character, environment())
   mood <- as_mood_arg(mood, environment())
   status <- as_status_arg(status, environment())
   bubble <- as_bubble_arg(bubble, environment())
+  size <- as_size_arg(size, environment())
+  placement <- as_placement_arg(placement, environment())
   mode <- if (is.null(status$text)) "mood" else "custom"
   tag <- htmltools::tags$div(
     class = "mascot",
@@ -62,6 +85,12 @@ mascot <- function(character = "tessa", id, mood = "idle", status = NULL, bubble
     `data-character` = character$id,
     `data-mood` = mood$name,
     `data-status` = mode,
+    `data-size` = size$size,
+    `data-small-screen` = size$small_screen,
+    `data-simplify-when-small` = tolower(as.character(size$simplify_when_small)),
+    `data-floating` = tolower(as.character(placement$floating)),
+    `data-position` = placement$position,
+    `data-minimise` = tolower(as.character(placement$minimise)),
     htmltools::tags$script(
       type = "application/json",
       `data-mascot-character` = character$id,
@@ -113,14 +142,14 @@ as_status_arg <- function(x, call) {
 #' Check a build-time argument with the public call attached
 #' @noRd
 check_arg <- function(x, arg, call) {
-  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture"))
+  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture", "size", "placement"))
   checkmate::assert_environment(call)
   # x is checked by arg_problem(), shared with warning-only runtime validation.
   problem <- arg_problem(x, arg)
   if (is.null(problem)) {
     return(invisible(NULL))
   }
-  if (!arg %in% c("status", "bubble") && isTRUE(checkmate::check_string(x, min.chars = 1))) {
+  if (arg %in% c("character", "mood", "gesture") && isTRUE(checkmate::check_string(x, min.chars = 1))) {
     valid <- switch(arg, character = builtin_characters()$id, mood = mood_table()$name, gesture = gesture_table()$name)
     abort_choice(x, valid, arg, arg, call)
   }
@@ -130,8 +159,14 @@ check_arg <- function(x, arg, call) {
 #' A plain-text problem, or NULL for a valid shortcut or helper
 #' @noRd
 arg_problem <- function(x, arg) {
-  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture"))
+  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture", "size", "placement"))
   # check_* deliberately replaces assert_* for x: runtime values must only warn.
+  if (arg == "size") {
+    return(size_problem(x))
+  }
+  if (arg == "placement") {
+    return(placement_problem(x))
+  }
   helper <- paste0("mascot_", arg)
   if (inherits(x, "mascot_bubble") && arg == "bubble") {
     if (

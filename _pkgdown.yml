@@ -50,6 +50,8 @@ reference:
     contents:
       - mascot_character
       - mascot_mood
+      - mascot_size
+      - mascot_placement
       - mascot_status
       - mascot_bubble
       - mascot_gesture

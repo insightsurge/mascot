@@ -21,15 +21,20 @@
 }
 
 .mascot {
-  --mascot-size: 160px;
+  --mascot-size: var(--mascot-size-default, 160px);
+  width: max(24px, var(--mascot-size));
+  position: relative;
+  flex-shrink: 0;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
 }
 
 .mascot-canvas {
-  width: var(--mascot-size);
-  height: var(--mascot-size);
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
 }
 
 .mascot-status {
@@ -48,6 +53,7 @@
   width: 16em;
   max-width: calc(100vw - 2rem);
   height: calc(10em + 24px + 1rem);
+  transform: translateX(var(--mascot-bubble-shift, 0px));
   flex-shrink: 0;
 }
 
@@ -57,10 +63,10 @@
   max-width: 16em;
   padding: 0.75em;
   margin-bottom: 1rem;
-  border: 1px solid var(--bs-border-color, var(--mascot-bubble-border, #dee2e6));
+  border: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border, #dee2e6)));
   border-radius: 0.75em;
-  background: var(--bs-body-bg, var(--mascot-bubble-bg, #fff));
-  color: var(--bs-body-color, var(--mascot-bubble-color, #212529));
+  background: var(--mascot-source-bg, var(--bs-body-bg, var(--mascot-bubble-bg, #fff)));
+  color: var(--mascot-source-text, var(--bs-body-color, var(--mascot-bubble-color, #212529)));
   font: inherit;
   overflow-wrap: anywhere;
   animation: mascot-bubble-appear 150ms ease-out;
@@ -83,9 +89,9 @@
   width: 0.7em;
   height: 0.7em;
   transform: rotate(45deg);
-  background: var(--bs-body-bg, var(--mascot-bubble-bg, #fff));
-  border-right: 1px solid var(--bs-border-color, var(--mascot-bubble-border, #dee2e6));
-  border-bottom: 1px solid var(--bs-border-color, var(--mascot-bubble-border, #dee2e6));
+  background: var(--mascot-source-bg, var(--bs-body-bg, var(--mascot-bubble-bg, #fff)));
+  border-right: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border, #dee2e6)));
+  border-bottom: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border, #dee2e6)));
 }
 
 /* The close button sits in the top-right corner; the text keeps clear of it. Tab order is unchanged (text, then button). */
@@ -106,7 +112,7 @@
   font: inherit;
   color: inherit;
   background: transparent;
-  border: 1px solid var(--bs-border-color, var(--mascot-bubble-border, #dee2e6));
+  border: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border, #dee2e6)));
   border-radius: 0.25em;
   cursor: pointer;
 }
@@ -124,4 +130,161 @@
   .mascot-bubble {
     animation: none;
   }
+}
+
+@media (max-width: 575.98px) {
+  .mascot {
+    --mascot-size: var(--mascot-size-small, var(--mascot-size-default, 160px));
+  }
+}
+
+.mascot [hidden] {
+  display: none;
+}
+
+.mascot[data-floating="true"] {
+  position: fixed;
+  font: var(--mascot-source-font, inherit);
+  color: var(--mascot-source-color, inherit);
+  z-index: 1031; /* Above Bootstrap fixed navbars (1030), below offcanvas and modal overlays. */
+}
+
+.mascot[data-floating="true"][data-position$="right"] {
+  right: 1rem;
+}
+
+.mascot[data-floating="true"][data-position$="left"] {
+  left: 1rem;
+}
+
+.mascot[data-floating="true"][data-position^="top"] {
+  top: 1rem;
+}
+
+.mascot[data-floating="true"][data-position^="bottom"] {
+  bottom: 1rem;
+}
+
+.mascot[data-floating="true"][data-position="bottom-right"] {
+  bottom: calc(1rem + var(--mascot-notification-offset, 0px));
+}
+
+/* Floating messages do not change the canvas or corner coordinates. */
+.mascot[data-floating="true"] .mascot-bubble-region {
+  position: absolute;
+  bottom: 100%;
+  height: auto;
+  transform: none;
+}
+
+.mascot[data-floating="true"][data-position$="right"] .mascot-bubble-region {
+  right: 0;
+}
+
+.mascot[data-floating="true"][data-position$="left"] .mascot-bubble-region {
+  left: 0;
+}
+
+.mascot[data-floating="true"][data-position^="top"] .mascot-bubble-region {
+  top: 100%;
+  bottom: auto;
+}
+
+.mascot[data-floating="true"][data-position^="top"] .mascot-bubble {
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.mascot[data-floating="true"][data-position^="top"] .mascot-bubble::after {
+  top: -0.4em;
+  bottom: auto;
+  transform: rotate(225deg);
+}
+
+.mascot[data-floating="true"][data-position$="right"] .mascot-bubble::after {
+  left: auto;
+  right: min(1.5rem, 50%);
+}
+
+.mascot[data-floating="true"][data-position$="left"] .mascot-bubble::after {
+  left: min(1.5rem, 50%);
+}
+
+.mascot-minimise,
+.mascot-restore {
+  box-sizing: border-box;
+  min-width: 24px;
+  min-height: 24px;
+  border: 2px solid var(--mascot-button-fg, currentColor);
+  color: var(--mascot-button-fg, currentColor);
+  background: var(--mascot-button-bg, var(--bs-body-bg, #fff));
+  font: inherit;
+  cursor: pointer;
+}
+
+.mascot-minimise {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border-radius: 0.25rem;
+  line-height: 1;
+}
+
+.mascot-restore {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  transition:
+    transform 150ms ease-out,
+    box-shadow 150ms ease-out;
+}
+
+.mascot-restore:hover,
+.mascot-restore:focus-visible {
+  transform: scale(1.08);
+  box-shadow: 0 0 0.75rem var(--mascot-button-glow, currentColor);
+}
+
+.mascot-minimise:focus-visible,
+.mascot-restore:focus-visible {
+  outline: 2px solid var(--mascot-button-fg, currentColor);
+  outline-offset: 3px;
+}
+
+.mascot[data-minimised="true"] {
+  width: 48px;
+}
+
+/* Preserve live status announcements without expanding the compact restore button. */
+.mascot[data-minimised="true"] .mascot-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-restore {
+    transition: none;
+  }
+
+  .mascot-restore:hover,
+  .mascot-restore:focus-visible {
+    transform: none;
+  }
+}
+
+.mascot-source {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.mascot[data-floating="true"][data-source-hidden="true"] {
+  display: none;
 }

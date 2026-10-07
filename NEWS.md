@@ -1,5 +1,8 @@
 # mascot 0.0.2.9000
 
+* `mascot()` and `updateMascot()` accept pixel or percentage sizes, with narrow-screen sizes and a simpler small drawing through `mascot_size()` (#201).
+* `mascot_placement()` places mascots inline or in a floating corner, above Shiny notifications; optional minimise controls keep updates and messages ready for return (#201).
+
 * `mascot()` and `updateMascot()` gain message bubbles with `mascot_bubble()`: escaped text, explicit HTML or
   self-contained tags, a close button, and a timer that pauses on hover or focus; `duration = Inf` (or `NULL`) keeps a
   message until it is closed. Space is reserved above the mascot, so a bubble never moves the page (#196).

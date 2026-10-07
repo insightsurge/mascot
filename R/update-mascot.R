@@ -1,6 +1,6 @@
 #' Update a mascot in a Shiny app
 #'
-#' Apply a character, mood, status, bubble and gesture together. Invalid values
+#' Apply character, mood, status, bubble, size, placement and gesture together. Invalid values
 #' warn and leave the mascot unchanged. In Shiny development mode they also show a worried
 #' mascot with the problem as its status; the next good update clears it.
 #' Updates sent before a mascot appears are kept until it appears.
@@ -18,6 +18,11 @@
 #'   default) leaves the bubble unchanged; `mascot_bubble()` clears it. Plain
 #'   text is escaped; [htmltools::HTML()] or tags supply HTML. Tags with
 #'   dependencies or head content are not supported.
+#' @param size A pixel number, percentage string or [mascot_size()] object, as
+#'   in [mascot()]. `NULL` (the default) leaves the size unchanged.
+#' @param placement A shortcut, named list or [mascot_placement()] object, as
+#'   in [mascot()]. `NULL` (the default) leaves placement unchanged. Size and
+#'   placement changes keep the mounted engine, its mood and character.
 #' @param gesture A gesture name or [mascot_gesture()] object. `NULL` (the
 #'   default) sends no gesture. Use `"nod"` to acknowledge an action or `"wave"`
 #'   to greet. Must be named. See [mascot_gestures()] for descriptions.
@@ -72,6 +77,8 @@ updateMascot <- function(
   mood = NULL,
   status = NULL,
   bubble = NULL,
+  size = NULL,
+  placement = NULL,
   ...,
   gesture = NULL,
   session = shiny::getDefaultReactiveDomain()
@@ -87,14 +94,22 @@ updateMascot <- function(
       "Unexpected arguments: {.val {extras}}.",
       "i" = paste(
         "Use {.arg id}, {.arg character}, {.arg mood}, {.arg status},",
-        "{.arg bubble}, {.arg gesture} and {.arg session};",
+        "{.arg bubble}, {.arg size}, {.arg placement}, {.arg gesture} and {.arg session};",
         "{.arg gesture} and {.arg session} must be named."
       )
     ))
   }
-  values <- list(character = character, mood = mood, status = status, bubble = bubble, gesture = gesture)
+  values <- list(
+    character = character,
+    mood = mood,
+    status = status,
+    bubble = bubble,
+    size = size,
+    placement = placement,
+    gesture = gesture
+  )
   misplaced <- vapply(
-    values[c("character", "mood", "status", "bubble")],
+    values[c("character", "mood", "status", "bubble", "size", "placement")],
     inherits,
     logical(1),
     what = c("ShinySession", "session_proxy", "MockShinySession")
@@ -162,6 +177,12 @@ updateMascot <- function(
         duration = if (is.finite(value$duration)) value$duration else NULL
       )
     }
+  }
+  if (!is.null(size)) {
+    patch$size <- unclass(as_size_arg(size, environment()))
+  }
+  if (!is.null(placement)) {
+    patch$placement <- unclass(as_placement_arg(placement, environment()))
   }
   if (!is.null(gesture)) {
     patch$gesture <- if (inherits(gesture, "mascot_gesture")) gesture$name else mascot_gesture(gesture)$name

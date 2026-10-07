@@ -24,6 +24,8 @@ Other mascot helpers:
 \code{\link[=mascot_gesture]{mascot_gesture()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
+\code{\link[=mascot_placement]{mascot_placement()}},
+\code{\link[=mascot_size]{mascot_size()}},
 \code{\link[=mascot_status]{mascot_status()}}
 }
 \concept{mascot helpers}

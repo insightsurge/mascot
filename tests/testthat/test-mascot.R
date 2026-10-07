@@ -11,7 +11,12 @@ describe("mascot()", {
         tabindex = "-1",
         `data-character` = "tessa",
         `data-mood` = "idle",
-        `data-status` = "mood"
+        `data-status` = "mood",
+        `data-size` = 160,
+        `data-simplify-when-small` = "true",
+        `data-floating` = "false",
+        `data-position` = "bottom-right",
+        `data-minimise` = "false"
       )
     )
     html <- sub('(?s)(<script[^>]*>).*?(</script>)', '\\1[character JSON]\\2', as.character(tag), perl = TRUE)
@@ -150,5 +155,27 @@ describe("message guidance", {
       expect_match(text, "duration = Inf", fixed = TRUE, info = topic)
       expect_match(text, "invalid form", info = topic)
     }
+  })
+})
+
+
+describe("mascot() size and placement", {
+  it("writes data attributes without inline layout styles and normalises shortcuts", {
+    tag <- mascot(id = "a", size = mascot_size("20%", 48, FALSE), placement = mascot_placement(TRUE, "top-left", TRUE))
+    expect_identical(tag$attribs$`data-size`, "20%")
+    expect_identical(tag$attribs$`data-small-screen`, 48)
+    expect_identical(tag$attribs$`data-simplify-when-small`, "false")
+    expect_identical(tag$attribs$`data-floating`, "true")
+    expect_identical(tag$attribs$`data-position`, "top-left")
+    expect_identical(tag$attribs$`data-minimise`, "true")
+    expect_null(tag$attribs$style)
+    expect_identical(
+      as.character(mascot(id = "a", size = 96, placement = "bottom-right")),
+      as.character(mascot(id = "a", size = mascot_size(96), placement = mascot_placement(TRUE)))
+    )
+    expect_error(mascot(id = "a", size = NULL), "size")
+    expect_error(mascot(id = "a", size = "24px"), "size.*24px")
+    expect_error(mascot(id = "a", placement = list(position = "top-left")), "only works.*floating")
+    expect_snapshot(error = TRUE, mascot(id = "a", placement = "fixed"))
   })
 })

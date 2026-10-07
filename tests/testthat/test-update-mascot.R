@@ -68,7 +68,7 @@ describe("updateMascot()", {
       expect_error(updateMascot(id, session = session), "Assertion on 'id' failed")
     }
     expect_snapshot(error = TRUE, updateMascot("helper", typo = 1, session = session))
-    expect_snapshot(error = TRUE, updateMascot("helper", NULL, NULL, NULL, session))
+    expect_snapshot(error = TRUE, updateMascot("helper", NULL, NULL, NULL, NULL, session))
   })
 })
 
@@ -188,5 +188,202 @@ describe("updateMascot() in a browser", {
     expect_null(app$get_js("mascot.host.state(window.oldMascot)"))
     expect_false(app$get_js("window.oldMascot.isConnected"))
     expect_identical(app$get_js("document.querySelector('#late .mascot-status').textContent"), "Idle")
+  })
+})
+
+
+describe("updateMascot() bubbles and gestures", {
+  it("sends complete bubble patches, JSON-safe Inf, clear and gesture names", {
+    calls <- new.env(parent = emptyenv())
+    calls$patches <- list()
+    local_mocked_bindings(send_update = function(session, id, patch) {
+      calls$patches[[length(calls$patches) + 1L]] <- patch
+    })
+    shiny::testServer(function(input, output, session) {}, {
+      updateMascot("helper", bubble = "Ready", gesture = "nod", session = session)
+      expect_identical(
+        calls$patches[[1]],
+        list(
+          bubble = list(text = "Ready", html = FALSE, closable = TRUE, duration = 5),
+          gesture = "nod"
+        )
+      )
+      updateMascot(
+        "helper",
+        bubble = mascot_bubble(htmltools::HTML("<b>Ready</b>"), Inf, FALSE),
+        gesture = mascot_gesture("wave"),
+        session = session
+      )
+      expect_identical(
+        calls$patches[[2]],
+        list(
+          bubble = list(text = "<b>Ready</b>", html = TRUE, closable = FALSE, duration = NULL),
+          gesture = "wave"
+        )
+      )
+      updateMascot("helper", bubble = htmltools::HTML("<b>Ready</b>"), session = session)
+      expect_true(calls$patches[[3]]$bubble$html)
+      updateMascot("helper", bubble = mascot_bubble(), session = session)
+      expect_identical(calls$patches[[4]], list(bubble = list(clear = TRUE)))
+      updateMascot("helper", bubble = NULL, gesture = NULL, session = session)
+      expect_length(calls$patches, 4)
+    })
+  })
+  it("warns and sends nothing for bad bubbles or gestures, or only a dev-mode problem", {
+    calls <- new.env(parent = emptyenv())
+    calls$patches <- list()
+    local_mocked_bindings(
+      send_update = function(session, id, patch) {
+        calls$patches[[length(calls$patches) + 1L]] <- patch
+      },
+      dev_mode = function() FALSE
+    )
+    session <- shiny::MockShinySession$new()
+    for (x in list("", 1, NA_character_, c("a", "b"))) {
+      expect_warning(updateMascot("a", mood = "happy", bubble = x, session = session), "bubble")
+      expect_warning(updateMascot("a", status = "Ready", gesture = x, session = session), "gesture")
+    }
+    expect_warning(updateMascot("a", bubble = "Ready", gesture = "jump", session = session), "not a gesture")
+    bad <- mascot_bubble("Ready")
+    for (field in c("text", "html", "duration", "closable")) {
+      value <- bad
+      value[[field]] <- NA
+      expect_warning(updateMascot("a", mood = "happy", bubble = value, session = session), "bubble")
+    }
+    expect_length(calls$patches, 0)
+    local_mocked_bindings(dev_mode = function() TRUE)
+    expect_warning(updateMascot("a", mood = "happy", bubble = "", gesture = "jump", session = session), "unchanged")
+    expect_named(calls$patches[[1]], "problem")
+    expect_match(calls$patches[[1]]$problem, "bubble.*gesture")
+  })
+})
+
+describe("server bubbles and gestures in a browser", {
+  it("shows a server bubble, accepts a gesture and lets the user close it", {
+    local_shiny_browser()
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      ui <- shiny::fluidPage(mascot(id = "helper"), shiny::actionButton("go", "Go"))
+      server <- function(input, output, session) {
+        shiny::observeEvent(input$go, {
+          updateMascot("helper", bubble = mascot_bubble("Ready", Inf), gesture = "wave")
+        })
+      }
+      shiny::shinyApp(ui, server)
+    })
+    withr::defer(app$stop())
+    app$run_js(
+      "window.mascotErrors = []; const originalError = console.error;
+      console.error = (...args) => { window.mascotErrors.push(args.map(String).join(' ')); originalError(...args); };
+      window.addEventListener('error', event => window.mascotErrors.push(event.message));"
+    )
+    app$click("go")
+    app$wait_for_js("document.querySelector('#helper .mascot-bubble-text').textContent === 'Ready'")
+    expect_length(app$get_js("window.mascotErrors"), 0)
+    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.text"), "Ready")
+    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Idle")
+    app$run_js("document.querySelector('#helper .mascot-bubble-close').click()")
+    app$wait_for_js("document.querySelector('#helper .mascot-bubble').hidden")
+    expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).bubble"))
+  })
+})
+
+describe("update review regressions", {
+  it("R2 renders a deferred tag once and sends that exact result", {
+    calls <- new.env(parent = emptyenv())
+    calls$count <- 0L
+    calls$patches <- list()
+    local_mocked_bindings(send_update = function(session, id, patch) {
+      calls$patches[[length(calls$patches) + 1L]] <- patch
+    })
+    deferred <- htmltools::tagList(htmltools::tagFunction(function() {
+      calls$count <- calls$count + 1L
+      if (calls$count > 1L) {
+        stop("Message was rendered again")
+      }
+      shiny::tags$strong(paste("Saved", calls$count))
+    }))
+    shiny::testServer(function(input, output, session) {}, {
+      updateMascot("helper", bubble = deferred, session = session)
+      expect_identical(calls$count, 1L)
+      expect_identical(calls$patches[[1]]$bubble$text, "<strong>Saved 1</strong>")
+      expect_true(calls$patches[[1]]$bubble$html)
+    })
+  })
+  it("R2 warns without sending when deferred tag rendering fails", {
+    calls <- new.env(parent = emptyenv())
+    calls$count <- 0L
+    calls$patches <- list()
+    local_mocked_bindings(
+      send_update = function(session, id, patch) {
+        calls$patches[[length(calls$patches) + 1L]] <- patch
+      },
+      dev_mode = function() FALSE
+    )
+    deferred <- htmltools::tagList(htmltools::tagFunction(function() {
+      calls$count <- calls$count + 1L
+      stop("Cannot render message")
+    }))
+    session <- shiny::MockShinySession$new()
+    expect_warning(
+      updateMascot("helper", mood = "happy", bubble = deferred, session = session),
+      "Cannot render message"
+    )
+    expect_identical(calls$count, 1L)
+    expect_length(calls$patches, 0)
+    local_mocked_bindings(dev_mode = function() TRUE)
+    expect_warning(updateMascot("helper", bubble = deferred, session = session), "Cannot render message")
+    expect_named(calls$patches[[1]], "problem")
+    expect_match(calls$patches[[1]]$problem, "Cannot render message")
+  })
+  it("G7 diagnoses an unnamed session before warning about runtime values", {
+    shiny::testServer(function(input, output, session) {}, {
+      expect_error(updateMascot("helper", mood = "happy", session), "session.*must be named")
+      for (arg in c("character", "mood", "status", "bubble")) {
+        args <- list(id = "helper")
+        args[[arg]] <- session
+        expect_error(do.call(updateMascot, args), "session.*must be named")
+      }
+    })
+    for (class in c("ShinySession", "session_proxy", "MockShinySession")) {
+      misplaced <- structure(list(), class = class)
+      expect_error(updateMascot("helper", misplaced, session = NULL), "session.*must be named")
+    }
+  })
+  it("G1 and G6 send untimed rendered tags and warn for unsupported dependencies", {
+    calls <- new.env(parent = emptyenv())
+    calls$patches <- list()
+    local_mocked_bindings(
+      send_update = function(session, id, patch) {
+        calls$patches[[length(calls$patches) + 1L]] <- patch
+      },
+      dev_mode = function() FALSE
+    )
+    shiny::testServer(function(input, output, session) {}, {
+      updateMascot("helper", bubble = mascot_bubble("Ready", duration = NULL), session = session)
+      expect_null(calls$patches[[1]]$bubble$duration)
+      updateMascot("helper", bubble = shiny::tags$strong("Saved"), session = session)
+      expect_identical(calls$patches[[2]]$bubble$text, "<strong>Saved</strong>")
+      expect_true(calls$patches[[2]]$bubble$html)
+      updateMascot("helper", bubble = htmltools::tagList(shiny::tags$strong("Saved")), session = session)
+      expect_true(calls$patches[[3]]$bubble$html)
+      dependency <- htmltools::htmlDependency("bubble-test", "1.0", src = c(file = tempdir()))
+      dependent <- htmltools::attachDependencies(shiny::tags$strong("Saved"), dependency)
+      expect_warning(
+        updateMascot("helper", mood = "happy", bubble = dependent, session = session),
+        "dependencies.*not supported"
+      )
+      expect_length(calls$patches, 3)
+    })
+  })
+  it("G2 names nod and wave in the gesture argument's help", {
+    path <- system.file("man", "updateMascot.Rd", package = "mascot")
+    rd <- if (nzchar(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[["updateMascot.Rd"]]
+    arguments <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\arguments"), rd)[[1]]
+    items <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\item"), arguments)
+    item <- Filter(function(x) identical(paste(unlist(x[[1]]), collapse = ""), "gesture"), items)[[1]]
+    text <- paste(unlist(item[[2]]), collapse = "")
+    expect_match(text, '"nod"', fixed = TRUE)
+    expect_match(text, '"wave"', fixed = TRUE)
   })
 })

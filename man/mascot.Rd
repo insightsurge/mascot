@@ -4,7 +4,7 @@
 \alias{mascot}
 \title{Add a mascot to a page}
 \usage{
-mascot(character = "tessa", id, mood = "idle", status = NULL)
+mascot(character = "tessa", id, mood = "idle", status = NULL, bubble = NULL)
 }
 \arguments{
 \item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object. Defaults
@@ -19,16 +19,27 @@ See \code{\link[=mascot_moods]{mascot_moods()}} for choices. \code{NULL} is not 
 
 \item{status}{A non-empty string or \code{\link[=mascot_status]{mascot_status()}} object. \code{NULL} (the
 default) follows the mood. Text is escaped, including \code{\link[htmltools:HTML]{htmltools::HTML()}}.}
+
+\item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the
+default) shows no bubble. A string uses the helper's five-second duration
+and close button. Plain text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply
+HTML. Tags with dependencies or head content are not supported.}
 }
 \value{
 An \code{htmltools} tag with its engine dependency attached.
 }
 \description{
-Draw a character with a mood and a status line. The status shows the
+Draw a character with a mood, a status line and an optional message bubble. The status shows the
 capitalised mood word until the app sets its own text. It follows the mood
 again after \code{\link[=mascot_status]{mascot_status()}} is supplied without text.
 }
 \details{
+Use the always visible status line for a short description of the current state.
+Use a bubble for a message about something that happened; it may time out.
+Use \code{mascot_bubble(..., duration = Inf)} for a message the user must act on,
+such as an invalid form, because a timed message can vanish before it is read.
+
 In Shiny the mascot uses an input binding with a \code{NULL} input value.
 A module can put the mascot in its UI and update it from its server:
 

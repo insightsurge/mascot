@@ -1,6 +1,6 @@
 #' Add a mascot to a page
 #'
-#' Draw a character with a mood and a status line. The status shows the
+#' Draw a character with a mood, a status line and an optional message bubble. The status shows the
 #' capitalised mood word until the app sets its own text. It follows the mood
 #' again after [mascot_status()] is supplied without text.
 #'
@@ -13,10 +13,20 @@
 #'   See [mascot_moods()] for choices. `NULL` is not accepted.
 #' @param status A non-empty string or [mascot_status()] object. `NULL` (the
 #'   default) follows the mood. Text is escaped, including [htmltools::HTML()].
+#' @param bubble A non-empty string, an `htmltools` tag or tag list, or a
+#'   [mascot_bubble()] object. `NULL` (the
+#'   default) shows no bubble. A string uses the helper's five-second duration
+#'   and close button. Plain text is escaped; [htmltools::HTML()] or tags supply
+#'   HTML. Tags with dependencies or head content are not supported.
 #' @returns An `htmltools` tag with its engine dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]
 #' @details
+#' Use the always visible status line for a short description of the current state.
+#' Use a bubble for a message about something that happened; it may time out.
+#' Use `mascot_bubble(..., duration = Inf)` for a message the user must act on,
+#' such as an invalid form, because a timed message can vanish before it is read.
+#'
 #' In Shiny the mascot uses an input binding with a `NULL` input value.
 #' A module can put the mascot in its UI and update it from its server:
 #' ```r
@@ -38,15 +48,17 @@
 #'   ui = shiny::fluidPage(mascot(id = "helper")),
 #'   server = function(input, output, session) {}
 #' )
-mascot <- function(character = "tessa", id, mood = "idle", status = NULL) {
+mascot <- function(character = "tessa", id, mood = "idle", status = NULL, bubble = NULL) {
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   character <- as_character_arg(character, environment())
   mood <- as_mood_arg(mood, environment())
   status <- as_status_arg(status, environment())
+  bubble <- as_bubble_arg(bubble, environment())
   mode <- if (is.null(status$text)) "mood" else "custom"
   tag <- htmltools::tags$div(
     class = "mascot",
     id = id,
+    tabindex = "-1",
     `data-character` = character$id,
     `data-mood` = mood$name,
     `data-status` = mode,
@@ -58,13 +70,15 @@ mascot <- function(character = "tessa", id, mood = "idle", status = NULL) {
     htmltools::tags$canvas(
       class = "mascot-canvas",
       role = "img",
+      tabindex = "0",
       `aria-label` = paste0(character$name, ", ", mood$name)
     ),
     htmltools::tags$div(
       class = "mascot-status",
       role = "status",
       if (mode == "mood") mood_label(mood$name) else status$text
-    )
+    ),
+    bubble_tag(bubble)
   )
   htmltools::attachDependencies(tag, mascot_dependency())
 }
@@ -99,15 +113,15 @@ as_status_arg <- function(x, call) {
 #' Check a build-time argument with the public call attached
 #' @noRd
 check_arg <- function(x, arg, call) {
-  checkmate::assert_choice(arg, c("character", "mood", "status"))
+  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture"))
   checkmate::assert_environment(call)
   # x is checked by arg_problem(), shared with warning-only runtime validation.
   problem <- arg_problem(x, arg)
   if (is.null(problem)) {
     return(invisible(NULL))
   }
-  if (arg != "status" && isTRUE(checkmate::check_string(x, min.chars = 1))) {
-    valid <- if (arg == "character") builtin_characters()$id else mood_table()$name
+  if (!arg %in% c("status", "bubble") && isTRUE(checkmate::check_string(x, min.chars = 1))) {
+    valid <- switch(arg, character = builtin_characters()$id, mood = mood_table()$name, gesture = gesture_table()$name)
     abort_choice(x, valid, arg, arg, call)
   }
   cli::cli_abort("{problem}", call = call)
@@ -116,23 +130,60 @@ check_arg <- function(x, arg, call) {
 #' A plain-text problem, or NULL for a valid shortcut or helper
 #' @noRd
 arg_problem <- function(x, arg) {
-  checkmate::assert_choice(arg, c("character", "mood", "status"))
+  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture"))
   # check_* deliberately replaces assert_* for x: runtime values must only warn.
   helper <- paste0("mascot_", arg)
+  if (inherits(x, "mascot_bubble") && arg == "bubble") {
+    if (
+      !is.list(x) ||
+        length(x) != 4L ||
+        !setequal(names(x), c("text", "html", "duration", "closable")) ||
+        !isTRUE(checkmate::check_string(x$text, min.chars = 1, null.ok = TRUE)) ||
+        !isTRUE(checkmate::check_flag(x$html)) ||
+        !isTRUE(checkmate::check_number(x$duration, lower = 0)) ||
+        x$duration == 0 ||
+        !isTRUE(checkmate::check_flag(x$closable))
+    ) {
+      return("`bubble` must be a mascot_bubble() object with valid text, html, duration and closable fields.")
+    }
+    return(NULL)
+  }
+  if (inherits(x, "mascot_gesture") && arg == "gesture") {
+    if (!is.list(x) || !isTRUE(checkmate::check_choice(x$name, gesture_table()$name))) {
+      return(paste0(
+        "`gesture` must name one of ",
+        paste(encodeString(gesture_table()$name, quote = '"'), collapse = ", "),
+        "; use mascot_gesture()."
+      ))
+    }
+    return(NULL)
+  }
+  if (arg == "bubble" && inherits(x, c("shiny.tag", "shiny.tag.list"))) {
+    return(tryCatch(
+      {
+        render_bubble_text(x)
+        NULL
+      },
+      error = function(error) conditionMessage(error)
+    ))
+  }
   if (inherits(x, helper)) {
     return(NULL)
   }
-  if (arg == "status" && is.null(x)) {
+  if (arg %in% c("status", "bubble") && is.null(x)) {
     return(NULL)
   }
   if (!isTRUE(checkmate::check_string(x, min.chars = 1))) {
+    if (arg == "bubble") {
+      return("`bubble` must be a non-empty string, an htmltools tag or tag list, or a mascot_bubble() object.")
+    }
     suffix <- if (arg == "status") "; use mascot_status() to follow the mood" else ""
     return(paste0("`", arg, "` must be a non-empty string or a ", helper, "() object", suffix, "."))
   }
-  if (arg == "status") {
+  if (arg %in% c("status", "bubble")) {
     return(NULL)
   }
-  valid <- if (arg == "character") builtin_characters()$id else mood_table()$name
+  valid <- switch(arg, character = builtin_characters()$id, mood = mood_table()$name, gesture = gesture_table()$name)
   if (!x %in% valid) {
     return(paste0(
       "`",

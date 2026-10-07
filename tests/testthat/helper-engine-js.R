@@ -60,7 +60,7 @@ error_js <- function(code) {
 }
 
 # Host integration page: real packaged assets and real markup, with motion reduced before navigation.
-local_host_page <- function(env = parent.frame()) {
+local_host_page <- function(env = parent.frame(), bubble = NULL, reduced = TRUE, scheme = "light") {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
   scripts <- file.path(www, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
@@ -70,7 +70,7 @@ local_host_page <- function(env = parent.frame()) {
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>host</title>',
       sprintf('<link rel="stylesheet" href="file://%s">', normalizePath(file.path(www, "mascot.css"))),
       '</head><body>',
-      as.character(mascot(id = "a")),
+      as.character(mascot(id = "a", bubble = bubble)),
       '<script type="application/json" data-mascot-character="blob">',
       readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
       '</script>',
@@ -81,7 +81,12 @@ local_host_page <- function(env = parent.frame()) {
   )
   session <- chromote::ChromoteSession$new(parent = test_browser())
   withr::defer(session$close(), envir = env)
-  session$Emulation$setEmulatedMedia(features = list(list(name = "prefers-reduced-motion", value = "reduce")))
+  session$Emulation$setEmulatedMedia(
+    features = list(
+      list(name = "prefers-reduced-motion", value = if (reduced) "reduce" else "no-preference"),
+      list(name = "prefers-color-scheme", value = scheme)
+    )
+  )
   loaded <- session$Page$loadEventFired(wait_ = FALSE)
   session$Page$navigate(paste0("file://", normalizePath(page)), wait_ = FALSE)
   session$wait_for(loaded)

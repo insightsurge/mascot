@@ -19,7 +19,10 @@ mascot_moods()
 \code{\link[=mascot]{mascot()}}
 
 Other mascot helpers:
+\code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
+\code{\link[=mascot_gesture]{mascot_gesture()}},
+\code{\link[=mascot_gestures]{mascot_gestures()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_status]{mascot_status()}}
 }

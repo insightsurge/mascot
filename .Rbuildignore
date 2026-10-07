@@ -25,3 +25,4 @@
 ^tools$
 ^biome\.json$
 ^site$
+^firebase\.json$

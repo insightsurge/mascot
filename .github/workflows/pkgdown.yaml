@@ -1,8 +1,8 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (pkgdown.yaml).
 # Builds the pkgdown site from main only (a rule, #127): on every push to main, and by hand on main. Never on pull
 # requests: the site will take its theme from a private theme package, which pull requests from outside contributors
-# can't install. Uploads the site as an artifact (download, unzip, open index.html). No deploy yet: GitHub Pages on a
-# private repo needs a paid plan; add the deploy step once the repo is public (#115).
+# can't install. Uploads the site as an artifact (download, unzip, open index.html) and deploys keylessly to Firebase
+# until GitHub Pages takes over when the repo is public (#195, #115). Setup: docs/deploy.md.
 on:
   push:
     branches: [main]
@@ -21,8 +21,13 @@ jobs:
     # A run started by hand on another branch does nothing: the site is built from main only.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
+    permissions:
+      contents: read
+      id-token: write  # keyless auth for this job only
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      DEPLOY_ENABLED: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && vars.GCP_SERVICE_ACCOUNT != '' && vars.FIREBASE_PROJECT_ID != '' && vars.FIREBASE_SITE_ID != '' }}
+      FIREBASE_TOOLS: "firebase-tools@15.31.0"
 
     steps:
       - uses: actions/checkout@v7
@@ -50,3 +55,26 @@ jobs:
           name: pkgdown-site
           path: site/
           retention-days: 14
+
+      - name: Authenticate to Google Cloud (keyless)
+        if: env.DEPLOY_ENABLED == 'true'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: actions/setup-node@v7
+        if: env.DEPLOY_ENABLED == 'true'
+        with:
+          node-version: 24
+
+      - name: Deploy to Firebase Hosting
+        if: env.DEPLOY_ENABLED == 'true'
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_SITE_ID: ${{ vars.FIREBASE_SITE_ID }}
+        run: |
+          node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("firebase.json", "utf8")); config.hosting.site = process.env.FIREBASE_SITE_ID; fs.writeFileSync("firebase.json", JSON.stringify(config, null, 2) + "\n");'
+          npx --yes "$FIREBASE_TOOLS" deploy --only hosting \
+            --project "$FIREBASE_PROJECT_ID" --non-interactive
+          printf 'Site deployed: https://%s.web.app\n' "$FIREBASE_SITE_ID" >> "$GITHUB_STEP_SUMMARY"

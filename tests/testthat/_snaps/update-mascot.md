@@ -16,14 +16,14 @@
     Condition
       Error in `updateMascot()`:
       ! Unexpected arguments: "typo".
-      i Use `id`, `character`, `mood`, `status` and `session`; `session` must be named.
+      i Use `id`, `character`, `mood`, `status`, `bubble`, `gesture` and `session`; `gesture` and `session` must be named.
 
 ---
 
     Code
-      updateMascot("helper", NULL, NULL, NULL, session)
+      updateMascot("helper", NULL, NULL, NULL, NULL, session)
     Condition
       Error in `updateMascot()`:
       ! Unexpected arguments: "unnamed".
-      i Use `id`, `character`, `mood`, `status` and `session`; `session` must be named.
+      i Use `id`, `character`, `mood`, `status`, `bubble`, `gesture` and `session`; `gesture` and `session` must be named.
 

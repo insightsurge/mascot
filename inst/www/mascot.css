@@ -1,9 +1,30 @@
+/* Page themes supply the fallbacks; Bootstrap variables still take priority. */
+:root,
+[data-bs-theme="light"] {
+  --mascot-bubble-bg: #fff;
+  --mascot-bubble-color: #212529;
+  --mascot-bubble-border: #dee2e6;
+}
+
+[data-bs-theme="dark"] {
+  --mascot-bubble-bg: #212529;
+  --mascot-bubble-color: #f8f9fa;
+  --mascot-bubble-border: #495057;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-bs-theme="light"]):not([data-bs-theme="dark"]) {
+    --mascot-bubble-bg: #212529;
+    --mascot-bubble-color: #f8f9fa;
+    --mascot-bubble-border: #495057;
+  }
+}
+
 .mascot {
   --mascot-size: 160px;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
 }
 
 .mascot-canvas {
@@ -12,7 +33,95 @@
 }
 
 .mascot-status {
+  margin-top: 0.5rem;
   font: inherit;
   color: inherit;
   text-align: center;
+}
+
+/* Reserve the same space when empty; long messages scroll rather than moving the page. */
+.mascot-bubble-region {
+  order: -1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 16em;
+  max-width: calc(100vw - 2rem);
+  height: calc(10em + 24px + 1rem);
+  flex-shrink: 0;
+}
+
+.mascot-bubble {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 16em;
+  padding: 0.75em;
+  margin-bottom: 1rem;
+  border: 1px solid var(--bs-border-color, var(--mascot-bubble-border, #dee2e6));
+  border-radius: 0.75em;
+  background: var(--bs-body-bg, var(--mascot-bubble-bg, #fff));
+  color: var(--bs-body-color, var(--mascot-bubble-color, #212529));
+  font: inherit;
+  overflow-wrap: anywhere;
+  animation: mascot-bubble-appear 150ms ease-out;
+}
+
+.mascot-bubble[hidden] {
+  display: none;
+}
+
+.mascot-bubble-text {
+  max-height: 7em;
+  overflow-y: auto;
+}
+
+.mascot-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -0.4em;
+  left: calc(50% - 0.35em);
+  width: 0.7em;
+  height: 0.7em;
+  transform: rotate(45deg);
+  background: var(--bs-body-bg, var(--mascot-bubble-bg, #fff));
+  border-right: 1px solid var(--bs-border-color, var(--mascot-bubble-border, #dee2e6));
+  border-bottom: 1px solid var(--bs-border-color, var(--mascot-bubble-border, #dee2e6));
+}
+
+/* The close button sits in the top-right corner; the text keeps clear of it. Tab order is unchanged (text, then button). */
+.mascot-bubble:has(.mascot-bubble-close) {
+  padding-right: calc(0.75em + 24px + 0.25em);
+}
+
+.mascot-bubble-close {
+  position: absolute;
+  top: 0.4em;
+  right: 0.4em;
+  display: block;
+  box-sizing: border-box;
+  min-width: 24px;
+  min-height: 24px;
+  margin: 0;
+  padding: 0.1em 0.4em;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--bs-border-color, var(--mascot-bubble-border, #dee2e6));
+  border-radius: 0.25em;
+  cursor: pointer;
+}
+
+@keyframes mascot-bubble-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-bubble {
+    animation: none;
+  }
 }

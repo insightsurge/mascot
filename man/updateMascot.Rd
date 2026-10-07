@@ -9,7 +9,9 @@ updateMascot(
   character = NULL,
   mood = NULL,
   status = NULL,
+  bubble = NULL,
   ...,
+  gesture = NULL,
   session = shiny::getDefaultReactiveDomain()
 )
 }
@@ -28,7 +30,17 @@ leaves the mood unchanged.}
 (the default) leaves the status unchanged; \code{mascot_status()} hands the
 status back to the mood. Text is always escaped.}
 
+\item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the
+default) leaves the bubble unchanged; \code{mascot_bubble()} clears it. Plain
+text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply HTML. Tags with
+dependencies or head content are not supported.}
+
 \item{...}{Must be empty. Extra arguments are errors.}
+
+\item{gesture}{A gesture name or \code{\link[=mascot_gesture]{mascot_gesture()}} object. \code{NULL} (the
+default) sends no gesture. Use \code{"nod"} to acknowledge an action or \code{"wave"}
+to greet. Must be named. See \code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions.}
 
 \item{session}{A Shiny session, defaulting to the current reactive domain.
 Must be named when supplied. \code{NULL} outside a server or module is an error.}
@@ -37,15 +49,26 @@ Must be named when supplied. \code{NULL} outside a server or module is an error.
 Called for its side effect; returns \code{NULL} invisibly.
 }
 \description{
-Apply a character, mood and status together. Invalid values warn and leave
-the mascot unchanged. In Shiny development mode they also show a worried
+Apply a character, mood, status, bubble and gesture together. Invalid values
+warn and leave the mascot unchanged. In Shiny development mode they also show a worried
 mascot with the problem as its status; the next good update clears it.
 Updates sent before a mascot appears are kept until it appears.
 }
 \details{
+Use the always visible status line for a short description of the current state.
+Use a bubble for a message about something that happened; it may time out.
+Use \code{mascot_bubble(..., duration = Inf)} for a message the user must act on,
+such as an invalid form, because a timed message can vanish before it is read.
+
 In a module use \code{mascot(id = ns("helper"))} in the UI, and
 \code{updateMascot("helper")} in its server. The session namespace is added once.
 An invalid \code{id} type, missing session or extra argument is an error.
+A character or mood change applies before the gesture. During a character
+swap the engine drops the gesture: the wave within the swap replaces it. Reduced
+motion skips movement. Gestures sent before the mascot appears are dropped
+with a browser console warning. Bubbles survive mood changes and swaps; a
+queued bubble's timer starts when it appears. Infinite duration is sent as
+JSON \code{null}. See \code{\link[=mascot_bubble]{mascot_bubble()}} for timing and closing behaviour.
 Calling with all update fields \code{NULL} does nothing.
 
 Updates sent before a mascot appears are kept for it, as long as one mascot is
@@ -66,7 +89,8 @@ shiny::shinyApp(
       updateMascot("helper", mood = "thinking", status = "Working")
     })
     shiny::observeEvent(input$done, {
-      updateMascot("helper", mood = "happy", status = mascot_status())
+      updateMascot("helper", mood = "happy", status = mascot_status(),
+        bubble = "Finished", gesture = "nod")
     })
   }
 )

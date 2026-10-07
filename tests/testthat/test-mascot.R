@@ -5,7 +5,14 @@ describe("mascot()", {
     expect_identical(tag$name, "div")
     expect_identical(
       tag$attribs,
-      list(class = "mascot", id = "helper", `data-character` = "tessa", `data-mood` = "idle", `data-status` = "mood")
+      list(
+        class = "mascot",
+        id = "helper",
+        tabindex = "-1",
+        `data-character` = "tessa",
+        `data-mood` = "idle",
+        `data-status` = "mood"
+      )
     )
     html <- sub('(?s)(<script[^>]*>).*?(</script>)', '\\1[character JSON]\\2', as.character(tag), perl = TRUE)
     expect_snapshot(cat(html))
@@ -54,5 +61,94 @@ describe("argument converters", {
     expect_error(check_arg("idle", "other", environment()), "'arg'")
     expect_error(check_arg("idle", "mood", NULL), "'call'")
     expect_error(arg_problem("idle", "other"), "'arg'")
+  })
+})
+
+
+describe("mascot() bubbles", {
+  it("renders escaped text or explicit HTML with an accessible close button", {
+    plain <- as.character(mascot(id = "a", bubble = "<b>Ready</b>"))
+    expect_match(plain, "&lt;b&gt;Ready&lt;/b&gt;", fixed = TRUE)
+    expect_identical(plain, as.character(mascot(id = "a", bubble = mascot_bubble("<b>Ready</b>"))))
+    html <- as.character(mascot(id = "a", bubble = mascot_bubble(htmltools::HTML("<b>Ready</b>"), Inf)))
+    expect_match(html, '<b>Ready</b>', fixed = TRUE)
+    expect_match(html, 'aria-label="Close message"', fixed = TRUE)
+    expect_match(html, 'type="button"', fixed = TRUE)
+    expect_match(html, 'aria-live="polite"', fixed = TRUE)
+    expect_false(grepl('data-duration=', html, fixed = TRUE))
+    expect_false(grepl(
+      'mascot-bubble-close',
+      as.character(mascot(id = "a", bubble = mascot_bubble("Ready", closable = FALSE))),
+      fixed = TRUE
+    ))
+    expect_match(as.character(mascot(id = "a")), 'hidden', fixed = TRUE)
+    # Reading order is canvas, status, bubble text, close button; the status is not a tab stop.
+    expect_true(regexpr('mascot-canvas', html) < regexpr('mascot-status', html))
+    expect_true(regexpr('mascot-status', html) < regexpr('mascot-bubble-text', html))
+    expect_true(regexpr('mascot-bubble-text', html) < regexpr('mascot-bubble-close', html))
+  })
+  it("rejects malformed shortcuts and bubble objects", {
+    for (x in list("", 1, NA_character_, c("a", "b"))) {
+      expect_error(mascot(id = "a", bubble = x), "bubble.*non-empty string")
+    }
+    bad <- mascot_bubble("Ready")
+    bad$duration <- 0
+    expect_error(mascot(id = "a", bubble = bad), "bubble.*valid text")
+  })
+})
+
+describe("bubble keyboard markup", {
+  it("G3 leaves static bubble text out of the tab order", {
+    tag <- bubble_tag(mascot_bubble("Ready"))
+    text <- tag$children[[1]]$children[[1]]
+    expect_identical(text$attribs$class, "mascot-bubble-text")
+    expect_null(text$attribs$tabindex)
+  })
+  it("G4 makes the mascot a programmatic focus target only", {
+    expect_identical(mascot(id = "a")$attribs$tabindex, "-1")
+  })
+})
+
+
+describe("mascot() tag bubbles", {
+  it("R2 renders a deferred tag once at build time and errors on rendering failures", {
+    calls <- new.env(parent = emptyenv())
+    calls$count <- 0L
+    deferred <- htmltools::tagList(htmltools::tagFunction(function() {
+      calls$count <- calls$count + 1L
+      shiny::tags$strong(paste("Saved", calls$count))
+    }))
+    html <- as.character(mascot(id = "a", bubble = deferred))
+    expect_identical(calls$count, 1L)
+    expect_match(html, "<strong>Saved 1</strong>", fixed = TRUE)
+    broken <- htmltools::tagList(htmltools::tagFunction(function() stop("Cannot render message")))
+    expect_error(mascot(id = "a", bubble = broken), "Cannot render message")
+  })
+  it("G6 renders tag shortcuts and rejects dependency-bearing tags", {
+    expect_match(
+      as.character(mascot(id = "a", bubble = shiny::tags$strong("Saved"))),
+      "<strong>Saved</strong>",
+      fixed = TRUE
+    )
+    tag <- htmltools::attachDependencies(
+      shiny::tags$strong("Saved"),
+      htmltools::htmlDependency("bubble-test", "1.0", src = c(file = tempdir()))
+    )
+    expect_error(mascot(id = "a", bubble = tag), "text.*dependencies.*not supported")
+  })
+})
+
+describe("message guidance", {
+  it("R3 explains state, event messages and actionable message duration in each help page", {
+    for (topic in c("mascot", "updateMascot", "mascot_bubble")) {
+      path <- system.file("man", paste0(topic, ".Rd"), package = "mascot")
+      rd <- if (nzchar(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[[paste0(topic, ".Rd")]]
+      text <- paste(unlist(rd), collapse = "")
+      expect_match(text, "always visible", info = topic)
+      expect_match(text, "current state", info = topic)
+      expect_match(text, "something that happened", info = topic)
+      expect_match(text, "duration = Inf", fixed = TRUE, info = topic)
+      expect_match(text, "invalid form", info = topic)
+    }
   })
 })

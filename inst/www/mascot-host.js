@@ -9,6 +9,12 @@
  * The host owns canvas dimensions (CSS size times pixel ratio), the 300-unit transform and accessible text.
  * Size patches are { size: pixels|percentage, small_screen: pixels|percentage|null, simplify_when_small: boolean }.
  * Placement patches are { floating: boolean, position: corner, minimise: boolean }; neither patch remounts the engine.
+ * Theme patches are { light, dark, mode, css, brand }; empty maps are null, mode null selects the host default
+ * (light in Shiny, auto on static pages). Maps use description role names. Brand retains primary/secondary
+ * colours for the incoming character's brandSlots. A theme replaces overrides, and survives character swaps.
+ * Auto follows source data-bs-theme, Quarto's body class, then the media preference; CSS reads the source context.
+ * Missing/invalid CSS uses the character colour and warns; contrast below 3:1 warns without changing the colour.
+ * One theme observer exists while auto is used; the shared scheme listener serves auto and floating bubbles.
  * CSS chooses the narrow-screen size. One ResizeObserver per element refreshes its backing canvas and detail pose;
  * zero sizes retain the last usable drawing. Shared viewport/density and notification observers are reference-counted.
  * Floating elements move to body; a source marker preserves tab visibility, inherited text/theme and Shiny teardown.
@@ -34,6 +40,8 @@
   const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
   let densityMedia = null;
   let schemeMedia = null;
+  let modeMutation = null;
+  const colourContext = document.createElement('canvas').getContext('2d');
   let notificationMutation = null;
   let notificationResize = null;
   let notificationPanel = null;
@@ -52,11 +60,11 @@
         'aria-label',
         `Restore ${record.names.get(snapshot.character)}, ${snapshot.mood}`,
       );
-      const colours = record.descriptions.get(snapshot.character).colours;
+      const colours = record.palettes.get(snapshot.character) || record.descriptions.get(snapshot.character).colours;
       const fallback = Object.values(colours)[0];
-      record.el.style.setProperty('--mascot-button-bg', colours.body || fallback);
-      record.el.style.setProperty('--mascot-button-fg', colours.outline || fallback);
-      record.el.style.setProperty('--mascot-button-glow', colours.rim || colours.body || fallback);
+      setProperty(record.el, '--mascot-button-bg', colours.body || fallback);
+      setProperty(record.el, '--mascot-button-fg', colours.outline || fallback);
+      setProperty(record.el, '--mascot-button-glow', colours.rim || colours.body || fallback);
     }
     const text = record.problem || (record.status.mode === 'mood' ? label(snapshot.mood) : record.status.text);
     if (record.statusEl.textContent !== text) record.statusEl.textContent = text;
@@ -205,6 +213,196 @@
     if (typeof name !== 'string' || !name.length) throw new Error('gesture needs a non-empty name');
     // The engine owns the vocabulary. Its pure pose path validates without changing a controller.
     if (description) ns.motion.pose(description, { gesture: name, reduced: true }, 0);
+  }
+
+  const emptyTheme = () => ({ light: null, dark: null, mode: null, css: null, brand: null });
+  const themeMode = (theme) => theme.mode ?? (window.Shiny?.InputBinding ? 'light' : 'auto');
+
+  function themeMap(value, field, css = false) {
+    if (value === null) return null;
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      throw new Error(`theme.${field} needs a map or null`);
+    for (const [role, colour] of Object.entries(value)) {
+      if (['light', 'dark', 'default'].includes(role))
+        throw new Error(`theme.${field}: reserved colour role "${role}"`);
+      if (css ? typeof colour !== 'string' || !/^--[A-Za-z_][A-Za-z0-9_-]*$/.test(colour) : !ns.validColour(colour))
+        throw new Error(`theme.${field}.${role}: invalid ${css ? 'CSS variable' : 'colour'} "${colour}"`);
+    }
+    return { ...value };
+  }
+
+  function validateTheme(value) {
+    const fields = ['light', 'dark', 'mode', 'css', 'brand'];
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      Array.isArray(value) ||
+      Object.keys(value).length !== fields.length ||
+      Object.keys(value).some((key) => !fields.includes(key))
+    )
+      throw new Error('theme needs light, dark, mode, css and brand fields');
+    if (value.mode !== null && !['light', 'dark', 'auto'].includes(value.mode))
+      throw new Error('theme.mode needs light, dark, auto or null');
+    const result = {
+      light: themeMap(value.light, 'light'),
+      dark: themeMap(value.dark, 'dark'),
+      mode: value.mode,
+      css: themeMap(value.css, 'css', true),
+      brand: themeMap(value.brand, 'brand'),
+    };
+    if (
+      result.brand &&
+      (Object.keys(result.brand).length !== 2 ||
+        Object.keys(result.brand).some((key) => !['primary', 'secondary'].includes(key)))
+    )
+      throw new Error('theme.brand needs primary and secondary colours');
+    return result;
+  }
+
+  function pageMode(source) {
+    for (let el = source; el; el = el.parentElement) {
+      if (['light', 'dark'].includes(el.dataset.bsTheme)) return el.dataset.bsTheme;
+    }
+    if (document.body.classList.contains('quarto-dark')) return 'dark';
+    if (document.body.classList.contains('quarto-light')) return 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function browserColour(value) {
+    if (
+      !value ||
+      /^(inherit|initial|unset|revert|revert-layer|currentcolor)$/i.test(value) ||
+      !CSS.supports('color', value)
+    )
+      return null;
+    // Canvas normalises named colours and alpha hex without adding DOM nodes or drawing pixels.
+    colourContext.fillStyle = value;
+    const colour = colourContext.fillStyle;
+    return ns.validColour(colour) ? colour : null;
+  }
+
+  function colourChannels(colour) {
+    if (colour.startsWith('#')) {
+      const hex = colour.length === 4 ? [...colour.slice(1)].map((x) => x + x).join('') : colour.slice(1);
+      return [0, 2, 4].map((at) => parseInt(hex.slice(at, at + 2), 16) / 255).concat(1);
+    }
+    const values = colour
+      .slice(colour.indexOf('(') + 1, -1)
+      .split(',')
+      .map(Number);
+    return values
+      .slice(0, 3)
+      .map((x) => x / 255)
+      .concat(values[3] ?? 1);
+  }
+
+  function colourContrast(colour, background) {
+    const fg = colourChannels(colour),
+      bg = colourChannels(background);
+    const luminance = (channels) =>
+      channels
+        .slice(0, 3)
+        .reduce(
+          (sum, x, i) => sum + (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4) * [0.2126, 0.7152, 0.0722][i],
+          0,
+        );
+    const values = [luminance(fg.slice(0, 3).map((x, i) => x * fg[3] + bg[i] * (1 - fg[3]))), luminance(bg)];
+    return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
+  }
+
+  function resolveTheme(theme, description, source, strict = false) {
+    const mode = themeMode(theme) === 'auto' ? pageMode(source) : themeMode(theme);
+    const overrides = {};
+    const warnings = [];
+    if (!description) return { overrides, mode, warnings };
+    if (strict && !theme.brand) {
+      for (const field of ['light', 'dark', 'css'])
+        for (const role of Object.keys(theme[field] || {}))
+          if (!has(description.colours, role))
+            throw new Error(
+              `theme.${field}: unknown colour role "${role}"; valid roles: ${Object.keys(description.colours).join(', ')}`,
+            );
+    }
+    const selected = theme.brand ? {} : theme[mode] || {};
+    if (theme.brand) {
+      for (const [slot, roles] of Object.entries(description.brandSlots || {})) {
+        if (!has(theme.brand, slot) || !Array.isArray(roles)) throw new Error(`invalid brand slot "${slot}"`);
+        for (const role of roles) {
+          if (!has(description.colours, role))
+            throw new Error(`brand slot "${slot}" has unknown colour role "${role}"`);
+          selected[role] = theme.brand[slot];
+        }
+      }
+    }
+    for (const role of Object.keys(description.colours)) overrides[role] = has(selected, role) ? selected[role] : null;
+    if (source && theme.css) {
+      const style = getComputedStyle(source);
+      const background =
+        browserColour(
+          style.getPropertyValue('--bs-body-bg').trim() || style.getPropertyValue('--mascot-bubble-bg').trim(),
+        ) || (mode === 'dark' ? '#212529' : '#ffffff');
+      for (const [role, variable] of Object.entries(theme.css)) {
+        if (!has(description.colours, role)) continue;
+        const colour = browserColour(style.getPropertyValue(variable).trim());
+        overrides[role] = colour;
+        if (!colour)
+          warnings.push(
+            `CSS variable "${variable}" for role "${role}" is missing or invalid; the character colour is kept`,
+          );
+        else if (colourContrast(colour, background) < 3)
+          warnings.push(
+            `CSS colour "${colour}" for role "${role}" in ${mode} mode has contrast below 3:1 against ${background}; the colour is kept`,
+          );
+      }
+    }
+    return { overrides, mode, warnings };
+  }
+
+  function commitPalette(record, description, resolved) {
+    record.colours = resolved.overrides;
+    record.mode = resolved.mode;
+    record.palettes.set(
+      description.id,
+      Object.fromEntries(
+        Object.entries(description.colours).map(([role, colour]) => [role, resolved.overrides[role] ?? colour]),
+      ),
+    );
+    for (const message of resolved.warnings) {
+      if (!record.themeWarnings.has(message)) {
+        record.themeWarnings.add(message);
+        warn(message);
+      }
+    }
+  }
+
+  function refreshTheme(record) {
+    const description = record.descriptions.get(record.character);
+    const resolved = resolveTheme(record.theme, description, record.anchor || record.el);
+    if (JSON.stringify(resolved.overrides) !== JSON.stringify(record.colours)) {
+      record.controller.update({ colours: resolved.overrides });
+      commitPalette(record, description, resolved);
+      show(record, record.controller.current());
+    } else commitPalette(record, description, resolved);
+  }
+
+  function watchModes() {
+    const auto = [...live].some((record) => themeMode(record.theme) === 'auto');
+    if (auto && !modeMutation) {
+      modeMutation = new MutationObserver(refreshPage);
+      for (const el of [document.documentElement, document.body])
+        modeMutation.observe(el, { attributes: true, attributeFilter: ['class', 'data-bs-theme'] });
+    } else if (!auto) {
+      modeMutation?.disconnect();
+      modeMutation = null;
+    }
+    const scheme = auto || [...live].some((record) => record.placement.floating);
+    if (scheme && !schemeMedia) {
+      schemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+      schemeMedia.addEventListener('change', refreshPage);
+    } else if (!scheme) {
+      schemeMedia?.removeEventListener('change', refreshPage);
+      schemeMedia = null;
+    }
   }
 
   function validateSizeValue(value) {
@@ -397,6 +595,7 @@
   function refreshViewport() {
     for (const record of live) {
       syncSource(record);
+      refreshTheme(record);
       measure(record);
     }
     refreshNotifications();
@@ -439,6 +638,7 @@
       if (record.anchor && !record.anchor.isConnected) unmount(record.el);
       else {
         syncSource(record);
+        refreshTheme(record);
         measure(record);
       }
     }
@@ -481,11 +681,10 @@
     live.add(record);
     if (live.size === 1) {
       window.addEventListener('resize', refreshViewport);
-      schemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
-      schemeMedia.addEventListener('change', refreshPage);
       densityChanged();
     }
     watchNotifications();
+    watchModes();
   }
 
   function unwatch(record) {
@@ -495,10 +694,9 @@
       window.removeEventListener('resize', refreshViewport);
       densityMedia?.removeEventListener('change', densityChanged);
       densityMedia = null;
-      schemeMedia?.removeEventListener('change', refreshPage);
-      schemeMedia = null;
     }
     watchNotifications();
+    watchModes();
   }
 
   function mount(el) {
@@ -540,6 +738,13 @@
       controller: null,
       size: sizeConfig,
       placement,
+      theme: validateTheme(
+        JSON.parse(el.querySelector('script[data-mascot-theme]')?.textContent || JSON.stringify(emptyTheme())),
+      ),
+      mode: null,
+      colours: {},
+      palettes: new Map(),
+      themeWarnings: new Set(),
       minimised: false,
       detail: 'full',
       renderedSize: null,
@@ -574,10 +779,13 @@
     records.set(el, record);
     try {
       layout(record);
+      const resolved = resolveTheme(record.theme, description, record.anchor || el, true);
+      commitPalette(record, description, resolved);
       record.controller = ns.mount(canvas, description, {
         x: 150,
         baseY: 270,
         mood: el.dataset.mood,
+        colours: record.colours,
         reduced: null,
         onChange: (snapshot) => show(record, snapshot),
       });
@@ -625,16 +833,23 @@
         }
       }
       const { problem, ...good } = patch;
-      if (Object.keys(good).length) apply(el, good);
+      if (Object.keys(good).length) apply(el, good, true);
       if (problem !== undefined) apply(el, { problem });
     }
   }
 
-  function apply(el, patch) {
+  function apply(el, patch, allowThemeDrop = false) {
     const record = records.get(el);
     let prepared;
     try {
-      prepared = prepare(patch, record.descriptions.get(record.character), record.descriptions);
+      prepared = prepare(
+        patch,
+        record.descriptions.get(record.character),
+        record.descriptions,
+        record.theme,
+        record.anchor || el,
+        !allowThemeDrop,
+      );
     } catch (error) {
       warn(error);
       return;
@@ -683,6 +898,12 @@
     if (has(enginePatch, 'mood')) record.mood = enginePatch.mood;
     else if (changed) record.mood = Object.keys(description.moods)[0];
     record.status = status;
+    if (prepared.theme) {
+      record.theme = prepared.theme;
+      record.themeWarnings.clear();
+    }
+    if (prepared.resolved) commitPalette(record, record.descriptions.get(record.character), prepared.resolved);
+    watchModes();
     el.dataset.character = record.character;
     el.dataset.mood = record.mood;
     el.dataset.status = status.mode;
@@ -699,16 +920,25 @@
       layout(record);
       measure(record);
       watchNotifications();
+      watchModes();
+      refreshTheme(record);
     }
     if (has(patch, 'bubble')) replaceBubble(record, prepared.bubble);
     if (has(patch, 'gesture')) record.controller.gesture(patch.gesture);
   }
 
   // Use the same pure preflight for mounted and queued patches; never merge a partial bad patch.
-  function prepare(patch, current, descriptions = new Map(current ? [[current.id, current]] : [])) {
+  function prepare(
+    patch,
+    current,
+    descriptions = new Map(current ? [[current.id, current]] : []),
+    theme = emptyTheme(),
+    source = null,
+    strictTheme = true,
+  ) {
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('update needs an object');
     for (const key of Object.keys(patch)) {
-      if (!['character', 'mood', 'status', 'bubble', 'gesture', 'size', 'placement', 'problem'].includes(key))
+      if (!['character', 'mood', 'status', 'bubble', 'gesture', 'size', 'placement', 'theme', 'problem'].includes(key))
         throw new Error(`unknown update field "${key}"`);
     }
     if (has(patch, 'problem')) {
@@ -750,7 +980,13 @@
     if (has(patch, 'gesture')) validateGesture(candidate, patch.gesture);
     const size = has(patch, 'size') ? validateSize(patch.size) : undefined;
     const placement = has(patch, 'placement') ? validatePlacement(patch.placement) : undefined;
-    return { description, changed, enginePatch, status, bubble, size, placement };
+    const nextTheme = has(patch, 'theme') ? validateTheme(patch.theme) : undefined;
+    const resolved =
+      nextTheme || changed
+        ? resolveTheme(nextTheme || theme, candidate, source, Boolean(nextTheme) && strictTheme)
+        : undefined;
+    if (resolved && candidate) enginePatch.colours = resolved.overrides;
+    return { description, changed, enginePatch, status, bubble, size, placement, theme: nextTheme, resolved };
   }
 
   function mergeQueued(next, patch) {
@@ -759,7 +995,7 @@
       next.character = patch.character;
       delete next.mood;
     }
-    for (const key of ['mood', 'status', 'bubble', 'size', 'placement', 'problem']) {
+    for (const key of ['mood', 'status', 'bubble', 'size', 'placement', 'theme', 'problem']) {
       if (has(patch, key)) next[key] = patch[key];
     }
   }
@@ -817,6 +1053,9 @@
       problem: record.problem,
       size: { ...record.size },
       placement: { ...record.placement },
+      theme: JSON.parse(JSON.stringify(record.theme)),
+      mode: record.mode,
+      colours: { ...record.colours },
       minimised: record.minimised,
       renderedSize: record.renderedSize,
       detail: record.detail,

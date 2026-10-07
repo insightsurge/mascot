@@ -52,6 +52,8 @@ reference:
       - mascot_mood
       - mascot_size
       - mascot_placement
+      - mascot_theme
+      - mascot_colour_roles
       - mascot_status
       - mascot_bubble
       - mascot_gesture

@@ -642,3 +642,94 @@ describe("floating mascots in dynamic module UI", {
     expect_equal(app$get_js("document.querySelectorAll('.mascot-source').length"), 0)
   })
 })
+
+describe("updateMascot() themes", {
+  it("sends one normalised theme in a module and leaves NULL unchanged", {
+    captured <- new.env(parent = emptyenv())
+    captured$patches <- list()
+    local_mocked_bindings(send_update = function(session, id, patch) {
+      captured$patches[[length(captured$patches) + 1L]] <- list(id = session$ns(id), patch = patch)
+    })
+    module <- function(id) shiny::moduleServer(id, function(input, output, session) {})
+    shiny::testServer(module, {
+      theme <- mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
+      expect_invisible(updateMascot("helper", theme = theme, mood = "happy", session = session))
+      expect_identical(captured$patches[[1]]$id, session$ns("helper"))
+      expect_named(captured$patches[[1]]$patch, c("mood", "theme"))
+      expect_identical(captured$patches[[1]]$patch$theme$mode, "auto")
+      expect_identical(captured$patches[[1]]$patch$theme$dark$body, "#9EC5FE")
+      updateMascot("helper", theme = NULL, session = session)
+      expect_length(captured$patches, 1)
+      updateMascot("helper", character = "tessa", theme = mascot_theme(), session = session)
+      expect_identical(
+        captured$patches[[2]]$patch$theme,
+        list(light = NULL, dark = NULL, mode = NULL, css = NULL, brand = NULL)
+      )
+      updateMascot("helper", theme = list(body = "#1f6feb"), session = session)
+      expect_identical(captured$patches[[3]]$patch$theme$light, captured$patches[[3]]$patch$theme$dark)
+    })
+  })
+  it("warns for bad themes atomically, sends only a development problem, and retains contrast warnings", {
+    captured <- new.env(parent = emptyenv())
+    captured$patches <- list()
+    local_mocked_bindings(
+      send_update = function(session, id, patch) {
+        captured$patches[[length(captured$patches) + 1L]] <- patch
+      },
+      dev_mode = function() FALSE
+    )
+    shiny::testServer(function(input, output, session) {}, {
+      for (theme in list(1, list(bdoy = "blue"), list(body = "invalid"), structure(list(), class = "mascot_theme"))) {
+        expect_warning(updateMascot("helper", theme = theme, mood = "happy", status = "Saved"), "unchanged")
+      }
+      expect_length(captured$patches, 0)
+      local_mocked_bindings(dev_mode = function() TRUE)
+      expect_warning(updateMascot("helper", theme = list(bdoy = "blue"), character = "missing"), "unchanged")
+      expect_named(captured$patches[[1]], "problem")
+      expect_match(captured$patches[[1]]$problem, "bdoy")
+      expect_warning(updateMascot("helper", theme = mascot_theme(light = list(body = "white"))), "below 3:1")
+      expect_identical(captured$patches[[2]]$theme$light$body, "#FFFFFF")
+      expect_null(captured$patches[[2]]$problem)
+      expect_error(updateMascot("helper", theme = session), "session.*must be named")
+    })
+  })
+})
+
+describe("theme in a Shiny browser", {
+  it("T4 switches explicit palettes from a bslib dark-mode input and defaults Shiny to light", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      brand <- function(dark) {
+        mascot_theme(
+          light = list(body = "#1f6feb"),
+          dark = list(body = "#9ec5fe"),
+          mode = if (identical(dark, "dark")) "dark" else "light"
+        )
+      }
+      shiny::shinyApp(
+        bslib::page_fluid(
+          bslib::input_dark_mode(id = "dark_mode", mode = "light"),
+          mascot(id = "helper", theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"))),
+          shiny::actionButton("reset", "Character colours")
+        ),
+        function(input, output, session) {
+          shiny::observeEvent(input$dark_mode, updateMascot("helper", theme = brand(input$dark_mode)))
+          shiny::observeEvent(input$reset, updateMascot("helper", theme = mascot_theme()))
+        }
+      )
+    })
+    withr::defer(app$stop())
+    app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper'))?.colours.body === '#1F6FEB'")
+    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).mode"), "light")
+    app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === '#9EC5FE'")
+    expect_identical(app$get_js("document.documentElement.dataset.bsTheme"), "dark")
+    app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === '#1F6FEB'")
+    app$click("reset")
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === null")
+    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Idle")
+  })
+})

@@ -12,6 +12,7 @@ updateMascot(
   bubble = NULL,
   size = NULL,
   placement = NULL,
+  theme = NULL,
   ...,
   gesture = NULL,
   session = shiny::getDefaultReactiveDomain()
@@ -45,6 +46,10 @@ in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves the size un
 in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves placement unchanged. Size and
 placement changes keep the mounted engine, its mood and character.}
 
+\item{theme}{A theme in the forms accepted by \code{\link[=mascot]{mascot()}}. \code{NULL} (the
+default) leaves the theme unchanged; \code{mascot_theme()} restores the
+character's own colours. Themes are resolved again after a character swap.}
+
 \item{...}{Must be empty. Extra arguments are errors.}
 
 \item{gesture}{A gesture name or \code{\link[=mascot_gesture]{mascot_gesture()}} object. \code{NULL} (the
@@ -58,7 +63,7 @@ Must be named when supplied. \code{NULL} outside a server or module is an error.
 Called for its side effect; returns \code{NULL} invisibly.
 }
 \description{
-Apply character, mood, status, bubble, size, placement and gesture together. Invalid values
+Apply character, mood, status, bubble, size, placement, theme and gesture together. Invalid values
 warn and leave the mascot unchanged. In Shiny development mode they also show a worried
 mascot with the problem as its status; the next good update clears it.
 Updates sent before a mascot appears are kept until it appears.

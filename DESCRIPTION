@@ -16,11 +16,13 @@ Imports:
     checkmate,
     cli,
     htmltools,
+    jsonlite,
     shiny
 Suggests: 
+    bslib,
     chromote,
     covr,
-    jsonlite,
+    lifecycle,
     shinytest2,
     testthat (>= 3.0.0),
     withr

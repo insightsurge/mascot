@@ -24,6 +24,7 @@
     "sweat": "#9dc3e6",
     "shadow": "#a2aea7"
   },
+  "brandSlots": { "primary": ["body"], "secondary": ["rim", "accessory"] },
   "centreHeight": 104,
   "body": [
     {

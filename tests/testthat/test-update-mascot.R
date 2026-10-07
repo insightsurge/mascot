@@ -757,7 +757,10 @@ describe("updateMascot() motion", {
       expect_length(captured$patches, 4)
       expect_error(updateMascot("helper", motion = session), "session.*must be named")
     })
-    expect_identical(tail(names(formals(updateMascot)), 5), c("theme", "motion", "...", "gesture", "session"))
+    expect_identical(
+      tail(names(formals(updateMascot)), 6),
+      c("theme", "motion", "popup_menu", "...", "gesture", "session")
+    )
   })
   it("rejects the whole update with a warning and sends only development problems", {
     captured <- new.env(parent = emptyenv())
@@ -812,5 +815,76 @@ describe("motion in a Shiny browser", {
     app$set_inputs(animate = TRUE)
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).motion.reduced === null")
     expect_identical(app$get_js("document.getElementById('helper').dataset.reduced"), "auto")
+  })
+})
+
+describe("updateMascot() popup menu", {
+  it("sends replacement and clear patches, leaves NULL unchanged and rejects bad updates atomically", {
+    captured <- new.env(parent = emptyenv())
+    captured$patches <- list()
+    local_mocked_bindings(
+      send_update = function(session, id, patch) {
+        captured$patches[[length(captured$patches) + 1L]] <- list(id = session$ns(id), patch = patch)
+      },
+      dev_mode = function() FALSE
+    )
+    shiny::testServer(function(input, output, session) {}, {
+      updateMascot("helper", popup_menu = c(about = "About"))
+      expect_identical(captured$patches[[1]]$id, session$ns("helper"))
+      expect_identical(
+        captured$patches[[1]]$patch,
+        list(popup_menu = list(items = list(about = "About"), key_bindings = FALSE))
+      )
+      updateMascot("helper", popup_menu = NULL)
+      expect_length(captured$patches, 1)
+      updateMascot("helper", popup_menu = mascot_popup_menu())
+      expect_identical(captured$patches[[2]]$patch$popup_menu, list(items = NULL, key_bindings = FALSE))
+      for (bad in list(1, "Help", character(), structure(list(), class = "mascot_popup_menu"))) {
+        expect_warning(updateMascot("helper", mood = "happy", popup_menu = bad), "unchanged")
+      }
+      expect_length(captured$patches, 2)
+      local_mocked_bindings(dev_mode = function() TRUE)
+      expect_warning(updateMascot("helper", mood = "happy", popup_menu = "Help"), "unchanged")
+      expect_named(captured$patches[[3]]$patch, "problem")
+      expect_error(updateMascot("helper", popup_menu = session), "session.*must be named")
+    })
+    expect_identical(names(formals(updateMascot))[9:12], c("motion", "popup_menu", "...", "gesture"))
+  })
+})
+
+describe("popup menu in a Shiny browser", {
+  it("P6 receives repeated choices in a module and opens the app's modal", {
+    local_shiny_browser()
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      ui <- function(id) {
+        ns <- shiny::NS(id)
+        shiny::tagList(
+          mascot(id = ns("helper"), popup_menu = mascot_popup_menu(c(about = "About this app"), TRUE)),
+          shiny::textOutput(ns("count"))
+        )
+      }
+      shiny::shinyApp(shiny::fluidPage(ui("module")), function(input, output, session) {
+        shiny::moduleServer("module", function(input, output, session) {
+          count <- shiny::reactiveVal(0L)
+          shiny::observeEvent(input$helper_menu, {
+            count(count() + 1L)
+            shiny::showModal(shiny::modalDialog(paste("Choice", input$helper_menu), easyClose = TRUE))
+          })
+          output$count <- shiny::renderText(count())
+        })
+      })
+    })
+    withr::defer(app$stop())
+    app$wait_for_js("!!document.querySelector('#module-helper .mascot-menu-toggle')")
+    for (i in 1:2) {
+      app$click(selector = "#module-helper .mascot-menu-toggle")
+      app$click(selector = "#module-helper [role=menuitem]")
+      app$wait_for_js(sprintf("document.getElementById('module-count').textContent === '%s'", i))
+      app$wait_for_js("!!document.querySelector('.modal.in, .modal.show')")
+      expect_match(app$get_js("document.querySelector('.modal-body').textContent"), "Choice about")
+      app$click(selector = ".modal-footer button")
+      app$wait_for_js("!document.querySelector('.modal.in, .modal.show')")
+    }
   })
 })

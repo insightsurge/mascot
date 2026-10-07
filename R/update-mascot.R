@@ -1,6 +1,7 @@
 #' Update a mascot in a Shiny app
 #'
-#' Apply character, mood, status, bubble, size, placement, theme, motion and gesture together. Invalid values
+#' Apply character, mood, status, bubble, size, placement, theme, motion, menu and
+#' gesture together. Invalid values
 #' warn and leave the mascot unchanged. In Shiny development mode they also show a worried
 #' mascot with the problem as its status; the next good update clears it.
 #' Updates sent before a mascot appears are kept until it appears.
@@ -29,6 +30,9 @@
 #' @param motion A logical flag or [mascot_motion()] object, as in [mascot()].
 #'   `NULL` (the default) leaves motion unchanged. Changes apply to the live mascot
 #'   without restarting it; the visitor's reduced-motion preference still applies.
+#' @param popup_menu A named character vector or [mascot_popup_menu()] object.
+#'   `NULL` (the default) leaves the menu unchanged; `mascot_popup_menu()` removes
+#'   it. Choices arrive as `input$<id>_menu` in the module that owns the mascot.
 #' @param gesture A gesture name or [mascot_gesture()] object. `NULL` (the
 #'   default) sends no gesture. Use `"nod"` to acknowledge an action or `"wave"`
 #'   to greet. Must be named. See [mascot_gestures()] for descriptions.
@@ -87,6 +91,7 @@ updateMascot <- function(
   placement = NULL,
   theme = NULL,
   motion = NULL,
+  popup_menu = NULL,
   ...,
   gesture = NULL,
   session = shiny::getDefaultReactiveDomain()
@@ -102,7 +107,8 @@ updateMascot <- function(
       "Unexpected arguments: {.val {extras}}.",
       "i" = paste(
         "Use {.arg id}, {.arg character}, {.arg mood}, {.arg status},",
-        "{.arg bubble}, {.arg size}, {.arg placement}, {.arg theme}, {.arg motion}, {.arg gesture} and {.arg session};",
+        "{.arg bubble}, {.arg size}, {.arg placement}, {.arg theme}, {.arg motion},",
+        "{.arg popup_menu}, {.arg gesture} and {.arg session};",
         "{.arg gesture} and {.arg session} must be named."
       )
     ))
@@ -116,10 +122,11 @@ updateMascot <- function(
     placement = placement,
     theme = theme,
     motion = motion,
+    popup_menu = popup_menu,
     gesture = gesture
   )
   misplaced <- vapply(
-    values[c("character", "mood", "status", "bubble", "size", "placement", "theme", "motion")],
+    values[c("character", "mood", "status", "bubble", "size", "placement", "theme", "motion", "popup_menu")],
     inherits,
     logical(1),
     what = c("ShinySession", "session_proxy", "MockShinySession")
@@ -220,6 +227,9 @@ updateMascot <- function(
   }
   if (!is.null(motion)) {
     patch$motion <- as_motion_arg(motion, environment())
+  }
+  if (!is.null(popup_menu)) {
+    patch$popup_menu <- as_popup_menu_arg(popup_menu, environment())
   }
   if (!is.null(gesture)) {
     patch$gesture <- if (inherits(gesture, "mascot_gesture")) gesture$name else mascot_gesture(gesture)$name

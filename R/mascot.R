@@ -32,6 +32,12 @@
 #' @param motion A logical flag or [mascot_motion()] object. `TRUE` (the default)
 #'   allows animation while honouring the visitor's reduced-motion preference.
 #'   `FALSE` stops animation. `NULL` is not accepted.
+#' @param popup_menu A named character vector of item labels or a
+#'   [mascot_popup_menu()] object. `NULL` (the default) shows no menu.
+#'   A choice sets `input$<id>_menu` to the item id, including repeated choices.
+#'   In a module, use `ns("helper")` in the UI and read `input$helper_menu` in
+#'   that module's server. Keyboard-only users need `key_bindings = TRUE`;
+#'   see [mascot_popup_menu()] for the module example and guidance.
 #' @returns An `htmltools` tag with its engine dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]
@@ -77,7 +83,8 @@ mascot <- function(
   size = 160,
   placement = "inline",
   theme = NULL,
-  motion = TRUE
+  motion = TRUE,
+  popup_menu = NULL
 ) {
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   character <- as_character_arg(character, environment())
@@ -88,6 +95,7 @@ mascot <- function(
   placement <- as_placement_arg(placement, environment())
   theme <- as_theme_arg(theme, environment(), character$id)
   motion <- as_motion_arg(motion, environment())
+  popup_menu <- as_popup_menu_arg(popup_menu, environment())
   mode <- if (is.null(status$text)) "mood" else "custom"
   tag <- htmltools::tags$div(
     class = "mascot",
@@ -110,6 +118,7 @@ mascot <- function(
       htmltools::HTML(character_json(character$id))
     ),
     theme_tag(theme),
+    popup_menu_tag(popup_menu),
     htmltools::tags$canvas(
       class = "mascot-canvas",
       role = "img",
@@ -158,7 +167,7 @@ as_status_arg <- function(x, call) {
 check_arg <- function(x, arg, call) {
   checkmate::assert_choice(
     arg,
-    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion")
+    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "popup_menu")
   )
   checkmate::assert_environment(call)
   # x is checked by arg_problem(), shared with warning-only runtime validation.
@@ -178,9 +187,12 @@ check_arg <- function(x, arg, call) {
 arg_problem <- function(x, arg) {
   checkmate::assert_choice(
     arg,
-    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion")
+    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "popup_menu")
   )
   # check_* deliberately replaces assert_* for x: runtime values must only warn.
+  if (arg == "popup_menu") {
+    return(popup_menu_problem(x))
+  }
   if (arg == "motion") {
     return(motion_problem(x))
   }

@@ -1,5 +1,7 @@
 # mascot 0.0.2.9000
 
+* `mascot_popup_menu()` adds app-defined choices through `popup_menu`, with a Shiny input for every choice, optional keyboard controls and a held look-up pose while open (#143).
+
 * `mascot()` and `updateMascot()` gain `motion` to stop animation or, with
   `mascot_motion(swap = FALSE)`, make character changes instant. The visitor's
   reduced-motion preference is always honoured (#203).

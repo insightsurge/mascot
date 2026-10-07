@@ -1489,3 +1489,141 @@ describe("mascot.host motion", {
     expect_identical(r$on$animation, "mascot-bubble-appear")
   })
 })
+
+describe("mascot.host popup menu", {
+  it("P6 toggles by pointer, sends repeated event choices, holds the pose and clears it without motion", {
+    skip_without_chrome()
+    js <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "<b>About</b>", help = "Help"), TRUE),
+      shiny_menu = TRUE,
+      motion = FALSE,
+      reduced = FALSE,
+      size = 24,
+      viewport = c(320, 800)
+    )
+    r <- js(host_motion_js(
+      "const button=el.querySelector('.mascot-menu-toggle'),menu=el.querySelector('[role=menu]');
+      const initial=menu.hidden;button.click();const rect=menu.getBoundingClientRect(),edges=rect.left>=15&&rect.right<=305;const pose=calls.at(-1).pose.lookY;
+      const label=menu.firstChild.textContent,escaped=menu.querySelector('b')===null;
+      menu.firstChild.click();button.click();menu.firstChild.click();
+      const cleared=calls.at(-1).pose.lookY===undefined;
+      button.click();document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+      const outside=menu.hidden;button.click();button.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+      return {initial,edges,pose,label,escaped,cleared,outside,escape:menu.hidden,focus:document.activeElement===button,
+        expanded:button.getAttribute('aria-expanded'),events:menuEvents,queue:queued.size,role:button.tagName};"
+    ))
+    expect_true(r$initial)
+    expect_true(r$edges)
+    expect_equal(r$pose, -1)
+    expect_true(r$escaped)
+    expect_identical(r$label, "<b>About</b>")
+    expect_true(r$cleared)
+    expect_true(r$outside)
+    expect_true(r$escape)
+    expect_true(r$focus)
+    expect_identical(r$expanded, "false")
+    expect_identical(r$role, "BUTTON")
+    expect_equal(r$queue, 0)
+    expect_equal(length(r$events), 2)
+    for (event in r$events) {
+      expect_identical(event, list("a_menu", "about", list(priority = "event")))
+    }
+  })
+  it("P6 gates opening keys and navigates only the focused mascot menu", {
+    skip_without_chrome()
+    js <- local_host_page(popup_menu = c(about = "About", help = "Help", more = "More"), shiny_menu = TRUE)
+    r <- js(
+      "(() => {const el=document.getElementById('a'),send=patch=>mascot.host.receive({id:'a',patch});
+      let button=el.querySelector('.mascot-menu-toggle');
+      const key=(target,key)=>target.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
+      button.focus();key(button,'Enter');const disabled=!mascot.host.state(el).menuOpen;
+      send({popup_menu:{items:{about:'About',help:'Help',more:'More'},key_bindings:true}});
+      button=el.querySelector('.mascot-menu-toggle');key(document.body,'Enter');const global=!mascot.host.state(el).menuOpen;
+      button.focus();key(button,' ');const first=document.activeElement.dataset.itemId;
+      key(document.activeElement,'End');const end=document.activeElement.dataset.itemId;
+      key(document.activeElement,'ArrowDown');const wrap=document.activeElement.dataset.itemId;
+      key(document.activeElement,'ArrowUp');const up=document.activeElement.dataset.itemId;
+      key(document.activeElement,'Home');const home=document.activeElement.dataset.itemId;
+      key(document.activeElement,'Escape');return {disabled,global,first,end,wrap,up,home,focus:document.activeElement===button};})()"
+    )
+    expect_true(r$disabled)
+    expect_true(r$global)
+    expect_identical(r$first, "about")
+    expect_identical(r$end, "more")
+    expect_identical(r$wrap, "about")
+    expect_identical(r$up, "more")
+    expect_identical(r$home, "about")
+    expect_true(r$focus)
+  })
+  it("P6 pauses bubble time, rejects whole bad patches and removes menu controls safely", {
+    skip_without_chrome()
+    js <- local_host_page(popup_menu = c(about = "About"), shiny_menu = TRUE, bubble = mascot_bubble("Ready", 5))
+    r <- js(
+      "(async()=>{const el=document.getElementById('a'),state=()=>mascot.host.state(el),send=patch=>mascot.host.receive({id:'a',patch});
+      el.querySelector('.mascot-menu-toggle').click();document.activeElement.blur();const before=state().bubble.remaining;
+      await new Promise(r=>setTimeout(r,120));const after=state().bubble.remaining;
+      send({mood:'happy',popup_menu:{items:{bad:''},key_bindings:true}});const atomic=state().mood==='idle'&&state().menuOpen;
+      el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:{replacement:'Replacement'},key_bindings:true}});
+      const replacementFocus=document.activeElement===el.querySelector('.mascot-menu-toggle');
+      el.querySelector('.mascot-menu-toggle').click();el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:null,key_bindings:false}});
+      return {before,after,atomic,replacementFocus,open:state().menuOpen,button:!!el.querySelector('.mascot-menu-toggle'),
+        image:el.querySelector('canvas').getAttribute('role'),focus:document.activeElement===el.querySelector('canvas')};})()"
+    )
+    expect_equal(r$before, r$after, tolerance = 0.02)
+    expect_true(r$atomic)
+    expect_true(r$replacementFocus)
+    expect_false(r$open)
+    expect_false(r$button)
+    expect_identical(r$image, "img")
+    expect_true(r$focus)
+  })
+  it("P6 keeps multiple mascots independent, preserves menus across swaps and cleans up outside listeners", {
+    skip_without_chrome()
+    js <- local_host_page(popup_menu = c(about = "About"), shiny_menu = TRUE, motion = FALSE)
+    r <- js(
+      "(() => {const a=document.getElementById('a');mascot.host.unmount(a);const b=a.cloneNode(true);b.id='module-helper';
+      let added=0,removed=0;
+      const add=document.addEventListener.bind(document),remove=document.removeEventListener.bind(document);
+      document.addEventListener=(type,...args)=>{if(type==='pointerdown')added++;return add(type,...args);};
+      document.removeEventListener=(type,...args)=>{if(type==='pointerdown')removed++;return remove(type,...args);};
+      try{document.body.append(b);mascot.host.mount(a);mascot.host.mount(b);
+        a.querySelector('.mascot-menu-toggle').click();b.querySelector('.mascot-menu-toggle').click();
+        const independent=!mascot.host.state(a).menuOpen&&mascot.host.state(b).menuOpen;
+        mascot.host.receive({id:b.id,patch:{character:{id:'blob',name:'Blob',json:document.querySelector('[data-mascot-character=blob]').textContent}}});
+        const retained=mascot.host.state(b).menuOpen&&b.querySelector('.mascot-menu-toggle').getAttribute('aria-label').startsWith('Blob');
+        b.querySelector('[role=menuitem]').click();b.querySelector('.mascot-menu-toggle').click();
+        mascot.host.unmount(b);mascot.host.unmount(a);
+        return {independent,retained,added,removed,event:menuEvents.at(-1),plain:!b.querySelector('.mascot-menu-toggle')};
+      }finally{document.addEventListener=add;document.removeEventListener=remove;b.remove();}})()"
+    )
+    expect_true(r$independent)
+    expect_true(r$retained)
+    expect_true(r$plain)
+    expect_equal(r$added, r$removed)
+    expect_identical(r$event, list("module-helper_menu", "about", list(priority = "event")))
+  })
+  it("P6 hides static menus and keeps restore clicks separate from menus in a top floating corner", {
+    skip_without_chrome()
+    static <- local_host_page(popup_menu = c(about = "About"))
+    expect_false(static("!!document.querySelector('.mascot-menu-toggle')"))
+    js <- local_host_page(
+      popup_menu = c(about = "About"),
+      shiny_menu = TRUE,
+      placement = mascot_placement(TRUE, "top-right", TRUE)
+    )
+    r <- js(
+      "(() => {const el=document.getElementById('a');el.querySelector('.mascot-menu-toggle').click();
+      const menu=el.querySelector('.mascot-menu'),below=menu.getBoundingClientRect().top>=el.getBoundingClientRect().bottom-1;
+      el.querySelector('.mascot-minimise').click();const closed=!mascot.host.state(el).menuOpen;
+      mascot.host.receive({id:'a',patch:{popup_menu:{items:{new:'New'},key_bindings:true}}});
+      const hiddenWhileMinimised=el.querySelector('.mascot-menu-toggle').hidden;
+      el.querySelector('.mascot-restore').click();return {below,closed,hiddenWhileMinimised,open:mascot.host.state(el).menuOpen,
+        hidden:el.querySelector('.mascot-menu-toggle').hidden};})()"
+    )
+    expect_true(r$below)
+    expect_true(r$closed)
+    expect_true(r$hiddenWhileMinimised)
+    expect_false(r$open)
+    expect_false(r$hidden)
+  })
+})

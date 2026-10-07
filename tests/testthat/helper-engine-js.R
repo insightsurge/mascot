@@ -71,7 +71,9 @@ local_host_page <- function(
   density = 1,
   theme = NULL,
   record_colours = FALSE,
-  motion = TRUE
+  motion = TRUE,
+  popup_menu = NULL,
+  shiny_menu = FALSE
 ) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
@@ -88,7 +90,8 @@ local_host_page <- function(
         size = size,
         placement = placement,
         theme = theme,
-        motion = motion
+        motion = motion,
+        popup_menu = popup_menu
       )),
       '<script type="application/json" data-mascot-character="blob">',
       readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
@@ -101,6 +104,9 @@ local_host_page <- function(
           'colours:{...ch.colours,...options.colours},overrides:{...options.colours}});',
           'return originalDraw(ctx,ch,options);};</script>'
         )
+      },
+      if (shiny_menu) {
+        '<script>window.menuEvents=[];window.Shiny={setInputValue:(...args)=>menuEvents.push(args)};</script>'
       },
       sprintf('<script src="file://%s"></script>', normalizePath(scripts[4])),
       '</body></html>'

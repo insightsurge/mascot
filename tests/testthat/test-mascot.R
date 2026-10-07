@@ -215,6 +215,16 @@ describe("mascot() motion", {
     }
     expect_error(mascot(id = "a", motion = "auto"), 'motion.*got "auto"')
     expect_error(mascot(id = "a", motion = NULL), 'motion.*got NULL')
-    expect_identical(tail(names(formals(mascot)), 2), c("theme", "motion"))
+    expect_identical(tail(names(formals(mascot)), 3), c("theme", "motion", "popup_menu"))
+  })
+})
+
+describe("mascot() popup menu", {
+  it("embeds inert menu configuration and keeps no-menu markup unchanged", {
+    expect_false(grepl("data-mascot-popup-menu", as.character(mascot(id = "a")), fixed = TRUE))
+    html <- as.character(mascot(id = "module-helper", popup_menu = mascot_popup_menu(c(about = "About"), TRUE)))
+    expect_match(html, 'data-mascot-popup-menu=""', fixed = TRUE)
+    expect_match(html, '"items":{"about":"About"},"key_bindings":true', fixed = TRUE)
+    expect_error(mascot(id = "a", popup_menu = c("Help")), "items.*names must")
   })
 })

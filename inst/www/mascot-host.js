@@ -24,6 +24,12 @@
  * data-reduced="auto"|"true" and data-swap="true"|"false" carry the same settings on static pages.
  * Motion changes update the live controller; swaps reapply retained settings alongside the theme.
  * CSS suppresses bubble and restore-control movement too. No per-element global listeners are added by this host.
+ * Popup menu patches are { items: {id: label}|null, key_bindings: boolean }; replacement closes the menu.
+ * Menus are Shiny-only. An active menu wraps the canvas in a native button; otherwise it stays an image.
+ * Choices set the already namespaced id + '_menu' with priority 'event'. Labels always use textContent.
+ * Enter/Space require key_bindings; navigation stays within the focused menu. No global keyboard listeners.
+ * A shared outside-pointer listener exists only while a menu is open; teardown removes it when unused.
+ * Open menus hold lookY=-1 and pause bubble timers; closing clears only lookY, preserving detail and mood.
  * host.{mount,unmount,receive,state} exposes lifecycle and plain snapshots for integration tests.
  */
 (() => {
@@ -42,6 +48,7 @@
   const sources = new WeakMap();
   const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
   let densityMedia = null;
+  const openMenus = new Set();
   let schemeMedia = null;
   let modeMutation = null;
   const colourContext = document.createElement('canvas').getContext('2d');
@@ -57,7 +64,9 @@
     record.el.dataset.shownCharacter = snapshot.character;
     record.el.dataset.shownMood = snapshot.mood;
     record.el.dataset.swapping = String(snapshot.swapping);
-    record.canvas.setAttribute('aria-label', `${record.names.get(snapshot.character)}, ${snapshot.mood}`);
+    const accessibleLabel = `${record.names.get(snapshot.character)}, ${snapshot.mood}`;
+    record.canvas.setAttribute('aria-label', accessibleLabel);
+    record.menuButton?.setAttribute('aria-label', `${accessibleLabel}, menu`);
     if (record.restoreButton) {
       record.restoreButton.setAttribute(
         'aria-label',
@@ -96,6 +105,7 @@
       record.hover ||
       record.focus ||
       record.minimised ||
+      record.menuOpen ||
       record.timer !== null
     )
       return;
@@ -198,7 +208,7 @@
         if (!record.focus) resumeTimer(record);
       },
       keydown(event) {
-        if (event.key === 'Escape' && el.contains(document.activeElement) && record.bubble) {
+        if (event.key === 'Escape' && !record.menuOpen && el.contains(document.activeElement) && record.bubble) {
           clearBubble(record);
           event.preventDefault();
           event.stopPropagation();
@@ -539,6 +549,7 @@
     record.minimiseButton.hidden = !placement.floating || !placement.minimise || record.minimised;
     record.restoreButton.hidden = !record.minimised;
     record.canvas.hidden = record.minimised;
+    if (record.menuButton) record.menuButton.hidden = record.minimised;
     record.bubbleEl.parentElement.hidden = record.minimised;
     el.dataset.minimised = String(record.minimised);
     if (focusedControl?.hidden) {
@@ -554,6 +565,7 @@
   function minimise(record, value, focus = true) {
     if (value === record.minimised) return;
     if (value && (!record.placement.floating || !record.placement.minimise)) return;
+    if (value) closeMenu(record);
     stopTimer(record);
     record.minimised = value;
     layout(record);
@@ -563,6 +575,15 @@
       measure(record);
       resumeTimer(record);
     }
+  }
+
+  function measureMenu(record) {
+    if (!record.menuEl || !record.menuOpen) return;
+    const rect = record.menuEl.getBoundingClientRect();
+    const shift = parseFloat(record.el.style.getPropertyValue('--mascot-menu-shift')) || 0;
+    const natural = rect.left - shift;
+    const left = Math.max(16, Math.min(natural, document.documentElement.clientWidth - 16 - rect.width));
+    setProperty(record.el, '--mascot-menu-shift', `${left - natural}px`);
   }
 
   function measure(record) {
@@ -586,6 +607,7 @@
       const left = Math.max(margin, Math.min(natural, document.documentElement.clientWidth - margin - rect.width));
       setProperty(record.el, '--mascot-bubble-shift', `${left - natural}px`);
     }
+    measureMenu(record);
     record.renderedSize = size;
     const detail = record.size.simplify_when_small && size < 72 ? 'simple' : 'full';
     if (detail !== record.detail) {
@@ -702,6 +724,160 @@
     watchModes();
   }
 
+  function validateMenu(value) {
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      Array.isArray(value) ||
+      Object.keys(value).length !== 2 ||
+      !has(value, 'items') ||
+      !has(value, 'key_bindings') ||
+      typeof value.key_bindings !== 'boolean'
+    )
+      throw new Error('popup_menu needs items and a key_bindings flag');
+    if (
+      value.items !== null &&
+      (!value.items ||
+        typeof value.items !== 'object' ||
+        Array.isArray(value.items) ||
+        !Object.keys(value.items).length ||
+        Object.entries(value.items).some(
+          ([id, text]) => !id.length || /\s/.test(id) || typeof text !== 'string' || !text.length,
+        ))
+    )
+      throw new Error('popup_menu items need non-empty ids without whitespace and plain-text labels');
+    return { items: value.items === null ? null : { ...value.items }, key_bindings: value.key_bindings };
+  }
+
+  function outsideMenu(event) {
+    for (const record of [...openMenus])
+      if (!record.menuEl.contains(event.target) && !record.menuButton.contains(event.target)) closeMenu(record);
+  }
+
+  function closeMenu(record, focus = false, clearPose = true) {
+    if (!record.menuOpen) return;
+    record.menuOpen = false;
+    record.menuEl.hidden = true;
+    record.menuButton.setAttribute('aria-expanded', 'false');
+    openMenus.delete(record);
+    if (!openMenus.size) document.removeEventListener('pointerdown', outsideMenu, true);
+    if (clearPose) record.controller.update({ pose: { lookY: null } });
+    if (focus) record.menuButton.focus();
+    resumeTimer(record);
+  }
+
+  function openMenu(record, keyboard) {
+    if (record.minimised || !record.menuEl) return;
+    for (const other of [...openMenus]) if (other !== record) closeMenu(other);
+    record.controller.update({ pose: { lookY: -1 } });
+    record.menuOpen = true;
+    record.menuEl.hidden = false;
+    measureMenu(record);
+    record.menuButton.setAttribute('aria-expanded', 'true');
+    stopTimer(record);
+    if (!openMenus.size) document.addEventListener('pointerdown', outsideMenu, true);
+    openMenus.add(record);
+    if (keyboard) record.menuEl.querySelector('button').focus();
+  }
+
+  function removeMenu(record, clearPose = true) {
+    closeMenu(record, false, clearPose);
+    if (!record.menuButton) return;
+    const focused = record.menuButton === document.activeElement || record.menuEl.contains(document.activeElement);
+    if (focused) record.el.focus();
+    for (const [name, handler] of Object.entries(record.menuHandlers)) record.el.removeEventListener(name, handler);
+    record.menuButton.replaceWith(record.canvas);
+    record.canvas.removeAttribute('aria-hidden');
+    record.canvas.setAttribute('tabindex', '0');
+    record.menuEl.remove();
+    record.menuButton = record.menuEl = record.menuHandlers = null;
+    if (focused) record.canvas.focus();
+  }
+
+  function replaceMenu(record, value, clearPose = true) {
+    const focused = record.menuButton === document.activeElement || record.menuEl?.contains(document.activeElement);
+    removeMenu(record, clearPose);
+    record.menu = value;
+    if (!value.items || !window.Shiny?.setInputValue) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mascot-menu-toggle';
+    button.hidden = record.minimised;
+    button.setAttribute('aria-haspopup', 'menu');
+    button.setAttribute('aria-expanded', 'false');
+    button.setAttribute('aria-controls', `${record.el.id}_popup_menu`);
+    const menu = document.createElement('div');
+    menu.id = `${record.el.id}_popup_menu`;
+    menu.className = 'mascot-menu';
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', 'Mascot choices');
+    menu.hidden = true;
+    for (const [id, text] of Object.entries(value.items)) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.setAttribute('role', 'menuitem');
+      item.tabIndex = -1;
+      item.dataset.itemId = id;
+      item.textContent = text;
+      menu.append(item);
+    }
+    record.canvas.before(button);
+    button.append(record.canvas);
+    record.canvas.setAttribute('aria-hidden', 'true');
+    record.canvas.setAttribute('tabindex', '-1');
+    record.el.append(menu);
+    record.menuButton = button;
+    record.menuEl = menu;
+    record.menuHandlers = {
+      click(event) {
+        if (button.contains(event.target)) {
+          if (record.menuOpen) closeMenu(record);
+          else openMenu(record, false);
+        } else {
+          const item = event.target.closest('[role="menuitem"]');
+          if (!item || !menu.contains(item)) return;
+          const id = item.dataset.itemId;
+          closeMenu(record, true);
+          window.Shiny.setInputValue(`${record.el.id}_menu`, id, { priority: 'event' });
+        }
+      },
+      keydown(event) {
+        if (event.target === button && ['Enter', ' '].includes(event.key)) {
+          event.preventDefault();
+          if (record.menu.key_bindings) {
+            if (record.menuOpen) closeMenu(record, true);
+            else openMenu(record, true);
+          }
+          return;
+        }
+        if (!record.menuOpen) return;
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          closeMenu(record, true);
+        } else if (menu.contains(event.target)) {
+          const items = [...menu.querySelectorAll('button')];
+          const index = items.indexOf(document.activeElement);
+          let next;
+          if (event.key === 'ArrowDown') next = (index + 1) % items.length;
+          if (event.key === 'ArrowUp') next = (index + items.length - 1) % items.length;
+          if (event.key === 'Home') next = 0;
+          if (event.key === 'End') next = items.length - 1;
+          if (next !== undefined) {
+            event.preventDefault();
+            items[next].focus();
+          }
+        }
+      },
+      focusout(event) {
+        if (!record.el.contains(event.relatedTarget)) closeMenu(record);
+      },
+    };
+    for (const [name, handler] of Object.entries(record.menuHandlers)) record.el.addEventListener(name, handler);
+    show(record, record.controller.current());
+    if (focused && !record.minimised) button.focus();
+  }
+
   function validateMotion(value) {
     if (
       !value ||
@@ -756,6 +932,15 @@
       controller: null,
       size: sizeConfig,
       placement,
+      menu: validateMenu(
+        JSON.parse(
+          el.querySelector('script[data-mascot-popup-menu]')?.textContent || '{"items":null,"key_bindings":false}',
+        ),
+      ),
+      menuOpen: false,
+      menuButton: null,
+      menuEl: null,
+      menuHandlers: null,
       motion: validateMotion({
         reduced: !has(el.dataset, 'reduced') || el.dataset.reduced === 'auto' ? null : el.dataset.reduced === 'true',
         swap:
@@ -813,6 +998,7 @@
         onChange: (snapshot) => show(record, snapshot),
       });
       listenBubble(record);
+      replaceMenu(record, record.menu);
       record.handlers.clickPlacement = (event) => {
         if (event.target.closest('.mascot-minimise') === record.minimiseButton) minimise(record, true);
         if (event.target.closest('.mascot-restore') === record.restoreButton) minimise(record, false);
@@ -822,6 +1008,7 @@
       measure(record);
     } catch (error) {
       unwatch(record);
+      removeMenu(record);
       if (record.handlers) {
         for (const [name, handler] of Object.entries(record.handlers))
           el.removeEventListener(name === 'clickPlacement' ? 'click' : name, handler);
@@ -898,6 +1085,7 @@
     }
 
     const enginePatch = { ...prepared.enginePatch };
+    if (prepared.menu && record.menuOpen) enginePatch.pose = { lookY: null };
     try {
       if (!has(patch, 'mood') && record.problem && !prepared.changed) enginePatch.mood = record.problemMood;
       // Synchronous engine notifications must not expose a partially committed host patch.
@@ -922,6 +1110,7 @@
     if (has(enginePatch, 'mood')) record.mood = enginePatch.mood;
     else if (changed) record.mood = Object.keys(description.moods)[0];
     record.status = status;
+    if (prepared.menu) replaceMenu(record, prepared.menu, false);
     if (prepared.motion) {
       record.motion = prepared.motion;
       el.dataset.reduced = record.motion.reduced === true ? 'true' : 'auto';
@@ -979,6 +1168,7 @@
           'placement',
           'theme',
           'motion',
+          'popup_menu',
           'problem',
         ].includes(key)
       )
@@ -1019,6 +1209,7 @@
         throw new Error('status needs mode "mood" or mode "custom" with non-empty text');
       status = { mode: next.mode, text: next.mode === 'custom' ? next.text : null };
     }
+    const menu = has(patch, 'popup_menu') ? validateMenu(patch.popup_menu) : undefined;
     const bubble = has(patch, 'bubble') ? validateBubble(patch.bubble) : undefined;
     if (has(patch, 'gesture')) validateGesture(candidate, patch.gesture);
     const size = has(patch, 'size') ? validateSize(patch.size) : undefined;
@@ -1037,6 +1228,7 @@
       enginePatch,
       status,
       bubble,
+      menu,
       size,
       placement,
       theme: nextTheme,
@@ -1051,7 +1243,7 @@
       next.character = patch.character;
       delete next.mood;
     }
-    for (const key of ['mood', 'status', 'bubble', 'size', 'placement', 'theme', 'motion', 'problem']) {
+    for (const key of ['mood', 'status', 'bubble', 'size', 'placement', 'theme', 'motion', 'popup_menu', 'problem']) {
       if (has(patch, key)) next[key] = patch[key];
     }
   }
@@ -1088,6 +1280,7 @@
   function unmount(el) {
     const record = records.get(el);
     if (!record) return;
+    removeMenu(record);
     stopTimer(record);
     unwatch(record);
     for (const [name, handler] of Object.entries(record.handlers))
@@ -1110,6 +1303,8 @@
       size: { ...record.size },
       placement: { ...record.placement },
       motion: { ...record.motion },
+      popup_menu: JSON.parse(JSON.stringify(record.menu)),
+      menuOpen: record.menuOpen,
       theme: JSON.parse(JSON.stringify(record.theme)),
       mode: record.mode,
       colours: { ...record.colours },

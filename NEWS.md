@@ -1,3 +1,10 @@
+# mascot 0.0.2.9000
+
+* `mascot()` adds Tessa to a page with a mood and a status line that follows the mood or shows your own text (#190).
+* `updateMascot()` changes a mascot's character, mood and status together, including inside Shiny modules (#190).
+* `mascot_character()`, `mascot_mood()` and `mascot_status()` describe a mascot's settings;
+  `mascot_moods()` lists the available moods and what they mean (#190).
+
 # mascot 0.0.2
 
 * The drawing engine starts: Tessa, a hexagon character first drawn for an earlier project, is drawn in

@@ -40,6 +40,7 @@ exception is fine with a comment saying why). Reasons and sources: `docs/standar
 - **CRAN:** no `:::` into other packages, no `<<-` into the global environment, at most 2 cores, `TRUE`/`FALSE`
   never `T`/`F`, no `set.seed()` inside functions (take a `seed` argument), no `q()`.
 - **CRAN:** R code is ASCII only: write other characters as `"\uXXXX"`.
-- **house:** names: `mascot()` is the main object; Shiny's convention for `mascotOutput()`, `renderMascot()`,
-  `updateMascot()`; `use_*()` only for project setup; otherwise short verbs without a prefix. Check a new name
-  against base R, shiny, bslib and ggplot2 first. Few exports: prefer an argument over a new function.
+- **house:** names: `mascot()` is the main object; `updateMascot()` follows Shiny's convention;
+  `use_*()` is only for project setup. Every top-level argument of `mascot()` takes a plain shortcut or a
+  `mascot_*()` helper (bslib style), and every helper and listing function carries the `mascot_` prefix
+  (autocomplete, no clashes). Check each new exported name against base R, shiny, bslib and ggplot2 first.

@@ -33,6 +33,8 @@ starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Ex
   cli; call other packages as `pkg::fn()`; no `library()`, `print()` or `cat()` in package code.
 - **CRAN/house:** roxygen2 with markdown; every export has `@returns` and offline `@examples`; never edit `man/` or
   `NAMESPACE` by hand.
+- **house:** a helper per argument: each `mascot()` argument takes a plain shortcut or a `mascot_*()` helper; every
+  helper starts with `mascot_`.
 - **house:** tests in BDD style (`describe()`/`it()`), one test file per R file, every checkmate assertion tested,
   shinytest2 for what a user sees (skipped on CRAN), coverage at least 70%.
 - **house:** the engine is plain, unminified JS/CSS in `inst/www/`, deterministic (seeded, no clock), with status

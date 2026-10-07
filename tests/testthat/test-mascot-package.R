@@ -30,3 +30,17 @@ describe("the mascot package", {
     expect_match(version, "^[0-9]+\\.[0-9]+\\.[0-9]+(\\.9[0-9]{3})?$")
   })
 })
+
+describe("mascot exports", {
+  it("avoids names exported by base packages, shiny and htmltools", {
+    exports <- getNamespaceExports("mascot")
+    for (package in c("base", "stats", "utils", "graphics", "grDevices", "methods", "shiny", "htmltools")) {
+      expect_equal(length(intersect(exports, getNamespaceExports(package))), 0, info = package)
+    }
+    expect_setequal(
+      exports,
+      c("mascot", "updateMascot", "mascot_character", "mascot_mood", "mascot_status", "mascot_moods")
+    )
+    expect_true(all(startsWith(setdiff(exports, c("mascot", "updateMascot")), "mascot_")))
+  })
+})

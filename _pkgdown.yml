@@ -42,3 +42,13 @@ reference:
   - title: Package
     contents:
       - mascot-package
+  - title: Mascots in Shiny
+    contents:
+      - mascot
+      - updateMascot
+  - title: Helpers
+    contents:
+      - mascot_character
+      - mascot_mood
+      - mascot_status
+      - mascot_moods

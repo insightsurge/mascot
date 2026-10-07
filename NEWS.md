@@ -1,9 +1,8 @@
 # mascot 0.0.2.9000
 
-* `mascot()` and `updateMascot()` gain message bubbles with `mascot_bubble()`: escaped text, explicit HTML or self-contained tags, a close button, and a timer that pauses on hover or focus (#196).
-* `mascot_bubble()` accepts `duration = NULL` as an alternative to `Inf` for a message that stays until closed (#196).
-* Bubble space is reserved above the mascot so showing or hiding a message does not move the page; long messages wrap and scroll (#196).
-* Queued updates use each mascot's own mood choices, and tag bubbles render once when supplied to `mascot()` or `updateMascot()` (#196).
+* `mascot()` and `updateMascot()` gain message bubbles with `mascot_bubble()`: escaped text, explicit HTML or
+  self-contained tags, a close button, and a timer that pauses on hover or focus; `duration = Inf` (or `NULL`) keeps a
+  message until it is closed. Space is reserved above the mascot, so a bubble never moves the page (#196).
 * `updateMascot()` gains one-off nod and wave gestures; `mascot_gesture()` chooses one and `mascot_gestures()` lists them (#196).
 
 * `mascot()` adds Tessa to a page with a mood and a status line that follows the mood or shows your own text (#190).

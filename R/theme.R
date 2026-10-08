@@ -30,7 +30,8 @@
 #'   including when the mascot floats.
 #' @returns A `mascot_theme` object describing colours, CSS sources and mode.
 #' @family mascot helpers
-#' @seealso [mascot_colour_roles()], [mascot()], [updateMascot()]
+#' @seealso [mascot_colour_roles()], [mascot()], [updateMascot()],
+#'   [mascot_motion()] for a complete Shiny settings example
 #' @evalRd paste0(
 #'   "\\section{Experimental CSS source}{\n",
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",

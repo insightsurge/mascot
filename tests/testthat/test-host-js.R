@@ -1614,6 +1614,7 @@ describe("mascot.host popup menu", {
     r <- js(
       "(() => {const el=document.getElementById('a');el.querySelector('.mascot-menu-toggle').click();
       const menu=el.querySelector('.mascot-menu'),below=menu.getBoundingClientRect().top>=el.getBoundingClientRect().bottom-1;
+      el.querySelector('.mascot-menu-toggle').click();
       el.querySelector('.mascot-minimise').click();const closed=!mascot.host.state(el).menuOpen;
       mascot.host.receive({id:'a',patch:{popup_menu:{items:{new:'New'},key_bindings:true}}});
       const hiddenWhileMinimised=el.querySelector('.mascot-menu-toggle').hidden;
@@ -1625,5 +1626,153 @@ describe("mascot.host popup menu", {
     expect_true(r$hiddenWhileMinimised)
     expect_false(r$open)
     expect_false(r$hidden)
+  })
+})
+
+
+describe("mascot.host review corrections", {
+  it("A1 keeps short-screen menu choices reachable in every corner and inline", {
+    skip_without_chrome()
+    for (position in c("top-left", "top-right", "bottom-left", "bottom-right", "inline")) {
+      js <- local_host_page(
+        popup_menu = mascot_popup_menu(
+          c(about = "About", help = "Help", contact = "Contact", settings = "Settings"),
+          TRUE
+        ),
+        shiny_menu = TRUE,
+        placement = if (position == "inline") "inline" else mascot_placement(TRUE, position, TRUE),
+        viewport = c(640, 320)
+      )
+      result <- host_layout(
+        js,
+        "const el=document.getElementById('a'),menu=el.querySelector('.mascot-menu');
+        el.querySelector('.mascot-menu-toggle').click();const rect=menu.getBoundingClientRect();
+        const first=menu.firstElementChild;first.focus();const firstRect=first.getBoundingClientRect();
+        const last=menu.lastElementChild;last.focus();const lastRect=last.getBoundingClientRect();
+        return {top:rect.top,bottom:rect.bottom,first:firstRect.top,last:lastRect.bottom,
+          scrollable:menu.scrollHeight>menu.clientHeight};"
+      )
+      expect_gte(result$top, 15)
+      expect_lte(result$bottom, 305)
+      expect_gte(result$first, 15)
+      expect_lte(result$last, 305)
+    }
+  })
+  it("A2 returns focus to the visible menu after either placement fallback", {
+    skip_without_chrome()
+    js <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), TRUE),
+      shiny_menu = TRUE,
+      placement = mascot_placement(TRUE, minimise = TRUE)
+    )
+    result <- js(
+      "(() => {const el=document.getElementById('a'),send=patch=>mascot.host.receive({id:'a',patch});
+      const button=el.querySelector('.mascot-menu-toggle'),outcomes=[];
+      for(const minimised of [false,true]) {
+        send({placement:{floating:true,position:'bottom-right',minimise:true}});
+        if(minimised) el.querySelector('.mascot-minimise').click();else el.querySelector('.mascot-minimise').focus();
+        send({placement:{floating:false,position:'bottom-right',minimise:false}});
+        outcomes.push(document.activeElement===button);
+        button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+        outcomes.push(mascot.host.state(el).menuOpen);
+        button.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+      }
+      send({placement:{floating:true,position:'bottom-right',minimise:true}});
+      el.querySelector('.mascot-minimise').focus();send({placement:{floating:true,position:'bottom-right',minimise:false}});
+      outcomes.push(document.activeElement===button);
+      const outside=document.createElement('button');document.body.append(outside);outside.focus();
+      send({placement:{floating:false,position:'bottom-right',minimise:false}});
+      return {outcomes,outside:document.activeElement===outside};})()"
+    )
+    expect_true(all(unlist(result$outcomes)))
+    expect_true(result$outside)
+  })
+  it("C3 uses neutral action controls and hides them completely while the menu is open", {
+    skip_without_chrome()
+    js <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), TRUE),
+      shiny_menu = TRUE,
+      placement = mascot_placement(TRUE, minimise = TRUE)
+    )
+    result <- js(
+      "(() => {const el=document.getElementById('a'),button=el.querySelector('.mascot-menu-toggle'),
+      action=el.querySelector('.mascot-minimise');
+      const css=getComputedStyle(action),neutral=css.backgroundColor==='rgba(0, 0, 0, 0)';
+      button.focus();const keyboard=getComputedStyle(action).opacity==='1'&&action.getClientRects().length>0;
+      button.click();const hidden=action.getClientRects().length===0;
+      button.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+      const returned=document.activeElement===button&&action.getClientRects().length>0;
+      action.click();const restore=el.querySelector('.mascot-restore');
+      return {neutral,keyboard,hidden,returned,restore:restore.getClientRects().length>0,diameter:restore.offsetWidth};})()"
+    )
+    expect_true(result$neutral)
+    expect_true(result$keyboard)
+    expect_true(result$hidden)
+    expect_true(result$returned)
+    expect_true(result$restore)
+    expect_equal(result$diameter, 48)
+    session <- attr(js, "session")
+    js("document.querySelector('.mascot-restore').click();document.activeElement.blur()")
+    session$Emulation$setTouchEmulationEnabled(enabled = FALSE)
+    session$Input$dispatchMouseEvent(type = "mouseMoved", x = 1, y = 1)
+    expect_true(host_layout(
+      js,
+      "return matchMedia('(hover:hover) and (pointer:fine)').matches &&
+      getComputedStyle(document.querySelector('.mascot-actions')).opacity==='0';"
+    ))
+    point <- js(
+      "(() => {const r=document.querySelector('.mascot-canvas').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()"
+    )
+    session$Input$dispatchMouseEvent(type = "mouseMoved", x = point$x, y = point$y)
+    expect_true(host_layout(js, "return getComputedStyle(document.querySelector('.mascot-actions')).opacity==='1';"))
+    session$Input$dispatchMouseEvent(type = "mouseMoved", x = 1, y = 1)
+    session$Emulation$setTouchEmulationEnabled(enabled = TRUE)
+    expect_true(host_layout(
+      js,
+      "return matchMedia('(pointer:coarse)').matches &&
+      getComputedStyle(document.querySelector('.mascot-actions')).opacity==='1';"
+    ))
+    session$Emulation$setTouchEmulationEnabled(enabled = FALSE)
+  })
+  it("A1 follows notifications and inline scrolling and releases the shared scroll listener", {
+    skip_without_chrome()
+    js <- local_host_page(
+      popup_menu = c(about = "About this app", help = "Help with a longer label", contact = "Contact", more = "More"),
+      shiny_menu = TRUE,
+      placement = mascot_placement(TRUE, minimise = TRUE),
+      viewport = c(640, 320)
+    )
+    js(
+      "window.el=document.getElementById('a');window.scrollAdds=0;window.scrollRemoves=0;
+      window.originalAdd=window.addEventListener.bind(window);window.originalRemove=window.removeEventListener.bind(window);
+      window.addEventListener=(type,...args)=>{if(type==='scroll')scrollAdds++;return originalAdd(type,...args)};
+      window.removeEventListener=(type,...args)=>{if(type==='scroll')scrollRemoves++;return originalRemove(type,...args)};
+      el.querySelector('.mascot-menu-toggle').click();
+      const panel=document.createElement('div');panel.id='shiny-notification-panel';
+      Object.assign(panel.style,{position:'fixed',bottom:'0',right:'0',height:'72px',width:'200px'});
+      panel.append(document.createElement('div'));panel.firstChild.textContent='Saved';document.body.append(panel);"
+    )
+    r <- host_layout(
+      js,
+      "const menu=el.querySelector('.mascot-menu').getBoundingClientRect(),panel=document.getElementById('shiny-notification-panel').getBoundingClientRect();
+      return {top:menu.top,bottom:menu.bottom,limit:panel.top,mascot:el.getBoundingClientRect().bottom};"
+    )
+    expect_gte(r$top, 15)
+    expect_lte(r$bottom, r$limit - 15)
+    expect_lte(r$mascot, r$limit - 15)
+    js(
+      "document.getElementById('shiny-notification-panel').remove();document.body.style.minHeight='1400px';
+      mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'bottom-right',minimise:false}}});window.scrollTo(0,200)"
+    )
+    r <- host_layout(
+      js,
+      "const rect=el.querySelector('.mascot-menu').getBoundingClientRect();
+      mascot.host.unmount(el);const result={top:rect.top,bottom:rect.bottom,adds:scrollAdds,removes:scrollRemoves};
+      window.addEventListener=originalAdd;window.removeEventListener=originalRemove;return result;"
+    )
+    expect_gte(r$top, 15)
+    expect_lte(r$bottom, 305)
+    expect_equal(r$adds, 1)
+    expect_equal(r$removes, 1)
   })
 })

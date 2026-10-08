@@ -188,3 +188,12 @@ host_motion_js <- function(code) {
     "}finally{mascot.host.unmount(el);mascot.mount=mount;mascot.draw=draw;window.requestAnimationFrame=raf;window.cancelAnimationFrame=cancel;}})()"
   )
 }
+
+
+# Source help during development; installed Rd database in coverage and R CMD check.
+local_help_page <- function(topic) {
+  checkmate::assert_string(topic)
+  name <- paste0(topic, ".Rd")
+  path <- testthat::test_path("..", "..", "man", name)
+  if (file.exists(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[[name]]
+}

@@ -62,7 +62,8 @@
 #' keep one mascot in the static UI.
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
-#' @seealso [mascot()]
+#' @seealso [mascot()], [mascot_motion()] for a complete Shiny settings example
+#'   with live colours, animation and a colour reset.
 #' @export
 #' @examplesIf interactive()
 #' shiny::shinyApp(

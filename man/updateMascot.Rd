@@ -122,7 +122,8 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=mascot_motion]{mascot_motion()}} for a complete Shiny settings example
+with live colours, animation and a colour reset.
 
 Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}}

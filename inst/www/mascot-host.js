@@ -30,6 +30,9 @@
  * Enter/Space require key_bindings; navigation stays within the focused menu. No global keyboard listeners.
  * A shared outside-pointer listener exists only while a menu is open; teardown removes it when unused.
  * Open menus hold lookY=-1 and pause bubble timers; closing clears only lookY, preserving detail and mood.
+ * Menus prefer above the canvas (below top corners), fitting/flipping to actual viewport space on resize/scroll.
+ * Action controls use a separate strip: hover/focus reveals it, touch keeps it available, open menus hide it.
+ * Restore stays reachable while minimised. Placement focus falls back to the visible menu toggle or image.
  * host.{mount,unmount,receive,state} exposes lifecycle and plain snapshots for integration tests.
  */
 (() => {
@@ -531,6 +534,15 @@
     if (focused && document.activeElement !== focused && !teardown) focused.focus();
   }
 
+  function focusTarget(record) {
+    if (record.minimised) return record.restoreButton;
+    return record.menuButton || record.canvas;
+  }
+
+  function refreshActions(record) {
+    record.actions.hidden = record.minimiseButton.hidden || record.menuOpen;
+  }
+
   function layout(record) {
     const { el, size, placement } = record;
     portal(record, placement.floating);
@@ -552,13 +564,9 @@
     if (record.menuButton) record.menuButton.hidden = record.minimised;
     record.bubbleEl.parentElement.hidden = record.minimised;
     el.dataset.minimised = String(record.minimised);
+    refreshActions(record);
     if (focusedControl?.hidden) {
-      (record.minimised
-        ? record.restoreButton
-        : record.minimiseButton.hidden
-          ? record.canvas
-          : record.minimiseButton
-      ).focus();
+      focusTarget(record).focus();
     }
   }
 
@@ -579,7 +587,35 @@
 
   function measureMenu(record) {
     if (!record.menuEl || !record.menuOpen) return;
-    const rect = record.menuEl.getBoundingClientRect();
+    const menu = record.menuEl;
+    const margin = 16;
+    const notification =
+      record.placement.floating && record.placement.position === 'bottom-right'
+        ? parseFloat(record.el.style.getPropertyValue('--mascot-notification-offset')) || 0
+        : 0;
+    const height = document.documentElement.clientHeight - notification;
+    const canvas = record.canvas.getBoundingClientRect();
+    const anchorBottom = record.placement.floating ? record.el.getBoundingClientRect().bottom : canvas.bottom;
+    const style = getComputedStyle(menu);
+    const wanted = Math.min(
+      menu.scrollHeight + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
+      18 * parseFloat(style.fontSize),
+    );
+    const above = Math.max(0, Math.min(height - 2 * margin, canvas.top - margin));
+    const below = Math.max(0, Math.min(height - 2 * margin, height - margin - anchorBottom));
+    let downward = record.placement.floating && record.placement.position.startsWith('top');
+    const preferred = downward ? below : above;
+    const alternative = downward ? above : below;
+    if (wanted > preferred && alternative > preferred) downward = !downward;
+    // Even a canvas taller than the viewport must not make the menu unreachable.
+    const available = Math.max(24, downward ? below : above);
+    setProperty(record.el, '--mascot-menu-max-height', `${available}px`);
+    const rect = menu.getBoundingClientRect();
+    const top = Math.max(
+      margin,
+      Math.min(downward ? anchorBottom : canvas.top - rect.height, height - margin - rect.height),
+    );
+    setProperty(record.el, '--mascot-menu-top', `${top - record.el.getBoundingClientRect().top}px`);
     const shift = parseFloat(record.el.style.getPropertyValue('--mascot-menu-shift')) || 0;
     const natural = rect.left - shift;
     const left = Math.max(16, Math.min(natural, document.documentElement.clientWidth - 16 - rect.width));
@@ -654,6 +690,7 @@
         const value = `${offset}px`;
         if (record.el.style.getPropertyValue('--mascot-notification-offset') !== value)
           record.el.style.setProperty('--mascot-notification-offset', value);
+        measureMenu(record);
       }
     }
   }
@@ -749,6 +786,10 @@
     return { items: value.items === null ? null : { ...value.items }, key_bindings: value.key_bindings };
   }
 
+  function measureOpenMenus() {
+    for (const record of openMenus) measureMenu(record);
+  }
+
   function outsideMenu(event) {
     for (const record of [...openMenus])
       if (!record.menuEl.contains(event.target) && !record.menuButton.contains(event.target)) closeMenu(record);
@@ -760,7 +801,11 @@
     record.menuEl.hidden = true;
     record.menuButton.setAttribute('aria-expanded', 'false');
     openMenus.delete(record);
-    if (!openMenus.size) document.removeEventListener('pointerdown', outsideMenu, true);
+    if (!openMenus.size) {
+      document.removeEventListener('pointerdown', outsideMenu, true);
+      window.removeEventListener('scroll', measureOpenMenus, true);
+    }
+    refreshActions(record);
     if (clearPose) record.controller.update({ pose: { lookY: null } });
     if (focus) record.menuButton.focus();
     resumeTimer(record);
@@ -771,13 +816,19 @@
     for (const other of [...openMenus]) if (other !== record) closeMenu(other);
     record.controller.update({ pose: { lookY: -1 } });
     record.menuOpen = true;
+    const actionFocused = record.actions.contains(document.activeElement);
+    refreshActions(record);
     record.menuEl.hidden = false;
     measureMenu(record);
     record.menuButton.setAttribute('aria-expanded', 'true');
     stopTimer(record);
-    if (!openMenus.size) document.addEventListener('pointerdown', outsideMenu, true);
+    if (!openMenus.size) {
+      document.addEventListener('pointerdown', outsideMenu, true);
+      window.addEventListener('scroll', measureOpenMenus, true);
+    }
     openMenus.add(record);
     if (keyboard) record.menuEl.querySelector('button').focus();
+    else if (actionFocused) record.menuButton.focus();
   }
 
   function removeMenu(record, clearPose = true) {
@@ -791,7 +842,7 @@
     record.canvas.setAttribute('tabindex', '0');
     record.menuEl.remove();
     record.menuButton = record.menuEl = record.menuHandlers = null;
-    if (focused) record.canvas.focus();
+    if (focused) focusTarget(record).focus();
   }
 
   function replaceMenu(record, value, clearPose = true) {
@@ -925,6 +976,11 @@
     canvas.width = canvas.height = Math.round(size * (window.devicePixelRatio || 1));
     const k = canvas.width / 300;
     canvas.getContext('2d').setTransform(k, 0, 0, k, 0, 0);
+    const actions = document.createElement('div');
+    actions.className = 'mascot-actions';
+    const minimiseButton = button('mascot-minimise', 'Minimise mascot');
+    actions.append(minimiseButton);
+    el.append(actions);
     const record = {
       el,
       canvas,
@@ -959,7 +1015,8 @@
       resize: null,
       anchor: null,
       binding: null,
-      minimiseButton: button('mascot-minimise', 'Minimise mascot'),
+      actions,
+      minimiseButton,
       restoreButton: button('mascot-restore', 'Restore mascot'),
       names: new Map([[id, description.name]]),
       descriptions: new Map([[id, description]]),
@@ -1000,7 +1057,8 @@
       listenBubble(record);
       replaceMenu(record, record.menu);
       record.handlers.clickPlacement = (event) => {
-        if (event.target.closest('.mascot-minimise') === record.minimiseButton) minimise(record, true);
+        if (!record.actions.hidden && event.target.closest('.mascot-minimise') === record.minimiseButton)
+          minimise(record, true);
         if (event.target.closest('.mascot-restore') === record.restoreButton) minimise(record, false);
       };
       el.addEventListener('click', record.handlers.clickPlacement);
@@ -1015,7 +1073,7 @@
       }
       record.controller?.destroy();
       portal(record, false, true);
-      record.minimiseButton.remove();
+      record.actions.remove();
       record.restoreButton.remove();
       records.delete(el);
       throw error;
@@ -1132,7 +1190,7 @@
     if (record.minimised && (!record.placement.floating || !record.placement.minimise)) {
       const focused = record.el.contains(document.activeElement);
       minimise(record, false, false);
-      if (focused) record.canvas.focus();
+      if (focused) focusTarget(record).focus();
     }
     if (prepared.size || prepared.placement) {
       layout(record);
@@ -1285,7 +1343,7 @@
     unwatch(record);
     for (const [name, handler] of Object.entries(record.handlers))
       el.removeEventListener(name === 'clickPlacement' ? 'click' : name, handler);
-    record.minimiseButton.remove();
+    record.actions.remove();
     record.restoreButton.remove();
     record.controller.destroy();
     portal(record, false, true);

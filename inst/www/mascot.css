@@ -220,22 +220,50 @@
   box-sizing: border-box;
   min-width: 24px;
   min-height: 24px;
-  border: 2px solid var(--mascot-button-fg, currentColor);
-  color: var(--mascot-button-fg, currentColor);
-  background: var(--mascot-button-bg, var(--bs-body-bg, #fff));
   font: inherit;
   cursor: pointer;
 }
 
-.mascot-minimise {
+.mascot-actions {
   position: absolute;
   top: 0;
   right: 0;
+  display: flex;
+  gap: 0.25rem;
+  z-index: 1;
+}
+
+.mascot-actions[hidden] {
+  display: none;
+}
+
+/* Opacity preserves the keyboard route; touch users have no hover step. */
+@media (hover: hover) and (pointer: fine) {
+  .mascot-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mascot:hover > .mascot-actions,
+  .mascot:focus-within > .mascot-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.mascot-minimise {
+  border: 1px solid currentColor;
+  color: var(--mascot-source-text, var(--bs-body-color, var(--mascot-bubble-color)));
+  background: transparent;
+  box-shadow: 0 0 0.35rem color-mix(in srgb, currentColor 35%, transparent);
   border-radius: 0.25rem;
   line-height: 1;
 }
 
 .mascot-restore {
+  border: 2px solid var(--mascot-button-fg, currentColor);
+  color: var(--mascot-button-fg, currentColor);
+  background: var(--mascot-button-bg, var(--bs-body-bg, #fff));
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -250,7 +278,11 @@
   box-shadow: 0 0 0.75rem var(--mascot-button-glow, currentColor);
 }
 
-.mascot-minimise:focus-visible,
+.mascot-minimise:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
 .mascot-restore:focus-visible {
   outline: 2px solid var(--mascot-button-fg, currentColor);
   outline-offset: 3px;
@@ -322,13 +354,14 @@
 
 .mascot-menu {
   position: absolute;
-  bottom: calc(100% - 10em - 24px);
+  top: var(--mascot-menu-top, 0px);
+  box-sizing: border-box;
   transform: translateX(var(--mascot-menu-shift, 0px));
   z-index: 2;
   width: max-content;
   min-width: min(10em, calc(100vw - 2rem));
   max-width: calc(100vw - 2rem);
-  max-height: min(18em, 50vh);
+  max-height: min(18em, var(--mascot-menu-max-height, calc(100vh - 2rem)));
   overflow-y: auto;
   padding: 0.35em;
   border: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border)));
@@ -355,15 +388,6 @@
 .mascot-menu [role="menuitem"]:hover,
 .mascot-menu [role="menuitem"]:focus {
   text-decoration: underline;
-}
-
-.mascot[data-floating="true"] .mascot-menu {
-  bottom: 100%;
-}
-
-.mascot[data-floating="true"][data-position^="top"] .mascot-menu {
-  top: 100%;
-  bottom: auto;
 }
 
 .mascot[data-floating="true"][data-position$="left"] .mascot-menu {

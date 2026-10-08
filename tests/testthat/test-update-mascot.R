@@ -888,3 +888,71 @@ describe("popup menu in a Shiny browser", {
     }
   })
 })
+
+
+describe("documented Shiny settings", {
+  it("D4 runs the help example for motion, light/dark colours and reset", {
+    local_shiny_browser()
+    rd <- local_help_page("mascot_motion")
+    con <- textConnection("code", "w", local = TRUE)
+    tools::Rd2ex(rd, out = con)
+    close(con)
+    find_app <- function(x) {
+      if (!is.call(x) && !is.expression(x)) {
+        return(NULL)
+      }
+      if (is.call(x) && identical(x[[1]], quote(shiny::shinyApp))) {
+        return(x)
+      }
+      for (part in as.list(x)) {
+        found <- find_app(part)
+        if (!is.null(found)) return(found)
+      }
+      NULL
+    }
+    expression <- find_app(parse(text = code))
+    expect_false(is.null(expression))
+    app_function <- function() NULL
+    body(app_function) <- substitute(
+      {
+        library(mascot)
+        APP
+      },
+      list(APP = expression)
+    )
+    app <- shinytest2::AppDriver$new(app_function)
+    withr::defer(app$stop())
+    app$wait_for_js("!!window.mascot?.host?.state(document.getElementById('helper'))")
+    app$set_inputs(animate = FALSE)
+    app$wait_for_js("document.getElementById('helper').dataset.reduced==='true'")
+    app$set_inputs(dark = TRUE)
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#9ec5fe'")
+    app$set_inputs(dark = FALSE)
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#1f6feb'")
+    app$click("reset")
+    app$wait_for_js(
+      "Object.values(mascot.host.state(document.getElementById('helper')).colours).every(value=>value===null)"
+    )
+    expect_identical(app$get_js("document.getElementById('helper').dataset.reduced"), "true")
+  })
+  it("D4 runs the complete module help block and receives repeated choices", {
+    local_shiny_browser()
+    rd <- local_help_page("mascot_popup_menu")
+    details <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\details"), rd)[[1]]
+    block <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\preformatted"), details)[[1]]
+    expressions <- parse(text = paste(unlist(block), collapse = ""))
+    app_function <- function() NULL
+    body(app_function) <- as.call(c(list(quote(`{`), quote(library(mascot))), as.list(expressions)))
+    app <- shinytest2::AppDriver$new(app_function)
+    withr::defer(app$stop())
+    app$wait_for_js("!!document.querySelector('#demo-helper .mascot-menu-toggle')")
+    for (i in 1:2) {
+      app$click(selector = "#demo-helper .mascot-menu-toggle")
+      app$click(selector = "#demo-helper [role=menuitem]")
+      app$wait_for_js("!!document.querySelector('.modal.in, .modal.show')")
+      expect_match(app$get_js("document.querySelector('.modal-body').textContent"), "About this app")
+      app$click(selector = ".modal-footer button")
+      app$wait_for_js("!document.querySelector('.modal.in, .modal.show')")
+    }
+  })
+})

@@ -47,11 +47,18 @@ helper_server <- function(id) \{
     \})
   \})
 \}
+shiny::shinyApp(
+  shiny::fluidPage(helper_ui("demo")),
+  function(input, output, session) helper_server("demo")
+)
 }\if{html}{\out{</div>}}
 
-The menu opens above the mascot, or below a top floating corner, over any
-bubble. Its bubble countdown pauses while the menu is open. The restore
+The menu prefers above the mascot, or below a top floating corner, over any
+bubble. It fits the available screen space and can change direction or scroll.
+Action controls hide while the menu is open. Its bubble countdown pauses. The restore
 button only restores a minimised mascot; it does not open the menu.
+On static pages the mascot stays an image. Run the Shiny example below to try
+the menu.
 }
 \examples{
 mascot_popup_menu(c(about = "About this app", help = "Help"), key_bindings = TRUE)

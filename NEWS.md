@@ -1,5 +1,9 @@
 # mascot 0.0.2.9000
 
+* Mascot menus fit short screens and keep keyboard focus on the visible control after placement changes (#208).
+* Minimise controls use a neutral glowing border, appear on hover or keyboard focus, and hide while the mascot menu is open; touch controls and restore remain reachable (#208).
+* Shiny examples show live theme and motion settings, a colour reset and a complete module menu (#208).
+
 * `mascot_popup_menu()` adds app-defined choices through `popup_menu`, with a Shiny input for every choice, optional keyboard controls and a held look-up pose while open (#143).
 
 * `mascot()` and `updateMascot()` gain `motion` to stop animation or, with

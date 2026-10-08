@@ -31,3 +31,7 @@ inst/examples/shared/styles.css
 vignettes/figures/*.png
     Source: screenshots of the bundled example apps captured locally in Chrome.
     Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/preview/preview.css
+    Source: static mascot comparison layout, written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.

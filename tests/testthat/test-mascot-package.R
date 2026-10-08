@@ -42,6 +42,7 @@ describe("mascot exports", {
       c(
         "mascot",
         "updateMascot",
+        "mascot_preview",
         "mascot_examples",
         "mascot_example",
         "mascot_character",

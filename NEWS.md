@@ -1,5 +1,7 @@
 # mascot 0.0.2.9000
 
+* `mascot_preview()` compares moods, light/dark colours and small drawings on an offline page, with contrast findings on the page and in R (#175).
+
 * `mascot_examples()` lists five bundled Shiny apps, with a shared layout and separate scenarios for learning each feature (#177).
 * `mascot_example()` opens the requested app or returns its source path without copying files (#178).
 * The Get started article walks through the existing helpers, modules and personalising Tessa, with runnable examples and screenshots of themes and menu actions (#177).

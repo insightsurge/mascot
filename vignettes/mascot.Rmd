@@ -398,10 +398,33 @@ text; keep ordinary error messages beside the fields they describe. Inspect
 modes. Personalising these settings keeps Tessa's existing shape and identity.
 
 A new named character comes later with `mascot_remix()` (#192).
-`mascot_preview()` is also planned; it is not available in this version.
-Until then, use the basic and branding apps to check moods, small sizes and
-light/dark settings. The Quarto `shortcode` and fuller static-site guidance are
-separate upcoming work.
+The Quarto `shortcode` and fuller static-site guidance are separate upcoming work.
+
+## Check a look before using it
+
+`mascot_preview()` makes one offline page with every mood in light and dark,
+then compares your requested size with 48, 32 and 24 pixels. Motion is off by
+default so you can inspect the faces. Assign the result to build it without
+opening a Viewer; print it when you want to look:
+
+```{r preview, eval=FALSE}
+page <- mascot_preview(theme = mascot_theme(
+  light = list(body = "#B53D78", sleeve = "#B53D78", limb = "#A94A82"),
+  dark = list(body = "#F2A6CF", sleeve = "#F2A6CF", limb = "#C5B0EB")
+))
+page
+attr(page, "contrast")
+mascot_preview(mood = "happy", size = 96)
+```
+
+Use the complete palettes from the branding example to coordinate the other
+coloured parts too. Supplied colours below 3:1 against the panel background
+are kept and listed above the grids, with one combined warning in R.
+`attr(page, "contrast")` returns their role, colour, background, ratio and mode.
+Experimental CSS values are only known in the browser; look in its console for
+those warnings. Floating settings appear inline for comparison, and static
+previews do not activate the Shiny click menu. Status text remains beside each
+small drawing; fine face details are harder to read at 32 and 24 pixels.
 
 ## Leave unchanged or reset
 

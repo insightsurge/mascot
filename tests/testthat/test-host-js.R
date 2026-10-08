@@ -1715,11 +1715,14 @@ describe("mascot.host review corrections", {
     js("document.querySelector('.mascot-restore').click();document.activeElement.blur()")
     session$Emulation$setTouchEmulationEnabled(enabled = FALSE)
     session$Input$dispatchMouseEvent(type = "mouseMoved", x = 1, y = 1)
-    expect_true(host_layout(
+    resting <- host_layout(
       js,
-      "return matchMedia('(hover:hover) and (pointer:fine)').matches &&
-      getComputedStyle(document.querySelector('.mascot-actions')).opacity==='0';"
-    ))
+      "const strip=document.querySelector('.mascot-actions'),css=getComputedStyle(strip);
+      return {fine:matchMedia('(hover:hover) and (pointer:fine)').matches,opacity:css.opacity,
+        pointer:css.pointerEvents,hover:strip.parentElement.matches(':hover'),focus:strip.parentElement.matches(':focus-within')};"
+    )
+    expect_identical(resting$opacity, if (resting$fine) "0" else "1", info = jsonlite::toJSON(resting))
+    expect_identical(resting$pointer, if (resting$fine) "none" else "auto", info = jsonlite::toJSON(resting))
     point <- js(
       "(() => {const r=document.querySelector('.mascot-canvas').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()"
     )

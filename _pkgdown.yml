@@ -34,6 +34,10 @@ template:
       </div>
 
 navbar:
+  components:
+    intro:
+      text: Get started
+      href: articles/mascot.html
   structure:
     left: [intro, reference, articles, news]
     right: [search, github, lightswitch]
@@ -61,3 +65,14 @@ reference:
       - mascot_gesture
       - mascot_gestures
       - mascot_moods
+
+  - title: Examples
+    contents:
+      - mascot_examples
+      - mascot_example
+
+articles:
+  - title: Get started
+    navbar: ~
+    contents:
+      - mascot

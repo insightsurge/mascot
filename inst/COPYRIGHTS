@@ -23,3 +23,11 @@ inst/www/mascot-host.js
 inst/www/mascot.css
     Source: page host and layout written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/examples/shared/styles.css
+    Source: shared layout for the bundled example apps, written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+vignettes/figures/*.png
+    Source: screenshots of the bundled example apps captured locally in Chrome.
+    Copyright (c) Harsh Verma. Licence: MIT.

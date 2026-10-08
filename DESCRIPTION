@@ -22,10 +22,13 @@ Suggests:
     bslib,
     chromote,
     covr,
+    knitr,
     lifecycle,
+    rmarkdown,
     shinytest2,
     testthat (>= 3.0.0),
     withr
+VignetteBuilder: knitr
 Config/cran-gate/coverage: 70
 Config/cran-gate/extra-dirs: tools
 Config/testthat/edition: 3

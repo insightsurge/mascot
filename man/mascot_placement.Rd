@@ -30,6 +30,8 @@ Floating mascots hide with their original tab or container. Switching back to
 inline returns the mascot to its original place in the UI.
 }
 \details{
+The neutral minimise control appears on hover or keyboard focus. Touch screens
+keep it visible; an open mascot menu hides it. Its border has a quiet glow.
 A minimised mascot is a round restore button in the character's colours.
 Its status remains available to screen readers. Updates still apply; bubble
 countdowns pause until restored. Click, Enter or Space restores the mascot.
@@ -53,6 +55,7 @@ Other mascot helpers:
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
 \code{\link[=mascot_motion]{mascot_motion()}},
+\code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_size]{mascot_size()}},
 \code{\link[=mascot_status]{mascot_status()}},
 \code{\link[=mascot_theme]{mascot_theme()}}

@@ -54,7 +54,8 @@ mascot(id = "brand", theme = bslib::bs_theme(primary = "#1f6feb"))
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}},
+\code{\link[=mascot_motion]{mascot_motion()}} for a complete Shiny settings example
 
 Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},
@@ -66,6 +67,7 @@ Other mascot helpers:
 \code{\link[=mascot_moods]{mascot_moods()}},
 \code{\link[=mascot_motion]{mascot_motion()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
+\code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_size]{mascot_size()}},
 \code{\link[=mascot_status]{mascot_status()}}
 }

@@ -13,7 +13,8 @@ mascot(
   size = 160,
   placement = "inline",
   theme = NULL,
-  motion = TRUE
+  motion = TRUE,
+  popup_menu = NULL
 )
 }
 \arguments{
@@ -52,6 +53,13 @@ colours. Unset roles keep their original colours in both modes.}
 \item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object. \code{TRUE} (the default)
 allows animation while honouring the visitor's reduced-motion preference.
 \code{FALSE} stops animation. \code{NULL} is not accepted.}
+
+\item{popup_menu}{A named character vector of item labels or a
+\code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object. \code{NULL} (the default) shows no menu.
+A choice sets \verb{input$<id>_menu} to the item id, including repeated choices.
+In a module, use \code{ns("helper")} in the UI and read \code{input$helper_menu} in
+that module's server. Keyboard-only users need \code{key_bindings = TRUE};
+see \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} for the module example and guidance.}
 }
 \value{
 An \code{htmltools} tag with its engine dependency attached.

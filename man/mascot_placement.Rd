@@ -56,6 +56,7 @@ Other mascot helpers:
 \code{\link[=mascot_moods]{mascot_moods()}},
 \code{\link[=mascot_motion]{mascot_motion()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
+\code{\link[=mascot_preview]{mascot_preview()}},
 \code{\link[=mascot_size]{mascot_size()}},
 \code{\link[=mascot_status]{mascot_status()}},
 \code{\link[=mascot_theme]{mascot_theme()}}

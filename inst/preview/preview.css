@@ -1,0 +1,109 @@
+/* Comparison-page styles only; the live mascot host keeps its own layout. */
+.mascot-preview {
+  --mascot-preview-border: #dee2e6;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 1.5rem;
+  background: #fff;
+  color: #212529;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+.mascot-preview h1,
+.mascot-preview h2 {
+  color: inherit;
+}
+
+.mascot-preview-contrast {
+  margin-block: 1rem 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--mascot-preview-border);
+  border-radius: 0.75rem;
+}
+
+.mascot-preview-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.mascot-preview-mode {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--mascot-preview-border);
+  border-radius: 0.75rem;
+}
+
+.mascot-preview-mode[data-bs-theme="light"] {
+  --bs-body-bg: var(--mascot-preview-light-bg);
+  --bs-body-color: var(--mascot-preview-light-fg);
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+.mascot-preview-mode[data-bs-theme="dark"] {
+  --bs-body-bg: var(--mascot-preview-dark-bg);
+  --bs-body-color: var(--mascot-preview-dark-fg);
+  --mascot-preview-border: #495057;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+.mascot-preview-scroll {
+  overflow-x: auto;
+}
+
+.mascot-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  color: inherit;
+}
+
+.mascot-preview caption {
+  padding-block: 0.5rem;
+  text-align: left;
+  color: inherit;
+}
+
+.mascot-preview th,
+.mascot-preview td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--mascot-preview-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.mascot-preview-cell {
+  min-width: 7rem;
+}
+
+.mascot-preview figure {
+  margin: 0;
+  text-align: center;
+}
+
+.mascot-preview figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.mascot-preview-stage {
+  min-width: 7rem;
+}
+
+.mascot-preview-no-bubble .mascot-bubble-region {
+  height: 0;
+  width: 0;
+  visibility: hidden;
+}
+
+.mascot-preview:not(.mascot-preview-no-bubble) .mascot-preview-cell {
+  min-width: 18rem;
+}
+
+@media (max-width: 70rem) {
+  .mascot-preview-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

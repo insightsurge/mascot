@@ -4,19 +4,15 @@
 \alias{mascot_popup_menu}
 \title{Choose a mascot's click menu}
 \usage{
-mascot_popup_menu(items = NULL, key_bindings = FALSE)
+mascot_popup_menu(items = NULL)
 }
 \arguments{
 \item{items}{A named character vector of plain-text labels. Names are unique,
 non-empty item ids without whitespace. \code{NULL} (the default) removes the menu;
 an empty vector is not accepted. Labels are always escaped.}
-
-\item{key_bindings}{A logical flag, defaulting to \code{FALSE}. With \code{TRUE}, Enter
-and Space open the menu while the mascot has focus. There are no page-wide
-shortcuts. \code{NULL} is not accepted.}
 }
 \value{
-A \code{mascot_popup_menu} object with \code{items} and \code{key_bindings} elements.
+A \code{mascot_popup_menu} object with an \code{items} element.
 }
 \description{
 The app supplies the items and decides what each choice does. Menus appear only
@@ -24,10 +20,10 @@ in Shiny. Clicking or touching the mascot opens the menu; Escape or a click
 elsewhere closes it. The mascot looks up while the menu is open.
 }
 \details{
-Keyboard-only users need \code{key_bindings = TRUE} to open the menu (\verb{WCAG 2.1.1}).
-This is recommended for regulated apps. Within an open menu, arrow keys move
-between choices, Home and End select the ends, and Escape returns focus to
-the mascot. Without items the mascot remains an image, with its status text.
+Enter and Space open or close the focused toggle; arrows, Home, End and
+Escape navigate the menu.
+Escape returns focus to the mascot. Without items the mascot remains an
+image, with its status text.
 
 A choice sets \code{input$helper_menu} for \code{mascot(id = "helper")} to the item id.
 Choosing the same item twice fires twice. In a module, use \code{ns("helper")} in
@@ -36,7 +32,7 @@ the UI and read \code{input$helper_menu} inside that module's server:
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{helper_ui <- function(id) \{
   ns <- shiny::NS(id)
   mascot(id = ns("helper"), popup_menu = mascot_popup_menu(
-    c(about = "About this app"), key_bindings = TRUE))
+    c(about = "About this app")))
 \}
 helper_server <- function(id) \{
   shiny::moduleServer(id, function(input, output, session) \{
@@ -61,13 +57,13 @@ On static pages the mascot stays an image. Run the Shiny example below to try
 the menu.
 }
 \examples{
-mascot_popup_menu(c(about = "About this app", help = "Help"), key_bindings = TRUE)
+mascot_popup_menu(c(about = "About this app", help = "Help"))
 mascot_popup_menu()
 mascot(id = "helper", popup_menu = c(about = "About this app"))
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   shiny::fluidPage(mascot(id = "helper", popup_menu = mascot_popup_menu(
-    c(about = "About this app"), key_bindings = TRUE))),
+    c(about = "About this app")))),
   function(input, output, session) {
     shiny::observeEvent(input$helper_menu, {
       shiny::showModal(shiny::modalDialog(paste("Selected", input$helper_menu)))

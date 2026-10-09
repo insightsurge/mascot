@@ -52,3 +52,18 @@ mood_label <- function(name) {
   checkmate::assert_choice(name, mood_table()$name)
   paste0(toupper(substr(name, 1, 1)), substring(name, 2))
 }
+
+#' @export
+#' @noRd
+format.mascot_mood <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_mood")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_mood <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_mood")
+  cli::cat_line(format(x))
+  invisible(x)
+}

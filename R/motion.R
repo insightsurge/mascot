@@ -93,3 +93,18 @@ as_motion_arg <- function(x, call) {
   # NULL follows the visitor; FALSE must never override the visitor's preference.
   list(reduced = if (value$animate) NULL else TRUE, swap = value$swap)
 }
+
+#' @export
+#' @noRd
+format.mascot_motion <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_motion")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_motion <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_motion")
+  cli::cat_line(format(x))
+  invisible(x)
+}

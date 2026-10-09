@@ -1,26 +1,19 @@
-# A plain observe() connects two form checks to the mascot. No validation package.
-# Standalone app: attach the package as a user would.
-library(mascot) # nolint: undesirable_function_linter.
-# Share presentation while keeping the scenario code here.
-# nolint start: undesirable_function_linter.
-source(
-  system.file("examples", "shared", "shell.R", package = "mascot"),
-  local = TRUE
-)
-# nolint end
+library(shiny)
+if (!requireNamespace("bslib", quietly = TRUE)) {
+  stop("This example needs bslib. Install it before running the app.")
+}
+library(bslib)
+library(mascot)
 
-ui <- shiny::tagList(shiny::tags$div(
-  class = "example-grid",
-  shiny::tags$section(
-    class = "example-panel",
+ui <- shiny::tagList(bslib::layout_columns(
+  bslib::card(
     shiny::tags$h2("Review a sample"),
     shiny::textInput("sample", "Sample label", ""),
     shiny::numericInput("quantity", "Quantity (1 to 100)", value = 0, min = 0, max = 100),
     shiny::textOutput("checks"),
-    shiny::tags$p(class = "example-note", "The form text explains the problem; the mood reinforces it.")
+    shiny::tags$p("The form text explains the problem; the mood reinforces it.")
   ),
-  shiny::tags$section(
-    class = "example-panel example-stage",
+  bslib::card(
     shiny::tags$h2("Form status"),
     mascot(id = "helper", mood = "worried", status = "2 fields need attention")
   )
@@ -52,4 +45,4 @@ server <- function(input, output, session) {
   })
 }
 
-example_app("Check a form", "Keep the form's feedback and the mascot's status in step.", ui, server)
+shiny::shinyApp(bslib::page_fluid(ui), server)

@@ -11,13 +11,15 @@ mascot_colour_roles(character = "tessa")
 \code{NULL} is not accepted.}
 }
 \value{
-A data frame with character columns \code{role}, \code{colour} and \code{brand_slot}.
-A role without a brand slot has \code{NA} in \code{brand_slot}.
+A data frame with character columns \code{role}, \code{colour}, \code{follows}
+(comma-separated leaders) and \code{shade} (\code{same}, \code{lighter} or \code{darker}).
+Roles without a follow rule have \code{NA} in \code{follows} and \code{shade}.
 }
 \description{
 Roles are written in snake case in R. Colours are the character's own colours,
-before any theme is applied. Brand slots identify the roles filled by a
-\code{\link[bslib:bs_theme]{bslib::bs_theme()}} primary or secondary colour.
+before any theme is applied. Follow rules list leaders in priority order.
+A supplied role wins; otherwise the first supplied or filled leader is used.
+With no available leader, the role keeps its original colour.
 }
 \examples{
 mascot_colour_roles()

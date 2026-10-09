@@ -30,7 +30,8 @@
 #' screens. Each cell keeps its status text, since small faces lose fine detail.
 #'
 #' Both supplied theme maps are shown, even if the theme selected one mode.
-#' Backgrounds are white and `#212529`, or the `bslib` theme's `bg` in both panels.
+#' Backgrounds are white and `#212529`, or the `bslib` theme's `bg` and
+#' `body-bg-dark`; text uses `fg` and `body-color-dark`.
 #' Only supplied colour roles are checked, using the same contrast calculation
 #' as [mascot()]. Experimental CSS variables are resolved in the browser: their
 #' warnings appear in its console and cannot be included in the R attribute.
@@ -71,7 +72,7 @@ mascot_preview <- function(
     as_theme_arg(theme, environment(), character$id),
     warning = function(warning) {
       checkmate::assert_class(warning, "warning")
-      if (grepl("contrast below 3:1", conditionMessage(warning), fixed = TRUE)) {
+      if (inherits(warning, "mascot_contrast")) {
         invokeRestart("muffleWarning")
       }
     }
@@ -80,10 +81,13 @@ mascot_preview <- function(
   contrast <- preview_contrast(resolved, surfaces$background)
   lines <- preview_contrast_labels(contrast)
   if (nrow(contrast)) {
-    cli::cli_warn(c(
-      "Preview colours have contrast below 3:1; the colours are kept.",
-      "i" = "{paste(lines, collapse = '\n')}"
-    ))
+    cli::cli_warn(
+      c(
+        "Preview colours have contrast below 3:1; the colours are kept.",
+        "i" = "{paste(lines, collapse = '\n')}"
+      ),
+      class = "mascot_contrast"
+    )
   }
   sizes <- c(
     list(size),
@@ -127,9 +131,6 @@ mascot_preview <- function(
     ),
     htmltools::tags$h1(id = paste0(prefix, "-heading"), paste(character$name, "preview")),
     htmltools::tags$p("Compare each mood and size in both modes. Status text keeps the meaning readable."),
-    if (inherits(theme, "bs_theme")) {
-      htmltools::tags$p("The supplied bslib background is used in both comparison panels.")
-    },
     if (placement$floating) htmltools::tags$p("Floating placement is shown inline in this comparison."),
     if (length(menu$items)) htmltools::tags$p("Click menus need Shiny and are inactive in this static preview."),
     if (length(resolved$css)) {
@@ -172,9 +173,15 @@ preview_surfaces <- function(theme) {
     foreground = c(light = "#212529", dark = "#F8F9FA")
   )
   if (inherits(theme, "bs_theme")) {
-    variables <- bslib::bs_get_variables(theme, c("bg", "fg"))
-    value$background[] <- theme_colour(variables[["bg"]], "bg")
-    value$foreground[] <- theme_colour(variables[["fg"]], "fg")
+    variables <- bslib::bs_get_variables(theme, c("bg", "fg", "body-bg-dark", "body-color-dark"))
+    value$background <- c(
+      light = theme_colour(variables[["bg"]], "bg"),
+      dark = theme_colour(variables[["body-bg-dark"]], "body-bg-dark")
+    )
+    value$foreground <- c(
+      light = theme_colour(variables[["fg"]], "fg"),
+      dark = theme_colour(variables[["body-color-dark"]], "body-color-dark")
+    )
   }
   value
 }
@@ -193,7 +200,7 @@ preview_contrast <- function(theme, backgrounds) {
     mode = character()
   )
   for (mode in c("light", "dark")) {
-    map <- theme[[mode]]
+    map <- if (length(theme$brand)) theme$brand else theme[[mode]]
     for (role in setdiff(names(map), names(theme$css))) {
       ratio <- theme_contrast(map[[role]], backgrounds[[mode]])
       if (ratio < 3) {

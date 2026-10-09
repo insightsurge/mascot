@@ -1,8 +1,7 @@
 #' List the bundled example apps
 #'
-#' Each example opens on its own, with a shared layout and separate scenario
-#' code. All work offline. The branding example needs the optional `bslib` package;
-#' the other examples use it for styling when available and otherwise use Shiny.
+#' Each example is a copyable app.R using Shiny and `bslib` cards. All work offline
+#' and need the optional `bslib` package. Copy just app.R into your own project.
 #' @returns A data frame with character columns `name`, `title` and `description`,
 #'   in teaching order. `name` is accepted by [mascot_example()].
 #' @family mascot examples
@@ -29,8 +28,8 @@ mascot_examples <- function() {
 #'
 #' Opens only the requested example, like [shiny::runExample()]. No files are
 #' copied or written by this function. Use `run = FALSE` to read the app's code
-#' or pass its directory to [shiny::runApp()]. A shared layout lives beside the
-#' example directories; keep that file available when adapting an entire app.
+#' or pass its directory to [shiny::runApp()]. Each app.R can be copied alone
+#' into a project with Shiny, `bslib` and mascot installed.
 #' @param name A required non-empty string from [mascot_examples()]'s `name`
 #'   column. `NULL` is not accepted.
 #' @param run A logical flag, defaulting to `TRUE`, to launch the app in an

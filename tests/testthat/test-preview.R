@@ -49,7 +49,7 @@ describe("mascot_preview()", {
       placement = mascot_placement(TRUE, minimise = TRUE),
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "dark"),
       motion = mascot_motion(swap = FALSE),
-      popup_menu = mascot_popup_menu(c(about = "About"), TRUE)
+      popup_menu = mascot_popup_menu(c(about = "About"))
     )
     expect_length(preview_nodes(page, "canvas"), 8)
     expect_match(as.character(page), "Floating placement is shown inline", fixed = TRUE)
@@ -93,22 +93,29 @@ describe("mascot_preview()", {
       page <- mascot_preview(mood = "idle", theme = list(body = "white"))
     })
   })
-  it("uses bslib's own background and maps primary/secondary roles without requiring an app", {
+  it("uses bslib's separate light and dark surfaces without requiring an app", {
     skip_if_not_installed("bslib")
-    page <- mascot_preview(
-      mood = "happy",
-      theme = bslib::bs_theme(
-        bg = "#fefefe",
-        fg = "#222222",
-        primary = "#1f6feb",
-        secondary = "#966600"
-      )
+    expect_warning(
+      page <- mascot_preview(
+        mood = "happy",
+        theme = bslib::bs_theme(
+          bg = "#fefefe",
+          fg = "#222222",
+          primary = "#1f6feb",
+          secondary = "#966600"
+        )
+      ),
+      class = "mascot_contrast"
     )
     expect_match(as.character(page), "--mascot-preview-light-bg:#FEFEFE", fixed = TRUE)
-    expect_match(as.character(page), "--mascot-preview-dark-bg:#FEFEFE", fixed = TRUE)
+    theme <- bslib::bs_theme(bg = "#fefefe", fg = "#222222", primary = "#1f6feb", secondary = "#966600")
+    dark <- theme_colour(bslib::bs_get_variables(theme, "body-bg-dark")[[1]], "bg")
+    expect_match(as.character(page), paste0("--mascot-preview-dark-bg:", dark), fixed = TRUE)
     wire <- preview_theme(preview_nodes(page, ".mascot")[[1]])
     expect_identical(wire$brand, list(primary = "#1F6FEB", secondary = "#966600"))
-    expect_equal(nrow(attr(page, "contrast")), 0)
+    # bslib derives a dark background from a near-white bg; both brand colours are too dark for it.
+    expect_identical(attr(page, "contrast")$mode, c("dark", "dark"))
+    expect_identical(attr(page, "contrast")$background, rep(dark, 2))
     low <- suppressWarnings(mascot_preview(
       mood = "idle",
       theme = bslib::bs_theme(
@@ -118,7 +125,7 @@ describe("mascot_preview()", {
         secondary = "white"
       )
     ))
-    expect_equal(nrow(attr(low, "contrast")), 6)
+    expect_equal(nrow(attr(low, "contrast")), 2)
     expect_true(all(attr(low, "contrast")$ratio == 1))
   })
   it("explains browser-only CSS checks and does not report a shadowed map as the drawn colour", {
@@ -130,11 +137,15 @@ describe("mascot_preview()", {
   it("preserves unrelated warnings while aggregating only colour-contrast warnings", {
     local_mocked_bindings(as_theme_arg = function(x, ...) {
       if (!is.null(x)) {
-        warning("Upstream theme warning")
+        warning("Upstream theme warning: contrast below 3:1")
       }
       NULL
     })
-    expect_warning(mascot_preview(mood = "idle", theme = mascot_theme()), "Upstream theme warning", fixed = TRUE)
+    expect_warning(
+      mascot_preview(mood = "idle", theme = mascot_theme()),
+      "Upstream theme warning: contrast below 3:1",
+      fixed = TRUE
+    )
   })
   it("generates unique ids when two previews share a page and never launches or saves it", {
     local_mocked_bindings(
@@ -169,7 +180,7 @@ describe("mascot_preview()", {
       list(theme = list(light = "red")),
       list(motion = NULL),
       list(motion = "yes"),
-      list(popup_menu = structure(list(items = "About"), class = "mascot_popup_menu")),
+      list(popup_menu = structure(list(items = c(about = "About"), extra = 1), class = "mascot_popup_menu")),
       list(size = structure(list(size = 96), class = "mascot_size")),
       list(theme = structure(list(mode = "night"), class = "mascot_theme")),
       list(motion = structure(list(animate = TRUE), class = "mascot_motion"))
@@ -297,7 +308,7 @@ describe("mascot_preview() in Chrome", {
         dark = list(body = "#F2A6CF"),
         mode = "light"
       ),
-      popup_menu = mascot_popup_menu(c(about = "About"), TRUE)
+      popup_menu = mascot_popup_menu(c(about = "About"))
     ))
     js <- local_preview_page(page)
     expect_identical(
@@ -340,5 +351,22 @@ describe("mascot_preview() in Chrome", {
       rep(c(96L, 48L, 32L, 24L), 2)
     )
     expect_true(js("Array.from(document.querySelectorAll('.mascot')).every(el=>mascot.host.state(el).detail==='full')"))
+  })
+})
+
+describe("bslib preview dark surface in Chrome", {
+  it("P213 paints the dark panel with body-bg-dark", {
+    skip_without_chrome()
+    skip_if_not_installed("bslib")
+    theme <- bslib::bs_theme(version = 5, bg = "#fefefe", fg = "#222222")
+    background <- bslib::bs_get_variables(theme, "body-bg-dark")[[1]]
+    rgb <- grDevices::col2rgb(background)
+    expected <- paste0("rgb(", paste(rgb[, 1], collapse = ", "), ")")
+    expect_warning(page <- mascot_preview(mood = "idle", theme = theme), class = "mascot_contrast")
+    js <- local_preview_page(page)
+    expect_identical(
+      js("getComputedStyle(document.querySelector('.mascot-preview-mode[data-bs-theme=dark]')).backgroundColor"),
+      expected
+    )
   })
 })

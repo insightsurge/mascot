@@ -1,26 +1,29 @@
 #' Set a mascot's colours and light or dark mode
 #'
-#' Unset roles keep the character's own colours in each mode. Use
+#' Unset roles follow the first supplied or filled leader declared by the character.
+#' With no supplied leader they keep their original colours. Use
 #' [mascot_colour_roles()] to find the roles for a character. A plain named list
 #' supplied to [mascot()] or [updateMascot()] uses one set in every mode. A
-#' [bslib::bs_theme()] fills the character's declared brand slots with its primary
+#' [bslib::bs_theme()] fills the character's declared brand leaders with its primary
 #' and secondary colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
 #'
-#' A theme survives a character swap: brand slots are resolved again and roles
+#' A theme survives a character swap: follow rules are resolved again and roles
 #' absent from the incoming character are ignored. An empty helper restores the
 #' character's own colours. When applied, a chosen colour below 3:1 contrast
 #' warns and is kept. The background is white in light mode and `#212529` in dark
-#' mode, or the `bslib` theme's `bg`. No colours are adjusted.
+#' mode, or the `bslib` theme's light and dark backgrounds. Supplied colours are
+#' kept exactly. Derived shades keep the hue, with calibrated lightness and
+#' saturation shifts. Tessa's original leaders reproduce derived colours within
+#' 3 units per RGB channel (0--255). Brand colours are the same in both modes.
 #' @param light,dark Named lists of colour roles, or `NULL` (the default) for the
 #'   character's colours in that mode. Values are colour names, hex strings,
 #'   [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or three red,
 #'   green and blue numbers in 0--255. Single numeric palette indices are not
 #'   accepted. Roles use snake case; `light`, `dark` and `default` are reserved.
-#' @param mode One of `"light"`, `"dark"` or `"auto"`. When omitted, defaults to
-#'   light in Shiny and auto on static pages such as Quarto and R Markdown.
-#'   An explicit mode always wins. `NULL` is not accepted. Auto follows the
-#'   source context's `data-bs-theme`, then Quarto's body class, then the system
-#'   preference. A Shiny app can instead switch by sending a new theme.
+#' @param mode One of `"auto"` (the default), `"light"` or `"dark"`.
+#'   Auto follows the nearest valid `data-bs-theme` in the original source
+#'   context, then Quarto's body classes. With no page signal it uses light.
+#'   Explicit light or dark always wins. `NULL` is not accepted.
 #' @param css A named list mapping colour roles to CSS variable names such as
 #'   `list(body = "--team-blue")`, or `NULL` (the default) for no CSS source.
 #'   This source is experimental. CSS entries override light and dark entries
@@ -47,13 +50,13 @@
 #' mascot(id = "helper", theme = list(body = "#1f6feb"))
 #' @examplesIf requireNamespace("bslib", quietly = TRUE)
 #' mascot(id = "brand", theme = bslib::bs_theme(primary = "#1f6feb"))
-mascot_theme <- function(light = NULL, dark = NULL, mode = "light", css = NULL) {
+mascot_theme <- function(light = NULL, dark = NULL, mode = "auto", css = NULL) {
   checkmate::assert_list(light, names = "unique", null.ok = TRUE)
   checkmate::assert_list(dark, names = "unique", null.ok = TRUE)
   checkmate::assert_choice(mode, c("light", "dark", "auto"))
   checkmate::assert_list(css, names = "unique", null.ok = TRUE)
   value <- structure(
-    list(light = light, dark = dark, mode = mode, css = css, mode_default = missing(mode)),
+    list(light = light, dark = dark, mode = mode, css = css),
     class = "mascot_theme"
   )
   check_arg(value, "theme", environment())
@@ -121,15 +124,12 @@ theme_problem <- function(x) {
   if (!inherits(x, "mascot_theme")) {
     return(theme_map_problem(x, "theme", roles))
   }
-  fields <- c("light", "dark", "mode", "css", "mode_default")
-  if (!isTRUE(checkmate::check_list(x, names = "unique")) || !setequal(names(x), fields) || length(x) != 5L) {
-    return("`theme` must be a mascot_theme() object with light, dark, mode, css and mode_default fields.")
+  fields <- c("light", "dark", "mode", "css")
+  if (!isTRUE(checkmate::check_list(x, names = "unique")) || !setequal(names(x), fields) || length(x) != 4L) {
+    return("`theme` must be a mascot_theme() object with light, dark, mode and css fields.")
   }
   if (!isTRUE(checkmate::check_choice(x$mode, c("light", "dark", "auto")))) {
     return("`theme$mode` must be one of \"light\", \"dark\" or \"auto\".")
-  }
-  if (!isTRUE(checkmate::check_flag(x$mode_default))) {
-    return("`theme$mode_default` must be TRUE or FALSE.")
   }
   for (field in c("light", "dark", "css")) {
     problem <- theme_map_problem(x[[field]], paste0("theme$", field), roles, field == "css")
@@ -227,20 +227,25 @@ as_theme_arg <- function(x, call, character = NULL) {
   brand <- NULL
   backgrounds <- c(light = "#ffffff", dark = "#212529")
   if (inherits(x, "bs_theme")) {
-    variables <- bslib::bs_get_variables(x, c("primary", "secondary", "bg"))
+    variables <- bslib::bs_get_variables(x, c("primary", "secondary"))
     brand <- lapply(c("primary", "secondary"), function(slot) theme_colour(variables[[slot]], slot))
     names(brand) <- c("primary", "secondary")
-    background <- theme_colour(variables[["bg"]], "bg")
-    backgrounds[] <- background
-    id <- if (is.null(character)) builtin_characters()$id[[1]] else character
-    slots <- character_colour_data(id)$brandSlots
-    colours <- list()
-    for (slot in names(slots)) {
-      for (role in slots[[slot]]) {
-        colours[[colour_role_names(role)]] <- brand[[slot]]
+    backgrounds <- preview_surfaces(x)$background
+    for (mode in names(backgrounds)) {
+      for (slot in names(brand)) {
+        if (theme_contrast(brand[[slot]], backgrounds[[mode]]) < 3) {
+          cli::cli_warn(
+            paste0(
+              "Brand colour {.val {slot}} in {mode} mode has contrast below 3:1 against ",
+              "{.val {backgrounds[[mode]]}}; the colour is kept."
+            ),
+            class = "mascot_contrast",
+            call = call
+          )
+        }
       }
     }
-    x <- mascot_theme(light = colours, dark = colours)
+    x <- mascot_theme()
   } else if (!inherits(x, "mascot_theme")) {
     x <- mascot_theme(light = x, dark = x)
   }
@@ -269,6 +274,7 @@ as_theme_arg <- function(x, call, character = NULL) {
               "Colour for role {.val {role}} in {field} mode has contrast below 3:1 against ",
               "{.val {backgrounds[[field]]}}; the colour is kept."
             ),
+            class = "mascot_contrast",
             call = call
           )
         }
@@ -280,7 +286,7 @@ as_theme_arg <- function(x, call, character = NULL) {
   list(
     light = convert(x$light, "light"),
     dark = convert(x$dark, "dark"),
-    mode = if (x$mode_default) NULL else x$mode,
+    mode = x$mode,
     css = convert(x$css, "css"),
     brand = brand
   )
@@ -305,4 +311,19 @@ theme_tag <- function(theme) {
 #' @noRd
 theme_has_bslib <- function() {
   requireNamespace("bslib", quietly = TRUE)
+}
+
+#' @export
+#' @noRd
+format.mascot_theme <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_theme")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_theme <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_theme")
+  cli::cat_line(format(x))
+  invisible(x)
 }

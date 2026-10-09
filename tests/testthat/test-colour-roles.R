@@ -1,16 +1,18 @@
 describe("mascot_colour_roles()", {
-  it("lists description colours in order with snake case and brand slots", {
+  it("lists description colours in order with snake case and follow rules", {
     value <- mascot_colour_roles()
     expect_identical(value, mascot_colour_roles("tessa"))
     expect_s3_class(value, "data.frame")
-    expect_named(value, c("role", "colour", "brand_slot"))
+    expect_named(value, c("role", "colour", "follows", "shade"))
     expect_equal(nrow(value), 20)
     expect_identical(value$role[3], "eye_white")
     expect_identical(value$role[9], "body_highlight")
     expect_identical(value$colour[value$role == "body"], "#3f8a66")
-    expect_identical(value$brand_slot[value$role == "body"], "primary")
-    expect_identical(value$role[value$brand_slot %in% "secondary"], c("rim", "accessory"))
-    expect_true(all(is.na(value$brand_slot[!value$role %in% c("body", "rim", "accessory")])))
+    expect_identical(value$follows[value$role == "limb"], "rim, body")
+    expect_identical(value$shade[value$role == "body_highlight"], "lighter")
+    expect_identical(value$shade[value$role == "accessory_detail"], "darker")
+    expect_identical(value$shade[value$role == "sleeve"], "same")
+    expect_true(all(is.na(value$follows[value$role %in% c("body", "rim", "outline")])))
     description <- character_colour_data("tessa")
     expect_identical(unname(unlist(description$colours)), value$colour)
     expect_identical(colour_role_registry(), colour_role_registry("tessa"))

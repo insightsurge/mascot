@@ -1,12 +1,14 @@
 #' List a character's colour roles
 #'
 #' Roles are written in snake case in R. Colours are the character's own colours,
-#' before any theme is applied. Brand slots identify the roles filled by a
-#' [bslib::bs_theme()] primary or secondary colour.
+#' before any theme is applied. Follow rules list leaders in priority order.
+#' A supplied role wins; otherwise the first supplied or filled leader is used.
+#' With no available leader, the role keeps its original colour.
 #' @param character A non-empty built-in character name, defaulting to `"tessa"`.
 #'   `NULL` is not accepted.
-#' @returns A data frame with character columns `role`, `colour` and `brand_slot`.
-#'   A role without a brand slot has `NA` in `brand_slot`.
+#' @returns A data frame with character columns `role`, `colour`, `follows`
+#'   (comma-separated leaders) and `shade` (`same`, `lighter` or `darker`).
+#'   Roles without a follow rule have `NA` in `follows` and `shade`.
 #' @family mascot helpers
 #' @seealso [mascot_theme()], [mascot()]
 #' @export
@@ -18,11 +20,18 @@ mascot_colour_roles <- function(character = "tessa") {
   id <- as_character_arg(character, environment())$id
   description <- character_colour_data(id)
   engine <- names(description$colours)
-  slots <- rep(NA_character_, length(engine))
-  for (slot in names(description$brandSlots)) {
-    slots[engine %in% description$brandSlots[[slot]]] <- slot
+  follows <- shade <- rep(NA_character_, length(engine))
+  for (role in names(description$follows)) {
+    rule <- description$follows[[role]]
+    follows[engine == role] <- paste(colour_role_names(unlist(rule$from)), collapse = ", ")
+    shade[engine == role] <- if (is.null(rule$shade)) "same" else rule$shade
   }
-  data.frame(role = colour_role_names(engine), colour = unname(unlist(description$colours)), brand_slot = slots)
+  data.frame(
+    role = colour_role_names(engine),
+    colour = unname(unlist(description$colours)),
+    follows = follows,
+    shade = shade
+  )
 }
 
 #' Read the character's colour metadata from the same description as the engine

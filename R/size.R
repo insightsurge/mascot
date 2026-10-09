@@ -108,3 +108,18 @@ as_size_arg <- function(x, call) {
   check_arg(x, "size", call)
   if (inherits(x, "mascot_size")) x else mascot_size(x)
 }
+
+#' @export
+#' @noRd
+format.mascot_size <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_size")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_size <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_size")
+  cli::cat_line(format(x))
+  invisible(x)
+}

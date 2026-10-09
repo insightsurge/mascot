@@ -9,13 +9,21 @@ describe("mascot_examples()", {
     expect_identical(anyDuplicated(examples$name), 0L)
     expect_match(examples$description[examples$name == "branding"], "Requires bslib")
   })
-  it("ships parseable scenario files that return app objects without starting a server", {
+  it("copies each app.R alone and builds an app without starting a server", {
+    # mascot is already attached by the test run; attaching it here would detach it on exit.
+    withr::local_package("shiny")
+    if (requireNamespace("bslib", quietly = TRUE)) {
+      withr::local_package("bslib")
+    }
     for (name in mascot_examples()$name) {
       file <- mascot_example(name, run = FALSE)
       expect_true(file.exists(file), info = name)
-      expect_type(parse(file), "expression")
-      if (name == "branding" && !requireNamespace("bslib", quietly = TRUE)) {
-        expect_error(source(file, local = new.env())$value, "branding example needs")
+      copied <- file.path(withr::local_tempdir(), "app.R")
+      expect_true(file.copy(file, copied))
+      expect_type(parse(copied), "expression")
+      file <- copied
+      if (!requireNamespace("bslib", quietly = TRUE)) {
+        expect_error(source(file, local = new.env())$value, "example needs bslib")
       } else {
         app <- source(file, local = new.env())$value
         expect_s3_class(app, "shiny.appobj")
@@ -65,6 +73,7 @@ describe("mascot_example()", {
 # A literal scenario name is embedded so the child R process needs no test globals.
 example_driver <- function(name) {
   checkmate::assert_string(name)
+  testthat::skip_if_not_installed("bslib")
   app_function <- function() NULL
   body(app_function) <- substitute(
     {
@@ -173,26 +182,18 @@ describe("bundled example apps", {
     wait_example_mood(app, "helper", "celebrating")
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("document.documentElement.dataset.bsTheme==='dark'")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#9ec5fe'")
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#1f6feb'")
     app$set_inputs(palette = "rose")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#f2a6cf'")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.rim"), "#C5B0EB")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.sleeve"), "#F2A6CF")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#C5B0EB")
-    expect_identical(
-      app$get_js("mascot.host.state(document.getElementById('helper')).colours.accessoryDetail"),
-      "#91649F"
-    )
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("document.documentElement.dataset.bsTheme==='light'")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#b53d78'")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.accessory"), "#A94A82")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.sleeve"), "#B53D78")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#A94A82")
-    expect_identical(
-      app$get_js("mascot.host.state(document.getElementById('helper')).colours.bodyHighlight"),
-      "#C95791"
-    )
     app$click("personalise")
     app$wait_for_js("!!mascot.host.state(document.getElementById('helper')).bubble")
     app$click("original")

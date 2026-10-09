@@ -183,7 +183,7 @@ describe("mascot() size and placement", {
 })
 
 describe("mascot() themes", {
-  it("embeds both palettes and preserves omitted versus explicit modes", {
+  it("embeds both palettes with auto by default and preserves explicit modes", {
     theme <- mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"))
     tag <- mascot(id = "themed", theme = theme)
     scripts <- Filter(function(x) inherits(x, "shiny.tag") && identical(x$name, "script"), tag$children)
@@ -191,7 +191,7 @@ describe("mascot() themes", {
     wire <- jsonlite::fromJSON(as.character(scripts[[2]]$children[[1]]), simplifyVector = FALSE)
     expect_identical(wire$light, list(body = "#1F6FEB"))
     expect_identical(wire$dark, list(body = "#9EC5FE"))
-    expect_null(wire$mode)
+    expect_identical(wire$mode, "auto")
     expect_false(grepl("data-mascot-theme", as.character(mascot(id = "own")), fixed = TRUE))
     expect_match(
       as.character(mascot(id = "light", theme = mascot_theme(mode = "light"))),
@@ -222,9 +222,9 @@ describe("mascot() motion", {
 describe("mascot() popup menu", {
   it("embeds inert menu configuration and keeps no-menu markup unchanged", {
     expect_false(grepl("data-mascot-popup-menu", as.character(mascot(id = "a")), fixed = TRUE))
-    html <- as.character(mascot(id = "module-helper", popup_menu = mascot_popup_menu(c(about = "About"), TRUE)))
+    html <- as.character(mascot(id = "module-helper", popup_menu = mascot_popup_menu(c(about = "About"))))
     expect_match(html, 'data-mascot-popup-menu=""', fixed = TRUE)
-    expect_match(html, '"items":{"about":"About"},"key_bindings":true', fixed = TRUE)
+    expect_match(html, '"items":{"about":"About"}', fixed = TRUE)
     expect_error(mascot(id = "a", popup_menu = c("Help")), "items.*names must")
   })
 })

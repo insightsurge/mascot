@@ -46,7 +46,8 @@ jobs:
         with:
           extra-packages: >-
             any::devtools, any::roxygen2, any::lintr, any::spelling, any::checkmate, any::cli, any::covr,
-            any::withr, any::pkgbuild, any::processx
+            any::withr, any::pkgbuild, any::processx, local::.
+          # local::. installs this package: browser tests start apps in a child R process, which needs it installed.
 
       - name: Gate self-test (every step must fail on its planted defect)
         run: Rscript tools/test-cran-gate.R all

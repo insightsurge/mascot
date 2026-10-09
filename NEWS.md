@@ -1,5 +1,13 @@
 # mascot 0.0.2.9000
 
+* `mascot_theme()` follows the page by default; absent a page signal, it uses light mode (#213).
+* Themes colour a character through declared follow rules; supplied roles stay exact, and `mascot_colour_roles()` lists leaders and shades (#213).
+* `bs_theme()` contrast checks and `mascot_preview()` use the light and dark backgrounds separately; contrast warnings have class `mascot_contrast` (#213).
+* `mascot_popup_menu()` always supports Enter and Space on its toggle; remove the unreleased `key_bindings` argument (#213).
+* Mascot helpers gain readable `format()` and `print()` methods (#213).
+* Bundled examples are self-contained, copyable `app.R` files using `bslib` cards (#213).
+
+
 * `mascot_preview()` compares moods, light/dark colours and small drawings on an offline page, with contrast findings on the page and in R (#175).
 
 * `mascot_examples()` lists five bundled Shiny apps, with a shared layout and separate scenarios for learning each feature (#177).

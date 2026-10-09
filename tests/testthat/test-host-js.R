@@ -1176,7 +1176,52 @@ describe("mascot.host themes", {
     expect_length(result$reset$overrides, 0)
     expect_identical(result$state$current$mood, "idle")
   })
-  it("T4 follows Bootstrap, Quarto and media mode live with explicit modes taking priority", {
+  it("T213 fills followers per mode, preserves supplied roles and reapplies rules after swaps", {
+    skip_without_chrome()
+    js <- local_host_page(record_colours = TRUE)
+    result <- js(
+      "(() => {const el=document.getElementById('a'),tessa=mascot.readCharacter('tessa'),blob=mascot.readCharacter('blob');
+      const send=patch=>mascot.host.receive({id:'a',patch});
+      const theme={light:{body:'#c2185b'},dark:{body:'#f2a6cf'},mode:'auto',css:null,brand:null};
+      send({theme});const pink=themeDraws.at(-1).colours;
+      send({theme:{...theme,light:{body:'#c2185b',sleeve:'#123456',rim:'#966600'}}});const supplied=themeDraws.at(-1).colours;
+      send({character:{id:blob.id,name:blob.name,json:JSON.stringify(blob)}});
+      send({character:{id:tessa.id,name:tessa.name,json:JSON.stringify(tessa)}});const swapped=themeDraws.at(-1).colours;
+      document.documentElement.dataset.bsTheme='dark';return {pink,supplied,swapped};})()"
+    )
+    expect_identical(result$pink$sleeve, "#c2185b")
+    expect_identical(result$pink$eyelid, "#c2185b")
+    expect_identical(result$pink$limb, "#c2185b")
+    expect_gt(mean(grDevices::col2rgb(result$pink$bodyHighlight)), mean(grDevices::col2rgb("#c2185b")))
+    expect_identical(result$pink$outline, "#26312b")
+    expect_identical(result$pink$accessory, "#d9b35c")
+    expect_identical(result$supplied$sleeve, "#123456")
+    expect_identical(result$supplied$limb, "#966600")
+    expect_identical(result$supplied$accessory, "#966600")
+    expect_identical(result$swapped$sleeve, "#123456")
+    expect_identical(result$swapped$limb, "#966600")
+    dark <- host_layout(js, "return themeDraws.at(-1).colours;")
+    expect_identical(dark$sleeve, "#f2a6cf")
+    expect_identical(dark$limb, "#f2a6cf")
+  })
+  it("T213 reproduces Tessa's original derived colours within three RGB units", {
+    skip_without_chrome()
+    description <- character_colour_data("tessa")
+    js <- suppressWarnings(local_host_page(
+      theme = list(
+        body = description$colours$body,
+        rim = description$colours$rim,
+        accessory = description$colours$accessory
+      ),
+      record_colours = TRUE
+    ))
+    drawn <- js("themeDraws.at(-1).colours")
+    for (role in names(description$colours)) {
+      difference <- abs(grDevices::col2rgb(drawn[[role]]) - grDevices::col2rgb(description$colours[[role]]))
+      expect_true(max(difference) <= 3, info = role)
+    }
+  })
+  it("T4 follows Bootstrap and Quarto, ignores system preference and honours explicit modes", {
     skip_without_chrome()
     theme <- mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
     js <- local_host_page(theme = theme, record_colours = TRUE)
@@ -1198,8 +1243,8 @@ describe("mascot.host themes", {
     expect_identical(colour("document.body.className='quarto-light'"), "#1F6FEB")
     attr(js, "session")$Emulation$setEmulatedMedia(features = list(list(name = "prefers-color-scheme", value = "dark")))
     expect_identical(colour(), "#1F6FEB")
-    expect_identical(colour("document.body.className=''"), "#9EC5FE")
-    expect_identical(colour("document.documentElement.dataset.bsTheme='invalid'"), "#9EC5FE")
+    expect_identical(colour("document.body.className=''"), "#1F6FEB")
+    expect_identical(colour("document.documentElement.dataset.bsTheme='invalid'"), "#1F6FEB")
     expect_identical(
       colour(
         "const theme=mascot.host.state(document.getElementById('a')).theme;theme.mode='light';mascot.host.receive({id:'a',patch:{theme}})"
@@ -1212,14 +1257,14 @@ describe("mascot.host themes", {
     )
     expect_identical(colour(), "#1F6FEB")
   })
-  it("T4 defaults static pages to auto but honours explicitly requested light", {
+  it("T4 defaults pages without a signal to light despite a dark system preference", {
     skip_without_chrome()
     implicit <- local_host_page(
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe")),
       scheme = "dark",
       record_colours = TRUE
     )
-    expect_identical(implicit("themeDraws.at(-1).colours.body"), "#9EC5FE")
+    expect_identical(implicit("themeDraws.at(-1).colours.body"), "#1F6FEB")
     explicit <- local_host_page(
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "light"),
       scheme = "dark",
@@ -1244,7 +1289,7 @@ describe("mascot.host themes", {
     expect_false("rim" %in% names(result$incoming$overrides))
     expect_identical(result$returning$colours$rim, "#ffa500")
   })
-  it("T4 resolves brand slots afresh and keeps themes when queued before mounting", {
+  it("T4 resolves brand leaders afresh and keeps themes when queued before mounting", {
     skip_without_chrome()
     skip_if_not_installed("bslib")
     js <- suppressWarnings(local_host_page(
@@ -1253,7 +1298,7 @@ describe("mascot.host themes", {
     ))
     result <- js(
       "(() => {
-      const initial=themeDraws.at(-1),blob={...mascot.readCharacter('blob'),brandSlots:{primary:['outline'],secondary:['body']}};
+      const initial=themeDraws.at(-1),blob={...mascot.readCharacter('blob'),brand:{primary:'outline',secondary:'body'}};
       mascot.host.receive({id:'a',patch:{character:{id:blob.id,name:blob.name,json:JSON.stringify(blob)}}});
       const remapped=themeDraws.at(-1),source=document.getElementById('a');
       mascot.host.receive({id:'late',patch:{theme:{light:{body:'#abcdef',rim:'#ffa500'},dark:null,mode:'light',css:null,brand:null}}});
@@ -1265,6 +1310,8 @@ describe("mascot.host themes", {
     )
     expect_identical(result$initial$colours$body, "#1F6FEB")
     expect_identical(result$initial$colours$accessory, "#FFA500")
+    expect_identical(result$initial$colours$limb, "#FFA500")
+    expect_identical(result$initial$colours$sleeve, "#1F6FEB")
     expect_identical(result$remapped$colours$outline, "#1F6FEB")
     expect_identical(result$remapped$colours$body, "#FFA500")
     expect_identical(result$queued$character, "blob")
@@ -1494,7 +1541,7 @@ describe("mascot.host popup menu", {
   it("P6 toggles by pointer, sends repeated event choices, holds the pose and clears it without motion", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "<b>About</b>", help = "Help"), TRUE),
+      popup_menu = mascot_popup_menu(c(about = "<b>About</b>", help = "Help")),
       shiny_menu = TRUE,
       motion = FALSE,
       reduced = FALSE,
@@ -1529,24 +1576,27 @@ describe("mascot.host popup menu", {
       expect_identical(event, list("a_menu", "about", list(priority = "event")))
     }
   })
-  it("P6 gates opening keys and navigates only the focused mascot menu", {
+  it("P6 Enter and Space always operate the toggle and navigation stays in its menu", {
     skip_without_chrome()
     js <- local_host_page(popup_menu = c(about = "About", help = "Help", more = "More"), shiny_menu = TRUE)
     r <- js(
       "(() => {const el=document.getElementById('a'),send=patch=>mascot.host.receive({id:'a',patch});
       let button=el.querySelector('.mascot-menu-toggle');
       const key=(target,key)=>target.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
-      button.focus();key(button,'Enter');const disabled=!mascot.host.state(el).menuOpen;
-      send({popup_menu:{items:{about:'About',help:'Help',more:'More'},key_bindings:true}});
+      button.focus();key(button,'Enter');const opened=mascot.host.state(el).menuOpen;key(button,'Enter');const closed=!mascot.host.state(el).menuOpen;
+      send({popup_menu:{items:{about:'About',help:'Help',more:'More'}}});
       button=el.querySelector('.mascot-menu-toggle');key(document.body,'Enter');const global=!mascot.host.state(el).menuOpen;
-      button.focus();key(button,' ');const first=document.activeElement.dataset.itemId;
+      button.focus();key(button,' ');button.focus();key(button,' ');const spaceClosed=!mascot.host.state(el).menuOpen;
+      key(button,' ');const first=document.activeElement.dataset.itemId;
       key(document.activeElement,'End');const end=document.activeElement.dataset.itemId;
       key(document.activeElement,'ArrowDown');const wrap=document.activeElement.dataset.itemId;
       key(document.activeElement,'ArrowUp');const up=document.activeElement.dataset.itemId;
       key(document.activeElement,'Home');const home=document.activeElement.dataset.itemId;
-      key(document.activeElement,'Escape');return {disabled,global,first,end,wrap,up,home,focus:document.activeElement===button};})()"
+      key(document.activeElement,'Escape');return {opened,closed,spaceClosed,global,first,end,wrap,up,home,focus:document.activeElement===button};})()"
     )
-    expect_true(r$disabled)
+    expect_true(r$opened)
+    expect_true(r$closed)
+    expect_true(r$spaceClosed)
     expect_true(r$global)
     expect_identical(r$first, "about")
     expect_identical(r$end, "more")
@@ -1562,10 +1612,10 @@ describe("mascot.host popup menu", {
       "(async()=>{const el=document.getElementById('a'),state=()=>mascot.host.state(el),send=patch=>mascot.host.receive({id:'a',patch});
       el.querySelector('.mascot-menu-toggle').click();document.activeElement.blur();const before=state().bubble.remaining;
       await new Promise(r=>setTimeout(r,120));const after=state().bubble.remaining;
-      send({mood:'happy',popup_menu:{items:{bad:''},key_bindings:true}});const atomic=state().mood==='idle'&&state().menuOpen;
-      el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:{replacement:'Replacement'},key_bindings:true}});
+      send({mood:'happy',popup_menu:{items:{bad:''}}});const atomic=state().mood==='idle'&&state().menuOpen;
+      el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:{replacement:'Replacement'}}});
       const replacementFocus=document.activeElement===el.querySelector('.mascot-menu-toggle');
-      el.querySelector('.mascot-menu-toggle').click();el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:null,key_bindings:false}});
+      el.querySelector('.mascot-menu-toggle').click();el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:null}});
       return {before,after,atomic,replacementFocus,open:state().menuOpen,button:!!el.querySelector('.mascot-menu-toggle'),
         image:el.querySelector('canvas').getAttribute('role'),focus:document.activeElement===el.querySelector('canvas')};})()"
     )
@@ -1616,7 +1666,7 @@ describe("mascot.host popup menu", {
       const menu=el.querySelector('.mascot-menu'),below=menu.getBoundingClientRect().top>=el.getBoundingClientRect().bottom-1;
       el.querySelector('.mascot-menu-toggle').click();
       el.querySelector('.mascot-minimise').click();const closed=!mascot.host.state(el).menuOpen;
-      mascot.host.receive({id:'a',patch:{popup_menu:{items:{new:'New'},key_bindings:true}}});
+      mascot.host.receive({id:'a',patch:{popup_menu:{items:{new:'New'}}}});
       const hiddenWhileMinimised=el.querySelector('.mascot-menu-toggle').hidden;
       el.querySelector('.mascot-restore').click();return {below,closed,hiddenWhileMinimised,open:mascot.host.state(el).menuOpen,
         hidden:el.querySelector('.mascot-menu-toggle').hidden};})()"
@@ -1636,8 +1686,7 @@ describe("mascot.host review corrections", {
     for (position in c("top-left", "top-right", "bottom-left", "bottom-right", "inline")) {
       js <- local_host_page(
         popup_menu = mascot_popup_menu(
-          c(about = "About", help = "Help", contact = "Contact", settings = "Settings"),
-          TRUE
+          c(about = "About", help = "Help", contact = "Contact", settings = "Settings")
         ),
         shiny_menu = TRUE,
         placement = if (position == "inline") "inline" else mascot_placement(TRUE, position, TRUE),
@@ -1661,7 +1710,7 @@ describe("mascot.host review corrections", {
   it("A2 returns focus to the visible menu after either placement fallback", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), TRUE),
+      popup_menu = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
       placement = mascot_placement(TRUE, minimise = TRUE)
     )
@@ -1690,7 +1739,7 @@ describe("mascot.host review corrections", {
   it("C3 uses neutral action controls and hides them completely while the menu is open", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), TRUE),
+      popup_menu = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
       placement = mascot_placement(TRUE, minimise = TRUE)
     )

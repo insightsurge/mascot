@@ -16,7 +16,7 @@
     Condition
       Error in `updateMascot()`:
       ! Unexpected arguments: "typo".
-      i Use `id`, `character`, `mood`, `status`, `bubble`, `size`, `placement`, `gesture` and `session`; `gesture` and `session` must be named.
+      i Use `id`, `character`, `mood`, `status`, `bubble`, `size`, `placement`, `theme`, `gesture` and `session`; `gesture` and `session` must be named.
 
 ---
 

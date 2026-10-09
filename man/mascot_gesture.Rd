@@ -32,11 +32,13 @@ mascot_gesture("wave")
 Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
+\code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
 \code{\link[=mascot_gestures]{mascot_gestures()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_size]{mascot_size()}},
-\code{\link[=mascot_status]{mascot_status()}}
+\code{\link[=mascot_status]{mascot_status()}},
+\code{\link[=mascot_theme]{mascot_theme()}}
 }
 \concept{mascot helpers}

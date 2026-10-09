@@ -26,6 +26,9 @@
 #'   such as `"top-left"`, a named list such as `list(floating = TRUE, position =
 #'   "top-left")`, or a [mascot_placement()] object. Explicit `position` or
 #'   `minimise` options require floating. `NULL` is not accepted.
+#' @param theme A named list of colour roles, a [bslib::bs_theme()] or a
+#'   [mascot_theme()] object. `NULL` (the default) keeps the character's own
+#'   colours. Unset roles keep their original colours in both modes.
 #' @returns An `htmltools` tag with its engine dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]
@@ -68,7 +71,8 @@ mascot <- function(
   status = NULL,
   bubble = NULL,
   size = 160,
-  placement = "inline"
+  placement = "inline",
+  theme = NULL
 ) {
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   character <- as_character_arg(character, environment())
@@ -77,6 +81,7 @@ mascot <- function(
   bubble <- as_bubble_arg(bubble, environment())
   size <- as_size_arg(size, environment())
   placement <- as_placement_arg(placement, environment())
+  theme <- as_theme_arg(theme, environment(), character$id)
   mode <- if (is.null(status$text)) "mood" else "custom"
   tag <- htmltools::tags$div(
     class = "mascot",
@@ -96,6 +101,7 @@ mascot <- function(
       `data-mascot-character` = character$id,
       htmltools::HTML(character_json(character$id))
     ),
+    theme_tag(theme),
     htmltools::tags$canvas(
       class = "mascot-canvas",
       role = "img",
@@ -142,7 +148,7 @@ as_status_arg <- function(x, call) {
 #' Check a build-time argument with the public call attached
 #' @noRd
 check_arg <- function(x, arg, call) {
-  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture", "size", "placement"))
+  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme"))
   checkmate::assert_environment(call)
   # x is checked by arg_problem(), shared with warning-only runtime validation.
   problem <- arg_problem(x, arg)
@@ -159,8 +165,11 @@ check_arg <- function(x, arg, call) {
 #' A plain-text problem, or NULL for a valid shortcut or helper
 #' @noRd
 arg_problem <- function(x, arg) {
-  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture", "size", "placement"))
+  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme"))
   # check_* deliberately replaces assert_* for x: runtime values must only warn.
+  if (arg == "theme") {
+    return(theme_problem(x))
+  }
   if (arg == "size") {
     return(size_problem(x))
   }

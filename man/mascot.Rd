@@ -11,7 +11,8 @@ mascot(
   status = NULL,
   bubble = NULL,
   size = 160,
-  placement = "inline"
+  placement = "inline",
+  theme = NULL
 )
 }
 \arguments{
@@ -42,6 +43,10 @@ with a 24-pixel floor. \code{NULL} is not accepted.}
 \item{placement}{\code{"inline"} (the default), \code{"floating"} (bottom-right), a corner
 such as \code{"top-left"}, a named list such as \code{list(floating = TRUE, position = "top-left")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object. Explicit \code{position} or
 \code{minimise} options require floating. \code{NULL} is not accepted.}
+
+\item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
+\code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
+colours. Unset roles keep their original colours in both modes.}
 }
 \value{
 An \code{htmltools} tag with its engine dependency attached.

@@ -1,6 +1,6 @@
 #' Update a mascot in a Shiny app
 #'
-#' Apply character, mood, status, bubble, size, placement and gesture together. Invalid values
+#' Apply character, mood, status, bubble, size, placement, theme and gesture together. Invalid values
 #' warn and leave the mascot unchanged. In Shiny development mode they also show a worried
 #' mascot with the problem as its status; the next good update clears it.
 #' Updates sent before a mascot appears are kept until it appears.
@@ -23,6 +23,9 @@
 #' @param placement A shortcut, named list or [mascot_placement()] object, as
 #'   in [mascot()]. `NULL` (the default) leaves placement unchanged. Size and
 #'   placement changes keep the mounted engine, its mood and character.
+#' @param theme A theme in the forms accepted by [mascot()]. `NULL` (the
+#'   default) leaves the theme unchanged; `mascot_theme()` restores the
+#'   character's own colours. Themes are resolved again after a character swap.
 #' @param gesture A gesture name or [mascot_gesture()] object. `NULL` (the
 #'   default) sends no gesture. Use `"nod"` to acknowledge an action or `"wave"`
 #'   to greet. Must be named. See [mascot_gestures()] for descriptions.
@@ -79,6 +82,7 @@ updateMascot <- function(
   bubble = NULL,
   size = NULL,
   placement = NULL,
+  theme = NULL,
   ...,
   gesture = NULL,
   session = shiny::getDefaultReactiveDomain()
@@ -94,7 +98,7 @@ updateMascot <- function(
       "Unexpected arguments: {.val {extras}}.",
       "i" = paste(
         "Use {.arg id}, {.arg character}, {.arg mood}, {.arg status},",
-        "{.arg bubble}, {.arg size}, {.arg placement}, {.arg gesture} and {.arg session};",
+        "{.arg bubble}, {.arg size}, {.arg placement}, {.arg theme}, {.arg gesture} and {.arg session};",
         "{.arg gesture} and {.arg session} must be named."
       )
     ))
@@ -106,10 +110,11 @@ updateMascot <- function(
     bubble = bubble,
     size = size,
     placement = placement,
+    theme = theme,
     gesture = gesture
   )
   misplaced <- vapply(
-    values[c("character", "mood", "status", "bubble", "size", "placement")],
+    values[c("character", "mood", "status", "bubble", "size", "placement", "theme")],
     inherits,
     logical(1),
     what = c("ShinySession", "session_proxy", "MockShinySession")
@@ -133,9 +138,30 @@ updateMascot <- function(
     list(value = NULL)
   }
   values["bubble"] <- list(bubble_result$value)
+  theme_result <- if (!is.null(theme)) {
+    tryCatch(
+      list(
+        value = as_theme_arg(
+          theme,
+          environment(),
+          if (is.null(character) || !is.null(arg_problem(character, "character"))) {
+            NULL
+          } else {
+            as_character_arg(character, environment())$id
+          }
+        )
+      ),
+      error = function(error) list(problem = conditionMessage(error))
+    )
+  } else {
+    list(value = NULL)
+  }
+  # The normalised wire object is not a public helper; do not validate it twice.
+  values$theme <- NULL
   # Runtime values deliberately use check_* through arg_problem(): a bad value warns.
   problems <- c(
     bubble_result$problem,
+    theme_result$problem,
     unlist(
       lapply(names(values), function(arg) {
         if (!is.null(values[[arg]])) arg_problem(values[[arg]], arg)
@@ -183,6 +209,9 @@ updateMascot <- function(
   }
   if (!is.null(placement)) {
     patch$placement <- unclass(as_placement_arg(placement, environment()))
+  }
+  if (!is.null(theme)) {
+    patch$theme <- theme_result$value
   }
   if (!is.null(gesture)) {
     patch$gesture <- if (inherits(gesture, "mascot_gesture")) gesture$name else mascot_gesture(gesture)$name

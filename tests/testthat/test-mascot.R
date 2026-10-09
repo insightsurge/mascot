@@ -179,3 +179,23 @@ describe("mascot() size and placement", {
     expect_snapshot(error = TRUE, mascot(id = "a", placement = "fixed"))
   })
 })
+
+describe("mascot() themes", {
+  it("embeds both palettes and preserves omitted versus explicit modes", {
+    theme <- mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"))
+    tag <- mascot(id = "themed", theme = theme)
+    scripts <- Filter(function(x) inherits(x, "shiny.tag") && identical(x$name, "script"), tag$children)
+    expect_length(scripts, 2)
+    wire <- jsonlite::fromJSON(as.character(scripts[[2]]$children[[1]]), simplifyVector = FALSE)
+    expect_identical(wire$light, list(body = "#1F6FEB"))
+    expect_identical(wire$dark, list(body = "#9EC5FE"))
+    expect_null(wire$mode)
+    expect_false(grepl("data-mascot-theme", as.character(mascot(id = "own")), fixed = TRUE))
+    expect_match(
+      as.character(mascot(id = "light", theme = mascot_theme(mode = "light"))),
+      '"mode":"light"',
+      fixed = TRUE
+    )
+    expect_snapshot(error = TRUE, mascot(id = "bad", theme = list(bdoy = "blue")))
+  })
+})

@@ -68,7 +68,9 @@ local_host_page <- function(
   size = 160,
   placement = "inline",
   viewport = NULL,
-  density = 1
+  density = 1,
+  theme = NULL,
+  record_colours = FALSE
 ) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
@@ -79,11 +81,20 @@ local_host_page <- function(
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>host</title>',
       sprintf('<link rel="stylesheet" href="file://%s">', normalizePath(file.path(www, "mascot.css"))),
       '</head><body>',
-      as.character(mascot(id = "a", bubble = bubble, size = size, placement = placement)),
+      as.character(mascot(id = "a", bubble = bubble, size = size, placement = placement, theme = theme)),
       '<script type="application/json" data-mascot-character="blob">',
       readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
       '</script>',
-      sprintf('<script src="file://%s"></script>', normalizePath(scripts)),
+      sprintf('<script src="file://%s"></script>', normalizePath(scripts[1:3])),
+      if (record_colours) {
+        paste0(
+          '<script>window.themeDraws=[];const originalDraw=mascot.draw;',
+          'mascot.draw=function(ctx,ch,options){themeDraws.push({character:ch.id,',
+          'colours:{...ch.colours,...options.colours},overrides:{...options.colours}});',
+          'return originalDraw(ctx,ch,options);};</script>'
+        )
+      },
+      sprintf('<script src="file://%s"></script>', normalizePath(scripts[4])),
       '</body></html>'
     ),
     page

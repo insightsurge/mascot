@@ -48,3 +48,18 @@ mascot_gesture <- function(name) {
   }
   structure(list(name = name), class = "mascot_gesture")
 }
+
+#' @export
+#' @noRd
+format.mascot_gesture <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_gesture")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_gesture <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_gesture")
+  cli::cat_line(format(x))
+  invisible(x)
+}

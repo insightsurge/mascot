@@ -60,3 +60,18 @@ abort_choice <- function(value, valid, arg, what, call) {
     call = call
   )
 }
+
+#' @export
+#' @noRd
+format.mascot_character <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_character")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_character <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_character")
+  cli::cat_line(format(x))
+  invisible(x)
+}

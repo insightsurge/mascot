@@ -120,3 +120,18 @@ as_placement_arg <- function(x, call) {
   }
   mascot_placement(TRUE, x)
 }
+
+#' @export
+#' @noRd
+format.mascot_placement <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_placement")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_placement <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_placement")
+  cli::cat_line(format(x))
+  invisible(x)
+}

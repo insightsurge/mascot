@@ -17,3 +17,18 @@ mascot_status <- function(text = NULL) {
   }
   structure(list(text = text), class = "mascot_status")
 }
+
+#' @export
+#' @noRd
+format.mascot_status <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_status")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_status <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_status")
+  cli::cat_line(format(x))
+  invisible(x)
+}

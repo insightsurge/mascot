@@ -115,3 +115,18 @@ render_bubble_text <- function(text) {
   checkmate::assert_string(rendered$html, min.chars = 1, .var.name = "text")
   htmltools::HTML(rendered$html)
 }
+
+#' @export
+#' @noRd
+format.mascot_bubble <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_bubble")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_bubble <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_bubble")
+  cli::cat_line(format(x))
+  invisible(x)
+}

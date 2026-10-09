@@ -1,5 +1,9 @@
 # mascot 0.0.2.9000
 
+* `updateMascot()` keeps the latest state for a later first mascot and replacements with the same id (#193).
+* Timed bubbles pause while a mascot is hidden and resume with the remaining time (#199).
+* `updateMascot()` keeps the latest early gesture and plays it once when the mascot appears (#200).
+
 * `mascot_theme()` follows the page by default; absent a page signal, it uses light mode (#213).
 * Themes colour a character through declared follow rules; supplied roles stay exact, and `mascot_colour_roles()` lists leaders and shades (#213).
 * `bs_theme()` contrast checks and `mascot_preview()` use the light and dark backgrounds separately; contrast warnings have class `mascot_contrast` (#213).

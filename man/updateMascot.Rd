@@ -90,16 +90,17 @@ In a module use \code{mascot(id = ns("helper"))} in the UI, and
 An invalid \code{id} type, missing session or extra argument is an error.
 A character or mood change applies before the gesture. During a character
 swap the engine drops the gesture: the wave within the swap replaces it. Reduced
-motion skips movement. Gestures sent before the mascot appears are dropped
-with a browser console warning. Bubbles survive mood changes and swaps; a
+motion skips movement. The latest gesture sent before the mascot appears
+plays once on appearance, after its queued character and mood are applied.
+Bubbles survive mood changes and swaps; a
 queued bubble's timer starts when it appears. Infinite duration is sent as
 JSON \code{null}. See \code{\link[=mascot_bubble]{mascot_bubble()}} for timing and closing behaviour.
 Calling with all update fields \code{NULL} does nothing.
 
-Updates sent before a mascot appears are kept for it, as long as one mascot is
-already on the page. If every mascot in the app is created later (for example
-by \code{\link[shiny:renderUI]{shiny::renderUI()}}), updates sent before the first one appears are lost;
-keep one mascot in the static UI.
+Updates sent before a mascot appears are kept per session, including when
+the first mascot is created by \code{\link[shiny:renderUI]{shiny::renderUI()}} or \code{\link[shiny:insertUI]{shiny::insertUI()}}.
+Only the latest value of each field and the latest early gesture are kept.
+A replacement with the same id receives the retained state; gestures play once.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

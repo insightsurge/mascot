@@ -50,16 +50,17 @@
 #' An invalid `id` type, missing session or extra argument is an error.
 #' A character or mood change applies before the gesture. During a character
 #' swap the engine drops the gesture: the wave within the swap replaces it. Reduced
-#' motion skips movement. Gestures sent before the mascot appears are dropped
-#' with a browser console warning. Bubbles survive mood changes and swaps; a
+#' motion skips movement. The latest gesture sent before the mascot appears
+#' plays once on appearance, after its queued character and mood are applied.
+#' Bubbles survive mood changes and swaps; a
 #' queued bubble's timer starts when it appears. Infinite duration is sent as
 #' JSON `null`. See [mascot_bubble()] for timing and closing behaviour.
 #' Calling with all update fields `NULL` does nothing.
 #'
-#' Updates sent before a mascot appears are kept for it, as long as one mascot is
-#' already on the page. If every mascot in the app is created later (for example
-#' by [shiny::renderUI()]), updates sent before the first one appears are lost;
-#' keep one mascot in the static UI.
+#' Updates sent before a mascot appears are kept per session, including when
+#' the first mascot is created by [shiny::renderUI()] or [shiny::insertUI()].
+#' Only the latest value of each field and the latest early gesture are kept.
+#' A replacement with the same id receives the retained state; gestures play once.
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
 #' @seealso [mascot()], [mascot_motion()] for a complete Shiny settings example
@@ -243,11 +244,88 @@ updateMascot <- function(
 
 #' Send one update, applying the module namespace once
 #' @noRd
-send_update <- function(session, id, patch) {
+send_update <- function(session, id, patch, replay = FALSE) {
   checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   checkmate::assert_list(patch, names = "unique")
-  session$sendCustomMessage("mascot:update", list(id = session$ns(id), patch = patch))
+  checkmate::assert_flag(replay)
+  key <- session$ns(id)
+  if (is.null(session$userData$mascot_updates)) {
+    session$userData$mascot_updates <- new.env(parent = emptyenv())
+    session$onSessionEnded(function() {
+      session$userData$mascot_updates <- NULL
+    })
+  }
+  states <- session$userData$mascot_updates
+  if (is.null(states[[key]])) {
+    states[[key]] <- list(patch = list(), revision = 0L, gesture_revision = 0L, fields = list())
+    # The existing input binding reports each new mount, including the first
+    # dependency loaded through dynamic UI. Module input names stay local here.
+    shiny::observeEvent(
+      session$input[[id]],
+      {
+        mounted <- session$input[[id]]
+        latest <- states[[key]]
+        if (
+          is.list(mounted) &&
+            is.numeric(mounted$revision) &&
+            length(mounted$revision) == 1L &&
+            !is.na(mounted$revision) &&
+            mounted$revision < latest$revision
+        ) {
+          send_update(session, id, latest$patch, replay = TRUE)
+        }
+      },
+      ignoreInit = FALSE,
+      domain = session
+    )
+  }
+  state <- states[[key]]
+  if (!replay) {
+    state$revision <- state$revision + 1L
+    state$patch <- merge_update_patch(state$patch, patch)
+    for (field in names(patch)) {
+      state$fields[[field]] <- state$revision
+    }
+    if (is.null(patch$problem)) {
+      state$fields$problem <- state$revision
+    }
+    if (!is.null(patch$character) && is.null(patch$mood)) {
+      state$fields$mood <- state$revision
+    }
+    if (!is.null(patch$gesture)) {
+      state$gesture_revision <- state$revision
+    }
+    states[[key]] <- state
+  }
+  session$sendCustomMessage(
+    "mascot:update",
+    list(
+      id = key,
+      patch = patch,
+      revision = state$revision,
+      gestureRevision = state$gesture_revision,
+      fields = state$fields,
+      replay = replay
+    )
+  )
+}
+
+#' Merge the latest fields using the browser queue's replacement rules
+#' @noRd
+merge_update_patch <- function(previous, patch) {
+  checkmate::assert_list(previous, names = "unique")
+  checkmate::assert_list(patch, names = "unique")
+  if (is.null(patch$problem)) {
+    previous$problem <- NULL
+  }
+  if (!is.null(patch$character)) {
+    previous$mood <- NULL
+  }
+  for (key in names(patch)) {
+    previous[key] <- patch[key]
+  }
+  previous
 }
 
 #' Whether client-side problem messages should be shown

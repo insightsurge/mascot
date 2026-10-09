@@ -1,7 +1,8 @@
 /**
  * Page host for mascot: one record and controller per element, with an idempotent lifecycle.
- * A Shiny input binding mounts on subscribe and destroys on unsubscribe; static pages mount at DOM ready.
- * Custom messages carry { id, patch }; late state merges by id, while late gestures are dropped.
+ * A Shiny input binding mounts for its initial value/subscribe and destroys on unsubscribe; static pages mount at DOM ready.
+ * Custom messages carry { id, patch }; late state merges by id, including the latest one-off gesture.
+ * At most 20 patches wait per id; beyond that the newest are kept and the server re-sends its retained state on mount.
  * Patches are atomic: prepare descriptions/status, ask the engine to validate, then commit host state.
  * Desired character/mood live in data-character/data-mood; data-shown-* and status follow the shown frame.
  * Custom status persists across swaps. Development problems temporarily cover it and use a worried mood;
@@ -45,6 +46,9 @@
 
   const records = new WeakMap();
   const pending = new Map();
+  const playedGestures = new Map();
+  const queueLimit = 20;
+  let mountSerial = 0;
   const known = new Map();
   const updating = new WeakSet();
   const live = new Set();
@@ -108,6 +112,7 @@
       record.hover ||
       record.focus ||
       record.minimised ||
+      record.hidden ||
       record.menuOpen ||
       record.timer !== null
     )
@@ -674,9 +679,16 @@
   }
 
   function measure(record) {
-    if (record.minimised) return;
     const size = record.canvas.getBoundingClientRect().width;
-    if (!(size > 0)) return;
+    const visibility = getComputedStyle(record.canvas).visibility;
+    const hidden =
+      !(size > 0) || visibility === 'hidden' || visibility === 'collapse' || record.el.dataset.sourceHidden === 'true';
+    if (hidden !== record.hidden) {
+      record.hidden = hidden;
+      if (hidden) stopTimer(record);
+      else resumeTimer(record);
+    }
+    if (record.minimised || hidden) return;
     const pixels = Math.max(1, Math.round(size * (window.devicePixelRatio || 1)));
     const resized = record.canvas.width !== pixels || record.canvas.height !== pixels;
     if (resized) {
@@ -1055,6 +1067,10 @@
       palettes: new Map(),
       themeWarnings: new Set(),
       minimised: false,
+      hidden: true,
+      revision: 0,
+      fields: new Map(),
+      mountSerial: ++mountSerial,
       detail: 'full',
       renderedSize: null,
       resize: null,
@@ -1132,10 +1148,9 @@
       const descriptions = new Map(record.descriptions);
       const patch = {};
       // Preserve whole patches until this target's mood vocabulary is known.
-      for (const { patch: next, warnedGesture } of waiting.patches) {
+      for (const { patch: next } of waiting.patches) {
         try {
           const prepared = prepare(next, current, descriptions);
-          if (has(next, 'gesture') && !warnedGesture) warnGesture(el.id, next.gesture);
           mergeQueued(patch, next);
           if (prepared.description) {
             current = prepared.description;
@@ -1147,7 +1162,10 @@
       }
       const { problem, ...good } = patch;
       if (Object.keys(good).length) apply(el, good, true);
+      record.revision = waiting.revision || 0;
+      for (const key of Object.keys(patch)) record.fields.set(key, record.revision);
       if (problem !== undefined) apply(el, { problem });
+      if (waiting.gestureRevision && has(good, 'gesture')) playedGestures.set(el.id, waiting.gestureRevision);
     }
   }
 
@@ -1184,7 +1202,7 @@
           }),
         );
       }
-      return;
+      return true;
     }
 
     const enginePatch = { ...prepared.enginePatch };
@@ -1193,7 +1211,11 @@
       if (!has(patch, 'mood') && record.problem && !prepared.changed) enginePatch.mood = record.problemMood;
       // Synchronous engine notifications must not expose a partially committed host patch.
       updating.add(record);
+      // Establish initial queued state before its gesture, without a mood transition or swap.
+      const initial = allowThemeDrop && (prepared.changed || has(enginePatch, 'mood'));
+      if (initial) Object.assign(enginePatch, { reduced: true, swap: false });
       if (Object.keys(enginePatch).length) record.controller.update(enginePatch);
+      if (initial) record.controller.update(prepared.motion || record.motion);
     } catch (error) {
       warn(error);
       return;
@@ -1246,6 +1268,7 @@
     }
     if (has(patch, 'bubble')) replaceBubble(record, prepared.bubble);
     if (has(patch, 'gesture')) record.controller.gesture(patch.gesture);
+    return true;
   }
 
   // Use the same pure preflight for mounted and queued patches; never merge a partial bad patch.
@@ -1346,12 +1369,23 @@
       next.character = patch.character;
       delete next.mood;
     }
-    for (const key of ['mood', 'status', 'bubble', 'size', 'placement', 'theme', 'motion', 'popup_menu', 'problem']) {
+    for (const key of [
+      'mood',
+      'status',
+      'bubble',
+      'size',
+      'placement',
+      'theme',
+      'motion',
+      'popup_menu',
+      'gesture',
+      'problem',
+    ]) {
       if (has(patch, key)) next[key] = patch[key];
     }
   }
 
-  function queue(id, patch) {
+  function queue(id, patch, revision) {
     const waiting = pending.get(id);
     const current = waiting?.description || known.get(id);
     let prepared;
@@ -1362,22 +1396,66 @@
       warn(error);
       return;
     }
-    const warnedGesture = has(patch, 'gesture') && Boolean(current || prepared.description);
-    if (warnedGesture) warnGesture(id, patch.gesture);
+    const patches = [...(waiting?.patches || []), { patch }];
+    // Bound the queue for an id that never appears (removed or mistyped). Past the limit keep the newest patches and
+    // report revision 0 on mount, so the server re-sends its complete retained state.
+    const stale = Boolean(waiting?.stale) || patches.length > queueLimit;
     pending.set(id, {
-      patches: [...(waiting?.patches || []), { patch, warnedGesture }],
+      patches: patches.slice(-queueLimit),
+      stale,
+      revision: stale ? 0 : revision || waiting?.revision || 0,
+      gestureRevision: waiting?.gestureRevision || 0,
       description: prepared.description || current,
     });
-  }
-
-  function warnGesture(id, name) {
-    console.warn(`mascot: gesture "${name}" for "${id}" was dropped: the mascot was not on the page yet`);
+    return true;
   }
 
   function receive(message) {
     const targets = [...document.querySelectorAll('.mascot')].filter((el) => el.id === message.id && records.has(el));
-    if (!targets.length) queue(message.id, message.patch);
-    else for (const el of targets) apply(el, message.patch);
+    if (!message.patch || typeof message.patch !== 'object' || Array.isArray(message.patch)) {
+      if (!targets.length) queue(message.id, message.patch, message.revision);
+      else for (const el of targets) apply(el, message.patch);
+      return;
+    }
+    const patch = { ...message.patch };
+    // A retained gesture is an event, not state. Replacements must not play it again.
+    if (has(patch, 'gesture') && message.gestureRevision) {
+      if ((playedGestures.get(message.id) || 0) >= message.gestureRevision) delete patch.gesture;
+    }
+    const deliver = (next) => {
+      if (!targets.length) {
+        if (queue(message.id, next, message.revision) && has(next, 'gesture') && message.gestureRevision)
+          pending.get(message.id).gestureRevision = message.gestureRevision;
+      } else
+        for (const el of targets) {
+          const record = records.get(el);
+          const value = { ...next };
+          if (message.replay) {
+            for (const key of Object.keys(value)) {
+              if ((record.fields.get(key) || 0) >= (message.fields?.[key] || message.revision)) delete value[key];
+            }
+          }
+          if (!Object.keys(value).length) continue;
+          const previousProblem = record.problem;
+          if (apply(el, value, Boolean(message.replay))) {
+            if (message.replay && previousProblem && !has(value, 'problem')) apply(el, { problem: previousProblem });
+            if (message.revision) {
+              for (const key of Object.keys(value)) record.fields.set(key, message.fields?.[key] || message.revision);
+              if (!message.replay && !has(value, 'problem')) record.fields.set('problem', message.revision);
+              if (has(value, 'character') && !has(value, 'mood')) record.fields.set('mood', message.revision);
+            }
+            if (has(value, 'gesture') && message.gestureRevision)
+              playedGestures.set(message.id, message.gestureRevision);
+          }
+        }
+    };
+    // The retained problem covers the last good state; ordinary patches remain atomic.
+    if (message.replay && has(patch, 'problem')) {
+      const { problem, ...good } = patch;
+      if (Object.keys(good).length) deliver(good);
+      deliver({ problem });
+    } else deliver(patch);
+    for (const el of targets) records.get(el).revision = Math.max(message.revision || 0, records.get(el).revision);
   }
 
   function unmount(el) {
@@ -1415,6 +1493,8 @@
       renderedSize: record.renderedSize,
       detail: record.detail,
       bubble: record.bubble ? { ...record.bubble, remaining: remaining(record) } : null,
+      hidden: record.hidden,
+      revision: record.revision,
       current: record.controller.current(),
     };
   }
@@ -1428,8 +1508,11 @@
       getId(el) {
         return sources.get(el)?.el.id || el.id || null;
       }
-      getValue() {
-        return null;
+      getValue(el) {
+        // Shiny bindInputs reads the initial value before subscribe.
+        if (!sources.has(el)) mount(el);
+        const record = sources.get(el) || records.get(el);
+        return record ? { mount: record.mountSerial, revision: record.revision } : null;
       }
       subscribe(el) {
         mount(el);

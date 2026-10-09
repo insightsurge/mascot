@@ -6,18 +6,12 @@
   --mascot-bubble-border: #dee2e6;
 }
 
-[data-bs-theme="dark"] {
+/* Dark only when the page says so (Bootstrap or Quarto), like the drawing; no signal means light. */
+[data-bs-theme="dark"],
+body.quarto-dark {
   --mascot-bubble-bg: #212529;
   --mascot-bubble-color: #f8f9fa;
   --mascot-bubble-border: #495057;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-bs-theme="light"]):not([data-bs-theme="dark"]) {
-    --mascot-bubble-bg: #212529;
-    --mascot-bubble-color: #f8f9fa;
-    --mascot-bubble-border: #495057;
-  }
 }
 
 .mascot {

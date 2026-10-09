@@ -25,8 +25,8 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   `new Function`, inline `<script>`, inline `style=` for layout or `javascript:` URLs (mascot adds no inline script
   of its own; Shiny itself still uses some).
 - **house:** colours from Bootstrap's CSS variables (`--bs-body-color`, `--bs-body-bg`, `--bs-primary`, ...) with
-  mascot's own `--mascot-*` variables as the fallback; follow `[data-bs-theme]` and the system preference for dark
-  mode. bslib stays in Suggests.
+  mascot's own `--mascot-*` variables as the fallback; follow the page for dark mode (`[data-bs-theme]`, then Quarto's
+  `quarto-dark`/`quarto-light` body classes); with no signal, light (founder, 2026-10-09). bslib stays in Suggests.
 - **house (WCAG 2.2):** status text beside every mascot in a `role="status"` element (the mood never carries meaning
   alone); the canvas has `role="img"` and an `aria-label` naming the mood; `prefers-reduced-motion` is honoured in
   CSS and JS (swap the wiggle for an instant change or a short fade) and R can switch animation off; no automatic

@@ -179,7 +179,8 @@ The engine is most of what a user sees, so it has its own rules. All of these ar
 - Colours are read from CSS variables when drawing: Bootstrap 5.3's `--bs-*` variables (`--bs-body-color`,
   `--bs-body-bg`, `--bs-primary`, `--bs-border-color`), with `--mascot-*` variables as the fallback. This works with
   bslib, in Quarto (also Bootstrap 5) and on plain pages.
-- Follow dark mode by watching `data-bs-theme` and the system preference.
+- Follow dark mode by watching `data-bs-theme` and Quarto's body classes; with no signal, light (founder, 2026-10-09:
+  a plain page in an OS dark mode stays light, so the drawing and the bubble match the page).
 - bslib is in `Suggests`, never `Imports`. 0.1.0 ships no fonts: the status text and speech bubble use the host
   page's font (the app's bslib theme, the Quarto or pkgdown site), never a font service.
 

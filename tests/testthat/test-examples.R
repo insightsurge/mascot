@@ -143,7 +143,11 @@ describe("bundled example apps", {
       "window.seenMoods=[];new MutationObserver(()=>seenMoods.push(document.getElementById('helper').dataset.shownMood)).observe(document.getElementById('helper'),{attributes:true,attributeFilter:['data-shown-mood']})"
     )
     app$click("start")
+    # The task runs as a promise, so the app answers while it works.
+    wait_example_mood(app, "helper", "thinking")
+    expect_match(app$get_js("document.getElementById('result').textContent"), "Reviewing the sample")
     wait_example_mood(app, "helper", "happy")
+    expect_match(app$get_js("document.getElementById('result').textContent"), "all 120 rows")
     expect_true(app$get_js("seenMoods.includes('thinking')"))
     app$set_inputs(fail = TRUE)
     app$click("start")

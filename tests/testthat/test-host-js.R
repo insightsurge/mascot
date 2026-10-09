@@ -1371,3 +1371,121 @@ describe("mascot.host themes", {
     expect_identical(result$gone, list(listeners = 0L, observers = 0L))
   })
 })
+
+describe("mascot.host motion", {
+  it("M5 makes faces instant with motion off and schedules no motion frames", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE, motion = FALSE)
+    r <- js(host_motion_js(
+      "send({mood:'happy'});const count=calls.length;fire(0);fire(500);
+
+      return {mood:state().current.mood,queue:queued.size,draws:calls.length-count,
+
+        reduced:state().motion.reduced};"
+    ))
+    expect_identical(r$mood, "happy")
+    expect_true(r$reduced)
+    expect_equal(r$queue, 0)
+    expect_equal(r$draws, 0)
+  })
+  it("M5 honours the real visitor preference when motion is TRUE", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = TRUE, motion = TRUE)
+    r <- js(host_motion_js(
+      "send({mood:'thinking'});send({gesture:'wave'});const count=calls.length;fire(0);fire(500);
+
+      return {mood:state().current.mood,reduced:state().motion.reduced,queue:queued.size,draws:calls.length-count};"
+    ))
+    expect_identical(r$mood, "thinking")
+    expect_null(r$reduced)
+    expect_equal(r$queue, 0)
+    expect_equal(r$draws, 0)
+  })
+  it("M5 swaps instantly with swap off, retains the theme and still animates moods", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE, motion = mascot_motion(swap = FALSE), theme = list(body = "#1f6feb"))
+    r <- js(host_motion_js(
+      "const blob=mascot.readCharacter('blob');
+
+      send({character:{id:blob.id,name:blob.name,json:JSON.stringify(blob)}});const swapped=state(),colour=calls.at(-1).colours.body;
+
+      const tessa=mascot.readCharacter('tessa');send({character:{id:tessa.id,name:tessa.name,json:JSON.stringify(tessa)}});
+
+      send({mood:'happy'});const before=state().current.mood;fire(0);fire(400);
+
+      return {swapped,colour,before,after:state().current.mood,frames:calls.map(x=>x.frame),players:players.length};"
+    ))
+    expect_identical(r$swapped$current$character, "blob")
+    expect_false(r$swapped$current$swapping)
+    expect_identical(r$colour, "#1F6FEB")
+    expect_identical(r$before, "idle")
+    expect_identical(r$after, "happy")
+    expect_true(any(unlist(r$frames) > 0))
+    expect_equal(r$players, 1)
+  })
+  it("M5 stops a running swap on the live controller and rejects whole bad updates", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE)
+    r <- js(host_motion_js(
+      "const blob=mascot.readCharacter('blob');send({character:{id:blob.id,name:blob.name,json:JSON.stringify(blob)}});
+
+      const running=state().current.swapping;send({motion:{reduced:true,swap:true}});const stopped=state(),queue=queued.size;
+
+      const snapshot=()=>JSON.stringify({state:state(),html:el.outerHTML,draws:calls.length}),before=snapshot(),warnings=[],old=console.warn;
+
+      console.warn=x=>warnings.push(x);const invalid=[null,[],{}, {reduced:false,swap:true},{reduced:null,swap:1},
+
+        {reduced:null,swap:true,seed:1}];
+
+      const unchanged=invalid.map(motion=>{send({motion,mood:'happy',bubble:{text:'Wrong',html:false,closable:true,duration:5}});return snapshot()===before;});
+
+      console.warn=old;send({motion:{reduced:null,swap:false}});
+
+      mascot.host.receive({id:'late-motion',patch:{motion:{reduced:true,swap:false}}});
+
+      const late=el.cloneNode(true);late.id='late-motion';late.dataset.character='tessa';late.dataset.mood='idle';document.body.append(late);mascot.host.mount(late);
+
+      const queuedMotion=mascot.host.state(late).motion;mascot.host.unmount(late);
+
+      return {running,stopped,queue,unchanged,warnings,players:players.length,queuedMotion,motion:state().motion};"
+    ))
+    expect_true(r$running)
+    expect_false(r$stopped$current$swapping)
+    expect_identical(r$stopped$current$character, "blob")
+    expect_equal(r$queue, 0)
+    expect_true(all(unlist(r$unchanged)))
+    expect_length(r$warnings, 6)
+    # One original controller and one separately mounted late mascot.
+    expect_equal(r$players, 2)
+    expect_identical(r$queuedMotion, list(reduced = TRUE, swap = FALSE))
+    expect_identical(r$motion, list(reduced = NULL, swap = FALSE))
+  })
+  it("M5 removes restore growth and bubble animation while retaining the focus glow", {
+    skip_without_chrome()
+    js <- local_host_page(
+      reduced = FALSE,
+      motion = FALSE,
+      placement = mascot_placement(TRUE, minimise = TRUE),
+      bubble = mascot_bubble("Ready", Inf)
+    )
+    r <- js(
+      "(() => {const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
+
+      const button=el.querySelector('.mascot-restore');button.focus();
+
+      const read=()=>({transform:getComputedStyle(button).transform,transition:getComputedStyle(button).transitionDuration,
+
+        glow:getComputedStyle(button).boxShadow,animation:getComputedStyle(el.querySelector('.mascot-bubble')).animationName});
+
+      const off=read();mascot.host.receive({id:'a',patch:{motion:{reduced:null,swap:true}}});
+
+      return {off,on:read()};})()"
+    )
+    expect_identical(r$off$transform, "none")
+    expect_identical(r$off$transition, "0s")
+    expect_identical(r$off$animation, "none")
+    expect_false(identical(r$off$glow, "none"))
+    expect_false(identical(r$on$transition, "0s"))
+    expect_identical(r$on$animation, "mascot-bubble-appear")
+  })
+})

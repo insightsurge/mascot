@@ -20,7 +20,10 @@
  * Floating elements move to body; a source marker preserves tab visibility, inherited text/theme and Shiny teardown.
  * Inline bubbles are clamped to viewport edges without changing their reserved height.
  * Floating bubbles point towards the page centre. Native buttons minimise/restore; messages pause while minimised.
- * Motion follows the visitor's preference. No per-element global listeners are added by this host.
+ * Motion patches are { reduced: null|true, swap: boolean }; null follows the visitor, true stops motion.
+ * data-reduced="auto"|"true" and data-swap="true"|"false" carry the same settings on static pages.
+ * Motion changes update the live controller; swaps reapply retained settings alongside the theme.
+ * CSS suppresses bubble and restore-control movement too. No per-element global listeners are added by this host.
  * host.{mount,unmount,receive,state} exposes lifecycle and plain snapshots for integration tests.
  */
 (() => {
@@ -699,6 +702,21 @@
     watchModes();
   }
 
+  function validateMotion(value) {
+    if (
+      !value ||
+      typeof value !== 'object' ||
+      Array.isArray(value) ||
+      Object.keys(value).length !== 2 ||
+      !has(value, 'reduced') ||
+      !has(value, 'swap') ||
+      (value.reduced !== null && value.reduced !== true) ||
+      typeof value.swap !== 'boolean'
+    )
+      throw new Error('motion needs reduced null or true and swap true or false');
+    return { reduced: value.reduced, swap: value.swap };
+  }
+
   function mount(el) {
     if (records.has(el)) return;
     const id = el.dataset.character;
@@ -738,6 +756,11 @@
       controller: null,
       size: sizeConfig,
       placement,
+      motion: validateMotion({
+        reduced: !has(el.dataset, 'reduced') || el.dataset.reduced === 'auto' ? null : el.dataset.reduced === 'true',
+        swap:
+          !has(el.dataset, 'swap') || el.dataset.swap === 'true' ? true : el.dataset.swap === 'false' ? false : null,
+      }),
       theme: validateTheme(
         JSON.parse(el.querySelector('script[data-mascot-theme]')?.textContent || JSON.stringify(emptyTheme())),
       ),
@@ -786,7 +809,7 @@
         baseY: 270,
         mood: el.dataset.mood,
         colours: record.colours,
-        reduced: null,
+        ...record.motion,
         onChange: (snapshot) => show(record, snapshot),
       });
       listenBubble(record);
@@ -849,6 +872,7 @@
         record.theme,
         record.anchor || el,
         !allowThemeDrop,
+        record.motion,
       );
     } catch (error) {
       warn(error);
@@ -898,6 +922,11 @@
     if (has(enginePatch, 'mood')) record.mood = enginePatch.mood;
     else if (changed) record.mood = Object.keys(description.moods)[0];
     record.status = status;
+    if (prepared.motion) {
+      record.motion = prepared.motion;
+      el.dataset.reduced = record.motion.reduced === true ? 'true' : 'auto';
+      el.dataset.swap = String(record.motion.swap);
+    }
     if (prepared.theme) {
       record.theme = prepared.theme;
       record.themeWarnings.clear();
@@ -935,10 +964,24 @@
     theme = emptyTheme(),
     source = null,
     strictTheme = true,
+    motion = { reduced: null, swap: true },
   ) {
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('update needs an object');
     for (const key of Object.keys(patch)) {
-      if (!['character', 'mood', 'status', 'bubble', 'gesture', 'size', 'placement', 'theme', 'problem'].includes(key))
+      if (
+        ![
+          'character',
+          'mood',
+          'status',
+          'bubble',
+          'gesture',
+          'size',
+          'placement',
+          'theme',
+          'motion',
+          'problem',
+        ].includes(key)
+      )
         throw new Error(`unknown update field "${key}"`);
     }
     if (has(patch, 'problem')) {
@@ -980,13 +1023,26 @@
     if (has(patch, 'gesture')) validateGesture(candidate, patch.gesture);
     const size = has(patch, 'size') ? validateSize(patch.size) : undefined;
     const placement = has(patch, 'placement') ? validatePlacement(patch.placement) : undefined;
+    const nextMotion = has(patch, 'motion') ? validateMotion(patch.motion) : undefined;
+    if (nextMotion || changed) Object.assign(enginePatch, nextMotion || motion);
     const nextTheme = has(patch, 'theme') ? validateTheme(patch.theme) : undefined;
     const resolved =
       nextTheme || changed
         ? resolveTheme(nextTheme || theme, candidate, source, Boolean(nextTheme) && strictTheme)
         : undefined;
     if (resolved && candidate) enginePatch.colours = resolved.overrides;
-    return { description, changed, enginePatch, status, bubble, size, placement, theme: nextTheme, resolved };
+    return {
+      description,
+      changed,
+      enginePatch,
+      status,
+      bubble,
+      size,
+      placement,
+      theme: nextTheme,
+      motion: nextMotion,
+      resolved,
+    };
   }
 
   function mergeQueued(next, patch) {
@@ -995,7 +1051,7 @@
       next.character = patch.character;
       delete next.mood;
     }
-    for (const key of ['mood', 'status', 'bubble', 'size', 'placement', 'theme', 'problem']) {
+    for (const key of ['mood', 'status', 'bubble', 'size', 'placement', 'theme', 'motion', 'problem']) {
       if (has(patch, key)) next[key] = patch[key];
     }
   }
@@ -1053,6 +1109,7 @@
       problem: record.problem,
       size: { ...record.size },
       placement: { ...record.placement },
+      motion: { ...record.motion },
       theme: JSON.parse(JSON.stringify(record.theme)),
       mode: record.mode,
       colours: { ...record.colours },

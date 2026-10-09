@@ -12,7 +12,8 @@ mascot(
   bubble = NULL,
   size = 160,
   placement = "inline",
-  theme = NULL
+  theme = NULL,
+  motion = TRUE
 )
 }
 \arguments{
@@ -47,6 +48,10 @@ such as \code{"top-left"}, a named list such as \code{list(floating = TRUE, posi
 \item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
 colours. Unset roles keep their original colours in both modes.}
+
+\item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object. \code{TRUE} (the default)
+allows animation while honouring the visitor's reduced-motion preference.
+\code{FALSE} stops animation. \code{NULL} is not accepted.}
 }
 \value{
 An \code{htmltools} tag with its engine dependency attached.
@@ -83,6 +88,7 @@ helper_server <- function(id) \{
 mascot(id = "helper", mood = "happy")
 mascot(id = "small", size = 96, placement = "bottom-right")
 mascot(id = "responsive", size = mascot_size(120, small_screen = 48))
+mascot(id = "still", motion = FALSE)
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   ui = shiny::fluidPage(mascot(id = "helper")),

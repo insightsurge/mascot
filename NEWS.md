@@ -1,5 +1,9 @@
 # mascot 0.0.2.9000
 
+* `mascot()` and `updateMascot()` gain `motion` to stop animation or, with
+  `mascot_motion(swap = FALSE)`, make character changes instant. The visitor's
+  reduced-motion preference is always honoured (#203).
+
 * `mascot()` and `updateMascot()` accept brand colours, named colour lists and light/dark themes through `mascot_theme()`; experimental CSS variables follow the source page (#202).
 * `mascot_colour_roles()` lists each character's original colours and brand slots (#202).
 

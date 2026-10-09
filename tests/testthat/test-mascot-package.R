@@ -48,6 +48,7 @@ describe("mascot exports", {
         "mascot_size",
         "mascot_placement",
         "mascot_theme",
+        "mascot_motion",
         "mascot_colour_roles",
         "mascot_moods",
         "mascot_bubble",

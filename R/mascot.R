@@ -29,6 +29,9 @@
 #' @param theme A named list of colour roles, a [bslib::bs_theme()] or a
 #'   [mascot_theme()] object. `NULL` (the default) keeps the character's own
 #'   colours. Unset roles keep their original colours in both modes.
+#' @param motion A logical flag or [mascot_motion()] object. `TRUE` (the default)
+#'   allows animation while honouring the visitor's reduced-motion preference.
+#'   `FALSE` stops animation. `NULL` is not accepted.
 #' @returns An `htmltools` tag with its engine dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]
@@ -59,6 +62,7 @@
 #' mascot(id = "helper", mood = "happy")
 #' mascot(id = "small", size = 96, placement = "bottom-right")
 #' mascot(id = "responsive", size = mascot_size(120, small_screen = 48))
+#' mascot(id = "still", motion = FALSE)
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   ui = shiny::fluidPage(mascot(id = "helper")),
@@ -72,7 +76,8 @@ mascot <- function(
   bubble = NULL,
   size = 160,
   placement = "inline",
-  theme = NULL
+  theme = NULL,
+  motion = TRUE
 ) {
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   character <- as_character_arg(character, environment())
@@ -82,6 +87,7 @@ mascot <- function(
   size <- as_size_arg(size, environment())
   placement <- as_placement_arg(placement, environment())
   theme <- as_theme_arg(theme, environment(), character$id)
+  motion <- as_motion_arg(motion, environment())
   mode <- if (is.null(status$text)) "mood" else "custom"
   tag <- htmltools::tags$div(
     class = "mascot",
@@ -96,6 +102,8 @@ mascot <- function(
     `data-floating` = tolower(as.character(placement$floating)),
     `data-position` = placement$position,
     `data-minimise` = tolower(as.character(placement$minimise)),
+    `data-reduced` = if (is.null(motion$reduced)) "auto" else "true",
+    `data-swap` = tolower(as.character(motion$swap)),
     htmltools::tags$script(
       type = "application/json",
       `data-mascot-character` = character$id,
@@ -148,7 +156,10 @@ as_status_arg <- function(x, call) {
 #' Check a build-time argument with the public call attached
 #' @noRd
 check_arg <- function(x, arg, call) {
-  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme"))
+  checkmate::assert_choice(
+    arg,
+    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion")
+  )
   checkmate::assert_environment(call)
   # x is checked by arg_problem(), shared with warning-only runtime validation.
   problem <- arg_problem(x, arg)
@@ -165,8 +176,14 @@ check_arg <- function(x, arg, call) {
 #' A plain-text problem, or NULL for a valid shortcut or helper
 #' @noRd
 arg_problem <- function(x, arg) {
-  checkmate::assert_choice(arg, c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme"))
+  checkmate::assert_choice(
+    arg,
+    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion")
+  )
   # check_* deliberately replaces assert_* for x: runtime values must only warn.
+  if (arg == "motion") {
+    return(motion_problem(x))
+  }
   if (arg == "theme") {
     return(theme_problem(x))
   }

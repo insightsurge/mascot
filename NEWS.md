@@ -1,5 +1,9 @@
 # mascot 0.0.2.9000
 
+* `mascot_examples()` lists five bundled Shiny apps, with a shared layout and separate scenarios for learning each feature (#177).
+* `mascot_example()` opens the requested app or returns its source path without copying files (#178).
+* The Get started article walks through the existing helpers, modules and personalising Tessa, with runnable examples and screenshots of themes and menu actions (#177).
+
 * Mascot menus fit short screens and keep keyboard focus on the visible control after placement changes (#208).
 * Minimise controls use a neutral glowing border, appear on hover or keyboard focus, and hide while the mascot menu is open; touch controls and restore remain reachable (#208).
 * Shiny examples show live theme and motion settings, a colour reset and a complete module menu (#208).

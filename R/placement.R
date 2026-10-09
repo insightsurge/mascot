@@ -13,46 +13,44 @@
 #' countdowns pause until restored. Click, Enter or Space restores the mascot.
 #' Hover and keyboard focus add a glow and a small growth transition; reduced
 #' motion keeps only the glow. Dragging and snapping are not supported.
-#' @param floating A logical flag, defaulting to `FALSE`, to keep the mascot
-#'   inline. `TRUE` floats it in a corner. `NULL` is not accepted.
-#' @param position A string naming `"top-left"`, `"top-right"`, `"bottom-left"`
-#'   or `"bottom-right"` (the default). Supplying this argument explicitly
-#'   requires `floating = TRUE`. `NULL` is not accepted.
+#' @param position `"inline"` (the default) to sit where the mascot is placed in
+#'   the UI, or a corner to float it: `"top-left"`, `"top-right"`,
+#'   `"bottom-left"` or `"bottom-right"`. `NULL` is not accepted.
 #' @param minimise A logical flag, defaulting to `FALSE`, to show a minimise
-#'   control. Supplying this argument explicitly requires `floating = TRUE`.
-#'   `NULL` is not accepted.
-#' @returns A `mascot_placement` object with `floating`, `position` and
-#'   `minimise` elements.
+#'   control. `TRUE` needs a corner `position`. `NULL` is not accepted.
+#' @returns A `mascot_placement` object with `position` and `minimise` elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
 #' @export
 #' @examples
 #' mascot_placement()
-#' mascot_placement(floating = TRUE, position = "top-left")
-#' mascot_placement(floating = TRUE, minimise = TRUE)
-mascot_placement <- function(floating = FALSE, position = "bottom-right", minimise = FALSE) {
-  checkmate::assert_flag(floating)
+#' mascot_placement("top-left")
+#' mascot_placement("bottom-right", minimise = TRUE)
+mascot_placement <- function(position = "inline", minimise = FALSE) {
   checkmate::assert_string(position)
   checkmate::assert_flag(minimise)
-  if (!position %in% placement_corners()) {
-    abort_choice(position, placement_corners(), "position", "position", environment())
+  if (!position %in% placement_positions()) {
+    abort_choice(position, placement_positions(), "position", "position", environment())
   }
-  if (!floating && (!missing(position) || !missing(minimise))) {
-    cli::cli_abort(
-      if (!missing(position)) {
-        "{.arg position} only works with {.code floating = TRUE}."
-      } else {
-        "{.arg minimise} only works with {.code floating = TRUE}."
-      }
-    )
+  if (minimise && position == "inline") {
+    cli::cli_abort(c(
+      "{.arg minimise} needs a corner {.arg position}; an inline mascot cannot be minimised.",
+      "i" = "Use {.code mascot_placement(\"bottom-right\", minimise = TRUE)}."
+    ))
   }
-  structure(list(floating = floating, position = position, minimise = minimise), class = "mascot_placement")
+  structure(list(position = position, minimise = minimise), class = "mascot_placement")
 }
 
 #' The shared corner vocabulary
 #' @noRd
 placement_corners <- function() {
   c("top-left", "top-right", "bottom-left", "bottom-right")
+}
+
+#' Every position a helper accepts
+#' @noRd
+placement_positions <- function() {
+  c("inline", placement_corners())
 }
 
 #' Validate placement shortcuts and helper contents without throwing
@@ -63,7 +61,7 @@ placement_problem <- function(x) {
   if (isTRUE(checkmate::check_string(x)) && x %in% choices) {
     return(NULL)
   }
-  fields <- c("floating", "position", "minimise")
+  fields <- c("position", "minimise")
   helper <- inherits(x, "mascot_placement")
   if (
     !isTRUE(checkmate::check_list(x, names = "unique")) ||
@@ -74,29 +72,23 @@ placement_problem <- function(x) {
     return(paste0(
       "`placement` must be one of ",
       paste(encodeString(choices, quote = '\"'), collapse = ", "),
-      ", a named list with floating, position and minimise fields, or a mascot_placement() object; got ",
+      ", a named list with position and minimise fields, or a mascot_placement() object; got ",
       paste(deparse(x, width.cutoff = 60L), collapse = " "),
       "."
     ))
   }
-  if ("floating" %in% names(x) && !isTRUE(checkmate::check_flag(x$floating))) {
-    return("`placement$floating` must be TRUE or FALSE.")
-  }
-  if ("position" %in% names(x) && !isTRUE(checkmate::check_choice(x$position, placement_corners()))) {
+  if ("position" %in% names(x) && !isTRUE(checkmate::check_choice(x$position, placement_positions()))) {
     return(paste0(
       "`placement$position` must be one of ",
-      paste(encodeString(placement_corners(), quote = '\"'), collapse = ", "),
+      paste(encodeString(placement_positions(), quote = '\"'), collapse = ", "),
       "."
     ))
   }
   if ("minimise" %in% names(x) && !isTRUE(checkmate::check_flag(x$minimise))) {
     return("`placement$minimise` must be TRUE or FALSE.")
   }
-  if (
-    !isTRUE(x$floating) &&
-      (if (helper) x$position != "bottom-right" || x$minimise else any(c("position", "minimise") %in% names(x)))
-  ) {
-    return("`placement` position or minimise only works with floating = TRUE.")
+  if (isTRUE(x$minimise) && (is.null(x$position) || x$position == "inline")) {
+    return("`placement` minimise needs a corner position, such as \"bottom-right\".")
   }
   NULL
 }
@@ -112,13 +104,18 @@ as_placement_arg <- function(x, call) {
   if (is.list(x)) {
     return(do.call(mascot_placement, x))
   }
-  if (x == "inline") {
-    return(mascot_placement())
-  }
   if (x == "floating") {
-    return(mascot_placement(TRUE))
+    return(mascot_placement("bottom-right"))
   }
-  mascot_placement(TRUE, x)
+  mascot_placement(x)
+}
+
+#' The browser's placement fields: floating, the corner (bottom-right when inline) and minimise
+#' @noRd
+placement_wire <- function(x) {
+  checkmate::assert_class(x, "mascot_placement")
+  floating <- x$position != "inline"
+  list(floating = floating, position = if (floating) x$position else "bottom-right", minimise = x$minimise)
 }
 
 #' @export

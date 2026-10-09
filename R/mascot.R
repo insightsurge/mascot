@@ -23,9 +23,9 @@
 #'   Percentages follow the parent width when inline and window width when floating,
 #'   with a 24-pixel floor. `NULL` is not accepted.
 #' @param placement `"inline"` (the default), `"floating"` (bottom-right), a corner
-#'   such as `"top-left"`, a named list such as `list(floating = TRUE, position =
-#'   "top-left")`, or a [mascot_placement()] object. Explicit `position` or
-#'   `minimise` options require floating. `NULL` is not accepted.
+#'   such as `"top-left"`, a named list such as `list(position = "top-left",
+#'   minimise = TRUE)`, or a [mascot_placement()] object. `minimise` needs a
+#'   corner. `NULL` is not accepted.
 #' @param theme A named list of colour roles, a [bslib::bs_theme()] or a
 #'   [mascot_theme()] object. `NULL` (the default) keeps the character's own
 #'   colours. Unset roles keep their original colours in both modes.
@@ -87,6 +87,18 @@ mascot <- function(
   motion = TRUE,
   popup_menu = NULL
 ) {
+  if (missing(id)) {
+    # mascot("helper") is the usual slip for Shiny users, who expect the id first.
+    looks_like_id <- isTRUE(checkmate::check_string(character)) && !character %in% builtin_characters()$id
+    cli::cli_abort(c(
+      "{.arg id} is missing; every mascot needs one.",
+      "i" = if (looks_like_id) {
+        "The first argument is the character. To set the id, name it: {.code mascot(id = \"{character}\")}."
+      } else {
+        "Supply it by name, such as {.code mascot(id = \"helper\")}."
+      }
+    ))
+  }
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   character <- as_character_arg(character, environment())
   mood <- as_mood_arg(mood, environment())
@@ -108,8 +120,8 @@ mascot <- function(
     `data-size` = size$size,
     `data-small-screen` = size$small_screen,
     `data-simplify-when-small` = tolower(as.character(size$simplify_when_small)),
-    `data-floating` = tolower(as.character(placement$floating)),
-    `data-position` = placement$position,
+    `data-floating` = tolower(as.character(placement_wire(placement)$floating)),
+    `data-position` = placement_wire(placement)$position,
     `data-minimise` = tolower(as.character(placement$minimise)),
     `data-reduced` = if (is.null(motion$reduced)) "auto" else "true",
     `data-swap` = tolower(as.character(motion$swap)),

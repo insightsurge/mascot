@@ -46,7 +46,7 @@ describe("mascot_preview()", {
       status = mascot_status("Ready <now>"),
       bubble = mascot_bubble("Check this", duration = Inf),
       size = mascot_size("20%", small_screen = 96, simplify_when_small = FALSE),
-      placement = mascot_placement(TRUE, minimise = TRUE),
+      placement = mascot_placement("bottom-right", minimise = TRUE),
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "dark"),
       motion = mascot_motion(swap = FALSE),
       popup_menu = mascot_popup_menu(c(about = "About"))
@@ -175,7 +175,7 @@ describe("mascot_preview()", {
       list(size = NULL),
       list(size = Inf),
       list(placement = "middle"),
-      list(placement = list(position = "top-left")),
+      list(placement = list(minimise = TRUE)),
       list(theme = list(eye_whit = "red")),
       list(theme = list(light = "red")),
       list(motion = NULL),

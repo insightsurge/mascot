@@ -410,7 +410,7 @@ describe("updateMascot() size and placement", {
     module <- function(id) {
       shiny::moduleServer(id, function(input, output, session) {
         shiny::observeEvent(input$layout, {
-          updateMascot("helper", size = "20%", placement = list(floating = TRUE, position = "top-left"))
+          updateMascot("helper", size = "20%", placement = list(position = "top-left"))
         })
       })
     }
@@ -479,7 +479,7 @@ describe("size and placement in a Shiny browser", {
       library(mascot)
       shiny::shinyApp(
         shiny::fluidPage(
-          mascot(id = "helper", size = 96, placement = mascot_placement(TRUE, minimise = TRUE)),
+          mascot(id = "helper", size = 96, placement = mascot_placement("bottom-right", minimise = TRUE)),
           shiny::actionButton("change", "Change"),
           shiny::actionButton("inline", "Inline"),
           shiny::actionButton("notice", "Notice"),
@@ -492,7 +492,7 @@ describe("size and placement in a Shiny browser", {
               "helper",
               size = 64,
               mood = "happy",
-              placement = mascot_placement(TRUE, "top-left", TRUE),
+              placement = mascot_placement("top-left", TRUE),
               bubble = mascot_bubble("Saved", Inf)
             )
           )
@@ -610,7 +610,11 @@ describe("floating mascots in dynamic module UI", {
             shiny::tags$div(
               `data-generation` = input$replace,
               style = "transform:translateZ(0);width:300px;height:300px",
-              mascot(id = session$ns("helper"), size = 64, placement = mascot_placement(TRUE, minimise = TRUE))
+              mascot(
+                id = session$ns("helper"),
+                size = 64,
+                placement = mascot_placement("bottom-right", minimise = TRUE)
+              )
             )
           })
         })

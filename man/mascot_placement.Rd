@@ -4,23 +4,18 @@
 \alias{mascot_placement}
 \title{Place a mascot inline or in a floating corner}
 \usage{
-mascot_placement(floating = FALSE, position = "bottom-right", minimise = FALSE)
+mascot_placement(position = "inline", minimise = FALSE)
 }
 \arguments{
-\item{floating}{A logical flag, defaulting to \code{FALSE}, to keep the mascot
-inline. \code{TRUE} floats it in a corner. \code{NULL} is not accepted.}
-
-\item{position}{A string naming \code{"top-left"}, \code{"top-right"}, \code{"bottom-left"}
-or \code{"bottom-right"} (the default). Supplying this argument explicitly
-requires \code{floating = TRUE}. \code{NULL} is not accepted.}
+\item{position}{\code{"inline"} (the default) to sit where the mascot is placed in
+the UI, or a corner to float it: \code{"top-left"}, \code{"top-right"},
+\code{"bottom-left"} or \code{"bottom-right"}. \code{NULL} is not accepted.}
 
 \item{minimise}{A logical flag, defaulting to \code{FALSE}, to show a minimise
-control. Supplying this argument explicitly requires \code{floating = TRUE}.
-\code{NULL} is not accepted.}
+control. \code{TRUE} needs a corner \code{position}. \code{NULL} is not accepted.}
 }
 \value{
-A \code{mascot_placement} object with \code{floating}, \code{position} and
-\code{minimise} elements.
+A \code{mascot_placement} object with \code{position} and \code{minimise} elements.
 }
 \description{
 Inline mascots sit where they are placed in the UI. Floating mascots sit
@@ -40,8 +35,8 @@ motion keeps only the glow. Dragging and snapping are not supported.
 }
 \examples{
 mascot_placement()
-mascot_placement(floating = TRUE, position = "top-left")
-mascot_placement(floating = TRUE, minimise = TRUE)
+mascot_placement("top-left")
+mascot_placement("bottom-right", minimise = TRUE)
 }
 \seealso{
 \code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}

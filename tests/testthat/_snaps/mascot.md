@@ -38,7 +38,34 @@
       mascot(id = "a", placement = "fixed")
     Condition
       Error in `mascot()`:
-      ! `placement` must be one of "inline", "floating", "top-left", "top-right", "bottom-left", "bottom-right", a named list with floating, position and minimise fields, or a mascot_placement() object; got "fixed".
+      ! `placement` must be one of "inline", "floating", "top-left", "top-right", "bottom-left", "bottom-right", a named list with position and minimise fields, or a mascot_placement() object; got "fixed".
+
+---
+
+    Code
+      mascot("helper")
+    Condition
+      Error in `mascot()`:
+      ! `id` is missing; every mascot needs one.
+      i The first argument is the character. To set the id, name it: `mascot(id = "helper")`.
+
+---
+
+    Code
+      mascot()
+    Condition
+      Error in `mascot()`:
+      ! `id` is missing; every mascot needs one.
+      i Supply it by name, such as `mascot(id = "helper")`.
+
+---
+
+    Code
+      mascot("typo", id = "a")
+    Condition
+      Error in `mascot()`:
+      ! `character` must be one of "tessa".
+      x "typo" is not a character.
 
 # mascot() themes / embeds both palettes with auto by default and preserves explicit modes
 
@@ -47,4 +74,3 @@
     Condition
       Error in `mascot()`:
       ! `theme` has unknown or reserved colour roles: "bdoy". Valid roles: outline, feature, eye_white, shine, teeth, eyelid, tongue, body, body_highlight, rim, limb, sleeve, blush, blush_strong, accessory, accessory_detail, sparkle, sparkle_outline, sweat, shadow.
-

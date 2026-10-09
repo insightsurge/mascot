@@ -45,7 +45,7 @@
     Code
       print(helper)
     Output
-      mascot_placement(floating = FALSE, position = "bottom-right", minimise = FALSE)
+      mascot_placement(position = "inline", minimise = FALSE)
 
 ---
 
@@ -67,4 +67,3 @@
       print(helper)
     Output
       mascot_popup_menu(items = c(about = "About"))
-

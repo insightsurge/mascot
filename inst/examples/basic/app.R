@@ -1,26 +1,15 @@
-# Open with mascot_example("basic"). Source this file to read/run the same app.
-# Standalone app: attach the package as a user would.
-library(mascot) # nolint: undesirable_function_linter.
-# Share presentation while keeping the scenario code here.
-# nolint start: undesirable_function_linter.
-source(
-  system.file("examples", "shared", "shell.R", package = "mascot"),
-  local = TRUE
-)
-# nolint end
-
-# Each setting accepts a shortcut or its mascot_* helper.
-ui <- shiny::tagList(shiny::tags$div(
-  class = "example-grid",
-  shiny::tags$section(
-    class = "example-panel",
+library(shiny)
+if (!requireNamespace("bslib", quietly = TRUE)) {
+  stop("This example needs bslib. Install it before running the app.")
+}
+library(bslib)
+library(mascot)
+ui <- shiny::tagList(bslib::layout_columns(
+  bslib::card(
     shiny::tags$h2("Tell the helper what changed"),
-    shiny::tags$div(
-      class = "example-buttons",
-      lapply(mascot_moods()$name, function(mood) {
-        shiny::actionButton(paste0("mood_", mood), tools::toTitleCase(mood))
-      })
-    ),
+    lapply(mascot_moods()$name, function(mood) {
+      shiny::actionButton(paste0("mood_", mood), tools::toTitleCase(mood))
+    }),
     shiny::textInput("status", "Your status text", "Ready to review"),
     shiny::actionButton("set_status", "Use this status"),
     shiny::actionButton("clear_status", "Follow the mood again"),
@@ -38,11 +27,10 @@ ui <- shiny::tagList(shiny::tags$div(
       shiny::actionButton("reset", "Reset helper settings")
     )
   ),
-  shiny::tags$section(
-    class = "example-panel example-stage",
+  bslib::card(
     shiny::tags$h2("Your helper"),
     mascot(character = mascot_character("tessa"), id = "helper"),
-    shiny::tags$p(class = "example-note", "Status stays readable when movement is off.")
+    shiny::tags$p("Status stays readable when movement is off.")
   )
 ))
 
@@ -89,4 +77,4 @@ server <- function(input, output, session) {
   })
 }
 
-example_app("Meet your helper", "Change a mascot with ordinary Shiny inputs, one setting at a time.", ui, server)
+shiny::shinyApp(bslib::page_fluid(ui), server)

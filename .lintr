@@ -27,6 +27,8 @@ exclusions: list(
     "dev",
     "renv",
     # Tests may print, set seeds and load packages; helpers live in helper files object_usage_linter can't follow.
-    "tests" = list(object_usage_linter = Inf, undesirable_function_linter = Inf)
+    "tests" = list(object_usage_linter = Inf, undesirable_function_linter = Inf),
+    # Example apps are scripts users copy into their own projects, so they attach packages as a user would.
+    "inst/examples" = list(undesirable_function_linter = Inf)
   )
 encoding: "UTF-8"

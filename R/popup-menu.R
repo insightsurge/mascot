@@ -6,17 +6,14 @@
 #' @param items A named character vector of plain-text labels. Names are unique,
 #'   non-empty item ids without whitespace. `NULL` (the default) removes the menu;
 #'   an empty vector is not accepted. Labels are always escaped.
-#' @param key_bindings A logical flag, defaulting to `FALSE`. With `TRUE`, Enter
-#'   and Space open the menu while the mascot has focus. There are no page-wide
-#'   shortcuts. `NULL` is not accepted.
-#' @returns A `mascot_popup_menu` object with `items` and `key_bindings` elements.
+#' @returns A `mascot_popup_menu` object with an `items` element.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
 #' @details
-#' Keyboard-only users need `key_bindings = TRUE` to open the menu (`WCAG 2.1.1`).
-#' This is recommended for regulated apps. Within an open menu, arrow keys move
-#' between choices, Home and End select the ends, and Escape returns focus to
-#' the mascot. Without items the mascot remains an image, with its status text.
+#' Enter and Space open or close the focused toggle; arrows, Home, End and
+#' Escape navigate the menu.
+#' Escape returns focus to the mascot. Without items the mascot remains an
+#' image, with its status text.
 #'
 #' A choice sets `input$helper_menu` for `mascot(id = "helper")` to the item id.
 #' Choosing the same item twice fires twice. In a module, use `ns("helper")` in
@@ -25,7 +22,7 @@
 #' helper_ui <- function(id) {
 #'   ns <- shiny::NS(id)
 #'   mascot(id = ns("helper"), popup_menu = mascot_popup_menu(
-#'     c(about = "About this app"), key_bindings = TRUE))
+#'     c(about = "About this app")))
 #' }
 #' helper_server <- function(id) {
 #'   shiny::moduleServer(id, function(input, output, session) {
@@ -49,23 +46,22 @@
 #' the menu.
 #' @export
 #' @examples
-#' mascot_popup_menu(c(about = "About this app", help = "Help"), key_bindings = TRUE)
+#' mascot_popup_menu(c(about = "About this app", help = "Help"))
 #' mascot_popup_menu()
 #' mascot(id = "helper", popup_menu = c(about = "About this app"))
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   shiny::fluidPage(mascot(id = "helper", popup_menu = mascot_popup_menu(
-#'     c(about = "About this app"), key_bindings = TRUE))),
+#'     c(about = "About this app")))),
 #'   function(input, output, session) {
 #'     shiny::observeEvent(input$helper_menu, {
 #'       shiny::showModal(shiny::modalDialog(paste("Selected", input$helper_menu)))
 #'     })
 #'   }
 #' )
-mascot_popup_menu <- function(items = NULL, key_bindings = FALSE) {
+mascot_popup_menu <- function(items = NULL) {
   checkmate::assert_character(items, min.chars = 1, any.missing = FALSE, min.len = 1, null.ok = TRUE)
-  checkmate::assert_flag(key_bindings)
-  value <- structure(list(items = items, key_bindings = key_bindings), class = "mascot_popup_menu")
+  value <- structure(list(items = items), class = "mascot_popup_menu")
   problem <- popup_menu_problem(value)
   if (!is.null(problem)) {
     cli::cli_abort("{problem}")
@@ -80,13 +76,10 @@ popup_menu_problem <- function(x) {
   if (inherits(x, "mascot_popup_menu")) {
     if (
       !isTRUE(checkmate::check_list(x, names = "unique")) ||
-        length(x) != 2L ||
-        !setequal(names(x), c("items", "key_bindings"))
+        length(x) != 1L ||
+        !setequal(names(x), "items")
     ) {
-      return("`popup_menu` must have items and key_bindings fields; use mascot_popup_menu().")
-    }
-    if (!isTRUE(checkmate::check_flag(x$key_bindings))) {
-      return("`key_bindings` must be TRUE or FALSE; use mascot_popup_menu().")
+      return("`popup_menu` must have an items field; use mascot_popup_menu().")
     }
     x <- x$items
   }
@@ -109,7 +102,7 @@ as_popup_menu_arg <- function(x, call) {
   checkmate::assert_environment(call)
   check_arg(x, "popup_menu", call)
   value <- if (inherits(x, "mascot_popup_menu")) x else mascot_popup_menu(x)
-  list(items = if (is.null(value$items)) NULL else as.list(value$items), key_bindings = value$key_bindings)
+  list(items = if (is.null(value$items)) NULL else as.list(value$items))
 }
 
 #' Initial menu configuration, escaped for an inert JSON script
@@ -125,4 +118,19 @@ popup_menu_tag <- function(menu) {
     `data-mascot-popup-menu` = "",
     htmltools::HTML(gsub("</", "<\\/", json, fixed = TRUE))
   )
+}
+
+#' @export
+#' @noRd
+format.mascot_popup_menu <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_popup_menu")
+  helper_format(x)
+}
+
+#' @export
+#' @noRd
+print.mascot_popup_menu <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_popup_menu")
+  cli::cat_line(format(x))
+  invisible(x)
 }

@@ -663,7 +663,7 @@ describe("updateMascot() themes", {
       updateMascot("helper", character = "tessa", theme = mascot_theme(), session = session)
       expect_identical(
         captured$patches[[2]]$patch$theme,
-        list(light = NULL, dark = NULL, mode = NULL, css = NULL, brand = NULL)
+        list(light = NULL, dark = NULL, mode = "auto", css = NULL, brand = NULL)
       )
       updateMascot("helper", theme = list(body = "#1f6feb"), session = session)
       expect_identical(captured$patches[[3]]$patch$theme$light, captured$patches[[3]]$patch$theme$dark)
@@ -696,18 +696,11 @@ describe("updateMascot() themes", {
 })
 
 describe("theme in a Shiny browser", {
-  it("T4 switches explicit palettes from a bslib dark-mode input and defaults Shiny to light", {
+  it("T4 follows a bslib dark-mode input with no mode argument or server theme updates", {
     local_shiny_browser()
     skip_if_not_installed("bslib")
     app <- shinytest2::AppDriver$new(function() {
       library(mascot)
-      brand <- function(dark) {
-        mascot_theme(
-          light = list(body = "#1f6feb"),
-          dark = list(body = "#9ec5fe"),
-          mode = if (identical(dark, "dark")) "dark" else "light"
-        )
-      }
       shiny::shinyApp(
         bslib::page_fluid(
           bslib::input_dark_mode(id = "dark_mode", mode = "light"),
@@ -715,7 +708,6 @@ describe("theme in a Shiny browser", {
           shiny::actionButton("reset", "Character colours")
         ),
         function(input, output, session) {
-          shiny::observeEvent(input$dark_mode, updateMascot("helper", theme = brand(input$dark_mode)))
           shiny::observeEvent(input$reset, updateMascot("helper", theme = mascot_theme()))
         }
       )
@@ -723,8 +715,12 @@ describe("theme in a Shiny browser", {
     withr::defer(app$stop())
     app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper'))?.colours.body === '#1F6FEB'")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).mode"), "light")
+    app$run_js(
+      "window.drawnBodies=[];const draw=mascot.draw;mascot.draw=(ctx,ch,options)=>{drawnBodies.push(options.colours.body || ch.colours.body);return draw(ctx,ch,options)}"
+    )
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === '#9EC5FE'")
+    app$wait_for_js("drawnBodies.at(-1)==='#9EC5FE'")
     expect_identical(app$get_js("document.documentElement.dataset.bsTheme"), "dark")
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === '#1F6FEB'")
@@ -833,12 +829,12 @@ describe("updateMascot() popup menu", {
       expect_identical(captured$patches[[1]]$id, session$ns("helper"))
       expect_identical(
         captured$patches[[1]]$patch,
-        list(popup_menu = list(items = list(about = "About"), key_bindings = FALSE))
+        list(popup_menu = list(items = list(about = "About")))
       )
       updateMascot("helper", popup_menu = NULL)
       expect_length(captured$patches, 1)
       updateMascot("helper", popup_menu = mascot_popup_menu())
-      expect_identical(captured$patches[[2]]$patch$popup_menu, list(items = NULL, key_bindings = FALSE))
+      expect_identical(captured$patches[[2]]$patch$popup_menu, list(items = NULL))
       for (bad in list(1, "Help", character(), structure(list(), class = "mascot_popup_menu"))) {
         expect_warning(updateMascot("helper", mood = "happy", popup_menu = bad), "unchanged")
       }
@@ -860,7 +856,7 @@ describe("popup menu in a Shiny browser", {
       ui <- function(id) {
         ns <- shiny::NS(id)
         shiny::tagList(
-          mascot(id = ns("helper"), popup_menu = mascot_popup_menu(c(about = "About this app"), TRUE)),
+          mascot(id = ns("helper"), popup_menu = mascot_popup_menu(c(about = "About this app"))),
           shiny::textOutput(ns("count"))
         )
       }

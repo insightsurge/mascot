@@ -1,7 +1,7 @@
 {
   "id": "tessa",
   "name": "Tessa",
-  "format": "provisional: the character description is settled in issue #3",
+  "format": "provisional: issue #3; follows uses ordered from leaders, optional shade and signed HSL lightness/saturation amounts (0-1); preserve leader hue and alpha; brand maps slots to leader roles",
   "colours": {
     "outline": "#26312b",
     "feature": "#16201b",
@@ -24,7 +24,18 @@
     "sweat": "#9dc3e6",
     "shadow": "#a2aea7"
   },
-  "brandSlots": { "primary": ["body"], "secondary": ["rim", "accessory"] },
+  "follows": {
+    "sleeve": { "from": ["body"] },
+    "eyelid": { "from": ["body"] },
+    "bodyHighlight": { "from": ["body"], "shade": "lighter", "amount": 0.2529, "saturation": 0.0491 },
+    "blush": { "from": ["body"], "shade": "lighter", "amount": 0.2529, "saturation": 0.0491 },
+    "limb": { "from": ["rim", "body"] },
+    "blushStrong": { "from": ["rim", "body"] },
+    "sparkleOutline": { "from": ["rim", "body"] },
+    "accessory": { "from": ["rim"] },
+    "accessoryDetail": { "from": ["accessory"], "shade": "darker", "amount": -0.3314, "saturation": 0.121 }
+  },
+  "brand": { "primary": "body", "secondary": "rim" },
   "centreHeight": 104,
   "body": [
     {

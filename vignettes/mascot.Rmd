@@ -71,10 +71,9 @@ app_file <- mascot_example("basic", run = FALSE)
 basename(app_file)
 ```
 
-Each `app.R` contains its scenario's UI and server. It loads a shared layout
-from `examples/shared/shell.R` in the installed package. Keep that layout
-available if adapting the complete app, or copy just the mascot calls into
-your existing UI and server. `mascot_example()` does not copy or write files.
+Each `app.R` contains its scenario's UI and server and runs alone when copied
+into a project with shiny, `bslib` and mascot installed. Layout uses ordinary
+`bslib` cards. `mascot_example()` does not copy or write files.
 
 ## Moods and status
 
@@ -174,11 +173,25 @@ updateMascot("helper", placement = mascot_placement()) # Return inline.
 Try the size and placement controls in `mascot_example("basic")`, and the
 parent-owned corner helper in `mascot_example("modules")`.
 
+Each bundled app uses ordinary `bslib` cards. Copy its `app.R` alone into a
+project with shiny, `bslib` and mascot installed; no shared file is needed.
+
 ## Theme and light/dark mode
 
 No theme means Tessa's own colours. Brand colours are used only when you ask.
-A named list supplies selected roles in every mode; other roles keep their
-original colours.
+A named list supplies selected roles in every mode. Unset roles follow the
+character's declared leaders: `list(body = "#c2185b")` gives pink sleeves,
+eyelids and hands, plus lighter pink highlights and blush. Hands follow a
+supplied rim before the body. The bow follows the rim, and its detail becomes
+a darker shade. A supplied sleeve or other role always wins. With no supplied
+or filled leader, the original colour stays. Outline, face lines, eye whites,
+shine, teeth, sparkle, tongue, sweat and shadow keep their colours.
+
+`mascot_colour_roles()` lists `follows` (leaders in priority order) and `shade`
+(`same`, `lighter` or `darker`); `NA` means there is no follow rule. Derived
+shades preserve hue using calibrated lightness and saturation shifts.
+Feeding Tessa's own body, rim and bow colours back reproduces her derived
+colours within 3 units per RGB channel (0--255). Supplied colours stay exact.
 
 ```{r roles}
 mascot_colour_roles("tessa")
@@ -197,8 +210,8 @@ mascot(id = "helper", theme = list(body = "#1f6feb", rim = "#966600"))
 updateMascot("helper", theme = mascot_theme()) # Restore original colours.
 ```
 
-With `bslib` installed, a brand fills each character's brand slots. For Tessa,
-primary colours her body; secondary colours her rim and bow.
+With `bslib` installed, primary supplies Tessa's body and secondary supplies
+her rim. Her follow rules also colour sleeves, eyelids, hands, feet and bow.
 
 ```{r bslib-theme, eval=FALSE}
 if (requireNamespace("bslib", quietly = TRUE)) {
@@ -208,70 +221,29 @@ if (requireNamespace("bslib", quietly = TRUE)) {
 }
 ```
 
-A `bs_theme()` supplies the same brand colours in both modes. To choose
-different colours, supply explicit light/dark role maps or re-send a brand
-when the app's toggle changes. `_brand.yml` enters through
-`bslib::bs_theme(brand = ...)`; there is no separate YAML reader.
+A `bs_theme()` supplies the same brand colours in both modes. For different
+colours per mode, use `mascot_theme(light = ..., dark = ...)`.
+`_brand.yml` enters through `bslib::bs_theme(brand = ...)`.
 
-In Shiny, an omitted mode is light. `mode = "auto"` opts into following the
-page's light/dark switch, then Quarto's body class, then the system preference.
-On static pages, an omitted mode follows the page automatically. Explicit
-`"light"`, `"dark"` and `"auto"` always win.
+The default `mode = "auto"` follows the nearest valid `data-bs-theme` from the
+mascot's original place in the page, then Quarto's body classes. Without a
+page signal it stays light, even if the system prefers dark. Explicit
+`"light"` or `"dark"` wins. Plain lists and `bs_theme()` follow the page too.
+A character swap resolves the incoming character's follow rules again.
 
-Try `mascot_example("branding")`: the header's `bslib::input_dark_mode()`
-switch changes the page and re-sends the mascot theme. Its original-colours
+Try `mascot_example("branding")`: `bslib::input_dark_mode()` switches the
+page and the mascot together, with no server theme update. The original-colours
 button resets Tessa without changing the page theme.
 
 ### Pink and lilac
 
-Choose **Pink and lilac** in the branding example for a coordinated rose
-and lilac character. Colour her sleeves, hands and feet as well as her body,
-rim, bow and small accents. Eye whites, teeth and dark face lines keep their
-neutral colours so her expression stays readable. The dark page uses lighter
-pinks and lilacs. These are chosen palettes, not automatic adjustments.
-
-A `bs_theme()` fills the declared brand slots; for Tessa these are body, rim
-and bow. That shortcut does not recolour her sleeves or limbs. To theme the
-whole character, supply every coloured role you want to change. `sleeve`
-colours her arms; `limb` colours her hands and feet. The branding app starts
-with the app brand and then sends a complete role palette on connection and
-when its controls change.
+Choose **Pink and lilac** for explicit light and dark palettes. You only need
+to supply leaders; individual roles can override their followers for full control.
 
 ```{r pink-theme, results="hide"}
 pink_theme <- mascot_theme(
-  light = list(
-    eyelid = "#A84679",
-    tongue = "#963B63",
-    body = "#B53D78",
-    body_highlight = "#C95791",
-    rim = "#9E477C",
-    limb = "#A94A82",
-    sleeve = "#B53D78",
-    blush = "#D16A9B",
-    blush_strong = "#A63D72",
-    accessory = "#A94A82",
-    accessory_detail = "#74345F",
-    sparkle_outline = "#9E477C",
-    sweat = "#9B65A5",
-    shadow = "#8E718C"
-  ),
-  dark = list(
-    eyelid = "#F2A6CF",
-    tongue = "#E987B4",
-    body = "#F2A6CF",
-    body_highlight = "#F7BFDB",
-    rim = "#C5B0EB",
-    limb = "#C5B0EB",
-    sleeve = "#F2A6CF",
-    blush = "#F3A7D0",
-    blush_strong = "#D98FC8",
-    accessory = "#C5B0EB",
-    accessory_detail = "#91649F",
-    sparkle_outline = "#C5B0EB",
-    sweat = "#AFC8F2",
-    shadow = "#B8A6C8"
-  ),
-  mode = "auto"
+  light = list(body = "#B53D78", rim = "#A94A82"),
+  dark = list(body = "#F2A6CF", rim = "#C5B0EB")
 )
 ```
 
@@ -318,13 +290,13 @@ updateMascot("helper", motion = mascot_motion(animate = FALSE))
 ## Click menu
 
 The app supplies labels and handles choices; the mascot opens the menu.
-Enable keyboard opening explicitly with `key_bindings = TRUE`.
+Enter and Space open or close the focused toggle. Arrow keys, Home, End and
+Escape navigate the open menu.
 
 ```{r menu, eval=FALSE}
 # In the UI:
 mascot(id = "helper", popup_menu = mascot_popup_menu(
-  c(finish = "Finish review", reset = "Reset helper", about = "About this app"),
-  key_bindings = TRUE
+  c(finish = "Finish review", reset = "Reset helper", about = "About this app")
 ))
 
 # In the server:
@@ -417,9 +389,10 @@ attr(page, "contrast")
 mascot_preview(mood = "happy", size = 96)
 ```
 
-Use the complete palettes from the branding example to coordinate the other
-coloured parts too. Supplied colours below 3:1 against the panel background
-are kept and listed above the grids, with one combined warning in R.
+Follow rules coordinate the coloured parts. A `bs_theme()` uses `bg`/`fg` for
+the light panel and `body-bg-dark`/`body-color-dark` for the dark panel.
+Supplied colours below 3:1 against the panel background
+are kept and listed above the grids, with one combined warning in R of class `mascot_contrast`.
 `attr(page, "contrast")` returns their role, colour, background, ratio and mode.
 Experimental CSS values are only known in the browser; look in its console for
 those warnings. Floating settings appear inline for comparison, and static

@@ -1,13 +1,11 @@
 describe("mascot_theme()", {
-  it("keeps omitted modes distinct from explicit modes and clears with an empty helper", {
+  it("defaults to following the page and clears with an empty helper", {
     value <- mascot_theme()
     expect_s3_class(value, "mascot_theme")
-    expect_true(value$mode_default)
-    expect_identical(value$mode, "light")
-    expect_false(mascot_theme(mode = "light")$mode_default)
+    expect_identical(value$mode, "auto")
     expect_identical(
       as_theme_arg(value, environment()),
-      list(light = NULL, dark = NULL, mode = NULL, css = NULL, brand = NULL)
+      list(light = NULL, dark = NULL, mode = "auto", css = NULL, brand = NULL)
     )
     expect_null(as_theme_arg(NULL, environment()))
     expect_null(arg_problem(NULL, "theme"))
@@ -35,7 +33,7 @@ describe("mascot_theme()", {
     expect_named(wire$light, c("eyeWhite", "bodyHighlight"))
     expect_identical(wire$light, wire$dark)
     expect_identical(wire$light$eyeWhite, "#FFFFFF")
-    expect_null(wire$mode)
+    expect_identical(wire$mode, "auto")
     css <- as_theme_arg(mascot_theme(css = list(body_highlight = "--team-blue")), environment())
     expect_identical(css$css, list(bodyHighlight = "--team-blue"))
   })
@@ -81,8 +79,6 @@ describe("mascot_theme()", {
       bad <- value
       bad[[field]] <- if (field == "mode") {
         "bad"
-      } else if (field == "mode_default") {
-        NA
       } else {
         1
       }
@@ -107,26 +103,28 @@ describe("mascot_theme()", {
     expect_equal(theme_contrast("#212529", "#212529"), 1)
     expect_no_warning(as_theme_arg(mascot_theme(), environment()))
   })
-  it("maps a bslib theme through the character's slots and uses its background", {
+  it("sends only brand colours and checks distinct light and dark backgrounds", {
     skip_if_not_installed("bslib")
-    theme <- bslib::bs_theme(primary = "#1f6feb", secondary = "orange", bg = "#102030", fg = "white")
-    expect_null(theme_problem(theme))
+    theme <- bslib::bs_theme(version = 5, primary = "#1f6feb", secondary = "orange", bg = "#102030", fg = "white")
     value <- suppressWarnings(as_theme_arg(theme, environment(), "tessa"))
     expect_identical(value$brand, list(primary = "#1F6FEB", secondary = "#FFA500"))
-    expect_identical(value$light, list(body = "#1F6FEB", rim = "#FFA500", accessory = "#FFA500"))
-    expect_identical(value$light, value$dark)
-    expect_identical(suppressWarnings(as_theme_arg(theme, environment()))$brand, value$brand)
-    expect_snapshot(suppressWarnings(
-      bslib_theme <- bslib::bs_theme(primary = "#102030", secondary = "white", bg = "#102030", fg = "white")
-    ))
-    warnings <- character()
-    withCallingHandlers(as_theme_arg(bslib_theme, environment()), warning = function(w) {
-      warnings <<- c(warnings, conditionMessage(w))
+    expect_null(value$light)
+    expect_null(value$dark)
+    expect_identical(value$mode, "auto")
+    expect_identical(suppressWarnings(as_theme_arg(theme, environment())), value)
+    # A primary equal to the theme's own dark background must warn for dark mode only.
+    dark <- bslib::bs_get_variables(bslib::bs_theme(version = 5), "body-bg-dark")[[1]]
+    dark_theme <- bslib::bs_theme(version = 5, primary = dark, secondary = "white")
+    warnings <- list()
+    withCallingHandlers(as_theme_arg(dark_theme, environment()), warning = function(w) {
+      warnings[[length(warnings) + 1L]] <<- w
       invokeRestart("muffleWarning")
     })
-    expect_length(warnings, 2)
-    expect_true(all(grepl("#102030", warnings, fixed = TRUE)))
-    expect_true(all(grepl("body", warnings, fixed = TRUE)))
+    expect_true(all(vapply(warnings, inherits, logical(1), "mascot_contrast")))
+    messages <- vapply(warnings, conditionMessage, character(1))
+    expect_true(any(grepl("primary.*dark mode", messages)))
+    expect_false(any(grepl("primary.*light mode", messages)))
+    expect_warning(as_theme_arg(list(body = "white"), environment()), class = "mascot_contrast")
   })
   it("explains an unavailable optional source and checks internal contracts", {
     local_mocked_bindings(theme_has_bslib = function() FALSE)

@@ -71,7 +71,8 @@ comparison columns preserve \code{simplify_when_small} but do not change on narr
 screens. Each cell keeps its status text, since small faces lose fine detail.
 
 Both supplied theme maps are shown, even if the theme selected one mode.
-Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's \code{bg} in both panels.
+Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's \code{bg} and
+\code{body-bg-dark}; text uses \code{fg} and \code{body-color-dark}.
 Only supplied colour roles are checked, using the same contrast calculation
 as \code{\link[=mascot]{mascot()}}. Experimental CSS variables are resolved in the browser: their
 warnings appear in its console and cannot be included in the R attribute.

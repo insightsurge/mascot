@@ -58,7 +58,7 @@ allows animation while honouring the visitor's reduced-motion preference.
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object. \code{NULL} (the default) shows no menu.
 A choice sets \verb{input$<id>_menu} to the item id, including repeated choices.
 In a module, use \code{ns("helper")} in the UI and read \code{input$helper_menu} in
-that module's server. Keyboard-only users need \code{key_bindings = TRUE};
+that module's server. Enter and Space operate the focused menu toggle;
 see \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} for the module example and guidance.}
 }
 \value{

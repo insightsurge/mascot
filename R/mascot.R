@@ -36,7 +36,7 @@
 #'   [mascot_popup_menu()] object. `NULL` (the default) shows no menu.
 #'   A choice sets `input$<id>_menu` to the item id, including repeated choices.
 #'   In a module, use `ns("helper")` in the UI and read `input$helper_menu` in
-#'   that module's server. Keyboard-only users need `key_bindings = TRUE`;
+#'   that module's server. Enter and Space operate the focused menu toggle;
 #'   see [mascot_popup_menu()] for the module example and guidance.
 #' @returns An `htmltools` tag with its engine dependency attached.
 #' @family mascots in Shiny

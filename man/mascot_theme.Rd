@@ -4,7 +4,7 @@
 \alias{mascot_theme}
 \title{Set a mascot's colours and light or dark mode}
 \usage{
-mascot_theme(light = NULL, dark = NULL, mode = "light", css = NULL)
+mascot_theme(light = NULL, dark = NULL, mode = "auto", css = NULL)
 }
 \arguments{
 \item{light, dark}{Named lists of colour roles, or \code{NULL} (the default) for the
@@ -13,11 +13,10 @@ character's colours in that mode. Values are colour names, hex strings,
 green and blue numbers in 0--255. Single numeric palette indices are not
 accepted. Roles use snake case; \code{light}, \code{dark} and \code{default} are reserved.}
 
-\item{mode}{One of \code{"light"}, \code{"dark"} or \code{"auto"}. When omitted, defaults to
-light in Shiny and auto on static pages such as Quarto and R Markdown.
-An explicit mode always wins. \code{NULL} is not accepted. Auto follows the
-source context's \code{data-bs-theme}, then Quarto's body class, then the system
-preference. A Shiny app can instead switch by sending a new theme.}
+\item{mode}{One of \code{"auto"} (the default), \code{"light"} or \code{"dark"}.
+Auto follows the nearest valid \code{data-bs-theme} in the original source
+context, then Quarto's body classes. With no page signal it uses light.
+Explicit light or dark always wins. \code{NULL} is not accepted.}
 
 \item{css}{A named list mapping colour roles to CSS variable names such as
 \code{list(body = "--team-blue")}, or \code{NULL} (the default) for no CSS source.
@@ -31,18 +30,22 @@ including when the mascot floats.}
 A \code{mascot_theme} object describing colours, CSS sources and mode.
 }
 \description{
-Unset roles keep the character's own colours in each mode. Use
+Unset roles follow the first supplied or filled leader declared by the character.
+With no supplied leader they keep their original colours. Use
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}} to find the roles for a character. A plain named list
 supplied to \code{\link[=mascot]{mascot()}} or \code{\link[=updateMascot]{updateMascot()}} uses one set in every mode. A
-\code{\link[bslib:bs_theme]{bslib::bs_theme()}} fills the character's declared brand slots with its primary
+\code{\link[bslib:bs_theme]{bslib::bs_theme()}} fills the character's declared brand leaders with its primary
 and secondary colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand =)}.
 }
 \details{
-A theme survives a character swap: brand slots are resolved again and roles
+A theme survives a character swap: follow rules are resolved again and roles
 absent from the incoming character are ignored. An empty helper restores the
 character's own colours. When applied, a chosen colour below 3:1 contrast
 warns and is kept. The background is white in light mode and \verb{#212529} in dark
-mode, or the \code{bslib} theme's \code{bg}. No colours are adjusted.
+mode, or the \code{bslib} theme's light and dark backgrounds. Supplied colours are
+kept exactly. Derived shades keep the hue, with calibrated lightness and
+saturation shifts. Tessa's original leaders reproduce derived colours within
+3 units per RGB channel (0--255). Brand colours are the same in both modes.
 }
 \examples{
 mascot_theme()

@@ -10,9 +10,9 @@
  * Size patches are { size: pixels|percentage, small_screen: pixels|percentage|null, simplify_when_small: boolean }.
  * Placement patches are { floating: boolean, position: corner, minimise: boolean }; neither patch remounts the engine.
  * Theme patches are { light, dark, mode, css, brand }; empty maps are null, mode null selects the host default
- * (light in Shiny, auto on static pages). Maps use description role names. Brand retains primary/secondary
- * colours for the incoming character's brandSlots. A theme replaces overrides, and survives character swaps.
- * Auto follows source data-bs-theme, Quarto's body class, then the media preference; CSS reads the source context.
+ * (auto follows the page; no signal means light). Maps use description role names. Brand retains primary/secondary
+ * colours for the incoming character's brand leaders. A theme replaces overrides, and survives character swaps.
+ * Auto follows source data-bs-theme, then Quarto's body class; CSS reads the original source context.
  * Missing/invalid CSS uses the character colour and warns; contrast below 3:1 warns without changing the colour.
  * One theme observer exists while auto is used; the shared scheme listener serves auto and floating bubbles.
  * CSS chooses the narrow-screen size. One ResizeObserver per element refreshes its backing canvas and detail pose;
@@ -24,10 +24,10 @@
  * data-reduced="auto"|"true" and data-swap="true"|"false" carry the same settings on static pages.
  * Motion changes update the live controller; swaps reapply retained settings alongside the theme.
  * CSS suppresses bubble and restore-control movement too. No per-element global listeners are added by this host.
- * Popup menu patches are { items: {id: label}|null, key_bindings: boolean }; replacement closes the menu.
+ * Popup menu patches are { items: {id: label}|null }; replacement closes the menu.
  * Menus are Shiny-only. An active menu wraps the canvas in a native button; otherwise it stays an image.
  * Choices set the already namespaced id + '_menu' with priority 'event'. Labels always use textContent.
- * Enter/Space require key_bindings; navigation stays within the focused menu. No global keyboard listeners.
+ * Enter/Space operate the focused toggle; navigation stays within the focused menu. No global keyboard listeners.
  * A shared outside-pointer listener exists only while a menu is open; teardown removes it when unused.
  * Open menus hold lookY=-1 and pause bubble timers; closing clears only lookY, preserving detail and mood.
  * Menus prefer above the canvas (below top corners), fitting/flipping to actual viewport space on resize/scroll.
@@ -232,7 +232,7 @@
   }
 
   const emptyTheme = () => ({ light: null, dark: null, mode: null, css: null, brand: null });
-  const themeMode = (theme) => theme.mode ?? (window.Shiny?.InputBinding ? 'light' : 'auto');
+  const themeMode = (theme) => theme.mode ?? 'auto';
 
   function themeMap(value, field, css = false) {
     if (value === null) return null;
@@ -281,7 +281,7 @@
     }
     if (document.body.classList.contains('quarto-dark')) return 'dark';
     if (document.body.classList.contains('quarto-light')) return 'light';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'light';
   }
 
   function browserColour(value) {
@@ -326,6 +326,40 @@
     return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
   }
 
+  // HSL shifts retain the leader's hue and alpha. Description amounts are calibrated from original colours.
+  function shadeColour(colour, rule) {
+    const [r, g, b, alpha] = colourChannels(colour);
+    const max = Math.max(r, g, b),
+      min = Math.min(r, g, b),
+      delta = max - min;
+    const light = (max + min) / 2;
+    const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * light - 1));
+    let hue = 0;
+    if (delta !== 0) {
+      if (max === r) hue = ((g - b) / delta + 6) % 6;
+      else if (max === g) hue = (b - r) / delta + 2;
+      else hue = (r - g) / delta + 4;
+    }
+    const clamp = (x) => Math.min(1, Math.max(0, x));
+    const l = clamp(light + rule.amount),
+      sat = delta === 0 ? 0 : clamp(saturation + (rule.saturation || 0));
+    const chroma = (1 - Math.abs(2 * l - 1)) * sat;
+    const x = chroma * (1 - Math.abs((hue % 2) - 1)),
+      m = l - chroma / 2;
+    const channels = [
+      [chroma, x, 0],
+      [x, chroma, 0],
+      [0, chroma, x],
+      [0, x, chroma],
+      [x, 0, chroma],
+      [chroma, 0, x],
+    ][Math.floor(hue)];
+    const rgb = channels.map((value) => Math.round((value + m) * 255));
+    return alpha === 1
+      ? `#${rgb.map((value) => value.toString(16).padStart(2, '0')).join('')}`
+      : `rgba(${rgb.join(',')},${alpha})`;
+  }
+
   function resolveTheme(theme, description, source, strict = false) {
     const mode = themeMode(theme) === 'auto' ? pageMode(source) : themeMode(theme);
     const overrides = {};
@@ -341,13 +375,10 @@
     }
     const selected = theme.brand ? {} : theme[mode] || {};
     if (theme.brand) {
-      for (const [slot, roles] of Object.entries(description.brandSlots || {})) {
-        if (!has(theme.brand, slot) || !Array.isArray(roles)) throw new Error(`invalid brand slot "${slot}"`);
-        for (const role of roles) {
-          if (!has(description.colours, role))
-            throw new Error(`brand slot "${slot}" has unknown colour role "${role}"`);
-          selected[role] = theme.brand[slot];
-        }
+      for (const [slot, role] of Object.entries(description.brand || {})) {
+        if (!has(theme.brand, slot) || !has(description.colours, role))
+          throw new Error(`invalid brand leader "${slot}"`);
+        selected[role] = theme.brand[slot];
       }
     }
     for (const role of Object.keys(description.colours)) overrides[role] = has(selected, role) ? selected[role] : null;
@@ -371,6 +402,26 @@
           );
       }
     }
+    // Only supplied or filled leaders participate. Resolve recursively so data order is irrelevant.
+    const visiting = new Set();
+    const fill = (role) => {
+      if (overrides[role] !== null) return overrides[role];
+      const rule = description.follows?.[role];
+      if (!rule || has(theme.css || {}, role)) return null;
+      if (visiting.has(role)) throw new Error(`cyclic colour follow rule "${role}"`);
+      visiting.add(role);
+      for (const leader of rule.from) {
+        if (!has(overrides, leader)) throw new Error(`unknown colour leader "${leader}"`);
+        const colour = fill(leader);
+        if (colour !== null) {
+          overrides[role] = rule.shade ? shadeColour(colour, rule) : colour;
+          break;
+        }
+      }
+      visiting.delete(role);
+      return overrides[role];
+    };
+    for (const role of Object.keys(overrides)) fill(role);
     return { overrides, mode, warnings };
   }
 
@@ -766,12 +817,10 @@
       !value ||
       typeof value !== 'object' ||
       Array.isArray(value) ||
-      Object.keys(value).length !== 2 ||
-      !has(value, 'items') ||
-      !has(value, 'key_bindings') ||
-      typeof value.key_bindings !== 'boolean'
+      Object.keys(value).length !== 1 ||
+      !has(value, 'items')
     )
-      throw new Error('popup_menu needs items and a key_bindings flag');
+      throw new Error('popup_menu needs only an items field');
     if (
       value.items !== null &&
       (!value.items ||
@@ -783,7 +832,7 @@
         ))
     )
       throw new Error('popup_menu items need non-empty ids without whitespace and plain-text labels');
-    return { items: value.items === null ? null : { ...value.items }, key_bindings: value.key_bindings };
+    return { items: value.items === null ? null : { ...value.items } };
   }
 
   function measureOpenMenus() {
@@ -895,10 +944,8 @@
       keydown(event) {
         if (event.target === button && ['Enter', ' '].includes(event.key)) {
           event.preventDefault();
-          if (record.menu.key_bindings) {
-            if (record.menuOpen) closeMenu(record, true);
-            else openMenu(record, true);
-          }
+          if (record.menuOpen) closeMenu(record, true);
+          else openMenu(record, true);
           return;
         }
         if (!record.menuOpen) return;
@@ -989,9 +1036,7 @@
       size: sizeConfig,
       placement,
       menu: validateMenu(
-        JSON.parse(
-          el.querySelector('script[data-mascot-popup-menu]')?.textContent || '{"items":null,"key_bindings":false}',
-        ),
+        JSON.parse(el.querySelector('script[data-mascot-popup-menu]')?.textContent || '{"items":null}'),
       ),
       menuOpen: false,
       menuButton: null,

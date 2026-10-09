@@ -40,7 +40,7 @@
       Error in `mascot()`:
       ! `placement` must be one of "inline", "floating", "top-left", "top-right", "bottom-left", "bottom-right", a named list with floating, position and minimise fields, or a mascot_placement() object; got "fixed".
 
-# mascot() themes / embeds both palettes and preserves omitted versus explicit modes
+# mascot() themes / embeds both palettes with auto by default and preserves explicit modes
 
     Code
       mascot(id = "bad", theme = list(bdoy = "blue"))

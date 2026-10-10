@@ -6,4 +6,3 @@
       Error in `mascot_example()`:
       ! `name` must be one of "basic", "form-check", "long-task", "modules", or "branding".
       x "typo" is not a bundled example.
-

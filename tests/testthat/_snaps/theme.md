@@ -16,4 +16,3 @@
       Colour for role "body" in light mode has contrast below 3:1 against "#ffffff"; the colour is kept.
       Warning:
       Colour for role "rim" in dark mode has contrast below 3:1 against "#212529"; the colour is kept.
-

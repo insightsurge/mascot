@@ -6,4 +6,3 @@
       Error in `mascot_colour_roles()`:
       ! `character` must be one of "tessa".
       x "missing" is not a character.
-

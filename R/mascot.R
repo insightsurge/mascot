@@ -24,8 +24,11 @@
 #'   with a 24-pixel floor. `NULL` is not accepted.
 #' @param placement `"inline"` (the default), `"floating"` (bottom-right), a corner
 #'   such as `"top-left"`, a named list such as `list(position = "top-left",
-#'   minimise = TRUE)`, or a [mascot_placement()] object. `minimise` needs a
-#'   corner. `NULL` is not accepted.
+#'   minimise = TRUE, drag = "snap")`, or a [mascot_placement()] object.
+#'   `minimise` and `drag` need a corner. With `drag`, each drop sets
+#'   `input$<id>_position` to the corner (`"snap"`) or a list with `x` and `y`
+#'   (`"free"`); saving it between visits is the app's job. See
+#'   [mascot_placement()]. `NULL` is not accepted.
 #' @param theme A named list of colour roles, a [bslib::bs_theme()] or a
 #'   [mascot_theme()] object. `NULL` (the default) keeps the character's own
 #'   colours. Unset roles keep their original colours in both modes.
@@ -119,10 +122,10 @@ mascot <- function(
     `data-status` = mode,
     `data-size` = size$size,
     `data-small-screen` = size$small_screen,
-    `data-simplify-when-small` = tolower(as.character(size$simplify_when_small)),
     `data-floating` = tolower(as.character(placement_wire(placement)$floating)),
     `data-position` = placement_wire(placement)$position,
     `data-minimise` = tolower(as.character(placement$minimise)),
+    `data-drag` = tolower(as.character(placement$drag)),
     `data-reduced` = if (is.null(motion$reduced)) "auto" else "true",
     `data-swap` = tolower(as.character(motion$swap)),
     htmltools::tags$script(

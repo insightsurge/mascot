@@ -13,10 +13,10 @@ describe("mascot()", {
         `data-mood` = "idle",
         `data-status` = "mood",
         `data-size` = 160,
-        `data-simplify-when-small` = "true",
         `data-floating` = "false",
         `data-position` = "bottom-right",
         `data-minimise` = "false",
+        `data-drag` = "false",
         `data-reduced` = "auto",
         `data-swap` = "true"
       )
@@ -163,10 +163,10 @@ describe("message guidance", {
 
 describe("mascot() size and placement", {
   it("writes data attributes without inline layout styles and normalises shortcuts", {
-    tag <- mascot(id = "a", size = mascot_size("20%", 48, FALSE), placement = mascot_placement("top-left", TRUE))
+    tag <- mascot(id = "a", size = mascot_size("20%", 48), placement = mascot_placement("top-left", TRUE))
     expect_identical(tag$attribs$`data-size`, "20%")
     expect_identical(tag$attribs$`data-small-screen`, 48)
-    expect_identical(tag$attribs$`data-simplify-when-small`, "false")
+    expect_null(tag$attribs$`data-simplify-when-small`)
     expect_identical(tag$attribs$`data-floating`, "true")
     expect_identical(tag$attribs$`data-position`, "top-left")
     expect_identical(tag$attribs$`data-minimise`, "true")

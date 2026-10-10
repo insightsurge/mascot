@@ -3,7 +3,7 @@
     Code
       cat(html)
     Output
-      <div class="mascot" id="helper" tabindex="-1" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-simplify-when-small="true" data-floating="false" data-position="bottom-right" data-minimise="false" data-reduced="auto" data-swap="true">
+      <div class="mascot" id="helper" tabindex="-1" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-floating="false" data-position="bottom-right" data-minimise="false" data-drag="false" data-reduced="auto" data-swap="true">
         <script type="application/json" data-mascot-character="tessa">[character JSON]</script>
         <canvas class="mascot-canvas" role="img" tabindex="0" aria-label="Tessa, idle"></canvas>
         <div class="mascot-status" role="status">Idle</div>
@@ -38,7 +38,7 @@
       mascot(id = "a", placement = "fixed")
     Condition
       Error in `mascot()`:
-      ! `placement` must be one of "inline", "floating", "top-left", "top-right", "bottom-left", "bottom-right", a named list with position and minimise fields, or a mascot_placement() object; got "fixed".
+      ! `placement` must be one of "inline", "floating", "top-left", "top-right", "bottom-left", "bottom-right", a named list with position, minimise and drag fields, or a mascot_placement() object; got "fixed".
 
 ---
 

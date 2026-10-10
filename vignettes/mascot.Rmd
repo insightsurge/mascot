@@ -165,7 +165,7 @@ mascot_placement("bottom-right", minimise = TRUE)
 ```
 
 Percentages use the container width inline and the window width when floating.
-Small drawings simplify by default. Inline mascots reserve space above the
+Every size draws the full character. Inline mascots reserve space above the
 drawing for a bubble, even before one appears, to avoid moving the page.
 A floating mascot can sit in any corner;
 its minimise control appears on hover or keyboard focus, and stays available
@@ -180,6 +180,23 @@ updateMascot("helper", placement = mascot_placement()) # Return inline.
 
 Try the size and placement controls in `mascot_example("studio")`, and the
 parent-owned corner helper in `mascot_example("modules")`.
+
+### Let visitors move it
+
+A floating mascot can be dragged by its drawing, with a mouse or a finger.
+Dragging is off by default. With `drag = "snap"` the mascot moves to the
+nearest corner when it is dropped; with `drag = "free"` it stays where it is
+dropped, kept inside the window. A click without movement still opens its menu.
+
+```{r drag, eval=FALSE}
+mascot(id = "helper",
+  placement = mascot_placement("bottom-right", drag = "snap"))
+```
+
+Each drop sets `input$helper_position`: the corner, such as `"top-left"`,
+after a snap, or a list with `x` and `y` in pixels after a free drop. A later
+`updateMascot(placement = ...)` replaces where the visitor put it. To remember
+the corner between visits, save it in your app and pass it back as `position`.
 
 ## Theme and light/dark mode
 
@@ -402,7 +419,7 @@ are kept and listed above the grids, with one combined warning in R of class `ma
 Experimental CSS values are only known in the browser; look in its console for
 those warnings. Floating settings appear inline for comparison, and static
 previews do not activate the Shiny click menu. Status text remains beside each
-small drawing; fine face details are harder to read at 32 and 24 pixels.
+mascot; fine face details are harder to read at 32 and 24 pixels.
 
 ## Leave unchanged or reset
 

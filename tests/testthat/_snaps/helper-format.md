@@ -38,14 +38,14 @@
     Code
       print(helper)
     Output
-      mascot_size(size = "20%", small_screen = NULL, simplify_when_small = TRUE)
+      mascot_size(size = "20%", small_screen = NULL)
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_placement(position = "inline", minimise = FALSE)
+      mascot_placement(position = "inline", minimise = FALSE, drag = FALSE)
 
 ---
 

@@ -1015,7 +1015,7 @@ describe("animated character swaps", {
           "const mutations = [",
           " ['face.eyes',ch => { ch.face.eyes = null; }],['face.mouth',ch => { ch.face.mouth = 1; }],",
           " ['face.style.lashes.three',ch => { ch.face.style = { lashes: { three: null } }; }],",
-          " ['body[0]',ch => { ch.body[0] = null; }],['small.hide',ch => { ch.small.hide = {}; }],",
+          " ['body[0]',ch => { ch.body[0] = null; }],",
           " ['anchors.face',ch => { ch.anchors.face = null; }],['accessories.bad.parts',ch => { ch.accessories = { bad: { parts: null } }; }],",
           " ['moods.idle',ch => { ch.moods.idle = null; }],['arms.paw',ch => { ch.arms = { length: 42, width: 15, paw: null, presets: { idle: { L: 1, R: 1 } } }; }],",
           " ['arms.presets.idle',ch => { ch.arms = { length: 42, width: 15, paw: { offset: 39, r: 6 }, presets: { idle: null } }; }],",
@@ -1034,7 +1034,7 @@ describe("animated character swaps", {
         )
       ))
       expect_true(r$rejected, info = character)
-      expect_equal(r$count, 26, tolerance = 1e-6, info = character)
+      expect_equal(r$count, 24, tolerance = 1e-6, info = character)
       expect_true(r$unchanged, info = character)
       expect_true(r$picture, info = character)
       expect_true(r$noDraw, info = character)
@@ -1130,7 +1130,7 @@ describe("animated character swaps", {
         character,
         paste(
           "const { p } = mount(); p.pause(); const good = clone(b); good.id = 'cached'; let goodReads = 0;",
-          "const hide = good.small.hide; Object.defineProperty(good.small,'hide',{ get: () => { goodReads++; return hide; } });",
+          "const name = good.name; Object.defineProperty(good,'name',{ get: () => { goodReads++; return name; } });",
           "p.update({ character: good }); const reads = goodReads; sample(p,60); p.update({ character: good }); mascot.validateCharacter(good);",
           "const bad = clone(a); bad.id = 'bad'; let badReads = 0; Object.defineProperty(bad.face,'eyes',{ get: () => { badReads++; return null; } });",
           "attempt(() => p.update({ character: bad })); const failedReads = badReads; attempt(() => p.update({ character: bad, swap: false })); mascot.validateCharacter(bad);",

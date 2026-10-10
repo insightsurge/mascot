@@ -4,7 +4,7 @@
 \alias{mascot_placement}
 \title{Place a mascot inline or in a floating corner}
 \usage{
-mascot_placement(position = "inline", minimise = FALSE)
+mascot_placement(position = "inline", minimise = FALSE, drag = FALSE)
 }
 \arguments{
 \item{position}{\code{"inline"} (the default) to sit where the mascot is placed in
@@ -13,9 +13,15 @@ the UI, or a corner to float it: \code{"top-left"}, \code{"top-right"},
 
 \item{minimise}{A logical flag, defaulting to \code{FALSE}, to show a minimise
 control. \code{TRUE} needs a corner \code{position}. \code{NULL} is not accepted.}
+
+\item{drag}{\code{FALSE} (the default) for no dragging, \code{"snap"} to let visitors
+drag the mascot and move it to the nearest corner on release, or \code{"free"}
+to keep it where it is dropped. Needs a corner \code{position}. \code{TRUE} and
+\code{NULL} are not accepted. See the Dragging section.}
 }
 \value{
-A \code{mascot_placement} object with \code{position} and \code{minimise} elements.
+A \code{mascot_placement} object with \code{position}, \code{minimise} and \code{drag}
+elements.
 }
 \description{
 Inline mascots sit where they are placed in the UI. Floating mascots sit
@@ -31,12 +37,50 @@ A minimised mascot is a round restore button in the character's colours.
 Its status remains available to screen readers. Updates still apply; bubble
 countdowns pause until restored. Click, Enter or Space restores the mascot.
 Hover and keyboard focus add a glow and a small growth transition; reduced
-motion keeps only the glow. Dragging and snapping are not supported.
+motion keeps only the glow.
 }
+\section{Dragging}{
+
+With \code{drag = "snap"} or \code{drag = "free"}, visitors can drag a floating mascot
+by its drawing, with a mouse, pen or finger. A click without movement still
+opens the mascot's menu; the minimise and restore buttons, the bubble's close
+button and links in the bubble do not start a drag, and a minimised mascot
+cannot be dragged. The bubble and menu move with the mascot.
+\itemize{
+\item \code{"snap"}: on release the mascot moves to the nearest corner, which becomes
+its \code{position}, so its bubble opens towards the page centre. Reduced motion,
+or \code{motion = FALSE}, makes the move instant.
+\item \code{"free"}: the mascot stays where it is dropped, at least 1rem inside the
+window, and stays inside when the window is resized.
+}
+
+In Shiny each drop sets \verb{input$<id>_position}, read in the module that owns
+the mascot, like \verb{input$<id>_menu}: the corner name, such as \code{"top-left"},
+after a snap, or a list with \code{x} and \code{y}, the mascot's top-left corner in
+CSS pixels from the window's top-left, after a free drop. A later
+\code{\link[=updateMascot]{updateMascot()}} with \code{placement} replaces the dragged position. Dragging
+has no keyboard alternative; the minimise control stays reachable by keyboard.
+Remembering a position between visits is the app's job: for example, save
+the corner and pass it back as \code{position} next time.
+}
+
 \examples{
 mascot_placement()
 mascot_placement("top-left")
 mascot_placement("bottom-right", minimise = TRUE)
+mascot_placement("bottom-right", drag = "snap")
+mascot(id = "helper", placement = list(position = "top-left", drag = "free"))
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
+shiny::shinyApp(
+  shiny::fluidPage(
+    mascot(id = "helper", placement = mascot_placement("bottom-right", drag = "snap")),
+    shiny::textOutput("where")
+  ),
+  function(input, output, session) {
+    output$where <- shiny::renderText(paste("Dropped in", input$helper_position))
+  }
+)
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}

@@ -5,3 +5,12 @@
     Condition
       Error in `mascot_popup_menu()`:
       ! `items` names must be unique, non-empty ids without whitespace; use c(about = 'About this app').
+
+# mascot_popup_menu() / rejects invalid directions and malformed helpers with snapshots
+
+    Code
+      mascot_popup_menu(direction = "center")
+    Condition
+      Error in `mascot_popup_menu()`:
+      ! `direction` must be one of "auto", "top", "bottom", "left", or "right".
+      x "center" is not a direction.

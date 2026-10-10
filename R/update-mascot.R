@@ -23,7 +23,8 @@
 #'   in [mascot()]. `NULL` (the default) leaves the size unchanged.
 #' @param placement A shortcut, named list or [mascot_placement()] object, as
 #'   in [mascot()]. `NULL` (the default) leaves placement unchanged. Size and
-#'   placement changes keep the mounted engine, its mood and character.
+#'   placement changes keep the mounted engine, its mood and character. A new
+#'   placement replaces any position the visitor dragged the mascot to.
 #' @param theme A theme in the forms accepted by [mascot()]. `NULL` (the
 #'   default) leaves the theme unchanged; `mascot_theme()` restores the
 #'   character's own colours. Themes are resolved again after a character swap.

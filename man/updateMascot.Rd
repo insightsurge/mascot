@@ -46,7 +46,8 @@ in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves the size un
 
 \item{placement}{A shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}} object, as
 in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves placement unchanged. Size and
-placement changes keep the mounted engine, its mood and character.}
+placement changes keep the mounted engine, its mood and character. A new
+placement replaces any position the visitor dragged the mascot to.}
 
 \item{theme}{A theme in the forms accepted by \code{\link[=mascot]{mascot()}}. \code{NULL} (the
 default) leaves the theme unchanged; \code{mascot_theme()} restores the

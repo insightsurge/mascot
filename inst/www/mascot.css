@@ -168,6 +168,27 @@ body.quarto-dark {
   bottom: calc(1rem + var(--mascot-notification-offset, 0px));
 }
 
+/* A mascot being dragged, or dropped freely, sits at its own point; its corner still orients the bubble and menu. */
+.mascot[data-floating="true"][data-placed="true"] {
+  top: var(--mascot-drag-top, 1rem);
+  right: auto;
+  bottom: auto;
+  left: var(--mascot-drag-left, 1rem);
+}
+
+/* Touch drags must not scroll the page or select text. */
+.mascot[data-floating="true"][data-drag="snap"] .mascot-canvas,
+.mascot[data-floating="true"][data-drag="free"] .mascot-canvas {
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.mascot[data-floating="true"][data-dragging="true"] .mascot-canvas {
+  cursor: grabbing;
+}
+
 /* Floating messages do not change the canvas or corner coordinates. */
 .mascot[data-floating="true"] .mascot-bubble-region {
   position: absolute;

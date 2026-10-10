@@ -1,5 +1,6 @@
 # mascot 0.0.2.9000
 
+* `mascot_placement()` gains `drag`: visitors can drag a floating mascot, which snaps to the nearest corner or stays where dropped; the server receives `input$<id>_position` (#220).
 * `mascot_placement()` takes one `position` (`"inline"` or a corner) and `minimise`, replacing `floating` + `position`, so the two can no longer contradict each other; shortcuts are unchanged (#215).
 * `mascot("helper")` without an `id` now explains that the first argument is the character and shows `mascot(id = "helper")` (#215).
 * In Shiny development mode, an update that never finds its mascot because of a namespace slip (`helper` versus `first-helper`) warns once and says how to fix it: `ns()` in the module UI, or update from inside the module (#215).

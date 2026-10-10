@@ -5,3 +5,4 @@
     Condition
       Error in `mascot_popup_menu()`:
       ! `items` names must be unique, non-empty ids without whitespace; use c(about = 'About this app').
+

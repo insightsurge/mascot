@@ -17,6 +17,7 @@ describe("mascot()", {
         `data-floating` = "false",
         `data-position` = "bottom-right",
         `data-minimise` = "false",
+        `data-drag` = "false",
         `data-reduced` = "auto",
         `data-swap` = "true"
       )

@@ -11,7 +11,13 @@
  * the next good patch clears the problem and restores the earlier mood unless it chooses another.
  * The host owns canvas dimensions (CSS size times pixel ratio), the 300-unit transform and accessible text.
  * Size patches are { size: pixels|percentage, small_screen: pixels|percentage|null, simplify_when_small: boolean }.
- * Placement patches are { floating: boolean, position: corner, minimise: boolean }; neither patch remounts the engine.
+ * Placement patches are { floating: boolean, position: corner, minimise: boolean, drag: false|'snap'|'free' };
+ * neither patch remounts the engine. A floating mascot with drag follows a pointer pressed on its canvas (pointer
+ * capture; a few pixels of movement before a press becomes a drag, so a click still opens the menu). On release
+ * "snap" moves to the nearest corner (animated unless motion is reduced), which becomes its position; "free" keeps
+ * the dropped point, kept 1rem inside the window on resize, and takes the nearest corner only to orient the bubble
+ * and menu. Each drop sets the namespaced id + '_position' (the corner, or { x, y }) with priority 'event'.
+ * A placement patch replaces any dragged position.
  * Theme patches are { light, dark, mode, css, brand }; empty maps are null, mode null selects the host default
  * (auto follows the page; no signal means light). Maps use description role names. Brand retains primary/secondary
  * colours for the incoming character's brand leaders. A theme replaces overrides, and survives character swaps.
@@ -58,6 +64,9 @@
   const live = new Set();
   const sources = new WeakMap();
   const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+  const drags = [false, 'snap', 'free'];
+  // CSS pixels a press must move before it becomes a drag, so a click still opens the menu.
+  const dragThreshold = 4;
   let densityMedia = null;
   const openMenus = new Set();
   let schemeMedia = null;
@@ -510,15 +519,16 @@
       !next ||
       typeof next !== 'object' ||
       Array.isArray(next) ||
-      Object.keys(next).length !== 3 ||
-      Object.keys(next).some((key) => !['floating', 'position', 'minimise'].includes(key)) ||
+      Object.keys(next).length !== 4 ||
+      Object.keys(next).some((key) => !['floating', 'position', 'minimise', 'drag'].includes(key)) ||
       typeof next.floating !== 'boolean' ||
       typeof next.minimise !== 'boolean' ||
-      !corners.includes(next.position)
+      !corners.includes(next.position) ||
+      !drags.includes(next.drag)
     )
-      throw new Error('placement needs floating, position and minimise fields');
-    if (!next.floating && (next.position !== 'bottom-right' || next.minimise))
-      throw new Error('position and minimise only work with floating');
+      throw new Error('placement needs floating, position, minimise and drag (false, "snap" or "free") fields');
+    if (!next.floating && (next.position !== 'bottom-right' || next.minimise || next.drag !== false))
+      throw new Error('position, minimise and drag only work with floating');
     return { ...next };
   }
 
@@ -616,6 +626,10 @@
     el.dataset.floating = String(placement.floating);
     el.dataset.position = placement.position;
     el.dataset.minimise = String(placement.minimise);
+    el.dataset.drag = String(placement.drag);
+    const point = record.dragState?.point || record.dropped;
+    if (placement.floating && point) placeAt(record, point);
+    else unplace(record);
     el.style.setProperty('--mascot-size-default', sizeCSS(size.size, placement.floating));
     el.style.setProperty('--mascot-size-small', sizeCSS(size.small_screen ?? size.size, placement.floating));
     record.minimiseButton.hidden = !placement.floating || !placement.minimise || record.minimised;
@@ -628,6 +642,163 @@
     if (focusedControl?.hidden) {
       focusTarget(record).focus();
     }
+  }
+
+  // Floating mascots sit 1rem inside the window, like the CSS corners.
+  function edgeOffset() {
+    return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  }
+
+  // Keep a point (the mascot's top-left) inside the window; an oversized mascot keeps its top-left edge visible.
+  function clampPoint(record, point) {
+    const rect = record.el.getBoundingClientRect();
+    const edge = edgeOffset();
+    const width = document.documentElement.clientWidth,
+      height = document.documentElement.clientHeight;
+    return {
+      x: Math.max(edge, Math.min(point.x, width - rect.width - edge)),
+      y: Math.max(edge, Math.min(point.y, height - rect.height - edge)),
+    };
+  }
+
+  // The corner whose quarter of the window holds the mascot's centre.
+  function nearestCorner(rect) {
+    const vertical = rect.top + rect.height / 2 < document.documentElement.clientHeight / 2 ? 'top' : 'bottom';
+    const horizontal = rect.left + rect.width / 2 < document.documentElement.clientWidth / 2 ? 'left' : 'right';
+    return `${vertical}-${horizontal}`;
+  }
+
+  function placeAt(record, point) {
+    const { x, y } = clampPoint(record, point);
+    setProperty(record.el, '--mascot-drag-left', `${x}px`);
+    setProperty(record.el, '--mascot-drag-top', `${y}px`);
+    record.el.dataset.placed = 'true';
+  }
+
+  function unplace(record) {
+    delete record.el.dataset.placed;
+    record.el.style.removeProperty('--mascot-drag-left');
+    record.el.style.removeProperty('--mascot-drag-top');
+  }
+
+  function reducedMotion(record) {
+    return record.motion.reduced === true || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function draggable(record) {
+    return record.placement.floating && record.placement.drag !== false && !record.minimised;
+  }
+
+  // Abandon a gesture without dropping: a placement update or unmount replaces it.
+  function cancelDrag(record) {
+    record.snapAnimation?.cancel();
+    record.snapAnimation = null;
+    const gesture = record.dragState;
+    if (!gesture) return;
+    record.dragState = null;
+    delete record.el.dataset.dragging;
+    if (gesture.moved) record.suppressClick = true;
+    if (record.canvas.hasPointerCapture(gesture.pointerId)) record.canvas.releasePointerCapture(gesture.pointerId);
+  }
+
+  function drop(record) {
+    const gesture = record.dragState;
+    record.dragState = null;
+    delete record.el.dataset.dragging;
+    if (!gesture.moved) return;
+    // The click that ends a drag must not open the menu; a touch drag may send no click at all.
+    record.suppressClick = true;
+    window.setTimeout(() => {
+      record.suppressClick = false;
+    }, 0);
+    const first = record.el.getBoundingClientRect();
+    const position = nearestCorner(first);
+    const free = record.placement.drag === 'free';
+    if (free) {
+      const point = clampPoint(record, gesture.point);
+      record.dropped = { x: Math.round(point.x), y: Math.round(point.y) };
+    } else record.dropped = null;
+    record.placement = { ...record.placement, position };
+    layout(record);
+    watchNotifications();
+    measure(record);
+    if (!free && !reducedMotion(record)) {
+      const last = record.el.getBoundingClientRect();
+      record.snapAnimation = record.el.animate(
+        [{ transform: `translate(${first.left - last.left}px, ${first.top - last.top}px)` }, { transform: 'none' }],
+        { duration: 200, easing: 'ease-out' },
+      );
+      record.snapAnimation.onfinish = () => {
+        record.snapAnimation = null;
+      };
+    }
+    window.Shiny?.setInputValue?.(`${record.el.id}_position`, free ? { ...record.dropped } : position, {
+      priority: 'event',
+    });
+  }
+
+  function listenDrag(record) {
+    const { el } = record;
+    const handlers = {
+      pointerdown(event) {
+        if (!draggable(record) || record.dragState || event.button !== 0 || event.target !== record.canvas) return;
+        record.suppressClick = false;
+        record.snapAnimation?.finish();
+        const rect = el.getBoundingClientRect();
+        record.dragState = {
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          left: rect.left,
+          top: rect.top,
+          moved: false,
+          point: null,
+        };
+        // Synthetic events (tests) have no active pointer to capture; the drag still follows their moves.
+        if (event.isTrusted) record.canvas.setPointerCapture(event.pointerId);
+      },
+      pointermove(event) {
+        const gesture = record.dragState;
+        if (!gesture || event.pointerId !== gesture.pointerId) return;
+        const dx = event.clientX - gesture.x,
+          dy = event.clientY - gesture.y;
+        if (!gesture.moved && Math.hypot(dx, dy) < dragThreshold) return;
+        if (!gesture.moved) {
+          gesture.moved = true;
+          el.dataset.dragging = 'true';
+        }
+        event.preventDefault();
+        gesture.point = { x: gesture.left + dx, y: gesture.top + dy };
+        placeAt(record, gesture.point);
+      },
+      pointerup(event) {
+        if (record.dragState?.pointerId === event.pointerId) drop(record);
+      },
+      pointercancel(event) {
+        if (record.dragState?.pointerId === event.pointerId) drop(record);
+      },
+      lostpointercapture(event) {
+        if (record.dragState?.pointerId === event.pointerId) drop(record);
+      },
+      // Capture phase, so the menu's own click handler on the same element never sees a drag's click.
+      click(event) {
+        if (!record.suppressClick) return;
+        record.suppressClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+      },
+    };
+    record.dragHandlers = handlers;
+    for (const [name, handler] of Object.entries(handlers)) el.addEventListener(name, handler, name === 'click');
+  }
+
+  function unlistenDrag(record) {
+    if (!record.dragHandlers) return;
+    cancelDrag(record);
+    for (const [name, handler] of Object.entries(record.dragHandlers))
+      record.el.removeEventListener(name, handler, name === 'click');
+    record.dragHandlers = null;
+    unplace(record);
   }
 
   function minimise(record, value, focus = true) {
@@ -699,6 +870,8 @@
   }
 
   function measure(record) {
+    // A free drop stays inside the window when the window or the mascot changes size.
+    if (record.dropped && record.placement.floating && !record.dragState) placeAt(record, record.dropped);
     const size = record.canvas.getBoundingClientRect().width;
     const visibility = getComputedStyle(record.canvas).visibility;
     const hidden =
@@ -1040,6 +1213,7 @@
       floating: el.dataset.floating === 'true',
       position: el.dataset.position || 'bottom-right',
       minimise: el.dataset.minimise === 'true',
+      drag: ['snap', 'free'].includes(el.dataset.drag) ? el.dataset.drag : false,
     });
     const button = (className, label) => {
       el.querySelector(`.${className}`)?.remove();
@@ -1121,6 +1295,11 @@
       hover: bubbleEl.matches(':hover'),
       focus: el.contains(document.activeElement),
       handlers: null,
+      dragHandlers: null,
+      dragState: null,
+      dropped: null,
+      suppressClick: false,
+      snapAnimation: null,
     };
     records.set(el, record);
     try {
@@ -1136,6 +1315,7 @@
         onChange: (snapshot) => show(record, snapshot),
       });
       listenBubble(record);
+      listenDrag(record);
       replaceMenu(record, record.menu);
       record.handlers.clickPlacement = (event) => {
         if (!record.actions.hidden && event.target.closest('.mascot-minimise') === record.minimiseButton)
@@ -1147,6 +1327,7 @@
       measure(record);
     } catch (error) {
       unwatch(record);
+      unlistenDrag(record);
       removeMenu(record);
       if (record.handlers) {
         for (const [name, handler] of Object.entries(record.handlers))
@@ -1273,7 +1454,11 @@
     known.set(el.id, record.descriptions.get(record.character));
     show(record, record.controller.current());
     if (prepared.size) record.size = prepared.size;
-    if (prepared.placement) record.placement = prepared.placement;
+    if (prepared.placement) {
+      cancelDrag(record);
+      record.dropped = null;
+      record.placement = prepared.placement;
+    }
     if (record.minimised && (!record.placement.floating || !record.placement.minimise)) {
       const focused = record.el.contains(document.activeElement);
       minimise(record, false, false);
@@ -1509,6 +1694,7 @@
     removeMenu(record);
     stopTimer(record);
     unwatch(record);
+    unlistenDrag(record);
     for (const [name, handler] of Object.entries(record.handlers))
       el.removeEventListener(name === 'clickPlacement' ? 'click' : name, handler);
     record.actions.remove();
@@ -1535,6 +1721,8 @@
       mode: record.mode,
       colours: { ...record.colours },
       minimised: record.minimised,
+      dropped: record.dropped ? { ...record.dropped } : null,
+      dragging: Boolean(record.dragState?.moved),
       renderedSize: record.renderedSize,
       detail: record.detail,
       bubble: record.bubble ? { ...record.bubble, remaining: remaining(record) } : null,

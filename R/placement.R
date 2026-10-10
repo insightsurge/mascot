@@ -12,13 +12,40 @@
 #' Its status remains available to screen readers. Updates still apply; bubble
 #' countdowns pause until restored. Click, Enter or Space restores the mascot.
 #' Hover and keyboard focus add a glow and a small growth transition; reduced
-#' motion keeps only the glow. Dragging and snapping are not supported.
+#' motion keeps only the glow.
+#'
+#' @section Dragging:
+#' With `drag = "snap"` or `drag = "free"`, visitors can drag a floating mascot
+#' by its drawing, with a mouse, pen or finger. A click without movement still
+#' opens the mascot's menu; the minimise and restore buttons, the bubble's close
+#' button and links in the bubble do not start a drag, and a minimised mascot
+#' cannot be dragged. The bubble and menu move with the mascot.
+#'
+#' * `"snap"`: on release the mascot moves to the nearest corner, which becomes
+#'   its `position`, so its bubble opens towards the page centre. Reduced motion,
+#'   or `motion = FALSE`, makes the move instant.
+#' * `"free"`: the mascot stays where it is dropped, at least 1rem inside the
+#'   window, and stays inside when the window is resized.
+#'
+#' In Shiny each drop sets `input$<id>_position`, read in the module that owns
+#' the mascot, like `input$<id>_menu`: the corner name, such as `"top-left"`,
+#' after a snap, or a list with `x` and `y`, the mascot's top-left corner in
+#' CSS pixels from the window's top-left, after a free drop. A later
+#' [updateMascot()] with `placement` replaces the dragged position. Dragging
+#' has no keyboard alternative; the minimise control stays reachable by keyboard.
+#' Remembering a position between visits is the app's job: for example, save
+#' the corner and pass it back as `position` next time.
 #' @param position `"inline"` (the default) to sit where the mascot is placed in
 #'   the UI, or a corner to float it: `"top-left"`, `"top-right"`,
 #'   `"bottom-left"` or `"bottom-right"`. `NULL` is not accepted.
 #' @param minimise A logical flag, defaulting to `FALSE`, to show a minimise
 #'   control. `TRUE` needs a corner `position`. `NULL` is not accepted.
-#' @returns A `mascot_placement` object with `position` and `minimise` elements.
+#' @param drag `FALSE` (the default) for no dragging, `"snap"` to let visitors
+#'   drag the mascot and move it to the nearest corner on release, or `"free"`
+#'   to keep it where it is dropped. Needs a corner `position`. `TRUE` and
+#'   `NULL` are not accepted. See the Dragging section.
+#' @returns A `mascot_placement` object with `position`, `minimise` and `drag`
+#'   elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
 #' @export
@@ -26,11 +53,28 @@
 #' mascot_placement()
 #' mascot_placement("top-left")
 #' mascot_placement("bottom-right", minimise = TRUE)
-mascot_placement <- function(position = "inline", minimise = FALSE) {
+#' mascot_placement("bottom-right", drag = "snap")
+#' mascot(id = "helper", placement = list(position = "top-left", drag = "free"))
+#' @examplesIf interactive()
+#' shiny::shinyApp(
+#'   shiny::fluidPage(
+#'     mascot(id = "helper", placement = mascot_placement("bottom-right", drag = "snap")),
+#'     shiny::textOutput("where")
+#'   ),
+#'   function(input, output, session) {
+#'     output$where <- shiny::renderText(paste("Dropped in", input$helper_position))
+#'   }
+#' )
+mascot_placement <- function(position = "inline", minimise = FALSE, drag = FALSE) {
   checkmate::assert_string(position)
   checkmate::assert_flag(minimise)
+  # drag is a union (FALSE or a mode); the wording for a wrong value comes from abort_drag().
+  checkmate::assert(checkmate::check_flag(drag), checkmate::check_string(drag), .var.name = "drag")
   if (!position %in% placement_positions()) {
     abort_choice(position, placement_positions(), "position", "position", environment())
+  }
+  if (!identical(drag, FALSE) && !isTRUE(drag %in% placement_drags())) {
+    abort_drag(drag, environment())
   }
   if (minimise && position == "inline") {
     cli::cli_abort(c(
@@ -38,7 +82,38 @@ mascot_placement <- function(position = "inline", minimise = FALSE) {
       "i" = "Use {.code mascot_placement(\"bottom-right\", minimise = TRUE)}."
     ))
   }
-  structure(list(position = position, minimise = minimise), class = "mascot_placement")
+  if (!identical(drag, FALSE) && position == "inline") {
+    cli::cli_abort(c(
+      "{.arg drag} needs a corner {.arg position}; an inline mascot cannot be dragged.",
+      "i" = "Use {.code mascot_placement(\"bottom-right\", drag = \"{drag}\")}."
+    ))
+  }
+  structure(list(position = position, minimise = minimise, drag = drag), class = "mascot_placement")
+}
+
+#' Report an invalid drag mode, explaining that TRUE is not a mode
+#' @noRd
+abort_drag <- function(drag, call) {
+  checkmate::assert(checkmate::check_flag(drag), checkmate::check_string(drag), .var.name = "drag")
+  checkmate::assert_environment(call)
+  cli::cli_abort(
+    c(
+      "{.arg drag} must be {.code FALSE}, {.val snap} or {.val free}.",
+      "x" = if (isTRUE(drag)) {
+        "{.code TRUE} is not accepted: choose how the mascot behaves when dropped."
+      } else {
+        "{.val {drag}} is not a drag mode."
+      },
+      "i" = "Use {.val snap} to move to the nearest corner or {.val free} to stay where dropped."
+    ),
+    call = call
+  )
+}
+
+#' The drag modes besides FALSE
+#' @noRd
+placement_drags <- function() {
+  c("snap", "free")
 }
 
 #' The shared corner vocabulary
@@ -61,7 +136,7 @@ placement_problem <- function(x) {
   if (isTRUE(checkmate::check_string(x)) && x %in% choices) {
     return(NULL)
   }
-  fields <- c("position", "minimise")
+  fields <- c("position", "minimise", "drag")
   helper <- inherits(x, "mascot_placement")
   if (
     !isTRUE(checkmate::check_list(x, names = "unique")) ||
@@ -72,7 +147,7 @@ placement_problem <- function(x) {
     return(paste0(
       "`placement` must be one of ",
       paste(encodeString(choices, quote = '\"'), collapse = ", "),
-      ", a named list with position and minimise fields, or a mascot_placement() object; got ",
+      ", a named list with position, minimise and drag fields, or a mascot_placement() object; got ",
       paste(deparse(x, width.cutoff = 60L), collapse = " "),
       "."
     ))
@@ -87,8 +162,18 @@ placement_problem <- function(x) {
   if ("minimise" %in% names(x) && !isTRUE(checkmate::check_flag(x$minimise))) {
     return("`placement$minimise` must be TRUE or FALSE.")
   }
+  if ("drag" %in% names(x) && !isFALSE(x$drag) && !isTRUE(checkmate::check_choice(x$drag, placement_drags()))) {
+    return(paste0(
+      "`placement$drag` must be FALSE, \"snap\" or \"free\"; got ",
+      paste(deparse(x$drag, width.cutoff = 60L), collapse = " "),
+      if (isTRUE(x$drag)) ". Use \"snap\" to move to the nearest corner or \"free\" to stay where dropped." else "."
+    ))
+  }
   if (isTRUE(x$minimise) && (is.null(x$position) || x$position == "inline")) {
     return("`placement` minimise needs a corner position, such as \"bottom-right\".")
+  }
+  if (!is.null(x$drag) && !isFALSE(x$drag) && (is.null(x$position) || x$position == "inline")) {
+    return("`placement` drag needs a corner position, such as \"bottom-right\"; an inline mascot cannot be dragged.")
   }
   NULL
 }
@@ -110,12 +195,17 @@ as_placement_arg <- function(x, call) {
   mascot_placement(x)
 }
 
-#' The browser's placement fields: floating, the corner (bottom-right when inline) and minimise
+#' The browser's placement fields: floating, the corner (bottom-right when inline), minimise and drag
 #' @noRd
 placement_wire <- function(x) {
   checkmate::assert_class(x, "mascot_placement")
   floating <- x$position != "inline"
-  list(floating = floating, position = if (floating) x$position else "bottom-right", minimise = x$minimise)
+  list(
+    floating = floating,
+    position = if (floating) x$position else "bottom-right",
+    minimise = x$minimise,
+    drag = x$drag
+  )
 }
 
 #' @export

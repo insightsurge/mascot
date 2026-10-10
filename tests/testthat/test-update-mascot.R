@@ -422,7 +422,7 @@ describe("updateMascot() size and placement", {
           id = "proxy1-helper",
           patch = list(
             size = list(size = "20%", small_screen = NULL, simplify_when_small = TRUE),
-            placement = list(floating = TRUE, position = "top-left", minimise = FALSE)
+            placement = list(floating = TRUE, position = "top-left", minimise = FALSE, drag = FALSE)
           )
         )
       )
@@ -431,11 +431,18 @@ describe("updateMascot() size and placement", {
         captured$messages[[2]]$patch,
         list(
           size = list(size = 120, small_screen = 48, simplify_when_small = FALSE),
-          placement = list(floating = FALSE, position = "bottom-right", minimise = FALSE)
+          placement = list(floating = FALSE, position = "bottom-right", minimise = FALSE, drag = FALSE)
         )
       )
+      updateMascot("helper", placement = mascot_placement("top-left", drag = "free"), session = session)
+      expect_identical(
+        captured$messages[[3]]$patch,
+        list(placement = list(floating = TRUE, position = "top-left", minimise = FALSE, drag = "free"))
+      )
+      updateMascot("helper", placement = list(position = "bottom-left", drag = "snap"), session = session)
+      expect_identical(captured$messages[[4]]$patch$placement$drag, "snap")
       updateMascot("helper", size = NULL, placement = NULL)
-      expect_length(captured$messages, 2)
+      expect_length(captured$messages, 4)
       expect_error(updateMascot("helper", NULL, NULL, NULL, NULL, session), "session.*must be named")
       expect_error(updateMascot("helper", NULL, NULL, NULL, NULL, NULL, session), "session.*must be named")
     })
@@ -459,9 +466,24 @@ describe("updateMascot() size and placement", {
       for (x in list(23, Inf, "24px", bad_size, bad_flag)) {
         expect_warning(updateMascot("a", size = x, mood = "happy"), "unchanged")
       }
-      for (x in list("fixed", list(floating = TRUE, snap = TRUE), bad_place)) {
+      bad_drag <- mascot_placement()
+      bad_drag$drag <- "snap"
+      for (x in list("fixed", list(floating = TRUE, snap = TRUE), bad_place, bad_drag)) {
         expect_warning(updateMascot("a", placement = x, status = "Saved"), "unchanged")
       }
+      # Like minimise, drag needs a corner: an inline mascot warns and stays unchanged.
+      expect_warning(
+        updateMascot("a", placement = list(position = "inline", drag = "snap")),
+        "unchanged.*cannot be dragged"
+      )
+      expect_warning(
+        updateMascot("a", placement = list(position = "top-left", drag = TRUE)),
+        "unchanged.*drag.*got TRUE"
+      )
+      expect_warning(
+        updateMascot("a", placement = list(position = "top-left", drag = "fixed")),
+        'unchanged.*drag.*"fixed"'
+      )
       expect_length(captured$patches, 0)
       local_mocked_bindings(dev_mode = function() TRUE)
       expect_warning(updateMascot("a", size = 1, placement = "fixed", mood = "happy"), "unchanged")

@@ -41,7 +41,7 @@ server_args <- function(state, style) {
 start_mascot <- do.call(mascot, lapply(ui_args(start, "short"), eval))
 
 studio_page <- bslib::layout_sidebar(
-  sidebar = bslib::sidebar(function_index(), width = 230, open = "desktop", title = "Functions"),
+  sidebar = bslib::sidebar(function_index(), width = 250, open = "desktop", title = "Functions"),
   div(
     class = "pg-studio",
     id = "studio_shell",
@@ -50,25 +50,7 @@ studio_page <- bslib::layout_sidebar(
       id = "studio_centre",
       div(
         class = "pg-toolbar pg-card-head",
-        actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm"),
-        div(
-          class = "pg-code-style",
-          popover(
-            tags$button(
-              type = "button",
-              class = "pg-arg-chip",
-              `aria-label` = "Shortcuts or helpers?",
-              "Code style",
-              tags$span(class = "pg-info", "i")
-            ),
-            p("Shortcuts are plain values: mood = \"happy\"."),
-            p(
-              "Helpers are mascot_*() calls: mood = mascot_mood(\"happy\"). Use them for settings beyond the main value, such as a bubble's duration. Both give the same mascot."
-            ),
-            title = "Shortcuts or helpers?"
-          ),
-          radioButtons("code_style", NULL, c(Shortcuts = "short", Helpers = "helper"), inline = TRUE)
-        )
+        actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm")
       ),
       div(
         class = "pg-canvas",
@@ -76,15 +58,6 @@ studio_page <- bslib::layout_sidebar(
         div(class = "pg-stage", start_mascot),
         uiOutput("stage_note"),
         div(class = "pg-canvas-caption pg-muted", "Tessa follows the arguments in the inspector.")
-      ),
-      bslib::card(
-        full_screen = TRUE,
-        class = "pg-learn",
-        bslib::accordion(
-          bslib::accordion_panel(uiOutput("learn_title", inline = TRUE), uiOutput("learn"), value = "learn"),
-          id = "learn_card",
-          open = FALSE
-        )
       ),
       div(
         class = "pg-dock",
@@ -94,7 +67,7 @@ studio_page <- bslib::layout_sidebar(
           class = "pg-grip",
           role = "separator",
           tabindex = "0",
-          `aria-label` = "Resize the code dock",
+          `aria-label` = "Resize the open Learn or Code panel",
           `aria-orientation` = "horizontal",
           `aria-valuemin` = "25",
           `aria-valuemax` = "80",
@@ -102,10 +75,31 @@ studio_page <- bslib::layout_sidebar(
           title = "Drag to resize, or use the up and down arrow keys"
         ),
         bslib::card(
+          id = "studio_panels_card",
           full_screen = TRUE,
           bslib::accordion(
+            bslib::accordion_panel(uiOutput("learn_title", inline = TRUE), uiOutput("learn"), value = "learn"),
             bslib::accordion_panel(
-              "Code: UI | Server | App | Last | Log",
+              "Code",
+              div(class = "pg-hint pg-code-purpose", "Code for Tessa as she is now."),
+              div(
+                class = "pg-code-style",
+                popover(
+                  tags$button(
+                    type = "button",
+                    class = "pg-arg-chip",
+                    `aria-label` = "Shortcuts or helpers?",
+                    "Code style",
+                    tags$span(class = "pg-info", "i")
+                  ),
+                  p("Shortcuts are plain values: mood = \"happy\"."),
+                  p(
+                    "Helpers are mascot_*() calls: mood = mascot_mood(\"happy\"). Use them for settings beyond the main value, such as a bubble's duration. Both give the same mascot."
+                  ),
+                  title = "Shortcuts or helpers?"
+                ),
+                radioButtons("code_style", NULL, c(Shortcuts = "short", Helpers = "helper"), inline = TRUE)
+              ),
               navset_underline(
                 id = "code_tabs",
                 nav_panel(
@@ -140,8 +134,9 @@ studio_page <- bslib::layout_sidebar(
               ),
               value = "code"
             ),
-            id = "code_dock",
-            open = TRUE
+            id = "studio_panels",
+            multiple = FALSE,
+            open = "code"
           )
         )
       )
@@ -150,8 +145,6 @@ studio_page <- bslib::layout_sidebar(
       class = "pg-inspector",
       id = "studio_inspector",
       `aria-label` = "Function controls",
-      input_switch("show_all_controls", "Show all controls", FALSE),
-      div(class = "pg-hint", "Show every function's controls, folded by function."),
       panel_look(),
       panel_messages(),
       panel_motion(),
@@ -314,7 +307,7 @@ ui <- function(request) {
       )),
       bslib::nav_item(tags$a(
         class = "dropdown-item",
-        href = "https://insightsurge.github.io/mascot/",
+        href = "https://mascot-pkg.web.app/",
         target = "_blank",
         rel = "noopener",
         shiny::icon("book"),

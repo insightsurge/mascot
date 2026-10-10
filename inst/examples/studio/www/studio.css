@@ -53,7 +53,7 @@
   gap: 0.5rem;
 }
 
-/* Sidebar: function headings and argument fields */
+/* Inspector: function headings and argument fields */
 
 .pg-fn-what {
   font-size: 0.85rem;
@@ -632,6 +632,7 @@
 }
 
 .pg-index-link code {
+  white-space: nowrap;
   font-size: 0.78rem;
   font-weight: 600;
   color: inherit;
@@ -653,7 +654,7 @@
 .pg-centre {
   --pg-dock-height: 42%;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto minmax(12rem, var(--pg-dock-height));
+  grid-template-rows: auto minmax(min-content, 1fr) minmax(0, var(--pg-dock-height));
   position: relative;
   min-width: 0;
   min-height: 0;
@@ -686,14 +687,18 @@
 .pg-canvas {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: safe center;
   align-items: center;
-  min-height: 0;
+  min-height: 18rem;
   overflow: auto;
   padding: 1rem 1rem 1.5rem;
   background-color: var(--bs-tertiary-bg);
   background-image: radial-gradient(var(--bs-border-color) 1px, transparent 1px);
   background-size: 18px 18px;
+}
+
+.pg-canvas > * {
+  flex-shrink: 0;
 }
 
 .pg-stage {
@@ -815,34 +820,97 @@
   background: var(--bs-primary-bg-subtle);
 }
 
-/* Native accordions own folding and cards own full-screen expansion. */
-.pg-learn {
-  margin: 0;
-  max-height: 40vh;
-  overflow: auto;
-}
-
-.pg-learn[data-full-screen="true"] {
-  max-height: none;
-}
-
+/* One accordion shares the available height; its open panel scrolls internally. */
 .pg-dock > .card {
   flex: 1;
   min-height: 0;
   margin: 0;
+  overflow: hidden;
+}
+
+.pg-dock > .card > .card-body,
+#studio_panels {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.pg-dock > .card > .card-body {
+  padding: 0;
+  overflow: hidden;
+}
+
+#studio_panels > .accordion-item {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  min-height: 0;
+}
+
+#studio_panels > .accordion-item:has(> .accordion-collapse.show),
+#studio_panels > .accordion-item:has(> .collapsing) {
+  flex: 1;
+}
+
+#studio_panels .accordion-header {
+  flex: none;
+}
+
+#studio_panels .accordion-collapse.show {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
 }
 
 .pg-centre.is-dock-collapsed {
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(min-content, 1fr) auto;
 }
 
 .pg-centre.is-dock-collapsed .pg-grip {
   display: none;
 }
 
-.pg-inspector-function .accordion-button {
-  font-size: 0.9rem;
+.pg-function-name {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+/* The full-screen Learn view flows individual sections across the available width. */
+#studio_panels_card[data-full-screen="true"] .pg-learn-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  grid-auto-rows: max-content;
+  height: auto;
+  flex: none;
+  align-content: start;
+  align-items: start;
+  gap: 1.25rem;
+}
+
+#studio_panels_card[data-full-screen="true"] .pg-learn-columns > * {
+  grid-column: auto;
+  grid-row: auto;
+  min-width: 0;
+}
+
+#studio_panels_card[data-full-screen="true"] .pg-learn-columns > :has(> .pg-guide-visual),
+#studio_panels_card[data-full-screen="true"] .pg-guide-visual {
+  display: contents;
+}
+
+#studio_panels_card[data-full-screen="true"] .pg-learn-piece {
+  min-width: 0;
+  overflow: auto;
+}
+
+#studio_panels_card[data-full-screen="true"] .pg-learn-columns .pg-section-title {
+  margin-top: 0;
+}
+
+#studio_panels_card[data-full-screen="true"] .pg-learn-columns p,
+#studio_panels_card[data-full-screen="true"] .pg-learn-columns .pg-callout {
+  max-width: 65ch;
 }
 
 @media (max-width: 991px) {

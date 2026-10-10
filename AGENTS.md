@@ -63,6 +63,15 @@ package can use it as it is); mascot's choices are in `DESCRIPTION`
 - In a git worktree, set `R_LIBS` to what `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout (renv
   keeps a package project's library outside the repo).
 
+## Keep mascot studio up to date
+- `inst/examples/studio/` (`mascot_example("studio")`) demonstrates every exported function and argument, and the
+  founder reviews the package through it. **Every PR that changes an export, an argument, a default or visible
+  behaviour checks the studio** and adds, changes or removes its controls, explanations (`R/guide.R`), control map
+  (`R/data.R`) and code builders (`R/code.R`) in the same PR. The completeness tests in
+  `tests/testthat/test-examples.R` catch a missing argument; they do not catch a changed default or behaviour.
+- After a merge to `main`, merge `main` into any open studio branch and restart a running studio before handing it
+  back for review.
+
 ## Known users: never break them
 - **Every known user is listed in `docs/consumers.md`**: what it uses, since which version, and how to check it
   still works. Read it before changing anything exported or anything a user can see (moods, arguments, defaults,

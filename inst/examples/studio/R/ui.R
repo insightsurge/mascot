@@ -64,21 +64,15 @@ inspector_function <- function(fn, ...) {
     class = "pg-inspector-function",
     `data-function` = fn,
     hidden = if (fn != "mascot_mood") NA,
-    bslib::accordion(
-      bslib::accordion_panel(
-        tags$code(paste0(fn, "()")),
-        div(class = "pg-fn-what", the_guide(fn)$what),
-        bslib::popover(
-          tags$button(type = "button", class = "btn btn-outline-primary btn-sm", "Usage"),
-          code_block(signature(fn), "pg-signature"),
-          title = paste0(fn, "()")
-        ),
-        div(class = "pg-returns", tags$strong("Returns: "), the_guide(fn)$returns),
-        div(class = "pg-function-controls", ...),
-        value = fn
-      ),
-      open = if (fn == "mascot_mood") TRUE else FALSE
-    )
+    tags$h2(class = "pg-function-name", tags$code(paste0(fn, "()"))),
+    div(class = "pg-fn-what", the_guide(fn)$what),
+    bslib::popover(
+      tags$button(type = "button", class = "btn btn-outline-primary btn-sm", "Usage"),
+      code_block(signature(fn), "pg-signature"),
+      title = paste0(fn, "()")
+    ),
+    div(class = "pg-returns", tags$strong("Returns: "), the_guide(fn)$returns),
+    div(class = "pg-function-controls", ...)
   )
 }
 
@@ -124,7 +118,8 @@ function_index <- function() {
               tags$code(paste0(fn, "()")),
               tags$span(the_guide(fn)$what)
             ),
-            the_guide(fn)$what
+            the_guide(fn)$what,
+            options = list(trigger = "hover")
           )
         })
       )
@@ -136,7 +131,16 @@ wiring_links <- function(fn) {
   shared <- setdiff(names(the_guide(fn)$args), c("id", "...", "session"))
   lapply(shared, function(arg) {
     helper <- paste0("mascot_", arg)
-    arg_field(fn, arg, try_button("select_function", helper, paste0("Set in ", helper, "()"), "btn-link"))
+    arg_field(
+      fn,
+      arg,
+      tags$p(
+        class = "pg-hint",
+        "Choose ",
+        tags$code(paste0(helper, "()")),
+        " in the function index to set this argument."
+      )
+    )
   })
 }
 
@@ -221,15 +225,41 @@ function_card <- function(fn, example = FALSE) {
 }
 
 selected_learn <- function(fn) {
+  checkmate::assert_string(fn)
+  # Keep headings with their diagrams or tables; callouts can flow into their own column.
+  sections <- list()
+  content <- list()
+  for (piece in category_visual(the_guide(fn)$category)) {
+    heading <- inherits(piece, "shiny.tag") && identical(piece$name, "h3")
+    callout <- inherits(piece, "shiny.tag") &&
+      !is.null(piece$attribs$class) &&
+      grepl("pg-callout", piece$attribs$class, fixed = TRUE)
+    if ((heading || callout) && length(content)) {
+      sections <- c(sections, list(div(class = "pg-learn-piece", content)))
+      content <- list()
+    }
+    content <- c(content, list(piece))
+    if (callout) {
+      sections <- c(sections, list(div(class = "pg-learn-piece", content)))
+      content <- list()
+    }
+  }
+  if (length(content)) {
+    sections <- c(sections, list(div(class = "pg-learn-piece", content)))
+  }
   div(
     `data-learn-function` = fn,
-    bslib::layout_columns(
-      col_widths = bslib::breakpoints(sm = 12, lg = c(6, 6)),
-      div(
-        tags$h3(class = "pg-section-title", "Example"),
-        div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
+    tagAppendAttributes(
+      bslib::layout_columns(
+        col_widths = bslib::breakpoints(sm = 12, lg = c(6, 6)),
+        div(
+          class = "pg-learn-example",
+          tags$h3(class = "pg-section-title", paste0("Example: how to call ", fn, "()")),
+          div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
+        ),
+        div(class = "pg-guide-visual", sections)
       ),
-      div(class = "pg-guide-visual", category_visual(the_guide(fn)$category))
+      class = "pg-learn-columns"
     )
   )
 }

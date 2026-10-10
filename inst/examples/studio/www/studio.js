@@ -66,26 +66,17 @@
   window.Shiny.inputBindings.register(new MoodBinding(), 'mascotStudio.mood');
 
   let selectedFunction = 'mascot_mood';
-  let showAll = false;
-  function showControls(selectionChanged = false) {
+  function showControls() {
     const inspector = document.getElementById('studio_inspector');
     if (!inspector) return;
-    inspector.classList.toggle('is-show-all', showAll);
     for (const group of inspector.querySelectorAll('[data-function]')) {
       const selected = group.dataset.function === selectedFunction;
-      if ((!showAll || selectionChanged) && !selected && group.contains(document.activeElement)) {
+      if (!selected && group.contains(document.activeElement)) {
         document.querySelector(`.pg-index-link[data-value="${selectedFunction}"]`)?.focus();
       }
-      group.hidden = !showAll && !selected;
-      if (!showAll || selectionChanged) {
-        const panel = group.querySelector('.accordion-collapse');
-        if (panel) {
-          const collapse = window.bootstrap.Collapse.getOrCreateInstance(panel, { toggle: false });
-          if (selected) collapse.show();
-          else collapse.hide();
-        }
-      }
+      group.hidden = !selected;
     }
+    inspector.scrollTop = 0;
     for (const button of document.querySelectorAll('.pg-index-link')) {
       button.setAttribute('aria-current', String(button.dataset.value === selectedFunction));
     }
@@ -96,20 +87,25 @@
       document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
     }
     showControls();
-    $(document).on('shiny:inputchanged', (event) => {
-      if (event.name === 'show_all_controls') {
-        showAll = event.value === true;
-        showControls(true);
+    const index = document.querySelector('.pg-index');
+    index?.addEventListener('show.bs.tooltip', (event) => {
+      const button = event.target.closest('.pg-index-link') ?? event.target.querySelector('.pg-index-link');
+      const description = button?.querySelector('span');
+      if (!description || description.scrollWidth <= description.clientWidth) {
+        event.preventDefault();
+        return;
+      }
+      for (const trigger of index.querySelectorAll('[aria-describedby]')) {
+        if (trigger !== event.target) window.bootstrap.Tooltip.getInstance(trigger)?.hide();
       }
     });
     const centre = document.getElementById('studio_centre');
-    const dock = document.getElementById('code_dock');
+    const dock = document.getElementById('studio_panels');
     function syncDock() {
-      centre?.classList.toggle('is-dock-collapsed', !dock?.querySelector('.accordion-collapse.show'));
+      centre?.classList.toggle('is-dock-collapsed', !dock?.querySelector('.accordion-collapse.show, .collapsing'));
     }
     dock?.addEventListener('shown.bs.collapse', syncDock);
     dock?.addEventListener('hidden.bs.collapse', syncDock);
-    syncDock();
     function placementControls() {
       const inline = document.querySelector('#position input:checked')?.value === 'inline';
       const minimise = document.getElementById('minimise');
@@ -132,9 +128,34 @@
     let height = 42;
     let drag = null;
     function resize(value) {
-      height = Math.max(25, Math.min(80, value));
+      if (!centre || !grip || !centre.clientHeight) return;
+      const canvas = document.getElementById('studio_canvas');
+      const style = getComputedStyle(canvas);
+      // Include the reserved bubble region, character, status and caption in the canvas floor.
+      const contentHeight = [...canvas.children].reduce((total, child) => {
+        const childStyle = getComputedStyle(child);
+        return total + child.offsetHeight + parseFloat(childStyle.marginTop) + parseFloat(childStyle.marginBottom);
+      }, parseFloat(style.paddingTop) + parseFloat(style.paddingBottom));
+      const canvasHeight = Math.max(parseFloat(style.minHeight), contentHeight);
+      const toolbarHeight = centre.querySelector('.pg-toolbar').offsetHeight;
+      const maximum = Math.max(
+        0,
+        Math.min(80, ((centre.clientHeight - toolbarHeight - canvasHeight) / centre.clientHeight) * 100),
+      );
+      const minimum = Math.min(25, maximum);
+      height = Math.max(minimum, Math.min(maximum, value));
       centre.style.setProperty('--pg-dock-height', `${height}%`);
+      grip.setAttribute('aria-valuemin', String(Math.round(minimum)));
+      grip.setAttribute('aria-valuemax', String(Math.round(maximum)));
       grip.setAttribute('aria-valuenow', String(Math.round(height)));
+    }
+    syncDock();
+    resize(height);
+    if (centre) {
+      const observer = new ResizeObserver(() => resize(height));
+      observer.observe(centre);
+      observer.observe(centre.querySelector('.pg-toolbar'));
+      for (const child of document.getElementById('studio_canvas').children) observer.observe(child);
     }
     grip?.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
@@ -166,7 +187,7 @@
     if (target) {
       if (target.dataset.event === 'select_function') {
         selectedFunction = target.dataset.value;
-        showControls(true);
+        showControls();
       }
       if (target.dataset.event === 'try_mood') {
         const mood = document.getElementById('mood');

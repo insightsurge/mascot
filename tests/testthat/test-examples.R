@@ -53,7 +53,7 @@ describe("mascot_examples()", {
         # bslib's inline icons name the SVG namespace, which is not a request.
         html <- gsub("http://www.w3.org/2000/svg", "", html, fixed = TRUE)
         # External navbar links are navigation only; assets must remain local.
-        for (link in c("https://github.com/insightsurge/mascot", "https://insightsurge.github.io/mascot/")) {
+        for (link in c("https://github.com/insightsurge/mascot", "https://mascot-pkg.web.app/")) {
           html <- gsub(paste0('href="', link, '"'), "", html, fixed = TRUE)
         }
         expect_false(any(grepl("https?://", html)), info = name)
@@ -158,6 +158,30 @@ describe("the studio's controls", {
     }
     expect_false(grepl("simplify_when_small", code$format_expr(code$code_size(120, 72)$helper), fixed = TRUE))
   })
+  it("labels Learn as a call to its selected function and keeps visuals in separate sections", {
+    skip_if_not_installed("bslib")
+    withr::local_package("shiny")
+    withr::local_package("bslib")
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    ui <- new.env()
+    sys.source(file.path(dir, "R", "guide.R"), envir = ui)
+    sys.source(file.path(dir, "R", "ui.R"), envir = ui)
+    expect_error(ui$selected_learn(42), "string")
+    for (fn in c(
+      "mascot_mood",
+      "mascot_bubble",
+      "mascot_motion",
+      "mascot_placement",
+      "mascot_theme",
+      "mascot_popup_menu",
+      "updateMascot"
+    )) {
+      html <- as.character(ui$selected_learn(fn))
+      expect_match(html, paste0("Example: how to call ", fn, "()"), fixed = TRUE)
+      expect_match(html, 'id="code_function"', fixed = TRUE)
+      expect_match(html, "pg-learn-piece", fixed = TRUE)
+    }
+  })
   it("has a control on the page, or a stated reason, for every exported argument", {
     skip_if_not_installed("bslib")
     # mascot is already attached by the test run; attaching it here would detach it on exit.
@@ -175,12 +199,14 @@ describe("the studio's controls", {
       expect_identical(anyDuplicated(ids), 0L)
     }
     html <- paste(unlist(pages), collapse = "\n")
-    expect_match(pages[[1]], 'id="learn_card"', fixed = TRUE)
-    expect_match(pages[[1]], 'id="code_dock"', fixed = TRUE)
+    expect_match(pages[[1]], 'id="studio_panels"', fixed = TRUE)
+    expect_match(pages[[1]], 'id="studio_panels_card"', fixed = TRUE)
+    expect_false(grepl('id="learn_card"', pages[[1]], fixed = TRUE))
+    expect_false(grepl('id="code_dock"', pages[[1]], fixed = TRUE))
     expect_match(pages[[1]], 'href="?view=preview"', fixed = TRUE)
     expect_match(pages[[1]], 'href="?view=examples"', fixed = TRUE)
     expect_match(pages[[1]], 'href="https://github.com/insightsurge/mascot"', fixed = TRUE)
-    expect_match(pages[[1]], 'href="https://insightsurge.github.io/mascot/"', fixed = TRUE)
+    expect_match(pages[[1]], 'href="https://mascot-pkg.web.app/"', fixed = TRUE)
     expect_match(pages[[1]], "Links", fixed = TRUE)
     expect_false(grepl('id="preview_body"', pages[[1]], fixed = TRUE))
     expect_false(grepl('id="helper"', pages[[2]], fixed = TRUE))
@@ -240,8 +266,9 @@ describe("mascot_example()", {
 })
 
 # A literal scenario name is embedded so the child R process needs no test globals.
-example_driver <- function(name) {
+example_driver <- function(name, width = 1100) {
   checkmate::assert_string(name)
+  checkmate::assert_number(width, lower = 1)
   testthat::skip_if_not_installed("bslib")
   app_function <- function() NULL
   body(app_function) <- substitute(
@@ -251,7 +278,7 @@ example_driver <- function(name) {
     },
     list(NAME = name)
   )
-  shinytest2::AppDriver$new(app_function, width = 1100, height = 900, load_timeout = 30000)
+  shinytest2::AppDriver$new(app_function, width = width, height = 900, load_timeout = 30000)
 }
 
 wait_example_mood <- function(app, id, mood) {
@@ -265,7 +292,7 @@ wait_example_mood <- function(app, id, mood) {
 describe("bundled example apps", {
   it("E1 studio selects functions and changes Tessa with code and an event log", {
     local_shiny_browser()
-    app <- example_driver("studio")
+    app <- example_driver("studio", width = 1440)
     withr::defer(app$stop())
     state <- "mascot.host.state(document.getElementById('helper'))"
     wait_example_mood(app, "helper", "idle")
@@ -275,14 +302,155 @@ describe("bundled example apps", {
       app$click(selector = sprintf('.pg-index-link[data-value="%s"]', fn))
       app$wait_for_js(sprintf("!!document.querySelector('#learn [data-learn-function=\"%s\"]')", fn))
       app$wait_for_js(sprintf(
-        "!document.querySelector('#studio_inspector [data-function=\"%s\"]').hidden && document.querySelector('#studio_inspector [data-function=\"%s\"] .accordion-collapse').classList.contains('show')",
-        fn,
+        "!document.querySelector('#studio_inspector [data-function=\"%s\"]').hidden && document.querySelectorAll('#studio_inspector [data-function]:not([hidden])').length === 1",
         fn
       ))
     }
-    expect_false(app$get_js("document.querySelector('#learn_card .accordion-collapse').classList.contains('show')"))
-    app$click(selector = "#learn_card .accordion-button")
-    app$wait_for_js("document.querySelector('#learn_card .accordion-collapse').classList.contains('show')")
+    learn_panel <- "#studio_panels > .accordion-item:first-child"
+    code_panel <- "#studio_panels > .accordion-item:last-child"
+    expect_identical(app$get_js("document.querySelectorAll('#studio_panels > .accordion-item').length"), 2L)
+    expect_true(app$get_js(
+      "document.getElementById('studio_panels_card').contains(document.getElementById('studio_panels')) && document.querySelector('#studio_panels_card .bslib-full-screen-enter') !== null"
+    ))
+    expect_identical(
+      app$get_js(sprintf("document.querySelector('%s .accordion-button').textContent.trim()", code_panel)),
+      "Code"
+    )
+    expect_true(app$get_js(sprintf(
+      "document.querySelector('%s .accordion-body').contains(document.getElementById('code_style')) && !document.querySelector('.pg-toolbar #code_style')",
+      code_panel
+    )))
+    expect_true(app$get_js(
+      "document.querySelector('.pg-code-style').compareDocumentPosition(document.getElementById('code_tabs')) & Node.DOCUMENT_POSITION_FOLLOWING ? true : false"
+    ))
+    # No accordion wraps a whole function; the colour pickers keep theirs, folded by group.
+    expect_true(app$get_js(
+      "![...document.querySelectorAll('#studio_inspector .accordion-item')].some(item => /^(mascot|updateMascot)/.test(item.dataset.value || ''))"
+    ))
+    expect_identical(
+      app$get_js("document.querySelectorAll('#studio_inspector [data-event=select_function]').length"),
+      0L
+    )
+    expect_identical(app$get_js("document.querySelectorAll('#status_text').length"), 1L)
+    app$run_js("window.studioStatusInput = document.getElementById('status_text')")
+    expect_match(
+      app$get_js("document.querySelector('.pg-code-purpose').textContent"),
+      "Code for Tessa as she is now.",
+      fixed = TRUE
+    )
+    # A fully readable description does not open a tooltip, even when Bootstrap requests one.
+    app$run_js(
+      "(() => {
+      const button = document.querySelectorAll('.pg-index-link')[0];
+      button.querySelector('span').style.width = '1000px';
+      const tooltip = bootstrap.Tooltip.getInstance(button) || bootstrap.Tooltip.getInstance(button.closest('bslib-tooltip'));
+      tooltip.show();
+    })()"
+    )
+    expect_identical(app$get_js("document.querySelectorAll('.tooltip.show').length"), 0L)
+    # Narrow two descriptions to exercise real truncation independently of their wording.
+    app$run_js(
+      "for (const button of [...document.querySelectorAll('.pg-index-link')].slice(0, 2)) button.querySelector('span').style.width = '3rem'"
+    )
+    # Focus does not keep an index tooltip open after the pointer leaves.
+    index_tooltip_shown <- "(() => {
+      const button = document.querySelectorAll('.pg-index-link')[%d];
+      const trigger = button.hasAttribute('aria-describedby') ? button : button.closest('bslib-tooltip');
+      return document.getElementById(trigger?.getAttribute('aria-describedby'))?.classList.contains('show') === true;
+    })()"
+    app$run_js("document.querySelectorAll('.pg-index-link')[0].focus()")
+    app$run_js(
+      "document.querySelectorAll('.pg-index-link')[0].dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))"
+    )
+    app$wait_for_js(sprintf(index_tooltip_shown, 0))
+    app$run_js(
+      "document.querySelectorAll('.pg-index-link')[0].dispatchEvent(new MouseEvent('mouseout', {bubbles: true}))"
+    )
+    app$wait_for_js("document.querySelectorAll('.tooltip.show').length === 0")
+    # A new hover also hides the previous tooltip, even before its mouseout arrives.
+    app$run_js(
+      "document.querySelectorAll('.pg-index-link')[0].dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))"
+    )
+    app$wait_for_js(sprintf(index_tooltip_shown, 0))
+    app$run_js(
+      "document.querySelectorAll('.pg-index-link')[1].dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))"
+    )
+    app$wait_for_js(sprintf(index_tooltip_shown, 1))
+    expect_true(app$get_js(
+      "document.querySelectorAll('.tooltip.show').length === 1 && document.activeElement === document.querySelectorAll('.pg-index-link')[0]"
+    ))
+    app$run_js(
+      "for (const button of document.querySelectorAll('.pg-index-link')) button.dispatchEvent(new MouseEvent('mouseout', {bubbles: true}))"
+    )
+    app$wait_for_js("document.querySelectorAll('.tooltip.show').length === 0")
+    app$run_js(
+      "for (const button of [...document.querySelectorAll('.pg-index-link')].slice(0, 2)) button.querySelector('span').style.removeProperty('width')"
+    )
+    expect_false(app$get_js(sprintf(
+      "document.querySelector('%s .accordion-collapse').classList.contains('show')",
+      learn_panel
+    )))
+    expect_true(app$get_js(sprintf(
+      "document.querySelector('%s .accordion-collapse').classList.contains('show')",
+      code_panel
+    )))
+    # The canvas includes the reserved bubble space and status with either panel open.
+    canvas_fits <- "(() => {
+      const canvas = document.getElementById('studio_canvas').getBoundingClientRect();
+      return ['.mascot-canvas', '.mascot-status', '.mascot-bubble-region'].every(selector => {
+        const item = document.querySelector('#helper ' + selector).getBoundingClientRect();
+        return item.top >= canvas.top && item.bottom <= canvas.bottom;
+      });
+    })()"
+    app$wait_for_js(canvas_fits)
+    expect_true(app$get_js(canvas_fits))
+    app$click(selector = paste(learn_panel, ".accordion-button"))
+    app$wait_for_js(sprintf("document.querySelector('%s .accordion-collapse').classList.contains('show')", learn_panel))
+    app$wait_for_js(paste(
+      "document.querySelectorAll('#studio_panels .accordion-collapse.show').length === 1",
+      "&& !document.querySelector('#studio_panels .collapsing')"
+    ))
+    expect_false(app$get_js(sprintf(
+      "document.querySelector('%s .accordion-collapse').classList.contains('show')",
+      code_panel
+    )))
+    app$wait_for_js(canvas_fits)
+    expect_true(app$get_js(canvas_fits))
+    expect_identical(
+      app$get_js(sprintf("getComputedStyle(document.querySelector('%s .accordion-collapse')).overflowY", learn_panel)),
+      "auto"
+    )
+    expect_identical(
+      app$get_js("document.querySelector('.pg-learn-example .pg-section-title').textContent"),
+      "Example: how to call mascot_mood()"
+    )
+    # Bslib's own full-screen button gives Learn compact columns for its example and visual sections.
+    app$click(selector = "#studio_panels_card .bslib-full-screen-enter")
+    app$wait_for_js("document.getElementById('studio_panels_card').getAttribute('data-full-screen') === 'true'")
+    app$wait_for_js(
+      "getComputedStyle(document.querySelector('.pg-learn-columns')).gridTemplateColumns.split(' ').length >= 3"
+    )
+    expect_true(app$get_js(
+      "(() => {
+      const example = document.querySelector('.pg-learn-example').getBoundingClientRect();
+      const table = document.querySelector('.pg-guide-visual .pg-table').getBoundingClientRect();
+      const callout = document.querySelector('.pg-guide-visual .pg-callout').getBoundingClientRect();
+      return table.left > example.left && callout.left > table.left && Math.abs(table.top - example.top) < 80;
+    })()"
+    ))
+    app$run_js(
+      "document.getElementById('studio_panels_card').dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))"
+    )
+    app$wait_for_js("document.getElementById('studio_panels_card').getAttribute('data-full-screen') === 'false'")
+    app$wait_for_js(canvas_fits)
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-index-link code')).whiteSpace"), "nowrap")
+    grip_height <- app$get_js("document.getElementById('studio_dock').getBoundingClientRect().height")
+    app$run_js(
+      "document.getElementById('dock_grip').dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}))"
+    )
+    app$wait_for_js(sprintf("document.getElementById('studio_dock').getBoundingClientRect().height < %f", grip_height))
+    app$wait_for_js(canvas_fits)
+    expect_true(app$get_js(canvas_fits))
     expect_identical(
       app$get_js("[...document.querySelectorAll('#code_tabs .nav-link')].map(el => el.textContent.trim()).join('|')"),
       "UI|Server|App|Last|Log"
@@ -310,7 +478,7 @@ describe("bundled example apps", {
     select_function("mascot_status")
     # The selected function owns the inspector header, controls and Learn example.
     expect_true(app$get_js(
-      "document.querySelector('#studio_inspector [data-function=mascot_status] .accordion-collapse').classList.contains('show') && document.querySelector('#learn [data-learn-function=mascot_status]') !== null && document.getElementById('status_text').getClientRects().length > 0"
+      "!document.querySelector('#studio_inspector [data-function=mascot_status]').hidden && document.querySelector('#learn [data-learn-function=mascot_status]') !== null && document.getElementById('status_text').getClientRects().length > 0"
     ))
     expect_true(app$get_js("document.querySelector('#studio_inspector [data-function=mascot_mood]').hidden"))
     expect_true(app$get_js(
@@ -386,24 +554,43 @@ describe("bundled example apps", {
     app$set_inputs(menu_items = "no equals sign")
     app$set_inputs(menu_on = FALSE)
     app$wait_for_js(paste0(state, ".popup_menu.items === null"))
-    # Switching functions and showing all controls reuse the same inputs and their values.
+    # Switching functions reuses the same mounted inputs and their values.
     select_function("mascot_status")
     expect_identical(app$get_value(input = "status_text"), "Checking 120 rows")
-    app$set_inputs(show_all_controls = TRUE)
-    app$wait_for_js("!document.querySelector('[data-function=mascot_bubble]').hidden")
-    expect_false(app$get_js(
-      "document.querySelector('[data-function=mascot_bubble] .accordion-collapse').classList.contains('show')"
-    ))
-    app$set_inputs(show_all_controls = FALSE)
-    app$wait_for_js("document.querySelector('[data-function=mascot_bubble]').hidden")
-    app$click(selector = "#code_dock > .accordion-item > .accordion-header .accordion-button")
-    app$wait_for_js("document.getElementById('studio_centre').classList.contains('is-dock-collapsed')")
-    expect_match(
-      app$get_js("document.querySelector('#code_dock .accordion-button').textContent"),
-      "UI | Server | App | Last | Log",
-      fixed = TRUE
+    expect_true(app$get_js("document.getElementById('status_text') === window.studioStatusInput"))
+    expect_true(app$get_js("document.querySelector('[data-function=mascot_bubble]').hidden"))
+    expect_identical(
+      app$get_js("document.querySelectorAll('#studio_inspector [data-function]:not([hidden])').length"),
+      1L
     )
-    app$click(selector = "#code_dock > .accordion-item > .accordion-header .accordion-button")
+    app$click(selector = paste(code_panel, ".accordion-button"))
+    app$wait_for_js(sprintf("document.querySelector('%s .accordion-collapse').classList.contains('show')", code_panel))
+    app$wait_for_js(paste(
+      "document.querySelectorAll('#studio_panels .accordion-collapse.show').length === 1",
+      "&& !document.querySelector('#studio_panels .collapsing')"
+    ))
+    expect_false(app$get_js(sprintf(
+      "document.querySelector('%s .accordion-collapse').classList.contains('show')",
+      learn_panel
+    )))
+    app$wait_for_js(canvas_fits)
+    expect_true(app$get_js(canvas_fits))
+    expect_identical(
+      app$get_js(sprintf("getComputedStyle(document.querySelector('%s .accordion-collapse')).overflowY", code_panel)),
+      "auto"
+    )
+    app$run_js(
+      "document.getElementById('dock_grip').dispatchEvent(new KeyboardEvent('keydown', {key: 'End', bubbles: true}))"
+    )
+    app$wait_for_js(canvas_fits)
+    expect_true(app$get_js(canvas_fits))
+    app$click(selector = paste(code_panel, ".accordion-button"))
+    app$wait_for_js("document.getElementById('studio_centre').classList.contains('is-dock-collapsed')")
+    expect_identical(
+      app$get_js(sprintf("document.querySelector('%s .accordion-button').textContent.trim()", code_panel)),
+      "Code"
+    )
+    app$click(selector = paste(code_panel, ".accordion-button"))
     app$wait_for_js("!document.getElementById('studio_centre').classList.contains('is-dock-collapsed')")
     # Each URL starts a new Shiny session and builds only its own view.
     app$run_js("window.location.search = '?view=preview'")

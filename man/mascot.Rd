@@ -11,7 +11,7 @@ mascot(
   status = NULL,
   bubble = NULL,
   size = 160,
-  placement = "inline",
+  placement = "bottom-right",
   theme = NULL,
   motion = TRUE,
   popup_menu = NULL
@@ -42,7 +42,7 @@ string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} obj
 Percentages follow the parent width when inline and window width when floating,
 with a 24-pixel floor. \code{NULL} is not accepted.}
 
-\item{placement}{\code{"inline"} (the default), \code{"floating"} (bottom-right), a corner
+\item{placement}{\code{"bottom-right"} (the default), \code{"floating"}, \code{"inline"}, a corner
 such as \code{"top-left"}, a named list such as \code{list(position = "top-left", minimise = TRUE, drag = "snap")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object.
 \code{minimise} and \code{drag} need a corner. With \code{drag}, each drop sets
 \verb{input$<id>_position} to the corner (\code{"snap"}) or a list with \code{x} and \code{y}

@@ -2,14 +2,14 @@
 % Please edit documentation in R/placement.R
 \name{mascot_placement}
 \alias{mascot_placement}
-\title{Place a mascot inline or in a floating corner}
+\title{Place a mascot in a floating corner or inline}
 \usage{
-mascot_placement(position = "inline", minimise = FALSE, drag = FALSE)
+mascot_placement(position = "bottom-right", minimise = FALSE, drag = FALSE)
 }
 \arguments{
-\item{position}{\code{"inline"} (the default) to sit where the mascot is placed in
-the UI, or a corner to float it: \code{"top-left"}, \code{"top-right"},
-\code{"bottom-left"} or \code{"bottom-right"}. \code{NULL} is not accepted.}
+\item{position}{A corner to float the mascot (\code{"bottom-right"}, the default;
+\code{"top-left"}, \code{"top-right"} or \code{"bottom-left"}), or \code{"inline"} to sit
+where the mascot is placed in the UI. \code{NULL} is not accepted.}
 
 \item{minimise}{A logical flag, defaulting to \code{FALSE}, to show a minimise
 control. \code{TRUE} needs a corner \code{position}. \code{NULL} is not accepted.}
@@ -24,11 +24,12 @@ A \code{mascot_placement} object with \code{position}, \code{minimise} and \code
 elements.
 }
 \description{
-Inline mascots sit where they are placed in the UI. Floating mascots sit
-1rem from the window's edges, above fixed navigation bars and below modals.
+Floating mascots sit in a corner (by default, \code{"bottom-right"}), 1rem from
+the window's edges, above fixed navigation bars and below modals.
 Bottom-right mascots move above Shiny notifications while they are visible.
-Floating mascots hide with their original tab or container. Switching back to
-inline returns the mascot to its original place in the UI.
+Floating mascots hide with their original tab or container. Inline mascots sit
+where they are placed in the page flow. Switching back to inline returns the
+mascot to its original place in the UI.
 }
 \details{
 The neutral minimise control appears on hover or keyboard focus. Touch screens

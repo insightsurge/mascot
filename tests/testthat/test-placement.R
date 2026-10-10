@@ -1,11 +1,11 @@
 describe("mascot_placement()", {
-  it("normalises every shortcut to one position and keeps inline the default", {
+  it("normalises every shortcut to one position and floats bottom-right by default", {
     expect_identical(
       mascot_placement(),
-      structure(list(position = "inline", minimise = FALSE, drag = FALSE), class = "mascot_placement")
+      structure(list(position = "bottom-right", minimise = FALSE, drag = FALSE), class = "mascot_placement")
     )
-    expect_identical(as_placement_arg("inline", environment()), mascot_placement())
-    expect_identical(as_placement_arg("floating", environment()), mascot_placement("bottom-right"))
+    expect_identical(as_placement_arg("inline", environment()), mascot_placement("inline"))
+    expect_identical(as_placement_arg("floating", environment()), mascot_placement())
     for (corner in c("top-left", "top-right", "bottom-left", "bottom-right")) {
       expect_identical(as_placement_arg(corner, environment()), mascot_placement(corner))
     }
@@ -15,6 +15,14 @@ describe("mascot_placement()", {
     )
     expect_identical(as_placement_arg(list(), environment()), mascot_placement())
     expect_identical(
+      as_placement_arg(list(minimise = TRUE), environment()),
+      mascot_placement("bottom-right", minimise = TRUE)
+    )
+    expect_identical(
+      as_placement_arg(list(drag = "snap"), environment()),
+      mascot_placement("bottom-right", drag = "snap")
+    )
+    expect_identical(
       as_placement_arg(mascot_placement("bottom-right", minimise = TRUE), environment()),
       mascot_placement("bottom-right", minimise = TRUE)
     )
@@ -22,6 +30,10 @@ describe("mascot_placement()", {
   it("sends the browser's floating, corner and minimise fields", {
     expect_identical(
       placement_wire(mascot_placement()),
+      list(floating = TRUE, position = "bottom-right", minimise = FALSE, drag = FALSE)
+    )
+    expect_identical(
+      placement_wire(mascot_placement("inline")),
       list(floating = FALSE, position = "bottom-right", minimise = FALSE, drag = FALSE)
     )
     expect_identical(
@@ -41,7 +53,7 @@ describe("mascot_placement()", {
     for (x in list(NULL, NA_character_, 1, "left", "floating", c("top-left", "top-right"))) {
       expect_error(mascot_placement(position = x), "position")
     }
-    expect_error(mascot_placement(minimise = TRUE), "needs a corner")
+    expect_error(mascot_placement("inline", minimise = TRUE), "needs a corner")
     for (x in list(
       NULL,
       NA,
@@ -49,14 +61,13 @@ describe("mascot_placement()", {
       "fixed",
       list(snap = TRUE),
       list(floating = TRUE),
-      list(minimise = TRUE),
       list(position = "inline", minimise = TRUE),
       list(TRUE),
       structure(list("top-left", "top-right"), names = c("position", "position"))
     )) {
       expect_error(as_placement_arg(x, environment()), "placement|minimise")
     }
-    bad <- mascot_placement()
+    bad <- mascot_placement("inline")
     bad$minimise <- TRUE
     expect_error(as_placement_arg(bad, environment()), "corner")
     bad <- mascot_placement()
@@ -70,7 +81,7 @@ describe("mascot_placement()", {
     expect_error(as_placement_arg(list(position = "top-left", minimise = NA), environment()), "minimise.*TRUE or FALSE")
     expect_error(as_placement_arg(structure(1, class = "mascot_placement"), environment()), "placement")
     expect_snapshot(error = TRUE, mascot_placement("left"))
-    expect_snapshot(error = TRUE, mascot_placement(minimise = TRUE))
+    expect_snapshot(error = TRUE, mascot_placement("inline", minimise = TRUE))
   })
   it("accepts drag modes with a corner, in the helper and the named-list shortcut", {
     expect_identical(mascot_placement("top-left", drag = "snap")$drag, "snap")
@@ -94,11 +105,11 @@ describe("mascot_placement()", {
     }
     expect_error(mascot_placement("bottom-right", drag = TRUE), "TRUE.*not accepted")
     expect_error(mascot_placement("bottom-right", drag = "fixed"), "\"fixed\" is not a drag mode")
-    expect_error(mascot_placement(drag = "snap"), "needs a corner")
+    expect_error(mascot_placement("inline", drag = "snap"), "needs a corner")
     expect_error(mascot_placement("inline", drag = "free"), "cannot be dragged")
     expect_error(abort_drag("left", NULL), "call")
     for (x in list(
-      list(drag = "snap"),
+      list(position = "inline", drag = "snap"),
       list(position = "inline", drag = "free"),
       list(position = "top-left", drag = TRUE),
       list(position = "top-left", drag = "fixed"),
@@ -111,7 +122,7 @@ describe("mascot_placement()", {
     expect_match(placement_problem(list(position = "top-left", drag = TRUE)), "got TRUE. Use \"snap\"")
     expect_match(placement_problem(list(position = "top-left", drag = "fixed")), 'got "fixed".$')
     expect_match(placement_problem(list(position = "inline", drag = "snap")), "cannot be dragged")
-    bad <- mascot_placement()
+    bad <- mascot_placement("inline")
     bad$drag <- "snap"
     expect_match(placement_problem(bad), "drag needs a corner")
     old <- mascot_placement("top-left")
@@ -119,7 +130,7 @@ describe("mascot_placement()", {
     expect_match(placement_problem(old), "position, minimise and drag fields")
     expect_snapshot(error = TRUE, mascot_placement("bottom-right", drag = TRUE))
     expect_snapshot(error = TRUE, mascot_placement("bottom-right", drag = "fixed"))
-    expect_snapshot(error = TRUE, mascot_placement(drag = "snap"))
+    expect_snapshot(error = TRUE, mascot_placement("inline", drag = "snap"))
     expect_snapshot(error = TRUE, mascot(id = "a", placement = list(position = "top-left", drag = TRUE)))
   })
   it("writes the drag mode for the browser and drops it for inline mascots", {

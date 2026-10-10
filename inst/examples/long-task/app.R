@@ -36,7 +36,7 @@ ui <- page_fluid(
     ),
     card(
       h2("Task status"),
-      mascot(id = "helper", status = "Ready to review")
+      mascot(id = "helper", status = "Ready to review", placement = "inline")
     )
   )
 )

@@ -1,5 +1,6 @@
 # mascot 0.0.2.9000
 
+* Floating mascots show a minimise button by default, and a minimised mascot can be dragged; on an inline mascot minimise and drag have no effect and say so in a message instead of an error (#229).
 * `mascot()` and `mascot_placement()` float in the bottom-right corner by default, as an assistant in the corner of the app; use `placement = "inline"` to place a mascot in the page (#223).
 * `mascot_placement()` gains `drag`: visitors can drag a floating mascot, which snaps to the nearest corner or stays where dropped; the server receives `input$<id>_position` (#220).
 * `mascot_size()` loses `simplify_when_small`, and characters no longer have a separate small-size drawing: below 72 pixels the simplified face looked worse than the full one, so every size now draws the full character (#219).

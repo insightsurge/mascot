@@ -3,7 +3,7 @@
     Code
       cat(html)
     Output
-      <div class="mascot" id="helper" tabindex="-1" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-floating="true" data-position="bottom-right" data-minimise="false" data-drag="false" data-reduced="auto" data-swap="true">
+      <div class="mascot" id="helper" tabindex="-1" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-floating="true" data-position="bottom-right" data-minimise="true" data-drag="false" data-reduced="auto" data-swap="true">
         <script type="application/json" data-mascot-character="tessa">[character JSON]</script>
         <canvas class="mascot-canvas" role="img" tabindex="0" aria-label="Tessa, idle"></canvas>
         <div class="mascot-status" role="status">Idle</div>
@@ -66,6 +66,34 @@
       Error in `mascot()`:
       ! `character` must be one of "tessa".
       x "typo" is not a character.
+
+# mascot() size and placement / silently disables inline defaults and informs about explicit list controls
+
+    Code
+      invisible(mascot(id = "a", placement = list(position = "inline", minimise = TRUE)))
+    Message
+      `minimise` has no effect on an inline mascot.
+
+---
+
+    Code
+      invisible(mascot(id = "a", placement = list(position = "inline", drag = "snap")))
+    Message
+      `drag` has no effect on an inline mascot.
+
+---
+
+    Code
+      invisible(mascot(id = "a", placement = mascot_placement("inline", minimise = TRUE)))
+    Message
+      `minimise` has no effect on an inline mascot.
+
+---
+
+    Code
+      invisible(mascot(id = "a", placement = mascot_placement("inline", drag = "free")))
+    Message
+      `drag` has no effect on an inline mascot.
 
 # mascot() themes / embeds both palettes with auto by default and preserves explicit modes
 

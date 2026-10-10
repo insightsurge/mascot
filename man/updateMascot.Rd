@@ -47,7 +47,12 @@ in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves the size un
 \item{placement}{A shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}} object, as
 in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves placement unchanged. Size and
 placement changes keep the mounted engine, its mood and character. A new
-placement replaces any position the visitor dragged the mascot to.}
+placement replaces any position the visitor dragged the mascot to.
+Floating placement shows a minimise control by default; dragging is off.
+Inline placement ignores \code{minimise} and \code{drag}: explicitly supplied values
+give an informational message, defaults stay silent, and the update is sent.
+With dragging enabled, the minimised restore button can also be dragged;
+a click restores it, and a drag leaves it minimised in its new position.}
 
 \item{theme}{A theme in the forms accepted by \code{\link[=mascot]{mascot()}}. \code{NULL} (the
 default) leaves the theme unchanged; \code{mascot_theme()} restores the

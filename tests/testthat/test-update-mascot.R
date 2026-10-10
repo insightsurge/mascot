@@ -422,7 +422,7 @@ describe("updateMascot() size and placement", {
           id = "proxy1-helper",
           patch = list(
             size = list(size = "20%", small_screen = NULL),
-            placement = list(floating = TRUE, position = "top-left", minimise = FALSE, drag = FALSE)
+            placement = list(floating = TRUE, position = "top-left", minimise = TRUE, drag = FALSE)
           )
         )
       )
@@ -437,7 +437,7 @@ describe("updateMascot() size and placement", {
       updateMascot("helper", placement = mascot_placement("top-left", drag = "free"), session = session)
       expect_identical(
         captured$messages[[3]]$patch,
-        list(placement = list(floating = TRUE, position = "top-left", minimise = FALSE, drag = "free"))
+        list(placement = list(floating = TRUE, position = "top-left", minimise = TRUE, drag = "free"))
       )
       updateMascot("helper", placement = list(position = "bottom-left", drag = "snap"), session = session)
       expect_identical(captured$messages[[4]]$patch$placement$drag, "snap")
@@ -462,21 +462,16 @@ describe("updateMascot() size and placement", {
       # A helper built before simplify_when_small was removed carries an extra field.
       bad_fields <- mascot_size()
       bad_fields$simplify_when_small <- TRUE
-      bad_place <- mascot_placement("inline")
-      bad_place$minimise <- TRUE
       for (x in list(23, Inf, "24px", bad_size, bad_fields)) {
         expect_warning(updateMascot("a", size = x, mood = "happy"), "unchanged")
       }
+      bad_place <- mascot_placement("inline")
+      bad_place$minimise <- NA
       bad_drag <- mascot_placement("inline")
-      bad_drag$drag <- "snap"
+      bad_drag$drag <- "fixed"
       for (x in list("fixed", list(floating = TRUE, snap = TRUE), bad_place, bad_drag)) {
         expect_warning(updateMascot("a", placement = x, status = "Saved"), "unchanged")
       }
-      # Like minimise, drag needs a corner: an inline mascot warns and stays unchanged.
-      expect_warning(
-        updateMascot("a", placement = list(position = "inline", drag = "snap")),
-        "unchanged.*cannot be dragged"
-      )
       expect_warning(
         updateMascot("a", placement = list(position = "top-left", drag = TRUE)),
         "unchanged.*drag.*got TRUE"
@@ -490,6 +485,44 @@ describe("updateMascot() size and placement", {
       expect_warning(updateMascot("a", size = 1, placement = "fixed", mood = "happy"), "unchanged")
       expect_named(captured$patches[[1]], "problem")
       expect_match(captured$patches[[1]]$problem, "size.*placement")
+    })
+  })
+  it("informs about explicit inline controls and still sends the complete update", {
+    captured <- new.env(parent = emptyenv())
+    captured$patches <- list()
+    local_mocked_bindings(send_update = function(session, id, patch) {
+      captured$patches[[length(captured$patches) + 1L]] <- patch
+    })
+    shiny::testServer(function(input, output, session) {}, {
+      wire <- list(floating = FALSE, position = "bottom-right", minimise = FALSE, drag = FALSE)
+      for (placement in list("inline", mascot_placement("inline"), list(position = "inline"))) {
+        expect_silent(updateMascot("a", placement = placement, session = session))
+        expect_identical(tail(captured$patches, 1)[[1]], list(placement = wire))
+      }
+      for (controls in list(
+        list(minimise = TRUE),
+        list(minimise = FALSE),
+        list(drag = "snap"),
+        list(drag = "free"),
+        list(drag = FALSE)
+      )) {
+        before <- length(captured$patches)
+        expect_message(
+          updateMascot("a", placement = c(list(position = "inline"), controls), status = "Saved", session = session),
+          paste0(names(controls), ".*no effect.*inline"),
+          class = "mascot_placement_ignored"
+        )
+        expect_length(captured$patches, before + 1L)
+        patch <- tail(captured$patches, 1)[[1]]
+        expect_identical(patch$placement, wire)
+        expect_identical(patch$status$text, "Saved")
+        expect_null(patch$problem)
+      }
+      expect_snapshot(updateMascot("a", placement = list(position = "inline", minimise = TRUE), session = session))
+      expect_snapshot(updateMascot("a", placement = list(position = "inline", drag = "snap"), session = session))
+      expect_snapshot(updateMascot("a", placement = mascot_placement("inline", minimise = TRUE), session = session))
+      expect_snapshot(updateMascot("a", placement = mascot_placement("inline", drag = "free"), session = session))
+      expect_identical(tail(captured$patches, 1)[[1]], list(placement = wire))
     })
   })
 })

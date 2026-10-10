@@ -25,7 +25,10 @@
 #' @param placement `"bottom-right"` (the default), `"floating"`, `"inline"`, a corner
 #'   such as `"top-left"`, a named list such as `list(position = "top-left",
 #'   minimise = TRUE, drag = "snap")`, or a [mascot_placement()] object.
-#'   `minimise` and `drag` need a corner. With `drag`, each drop sets
+#'   Floating mascots show a minimise control by default; dragging is off.
+#'   Inline mascots ignore `minimise` and `drag`, with an informational message
+#'   for explicitly supplied values and silence for defaults. With `drag`,
+#'   visitors can also drag the minimised restore button; each drop sets
 #'   `input$<id>_position` to the corner (`"snap"`) or a list with `x` and `y`
 #'   (`"free"`); saving it between visits is the app's job. See
 #'   [mascot_placement()]. `NULL` is not accepted.
@@ -113,6 +116,7 @@ mascot <- function(
   motion <- as_motion_arg(motion, environment())
   popup_menu <- as_popup_menu_arg(popup_menu, environment())
   mode <- if (is.null(status$text)) "mood" else "custom"
+  placement_fields <- placement_wire(placement)
   tag <- htmltools::tags$div(
     class = "mascot",
     id = id,
@@ -122,10 +126,10 @@ mascot <- function(
     `data-status` = mode,
     `data-size` = size$size,
     `data-small-screen` = size$small_screen,
-    `data-floating` = tolower(as.character(placement_wire(placement)$floating)),
-    `data-position` = placement_wire(placement)$position,
-    `data-minimise` = tolower(as.character(placement$minimise)),
-    `data-drag` = tolower(as.character(placement$drag)),
+    `data-floating` = tolower(as.character(placement_fields$floating)),
+    `data-position` = placement_fields$position,
+    `data-minimise` = tolower(as.character(placement_fields$minimise)),
+    `data-drag` = tolower(as.character(placement_fields$drag)),
     `data-reduced` = if (is.null(motion$reduced)) "auto" else "true",
     `data-swap` = tolower(as.character(motion$swap)),
     htmltools::tags$script(

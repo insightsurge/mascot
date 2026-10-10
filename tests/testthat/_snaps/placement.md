@@ -1,4 +1,4 @@
-# mascot_placement() / checks positions, flags, unknown fields and minimising an inline mascot
+# mascot_placement() / checks positions, flags and unknown fields
 
     Code
       mascot_placement("left")
@@ -7,16 +7,7 @@
       ! `position` must be one of "inline", "top-left", "top-right", "bottom-left", or "bottom-right".
       x "left" is not a position.
 
----
-
-    Code
-      mascot_placement("inline", minimise = TRUE)
-    Condition
-      Error in `mascot_placement()`:
-      ! `minimise` needs a corner `position`; an inline mascot cannot be minimised.
-      i Use `mascot_placement("bottom-right", minimise = TRUE)`.
-
-# mascot_placement() / rejects TRUE, unknown and malformed drag values and dragging an inline mascot
+# mascot_placement() / rejects TRUE, unknown and malformed drag values
 
     Code
       mascot_placement("bottom-right", drag = TRUE)
@@ -39,16 +30,29 @@
 ---
 
     Code
-      mascot_placement("inline", drag = "snap")
-    Condition
-      Error in `mascot_placement()`:
-      ! `drag` needs a corner `position`; an inline mascot cannot be dragged.
-      i Use `mascot_placement("bottom-right", drag = "snap")`.
-
----
-
-    Code
       mascot(id = "a", placement = list(position = "top-left", drag = TRUE))
     Condition
       Error in `mascot()`:
       ! `placement$drag` must be FALSE, "snap" or "free"; got TRUE. Use "snap" to move to the nearest corner or "free" to stay where dropped.
+
+# mascot_placement() / silently disables inline defaults and informs about each explicit control
+
+    Code
+      invisible(mascot_placement("inline", minimise = TRUE))
+    Message
+      `minimise` has no effect on an inline mascot.
+
+---
+
+    Code
+      invisible(mascot_placement("inline", drag = "snap"))
+    Message
+      `drag` has no effect on an inline mascot.
+
+---
+
+    Code
+      invisible(mascot_placement("inline", minimise = TRUE, drag = "free"))
+    Message
+      `minimise` has no effect on an inline mascot.
+      `drag` has no effect on an inline mascot.

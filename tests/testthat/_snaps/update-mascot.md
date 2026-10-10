@@ -26,3 +26,34 @@
       Error in `updateMascot()`:
       ! `session` must be named; a Shiny session was supplied to `size`.
 
+# updateMascot() size and placement / informs about explicit inline controls and still sends the complete update
+
+    Code
+      updateMascot("a", placement = list(position = "inline", minimise = TRUE),
+      session = session)
+    Message
+      `minimise` has no effect on an inline mascot.
+
+---
+
+    Code
+      updateMascot("a", placement = list(position = "inline", drag = "snap"),
+      session = session)
+    Message
+      `drag` has no effect on an inline mascot.
+
+---
+
+    Code
+      updateMascot("a", placement = mascot_placement("inline", minimise = TRUE),
+      session = session)
+    Message
+      `minimise` has no effect on an inline mascot.
+
+---
+
+    Code
+      updateMascot("a", placement = mascot_placement("inline", drag = "free"),
+      session = session)
+    Message
+      `drag` has no effect on an inline mascot.

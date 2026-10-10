@@ -1,4 +1,4 @@
-# mascot_size() / rejects every invalid size and flag with a useful message
+# mascot_size() / rejects every invalid size with a useful message
 
     Code
       mascot_size("24px")

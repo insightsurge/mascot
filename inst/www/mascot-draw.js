@@ -38,17 +38,9 @@
     return `rgba(${channels[0]}, ${channels[1]}, ${channels[2]}, ${alpha * (channels[3] === undefined ? 1 : channels[3])})`;
   }
 
-  // Minimum screen width uses the smaller singular value of the current canvas transform.
-  function stroke(g, minimum = 0, cap = 'round', join = 'miter') {
+  function stroke(g, cap = 'round', join = 'miter') {
     g.lineCap = cap;
     g.lineJoin = join;
-    if (minimum) {
-      const { a, b, c, d } = g.getTransform();
-      const sum = a * a + b * b + c * c + d * d;
-      const largest = Math.sqrt((sum + Math.sqrt(Math.max(0, sum * sum - 4 * (a * d - b * c) ** 2))) / 2);
-      const scale = largest ? Math.abs(a * d - b * c) / largest : 0;
-      if (scale) g.lineWidth = Math.max(g.lineWidth, minimum / scale);
-    }
     g.stroke();
   }
 
@@ -133,7 +125,7 @@
   }
 
   /** Fill plus a cartoon outline for the current path. */
-  function fs(ctx, fill, lw, outline, minimum = 0) {
+  function fs(ctx, fill, lw, outline) {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     if (fill) {
@@ -142,7 +134,7 @@
     }
     ctx.lineWidth = lw === undefined ? 2.5 : lw;
     ctx.strokeStyle = outline;
-    stroke(ctx, minimum, 'round', 'round');
+    stroke(ctx, 'round', 'round');
   }
 
   /** A colour from the character's colours, by role, with an optional alpha. */
@@ -157,7 +149,7 @@
    * shape: 'hexagon' (r, corner), 'path' (d), 'circle' (x, y, r), 'roundRect' (x, y, w, h, r), 'rect' (x, y, w, h;
    * fill only). round: true sets round joins and caps first, like a cartoon outline.
    */
-  function drawPart(g, c, part, minimum = 0) {
+  function drawPart(g, c, part) {
     if (part.shape === 'rect') {
       g.fillStyle = colour(c, part.fill, part.alpha);
       g.fillRect(part.x, part.y, part.w, part.h);
@@ -181,13 +173,12 @@
     if (part.stroke) {
       g.strokeStyle = colour(c, part.stroke);
       g.lineWidth = part.lineWidth === undefined ? 2.5 : part.lineWidth;
-      stroke(g, minimum, part.round ? 'round' : 'butt', part.round ? 'round' : 'miter');
+      stroke(g, part.round ? 'round' : 'butt', part.round ? 'round' : 'miter');
     }
   }
 
   // Pose fields every character understands; a character's own `pose` and `moods` change them.
   const DEFAULT_POSE = {
-    detail: 'full',
     scale: 1,
     sx: 1,
     sy: 1,
@@ -258,7 +249,6 @@
     eyes: ['open', 'wide', 'happy', 'blink', 'wink', 'focused', 'worried'],
     mouth: ['smile', 'smirk', 'proud', 'flat', 'grit', 'determined', 'o', 'grin'],
     brows: ['none', 'neutral', 'raised', 'determined', 'angry', 'frown', 'worried', 'sad'],
-    hide: ['lashes', 'highlight', 'blush', 'sweat', 'accessories', 'shadow', 'sparkle', 'brows'],
     shape: ['hexagon', 'path', 'circle', 'roundRect', 'rect'],
     anchor: [
       'hair',
@@ -308,7 +298,6 @@
       eyes: names.eyes,
       mouth: names.mouth,
       brows: names.brows,
-      detail: ['full', 'simple'],
       feet: ['auto', 'stand', 'tuck'],
     })) {
       if (p[key] !== undefined && p[key] !== null && !choices.includes(p[key]))
@@ -321,13 +310,9 @@
       throw new Error(`mascot: ${field}.arms '${p.arms}' is not an arm preset`);
     accessories(ch, p, field);
   }
-  // Required small block: faceScale multiplies the normal face frame; minLineWidth is in screen pixels.
-  // hide lists optional features to omit. Parts marked detail: 'full' are also omitted, without role checks.
   // Accessories: { parts, slot, anchor = 'hair', colours = {}, side = 'R' }; side selects paired anchors.
   // face.outline sets leftCap/rightCap/join explicitly (defaults: round/round/miter).
   const styles = new WeakMap();
-  const hidden = (ch, p, name) => p.detail === 'simple' && ch.small.hide.includes(name);
-  const visible = (part, p) => p.detail !== 'simple' || part.detail !== 'full';
   function armAngles(ch, p) {
     if (!Object.hasOwn(ch.arms.presets, p.arms)) throw new Error(`mascot: pose.arms '${p.arms}' is not an arm preset`);
     const preset = ch.arms.presets[p.arms];
@@ -352,7 +337,7 @@
       g.beginPath();
       g.moveTo(ex, ey);
       g.lineTo(ex + ux * style.length, ey + uy * style.length);
-      stroke(g, f.minimum);
+      stroke(g);
     }
   }
 
@@ -363,7 +348,7 @@
     g.lineCap = 'round';
     g.beginPath();
     g.arc(cx, cy + style.y, style.r, Math.PI * style.start, Math.PI * style.end, false);
-    stroke(g, f.minimum);
+    stroke(g);
     if (f.lashes) lashes(g, f, s, cx, cy + style.lashY, style.lashW, style.lashH, 2);
   }
 
@@ -374,7 +359,7 @@
     g.lineCap = 'round';
     g.beginPath();
     g.arc(cx, cy + style.y, style.r, Math.PI * style.start, Math.PI * style.end, false);
-    stroke(g, f.minimum);
+    stroke(g);
     if (f.lashes) lashes(g, f, s, cx, cy + style.lashY, style.lashW, style.lashH, 2);
   }
 
@@ -388,7 +373,7 @@
     g.fill();
     g.strokeStyle = c.feature;
     g.lineWidth = 2.5;
-    stroke(g, f.minimum, s === -1 ? f.outline.leftCap : f.outline.rightCap, f.outline.join);
+    stroke(g, s === -1 ? f.outline.leftCap : f.outline.rightCap, f.outline.join);
     g.beginPath();
     g.ellipse(0, 0, o.ew - 1, o.eh - 1, 0, 0, 7);
     g.clip();
@@ -399,15 +384,13 @@
     g.beginPath();
     g.arc(px, py, pr, 0, 7);
     g.fill();
-    if (!f.hideHighlight) {
-      g.fillStyle = c.shine;
-      g.beginPath();
-      g.arc(px + pr * 0.35, py - pr * 0.35, pr * 0.4, 0, 7);
-      g.fill();
-      g.beginPath();
-      g.arc(px - pr * 0.35, py + pr * 0.35, pr * 0.22, 0, 7);
-      g.fill();
-    }
+    g.fillStyle = c.shine;
+    g.beginPath();
+    g.arc(px + pr * 0.35, py - pr * 0.35, pr * 0.4, 0, 7);
+    g.fill();
+    g.beginPath();
+    g.arc(px - pr * 0.35, py + pr * 0.35, pr * 0.22, 0, 7);
+    g.fill();
     if (o.lid > 0) {
       // half-lid (focused) or blink
       const ly = -o.eh * 1.2 + o.eh * 2.4 * o.lid;
@@ -418,7 +401,7 @@
       g.beginPath();
       g.moveTo(-o.ew * 1.2, ly + s * (o.slant || 0));
       g.lineTo(o.ew * 1.2, ly - s * (o.slant || 0));
-      stroke(g, f.minimum, s === -1 ? f.outline.leftCap : f.outline.rightCap, f.outline.join);
+      stroke(g, s === -1 ? f.outline.leftCap : f.outline.rightCap, f.outline.join);
     }
     g.restore();
     if (f.lashes) lashes(g, f, s, cx, cy, o.ew, o.eh, 3);
@@ -458,7 +441,7 @@
     }
     let br = p.brows;
     if (br === null || br === undefined) br = kind === 'worried' ? 'worried' : kind === 'focused' ? 'frown' : 'none';
-    if (!f.hideBrows && br && br !== 'none' && kind !== 'happy') {
+    if (br && br !== 'none' && kind !== 'happy') {
       g.strokeStyle = f.c.feature;
       const b = f.style.brows;
       g.lineWidth = br === 'neutral' ? b.neutralLineWidth : b.lineWidth;
@@ -480,7 +463,7 @@
           g.moveTo(s * (SP + b.raisedWidth), yy + b.raisedY);
           g.quadraticCurveTo(s * SP, yy + b.raisedControlY, s * (SP - b.raisedWidth), yy + b.raisedY);
         }
-        stroke(g, f.minimum);
+        stroke(g);
       }
     }
   }
@@ -497,34 +480,34 @@
     if (m === 'smile') {
       g.beginPath();
       g.arc(0, my, 13, 0.15 * Math.PI, 0.85 * Math.PI, false);
-      stroke(g, f.minimum);
+      stroke(g);
     } else if (m === 'smirk') {
       g.beginPath();
       g.moveTo(-8, my + 2);
       g.quadraticCurveTo(0, my + 9, 9, my);
-      stroke(g, f.minimum);
+      stroke(g);
     } else if (m === 'proud') {
       g.beginPath();
       g.moveTo(-14, my + 3);
       g.quadraticCurveTo(0, my + 15, 15, my - 1);
-      stroke(g, f.minimum);
+      stroke(g);
       g.lineWidth = 2.5;
       g.beginPath();
       g.moveTo(16, my - 6);
       g.lineTo(18, my - 1);
-      stroke(g, f.minimum);
+      stroke(g);
     } else if (m === 'flat') {
       g.beginPath();
       g.moveTo(-11, my + 8);
       g.lineTo(11, my + 8);
-      stroke(g, f.minimum);
+      stroke(g);
     } else if (m === 'grit' || m === 'determined') {
       g.beginPath();
       g.moveTo(-14, my + 3);
       g.lineTo(-5, my);
       g.lineTo(5, my + 4);
       g.lineTo(14, my + 1);
-      stroke(g, f.minimum);
+      stroke(g);
     } else if (m === 'o') {
       g.beginPath();
       g.ellipse(0, my + 5, 10, 15, 0, 0, 7);
@@ -538,7 +521,7 @@
       g.arc(0, my, 16, 0, Math.PI, false);
       g.closePath();
       g.fill();
-      stroke(g, f.minimum);
+      stroke(g);
       g.fillStyle = c.teeth;
       g.fillRect(-13, my, 26, 6);
     }
@@ -569,13 +552,11 @@
     g.bezierCurveTo(-9, 6, -8, -4, 0, -11);
     g.closePath();
     g.fill();
-    stroke(g, p.minimum);
-    if (p.detail !== 'simple') {
-      g.fillStyle = c.shine;
-      g.beginPath();
-      g.arc(2.5, 2.5, 2.2, 0, 7);
-      g.fill();
-    }
+    stroke(g);
+    g.fillStyle = c.shine;
+    g.beginPath();
+    g.arc(2.5, 2.5, 2.2, 0, 7);
+    g.fill();
     g.restore();
   }
 
@@ -591,30 +572,28 @@
       g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
     }
     g.closePath();
-    fs(g, c.sparkle, 1.6, c.sparkleOutline, p.minimum);
+    fs(g, c.sparkle, 1.6, c.sparkleOutline);
     g.restore();
   }
 
   // A head accessory: the character's own parts, placed at its head anchor.
-  function drawAccessory(g, c, at, parts, p) {
+  function drawAccessory(g, c, at, parts) {
     g.save();
     g.translate(at.x, at.y);
     g.rotate(at.rotate || 0);
     g.scale(at.scale === undefined ? 1 : at.scale, at.scale === undefined ? 1 : at.scale);
-    for (const part of parts) {
-      if (visible(part, p)) drawPart(g, c, part, p.minimum);
-    }
+    for (const part of parts) drawPart(g, c, part);
     g.restore();
   }
 
-  function paw(g, c, x, y, r, minimum = 0) {
+  function paw(g, c, x, y, r) {
     g.fillStyle = c.limb;
     g.strokeStyle = c.outline;
     g.lineWidth = 2.5;
     g.beginPath();
     g.arc(x, y, r, 0, 7);
     g.fill();
-    stroke(g, minimum, 'round', 'round');
+    stroke(g, 'round', 'round');
   }
 
   /**
@@ -699,7 +678,6 @@
     const g = ctx;
     const c = colours || ch.colours;
     const sc = p.scale;
-    p = { ...p, minimum: p.detail === 'simple' ? ch.small.minLineWidth : 0 };
     if (!styles.has(ch))
       styles.set(ch, {
         style: faceStyle(ch.face.style),
@@ -710,15 +688,12 @@
       outline: styles.get(ch).outline,
       eyes: ch.face.eyes,
       mouth: ch.face.mouth,
-      lashes: ch.face.lashes && !hidden(ch, p, 'lashes'),
-      minimum: p.minimum,
-      hideBrows: hidden(ch, p, 'brows'),
-      hideHighlight: hidden(ch, p, 'highlight'),
+      lashes: ch.face.lashes,
       style: styles.get(ch).style,
     };
 
     // ground shadow (not affected by squash, shrinks and fades with height)
-    if (!hidden(ch, p, 'shadow') && p.shadow && ch.shadow && visible(ch.shadow, p)) {
+    if (p.shadow && ch.shadow) {
       const shade = ch.shadow;
       const k = 1 / (1 + p.lift / 200);
       g.save();
@@ -737,12 +712,12 @@
 
     // A. feet
     const feet = ch.feet;
-    if (feet && visible(feet, p)) {
+    if (feet) {
       const tuck = p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6);
       g.fillStyle = c.limb;
       g.strokeStyle = c.outline;
       g.lineWidth = feet.lineWidth;
-      if (tuck && visible(feet.tuck, p) && visible(feet.tuck.rect, p)) {
+      if (tuck) {
         const ft = feet.tuck;
         for (const s of [-1, 1]) {
           g.save();
@@ -751,28 +726,25 @@
           g.beginPath();
           g.roundRect(ft.rect.x, ft.rect.y, ft.rect.w, ft.rect.h, ft.rect.r);
           g.fill();
-          stroke(g, p.minimum, 'butt');
+          stroke(g, 'butt');
           g.restore();
         }
       } else if (!tuck) {
         for (const f of feet.stand) {
-          if (!visible(f, p)) continue;
           g.beginPath();
           g.roundRect(f.x, f.y, f.w, f.h, f.r);
           g.fill();
-          stroke(g, p.minimum, 'butt');
+          stroke(g, 'butt');
         }
       }
     }
 
     // B. body
-    for (const part of ch.body) {
-      if (visible(part, p)) drawPart(g, c, part, p.minimum);
-    }
+    for (const part of ch.body) drawPart(g, c, part);
 
     // C. face
     const at = Object.hasOwn(ch.anchors || {}, 'face') ? ch.anchors.face : {};
-    const faceScale = (at.scale === undefined ? 1 : at.scale) * (p.detail === 'simple' ? ch.small.faceScale : 1);
+    const faceScale = at.scale === undefined ? 1 : at.scale;
     const framed = (at.x || 0) !== 0 || (at.y || 0) !== 0 || (at.rotate || 0) !== 0 || faceScale !== 1;
     g.save();
     if (framed) {
@@ -780,56 +752,47 @@
       if (at.rotate) g.rotate(at.rotate);
       g.scale(faceScale, faceScale);
     }
-    if (p.blush && ch.face.blush && !hidden(ch, p, 'blush')) drawBlush(g, c, ch.face.blush, p.blush);
+    if (p.blush && ch.face.blush) drawBlush(g, c, ch.face.blush, p.blush);
     drawEyes(g, face, p);
     drawMouth(g, face, p);
     g.restore();
 
     // D. accessory, sparkle, sweat
-    if (!hidden(ch, p, 'accessories')) {
-      for (const item of accessories(ch, p)) {
-        const anchor = item.anchor || 'hair';
-        const side = item.side || 'R';
-        let at = ch.anchors[anchor];
-        const sign = side === 'L' ? -1 : 1;
-        if (anchor === 'hands') {
-          const angle = armAngles(ch, p)[side];
-          const shoulder = ch.anchors.shoulders;
+    for (const item of accessories(ch, p)) {
+      const anchor = item.anchor || 'hair';
+      const side = item.side || 'R';
+      let at = ch.anchors[anchor];
+      const sign = side === 'L' ? -1 : 1;
+      if (anchor === 'hands') {
+        const angle = armAngles(ch, p)[side];
+        const shoulder = ch.anchors.shoulders;
+        at = {
+          x: sign * shoulder.x + Math.cos(angle) * ch.arms.paw.offset,
+          y: shoulder.y + Math.sin(angle) * ch.arms.paw.offset,
+          rotate: angle,
+        };
+      } else if (anchor === 'shoulders' || anchor === 'feet') {
+        at = { ...at, x: sign * at.x };
+        if (anchor === 'feet' && ch.feet && (p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6))) {
+          const ft = ch.feet.tuck;
+          const angle = -sign * ft.rotate;
+          const x = ft.rect.x + ft.rect.w / 2;
+          const y = ft.rect.y + ft.rect.h;
           at = {
-            x: sign * shoulder.x + Math.cos(angle) * ch.arms.paw.offset,
-            y: shoulder.y + Math.sin(angle) * ch.arms.paw.offset,
+            x: sign * ft.x + x * Math.cos(angle) - y * Math.sin(angle),
+            y: ft.y + x * Math.sin(angle) + y * Math.cos(angle),
             rotate: angle,
           };
-        } else if (anchor === 'shoulders' || anchor === 'feet') {
-          at = { ...at, x: sign * at.x };
-          if (anchor === 'feet' && ch.feet && (p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6))) {
-            const ft = ch.feet.tuck;
-            const angle = -sign * ft.rotate;
-            const x = ft.rect.x + ft.rect.w / 2;
-            const y = ft.rect.y + ft.rect.h;
-            at = {
-              x: sign * ft.x + x * Math.cos(angle) - y * Math.sin(angle),
-              y: ft.y + x * Math.sin(angle) + y * Math.cos(angle),
-              rotate: angle,
-            };
-          }
         }
-        drawAccessory(g, { ...c, ...item.colours }, at, item.parts, p);
       }
+      drawAccessory(g, { ...c, ...item.colours }, at, item.parts);
     }
-    if (
-      !hidden(ch, p, 'sparkle') &&
-      p.sparkle &&
-      Object.hasOwn(ch.anchors || {}, 'sparkle') &&
-      visible(ch.anchors.sparkle, p)
-    )
-      drawSparkle(g, c, ch.anchors.sparkle, p);
-    if (!hidden(ch, p, 'sweat') && Object.hasOwn(ch.anchors || {}, 'sweat') && visible(ch.anchors.sweat, p))
-      drawSweat(g, c, ch.anchors.sweat, p);
+    if (p.sparkle && Object.hasOwn(ch.anchors || {}, 'sparkle')) drawSparkle(g, c, ch.anchors.sparkle, p);
+    if (Object.hasOwn(ch.anchors || {}, 'sweat')) drawSweat(g, c, ch.anchors.sweat, p);
 
     // E. arms
     const arms = ch.arms;
-    if (arms && visible(arms, p)) {
+    if (arms) {
       const angles = armAngles(ch, p);
       const shoulder = ch.anchors.shoulders;
       const arm = (ax, ay, a) => {
@@ -837,8 +800,8 @@
         g.translate(ax, ay);
         g.rotate(a);
         rr(g, 0, -arms.width / 2, arms.length, arms.width, arms.width / 2);
-        fs(g, c.sleeve, 2.5, c.outline, p.minimum);
-        paw(g, c, arms.paw.offset, 0, arms.paw.r, p.minimum);
+        fs(g, c.sleeve, 2.5, c.outline);
+        paw(g, c, arms.paw.offset, 0, arms.paw.r);
         g.restore();
       };
       arm(-shoulder.x, shoulder.y, angles.L);

@@ -806,11 +806,10 @@ describe("mascot.host responsive size", {
     result <- host_layout(
       js,
       "return {css:el.querySelector('canvas').getBoundingClientRect().width,
-      backing:el.querySelector('canvas').width, detail:mascot.host.state(el).detail};"
+      backing:el.querySelector('canvas').width};"
     )
     expect_equal(result$css, 24)
     expect_equal(result$backing, 24)
-    expect_identical(result$detail, "simple")
   })
   it("keeps a usable backing size while hidden and redraws at double density on return", {
     skip_without_chrome()
@@ -862,23 +861,29 @@ describe("mascot.host responsive size", {
     expect_equal(result$mounts, 0)
     expect_identical(result$mood, "happy")
   })
-  it("passes simple detail to the real drawing path only below 72 pixels unless disabled", {
+  it("draws the full character at every size, with no small-size pose", {
     skip_without_chrome()
     js <- local_host_page()
     js(
-      "window.lastPose=null; const draw=mascot.draw;
-      mascot.draw=(ctx,ch,options)=>{lastPose=options.pose;return draw(ctx,ch,options);};
-      window.resizeTo = (size,simplify=true) => mascot.host.receive({id:'a',patch:{size:{size,
-        small_screen:null,simplify_when_small:simplify}}});"
+      "window.poses=[]; const draw=mascot.draw;
+      mascot.draw=(ctx,ch,options)=>{poses.push(options.pose);return draw(ctx,ch,options);};
+      window.resizeTo = size => mascot.host.receive({id:'a',patch:{size:{size,small_screen:null}}});"
     )
-    for (size in c(48, 32, 24, 71.5)) {
-      js(sprintf("resizeTo(%s)", size))
-      expect_identical(host_layout(js, "return lastPose.detail;"), "simple")
+    # Each size changes the backing canvas, so each one redraws.
+    for (size in c(48, 32, 24, 71, 160)) {
+      js(sprintf("poses.length=0; resizeTo(%s)", size))
+      result <- host_layout(
+        js,
+        "const el=document.getElementById('a');
+        return {drawn:poses.length>0, detail:poses.some(p=>Object.hasOwn(p,'detail')),
+        state:Object.hasOwn(mascot.host.state(el),'detail'),
+        attribute:el.hasAttribute('data-simplify-when-small')};"
+      )
+      expect_true(result$drawn, info = paste(size, "px"))
+      expect_false(result$detail, info = paste(size, "px"))
+      expect_false(result$state, info = paste(size, "px"))
+      expect_false(result$attribute, info = paste(size, "px"))
     }
-    js("resizeTo(72)")
-    expect_identical(host_layout(js, "return lastPose.detail;"), "full")
-    js("resizeTo(48,false)")
-    expect_identical(host_layout(js, "return lastPose.detail;"), "full")
   })
 })
 
@@ -961,7 +966,7 @@ describe("mascot.host floating placement", {
     js(
       "window.el=document.getElementById('a');window.mountCount=0;const mount=mascot.mount;
       mascot.mount=(...args)=>{mountCount++;return mount(...args);}; el.querySelector('.mascot-minimise').click();
-      mascot.host.receive({id:'a',patch:{mood:'happy',size:{size:64,small_screen:null,simplify_when_small:true},
+      mascot.host.receive({id:'a',patch:{mood:'happy',size:{size:64,small_screen:null},
       bubble:{text:'While minimised',html:false,duration:0.01,closable:true}}})"
     )
     result <- host_layout(
@@ -1006,12 +1011,12 @@ describe("mascot.host floating placement", {
     result <- js(
       "(() => {const el=document.getElementById('a'), before=JSON.stringify(mascot.host.state(el));
       const warnings=[]; console.warn=x=>warnings.push(x);
-      for(const bad of [{size:23,small_screen:null,simplify_when_small:true},
-        {size:'0%',small_screen:null,simplify_when_small:true}, {size:48,small_screen:null,simplify_when_small:true,typo:1}])
+      for(const bad of [{size:23,small_screen:null}, {size:'0%',small_screen:null},
+        {size:48,small_screen:null,simplify_when_small:true}])
         mascot.host.receive({id:'a',patch:{size:bad,mood:'happy'}});
       mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'top-left',minimise:false},mood:'happy'}});
-      mascot.host.receive({id:'late-layout',patch:{size:{size:1,small_screen:null,simplify_when_small:true},mood:'happy'}});
-      mascot.host.receive({id:'late-layout',patch:{size:{size:48,small_screen:null,simplify_when_small:true},
+      mascot.host.receive({id:'late-layout',patch:{size:{size:1,small_screen:null},mood:'happy'}});
+      mascot.host.receive({id:'late-layout',patch:{size:{size:48,small_screen:null},
         placement:{floating:true,position:'top-left',minimise:false}}});
       const next=el.cloneNode(true);next.id='late-layout';document.body.append(next);mascot.host.mount(next);
       return {same:before===JSON.stringify(mascot.host.state(el)), warnings:warnings.length,

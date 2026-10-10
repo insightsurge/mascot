@@ -4,7 +4,7 @@
 \alias{mascot_size}
 \title{Set a mascot's size}
 \usage{
-mascot_size(size = 160, small_screen = NULL, simplify_when_small = TRUE)
+mascot_size(size = 160, small_screen = NULL)
 }
 \arguments{
 \item{size}{A finite number of CSS pixels, at least \code{24}, or a positive
@@ -12,21 +12,16 @@ percentage string such as \code{"20\%"}. Defaults to \code{160}; \code{NULL} is 
 
 \item{small_screen}{A size in the same forms as \code{size}, or \code{NULL} (the default)
 to use \code{size} at every screen width.}
-
-\item{simplify_when_small}{A logical flag, defaulting to \code{TRUE}, to use the
-character's small-size drawing below 72 CSS pixels. \code{FALSE} keeps every layer,
-which may be hard to read. \code{NULL} is not accepted.}
 }
 \value{
-A \code{mascot_size} object with \code{size}, \code{small_screen} and
-\code{simplify_when_small} elements.
+A \code{mascot_size} object with \code{size} and \code{small_screen} elements.
 }
 \description{
 Percentage sizes follow the parent's content width when inline, and the window
 width when floating. The rendered canvas is never smaller than 24 CSS pixels.
 Screens at most 575.98 CSS pixels wide use \code{small_screen}, if supplied.
-Below 72 CSS pixels the character uses its small-size drawing by default.
-This keeps the face readable at 48 pixels; smaller drawings lose detail.
+The full character is drawn at every size; fine face details are harder to
+read at 32 and 24 pixels, so the status text carries the meaning.
 }
 \examples{
 mascot_size()

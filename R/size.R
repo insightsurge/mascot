@@ -3,17 +3,13 @@
 #' Percentage sizes follow the parent's content width when inline, and the window
 #' width when floating. The rendered canvas is never smaller than 24 CSS pixels.
 #' Screens at most 575.98 CSS pixels wide use `small_screen`, if supplied.
-#' Below 72 CSS pixels the character uses its small-size drawing by default.
-#' This keeps the face readable at 48 pixels; smaller drawings lose detail.
+#' The full character is drawn at every size; fine face details are harder to
+#' read at 32 and 24 pixels, so the status text carries the meaning.
 #' @param size A finite number of CSS pixels, at least `24`, or a positive
 #'   percentage string such as `"20%"`. Defaults to `160`; `NULL` is not accepted.
 #' @param small_screen A size in the same forms as `size`, or `NULL` (the default)
 #'   to use `size` at every screen width.
-#' @param simplify_when_small A logical flag, defaulting to `TRUE`, to use the
-#'   character's small-size drawing below 72 CSS pixels. `FALSE` keeps every layer,
-#'   which may be hard to read. `NULL` is not accepted.
-#' @returns A `mascot_size` object with `size`, `small_screen` and
-#'   `simplify_when_small` elements.
+#' @returns A `mascot_size` object with `size` and `small_screen` elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
 #' @export
@@ -21,17 +17,13 @@
 #' mascot_size()
 #' mascot_size("20%")
 #' mascot_size(120, small_screen = 48)
-mascot_size <- function(size = 160, small_screen = NULL, simplify_when_small = TRUE) {
+mascot_size <- function(size = 160, small_screen = NULL) {
   # Sizes are a union of pixels and percentages; share non-throwing checks with updates.
   check_size_value(size, "size", environment())
   if (!is.null(small_screen)) {
     check_size_value(small_screen, "small_screen", environment())
   }
-  checkmate::assert_flag(simplify_when_small)
-  structure(
-    list(size = size, small_screen = small_screen, simplify_when_small = simplify_when_small),
-    class = "mascot_size"
-  )
+  structure(list(size = size, small_screen = small_screen), class = "mascot_size")
 }
 
 #' A size-value problem shared by helpers and runtime updates
@@ -78,13 +70,13 @@ size_problem <- function(x) {
   if (!inherits(x, "mascot_size")) {
     return(size_value_problem(x, "size"))
   }
-  fields <- c("size", "small_screen", "simplify_when_small")
+  fields <- c("size", "small_screen")
   if (
     !isTRUE(checkmate::check_list(x, names = "unique")) ||
       length(x) != length(fields) ||
       !setequal(names(x), fields)
   ) {
-    return("`size` must be a mascot_size() object with size, small_screen and simplify_when_small fields.")
+    return("`size` must be a mascot_size() object with size and small_screen fields.")
   }
   problem <- size_value_problem(x$size, "size")
   if (!is.null(problem)) {
@@ -93,9 +85,6 @@ size_problem <- function(x) {
   if (!is.null(x$small_screen)) {
     problem <- size_value_problem(x$small_screen, "small_screen")
     if (!is.null(problem)) return(problem)
-  }
-  if (!isTRUE(checkmate::check_flag(x$simplify_when_small))) {
-    return("`simplify_when_small` must be TRUE or FALSE; use mascot_size().")
   }
   NULL
 }

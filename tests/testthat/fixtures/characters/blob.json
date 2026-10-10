@@ -143,19 +143,5 @@
       "lift": 15,
       "rot": 0.12
     }
-  },
-  "small": {
-    "faceScale": 2,
-    "minLineWidth": 1.5,
-    "hide": [
-      "lashes",
-      "highlight",
-      "blush",
-      "sweat",
-      "accessories",
-      "shadow",
-      "sparkle",
-      "brows"
-    ]
   }
 }

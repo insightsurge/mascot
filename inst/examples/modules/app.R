@@ -10,7 +10,7 @@ review_ui <- function(id, title) {
   card(
     h2(title),
     checkboxInput(ns("ready"), "Review complete", FALSE),
-    mascot(id = ns("helper"), mood = "worried", status = "Review still needed")
+    mascot(id = ns("helper"), mood = "worried", status = "Review still needed", placement = "inline")
   )
 }
 

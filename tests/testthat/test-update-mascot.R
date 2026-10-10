@@ -462,12 +462,12 @@ describe("updateMascot() size and placement", {
       # A helper built before simplify_when_small was removed carries an extra field.
       bad_fields <- mascot_size()
       bad_fields$simplify_when_small <- TRUE
-      bad_place <- mascot_placement()
+      bad_place <- mascot_placement("inline")
       bad_place$minimise <- TRUE
       for (x in list(23, Inf, "24px", bad_size, bad_fields)) {
         expect_warning(updateMascot("a", size = x, mood = "happy"), "unchanged")
       }
-      bad_drag <- mascot_placement()
+      bad_drag <- mascot_placement("inline")
       bad_drag$drag <- "snap"
       for (x in list("fixed", list(floating = TRUE, snap = TRUE), bad_place, bad_drag)) {
         expect_warning(updateMascot("a", placement = x, status = "Saved"), "unchanged")
@@ -587,7 +587,7 @@ describe("size and placement in a Shiny browser", {
         ns <- shiny::NS(id)
         shiny::tags$div(
           style = "width:400px",
-          mascot(id = ns("helper"), size = "20%"),
+          mascot(id = ns("helper"), size = "20%", placement = "inline"),
           shiny::actionButton(ns("change"), "Change")
         )
       }
@@ -644,7 +644,7 @@ describe("floating mascots in dynamic module UI", {
       }
       shiny::shinyApp(
         shiny::fluidPage(
-          mascot(id = "loader", size = 24),
+          mascot(id = "loader", size = 24, placement = "inline"),
           shiny::tabsetPanel(id = "tabs", shiny::tabPanel("Home", "Home"), shiny::tabPanel("Helper", module_ui("mod")))
         ),
         function(input, output, session) module_server("mod")

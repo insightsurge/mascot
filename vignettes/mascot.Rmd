@@ -149,7 +149,8 @@ Try both gestures in `mascot_example("basic")`.
 
 ## Size and placement
 
-The default is 160 pixels, inline where you put it in the UI.
+The default is 160 pixels, floating in the bottom-right corner as an assistant.
+Use `placement = "inline"` to place a mascot in the page flow.
 
 ```{r layout, results="hide"}
 mascot_size(180, small_screen = 72)
@@ -167,8 +168,8 @@ menu hides the action controls until the menu closes.
 
 ```{r layout-update, eval=FALSE}
 updateMascot("helper", size = mascot_size(180, small_screen = 72),
-  placement = mascot_placement("bottom-right", minimise = TRUE))
-updateMascot("helper", placement = mascot_placement()) # Return inline.
+  placement = mascot_placement("top-left", minimise = TRUE))
+updateMascot("helper", placement = mascot_placement("inline")) # Return inline.
 ```
 
 Try the size and placement controls in `mascot_example("basic")`, and the
@@ -425,7 +426,7 @@ when the setting has a clear/reset action:
 | Bubble | `bubble = mascot_bubble()` removes it |
 | Theme | `theme = mascot_theme()` restores character colours |
 | Menu | `popup_menu = mascot_popup_menu()` removes it |
-| Placement | `placement = mascot_placement()` returns inline |
+| Placement | `placement = mascot_placement()` resets to default bottom-right; `mascot_placement("inline")` returns inline |
 | Motion | `motion = mascot_motion()` allows animation subject to visitor preference |
 
 An invalid update warns and leaves the complete update unchanged. During app

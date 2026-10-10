@@ -37,8 +37,8 @@ string, or \code{\link[=mascot_size]{mascot_size()}} object. Defaults to \code{1
 comparison cell width. \code{NULL} is not accepted.}
 
 \item{placement}{A placement shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}}
-object, defaulting to \code{"inline"}. Valid floating settings are shown inline
-in the grid. \code{NULL} is not accepted.}
+object, defaulting to \code{"inline"}. The preview ignores floating and shows
+every mascot inline in the comparison grid. \code{NULL} is not accepted.}
 
 \item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
@@ -77,9 +77,10 @@ Only supplied colour roles are checked, using the same contrast calculation
 as \code{\link[=mascot]{mascot()}}. Experimental CSS variables are resolved in the browser: their
 warnings appear in its console and cannot be included in the R attribute.
 
-Floating \code{placement} is checked then shown inline for comparison. Click menus
-are checked but remain inactive on this static page. Empty bubble space is
-omitted here; a supplied bubble keeps its space and normal timing.
+Floating \code{placement} is checked then shown inline for comparison; the preview
+ignores floating so every cell remains in its grid. Click menus are checked
+but remain inactive on this static page. Empty bubble space is omitted here;
+a supplied bubble keeps its space and normal timing.
 }
 \examples{
 page <- mascot_preview(mood = "happy", size = 96)

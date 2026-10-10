@@ -10,7 +10,7 @@
 ---
 
     Code
-      mascot_placement(minimise = TRUE)
+      mascot_placement("inline", minimise = TRUE)
     Condition
       Error in `mascot_placement()`:
       ! `minimise` needs a corner `position`; an inline mascot cannot be minimised.
@@ -39,7 +39,7 @@
 ---
 
     Code
-      mascot_placement(drag = "snap")
+      mascot_placement("inline", drag = "snap")
     Condition
       Error in `mascot_placement()`:
       ! `drag` needs a corner `position`; an inline mascot cannot be dragged.

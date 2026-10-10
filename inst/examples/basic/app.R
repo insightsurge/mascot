@@ -35,7 +35,7 @@ ui <- page_fluid(
     ),
     card(
       h2("Your helper"),
-      mascot(id = "helper"),
+      mascot(id = "helper", placement = "inline"),
       p("Status stays readable when movement is off.")
     )
   )
@@ -80,7 +80,7 @@ server <- function(input, output, session) {
       bubble = mascot_bubble(),
       theme = mascot_theme(),
       motion = mascot_motion(),
-      placement = mascot_placement()
+      placement = mascot_placement("inline")
     )
   })
 }

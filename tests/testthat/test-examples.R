@@ -52,6 +52,10 @@ describe("mascot_examples()", {
         html <- as.character(app$httpHandler(list(PATH_INFO = "/"))$content)
         # bslib's inline icons name the SVG namespace, which is not a request.
         html <- gsub("http://www.w3.org/2000/svg", "", html, fixed = TRUE)
+        # External navbar links are navigation only; assets must remain local.
+        for (link in c("https://github.com/insightsurge/mascot", "https://insightsurge.github.io/mascot/")) {
+          html <- gsub(paste0('href="', link, '"'), "", html, fixed = TRUE)
+        }
         expect_false(any(grepl("https?://", html)), info = name)
       }
     }
@@ -96,8 +100,8 @@ describe("the studio's controls", {
       code$code_bubble("<strong>Saved</strong>", TRUE, Inf, FALSE),
       code$code_gesture("wave"),
       code$code_motion(FALSE, FALSE),
-      code$code_size("20%", 72, FALSE),
-      code$code_placement("top-left", TRUE),
+      code$code_size("20%", 72),
+      code$code_placement("top-left", TRUE, "snap"),
       code$code_menu(character()),
       theme
     )
@@ -107,6 +111,53 @@ describe("the studio's controls", {
       }
     }
   })
+  it("prints parseable bubble calls without escaped quotes, including raw delimiter collisions", {
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    code <- new.env()
+    sys.source(file.path(dir, "R", "code.R"), envir = code)
+    sys.source(file.path(dir, "R", "data.R"), envir = code)
+    cases <- c(
+      code$bubble_examples,
+      list(
+        quotes = list(text = '<p class="notice">She said "Saved".</p>', html = TRUE),
+        delimiters = list(text = 'Both )" and )-" occur, plus a \nnew line.', html = FALSE),
+        short = list(text = 'A "quote"', html = FALSE)
+      )
+    )
+    for (example in cases) {
+      pair <- code$code_bubble(example$text, example$html, Inf, TRUE)
+      for (style in c("short", "helper")) {
+        text <- code$format_call("mascot", list(id = "helper", bubble = pair[[style]]))
+        expect_type(parse(text = text), "expression")
+        expect_false(grepl('\\"', text, fixed = TRUE))
+        # Parsing must preserve the original text, not merely accept the syntax.
+        parsed <- parse(text = text)[[1]][["bubble"]]
+        bubble <- eval(parsed, envir = list(HTML = htmltools::HTML, mascot_bubble = mascot_bubble))
+        expect_identical(as.character(bubble$text), example$text)
+      }
+    }
+    direct <- code$format_call(
+      "mascot",
+      list(id = "helper", bubble = code$code_bubble(cases$quotes$text, TRUE, 5, TRUE)$short)
+    )
+    expect_type(parse(text = direct), "expression")
+    expect_false(grepl('\\"', direct, fixed = TRUE))
+    expect_match(code$format_expr('A "quote"'), 'r"(A "quote")"', fixed = TRUE)
+    expect_match(code$format_expr('Both )" and )-"'), 'r"--(', fixed = TRUE)
+  })
+  it("prints drag in both placement forms and omits the removed size argument", {
+    code <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), envir = code)
+    for (mode in c("snap", "free")) {
+      pair <- code$code_placement("bottom-right", FALSE, mode)
+      expect_identical(eval(pair$short), list(position = "bottom-right", drag = mode))
+      expect_identical(eval(pair$helper), mascot_placement("bottom-right", drag = mode))
+      for (style in c("short", "helper")) {
+        expect_match(code$format_expr(pair[[style]]), paste0('drag = "', mode, '"'), fixed = TRUE)
+      }
+    }
+    expect_false(grepl("simplify_when_small", code$format_expr(code$code_size(120, 72)$helper), fixed = TRUE))
+  })
   it("has a control on the page, or a stated reason, for every exported argument", {
     skip_if_not_installed("bslib")
     # mascot is already attached by the test run; attaching it here would detach it on exit.
@@ -115,9 +166,27 @@ describe("the studio's controls", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     data <- new.env()
     sys.source(file.path(dir, "R", "data.R"), envir = data)
-    html <- as.character(shiny::shinyAppDir(dir)$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET"))$content)
-    ids <- regmatches(html, gregexpr(' id="[^"]+"', html))[[1]]
-    expect_identical(anyDuplicated(ids), 0L)
+    app <- shiny::shinyAppDir(dir)
+    pages <- lapply(c("", "view=preview", "view=examples"), function(query) {
+      as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
+    })
+    for (page in pages) {
+      ids <- regmatches(page, gregexpr(' id="[^"]+"', page))[[1]]
+      expect_identical(anyDuplicated(ids), 0L)
+    }
+    html <- paste(unlist(pages), collapse = "\n")
+    expect_match(pages[[1]], 'id="learn_card"', fixed = TRUE)
+    expect_match(pages[[1]], 'id="code_dock"', fixed = TRUE)
+    expect_match(pages[[1]], 'href="?view=preview"', fixed = TRUE)
+    expect_match(pages[[1]], 'href="?view=examples"', fixed = TRUE)
+    expect_match(pages[[1]], 'href="https://github.com/insightsurge/mascot"', fixed = TRUE)
+    expect_match(pages[[1]], 'href="https://insightsurge.github.io/mascot/"', fixed = TRUE)
+    expect_match(pages[[1]], "Links", fixed = TRUE)
+    expect_false(grepl('id="preview_body"', pages[[1]], fixed = TRUE))
+    expect_false(grepl('id="helper"', pages[[2]], fixed = TRUE))
+    expect_false(grepl('id="helper"', pages[[3]], fixed = TRUE))
+    expect_false(grepl("Use the studio's", pages[[2]], fixed = TRUE))
+    expect_false(grepl("Open in a new tab", pages[[2]], fixed = TRUE))
     for (fn in getNamespaceExports("mascot")) {
       for (arg in names(formals(getExportedValue("mascot", fn)))) {
         control <- data$playground_controls[[fn]][[arg]]
@@ -204,29 +273,64 @@ describe("bundled example apps", {
     select_function <- function(fn) {
       checkmate::assert_string(fn)
       app$click(selector = sprintf('.pg-index-link[data-value="%s"]', fn))
-      app$wait_for_js(sprintf("!!document.querySelector('#guide [data-guide-function=\"%s\"]')", fn))
+      app$wait_for_js(sprintf("!!document.querySelector('#learn [data-learn-function=\"%s\"]')", fn))
       app$wait_for_js(sprintf(
-        "!document.querySelector('#studio_inspector [data-function=\"%s\"]').hidden",
+        "!document.querySelector('#studio_inspector [data-function=\"%s\"]').hidden && document.querySelector('#studio_inspector [data-function=\"%s\"] .accordion-collapse').classList.contains('show')",
+        fn,
         fn
       ))
     }
+    expect_false(app$get_js("document.querySelector('#learn_card .accordion-collapse').classList.contains('show')"))
+    app$click(selector = "#learn_card .accordion-button")
+    app$wait_for_js("document.querySelector('#learn_card .accordion-collapse').classList.contains('show')")
+    expect_identical(
+      app$get_js("[...document.querySelectorAll('#code_tabs .nav-link')].map(el => el.textContent.trim()).join('|')"),
+      "UI|Server|App|Last|Log"
+    )
+    expect_true(app$get_js("document.querySelector('a[href=\"?view=preview\"]').target === '_blank'"))
+    expect_true(app$get_js("document.querySelector('a[href=\"?view=examples\"]').target === '_blank'"))
+    app$run_js(
+      "[...document.querySelectorAll('.dropdown-toggle')].find(el => el.textContent.includes('Links')).click()"
+    )
+    expect_true(app$get_js(
+      "(() => {
+      const links = [...document.querySelectorAll('.dropdown-menu a')].filter(el =>
+        ['GitHub', 'Package website'].includes(el.textContent.trim()));
+      return links.length === 2 && links.every(el => el.target === '_blank' && el.rel === 'noopener');
+    })()"
+    ))
+    app$run_js(
+      "[...document.querySelectorAll('.dropdown-toggle')].find(el => el.textContent.includes('Links')).click()"
+    )
     # The mood cards are the inspector's only mood input.
     expect_identical(app$get_js("document.querySelectorAll('#mood input[type=radio]').length"), 0L)
     app$run_js("document.querySelector('[data-event=try_mood][data-value=happy]').click()")
     wait_example_mood(app, "helper", "happy")
     app$wait_for_js("document.getElementById('code_last').textContent.includes('mood = \"happy\"')")
     select_function("mascot_status")
-    # The selected function owns both the inspector controls and the guide.
+    # The selected function owns the inspector header, controls and Learn example.
     expect_true(app$get_js(
-      "document.querySelector('#studio_inspector [data-function=mascot_status]').open && document.querySelector('#guide [data-guide-function=mascot_status]') !== null && document.getElementById('status_text').getClientRects().length > 0"
+      "document.querySelector('#studio_inspector [data-function=mascot_status] .accordion-collapse').classList.contains('show') && document.querySelector('#learn [data-learn-function=mascot_status]') !== null && document.getElementById('status_text').getClientRects().length > 0"
     ))
     expect_true(app$get_js("document.querySelector('#studio_inspector [data-function=mascot_mood]').hidden"))
+    expect_true(app$get_js(
+      "(() => {
+      const panel = document.querySelector('#studio_inspector [data-function=mascot_status]');
+      return panel.textContent.includes('Usage') && panel.textContent.includes('Returns:') &&
+        panel.textContent.includes('always visible line');
+    })()"
+    ))
     app$set_inputs(status_text = "Checking 120 rows")
     app$wait_for_js(paste0(state, ".status.text === 'Checking 120 rows'"))
     select_function("mascot_bubble")
     app$set_inputs(bubble_example = "Small table")
     app$click("bubble_show")
     app$wait_for_js("!!document.querySelector('#helper .mascot-bubble table')")
+    app$set_inputs(bubble_text = '<p class="notice">Saved</p>', bubble_html = TRUE)
+    app$click("bubble_show")
+    app$wait_for_js("document.getElementById('code_ui').textContent.includes('r\"(')")
+    expect_type(parse(text = app$get_value(output = "code_ui")), "expression")
+    expect_false(grepl('\\"', app$get_value(output = "code_ui"), fixed = TRUE))
     select_function("mascot_motion")
     app$set_inputs(animate = FALSE)
     app$wait_for_js(paste0(state, ".motion.reduced === true"))
@@ -237,6 +341,24 @@ describe("bundled example apps", {
     app$set_inputs(position = "top-left")
     app$set_inputs(minimise = TRUE)
     app$wait_for_js(paste0(state, ".placement.floating && ", state, ".placement.minimise"))
+    app$set_inputs(drag = "snap", position = "bottom-right")
+    app$wait_for_js(paste0(state, ".placement.drag === 'snap'"))
+    app$run_js(
+      "(() => {
+      const canvas = document.querySelector('#helper canvas'), r = canvas.getBoundingClientRect();
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const press = (type, x, y) => canvas.dispatchEvent(new PointerEvent(type, {
+        bubbles: true, cancelable: true, pointerId: 1, button: 0, isPrimary: true, clientX: x, clientY: y
+      }));
+      press('pointerdown', x, y); press('pointermove', 80, 80); press('pointerup', 80, 80);
+    })()"
+    )
+    app$wait_for_js("document.getElementById('position_last').textContent.includes('top-left')")
+    expect_identical(app$get_value(input = "helper_position"), "top-left")
+    app$wait_for_js("document.getElementById('log').textContent.includes('input$helper_position')")
+    # Disable dragging for later menu clicks, then return to inline to test disabled controls.
+    app$set_inputs(drag = "FALSE", position = "inline")
+    app$wait_for_js("document.getElementById('drag').disabled && document.getElementById('minimise').disabled")
     select_function("mascot_theme")
     app$set_inputs(theme_source = "mascot")
     app$run_js(
@@ -269,18 +391,52 @@ describe("bundled example apps", {
     expect_identical(app$get_value(input = "status_text"), "Checking 120 rows")
     app$set_inputs(show_all_controls = TRUE)
     app$wait_for_js("!document.querySelector('[data-function=mascot_bubble]').hidden")
-    expect_false(app$get_js("document.querySelector('[data-function=mascot_bubble]').open"))
+    expect_false(app$get_js(
+      "document.querySelector('[data-function=mascot_bubble] .accordion-collapse').classList.contains('show')"
+    ))
     app$set_inputs(show_all_controls = FALSE)
     app$wait_for_js("document.querySelector('[data-function=mascot_bubble]').hidden")
-    app$click(selector = "#guide_expand")
-    app$wait_for_js("document.getElementById('studio_centre').classList.contains('is-expanded')")
-    expect_identical(app$get_js("document.querySelectorAll('.mascot').length"), 1L)
-    app$click(selector = "#guide_expand")
-    # The first visit to the preview tab builds a preview without a click.
-    app$run_js("document.querySelector('a[data-value=preview]').click()")
+    app$click(selector = "#code_dock > .accordion-item > .accordion-header .accordion-button")
+    app$wait_for_js("document.getElementById('studio_centre').classList.contains('is-dock-collapsed')")
+    expect_match(
+      app$get_js("document.querySelector('#code_dock .accordion-button').textContent"),
+      "UI | Server | App | Last | Log",
+      fixed = TRUE
+    )
+    app$click(selector = "#code_dock > .accordion-item > .accordion-header .accordion-button")
+    app$wait_for_js("!document.getElementById('studio_centre').classList.contains('is-dock-collapsed')")
+    # Each URL starts a new Shiny session and builds only its own view.
+    app$run_js("window.location.search = '?view=preview'")
     app$wait_for_js("!!document.querySelector('iframe.pg-preview')", timeout = 15000)
-    app$run_js("document.querySelector('a[data-value=examples]').click()")
+    expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
+    expect_true(app$get_js(
+      "!!document.getElementById('preview_body') && !!document.getElementById('preview_menu_items')"
+    ))
+    app$run_js(
+      "(() => {
+      for (const [id, value] of [['preview_body', '#1f6feb'], ['preview_rim', '#966600']]) {
+        const picker = document.getElementById(id); picker.value = value;
+        picker.dispatchEvent(new Event('input'));
+      }
+    })()"
+    )
+    # A view opened by URL is a new page: shinytest2's input helpers stay with the first page, so use Shiny's own API.
+    app$run_js(
+      "Shiny.setInputValue('preview_menu_items', 'about = About the preview');
+      document.querySelector('input[name=preview_width][value=phone]').click();"
+    )
+    app$wait_for_js("document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"')")
+    app$wait_for_js("document.getElementById('code_preview').textContent.includes('About the preview')")
+    app$run_js("document.getElementById('preview_build').click()")
+    app$wait_for_js("document.querySelector('iframe.pg-preview').classList.contains('is-phone')")
+    expect_match(
+      app$get_js("document.getElementById('code_preview').textContent"),
+      'popup_menu = c(about = "About the preview")',
+      fixed = TRUE
+    )
+    app$run_js("window.location.search = '?view=examples'")
     app$wait_for_js("!!document.querySelector('#example_code')", timeout = 15000)
+    expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
   })
   it("E2 form-check names invalid fields and becomes happy when both pass", {
     local_shiny_browser()

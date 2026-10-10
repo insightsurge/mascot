@@ -60,13 +60,25 @@ fn_heading <- function(fn) {
 }
 
 inspector_function <- function(fn, ...) {
-  tags$details(
+  div(
     class = "pg-inspector-function",
     `data-function` = fn,
     hidden = if (fn != "mascot_mood") NA,
-    open = if (fn == "mascot_mood") NA,
-    tags$summary(tags$code(paste0(fn, "()")), div(class = "pg-fn-what", the_guide(fn)$what)),
-    div(class = "pg-function-controls", ...)
+    bslib::accordion(
+      bslib::accordion_panel(
+        tags$code(paste0(fn, "()")),
+        div(class = "pg-fn-what", the_guide(fn)$what),
+        bslib::popover(
+          tags$button(type = "button", class = "btn btn-outline-primary btn-sm", "Usage"),
+          code_block(signature(fn), "pg-signature"),
+          title = paste0(fn, "()")
+        ),
+        div(class = "pg-returns", tags$strong("Returns: "), the_guide(fn)$returns),
+        div(class = "pg-function-controls", ...),
+        value = fn
+      ),
+      open = if (fn == "mascot_mood") TRUE else FALSE
+    )
   )
 }
 
@@ -102,15 +114,17 @@ function_index <- function() {
       tagList(
         tags$h2(playground_categories[[category]]$title),
         lapply(category_functions(category), function(fn) {
-          tags$button(
-            type = "button",
-            class = "pg-index-link",
-            title = the_guide(fn)$what,
-            `data-event` = "select_function",
-            `data-value` = fn,
-            `aria-current` = if (fn == "mascot_mood") "true" else "false",
-            tags$code(paste0(fn, "()")),
-            tags$span(the_guide(fn)$what)
+          bslib::tooltip(
+            tags$button(
+              type = "button",
+              class = "pg-index-link",
+              `data-event` = "select_function",
+              `data-value` = fn,
+              `aria-current` = if (fn == "mascot_mood") "true" else "false",
+              tags$code(paste0(fn, "()")),
+              tags$span(the_guide(fn)$what)
+            ),
+            the_guide(fn)$what
           )
         })
       )
@@ -182,10 +196,10 @@ arg_block <- function(fn, arg) {
 function_card <- function(fn, example = FALSE) {
   entry <- the_guide(fn)
   arguments <- names(formals(get(fn, envir = asNamespace("mascot"))))
-  div(
-    class = "pg-fn-card",
+  bslib::card(
+    full_screen = TRUE,
     `data-guide-function` = fn,
-    tags$h2(class = "pg-guide-title", tags$code(paste0(fn, "()"))),
+    bslib::card_header(tags$code(paste0(fn, "()"))),
     tags$h3(class = "pg-section-title", "Description"),
     tags$p(entry$what),
     tags$h3(class = "pg-section-title", "Usage"),
@@ -206,11 +220,17 @@ function_card <- function(fn, example = FALSE) {
   )
 }
 
-selected_guide <- function(fn) {
+selected_learn <- function(fn) {
   div(
-    class = "pg-guide-columns",
-    function_card(fn, example = TRUE),
-    div(class = "pg-guide-visual", category_visual(the_guide(fn)$category))
+    `data-learn-function` = fn,
+    bslib::layout_columns(
+      col_widths = bslib::breakpoints(sm = 12, lg = c(6, 6)),
+      div(
+        tags$h3(class = "pg-section-title", "Example"),
+        div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
+      ),
+      div(class = "pg-guide-visual", category_visual(the_guide(fn)$category))
+    )
   )
 }
 
@@ -261,7 +281,7 @@ mood_cards <- function(moods) {
     role = "group",
     `aria-label` = "Mood",
     lapply(seq_len(nrow(moods)), function(i) {
-      div(
+      bslib::card(
         class = "pg-card-mini",
         div(class = "pg-card-title", tools::toTitleCase(moods$name[i])),
         div(class = "pg-muted", moods$description[i]),
@@ -355,7 +375,7 @@ visual_motion <- function() {
     div(
       class = "pg-cards",
       lapply(seq_len(nrow(gestures)), function(i) {
-        div(
+        bslib::card(
           class = "pg-card-mini",
           div(class = "pg-card-title", tools::toTitleCase(gestures$name[i])),
           div(class = "pg-muted", gestures$description[i]),
@@ -387,7 +407,6 @@ size_ruler <- function(pixels, label) {
   position <- function(value) sprintf("left: %.1f%%", 100 * min(value, 320) / 320)
   div(
     class = "pg-ruler",
-    div(class = "pg-ruler-zone", style = "width: 22.5%", tags$span("simpler drawing below 72")),
     lapply(marks, function(mark) {
       div(class = "pg-ruler-mark", style = position(mark), tags$span(mark))
     }),

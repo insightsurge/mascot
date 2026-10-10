@@ -12,26 +12,26 @@ bubble_examples <- list(
   Checklist = list(
     html = TRUE,
     text = paste0(
-      "<strong>Before you submit</strong>\n<ul class=\"list-unstyled mb-0\">\n",
+      "<strong>Before you submit</strong>\n<ul class='list-unstyled mb-0'>\n",
       "  <li>\u2705 Sample ID</li>\n  <li>\u2705 Quantity</li>\n  <li>\u26a0\ufe0f Batch date is missing</li>\n</ul>"
     )
   ),
   `Small table` = list(
     html = TRUE,
     text = paste0(
-      "<table class=\"table table-sm mb-0\">\n",
+      "<table class='table table-sm mb-0'>\n",
       "  <thead><tr><th>Check</th><th>Result</th></tr></thead>\n",
       "  <tbody>\n    <tr><td>Rows</td><td>120</td></tr>\n",
-      "    <tr><td>Missing</td><td><span class=\"badge text-bg-warning\">3</span></td></tr>\n  </tbody>\n</table>"
+      "    <tr><td>Missing</td><td><span class='badge text-bg-warning'>3</span></td></tr>\n  </tbody>\n</table>"
     )
   ),
   `Progress bar` = list(
     html = TRUE,
     text = paste0(
       "Uploading <strong>batch 2 of 3</strong>\n",
-      "<div class=\"progress mt-1\" role=\"progressbar\" aria-label=\"Upload progress\" ",
-      "aria-valuenow=\"66\" aria-valuemin=\"0\" aria-valuemax=\"100\">\n",
-      "  <div class=\"progress-bar\" style=\"width: 66%\">66%</div>\n</div>"
+      "<div class='progress mt-1' role='progressbar' aria-label='Upload progress' ",
+      "aria-valuenow='66' aria-valuemin='0' aria-valuemax='100'>\n",
+      "  <div class='progress-bar' style='width: 66%'>66%</div>\n</div>"
     )
   ),
   `Keys and code` = list(
@@ -41,12 +41,12 @@ bubble_examples <- list(
   Badges = list(
     html = TRUE,
     text = paste0(
-      "<span class=\"badge text-bg-success\">QC passed</span> ",
-      "<span class=\"badge text-bg-secondary\">v1.2</span>\n",
-      "<div class=\"small text-body-secondary mt-1\">Reviewed by the study team</div>"
+      "<span class='badge text-bg-success'>QC passed</span> ",
+      "<span class='badge text-bg-secondary'>v1.2</span>\n",
+      "<div class='small text-body-secondary mt-1'>Reviewed by the study team</div>"
     )
   ),
-  `Your own HTML` = list(html = TRUE, text = "<p class=\"mb-1\">Write your own <mark>HTML</mark> here.</p>")
+  `Your own HTML` = list(html = TRUE, text = "<p class='mb-1'>Write your own <mark>HTML</mark> here.</p>")
 )
 
 default_menu <- c(finish = "Finish review", reset = "Reset helper", about = "About this studio")
@@ -124,10 +124,9 @@ playground_controls <- list(
   mascot_gesture = list(name = input_event("gesture")),
   mascot_size = list(
     size = input_id("size_unit", "size_px", "size_pct"),
-    small_screen = input_id("small_on", "small_px"),
-    simplify_when_small = input_id("simplify")
+    small_screen = input_id("small_on", "small_px")
   ),
-  mascot_placement = list(position = input_id("position"), minimise = input_id("minimise")),
+  mascot_placement = list(position = input_id("position"), minimise = input_id("minimise"), drag = input_id("drag")),
   mascot_colour_roles = list(character = input_id("roles_character")),
   mascot_theme = list(
     light = input_id("light_body"),
@@ -170,9 +169,9 @@ playground_controls <- list(
     bubble = input_id("preview_bubble"),
     size = input_id("preview_size", "preview_width"),
     placement = input_id("preview_placement"),
-    theme = input_id("preview_theme"),
+    theme = input_id("preview_body", "preview_rim"),
     motion = input_id("preview_motion"),
-    popup_menu = input_id("preview_menu")
+    popup_menu = input_id("preview_menu_items")
   ),
   mascot_example = list(name = input_id("example_name"), run = input_id("example_run"))
 )

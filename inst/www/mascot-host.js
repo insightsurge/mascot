@@ -181,6 +181,7 @@
       clearBubble(record);
       return;
     }
+    if (record.menuOpen) closeMenu(record, record.menuEl.contains(document.activeElement));
     stopTimer(record);
     record.bubble = next;
     const el = record.bubbleEl;
@@ -814,6 +815,24 @@
     }
   }
 
+  // Sample once on opening, not on scroll or each animation frame. Canvas artwork
+  // has transparent margins; anchoring to its box leaves a visible gap above the character.
+  function menuInk(record) {
+    const canvas = record.canvas;
+    const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+    let first = canvas.height;
+    let last = -1;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        if (data[(y * canvas.width + x) * 4 + 3] === 0) continue;
+        first = Math.min(first, y);
+        last = y;
+        break;
+      }
+    }
+    return last < 0 ? { top: 0, bottom: 1 } : { top: first / canvas.height, bottom: (last + 1) / canvas.height };
+  }
+
   function measureMenu(record) {
     if (!record.menuEl || !record.menuOpen) return;
     const menu = record.menuEl;
@@ -822,49 +841,62 @@
       record.placement.floating && record.placement.position === 'bottom-right'
         ? parseFloat(record.el.style.getPropertyValue('--mascot-notification-offset')) || 0
         : 0;
-    const height = document.documentElement.clientHeight - notification;
+    const bounds = record.placement.floating ? clipBounds(document.body) : clipBounds(record.el);
+    const ceiling = bounds.top;
+    const floor = Math.min(bounds.bottom, document.documentElement.clientHeight - notification - margin);
+    const gap = 8;
     const canvas = record.canvas.getBoundingClientRect();
-    const anchorBottom = record.placement.floating ? record.el.getBoundingClientRect().bottom : canvas.bottom;
+    const ink = record.menuInk || { top: 0, bottom: 1 };
+    const anchorTop = canvas.top + ink.top * canvas.height;
+    const anchorBottom = canvas.top + ink.bottom * canvas.height;
     const style = getComputedStyle(menu);
     const wanted = Math.min(
       menu.scrollHeight + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
       18 * parseFloat(style.fontSize),
     );
-    const above = Math.max(0, Math.min(height - 2 * margin, canvas.top - margin));
-    const below = Math.max(0, Math.min(height - 2 * margin, height - margin - anchorBottom));
+    const above = Math.max(0, anchorTop - gap - ceiling);
+    const below = Math.max(0, floor - anchorBottom - gap);
     let downward = record.placement.floating && record.placement.position.startsWith('top');
     const preferred = downward ? below : above;
     const alternative = downward ? above : below;
     if (wanted > preferred && alternative > preferred) downward = !downward;
+    // Anchor to the painted canvas, never the whole host (message region and status).
     // Even a canvas taller than the viewport must not make the menu unreachable.
     const available = Math.max(24, downward ? below : above);
     setProperty(record.el, '--mascot-menu-max-height', `${available}px`);
     const rect = menu.getBoundingClientRect();
     const top = Math.max(
-      margin,
-      Math.min(downward ? anchorBottom : canvas.top - rect.height, height - margin - rect.height),
+      ceiling,
+      Math.min(downward ? anchorBottom + gap : anchorTop - gap - rect.height, floor - rect.height),
     );
     setProperty(record.el, '--mascot-menu-top', `${top - record.el.getBoundingClientRect().top}px`);
     const shift = parseFloat(record.el.style.getPropertyValue('--mascot-menu-shift')) || 0;
     const natural = rect.left - shift;
-    const bounds = record.placement.floating ? clipBounds(document.body) : clipBounds(record.el);
     const left = Math.max(bounds.left, Math.min(natural, bounds.right - rect.width));
     setProperty(record.el, '--mascot-menu-shift', `${left - natural}px`);
   }
 
-  // Horizontal room for an inline overlay: the viewport, narrowed by any ancestor that clips overflow (a bslib card).
+  // Overlay room: the viewport, narrowed by ancestors that clip overflow (such as a bslib card).
   function clipBounds(el) {
     const viewport = 16,
       inset = 8;
     let left = viewport,
-      right = document.documentElement.clientWidth - viewport;
+      right = document.documentElement.clientWidth - viewport,
+      top = viewport,
+      bottom = document.documentElement.clientHeight - viewport;
     for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
-      if (getComputedStyle(node).overflowX === 'visible') continue;
+      const style = getComputedStyle(node);
       const rect = node.getBoundingClientRect();
-      left = Math.max(left, rect.left + node.clientLeft + inset);
-      right = Math.min(right, rect.left + node.clientLeft + node.clientWidth - inset);
+      if (style.overflowX !== 'visible') {
+        left = Math.max(left, rect.left + node.clientLeft + inset);
+        right = Math.min(right, rect.left + node.clientLeft + node.clientWidth - inset);
+      }
+      if (style.overflowY !== 'visible') {
+        top = Math.max(top, rect.top + node.clientTop + inset);
+        bottom = Math.min(bottom, rect.top + node.clientTop + node.clientHeight - inset);
+      }
     }
-    return { left, right: Math.max(left, right) };
+    return { left, right: Math.max(left, right), top, bottom: Math.max(top, bottom) };
   }
 
   function measure(record) {
@@ -1061,11 +1093,13 @@
   function openMenu(record, keyboard) {
     if (record.minimised || !record.menuEl) return;
     for (const other of [...openMenus]) if (other !== record) closeMenu(other);
+    clearBubble(record);
     record.controller.update({ pose: { lookY: -1 } });
     record.menuOpen = true;
     const actionFocused = record.actions.contains(document.activeElement);
     refreshActions(record);
     record.menuEl.hidden = false;
+    record.menuInk = menuInk(record);
     measureMenu(record);
     record.menuButton.setAttribute('aria-expanded', 'true');
     stopTimer(record);

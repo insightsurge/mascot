@@ -353,6 +353,7 @@ body.quarto-dark {
 /* Menus share the source page's bubble palette, including when floating. */
 .mascot-menu-toggle {
   display: block;
+  flex-shrink: 0;
   width: 100%;
   padding: 0;
   border: 0;

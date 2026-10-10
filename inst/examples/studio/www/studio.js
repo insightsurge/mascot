@@ -77,7 +77,14 @@
         document.querySelector(`.pg-index-link[data-value="${selectedFunction}"]`)?.focus();
       }
       group.hidden = !showAll && !selected;
-      if (!showAll || selectionChanged) group.open = selected;
+      if (!showAll || selectionChanged) {
+        const panel = group.querySelector('.accordion-collapse');
+        if (panel) {
+          const collapse = window.bootstrap.Collapse.getOrCreateInstance(panel, { toggle: false });
+          if (selected) collapse.show();
+          else collapse.hide();
+        }
+      }
     }
     for (const button of document.querySelectorAll('.pg-index-link')) {
       button.setAttribute('aria-current', String(button.dataset.value === selectedFunction));
@@ -96,24 +103,31 @@
       }
     });
     const centre = document.getElementById('studio_centre');
-    const expand = document.getElementById('guide_expand');
-    const dock = document.getElementById('studio_dock');
-    const dockTabs = dock?.querySelector(':scope > .tabbable > .nav');
-    function placeMiniCard() {
-      if (centre && dock && dockTabs) {
-        centre.style.setProperty('--pg-mini-top', `${dock.offsetTop + dockTabs.offsetHeight + 12}px`);
+    const dock = document.getElementById('code_dock');
+    function syncDock() {
+      centre?.classList.toggle('is-dock-collapsed', !dock?.querySelector('.accordion-collapse.show'));
+    }
+    dock?.addEventListener('shown.bs.collapse', syncDock);
+    dock?.addEventListener('hidden.bs.collapse', syncDock);
+    syncDock();
+    function placementControls() {
+      const inline = document.querySelector('#position input:checked')?.value === 'inline';
+      const minimise = document.getElementById('minimise');
+      const drag = document.getElementById('drag');
+      if (minimise) minimise.disabled = inline;
+      if (drag) {
+        drag.disabled = inline;
+        const selectize = $(drag)[0]?.selectize;
+        if (selectize) {
+          if (inline) selectize.disable();
+          else selectize.enable();
+        }
       }
     }
-    const layoutObserver = new ResizeObserver(placeMiniCard);
-    if (centre) layoutObserver.observe(centre);
-    if (dockTabs) layoutObserver.observe(dockTabs);
-    expand?.addEventListener('click', () => {
-      const expanded = centre.classList.toggle('is-expanded');
-      expand.setAttribute('aria-expanded', String(expanded));
-      expand.textContent = expanded ? 'Restore canvas' : 'Expand guide';
-      placeMiniCard();
-      document.querySelector('#code_tabs a[data-value="Guide"]')?.click();
+    $(document).on('shiny:inputchanged', (event) => {
+      if (event.name === 'position') setTimeout(placementControls, 0);
     });
+    placementControls();
     const grip = document.getElementById('dock_grip');
     let height = 42;
     let drag = null;
@@ -148,10 +162,6 @@
 
   // Buttons update the same mounted inputs as the inspector.
   document.addEventListener('click', (event) => {
-    if (!showAll && event.target.closest('.pg-inspector-function > summary')) {
-      event.preventDefault();
-      return;
-    }
     const target = event.target.closest('[data-event]');
     if (target) {
       if (target.dataset.event === 'select_function') {
@@ -184,12 +194,8 @@
     }
   });
 
-  // A selected function starts at the top. Placement shortcuts retain their keyboard focus.
+  // Placement shortcuts retain their keyboard focus when their diagram is rebuilt.
   $(document).on('shiny:value', (event) => {
-    if (event.name === 'guide') {
-      const body = document.querySelector('#studio_dock > .tabbable > .tab-content');
-      if (body) body.scrollTop = 0;
-    }
     if (event.name === 'placement_map') {
       const focused = document.activeElement?.closest('#placement_map [data-value]')?.dataset.value;
       if (!focused) return;

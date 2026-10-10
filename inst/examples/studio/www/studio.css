@@ -54,24 +54,6 @@
 }
 
 /* Sidebar: function headings and argument fields */
-.pg-fn {
-  border-top: 1px solid var(--bs-border-color);
-  margin-top: 0.75rem;
-  padding-top: 0.6rem;
-}
-
-.pg-fn:first-child {
-  border-top: 0;
-  margin-top: 0;
-  padding-top: 0;
-}
-
-.pg-fn-name {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 600;
-}
 
 .pg-fn-what {
   font-size: 0.85rem;
@@ -189,16 +171,6 @@
   text-decoration: none;
 }
 
-.pg-role-group {
-  margin: 0.4rem 0;
-}
-
-.pg-role-group > summary {
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
 .pg-swatch {
   display: inline-block;
   width: 0.9rem;
@@ -277,23 +249,6 @@
 }
 
 /* Guide: function cards */
-.pg-fn-card {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.5rem;
-  padding: 0.9rem 1rem;
-  margin-bottom: 1rem;
-}
-
-.pg-fn-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pg-fn-card-head h4 {
-  font-size: 1.05rem;
-  margin: 0;
-}
 
 .pg-signature {
   font-size: 0.8rem;
@@ -355,12 +310,7 @@
 }
 
 .pg-card-mini {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.5rem;
-  padding: 0.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  margin: 0;
   font-size: 0.85rem;
 }
 
@@ -459,17 +409,6 @@
   border-bottom: 2px solid var(--bs-border-color);
   margin: 0.5rem 0.75rem 1.5rem;
   font-size: 0.75rem;
-}
-
-.pg-ruler-zone {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 1.2rem;
-  background: var(--bs-warning-bg-subtle);
-  white-space: nowrap;
-  overflow: visible;
-  padding-left: 0.2rem;
 }
 
 .pg-ruler-mark {
@@ -644,7 +583,7 @@
 /* Layout E: index, live canvas and dock, then the argument inspector. */
 .pg-studio {
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) 330px;
   height: 100%;
   min-height: 0;
   flex: 1;
@@ -658,10 +597,6 @@
   min-height: 0;
   padding: 0.75rem;
   background: var(--bs-body-bg);
-}
-
-.pg-index {
-  border-right: 1px solid var(--bs-border-color);
 }
 
 .pg-inspector {
@@ -718,12 +653,10 @@
 .pg-centre {
   --pg-dock-height: 42%;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) minmax(12rem, var(--pg-dock-height));
+  grid-template-rows: auto minmax(0, 1fr) auto minmax(12rem, var(--pg-dock-height));
   position: relative;
   min-width: 0;
   min-height: 0;
-  container-type: inline-size;
-  container-name: studio-centre;
 }
 
 .pg-toolbar {
@@ -789,21 +722,21 @@
   border-top: 1px solid var(--bs-border-color);
 }
 
-/* bslib wraps the dock's tabs in a .tabbable div; it fills the dock so the tab content can scroll. */
-.pg-dock > .tabbable {
+/* Native tabs fill the dock and let code scroll independently. */
+.pg-dock .tabbable {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
-.pg-dock > .tabbable > .nav {
+.pg-dock .tabbable > .nav {
   flex: none;
-  padding: 0.4rem 8rem 0 0.75rem;
+  padding: 0.4rem 0.75rem;
   border-bottom: 1px solid var(--bs-border-color);
 }
 
-.pg-dock > .tabbable > .tab-content {
+.pg-dock .tabbable > .tab-content {
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -842,41 +775,6 @@
   outline-offset: 2px;
 }
 
-.pg-expand {
-  position: absolute;
-  top: 0.35rem;
-  right: 0.4rem;
-  font-size: 0.75rem;
-}
-
-.pg-guide-columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-}
-
-.pg-guide-columns > * {
-  min-width: 0;
-}
-
-.pg-guide-columns .pg-fn-card {
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  margin: 0;
-}
-
-.pg-guide-title {
-  font-size: 1rem;
-  margin: 0 0 0.5rem;
-}
-
-.pg-guide-columns .pg-section-title,
-.pg-guide-visual > .pg-section-title:first-child {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-}
-
 .pg-args {
   gap: 0.3rem;
 }
@@ -892,31 +790,6 @@
 
 .pg-inspector-function[hidden] {
   display: none;
-}
-
-.pg-inspector-function > summary {
-  list-style: none;
-  cursor: default;
-  font-size: 1rem;
-  margin: 0.5rem 0;
-}
-
-.pg-inspector-function > summary::-webkit-details-marker {
-  display: none;
-}
-
-.pg-inspector.is-show-all .pg-inspector-function > summary {
-  cursor: pointer;
-  border-bottom: 1px solid var(--bs-border-color);
-  padding: 0.5rem 0;
-}
-
-.pg-inspector.is-show-all .pg-inspector-function > summary::before {
-  content: "+ ";
-}
-
-.pg-inspector.is-show-all .pg-inspector-function[open] > summary::before {
-  content: "\2212 ";
 }
 
 .pg-inspector .pg-field {
@@ -942,68 +815,34 @@
   background: var(--bs-primary-bg-subtle);
 }
 
-.pg-centre.is-expanded {
-  grid-template-rows: auto minmax(0, 1fr);
-}
-
-.pg-centre.is-expanded .pg-canvas {
-  position: absolute;
-  top: var(--pg-mini-top, 6rem);
-  right: 1rem;
-  width: 13rem;
-  height: 17rem;
-  z-index: 2;
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.5rem;
-  background: var(--bs-body-bg);
-  padding: 0.5rem;
-}
-
-.pg-centre.is-expanded .pg-stage .mascot[data-floating="false"] {
-  width: 80px;
-  font-size: 0.75rem;
-}
-
-.pg-centre.is-expanded .pg-stage .mascot[data-floating="false"] .mascot-bubble-region {
-  width: 11rem;
-  height: 9rem;
-}
-
-.pg-centre.is-expanded .pg-stage .mascot[data-floating="false"] .mascot-bubble-text {
-  max-height: 6.5rem;
+/* Native accordions own folding and cards own full-screen expansion. */
+.pg-learn {
+  margin: 0;
+  max-height: 40vh;
   overflow: auto;
 }
 
-.pg-centre.is-expanded .pg-canvas-caption,
-.pg-centre.is-expanded .pg-grip {
+.pg-learn[data-full-screen="true"] {
+  max-height: none;
+}
+
+.pg-dock > .card {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+}
+
+.pg-centre.is-dock-collapsed {
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+
+.pg-centre.is-dock-collapsed .pg-grip {
   display: none;
 }
 
-/* The mini card has a reserved column, including while the dock scrolls. */
-.pg-centre.is-expanded .pg-dock > .tabbable > .tab-content {
-  padding-right: 15rem;
-}
-
-@container studio-centre (min-width: 640px) {
-  .pg-guide-columns {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .pg-centre.is-expanded .pg-guide-columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@container studio-centre (min-width: 820px) {
-  .pg-centre.is-expanded .pg-guide-columns {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-
-@media (min-width: 992px) and (max-width: 1199px) {
-  .pg-studio {
-    grid-template-columns: 190px minmax(0, 1fr) 300px;
-  }
+.pg-inspector-function .accordion-button {
+  font-size: 0.9rem;
 }
 
 @media (max-width: 991px) {
@@ -1013,29 +852,12 @@
     overflow: auto;
   }
 
-  .pg-index {
-    max-height: 14rem;
-    border-bottom: 1px solid var(--bs-border-color);
-  }
-
   .pg-centre {
-    height: 48rem;
+    height: 52rem;
   }
 
   .pg-inspector {
     border-left: 0;
     border-top: 1px solid var(--bs-border-color);
-  }
-}
-
-@container studio-centre (max-width: 440px) {
-  .pg-centre.is-expanded .pg-canvas {
-    right: 0.5rem;
-    width: calc(100% - 1rem);
-  }
-
-  .pg-centre.is-expanded .pg-dock > .tabbable > .tab-content {
-    padding-right: 0.75rem;
-    margin-top: 18rem;
   }
 }

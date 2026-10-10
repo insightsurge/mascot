@@ -1662,6 +1662,95 @@ describe("mascot.host popup menu", {
       expect_identical(event, list("a_menu", "about", list(priority = "event")))
     }
   })
+  it("opens eight pixels from the painted character, including inline reserved bubble space", {
+    skip_without_chrome()
+    for (position in c("inline", "top-left", "top-right", "bottom-left", "bottom-right")) {
+      js <- local_host_page(
+        popup_menu = c(about = "About"),
+        shiny_menu = TRUE,
+        motion = FALSE,
+        placement = position,
+        viewport = c(800, 900),
+        size = 120
+      )
+      result <- js(
+        "(() => {
+        const el = document.getElementById('a'), canvas = el.querySelector('canvas');
+        // Opened from the keyboard, so focus moves to the first item; a mouse click leaves focus where it was.
+        const toggle = el.querySelector('.mascot-menu-toggle');
+        toggle.focus(); toggle.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
+        const box = canvas.getBoundingClientRect(), menu = el.querySelector('.mascot-menu').getBoundingClientRect();
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        const rows = [];
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            if (pixels[(y * canvas.width + x) * 4 + 3] > 0) { rows.push(y); break; }
+          }
+        }
+        const top = box.top + rows[0] / canvas.height * box.height;
+        const bottom = box.top + (rows.at(-1) + 1) / canvas.height * box.height;
+        return {gap: el.dataset.position.startsWith('top') && el.dataset.floating === 'true'
+          ? menu.top - bottom : top - menu.bottom, top: menu.top, bottom: menu.bottom,
+          focus: document.activeElement === el.querySelector('[role=menuitem]')};
+      })()"
+      )
+      expect_equal(result$gap, 8, tolerance = 1)
+      expect_gte(result$top, 16)
+      expect_lte(result$bottom, 884)
+      expect_true(result$focus)
+    }
+  })
+  it("a new bubble closes the menu and returns focus only from its items", {
+    skip_without_chrome()
+    js <- local_host_page(popup_menu = c(about = "About"), shiny_menu = TRUE, motion = FALSE)
+    result <- js(
+      "(() => {
+      const el = document.getElementById('a'), toggle = el.querySelector('.mascot-menu-toggle');
+      const send = text => mascot.host.receive({id: 'a', patch: {bubble: {text, html: false, closable: true, duration: null}}});
+      const openByKeyboard = () => { toggle.focus(); toggle.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true})); };
+      openByKeyboard(); send('First');
+      const closed = !mascot.host.state(el).menuOpen && el.querySelector('.mascot-menu').hidden;
+      const returned = document.activeElement === toggle;
+      const visible = !el.querySelector('.mascot-bubble').hidden;
+      toggle.click(); toggle.focus(); send('Second');
+      const toggleKept = document.activeElement === toggle;
+      toggle.click();
+      // A page control focused without emitting focusout keeps the menu open, isolating the focus rule.
+      const outside = document.createElement('button'); document.body.append(outside);
+      const stop = event => event.stopImmediatePropagation(); el.addEventListener('focusout', stop, true);
+      outside.focus(); el.removeEventListener('focusout', stop, true);
+      const outsideWasOpen = mascot.host.state(el).menuOpen;
+      send('Third'); const outsideKept = document.activeElement === outside; outside.remove();
+      return {closed, returned, visible, toggleKept, outsideWasOpen, outsideKept, open: mascot.host.state(el).menuOpen};
+    })()"
+    )
+    expect_true(result$closed)
+    expect_true(result$returned)
+    expect_true(result$visible)
+    expect_true(result$toggleKept)
+    expect_true(result$outsideWasOpen)
+    expect_true(result$outsideKept)
+    expect_false(result$open)
+  })
+  it("keeps an inline menu inside its scrolling card", {
+    skip_without_chrome()
+    js <- local_host_page(popup_menu = c(about = "About", help = "Help"), shiny_menu = TRUE, motion = FALSE, size = 120)
+    result <- js(
+      "(() => {
+      const el = document.getElementById('a'), card = document.createElement('div');
+      Object.assign(card.style, {height: '360px', width: '400px', overflow: 'auto', marginTop: '120px'});
+      el.parentElement.insertBefore(card, el); card.append(el);
+      el.querySelector('.mascot-menu-toggle').click();
+      const menu = el.querySelector('.mascot-menu').getBoundingClientRect(), bounds = card.getBoundingClientRect();
+      return {top: menu.top - bounds.top, bottom: bounds.bottom - menu.bottom,
+        left: menu.left - bounds.left, right: bounds.right - menu.right};
+    })()"
+    )
+    expect_gte(result$top, 7)
+    expect_gte(result$bottom, 7)
+    expect_gte(result$left, 7)
+    expect_gte(result$right, 7)
+  })
   it("P6 Enter and Space always operate the toggle and navigation stays in its menu", {
     skip_without_chrome()
     js <- local_host_page(popup_menu = c(about = "About", help = "Help", more = "More"), shiny_menu = TRUE)
@@ -1691,21 +1780,20 @@ describe("mascot.host popup menu", {
     expect_identical(r$home, "about")
     expect_true(r$focus)
   })
-  it("P6 pauses bubble time, rejects whole bad patches and removes menu controls safely", {
+  it("P6 clears bubbles on opening, rejects whole bad patches and removes menu controls safely", {
     skip_without_chrome()
     js <- local_host_page(popup_menu = c(about = "About"), shiny_menu = TRUE, bubble = mascot_bubble("Ready", 5))
     r <- js(
       "(async()=>{const el=document.getElementById('a'),state=()=>mascot.host.state(el),send=patch=>mascot.host.receive({id:'a',patch});
-      el.querySelector('.mascot-menu-toggle').click();document.activeElement.blur();const before=state().bubble.remaining;
-      await new Promise(r=>setTimeout(r,120));const after=state().bubble.remaining;
+      el.querySelector('.mascot-menu-toggle').click();const cleared=state().bubble===null&&el.querySelector('.mascot-bubble').hidden;
       send({mood:'happy',popup_menu:{items:{bad:''}}});const atomic=state().mood==='idle'&&state().menuOpen;
       el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:{replacement:'Replacement'}}});
       const replacementFocus=document.activeElement===el.querySelector('.mascot-menu-toggle');
       el.querySelector('.mascot-menu-toggle').click();el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:null}});
-      return {before,after,atomic,replacementFocus,open:state().menuOpen,button:!!el.querySelector('.mascot-menu-toggle'),
+      return {cleared,atomic,replacementFocus,open:state().menuOpen,button:!!el.querySelector('.mascot-menu-toggle'),
         image:el.querySelector('canvas').getAttribute('role'),focus:document.activeElement===el.querySelector('canvas')};})()"
     )
-    expect_equal(r$before, r$after, tolerance = 0.02)
+    expect_true(r$cleared)
     expect_true(r$atomic)
     expect_true(r$replacementFocus)
     expect_false(r$open)
@@ -1749,7 +1837,7 @@ describe("mascot.host popup menu", {
     )
     r <- js(
       "(() => {const el=document.getElementById('a');el.querySelector('.mascot-menu-toggle').click();
-      const menu=el.querySelector('.mascot-menu'),below=menu.getBoundingClientRect().top>=el.getBoundingClientRect().bottom-1;
+      const menu=el.querySelector('.mascot-menu'),below=menu.getBoundingClientRect().top>=el.querySelector('canvas').getBoundingClientRect().top;
       el.querySelector('.mascot-menu-toggle').click();
       el.querySelector('.mascot-minimise').click();const closed=!mascot.host.state(el).menuOpen;
       mascot.host.receive({id:'a',patch:{popup_menu:{items:{new:'New'}}}});
@@ -2041,7 +2129,8 @@ describe("mascot.host dragging", {
     expect_identical(result$events, list(list("a_position", "top-left", list(priority = "event"))))
     result <- host_layout(
       js,
-      "const el=document.getElementById('a'),r=el.getBoundingClientRect(),
+      "mascot.host.receive({id:'a',patch:{bubble:{text:'Hello again',html:false,closable:true,duration:null}}});
+      const el=document.getElementById('a'),r=el.getBoundingClientRect(),
       b=el.querySelector('.mascot-bubble').getBoundingClientRect(),s=mascot.host.state(el);
       return {x:r.x,y:r.y,position:el.dataset.position,state:s.placement.position,drag:s.placement.drag,
         placed:el.dataset.placed===undefined,dragging:s.dragging,dropped:s.dropped,below:b.top>r.bottom,

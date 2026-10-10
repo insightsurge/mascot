@@ -50,17 +50,19 @@ role_pickers <- function(mode, roles) {
       "Each picker starts at Tessa's own colour. Change one to add it to the theme; \u00d7 takes it out again.
       The round swatch shows the colour in use now."
     ),
-    lapply(names(role_groups), function(group) {
-      if (!length(role_groups[[group]])) {
-        return(NULL)
-      }
-      tags$details(
-        open = if (group == "Body") NA,
-        class = "pg-role-group",
-        tags$summary(group),
-        lapply(role_groups[[group]], function(role) role_picker(mode, role, roles))
+    do.call(
+      bslib::accordion,
+      c(
+        lapply(names(Filter(length, role_groups)), function(group) {
+          bslib::accordion_panel(
+            group,
+            lapply(role_groups[[group]], function(role) role_picker(mode, role, roles)),
+            value = group
+          )
+        }),
+        list(open = "Body")
       )
-    }),
+    ),
     try_button("reset_mode", mode, paste("Reset", mode, "colours"), "btn-outline-primary")
   )
 }
@@ -78,7 +80,7 @@ panel_look <- function(moods = mascot_moods()) {
       mood_cards(moods)
     ),
     fn_heading("mascot_moods"),
-    div(class = "pg-hint", "No arguments. Its table is in the guide; choose mascot_mood() to try a mood.")
+    div(class = "pg-hint", "No arguments. Its table is in the Learn card; choose mascot_mood() to try a mood.")
   )
 }
 
@@ -137,7 +139,7 @@ panel_motion <- function(gestures = mascot_gestures()) {
       )
     ),
     fn_heading("mascot_gestures"),
-    div(class = "pg-hint", "No arguments. Its table is shown as the gesture cards in the guide.")
+    div(class = "pg-hint", "No arguments. Its table is shown as the gesture cards in the Learn card.")
   )
 }
 
@@ -169,7 +171,6 @@ panel_layout <- function() {
         conditionalPanel("input.small_on", sliderInput("small_px", "Pixels", min = 24, max = 160, value = 72, step = 4))
       )
     ),
-    arg_field("mascot_size", "simplify_when_small", input_switch("simplify", "Simpler drawing below 72 pixels", TRUE)),
     fn_heading("mascot_placement"),
     arg_field(
       "mascot_placement",
@@ -184,11 +185,23 @@ panel_layout <- function() {
       "mascot_placement",
       "minimise",
       tagList(
-        conditionalPanel("input.position != 'inline'", input_switch("minimise", "Show a minimise button", FALSE)),
+        input_switch("minimise", "Show a minimise button", FALSE),
         conditionalPanel(
           "input.position == 'inline'",
           div(class = "pg-note", "Pick a corner first: only a floating mascot can minimise.")
         )
+      )
+    ),
+    arg_field(
+      "mascot_placement",
+      "drag",
+      tagList(
+        selectInput("drag", "When dropped", c("No dragging (FALSE)" = "FALSE", Snap = "snap", Free = "free")),
+        conditionalPanel(
+          "input.position == 'inline'",
+          div(class = "pg-note", "Pick a corner first: only a floating mascot can be dragged.")
+        ),
+        div(class = "pg-live", tags$code("input$helper_position"), textOutput("position_last"))
       )
     )
   )
@@ -247,7 +260,7 @@ panel_colours <- function(roles = mascot_colour_roles()) {
         "mascot_colour_roles",
         "character",
         selectInput("roles_character", "Character", c(Tessa = "tessa")),
-        note = div(class = "pg-note", "Its table is in the guide, with every part's colour and what it follows.")
+        note = div(class = "pg-note", "Its table is in the Learn card, with every part's colour and what it follows.")
       )
     )
   )

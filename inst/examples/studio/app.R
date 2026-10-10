@@ -40,113 +40,126 @@ server_args <- function(state, style) {
 
 start_mascot <- do.call(mascot, lapply(ui_args(start, "short"), eval))
 
-studio_page <- div(
-  class = "pg-studio",
-  id = "studio_shell",
-  function_index(),
+studio_page <- bslib::layout_sidebar(
+  sidebar = bslib::sidebar(function_index(), width = 230, open = "desktop", title = "Functions"),
   div(
-    class = "pg-centre",
-    id = "studio_centre",
+    class = "pg-studio",
+    id = "studio_shell",
     div(
-      class = "pg-toolbar pg-card-head",
-      actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm"),
+      class = "pg-centre",
+      id = "studio_centre",
       div(
-        class = "pg-code-style",
-        popover(
-          tags$button(
-            type = "button",
-            class = "pg-arg-chip",
-            `aria-label` = "Shortcuts or helpers?",
-            "Code style",
-            tags$span(class = "pg-info", "i")
+        class = "pg-toolbar pg-card-head",
+        actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm"),
+        div(
+          class = "pg-code-style",
+          popover(
+            tags$button(
+              type = "button",
+              class = "pg-arg-chip",
+              `aria-label` = "Shortcuts or helpers?",
+              "Code style",
+              tags$span(class = "pg-info", "i")
+            ),
+            p("Shortcuts are plain values: mood = \"happy\"."),
+            p(
+              "Helpers are mascot_*() calls: mood = mascot_mood(\"happy\"). Use them for settings beyond the main value, such as a bubble's duration. Both give the same mascot."
+            ),
+            title = "Shortcuts or helpers?"
           ),
-          p("Shortcuts are plain values: mood = \"happy\"."),
-          p(
-            "Helpers are mascot_*() calls: mood = mascot_mood(\"happy\"). Use them for settings beyond the main value, such as a bubble's duration. Both give the same mascot."
-          ),
-          title = "Shortcuts or helpers?"
-        ),
-        radioButtons("code_style", NULL, c(Shortcuts = "short", Helpers = "helper"), inline = TRUE)
-      )
-    ),
-    div(
-      class = "pg-canvas",
-      id = "studio_canvas",
-      div(class = "pg-stage", start_mascot),
-      uiOutput("stage_note"),
-      div(class = "pg-canvas-caption pg-muted", "Tessa follows the arguments in the inspector.")
-    ),
-    div(
-      class = "pg-dock",
-      id = "studio_dock",
-      tags$div(
-        id = "dock_grip",
-        class = "pg-grip",
-        role = "separator",
-        tabindex = "0",
-        `aria-label` = "Resize the guide and code dock",
-        `aria-orientation` = "horizontal",
-        `aria-valuemin` = "25",
-        `aria-valuemax` = "80",
-        `aria-valuenow` = "42",
-        title = "Drag to resize, or use the up and down arrow keys"
+          radioButtons("code_style", NULL, c(Shortcuts = "short", Helpers = "helper"), inline = TRUE)
+        )
       ),
-      tags$button(
-        id = "guide_expand",
-        type = "button",
-        class = "btn btn-outline-primary btn-sm pg-expand",
-        `aria-expanded` = "false",
-        `aria-controls` = "studio_dock",
-        "Expand guide"
+      div(
+        class = "pg-canvas",
+        id = "studio_canvas",
+        div(class = "pg-stage", start_mascot),
+        uiOutput("stage_note"),
+        div(class = "pg-canvas-caption pg-muted", "Tessa follows the arguments in the inspector.")
       ),
-      navset_underline(
-        id = "code_tabs",
-        nav_panel("Guide", value = "Guide", uiOutput("guide")),
-        nav_panel(
-          "UI",
-          div(class = "pg-hint", "A mascot() call that starts the way Tessa looks now."),
-          div(class = "pg-code-wrap", code_output("code_ui"), copy_button("code_ui"))
+      bslib::card(
+        full_screen = TRUE,
+        class = "pg-learn",
+        bslib::accordion(
+          bslib::accordion_panel(uiOutput("learn_title", inline = TRUE), uiOutput("learn"), value = "learn"),
+          id = "learn_card",
+          open = FALSE
+        )
+      ),
+      div(
+        class = "pg-dock",
+        id = "studio_dock",
+        tags$div(
+          id = "dock_grip",
+          class = "pg-grip",
+          role = "separator",
+          tabindex = "0",
+          `aria-label` = "Resize the code dock",
+          `aria-orientation` = "horizontal",
+          `aria-valuemin` = "25",
+          `aria-valuemax` = "80",
+          `aria-valuenow` = "42",
+          title = "Drag to resize, or use the up and down arrow keys"
         ),
-        nav_panel(
-          "Server",
-          div(class = "pg-hint", "One updateMascot() call that turns a plain mascot into Tessa as she is now."),
-          div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))
-        ),
-        nav_panel(
-          "App",
-          div(class = "pg-hint", "A complete app.R: paste it into a new file and run it."),
-          div(class = "pg-code-wrap", code_output("code_app"), copy_button("code_app"))
-        ),
-        nav_panel(
-          "Last",
-          div(class = "pg-hint", "The call the studio just ran in its server."),
-          div(class = "pg-code-wrap", code_output("code_last"), copy_button("code_last"))
-        ),
-        nav_panel(
-          "Log",
-          div(
-            class = "pg-card-head",
-            div(class = "pg-hint", "Every call and menu choice, newest first, with warnings and errors."),
-            actionButton("log_clear", "Clear", class = "btn-outline-primary btn-sm")
-          ),
-          uiOutput("log")
+        bslib::card(
+          full_screen = TRUE,
+          bslib::accordion(
+            bslib::accordion_panel(
+              "Code: UI | Server | App | Last | Log",
+              navset_underline(
+                id = "code_tabs",
+                nav_panel(
+                  "UI",
+                  div(class = "pg-hint", "A mascot() call that starts the way Tessa looks now."),
+                  div(class = "pg-code-wrap", code_output("code_ui"), copy_button("code_ui"))
+                ),
+                nav_panel(
+                  "Server",
+                  div(class = "pg-hint", "One updateMascot() call that turns a plain mascot into Tessa as she is now."),
+                  div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))
+                ),
+                nav_panel(
+                  "App",
+                  div(class = "pg-hint", "A complete app.R: paste it into a new file and run it."),
+                  div(class = "pg-code-wrap", code_output("code_app"), copy_button("code_app"))
+                ),
+                nav_panel(
+                  "Last",
+                  div(class = "pg-hint", "The call the studio just ran in its server."),
+                  div(class = "pg-code-wrap", code_output("code_last"), copy_button("code_last"))
+                ),
+                nav_panel(
+                  "Log",
+                  div(
+                    class = "pg-card-head",
+                    div(class = "pg-hint", "Every call and menu choice, newest first, with warnings and errors."),
+                    actionButton("log_clear", "Clear", class = "btn-outline-primary btn-sm")
+                  ),
+                  uiOutput("log")
+                )
+              ),
+              value = "code"
+            ),
+            id = "code_dock",
+            open = TRUE
+          )
         )
       )
+    ),
+    tags$aside(
+      class = "pg-inspector",
+      id = "studio_inspector",
+      `aria-label` = "Function controls",
+      input_switch("show_all_controls", "Show all controls", FALSE),
+      div(class = "pg-hint", "Show every function's controls, folded by function."),
+      panel_look(),
+      panel_messages(),
+      panel_motion(),
+      panel_layout(),
+      panel_colours(),
+      panel_menu(),
+      panel_wiring()
     )
-  ),
-  tags$aside(
-    class = "pg-inspector",
-    id = "studio_inspector",
-    `aria-label` = "Function controls",
-    input_switch("show_all_controls", "Show all controls", FALSE),
-    div(class = "pg-hint", "Show every function's controls, folded by function."),
-    panel_look(),
-    panel_messages(),
-    panel_motion(),
-    panel_layout(),
-    panel_colours(),
-    panel_menu(),
-    panel_wiring()
   )
 )
 
@@ -181,13 +194,25 @@ preview_page <- layout_sidebar(
       "placement",
       selectInput("preview_placement", "Placement", c("inline", corners))
     ),
-    arg_field("mascot_preview", "theme", input_switch("preview_theme", "Use the studio's colours", TRUE)),
+    arg_field(
+      "mascot_preview",
+      "theme",
+      tagList(
+        div(class = "pg-css", colour_input("preview_body", "#3f8a66", "Body colour"), tags$code("body")),
+        div(class = "pg-css", colour_input("preview_rim", "#d9b35c", "Rim colour"), tags$code("rim"))
+      )
+    ),
     arg_field("mascot_preview", "motion", input_switch("preview_motion", "Animate", FALSE)),
-    arg_field("mascot_preview", "popup_menu", input_switch("preview_menu", "Use the studio's menu", FALSE)),
+    arg_field(
+      "mascot_preview",
+      "popup_menu",
+      textAreaInput("preview_menu_items", "One item per line: id = Label", "", rows = 3)
+    ),
     actionButton("preview_build", "Build the preview", class = "btn-primary")
   ),
   card(
-    card_header(class = "pg-card-head", "The preview page", uiOutput("preview_open", inline = TRUE)),
+    full_screen = TRUE,
+    card_header("The preview page"),
     div(
       class = "pg-code-wrap",
       code_output("code_preview"),
@@ -196,12 +221,13 @@ preview_page <- layout_sidebar(
     uiOutput("preview_frame"),
     uiOutput("preview_contrast")
   ),
-  card(card_header("Guide"), card_body(guide_content("preview")))
+  card(full_screen = TRUE, card_header("Guide"), card_body(guide_content("preview")))
 )
 
 examples_page <- layout_columns(
   col_widths = breakpoints(sm = 12, lg = c(5, 7)),
   card(
+    full_screen = TRUE,
     card_header("Guide"),
     card_body(
       guide_content("examples"),
@@ -210,6 +236,7 @@ examples_page <- layout_columns(
     )
   ),
   card(
+    full_screen = TRUE,
     card_header(class = "pg-card-head", "Read an example", tags$span(class = "pg-muted", "mascot_example()")),
     card_body(
       arg_field(
@@ -231,27 +258,77 @@ examples_page <- layout_columns(
   )
 )
 
-ui <- page_navbar(
-  title = "mascot studio",
-  id = "tabs",
-  theme = bs_theme(version = 5),
-  # The studio fills the window; each column and the dock scroll independently.
-  fillable = "studio",
-  window_title = "mascot studio",
-  header = tags$head(
-    tags$link(rel = "stylesheet", href = "studio.css"),
-    tags$script(src = "studio.js")
-  ),
-  nav_panel("Studio", value = "studio", studio_page),
-  nav_panel("Static preview", value = "preview", preview_page),
-  nav_panel("Examples", value = "examples", examples_page),
-  nav_spacer(),
-  nav_item(input_dark_mode(id = "dark_mode", mode = "light"))
-)
+view_from_request <- function(request) {
+  checkmate::assert(checkmate::check_list(request), checkmate::check_environment(request), .var.name = "request")
+  query <- shiny::parseQueryString(if (is.null(request$QUERY_STRING)) "" else request$QUERY_STRING)
+  if (is.null(query$view) || !query$view %in% c("preview", "examples")) "studio" else query$view
+}
+
+view_link <- function(label, view, new_tab = TRUE) {
+  checkmate::assert_string(label)
+  checkmate::assert_string(view)
+  checkmate::assert_flag(new_tab)
+  bslib::nav_item(tags$a(
+    class = "nav-link",
+    href = if (view == "studio") "?" else paste0("?view=", view),
+    target = if (new_tab) "_blank",
+    rel = "noopener",
+    label,
+    if (new_tab) shiny::icon("arrow-up-right-from-square", class = "small ms-1")
+  ))
+}
+
+ui <- function(request) {
+  view <- view_from_request(request)
+  page_navbar(
+    title = "mascot studio",
+    id = "tabs",
+    theme = bs_theme(version = 5),
+    fillable = if (view == "studio") "studio" else FALSE,
+    window_title = "mascot studio",
+    header = tags$head(
+      tags$link(rel = "stylesheet", href = "studio.css"),
+      tags$script(src = "studio.js")
+    ),
+    if (view == "studio") nav_panel("Studio", value = "studio", studio_page) else view_link("Studio", "studio", FALSE),
+    if (view == "preview") {
+      nav_panel("Static preview", value = "preview", preview_page)
+    } else {
+      view_link("Static preview", "preview")
+    },
+    if (view == "examples") {
+      nav_panel("Examples", value = "examples", examples_page)
+    } else {
+      view_link("Examples", "examples")
+    },
+    nav_spacer(),
+    bslib::nav_menu(
+      "Links",
+      bslib::nav_item(tags$a(
+        class = "dropdown-item",
+        href = "https://github.com/insightsurge/mascot",
+        target = "_blank",
+        rel = "noopener",
+        shiny::icon("github"),
+        "GitHub"
+      )),
+      bslib::nav_item(tags$a(
+        class = "dropdown-item",
+        href = "https://insightsurge.github.io/mascot/",
+        target = "_blank",
+        rel = "noopener",
+        shiny::icon("book"),
+        "Package website"
+      )),
+      align = "right"
+    ),
+    nav_item(input_dark_mode(id = "dark_mode", mode = "light"))
+  )
+}
 
 # ---- Server ------------------------------------------------------------------------------
 
-server <- function(input, output, session) {
+studio_server <- function(input, output, session) {
   state <- do.call(reactiveValues, start)
   last_call <- reactiveVal("No update yet. Change a setting in the inspector.")
   log <- reactiveVal(list())
@@ -332,7 +409,6 @@ server <- function(input, output, session) {
     req(input$select_function %in% names(playground_guide))
     selected_function(input$select_function)
     nav_select("tabs", "studio")
-    nav_select("code_tabs", "Guide")
   })
   observeEvent(input$reset_all, session$reload())
 
@@ -377,20 +453,28 @@ server <- function(input, output, session) {
   size_code <- reactive({
     # Sliders send whole numbers as integers; the code shows plain numbers.
     size <- if (input$size_unit == "pct") paste0(input$size_pct, "%") else as.numeric(input$size_px)
-    code_size(size, if (input$small_on) as.numeric(input$small_px), input$simplify)
+    code_size(size, if (input$small_on) as.numeric(input$small_px))
   })
   observeEvent(size_code(), send(list(size = size_code())), ignoreInit = TRUE)
   observeEvent(
-    list(input$position, input$minimise),
+    list(input$position, input$minimise, input$drag),
     {
       floating <- input$position != "inline"
       if (!floating && isTRUE(input$minimise)) {
         update_switch("minimise", value = FALSE)
       }
-      send(list(placement = code_placement(input$position, floating && isTRUE(input$minimise))))
+      drag <- if (floating && !is.null(input$drag) && input$drag != "FALSE") input$drag else FALSE
+      send(list(placement = code_placement(input$position, floating && isTRUE(input$minimise), drag)))
     },
     ignoreInit = TRUE
   )
+  position_last <- reactiveVal("Nothing yet: drag a floating mascot to receive an event.")
+  observeEvent(input$helper_position, {
+    value <- format_expr(input$helper_position)
+    position_last(value)
+    add_log(paste0("input$helper_position  # ", value), "event", "The visitor dropped the mascot.")
+  })
+  output$position_last <- renderText(position_last())
   output$size_ruler <- renderUI({
     if (input$size_unit == "pct") {
       size_ruler(NULL, NULL)
@@ -679,8 +763,12 @@ server <- function(input, output, session) {
     )
   })
 
+  outputOptions(output, "log", suspendWhenHidden = FALSE)
+
   # A reference for the selected function, with code made from its current controls.
-  output$guide <- renderUI(selected_guide(selected_function()))
+  output$learn_title <- renderText(paste0("Learn: ", selected_function(), "()"))
+  output$learn <- renderUI(selected_learn(selected_function()))
+  outputOptions(output, "learn", suspendWhenHidden = FALSE)
   output$roles_table <- renderUI(roles_table(input$roles_character))
   output$code_function <- renderText({
     fn <- selected_function()
@@ -698,7 +786,11 @@ server <- function(input, output, session) {
       mascot_motion = code_motion(input$animate, input$swap),
       mascot_gesture = code_gesture(if (is.null(input$gesture)) "nod" else input$gesture),
       mascot_size = size_code(),
-      mascot_placement = code_placement(input$position, input$position != "inline" && isTRUE(input$minimise)),
+      mascot_placement = code_placement(
+        input$position,
+        input$position != "inline" && isTRUE(input$minimise),
+        if (input$position != "inline" && input$drag != "FALSE") input$drag else FALSE
+      ),
       mascot_theme = theme_code(),
       mascot_popup_menu = code_menu(if (isTRUE(input$menu_on)) menu_parsed()$items else character()),
       NULL
@@ -716,15 +808,25 @@ server <- function(input, output, session) {
     )
   })
   outputOptions(output, "code_function", suspendWhenHidden = FALSE)
+}
 
+preview_server <- function(input, output, session) {
   # Static preview
-  preview_dir <- file.path(tempdir(), "mascot-studio-preview")
+  prefix <- paste0("studio-preview-", session$token)
+  preview_dir <- file.path(tempdir(), prefix)
   dir.create(preview_dir, showWarnings = FALSE)
-  addResourcePath("studio-preview", preview_dir)
+  addResourcePath(prefix, preview_dir)
+  session$onSessionEnded(function() {
+    removeResourcePath(prefix)
+    unlink(preview_dir, recursive = TRUE)
+  })
   preview_count <- reactiveVal(0)
   preview_call <- reactive({
-    current <- reactiveValuesToList(state)
-    menu <- current$popup_menu$short
+    req(input$preview_character, input$preview_body, input$preview_rim)
+    lines <- trimws(strsplit(input$preview_menu_items, "\n", fixed = TRUE)[[1]])
+    lines <- lines[nzchar(lines)]
+    validate(need(all(grepl("=", lines, fixed = TRUE)), "Write each menu item as id = Label."))
+    items <- stats::setNames(trimws(sub("^[^=]*=", "", lines)), trimws(sub("=.*$", "", lines)))
     args <- list(
       character = if (input$preview_character != "tessa") input$preview_character,
       mood = if (nzchar(input$preview_mood)) input$preview_mood,
@@ -732,14 +834,14 @@ server <- function(input, output, session) {
       bubble = if (nzchar(trimws(input$preview_bubble))) input$preview_bubble,
       size = if (input$preview_size != 160) as.numeric(input$preview_size),
       placement = if (input$preview_placement != "inline") input$preview_placement,
-      theme = if (input$preview_theme && !identical(current$theme$short, defaults$theme)) current$theme[[style()]],
+      theme = named_call("list", list(body = input$preview_body, rim = input$preview_rim)),
       motion = if (input$preview_motion) TRUE,
-      popup_menu = if (input$preview_menu && !identical(menu, defaults$popup_menu)) current$popup_menu[[style()]]
+      popup_menu = if (length(items)) named_call("c", items)
     )
     Filter(Negate(is.null), args)
   })
   output$code_preview <- renderText(format_call("mascot_preview", preview_call()))
-  # The first visit to the tab builds a preview; the button builds a new one.
+  # This view builds on its first visit; the button builds a new preview.
   preview_request <- reactiveVal(0)
   observeEvent(input$preview_build, preview_request(preview_request() + 1))
   observeEvent(input$tabs, {
@@ -748,7 +850,6 @@ server <- function(input, output, session) {
   preview <- eventReactive(preview_request(), {
     req(preview_request() > 0)
     args <- preview_call()
-    code <- format_call("mascot_preview", args)
     page <- withCallingHandlers(
       tryCatch(eval(as.call(c(as.name("mascot_preview"), args))), error = function(e) e),
       warning = function(w) {
@@ -756,15 +857,10 @@ server <- function(input, output, session) {
       }
     )
     if (inherits(page, "error")) {
-      add_log(code, "error", cli::ansi_strip(conditionMessage(page)))
       return(list(error = cli::ansi_strip(conditionMessage(page))))
     }
     preview_count(isolate(preview_count()) + 1)
     file <- sprintf("preview-%s-%d.html", session$token, isolate(preview_count()))
-    # The preview is its own page: carry the studio's CSS variable over when a part reads it.
-    if (grepl("--studio-accent", paste(deparse(args$theme), collapse = ""), fixed = TRUE)) {
-      page <- tagList(tags$style(sprintf(":root { --studio-accent: %s; }", input$css_accent)), page)
-    }
     htmltools::save_html(page, file.path(preview_dir, file), libdir = "lib")
     list(file = file, contrast = attr(page, "contrast"))
   })
@@ -778,20 +874,8 @@ server <- function(input, output, session) {
     }
     tags$iframe(
       class = paste("pg-preview", if (input$preview_width == "phone") "is-phone"),
-      src = paste0("studio-preview/", result$file),
+      src = paste0(prefix, "/", result$file),
       title = "mascot_preview() page"
-    )
-  })
-  output$preview_open <- renderUI({
-    req(preview_request() > 0)
-    result <- preview()
-    req(result$file)
-    tags$a(
-      class = "btn btn-sm btn-outline-primary",
-      href = paste0("studio-preview/", result$file),
-      target = "_blank",
-      rel = "noopener",
-      "Open in a new tab"
     )
   })
   output$preview_contrast <- renderUI({
@@ -806,7 +890,9 @@ server <- function(input, output, session) {
     findings$ratio <- format(round(findings$ratio, 2), nsmall = 2)
     tagList(div(class = "pg-note pg-warn", "attr(page, \"contrast\") lists colours below 3:1:"), data_table(findings))
   })
+}
 
+examples_server <- function(input, output, session) {
   # Examples
   observeEvent(input$example_pick, updateSelectInput(session, "example_name", selected = input$example_pick))
   output$example_result <- renderUI({
@@ -843,6 +929,24 @@ server <- function(input, output, session) {
       )
     )
   })
+}
+
+# The UI exposes exactly one panel for the URL. Its initial selection routes the
+# server, because the WebSocket request need not carry the page's query string.
+server <- function(input, output, session) {
+  observeEvent(
+    input$tabs,
+    {
+      req(input$tabs %in% c("studio", "preview", "examples"))
+      switch(
+        input$tabs,
+        studio = studio_server(input, output, session),
+        preview = preview_server(input, output, session),
+        examples = examples_server(input, output, session)
+      )
+    },
+    once = TRUE
+  )
 }
 
 shinyApp(ui, server)

@@ -189,12 +189,6 @@ playground_guide <- list(
         default = "NULL",
         null = "uses size on every screen",
         detail = "Narrow your browser window below 576 pixels to see it switch."
-      ),
-      simplify_when_small = guide_arg(
-        "Below 72 pixels, use the character's simpler drawing.",
-        accepts = c("TRUE", "FALSE"),
-        default = "TRUE",
-        detail = "TRUE selects the small drawing below 72 pixels; FALSE keeps the full drawing."
       )
     )
   ),
@@ -216,6 +210,14 @@ playground_guide <- list(
         default = "FALSE",
         detail = "A minimised mascot shrinks to a small restore button. Updates and messages still arrive
           and show when the visitor restores it."
+      ),
+      drag = guide_arg(
+        "Let visitors drag a floating mascot. Pick a corner first.",
+        accepts = c("FALSE", "\"snap\"", "\"free\""),
+        default = "FALSE",
+        detail = "Snap moves to the nearest corner on release. Free stays where dropped. In Shiny,
+          input$<id>_position reports the corner for snap, or a list with x and y in CSS pixels for free.",
+        example = "mascot_placement(\"bottom-right\", drag = \"snap\")"
       )
     )
   ),

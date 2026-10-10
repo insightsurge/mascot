@@ -905,7 +905,7 @@ describe("mascot.host floating placement", {
       }
       for (corner in c("top-left", "top-right", "bottom-left", "bottom-right")) {
         js(sprintf(
-          "mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'%s',minimise:false}}})",
+          "mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'%s',minimise:false,drag:false}}})",
           corner
         ))
         result <- host_layout(
@@ -999,7 +999,7 @@ describe("mascot.host floating placement", {
     expect_equal(result$mounts, 0)
     js(
       "el.querySelector('.mascot-minimise').click();mascot.host.receive({id:'a',patch:{placement:{
-      floating:false,position:'bottom-right',minimise:false}}})"
+      floating:false,position:'bottom-right',minimise:false,drag:false}}})"
     )
     expect_false(host_layout(js, "return mascot.host.state(el).minimised;"))
     expect_identical(js("getComputedStyle(el).position"), "relative")
@@ -1014,10 +1014,10 @@ describe("mascot.host floating placement", {
       for(const bad of [{size:23,small_screen:null}, {size:'0%',small_screen:null},
         {size:48,small_screen:null,simplify_when_small:true}])
         mascot.host.receive({id:'a',patch:{size:bad,mood:'happy'}});
-      mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'top-left',minimise:false},mood:'happy'}});
+      mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'top-left',minimise:false,drag:false},mood:'happy'}});
       mascot.host.receive({id:'late-layout',patch:{size:{size:1,small_screen:null},mood:'happy'}});
       mascot.host.receive({id:'late-layout',patch:{size:{size:48,small_screen:null},
-        placement:{floating:true,position:'top-left',minimise:false}}});
+        placement:{floating:true,position:'top-left',minimise:false,drag:false}}});
       const next=el.cloneNode(true);next.id='late-layout';document.body.append(next);mascot.host.mount(next);
       return {same:before===JSON.stringify(mascot.host.state(el)), warnings:warnings.length,
         mood:mascot.host.state(next).mood,size:mascot.host.state(next).size.size,
@@ -1044,7 +1044,7 @@ describe("mascot.host floating placement", {
       const count=()=>[...watched.values()].filter(targets=>targets.has(panel)).length;
       mascot.host.mount(el);const inline=count();
       const placement=(floating,position='bottom-right')=>
-        mascot.host.receive({id:'a',patch:{placement:{floating,position,minimise:false}}});
+        mascot.host.receive({id:'a',patch:{placement:{floating,position,minimise:false,drag:false}}});
       placement(true);const bottom=count();placement(true,'top-right');const top=count();
       placement(true);const again=count();placement(false);const restored=count();
       const state=mascot.host.state(el);mascot.host.unmount(el);
@@ -1183,17 +1183,17 @@ describe("size and placement review regressions", {
     for (floating in c(TRUE, FALSE)) {
       js(
         "window.el=document.getElementById('a');mascot.host.receive({id:'a',patch:{placement:{
-        floating:true,position:'bottom-right',minimise:true}}});el.querySelector('.mascot-minimise').focus()"
+        floating:true,position:'bottom-right',minimise:true,drag:false}}});el.querySelector('.mascot-minimise').focus()"
       )
       js(sprintf(
-        "mascot.host.receive({id:'a',patch:{placement:{floating:%s,position:'bottom-right',minimise:false}}})",
+        "mascot.host.receive({id:'a',patch:{placement:{floating:%s,position:'bottom-right',minimise:false,drag:false}}})",
         tolower(as.character(floating))
       ))
       expect_true(host_layout(js, "return document.activeElement===el.querySelector('canvas');"))
     }
     js(
       "window.other=document.createElement('button');other.textContent='Elsewhere';document.body.append(other);
-      other.focus();mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'top-left',minimise:false}}})"
+      other.focus();mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'top-left',minimise:false,drag:false}}})"
     )
     expect_true(host_layout(js, "return document.activeElement===other;"))
   })
@@ -1204,7 +1204,7 @@ describe("size and placement review regressions", {
       "window.el=document.getElementById('a');window.box=document.createElement('div');
       box.style.cssText='transform:translateZ(0);position:relative;width:400px;height:400px;margin:100px';
       box.dataset.bsTheme='dark';el.before(box);box.append(el);
-      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'bottom-right',minimise:true}}})"
+      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'bottom-right',minimise:true,drag:false}}})"
     )
     result <- host_layout(
       js,
@@ -1229,7 +1229,9 @@ describe("size and placement review regressions", {
       host_layout(js, "return getComputedStyle(el.querySelector('.mascot-bubble')).backgroundColor;"),
       "rgb(33, 37, 41)"
     )
-    js("mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'bottom-right',minimise:false}}})")
+    js(
+      "mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'bottom-right',minimise:false,drag:false}}})"
+    )
     expect_true(host_layout(js, "return el.parentElement===box;"))
     expect_equal(js("document.querySelectorAll('.mascot-source').length"), 0)
     expect_false(js("el.hasAttribute('data-shiny-no-bind-input')"))
@@ -1433,7 +1435,7 @@ describe("mascot.host themes", {
     js(
       "window.el=document.getElementById('a');window.box=document.createElement('div');
       box.style.cssText='--team-blue:#1f6feb';box.dataset.bsTheme='dark';el.before(box);box.append(el);
-      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'bottom-right',minimise:true},
+      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'bottom-right',minimise:true,drag:false},
         theme:{light:null,dark:null,mode:'auto',css:{body:'--team-blue'},brand:null}}});"
     )
     result <- host_layout(
@@ -1490,7 +1492,7 @@ describe("mascot.host themes", {
       mascot.host.receive({id:'a',patch:{theme:theme('auto')}});const first=counts();
       const b=el.cloneNode(true);b.id='b';document.body.append(b);mascot.host.mount(b);mascot.host.receive({id:'b',patch:{theme:theme('auto')}});const two=counts();
       mascot.host.unmount(el);const one=counts();mascot.host.receive({id:'b',patch:{theme:theme('light')}});const none=counts();
-      mascot.host.receive({id:'b',patch:{placement:{floating:true,position:'bottom-right',minimise:true}}});const bubble=counts();
+      mascot.host.receive({id:'b',patch:{placement:{floating:true,position:'bottom-right',minimise:true,drag:false}}});const bubble=counts();
       mascot.host.unmount(b);const gone=counts();return {first,two,one,none,bubble,gone};
     })()"
     )
@@ -1802,19 +1804,19 @@ describe("mascot.host review corrections", {
       "(() => {const el=document.getElementById('a'),send=patch=>mascot.host.receive({id:'a',patch});
       const button=el.querySelector('.mascot-menu-toggle'),outcomes=[];
       for(const minimised of [false,true]) {
-        send({placement:{floating:true,position:'bottom-right',minimise:true}});
+        send({placement:{floating:true,position:'bottom-right',minimise:true,drag:false}});
         if(minimised) el.querySelector('.mascot-minimise').click();else el.querySelector('.mascot-minimise').focus();
-        send({placement:{floating:false,position:'bottom-right',minimise:false}});
+        send({placement:{floating:false,position:'bottom-right',minimise:false,drag:false}});
         outcomes.push(document.activeElement===button);
         button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
         outcomes.push(mascot.host.state(el).menuOpen);
         button.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
       }
-      send({placement:{floating:true,position:'bottom-right',minimise:true}});
-      el.querySelector('.mascot-minimise').focus();send({placement:{floating:true,position:'bottom-right',minimise:false}});
+      send({placement:{floating:true,position:'bottom-right',minimise:true,drag:false}});
+      el.querySelector('.mascot-minimise').focus();send({placement:{floating:true,position:'bottom-right',minimise:false,drag:false}});
       outcomes.push(document.activeElement===button);
       const outside=document.createElement('button');document.body.append(outside);outside.focus();
-      send({placement:{floating:false,position:'bottom-right',minimise:false}});
+      send({placement:{floating:false,position:'bottom-right',minimise:false,drag:false}});
       return {outcomes,outside:document.activeElement===outside};})()"
     )
     expect_true(all(unlist(result$outcomes)))
@@ -1898,7 +1900,7 @@ describe("mascot.host review corrections", {
     expect_lte(r$mascot, r$limit - 15)
     js(
       "document.getElementById('shiny-notification-panel').remove();document.body.style.minHeight='1400px';
-      mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'bottom-right',minimise:false}}});window.scrollTo(0,200)"
+      mascot.host.receive({id:'a',patch:{placement:{floating:false,position:'bottom-right',minimise:false,drag:false}}});window.scrollTo(0,200)"
     )
     r <- host_layout(
       js,
@@ -1992,5 +1994,210 @@ describe("mount replies racing live updates", {
     expect_identical(result$covered$current$mood, "worried")
     expect_null(result$recovered$problem)
     expect_identical(result$recovered$current$mood, "thinking")
+  })
+})
+
+# Synthetic pointer events on the canvas, as a mouse or finger would send them (pointer id 1, primary button).
+drag_js <- paste(
+  "window.press=(target,type,x,y)=>target.dispatchEvent(new PointerEvent(type,",
+  "{bubbles:true,cancelable:true,pointerId:1,button:0,isPrimary:true,clientX:x,clientY:y}));",
+  "window.dragBy=(target,dx,dy)=>{const r=target.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;",
+  "press(target,'pointerdown',x,y);press(target,'pointermove',x+dx/2,y+dy/2);press(target,'pointermove',x+dx,y+dy);",
+  "press(target,'pointerup',x+dx,y+dy);};"
+)
+
+describe("mascot.host dragging", {
+  it("D1 snaps to the nearest corner, reports it, opens bubbles inwards and keeps a click for the menu", {
+    skip_without_chrome()
+    js <- local_host_page(
+      placement = mascot_placement("bottom-right", drag = "snap"),
+      bubble = mascot_bubble("Hello", Inf),
+      popup_menu = c(about = "About"),
+      shiny_menu = TRUE,
+      size = 100,
+      viewport = c(800, 600)
+    )
+    js(drag_js)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a'),c=el.querySelector('canvas'),r=c.getBoundingClientRect();
+      const x=r.left+50,y=r.top+50;
+      press(c,'pointerdown',x,y);press(c,'pointermove',x+2,y+1);const small=el.dataset.dragging;
+      press(c,'pointerup',x+2,y+1);c.click();const menuOpen=mascot.host.state(el).menuOpen;c.click();
+      const start=el.getBoundingClientRect();
+      press(c,'pointerdown',x,y);press(c,'pointermove',x-300,y-200);
+      const moving=el.getBoundingClientRect(),dragging=mascot.host.state(el).dragging,placed=el.dataset.placed;
+      press(c,'pointermove',x-600,y-450);press(c,'pointerup',x-600,y-450);c.click();
+      return {small:small===undefined,menuOpen,dx:moving.left-start.left,dy:moving.top-start.top,dragging,placed,
+        afterClick:mascot.host.state(el).menuOpen,events:menuEvents};"
+    )
+    expect_true(result$small)
+    expect_true(result$menuOpen)
+    expect_equal(result$dx, -300)
+    expect_equal(result$dy, -200)
+    expect_true(result$dragging)
+    expect_identical(result$placed, "true")
+    expect_false(result$afterClick)
+    expect_identical(result$events, list(list("a_position", "top-left", list(priority = "event"))))
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a'),r=el.getBoundingClientRect(),
+      b=el.querySelector('.mascot-bubble').getBoundingClientRect(),s=mascot.host.state(el);
+      return {x:r.x,y:r.y,position:el.dataset.position,state:s.placement.position,drag:s.placement.drag,
+        placed:el.dataset.placed===undefined,dragging:s.dragging,dropped:s.dropped,below:b.top>r.bottom,
+        animations:el.getAnimations().length};"
+    )
+    expect_equal(result$x, 16)
+    expect_equal(result$y, 16)
+    expect_identical(result$position, "top-left")
+    expect_identical(result$state, "top-left")
+    expect_identical(result$drag, "snap")
+    expect_true(result$placed)
+    expect_false(result$dragging)
+    expect_null(result$dropped)
+    expect_true(result$below)
+    # Reduced motion: the move to the corner is instant.
+    expect_equal(result$animations, 0)
+    # Each corner is reached from its own quarter of the window.
+    for (move in list(c(500, 0, "top-right"), c(0, 300, "bottom-right"), c(-500, 0, "bottom-left"))) {
+      js(sprintf("dragBy(document.querySelector('#a canvas'),%s,%s)", move[[1]], move[[2]]))
+      expect_identical(js("document.getElementById('a').dataset.position"), move[[3]])
+      expect_identical(js("menuEvents.at(-1)[1]"), move[[3]])
+    }
+    expect_equal(host_layout(js, "return innerHeight-document.getElementById('a').getBoundingClientRect().bottom;"), 16)
+  })
+  it("D2 keeps a free drop inside the window, after resizes, until a placement update replaces it", {
+    skip_without_chrome()
+    js <- local_host_page(
+      placement = mascot_placement("top-left", drag = "free"),
+      shiny_menu = TRUE,
+      size = 100,
+      viewport = c(800, 600)
+    )
+    js(drag_js)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a'),c=el.querySelector('canvas'),start=el.getBoundingClientRect();
+      dragBy(c,400.4,150);const r=el.getBoundingClientRect(),s=mascot.host.state(el);
+      return {dx:r.left-start.left,dy:r.top-start.top,dropped:s.dropped,position:el.dataset.position,
+        events:menuEvents,width:r.width,height:r.height};"
+    )
+    expect_equal(result$dx, 400)
+    expect_equal(result$dy, 150)
+    expect_identical(result$dropped, list(x = 416L, y = 166L))
+    # The nearest corner only orients the bubble and menu.
+    expect_identical(result$position, "top-right")
+    expect_identical(result$events, list(list("a_position", list(x = 416L, y = 166L), list(priority = "event"))))
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a');dragBy(el.querySelector('canvas'),5000,5000);
+      const r=el.getBoundingClientRect();return {right:innerWidth-r.right,bottom:innerHeight-r.bottom,
+        event:menuEvents.at(-1)[1],x:r.x,y:r.y,position:el.dataset.position};"
+    )
+    expect_equal(result$right, 16)
+    expect_equal(result$bottom, 16)
+    expect_equal(result$event$x, round(result$x))
+    expect_equal(result$event$y, round(result$y))
+    expect_identical(result$position, "bottom-right")
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a');dragBy(el.querySelector('canvas'),-5000,-5000);
+      const r=el.getBoundingClientRect();return {x:r.x,y:r.y};"
+    )
+    expect_equal(result$x, 16)
+    expect_equal(result$y, 16)
+    js("dragBy(document.querySelector('#a canvas'),600,400)")
+    attr(js, "session")$Emulation$setDeviceMetricsOverride(
+      width = 400,
+      height = 300,
+      deviceScaleFactor = 1,
+      mobile = FALSE
+    )
+    result <- host_layout(
+      js,
+      "const r=document.getElementById('a').getBoundingClientRect();
+      return {right:innerWidth-r.right,bottom:innerHeight-r.bottom,dropped:mascot.host.state(document.getElementById('a')).dropped};"
+    )
+    expect_equal(result$right, 16)
+    expect_equal(result$bottom, 16)
+    # The visitor's drop point is kept; only what is shown is clamped.
+    expect_identical(result$dropped$x, 616L)
+    js(
+      "mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'bottom-left',minimise:false,drag:'free'}}})"
+    )
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a'),r=el.getBoundingClientRect();
+      return {x:r.x,bottom:innerHeight-r.bottom,placed:el.dataset.placed===undefined,dropped:mascot.host.state(el).dropped};"
+    )
+    expect_equal(result$x, 16)
+    expect_equal(result$bottom, 16)
+    expect_true(result$placed)
+    expect_null(result$dropped)
+  })
+  it("D3 starts only from the canvas of a floating, draggable, unminimised mascot", {
+    skip_without_chrome()
+    js <- local_host_page(
+      placement = mascot_placement("bottom-right", minimise = TRUE, drag = "snap"),
+      bubble = mascot_bubble(htmltools::HTML("Read <a href='#more'>more</a>"), Inf),
+      shiny_menu = TRUE,
+      viewport = c(800, 600)
+    )
+    js(drag_js)
+    result <- js(
+      "(() => {const el=document.getElementById('a'),start=JSON.stringify(el.getBoundingClientRect());
+      const same=()=>JSON.stringify(el.getBoundingClientRect())===start&&el.dataset.position==='bottom-right';
+      const out=[];
+      for (const selector of ['.mascot-minimise','.mascot-bubble-close','.mascot-bubble a','.mascot-status']) {
+        const target=el.querySelector(selector);target.hidden=false;dragBy(target,-500,-400);out.push(same());}
+      el.querySelector('.mascot-minimise').click();dragBy(el.querySelector('.mascot-restore'),-500,-400);
+      out.push(el.dataset.position==='bottom-right');el.querySelector('.mascot-restore').click();
+      const c=el.querySelector('canvas');
+      press(c,'pointerdown',700,500);press(c,'pointermove',650,450);
+      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'bottom-right',minimise:true,drag:false}}});
+      const replaced=mascot.host.state(el).dragging===false&&el.dataset.placed===undefined;
+      press(c,'pointermove',100,100);press(c,'pointerup',100,100);
+      dragBy(c,-500,-400);
+      return {out,replaced,still:el.dataset.position,events:menuEvents.length,drag:el.dataset.drag};})()"
+    )
+    expect_true(all(unlist(result$out)))
+    expect_true(result$replaced)
+    expect_identical(result$still, "bottom-right")
+    expect_identical(result$events, 0L)
+    expect_identical(result$drag, "false")
+    inline <- local_host_page(shiny_menu = TRUE)
+    inline(drag_js)
+    expect_identical(
+      inline(
+        "(() => {const el=document.getElementById('a');dragBy(el.querySelector('canvas'),100,100);
+        return [el.dataset.placed===undefined,mascot.host.state(el).dragging,menuEvents.length];})()"
+      ),
+      list(TRUE, FALSE, 0L)
+    )
+  })
+  it("D4 animates a snap unless motion is reduced or off, and removes its listeners on unmount", {
+    skip_without_chrome()
+    for (case in list(list(reduced = FALSE, motion = TRUE, n = 1L), list(reduced = FALSE, motion = FALSE, n = 0L))) {
+      js <- local_host_page(
+        placement = mascot_placement("bottom-right", drag = "snap"),
+        reduced = case$reduced,
+        motion = case$motion,
+        viewport = c(800, 600)
+      )
+      js(drag_js)
+      expect_identical(
+        js(
+          "(() => {const el=document.getElementById('a');dragBy(el.querySelector('canvas'),-500,-400);
+          return el.getAnimations().length;})()"
+        ),
+        case$n
+      )
+    }
+    result <- js(
+      "(() => {const el=document.getElementById('a'),c=el.querySelector('canvas');mascot.host.unmount(el);
+      press(c,'pointerdown',700,500);press(c,'pointermove',100,100);
+      return [el.dataset.placed===undefined,el.dataset.dragging===undefined,el.dataset.drag];})()"
+    )
+    expect_identical(result, list(TRUE, TRUE, "snap"))
   })
 })

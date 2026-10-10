@@ -174,6 +174,23 @@ updateMascot("helper", placement = mascot_placement()) # Return inline.
 Try the size and placement controls in `mascot_example("basic")`, and the
 parent-owned corner helper in `mascot_example("modules")`.
 
+### Let visitors move it
+
+A floating mascot can be dragged by its drawing, with a mouse or a finger.
+Dragging is off by default. With `drag = "snap"` the mascot moves to the
+nearest corner when it is dropped; with `drag = "free"` it stays where it is
+dropped, kept inside the window. A click without movement still opens its menu.
+
+```{r drag, eval=FALSE}
+mascot(id = "helper",
+  placement = mascot_placement("bottom-right", drag = "snap"))
+```
+
+Each drop sets `input$helper_position`: the corner, such as `"top-left"`,
+after a snap, or a list with `x` and `y` in pixels after a free drop. A later
+`updateMascot(placement = ...)` replaces where the visitor put it. To remember
+the corner between visits, save it in your app and pass it back as `position`.
+
 ## Theme and light/dark mode
 
 No theme means Tessa's own colours. Brand colours are used only when you ask.

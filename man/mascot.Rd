@@ -43,8 +43,11 @@ Percentages follow the parent width when inline and window width when floating,
 with a 24-pixel floor. \code{NULL} is not accepted.}
 
 \item{placement}{\code{"inline"} (the default), \code{"floating"} (bottom-right), a corner
-such as \code{"top-left"}, a named list such as \code{list(position = "top-left", minimise = TRUE)}, or a \code{\link[=mascot_placement]{mascot_placement()}} object. \code{minimise} needs a
-corner. \code{NULL} is not accepted.}
+such as \code{"top-left"}, a named list such as \code{list(position = "top-left", minimise = TRUE, drag = "snap")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object.
+\code{minimise} and \code{drag} need a corner. With \code{drag}, each drop sets
+\verb{input$<id>_position} to the corner (\code{"snap"}) or a list with \code{x} and \code{y}
+(\code{"free"}); saving it between visits is the app's job. See
+\code{\link[=mascot_placement]{mascot_placement()}}. \code{NULL} is not accepted.}
 
 \item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own

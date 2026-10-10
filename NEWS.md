@@ -2,7 +2,7 @@
 
 * `mascot_placement()` takes one `position` (`"inline"` or a corner) and `minimise`, replacing `floating` + `position`, so the two can no longer contradict each other; shortcuts are unchanged (#215).
 * `mascot("helper")` without an `id` now explains that the first argument is the character and shows `mascot(id = "helper")` (#215).
-* In Shiny development mode, an update for an id that never appears while a namespaced mascot such as `first-helper` is on the page warns once and suggests `ns()` (#215).
+* In Shiny development mode, an update that never finds its mascot because of a namespace slip (`helper` versus `first-helper`) warns once and says how to fix it: `ns()` in the module UI, or update from inside the module (#215).
 * The speech bubble follows the page's light/dark signal like the drawing; a dark system setting alone keeps it light (#215).
 * The long-task example runs its slow step with `shiny::ExtendedTask`, so the app stays responsive; every example has a title, a one-line purpose and a light/dark switch (#215).
 * `updateMascot()` keeps the latest state for a later first mascot and replacements with the same id (#193).

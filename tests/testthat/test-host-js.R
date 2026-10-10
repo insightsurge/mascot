@@ -103,14 +103,17 @@ describe("mascot.host", {
       mascot.host.receive({id:'helper',patch:{mood:'thinking'}});
       mascot.host.receive({id:'helper',patch:{mood:'happy'}});
       mascot.host.receive({id:'later',patch:{mood:'happy'}});
+      add('summary');
+      mascot.host.receive({id:'second-summary',patch:{mood:'happy'}});
       await new Promise(resolve => setTimeout(resolve, 2200));
       console.warn = original; delete window.Shiny;
       return {production, warnings, events};
     })()"
     )
     expect_identical(result$production, 0L)
-    expect_length(result$warnings, 1)
-    expect_match(result$warnings[[1]], 'no mascot "helper".*"first-helper".*ns\\("helper"\\)')
+    expect_length(result$warnings, 2)
+    expect_match(result$warnings[[1]], 'no mascot "helper".*"first-helper".*from inside its module')
+    expect_match(result$warnings[[2]], 'no mascot "second-summary".*"summary".*ns\\("summary"\\)')
     expect_identical(result$events[[1]], sub("^mascot: ", "", result$warnings[[1]]))
   })
   it("bounds the queue for an id that has not appeared and asks the server for its full state", {

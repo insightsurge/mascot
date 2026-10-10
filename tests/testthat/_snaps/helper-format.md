@@ -38,7 +38,7 @@
     Code
       print(helper)
     Output
-      mascot_size(size = "20%", small_screen = NULL, simplify_when_small = TRUE)
+      mascot_size(size = "20%", small_screen = NULL)
 
 ---
 

@@ -86,7 +86,6 @@
  * @property {Object[]} body Drawing parts.
  * @property {Object} face Face geometry and styles.
  * @property {Object<string, Object>} moods Named mood poses.
- * @property {Object} small Small-detail settings.
  * @property {Object} [anchors] Attachment points.
  * @property {Object} [arms] Arm geometry and presets.
  * @property {Object} [feet] Feet geometry.

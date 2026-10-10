@@ -111,8 +111,6 @@
           else if (!Number.isFinite(v)) errors.push(`face.style.${name}.${key}: expected a finite number`);
         }
       }
-    array(ch.small.hide, 'small.hide', () => {});
-    numbers(ch.small, ['faceScale', 'minLineWidth'], 'small');
     parts(ch.body, 'body');
     for (const field of ['anchors', 'accessories', 'arms', 'feet', 'shadow', 'pose', 'motion'])
       if (ch[field] !== undefined) record(ch[field], field);
@@ -189,13 +187,13 @@
     if (!ch || typeof ch !== 'object' || Array.isArray(ch))
       return ['character: draw() needs a character description object'];
     const errors = [];
-    for (const field of ['id', 'name', 'centreHeight', 'colours', 'body', 'face', 'moods', 'small']) {
+    for (const field of ['id', 'name', 'centreHeight', 'colours', 'body', 'face', 'moods']) {
       if (!Object.hasOwn(ch, field)) errors.push(`${field} is missing`);
     }
     if (errors.length) return errors;
     for (const field of ['id', 'name'])
       if (typeof ch[field] !== 'string' || !ch[field].trim()) errors.push(`${field}: expected a non-empty string`);
-    for (const field of ['colours', 'face', 'moods', 'small'])
+    for (const field of ['colours', 'face', 'moods'])
       if (!ch[field] || typeof ch[field] !== 'object' || Array.isArray(ch[field]))
         errors.push(`${field}: expected an object`);
     if (!Array.isArray(ch.body)) errors.push('body: expected an array');
@@ -228,12 +226,6 @@
           }
         }
       });
-    for (const name of ch.small.hide || []) {
-      if (!ns.drawing.names.hide.includes(name)) errors.push(`small.hide: unknown name '${name}'`);
-    }
-    for (const field of ['faceScale', 'minLineWidth', 'hide']) {
-      if (!Object.hasOwn(ch.small, field)) errors.push(`small.${field} is missing`);
-    }
     for (const [group, fields] of Object.entries(ch.face.style || {})) {
       if (!Object.hasOwn(ns.drawing.faceStyle, group)) {
         errors.push(`face.style.${group}: unknown group '${group}'`);

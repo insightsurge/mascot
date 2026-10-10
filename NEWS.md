@@ -1,6 +1,7 @@
 # mascot 0.0.2.9000
 
 * `mascot_placement()` gains `drag`: visitors can drag a floating mascot, which snaps to the nearest corner or stays where dropped; the server receives `input$<id>_position` (#220).
+* `mascot_size()` loses `simplify_when_small`, and characters no longer have a separate small-size drawing: below 72 pixels the simplified face looked worse than the full one, so every size now draws the full character (#219).
 * `mascot_placement()` takes one `position` (`"inline"` or a corner) and `minimise`, replacing `floating` + `position`, so the two can no longer contradict each other; shortcuts are unchanged (#215).
 * `mascot("helper")` without an `id` now explains that the first argument is the character and shows `mascot(id = "helper")` (#215).
 * In Shiny development mode, an update that never finds its mascot because of a namespace slip (`helper` versus `first-helper`) warns once and says how to fix it: `ns()` in the module UI, or update from inside the module (#215).
@@ -18,7 +19,7 @@
 * Bundled examples are self-contained, copyable `app.R` files using `bslib` cards (#213).
 
 
-* `mascot_preview()` compares moods, light/dark colours and small drawings on an offline page, with contrast findings on the page and in R (#175).
+* `mascot_preview()` compares moods, light/dark colours and sizes on an offline page, with contrast findings on the page and in R (#175).
 
 * `mascot_examples()` lists five bundled Shiny apps, with a shared layout and separate scenarios for learning each feature (#177).
 * `mascot_example()` opens the requested app or returns its source path without copying files (#178).
@@ -37,7 +38,7 @@
 * `mascot()` and `updateMascot()` accept brand colours, named colour lists and light/dark themes through `mascot_theme()`; experimental CSS variables follow the source page (#202).
 * `mascot_colour_roles()` lists each character's original colours and brand slots (#202).
 
-* `mascot()` and `updateMascot()` accept pixel or percentage sizes, with narrow-screen sizes and a simpler small drawing through `mascot_size()` (#201).
+* `mascot()` and `updateMascot()` accept pixel or percentage sizes, with narrow-screen sizes through `mascot_size()` (#201).
 * `mascot_placement()` places mascots inline or in a floating corner, above Shiny notifications; optional minimise controls keep updates and messages ready for return (#201).
 
 * `mascot()` and `updateMascot()` gain message bubbles with `mascot_bubble()`: escaped text, explicit HTML or

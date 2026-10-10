@@ -158,7 +158,7 @@ mascot_placement("bottom-right", minimise = TRUE)
 ```
 
 Percentages use the container width inline and the window width when floating.
-Small drawings simplify by default. Inline mascots reserve space above the
+Every size draws the full character. Inline mascots reserve space above the
 drawing for a bubble, even before one appears, to avoid moving the page.
 A floating mascot can sit in any corner;
 its minimise control appears on hover or keyboard focus, and stays available
@@ -412,7 +412,7 @@ are kept and listed above the grids, with one combined warning in R of class `ma
 Experimental CSS values are only known in the browser; look in its console for
 those warnings. Floating settings appear inline for comparison, and static
 previews do not activate the Shiny click menu. Status text remains beside each
-small drawing; fine face details are harder to read at 32 and 24 pixels.
+mascot; fine face details are harder to read at 32 and 24 pixels.
 
 ## Leave unchanged or reset
 

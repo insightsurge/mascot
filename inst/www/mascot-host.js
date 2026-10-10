@@ -10,7 +10,7 @@
  * Custom status persists across swaps. Development problems temporarily cover it and use a worried mood;
  * the next good patch clears the problem and restores the earlier mood unless it chooses another.
  * The host owns canvas dimensions (CSS size times pixel ratio), the 300-unit transform and accessible text.
- * Size patches are { size: pixels|percentage, small_screen: pixels|percentage|null, simplify_when_small: boolean }.
+ * Size patches are { size: pixels|percentage, small_screen: pixels|percentage|null }; every size draws in full.
  * Placement patches are { floating: boolean, position: corner, minimise: boolean, drag: false|'snap'|'free' };
  * neither patch remounts the engine. A floating mascot with drag follows a pointer pressed on its canvas (pointer
  * capture; a few pixels of movement before a press becomes a drag, so a click still opens the menu). On release
@@ -24,7 +24,7 @@
  * Auto follows source data-bs-theme, then Quarto's body class; CSS reads the original source context.
  * Missing/invalid CSS uses the character colour and warns; contrast below 3:1 warns without changing the colour.
  * One theme observer exists while auto is used; the shared scheme listener serves auto and floating bubbles.
- * CSS chooses the narrow-screen size. One ResizeObserver per element refreshes its backing canvas and detail pose;
+ * CSS chooses the narrow-screen size. One ResizeObserver per element refreshes its backing canvas;
  * zero sizes retain the last usable drawing. Shared viewport/density and notification observers are reference-counted.
  * Floating elements move to body; a source marker preserves tab visibility, inherited text/theme and Shiny teardown.
  * Inline bubbles are clamped to viewport edges without changing their reserved height.
@@ -38,7 +38,7 @@
  * Choices set the already namespaced id + '_menu' with priority 'event'. Labels always use textContent.
  * Enter/Space operate the focused toggle; navigation stays within the focused menu. No global keyboard listeners.
  * A shared outside-pointer listener exists only while a menu is open; teardown removes it when unused.
- * Open menus hold lookY=-1 and pause bubble timers; closing clears only lookY, preserving detail and mood.
+ * Open menus hold lookY=-1 and pause bubble timers; closing clears only lookY, preserving the mood.
  * Menus prefer above the canvas (below top corners), fitting/flipping to actual viewport space on resize/scroll.
  * Action controls use a separate strip: hover/focus reveals it, touch keeps it available, open menus hide it.
  * Restore stays reachable while minimised. Placement focus falls back to the visible menu toggle or image.
@@ -504,13 +504,12 @@
       !next ||
       typeof next !== 'object' ||
       Array.isArray(next) ||
-      Object.keys(next).length !== 3 ||
-      Object.keys(next).some((key) => !['size', 'small_screen', 'simplify_when_small'].includes(key))
+      Object.keys(next).length !== 2 ||
+      Object.keys(next).some((key) => !['size', 'small_screen'].includes(key))
     )
-      throw new Error('size needs size, small_screen and simplify_when_small fields');
+      throw new Error('size needs size and small_screen fields');
     validateSizeValue(next.size);
     if (next.small_screen !== null) validateSizeValue(next.small_screen);
-    if (typeof next.simplify_when_small !== 'boolean') throw new Error('simplify_when_small needs a flag');
     return { ...next };
   }
 
@@ -622,7 +621,6 @@
     el.dataset.size = String(size.size);
     if (size.small_screen === null) delete el.dataset.smallScreen;
     else el.dataset.smallScreen = String(size.small_screen);
-    el.dataset.simplifyWhenSmall = String(size.simplify_when_small);
     el.dataset.floating = String(placement.floating);
     el.dataset.position = placement.position;
     el.dataset.minimise = String(placement.minimise);
@@ -901,11 +899,6 @@
     }
     measureMenu(record);
     record.renderedSize = size;
-    const detail = record.size.simplify_when_small && size < 72 ? 'simple' : 'full';
-    if (detail !== record.detail) {
-      record.detail = detail;
-      record.controller.update({ pose: { detail } });
-    }
     if (resized) record.controller.redraw();
   }
 
@@ -1207,7 +1200,6 @@
     const sizeConfig = validateSize({
       size: has(el.dataset, 'size') ? sizeAttribute(el.dataset.size) : 160,
       small_screen: has(el.dataset, 'smallScreen') ? sizeAttribute(el.dataset.smallScreen) : null,
-      simplify_when_small: el.dataset.simplifyWhenSmall !== 'false',
     });
     const placement = validatePlacement({
       floating: el.dataset.floating === 'true',
@@ -1265,7 +1257,6 @@
       revision: 0,
       fields: new Map(),
       mountSerial: ++mountSerial,
-      detail: 'full',
       renderedSize: null,
       resize: null,
       anchor: null,
@@ -1724,7 +1715,6 @@
       dropped: record.dropped ? { ...record.dropped } : null,
       dragging: Boolean(record.dragState?.moved),
       renderedSize: record.renderedSize,
-      detail: record.detail,
       bubble: record.bubble ? { ...record.bubble, remaining: remaining(record) } : null,
       hidden: record.hidden,
       revision: record.revision,

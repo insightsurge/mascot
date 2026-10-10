@@ -1,15 +1,15 @@
 describe("mascot_examples()", {
-  it("lists the five teaching apps in order with readable metadata", {
+  it("lists the studio and four scenario apps in order with readable metadata", {
     examples <- mascot_examples()
     expect_s3_class(examples, "data.frame")
     expect_named(examples, c("name", "title", "description"))
-    expect_identical(examples$name, c("basic", "form-check", "long-task", "modules", "branding"))
+    expect_identical(examples$name, c("studio", "form-check", "long-task", "modules", "branding"))
     expect_true(all(vapply(examples, is.character, logical(1))))
     expect_true(all(nzchar(unlist(examples))))
     expect_identical(anyDuplicated(examples$name), 0L)
     expect_match(examples$description[examples$name == "branding"], "Requires bslib")
   })
-  it("copies each app.R alone and builds an app without starting a server", {
+  it("copies each scenario's app.R alone, or the studio's folder, and builds it without a server", {
     # mascot is already attached by the test run; attaching it here would detach it on exit.
     withr::local_package("shiny")
     if (requireNamespace("bslib", quietly = TRUE)) {
@@ -18,17 +18,117 @@ describe("mascot_examples()", {
     for (name in mascot_examples()$name) {
       file <- mascot_example(name, run = FALSE)
       expect_true(file.exists(file), info = name)
-      copied <- file.path(withr::local_tempdir(), "app.R")
-      expect_true(file.copy(file, copied))
-      expect_type(parse(copied), "expression")
-      file <- copied
-      if (!requireNamespace("bslib", quietly = TRUE)) {
-        expect_error(source(file, local = new.env())$value, "example needs bslib")
+      # The studio is a folder (app.R, R/ and www/); every other example is one file.
+      sources <- list.files(dirname(file), recursive = TRUE)
+      if (name == "studio") {
+        expect_setequal(
+          sources,
+          c(
+            "app.R",
+            "R/code.R",
+            "R/data.R",
+            "R/guide.R",
+            "R/panels.R",
+            "R/ui.R",
+            "www/studio.css",
+            "www/studio.js"
+          )
+        )
       } else {
-        app <- source(file, local = new.env())$value
+        expect_identical(sources, "app.R", info = name)
+      }
+      copy <- withr::local_tempdir()
+      expect_true(file.copy(dirname(file), copy, recursive = TRUE))
+      dir <- file.path(copy, name)
+      for (script in list.files(dir, pattern = "[.]R$", recursive = TRUE, full.names = TRUE)) {
+        expect_type(parse(script), "expression")
+      }
+      if (!requireNamespace("bslib", quietly = TRUE)) {
+        # shinyAppDir() reads app.R on the first request.
+        expect_error(shiny::shinyAppDir(dir)$httpHandler(list(PATH_INFO = "/")), "example needs bslib")
+      } else {
+        app <- shiny::shinyAppDir(dir)
         expect_s3_class(app, "shiny.appobj")
         html <- as.character(app$httpHandler(list(PATH_INFO = "/"))$content)
+        # bslib's inline icons name the SVG namespace, which is not a request.
+        html <- gsub("http://www.w3.org/2000/svg", "", html, fixed = TRUE)
         expect_false(any(grepl("https?://", html)), info = name)
+      }
+    }
+  })
+  it("explains every exported function and argument in the studio", {
+    guide <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "guide.R"), envir = guide)
+    exports <- getNamespaceExports("mascot")
+    expect_setequal(names(guide$playground_guide), exports)
+    for (fn in exports) {
+      entry <- guide$playground_guide[[fn]]
+      expect_setequal(as.character(names(entry$args)), as.character(names(formals(getExportedValue("mascot", fn)))))
+      expect_true(entry$category %in% names(guide$playground_categories), info = fn)
+      expect_true(all(nzchar(c(entry$what, entry$returns))), info = fn)
+      for (arg in names(entry$args)) {
+        expect_true(nzchar(entry$args[[arg]]$hint), info = paste(fn, arg))
+        expect_true(is.null(entry$args[[arg]]$try) || entry$args[[arg]]$try %in% names(guide$playground_categories))
+      }
+    }
+  })
+})
+
+describe("the studio's controls", {
+  it("prints code that parses, including menu ids that need backticks", {
+    code <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
+    items <- c(`finish-review` = "Finish the review of every row in this table", about = "About this app")
+    menu <- code$code_menu(items)
+    theme <- code$code_theme("mascot", c(body = "#1f6feb"), c(body = "#9ec5fe"), "dark", "rim", "", "")
+    call <- code$format_call("mascot", list(id = "helper", popup_menu = menu$helper, theme = theme$helper))
+    expect_match(call, "`finish-review` = ", fixed = TRUE)
+    expect_identical(eval(parse(text = call)[[1]][["popup_menu"]]), mascot_popup_menu(items))
+    handler <- code$menu_handler_code(items)
+    expect_type(parse(text = handler), "expression")
+    app <- code$whole_app_code(call, handler, c("shiny", "mascot"), "#7b4fd6")
+    expect_type(parse(text = app), "expression")
+    # Every helper has live example code in the guide, including the compound controls.
+    pairs <- list(
+      code$code_character("tessa"),
+      code$code_mood("worried"),
+      code$code_status("Checking rows"),
+      code$code_bubble("<strong>Saved</strong>", TRUE, Inf, FALSE),
+      code$code_gesture("wave"),
+      code$code_motion(FALSE, FALSE),
+      code$code_size("20%", 72, FALSE),
+      code$code_placement("top-left", TRUE),
+      code$code_menu(character()),
+      theme
+    )
+    for (pair in pairs) {
+      for (style in c("short", "helper")) {
+        expect_type(parse(text = code$format_expr(pair[[style]])), "expression")
+      }
+    }
+  })
+  it("has a control on the page, or a stated reason, for every exported argument", {
+    skip_if_not_installed("bslib")
+    # mascot is already attached by the test run; attaching it here would detach it on exit.
+    withr::local_package("shiny")
+    withr::local_package("bslib")
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    data <- new.env()
+    sys.source(file.path(dir, "R", "data.R"), envir = data)
+    html <- as.character(shiny::shinyAppDir(dir)$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET"))$content)
+    ids <- regmatches(html, gregexpr(' id="[^"]+"', html))[[1]]
+    expect_identical(anyDuplicated(ids), 0L)
+    for (fn in getNamespaceExports("mascot")) {
+      for (arg in names(formals(getExportedValue("mascot", fn)))) {
+        control <- data$playground_controls[[fn]][[arg]]
+        expect_false(is.null(control), info = paste(fn, arg))
+        if (is.list(control)) {
+          expect_true(nzchar(control$fixed), info = paste(fn, arg))
+        } else {
+          for (fragment in control) {
+            expect_true(grepl(fragment, html, fixed = TRUE), info = paste(fn, arg, fragment))
+          }
+        }
       }
     }
   })
@@ -36,23 +136,23 @@ describe("mascot_examples()", {
 
 describe("mascot_example()", {
   it("returns the installed app.R path without writing or running anything", {
-    path <- mascot_example("basic", run = FALSE)
-    expect_identical(path, system.file("examples", "basic", "app.R", package = "mascot"))
+    path <- mascot_example("studio", run = FALSE)
+    expect_identical(path, system.file("examples", "studio", "app.R", package = "mascot"))
     expect_identical(basename(path), "app.R")
     expect_true(file.exists(path))
   })
   it("checks every argument and names valid examples for unknown names", {
-    for (bad in list(NULL, NA_character_, "", 1, c("basic", "modules"))) {
+    for (bad in list(NULL, NA_character_, "", 1, c("studio", "modules"))) {
       expect_error(mascot_example(bad, FALSE), "Assertion on 'name' failed")
     }
     for (bad in list(NULL, NA, 1, "FALSE", c(TRUE, FALSE))) {
-      expect_error(mascot_example("basic", bad), "Assertion on 'run' failed")
+      expect_error(mascot_example("studio", bad), "Assertion on 'run' failed")
     }
     expect_snapshot(error = TRUE, mascot_example("typo", FALSE))
   })
   it("explains how to locate an app in a non-interactive session", {
     expect_false(interactive())
-    expect_error(mascot_example("basic"), "needs an interactive R session")
+    expect_error(mascot_example("studio"), "needs an interactive R session")
   })
   it("delegates the selected directory to Shiny when running interactively", {
     # Restore both bindings at teardown; no browser or server is started here.
@@ -78,7 +178,7 @@ example_driver <- function(name) {
   body(app_function) <- substitute(
     {
       library(mascot)
-      source(system.file("examples", NAME, "app.R", package = "mascot"), local = new.env())$value
+      shiny::shinyAppDir(system.file("examples", NAME, package = "mascot"))
     },
     list(NAME = name)
   )
@@ -94,31 +194,93 @@ wait_example_mood <- function(app, id, mood) {
 }
 
 describe("bundled example apps", {
-  it("E1 basic renders one helper and changes mood, text, layout and motion", {
+  it("E1 studio selects functions and changes Tessa with code and an event log", {
     local_shiny_browser()
-    app <- example_driver("basic")
+    app <- example_driver("studio")
     withr::defer(app$stop())
+    state <- "mascot.host.state(document.getElementById('helper'))"
     wait_example_mood(app, "helper", "idle")
     expect_identical(app$get_js("document.querySelectorAll('.mascot').length"), 1L)
-    app$click("mood_happy")
+    select_function <- function(fn) {
+      checkmate::assert_string(fn)
+      app$click(selector = sprintf('.pg-index-link[data-value="%s"]', fn))
+      app$wait_for_js(sprintf("!!document.querySelector('#guide [data-guide-function=\"%s\"]')", fn))
+      app$wait_for_js(sprintf(
+        "!document.querySelector('#studio_inspector [data-function=\"%s\"]').hidden",
+        fn
+      ))
+    }
+    # The mood cards are the inspector's only mood input.
+    expect_identical(app$get_js("document.querySelectorAll('#mood input[type=radio]').length"), 0L)
+    app$run_js("document.querySelector('[data-event=try_mood][data-value=happy]').click()")
     wait_example_mood(app, "helper", "happy")
-    app$set_inputs(status = "Check complete")
-    app$click("set_status")
-    app$wait_for_js("document.querySelector('#helper .mascot-status').textContent==='Check complete'")
-    app$click("clear_status")
-    app$wait_for_js("document.querySelector('#helper .mascot-status').textContent==='Happy'")
-    app$set_inputs(keep = TRUE, message = "Three rows skipped")
-    app$click("show_bubble")
-    app$wait_for_js("document.querySelector('#helper .mascot-bubble')?.textContent.includes('Three rows skipped')")
-    app$click("clear_bubble")
-    app$wait_for_js("!mascot.host.state(document.getElementById('helper')).bubble")
-    app$run_js("document.querySelector('details').open=true")
-    app$set_inputs(floating = TRUE, animate = FALSE, size = 120)
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).placement.floating===true")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).motion.reduced===true")
-    app$click("reset")
-    wait_example_mood(app, "helper", "idle")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).placement.floating===false")
+    app$wait_for_js("document.getElementById('code_last').textContent.includes('mood = \"happy\"')")
+    select_function("mascot_status")
+    # The selected function owns both the inspector controls and the guide.
+    expect_true(app$get_js(
+      "document.querySelector('#studio_inspector [data-function=mascot_status]').open && document.querySelector('#guide [data-guide-function=mascot_status]') !== null && document.getElementById('status_text').getClientRects().length > 0"
+    ))
+    expect_true(app$get_js("document.querySelector('#studio_inspector [data-function=mascot_mood]').hidden"))
+    app$set_inputs(status_text = "Checking 120 rows")
+    app$wait_for_js(paste0(state, ".status.text === 'Checking 120 rows'"))
+    select_function("mascot_bubble")
+    app$set_inputs(bubble_example = "Small table")
+    app$click("bubble_show")
+    app$wait_for_js("!!document.querySelector('#helper .mascot-bubble table')")
+    select_function("mascot_motion")
+    app$set_inputs(animate = FALSE)
+    app$wait_for_js(paste0(state, ".motion.reduced === true"))
+    select_function("mascot_size")
+    app$set_inputs(size_px = 120)
+    app$wait_for_js(paste0(state, ".size.size === 120"))
+    select_function("mascot_placement")
+    app$set_inputs(position = "top-left")
+    app$set_inputs(minimise = TRUE)
+    app$wait_for_js(paste0(state, ".placement.floating && ", state, ".placement.minimise"))
+    select_function("mascot_theme")
+    app$set_inputs(theme_source = "mascot")
+    app$run_js(
+      "const p = document.getElementById('light_body'); p.value = '#1f6feb'; p.dispatchEvent(new Event('input'))"
+    )
+    app$wait_for_js(paste0(state, ".colours.body?.toLowerCase() === '#1f6feb'"))
+    app$wait_for_js("document.getElementById('code_ui').textContent.includes('mascot_theme(light = list(body')")
+    select_function("mascot_popup_menu")
+    app$click(selector = "#helper .mascot-menu-toggle")
+    app$click(selector = "#helper [role=menuitem][data-item-id=finish]")
+    app$wait_for_js("document.querySelector('#helper .mascot-bubble')?.textContent.includes('Finish review')")
+    # A mistake is an error in the log, and the mascot keeps its settings.
+    select_function("updateMascot")
+    app$set_inputs(mistake = "Misspell an argument")
+    app$click("mistake_run")
+    app$wait_for_js("document.getElementById('log').textContent.includes('Unexpected arguments')")
+    # The second step of the slow task runs later and names the session.
+    app$click("task_run")
+    wait_example_mood(app, "helper", "thinking")
+    app$wait_for_js(paste0(state, ".status.text === 'All 120 rows checked'"), timeout = 15000)
+    app$wait_for_js("document.getElementById('code_last').textContent.includes('session = session')")
+    expect_match(app$get_value(output = "code_app"), "shinyApp(ui, server)", fixed = TRUE)
+    # Switching the menu off works even while its text has a problem.
+    select_function("mascot_popup_menu")
+    app$set_inputs(menu_items = "no equals sign")
+    app$set_inputs(menu_on = FALSE)
+    app$wait_for_js(paste0(state, ".popup_menu.items === null"))
+    # Switching functions and showing all controls reuse the same inputs and their values.
+    select_function("mascot_status")
+    expect_identical(app$get_value(input = "status_text"), "Checking 120 rows")
+    app$set_inputs(show_all_controls = TRUE)
+    app$wait_for_js("!document.querySelector('[data-function=mascot_bubble]').hidden")
+    expect_false(app$get_js("document.querySelector('[data-function=mascot_bubble]').open"))
+    app$set_inputs(show_all_controls = FALSE)
+    app$wait_for_js("document.querySelector('[data-function=mascot_bubble]').hidden")
+    app$click(selector = "#guide_expand")
+    app$wait_for_js("document.getElementById('studio_centre').classList.contains('is-expanded')")
+    expect_identical(app$get_js("document.querySelectorAll('.mascot').length"), 1L)
+    app$click(selector = "#guide_expand")
+    # The first visit to the preview tab builds a preview without a click.
+    app$run_js("document.querySelector('a[data-value=preview]').click()")
+    app$wait_for_js("!!document.querySelector('iframe.pg-preview')", timeout = 15000)
+    app$run_js("document.querySelector('a[data-value=examples]').click()")
+    app$wait_for_js("!!document.querySelector('#example_code')", timeout = 15000)
   })
   it("E2 form-check names invalid fields and becomes happy when both pass", {
     local_shiny_browser()

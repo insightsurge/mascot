@@ -1,7 +1,8 @@
 #' List the bundled example apps
 #'
-#' Each example is a copyable app.R using Shiny and `bslib` cards. All work offline
-#' and need the optional `bslib` package. Copy just app.R into your own project.
+#' Start with the studio: every exported function and argument, live, with
+#' explanations and the code to copy. The other examples are each one copyable app.R
+#' for one scenario. All work offline and need the optional `bslib` package.
 #' @returns A data frame with character columns `name`, `title` and `description`,
 #'   in teaching order. `name` is accepted by [mascot_example()].
 #' @family mascot examples
@@ -11,10 +12,10 @@
 #' mascot_examples()
 mascot_examples <- function() {
   data.frame(
-    name = c("basic", "form-check", "long-task", "modules", "branding"),
-    title = c("Meet your helper", "Check a form", "Show task progress", "Work in modules", "Personalise Tessa"),
+    name = c("studio", "form-check", "long-task", "modules", "branding"),
+    title = c("Mascot studio", "Check a form", "Show task progress", "Work in modules", "Personalise Tessa"),
     description = c(
-      "Moods, status, bubbles, gestures, size, placement and motion.",
+      "Every function and argument, live, with explanations and the code to copy.",
       "A worried helper names invalid fields and becomes happy when both pass.",
       "Thinking during a slow step, then success or a lasting error bubble.",
       "Two module helpers and a parent-owned floating helper.",
@@ -28,8 +29,9 @@ mascot_examples <- function() {
 #'
 #' Opens only the requested example, like [shiny::runExample()]. No files are
 #' copied or written by this function. Use `run = FALSE` to read the app's code
-#' or pass its directory to [shiny::runApp()]. Each app.R can be copied alone
-#' into a project with Shiny, `bslib` and mascot installed.
+#' or pass its directory to [shiny::runApp()]. Each scenario's app.R can be copied
+#' alone into a project with Shiny, `bslib` and mascot installed; the studio is a
+#' folder, with its helpers in `R/` and its styles in `www/`.
 #' @param name A required non-empty string from [mascot_examples()]'s `name`
 #'   column. `NULL` is not accepted.
 #' @param run A logical flag, defaulting to `TRUE`, to launch the app in an
@@ -41,9 +43,9 @@ mascot_examples <- function() {
 #' @seealso [mascot_examples()]
 #' @export
 #' @examples
-#' basename(mascot_example("basic", run = FALSE))
+#' basename(mascot_example("form-check", run = FALSE))
 #' @examplesIf interactive()
-#' mascot_example("basic")
+#' mascot_example("studio")
 mascot_example <- function(name, run = TRUE) {
   checkmate::assert_string(name, min.chars = 1)
   checkmate::assert_flag(run)

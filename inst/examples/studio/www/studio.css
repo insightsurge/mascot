@@ -1,0 +1,1041 @@
+/* The studio's own layout and diagrams. Colours come from Bootstrap's variables, so the page
+   follows its light/dark switch. */
+:root {
+  --studio-accent: #7b4fd6;
+}
+
+.pg-muted {
+  color: var(--bs-secondary-color);
+}
+
+.pg-lead {
+  font-size: 1.05rem;
+}
+
+.pg-hint {
+  color: var(--bs-secondary-color);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.pg-note {
+  border-left: 3px solid var(--bs-info);
+  padding: 0.25rem 0.6rem;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+}
+
+.pg-note.pg-warn {
+  border-left-color: var(--bs-warning);
+}
+
+.pg-note.pg-ok {
+  border-left-color: var(--bs-success);
+}
+
+.pg-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.pg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.pg-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Sidebar: function headings and argument fields */
+.pg-fn {
+  border-top: 1px solid var(--bs-border-color);
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+}
+
+.pg-fn:first-child {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.pg-fn-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.pg-fn-what {
+  font-size: 0.85rem;
+  color: var(--bs-secondary-color);
+  margin-bottom: 0.4rem;
+}
+
+.pg-field {
+  margin: 0.5rem 0 0.9rem;
+}
+
+.pg-field .form-group,
+.pg-field .shiny-input-container {
+  margin-bottom: 0.25rem;
+}
+
+.pg-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.pg-arg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  padding: 0.05rem 0.5rem;
+  font-size: 0.85rem;
+  color: inherit;
+}
+
+.pg-info {
+  display: inline-grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background: var(--bs-primary);
+  color: var(--bs-white);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.pg-default {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+}
+
+.pg-chip {
+  display: inline-block;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.3rem;
+  padding: 0 0.35rem;
+  margin: 0 0.25rem 0.25rem 0;
+  font-family: var(--bs-font-monospace);
+  font-size: 0.78rem;
+}
+
+.pg-code-small {
+  font-size: 0.8rem;
+  background: var(--bs-tertiary-bg);
+  border-radius: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  margin: 0.25rem 0;
+  white-space: pre-wrap;
+}
+
+/* Colour pickers */
+.pg-role,
+.pg-css {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+}
+
+.pg-css {
+  grid-template-columns: 2.4rem 1fr;
+}
+
+.pg-colour.form-control-color {
+  width: 2.4rem;
+  height: 2rem;
+  padding: 0.15rem;
+}
+
+.pg-role-text {
+  line-height: 1.1;
+  font-size: 0.85rem;
+}
+
+.pg-role-text .pg-muted {
+  font-size: 0.75rem;
+}
+
+.pg-resolved {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 1px solid var(--bs-border-color);
+}
+
+.pg-resolved.is-idle {
+  border-style: dashed;
+}
+
+.pg-role-reset {
+  padding: 0 0.3rem;
+  text-decoration: none;
+}
+
+.pg-role-group {
+  margin: 0.4rem 0;
+}
+
+.pg-role-group > summary {
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.pg-swatch {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 0.2rem;
+  border: 1px solid var(--bs-border-color);
+  vertical-align: middle;
+  margin-right: 0.35rem;
+}
+
+/* Stage and code */
+.pg-code-wrap {
+  position: relative;
+}
+
+.pg-code {
+  background: var(--bs-tertiary-bg);
+  border-radius: 0.4rem;
+  padding: 0.75rem;
+  font-size: 0.82rem;
+  white-space: pre-wrap;
+  max-height: 16rem;
+  overflow: auto;
+  margin: 0;
+}
+
+.pg-code-long {
+  max-height: 28rem;
+}
+
+.pg-copy {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+}
+
+.pg-log {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 18rem;
+  overflow: auto;
+}
+
+.pg-log-entry {
+  border-left: 3px solid var(--bs-success);
+  padding-left: 0.5rem;
+}
+
+.pg-log-entry pre {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+
+.pg-log-entry.is-error {
+  border-left-color: var(--bs-danger);
+}
+
+.pg-log-entry.is-warning {
+  border-left-color: var(--bs-warning);
+}
+
+.pg-log-entry.is-event {
+  border-left-color: var(--bs-info);
+}
+
+.pg-log-badge {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-secondary-color);
+}
+
+.pg-log-message {
+  color: var(--bs-secondary-color);
+}
+
+/* Guide: function cards */
+.pg-fn-card {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.pg-fn-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pg-fn-card-head h4 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.pg-signature {
+  font-size: 0.8rem;
+  background: var(--bs-tertiary-bg);
+  border-radius: 0.3rem;
+  padding: 0.5rem;
+}
+
+.pg-args {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.pg-arg {
+  border-left: 3px solid var(--bs-primary);
+  padding-left: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.pg-arg-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.pg-arg-name {
+  font-weight: 600;
+}
+
+.pg-try {
+  margin-left: auto;
+  padding: 0;
+  font-size: 0.8rem;
+}
+
+.pg-accepts,
+.pg-null,
+.pg-returns {
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.pg-accepts > .pg-muted,
+.pg-null > .pg-muted,
+.pg-returns > .pg-muted {
+  display: inline-block;
+  min-width: 4.5rem;
+}
+
+.pg-returns {
+  margin-top: 0.75rem;
+}
+
+/* Guide: visuals */
+.pg-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.6rem;
+}
+
+.pg-card-mini {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.pg-card-title {
+  font-weight: 600;
+}
+
+.pg-card-foot {
+  margin-top: auto;
+  font-size: 0.75rem;
+}
+
+.pg-callout {
+  background: var(--bs-info-bg-subtle);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  margin: 0.8rem 0;
+  font-size: 0.9rem;
+}
+
+.pg-callout-warn {
+  background: var(--bs-warning-bg-subtle);
+}
+
+.pg-table {
+  font-size: 0.85rem;
+}
+
+.pg-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.pg-flow-step {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  background: var(--bs-tertiary-bg);
+}
+
+.pg-flow-arrow {
+  align-self: center;
+  color: var(--bs-secondary-color);
+}
+
+.pg-flow-gap {
+  flex-basis: 100%;
+}
+
+.pg-grid2 {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.pg-grid-head {
+  align-self: center;
+}
+
+.pg-grid-cell {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.pg-timeline {
+  font-size: 0.8rem;
+}
+
+.pg-timeline-bar {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+  overflow: hidden;
+}
+
+.pg-timeline-fill {
+  width: 60%;
+  height: 100%;
+  background: var(--bs-primary);
+}
+
+.pg-timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  color: var(--bs-secondary-color);
+}
+
+.pg-ruler {
+  position: relative;
+  height: 3.2rem;
+  border-bottom: 2px solid var(--bs-border-color);
+  margin: 0.5rem 0.75rem 1.5rem;
+  font-size: 0.75rem;
+}
+
+.pg-ruler-zone {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 1.2rem;
+  background: var(--bs-warning-bg-subtle);
+  white-space: nowrap;
+  overflow: visible;
+  padding-left: 0.2rem;
+}
+
+.pg-ruler-mark {
+  position: absolute;
+  bottom: -1.3rem;
+  transform: translateX(-50%);
+  color: var(--bs-secondary-color);
+}
+
+.pg-ruler-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 2px solid var(--bs-primary);
+}
+
+.pg-ruler-now span {
+  position: absolute;
+  top: 0;
+  left: 0.25rem;
+  color: var(--bs-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pg-map {
+  position: relative;
+  border: 2px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  height: 12rem;
+  max-width: 22rem;
+  font-size: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.pg-map-bar {
+  height: 1rem;
+  background: var(--bs-tertiary-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.pg-map-page {
+  padding: 0.75rem 4.5rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.pg-map-line {
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg);
+}
+
+.pg-map-line.short {
+  width: 60%;
+}
+
+.pg-map-inline,
+.pg-map-corner {
+  border: 1px dashed var(--bs-border-color);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  font-size: 0.7rem;
+}
+
+.pg-map-inline {
+  height: 2.5rem;
+}
+
+.pg-map-corner {
+  position: absolute;
+  width: 3.5rem;
+  height: 2.2rem;
+}
+
+.pg-map-inline.is-active,
+.pg-map-corner.is-active {
+  border: 2px solid var(--bs-primary);
+  background: var(--bs-primary-bg-subtle);
+  color: var(--bs-emphasis-color);
+  font-weight: 600;
+}
+
+.pg-top-left {
+  top: 1.4rem;
+  left: 0.4rem;
+}
+
+.pg-top-right {
+  top: 1.4rem;
+  right: 0.4rem;
+}
+
+.pg-bottom-left {
+  bottom: 0.4rem;
+  left: 0.4rem;
+}
+
+.pg-bottom-right {
+  bottom: 0.4rem;
+  right: 0.4rem;
+}
+
+.pg-map-caption {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.3rem;
+}
+
+.pg-wire {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pg-wire-box {
+  flex: 1;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.pg-wire-box pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.pg-live {
+  margin: 0.6rem 0;
+  font-size: 0.9rem;
+}
+
+/* Static preview */
+.pg-preview {
+  width: 100%;
+  height: 34rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.pg-card-head .shiny-input-container {
+  width: auto;
+  margin: 0;
+}
+
+.pg-card-head .shiny-options-group {
+  margin: 0;
+}
+
+.pg-card-head .form-check-inline {
+  margin-bottom: 0;
+}
+
+.pg-preview.is-phone {
+  width: 375px;
+  max-width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pg-dock .nav-underline {
+  --bs-nav-underline-gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Layout E: index, live canvas and dock, then the argument inspector. */
+.pg-studio {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr) 330px;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  gap: 0;
+  border: 1px solid var(--bs-border-color);
+}
+
+.pg-index,
+.pg-inspector {
+  overflow: auto;
+  min-height: 0;
+  padding: 0.75rem;
+  background: var(--bs-body-bg);
+}
+
+.pg-index {
+  border-right: 1px solid var(--bs-border-color);
+}
+
+.pg-inspector {
+  border-left: 1px solid var(--bs-border-color);
+}
+
+.pg-index h2 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bs-secondary-color);
+  margin: 1rem 0 0.25rem;
+}
+
+.pg-index h2:first-child {
+  margin-top: 0;
+}
+
+.pg-index-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.3rem 0.4rem;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+}
+
+.pg-index-link code,
+.pg-index-link span {
+  display: block;
+}
+
+.pg-index-link code {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+.pg-index-link span {
+  color: var(--bs-secondary-color);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-index-link[aria-current="true"] {
+  background: var(--bs-primary-bg-subtle);
+  color: var(--bs-primary-text-emphasis);
+}
+
+.pg-centre {
+  --pg-dock-height: 42%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) minmax(12rem, var(--pg-dock-height));
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  container-type: inline-size;
+  container-name: studio-centre;
+}
+
+.pg-toolbar {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  flex-wrap: wrap;
+}
+
+.pg-code-style {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.pg-code-style .shiny-input-container,
+.pg-code-style .shiny-options-group {
+  width: auto;
+  margin: 0;
+}
+
+.pg-code-style .form-check-inline {
+  margin-bottom: 0;
+}
+
+.pg-canvas {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem 1rem 1.5rem;
+  background-color: var(--bs-tertiary-bg);
+  background-image: radial-gradient(var(--bs-border-color) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.pg-stage {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.pg-canvas-caption {
+  font-size: 0.75rem;
+  text-align: center;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.pg-dock pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pg-dock {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+}
+
+/* bslib wraps the dock's tabs in a .tabbable div; it fills the dock so the tab content can scroll. */
+.pg-dock > .tabbable {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pg-dock > .tabbable > .nav {
+  flex: none;
+  padding: 0.4rem 8rem 0 0.75rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.pg-dock > .tabbable > .tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.75rem;
+}
+
+.pg-dock .pg-code,
+.pg-dock .pg-log {
+  max-height: none;
+}
+
+.pg-grip {
+  position: absolute;
+  top: -6px;
+  left: calc(50% - 27px);
+  width: 54px;
+  height: 12px;
+  border: 1px solid var(--bs-secondary-color);
+  border-radius: 6px;
+  background: var(--bs-body-bg);
+  cursor: ns-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.pg-grip::after {
+  content: "";
+  display: block;
+  border-top: 3px double var(--bs-secondary-color);
+  margin: 3px 10px;
+}
+
+.pg-grip:focus-visible,
+.pg-index-link:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.pg-expand {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.4rem;
+  font-size: 0.75rem;
+}
+
+.pg-guide-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.pg-guide-columns > * {
+  min-width: 0;
+}
+
+.pg-guide-columns .pg-fn-card {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.pg-guide-title {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.pg-guide-columns .pg-section-title,
+.pg-guide-visual > .pg-section-title:first-child {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.pg-args {
+  gap: 0.3rem;
+}
+
+.pg-arg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  border: 0;
+  padding: 0;
+}
+
+.pg-inspector-function[hidden] {
+  display: none;
+}
+
+.pg-inspector-function > summary {
+  list-style: none;
+  cursor: default;
+  font-size: 1rem;
+  margin: 0.5rem 0;
+}
+
+.pg-inspector-function > summary::-webkit-details-marker {
+  display: none;
+}
+
+.pg-inspector.is-show-all .pg-inspector-function > summary {
+  cursor: pointer;
+  border-bottom: 1px solid var(--bs-border-color);
+  padding: 0.5rem 0;
+}
+
+.pg-inspector.is-show-all .pg-inspector-function > summary::before {
+  content: "+ ";
+}
+
+.pg-inspector.is-show-all .pg-inspector-function[open] > summary::before {
+  content: "\2212 ";
+}
+
+.pg-inspector .pg-field {
+  padding: 0.6rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+}
+
+.pg-inspector .pg-field > .pg-hint {
+  margin-bottom: 0.5rem;
+}
+
+.pg-inspector .shiny-input-container {
+  max-width: 100%;
+}
+
+.pg-mood-input {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pg-mood-input .pg-card-mini:has([aria-pressed="true"]) {
+  border-color: var(--bs-primary);
+  background: var(--bs-primary-bg-subtle);
+}
+
+.pg-centre.is-expanded {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.pg-centre.is-expanded .pg-canvas {
+  position: absolute;
+  top: var(--pg-mini-top, 6rem);
+  right: 1rem;
+  width: 13rem;
+  height: 17rem;
+  z-index: 2;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  background: var(--bs-body-bg);
+  padding: 0.5rem;
+}
+
+.pg-centre.is-expanded .pg-stage .mascot[data-floating="false"] {
+  width: 80px;
+  font-size: 0.75rem;
+}
+
+.pg-centre.is-expanded .pg-stage .mascot[data-floating="false"] .mascot-bubble-region {
+  width: 11rem;
+  height: 9rem;
+}
+
+.pg-centre.is-expanded .pg-stage .mascot[data-floating="false"] .mascot-bubble-text {
+  max-height: 6.5rem;
+  overflow: auto;
+}
+
+.pg-centre.is-expanded .pg-canvas-caption,
+.pg-centre.is-expanded .pg-grip {
+  display: none;
+}
+
+/* The mini card has a reserved column, including while the dock scrolls. */
+.pg-centre.is-expanded .pg-dock > .tabbable > .tab-content {
+  padding-right: 15rem;
+}
+
+@container studio-centre (min-width: 640px) {
+  .pg-guide-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .pg-centre.is-expanded .pg-guide-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container studio-centre (min-width: 820px) {
+  .pg-centre.is-expanded .pg-guide-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+  .pg-studio {
+    grid-template-columns: 190px minmax(0, 1fr) 300px;
+  }
+}
+
+@media (max-width: 991px) {
+  .pg-studio {
+    display: block;
+    height: auto;
+    overflow: auto;
+  }
+
+  .pg-index {
+    max-height: 14rem;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  .pg-centre {
+    height: 48rem;
+  }
+
+  .pg-inspector {
+    border-left: 0;
+    border-top: 1px solid var(--bs-border-color);
+  }
+}
+
+@container studio-centre (max-width: 440px) {
+  .pg-centre.is-expanded .pg-canvas {
+    right: 0.5rem;
+    width: calc(100% - 1rem);
+  }
+
+  .pg-centre.is-expanded .pg-dock > .tabbable > .tab-content {
+    padding-right: 0.75rem;
+    margin-top: 18rem;
+  }
+}

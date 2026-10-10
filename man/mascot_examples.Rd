@@ -11,8 +11,9 @@ A data frame with character columns \code{name}, \code{title} and \code{descript
 in teaching order. \code{name} is accepted by \code{\link[=mascot_example]{mascot_example()}}.
 }
 \description{
-Each example is a copyable app.R using Shiny and \code{bslib} cards. All work offline
-and need the optional \code{bslib} package. Copy just app.R into your own project.
+Start with the studio: every exported function and argument, live, with
+explanations and the code to copy. The other examples are each one copyable app.R
+for one scenario. All work offline and need the optional \code{bslib} package.
 }
 \examples{
 mascot_examples()

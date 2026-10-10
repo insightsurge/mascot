@@ -49,31 +49,37 @@ shinyApp(ui, server)
 `mascot()` belongs in the UI; `updateMascot()` belongs in the server.
 There is no `mascotOutput()` or `renderMascot()`. Give each mascot its own id.
 
-![Basic example with mood, status, bubble and gesture controls beside Tessa.](figures/basic-light.png)
-
 ## Open an example
 
-The package includes five small apps. Each opens only the requested scenario,
-using the same layout; there is no example chooser to navigate first.
+Start with mascot studio. Select a function in the index on the left; its
+arguments appear in the inspector on the right. One live Tessa follows your
+changes. The centre dock explains the selected function and shows its example,
+UI, server and whole-app code to copy, plus the last call and event log.
+Drag the dock's top edge to resize it, or choose Expand guide to give the guide
+more room. Show all controls folds the controls by function. The four other
+apps each show one scenario.
+
+![Mascot studio: a function index on the left, Tessa above the guide and code dock in the centre, and the selected function's argument controls on the right.](figures/studio-light.png)
 
 ```{r catalogue}
 mascot_examples()
 ```
 
 ```{r run-example, eval=FALSE}
-mascot_example("basic")
+mascot_example("studio")
 ```
 
 To read a scenario without running it:
 
 ```{r locate-example}
-app_file <- mascot_example("basic", run = FALSE)
+app_file <- mascot_example("form-check", run = FALSE)
 basename(app_file)
 ```
 
-Each `app.R` contains its scenario's UI and server and runs alone when copied
+Each scenario's `app.R` contains its UI and server and runs alone when copied
 into a project with shiny, `bslib` and mascot installed. Layout uses ordinary
-`bslib` cards. `mascot_example()` does not copy or write files.
+`bslib` cards. The studio is a folder: `app.R`, with its helpers in `R/`
+and its styles in `www/`. `mascot_example()` does not copy or write files.
 
 ## Moods and status
 
@@ -124,7 +130,8 @@ pause on hover or keyboard focus, and while the mascot is minimised. The
 close button is present by default. A bubble survives a mood change unless
 you replace or clear it. Pausing while a tab is hidden is still pending.
 
-Try the bubble controls in `mascot_example("basic")`, or the lasting error
+Try the bubble examples, including your own HTML, in
+`mascot_example("studio")`, or the lasting error
 message in `mascot_example("long-task")`.
 
 ## One-off gestures
@@ -142,10 +149,10 @@ updateMascot("helper", gesture = mascot_gesture("nod"))
 ```
 
 Gestures are named-only in `updateMascot()`; they are not a persistent mood.
-The visitor's reduced-motion preference can suppress them. Send them after
-the mascot is mounted: early gestures are currently dropped. A character
+The visitor's reduced-motion preference can suppress them. A gesture sent
+before the mascot appears plays once when it does. A character
 swap has its own wave and takes precedence over a gesture in the same update.
-Try both gestures in `mascot_example("basic")`.
+Try both gestures in `mascot_example("studio")`.
 
 ## Size and placement
 
@@ -171,7 +178,7 @@ updateMascot("helper", size = mascot_size(180, small_screen = 72),
 updateMascot("helper", placement = mascot_placement()) # Return inline.
 ```
 
-Try the size and placement controls in `mascot_example("basic")`, and the
+Try the size and placement controls in `mascot_example("studio")`, and the
 parent-owned corner helper in `mascot_example("modules")`.
 
 ## Theme and light/dark mode
@@ -279,7 +286,7 @@ mascot_motion(swap = FALSE)
 `motion = FALSE` stops animation. `mascot_motion(swap = FALSE)` stops just
 the character hand-over animation. A visitor's reduced-motion preference is
 always honoured, even with `animate = TRUE`. Idle movement settles after five
-seconds. Try the motion switch in `mascot_example("basic")`.
+seconds. Try the motion switches in `mascot_example("studio")`.
 
 ```{r motion-update, eval=FALSE}
 updateMascot("helper", motion = mascot_motion(animate = FALSE))

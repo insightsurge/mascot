@@ -1,5 +1,6 @@
 # mascot 0.0.2.9000
 
+* `mascot_example("studio")` opens mascot studio: a function index, one live Tessa, a guide and code dock that resizes or expands, and an inspector for every argument. Copy UI, server or whole-app code, inspect warnings and errors in the log, and try static previews and bundled examples. Tests keep the guide and controls complete as functions and arguments are added (#218).
 * `mascot_placement()` takes one `position` (`"inline"` or a corner) and `minimise`, replacing `floating` + `position`, so the two can no longer contradict each other; shortcuts are unchanged (#215).
 * `mascot("helper")` without an `id` now explains that the first argument is the character and shows `mascot(id = "helper")` (#215).
 * In Shiny development mode, an update that never finds its mascot because of a namespace slip (`helper` versus `first-helper`) warns once and says how to fix it: `ns()` in the module UI, or update from inside the module (#215).

@@ -22,7 +22,7 @@
 #'   string such as `"20%"`, or a [mascot_size()] object. Defaults to `160`.
 #'   Percentages follow the parent width when inline and window width when floating,
 #'   with a 24-pixel floor. `NULL` is not accepted.
-#' @param placement `"inline"` (the default), `"floating"` (bottom-right), a corner
+#' @param placement `"bottom-right"` (the default), `"floating"`, `"inline"`, a corner
 #'   such as `"top-left"`, a named list such as `list(position = "top-left",
 #'   minimise = TRUE, drag = "snap")`, or a [mascot_placement()] object.
 #'   `minimise` and `drag` need a corner. With `drag`, each drop sets
@@ -85,7 +85,7 @@ mascot <- function(
   status = NULL,
   bubble = NULL,
   size = 160,
-  placement = "inline",
+  placement = "bottom-right",
   theme = NULL,
   motion = TRUE,
   popup_menu = NULL

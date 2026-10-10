@@ -11,8 +11,8 @@
 #'   string, or [mascot_size()] object. Defaults to `160`. Percentages follow the
 #'   comparison cell width. `NULL` is not accepted.
 #' @param placement A placement shortcut, named list or [mascot_placement()]
-#'   object, defaulting to `"inline"`. Valid floating settings are shown inline
-#'   in the grid. `NULL` is not accepted.
+#'   object, defaulting to `"inline"`. The preview ignores floating and shows
+#'   every mascot inline in the comparison grid. `NULL` is not accepted.
 #' @param popup_menu A named character vector or [mascot_popup_menu()] object,
 #'   or `NULL` (the default) for no menu. The value is checked; menus remain
 #'   inactive on this static page.
@@ -36,9 +36,10 @@
 #' as [mascot()]. Experimental CSS variables are resolved in the browser: their
 #' warnings appear in its console and cannot be included in the R attribute.
 #'
-#' Floating `placement` is checked then shown inline for comparison. Click menus
-#' are checked but remain inactive on this static page. Empty bubble space is
-#' omitted here; a supplied bubble keeps its space and normal timing.
+#' Floating `placement` is checked then shown inline for comparison; the preview
+#' ignores floating so every cell remains in its grid. Click menus are checked
+#' but remain inactive on this static page. Empty bubble space is omitted here;
+#' a supplied bubble keeps its space and normal timing.
 #' @family mascot helpers
 #' @seealso [mascot()], [mascot_colour_roles()], [mascot_theme()]
 #' @export

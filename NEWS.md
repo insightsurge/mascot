@@ -1,7 +1,8 @@
 # mascot 0.0.2.9000
 
-* Mascot menus open next to the character, and only one popup shows at a time: opening the menu closes the bubble, and a new bubble closes the menu (#218).
-
+* `mascot_popup_menu()` gains `direction`: the menu opens from the mascot's on-screen position towards `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`, and falls back to another side when there is no room (#225).
+* Mascot menus open next to the character instead of above its empty canvas area, and only one pop-up shows at a time: opening the menu closes the bubble, and a new bubble closes the menu (#225).
+* `mascot()` and `mascot_placement()` float in the bottom-right corner by default, as an assistant in the corner of the app; use `placement = "inline"` to place a mascot in the page (#223).
 * `mascot_example("studio")` opens mascot studio: a function index, one live Tessa, a folded Learn card and a collapsible code dock that resizes, and an inspector for every argument. Copy UI, server or whole-app code, inspect warnings and errors in the log, and try static previews and bundled examples in their own tabs. Tests keep the guide and controls complete as functions and arguments are added (#218).
 * `mascot_placement()` gains `drag`: visitors can drag a floating mascot, which snaps to the nearest corner or stays where dropped; the server receives `input$<id>_position` (#220).
 * `mascot_size()` loses `simplify_when_small`, and characters no longer have a separate small-size drawing: below 72 pixels the simplified face looked worse than the full one, so every size now draws the full character (#219).

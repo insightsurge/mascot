@@ -1,10 +1,11 @@
-#' Place a mascot inline or in a floating corner
+#' Place a mascot in a floating corner or inline
 #'
-#' Inline mascots sit where they are placed in the UI. Floating mascots sit
-#' 1rem from the window's edges, above fixed navigation bars and below modals.
+#' Floating mascots sit in a corner (by default, `"bottom-right"`), 1rem from
+#' the window's edges, above fixed navigation bars and below modals.
 #' Bottom-right mascots move above Shiny notifications while they are visible.
-#' Floating mascots hide with their original tab or container. Switching back to
-#' inline returns the mascot to its original place in the UI.
+#' Floating mascots hide with their original tab or container. Inline mascots sit
+#' where they are placed in the page flow. Switching back to inline returns the
+#' mascot to its original place in the UI.
 #'
 #' The neutral minimise control appears on hover or keyboard focus. Touch screens
 #' keep it visible; an open mascot menu hides it. Its border has a quiet glow.
@@ -35,9 +36,9 @@
 #' has no keyboard alternative; the minimise control stays reachable by keyboard.
 #' Remembering a position between visits is the app's job: for example, save
 #' the corner and pass it back as `position` next time.
-#' @param position `"inline"` (the default) to sit where the mascot is placed in
-#'   the UI, or a corner to float it: `"top-left"`, `"top-right"`,
-#'   `"bottom-left"` or `"bottom-right"`. `NULL` is not accepted.
+#' @param position A corner to float the mascot (`"bottom-right"`, the default;
+#'   `"top-left"`, `"top-right"` or `"bottom-left"`), or `"inline"` to sit
+#'   where the mascot is placed in the UI. `NULL` is not accepted.
 #' @param minimise A logical flag, defaulting to `FALSE`, to show a minimise
 #'   control. `TRUE` needs a corner `position`. `NULL` is not accepted.
 #' @param drag `FALSE` (the default) for no dragging, `"snap"` to let visitors
@@ -65,7 +66,7 @@
 #'     output$where <- shiny::renderText(paste("Dropped in", input$helper_position))
 #'   }
 #' )
-mascot_placement <- function(position = "inline", minimise = FALSE, drag = FALSE) {
+mascot_placement <- function(position = "bottom-right", minimise = FALSE, drag = FALSE) {
   checkmate::assert_string(position)
   checkmate::assert_flag(minimise)
   # drag is a union (FALSE or a mode); the wording for a wrong value comes from abort_drag().
@@ -169,10 +170,10 @@ placement_problem <- function(x) {
       if (isTRUE(x$drag)) ". Use \"snap\" to move to the nearest corner or \"free\" to stay where dropped." else "."
     ))
   }
-  if (isTRUE(x$minimise) && (is.null(x$position) || x$position == "inline")) {
+  if (isTRUE(x$minimise) && identical(x$position, "inline")) {
     return("`placement` minimise needs a corner position, such as \"bottom-right\".")
   }
-  if (!is.null(x$drag) && !isFALSE(x$drag) && (is.null(x$position) || x$position == "inline")) {
+  if (!is.null(x$drag) && !isFALSE(x$drag) && identical(x$position, "inline")) {
     return("`placement` drag needs a corner position, such as \"bottom-right\"; an inline mascot cannot be dragged.")
   }
   NULL

@@ -371,8 +371,9 @@ body.quarto-dark {
 .mascot-menu {
   position: absolute;
   top: var(--mascot-menu-top, 0px);
+  left: var(--mascot-menu-left, 0px);
+  right: auto;
   box-sizing: border-box;
-  transform: translateX(var(--mascot-menu-shift, 0px));
   z-index: 2;
   width: max-content;
   min-width: min(10em, calc(100vw - 2rem));
@@ -404,12 +405,4 @@ body.quarto-dark {
 .mascot-menu [role="menuitem"]:hover,
 .mascot-menu [role="menuitem"]:focus {
   text-decoration: underline;
-}
-
-.mascot[data-floating="true"][data-position$="left"] .mascot-menu {
-  left: 0;
-}
-
-.mascot[data-floating="true"][data-position$="right"] .mascot-menu {
-  right: 0;
 }

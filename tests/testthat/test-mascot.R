@@ -13,7 +13,7 @@ describe("mascot()", {
         `data-mood` = "idle",
         `data-status` = "mood",
         `data-size` = 160,
-        `data-floating` = "false",
+        `data-floating` = "true",
         `data-position` = "bottom-right",
         `data-minimise` = "false",
         `data-drag` = "false",
@@ -177,7 +177,7 @@ describe("mascot() size and placement", {
     )
     expect_error(mascot(id = "a", size = NULL), "size")
     expect_error(mascot(id = "a", size = "24px"), "size.*24px")
-    expect_error(mascot(id = "a", placement = list(minimise = TRUE)), "corner")
+    expect_error(mascot(id = "a", placement = list(position = "inline", minimise = TRUE)), "corner")
     expect_snapshot(error = TRUE, mascot(id = "a", placement = "fixed"))
     expect_snapshot(error = TRUE, mascot("helper"))
     expect_snapshot(error = TRUE, mascot())

@@ -462,12 +462,12 @@ describe("updateMascot() size and placement", {
       # A helper built before simplify_when_small was removed carries an extra field.
       bad_fields <- mascot_size()
       bad_fields$simplify_when_small <- TRUE
-      bad_place <- mascot_placement()
+      bad_place <- mascot_placement("inline")
       bad_place$minimise <- TRUE
       for (x in list(23, Inf, "24px", bad_size, bad_fields)) {
         expect_warning(updateMascot("a", size = x, mood = "happy"), "unchanged")
       }
-      bad_drag <- mascot_placement()
+      bad_drag <- mascot_placement("inline")
       bad_drag$drag <- "snap"
       for (x in list("fixed", list(floating = TRUE, snap = TRUE), bad_place, bad_drag)) {
         expect_warning(updateMascot("a", placement = x, status = "Saved"), "unchanged")
@@ -587,7 +587,7 @@ describe("size and placement in a Shiny browser", {
         ns <- shiny::NS(id)
         shiny::tags$div(
           style = "width:400px",
-          mascot(id = ns("helper"), size = "20%"),
+          mascot(id = ns("helper"), size = "20%", placement = "inline"),
           shiny::actionButton(ns("change"), "Change")
         )
       }
@@ -644,7 +644,7 @@ describe("floating mascots in dynamic module UI", {
       }
       shiny::shinyApp(
         shiny::fluidPage(
-          mascot(id = "loader", size = 24),
+          mascot(id = "loader", size = 24, placement = "inline"),
           shiny::tabsetPanel(id = "tabs", shiny::tabPanel("Home", "Home"), shiny::tabPanel("Helper", module_ui("mod")))
         ),
         function(input, output, session) module_server("mod")
@@ -867,19 +867,24 @@ describe("updateMascot() popup menu", {
       expect_identical(captured$patches[[1]]$id, session$ns("helper"))
       expect_identical(
         captured$patches[[1]]$patch,
-        list(popup_menu = list(items = list(about = "About")))
+        list(popup_menu = list(items = list(about = "About"), direction = "auto"))
       )
       updateMascot("helper", popup_menu = NULL)
       expect_length(captured$patches, 1)
       updateMascot("helper", popup_menu = mascot_popup_menu())
-      expect_identical(captured$patches[[2]]$patch$popup_menu, list(items = NULL))
+      expect_identical(captured$patches[[2]]$patch$popup_menu, list(items = NULL, direction = "auto"))
+      updateMascot("helper", popup_menu = mascot_popup_menu(c(about = "About"), direction = "right"))
+      expect_identical(
+        captured$patches[[3]]$patch$popup_menu,
+        list(items = list(about = "About"), direction = "right")
+      )
       for (bad in list(1, "Help", character(), structure(list(), class = "mascot_popup_menu"))) {
         expect_warning(updateMascot("helper", mood = "happy", popup_menu = bad), "unchanged")
       }
-      expect_length(captured$patches, 2)
+      expect_length(captured$patches, 3)
       local_mocked_bindings(dev_mode = function() TRUE)
       expect_warning(updateMascot("helper", mood = "happy", popup_menu = "Help"), "unchanged")
-      expect_named(captured$patches[[3]]$patch, "problem")
+      expect_named(captured$patches[[4]]$patch, "problem")
       expect_error(updateMascot("helper", popup_menu = session), "session.*must be named")
     })
     expect_identical(names(formals(updateMascot))[9:12], c("motion", "popup_menu", "...", "gesture"))

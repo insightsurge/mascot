@@ -20,7 +20,7 @@ ui <- page_fluid(
     ),
     card(
       h2("Form status"),
-      mascot(id = "helper", mood = "worried", status = "2 fields need attention")
+      mascot(id = "helper", mood = "worried", status = "2 fields need attention", placement = "inline")
     )
   )
 )

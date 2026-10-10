@@ -4,15 +4,20 @@
 \alias{mascot_popup_menu}
 \title{Choose a mascot's click menu}
 \usage{
-mascot_popup_menu(items = NULL)
+mascot_popup_menu(items = NULL, direction = "auto")
 }
 \arguments{
 \item{items}{A named character vector of plain-text labels. Names are unique,
 non-empty item ids without whitespace. \code{NULL} (the default) removes the menu;
 an empty vector is not accepted. Labels are always escaped.}
+
+\item{direction}{Direction to open the menu from the mascot: \code{"auto"} (the default),
+\code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. \code{"auto"} picks the side with room
+(preferring above, then below, then the side towards the page centre). If a
+chosen side has no room, it falls back to the opposite side, then to \code{"auto"}.}
 }
 \value{
-A \code{mascot_popup_menu} object with an \code{items} element.
+A \code{mascot_popup_menu} object with \code{items} and \code{direction} elements.
 }
 \description{
 The app supplies the items and decides what each choice does. Menus appear only
@@ -49,8 +54,8 @@ shiny::shinyApp(
 )
 }\if{html}{\out{</div>}}
 
-The menu prefers above the mascot, or below a top floating corner, over any
-bubble. It fits the available screen space and can change direction or scroll.
+The menu opens from the mascot's on-screen position in the requested direction.
+It fits the available screen space and can change direction or scroll.
 Action controls hide while the menu is open. Its bubble countdown pauses. The restore
 button only restores a minimised mascot; it does not open the menu.
 On static pages the mascot stays an image. Run the Shiny example below to try
@@ -58,6 +63,7 @@ the menu.
 }
 \examples{
 mascot_popup_menu(c(about = "About this app", help = "Help"))
+mascot_popup_menu(c(about = "About this app"), direction = "top")
 mascot_popup_menu()
 mascot(id = "helper", popup_menu = c(about = "About this app"))
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

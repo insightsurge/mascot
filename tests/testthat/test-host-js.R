@@ -1623,6 +1623,15 @@ describe("mascot.host motion", {
   })
 })
 
+# Synthetic pointer events on the canvas, as a mouse or finger would send them (pointer id 1, primary button).
+drag_js <- paste(
+  "window.press=(target,type,x,y)=>target.dispatchEvent(new PointerEvent(type,",
+  "{bubbles:true,cancelable:true,pointerId:1,button:0,isPrimary:true,clientX:x,clientY:y}));",
+  "window.dragBy=(target,dx,dy)=>{const r=target.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;",
+  "press(target,'pointerdown',x,y);press(target,'pointermove',x+dx/2,y+dy/2);press(target,'pointermove',x+dx,y+dy);",
+  "press(target,'pointerup',x+dx,y+dy);};"
+)
+
 describe("mascot.host popup menu", {
   it("P6 toggles by pointer, sends repeated event choices, holds the pose and clears it without motion", {
     skip_without_chrome()
@@ -1850,6 +1859,231 @@ describe("mascot.host popup menu", {
     expect_true(r$hiddenWhileMinimised)
     expect_false(r$open)
     expect_false(r$hidden)
+  })
+  it("places the popup menu in each requested direction with an eight-pixel gap from the canvas", {
+    skip_without_chrome()
+    for (dir in c("top", "bottom", "left", "right")) {
+      js <- local_host_page(
+        popup_menu = mascot_popup_menu(c(about = "About"), direction = dir),
+        shiny_menu = TRUE,
+        placement = mascot_placement("top-left", drag = "free"),
+        size = 120,
+        viewport = c(800, 800)
+      )
+      js(drag_js)
+      js("dragBy(document.querySelector('#a canvas'), 300, 300)")
+      res <- js(
+        "(() => {
+        const el = document.getElementById('a'), canvas = el.querySelector('canvas');
+        el.querySelector('.mascot-menu-toggle').click();
+        const menu = el.querySelector('.mascot-menu').getBoundingClientRect();
+        const box = canvas.getBoundingClientRect();
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        let minX = canvas.width, maxX = -1, minY = canvas.height, maxY = -1;
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            if (pixels[(y * canvas.width + x) * 4 + 3] > 0) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        const inkLeft = box.left + (minX / canvas.width) * box.width;
+        const inkRight = box.left + ((maxX + 1) / canvas.width) * box.width;
+        const inkTop = box.top + (minY / canvas.height) * box.height;
+        const inkBottom = box.top + ((maxY + 1) / canvas.height) * box.height;
+        return {
+          gapTop: inkTop - menu.bottom,
+          gapBottom: menu.top - inkBottom,
+          gapLeft: inkLeft - menu.right,
+          gapRight: menu.left - inkRight,
+          menuTop: menu.top,
+          menuBottom: menu.bottom,
+          menuLeft: menu.left,
+          menuRight: menu.right,
+          inkMidY: (inkTop + inkBottom) / 2,
+          menuMidY: (menu.top + menu.bottom) / 2
+        };
+      })()"
+      )
+      if (dir == "top") {
+        expect_equal(res$gapTop, 8, tolerance = 1)
+        expect_gte(res$menuTop, 16)
+      } else if (dir == "bottom") {
+        expect_equal(res$gapBottom, 8, tolerance = 1)
+        expect_lte(res$menuBottom, 784)
+      } else if (dir == "left") {
+        expect_equal(res$gapLeft, 8, tolerance = 1)
+        expect_gte(res$menuLeft, 16)
+        expect_equal(res$menuMidY, res$inkMidY, tolerance = 2)
+      } else if (dir == "right") {
+        expect_equal(res$gapRight, 8, tolerance = 1)
+        expect_lte(res$menuRight, 784)
+        expect_equal(res$menuMidY, res$inkMidY, tolerance = 2)
+      }
+    }
+  })
+  it("falls back to the opposite side then auto when the requested direction has no room", {
+    skip_without_chrome()
+    js_top <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "top"),
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-left", FALSE),
+      viewport = c(800, 600)
+    )
+    res_top <- js_top(
+      "(() => {
+      const el = document.getElementById('a'), canvas = el.querySelector('canvas');
+      el.querySelector('.mascot-menu-toggle').click();
+      const menu = el.querySelector('.mascot-menu').getBoundingClientRect();
+      const box = canvas.getBoundingClientRect();
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      let maxY = -1;
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] > 0) maxY = Math.max(maxY, y);
+        }
+      }
+      const inkBottom = box.top + ((maxY + 1) / canvas.height) * box.height;
+      return { gap: menu.top - inkBottom };
+    })()"
+    )
+    expect_equal(res_top$gap, 8, tolerance = 1)
+
+    js_bottom <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "bottom"),
+      shiny_menu = TRUE,
+      placement = mascot_placement("bottom-left", FALSE),
+      viewport = c(800, 600)
+    )
+    res_bottom <- js_bottom(
+      "(() => {
+      const el = document.getElementById('a'), canvas = el.querySelector('canvas');
+      el.querySelector('.mascot-menu-toggle').click();
+      const menu = el.querySelector('.mascot-menu').getBoundingClientRect();
+      const box = canvas.getBoundingClientRect();
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      let minY = canvas.height;
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] > 0) { minY = Math.min(minY, y); break; }
+        }
+      }
+      const inkTop = box.top + (minY / canvas.height) * box.height;
+      return { gap: inkTop - menu.bottom };
+    })()"
+    )
+    expect_equal(res_bottom$gap, 8, tolerance = 1)
+
+    js_left <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-left", FALSE),
+      viewport = c(800, 600)
+    )
+    res_left <- js_left(
+      "(() => {
+      const el = document.getElementById('a'), canvas = el.querySelector('canvas');
+      el.querySelector('.mascot-menu-toggle').click();
+      const menu = el.querySelector('.mascot-menu').getBoundingClientRect();
+      const box = canvas.getBoundingClientRect();
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      let maxX = -1;
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] > 0) maxX = Math.max(maxX, x);
+        }
+      }
+      const inkRight = box.left + ((maxX + 1) / canvas.width) * box.width;
+      return { gap: menu.left - inkRight };
+    })()"
+    )
+    expect_equal(res_left$gap, 8, tolerance = 1)
+
+    js_right <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "right"),
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-right", FALSE),
+      viewport = c(800, 600)
+    )
+    res_right <- js_right(
+      "(() => {
+      const el = document.getElementById('a'), canvas = el.querySelector('canvas');
+      el.querySelector('.mascot-menu-toggle').click();
+      const menu = el.querySelector('.mascot-menu').getBoundingClientRect();
+      const box = canvas.getBoundingClientRect();
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      let minX = canvas.width;
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] > 0) minX = Math.min(minX, x);
+        }
+      }
+      const inkLeft = box.left + (minX / canvas.width) * box.width;
+      return { gap: inkLeft - menu.right };
+    })()"
+    )
+    expect_equal(res_right$gap, 8, tolerance = 1)
+
+    js_auto <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      shiny_menu = TRUE,
+      size = 100,
+      viewport = c(800, 600)
+    )
+    res_auto <- js_auto(
+      "(() => {
+      const el = document.getElementById('a');
+      const card = document.createElement('div');
+      Object.assign(card.style, { width: '130px', height: '400px', overflow: 'hidden' });
+      el.parentElement.insertBefore(card, el);
+      card.append(el);
+      el.querySelector('.mascot-menu-toggle').click();
+      const menu = el.querySelector('.mascot-menu').getBoundingClientRect();
+      const box = el.querySelector('canvas').getBoundingClientRect();
+      return { openedAbove: menu.bottom <= box.top + 20 };
+    })()"
+    )
+    expect_true(res_auto$openedAbove)
+  })
+  it("anchors the popup menu to a free-dragged mascot rather than a corner", {
+    skip_without_chrome()
+    js <- local_host_page(
+      placement = mascot_placement("bottom-right", drag = "free"),
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "top"),
+      shiny_menu = TRUE,
+      size = 100,
+      viewport = c(800, 600)
+    )
+    js(drag_js)
+    js("dragBy(document.querySelector('#a canvas'), -350, -250)")
+    result <- js(
+      "(() => {
+      const el = document.getElementById('a'), canvas = el.querySelector('canvas');
+      el.querySelector('.mascot-menu-toggle').click();
+      const menu = el.querySelector('.mascot-menu').getBoundingClientRect();
+      const box = canvas.getBoundingClientRect();
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      let minY = canvas.height;
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          if (pixels[(y * canvas.width + x) * 4 + 3] > 0) { minY = Math.min(minY, y); break; }
+        }
+      }
+      const inkTop = box.top + (minY / canvas.height) * box.height;
+      return {
+        gap: inkTop - menu.bottom,
+        menuLeft: menu.left,
+        canvasLeft: box.left,
+        cornerLeft: 600
+      };
+    })()"
+    )
+    expect_equal(result$gap, 8, tolerance = 1)
+    expect_lt(result$menuLeft, result$cornerLeft)
+    expect_gt(result$menuLeft, 200)
   })
 })
 
@@ -2084,15 +2318,6 @@ describe("mount replies racing live updates", {
     expect_identical(result$recovered$current$mood, "thinking")
   })
 })
-
-# Synthetic pointer events on the canvas, as a mouse or finger would send them (pointer id 1, primary button).
-drag_js <- paste(
-  "window.press=(target,type,x,y)=>target.dispatchEvent(new PointerEvent(type,",
-  "{bubbles:true,cancelable:true,pointerId:1,button:0,isPrimary:true,clientX:x,clientY:y}));",
-  "window.dragBy=(target,dx,dy)=>{const r=target.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;",
-  "press(target,'pointerdown',x,y);press(target,'pointermove',x+dx/2,y+dy/2);press(target,'pointermove',x+dx,y+dy);",
-  "press(target,'pointerup',x+dx,y+dy);};"
-)
 
 describe("mascot.host dragging", {
   it("D1 snaps to the nearest corner, reports it, opens bubbles inwards and keeps a click for the menu", {

@@ -85,6 +85,37 @@ describe("mascot.host", {
     expect_length(result$warnings, 5)
     expect_true(all(startsWith(unlist(result$warnings), "mascot: ")))
   })
+  it("warns once in development mode when an update misses a namespaced mascot on the page", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(async () => {
+      const source = document.getElementById('a'), warnings = [], events = [], original = console.warn;
+      const add = id => {const el=source.cloneNode(true); el.id=id; document.body.append(el); mascot.host.mount(el); return el;};
+      console.warn = message => warnings.push(message);
+      window.addEventListener('shiny:client-message', event => events.push(event.detail.message));
+      add('first-helper');
+      window.Shiny = {inDevMode: () => false};
+      mascot.host.receive({id:'helper',patch:{mood:'happy'}});
+      await new Promise(resolve => setTimeout(resolve, 2200));
+      const production = warnings.length;
+      window.Shiny = {inDevMode: () => true};
+      mascot.host.receive({id:'helper',patch:{mood:'thinking'}});
+      mascot.host.receive({id:'helper',patch:{mood:'happy'}});
+      mascot.host.receive({id:'later',patch:{mood:'happy'}});
+      add('summary');
+      mascot.host.receive({id:'second-summary',patch:{mood:'happy'}});
+      await new Promise(resolve => setTimeout(resolve, 2200));
+      console.warn = original; delete window.Shiny;
+      return {production, warnings, events};
+    })()"
+    )
+    expect_identical(result$production, 0L)
+    expect_length(result$warnings, 2)
+    expect_match(result$warnings[[1]], 'no mascot "helper".*"first-helper".*from inside its module')
+    expect_match(result$warnings[[2]], 'no mascot "second-summary".*"summary".*ns\\("summary"\\)')
+    expect_identical(result$events[[1]], sub("^mascot: ", "", result$warnings[[1]]))
+  })
   it("bounds the queue for an id that has not appeared and asks the server for its full state", {
     skip_without_chrome()
     js <- local_host_page()
@@ -645,20 +676,23 @@ describe("host review regressions", {
     expect_identical(result$dark$tail, result$dark$background)
     expect_identical(result$light$background, "rgb(255, 255, 255)")
   })
-  it("A3 follows system dark mode but honours an explicit light theme", {
+  it("A3 colours the bubble from the page's signal, never from the system preference alone", {
     skip_without_chrome()
     js <- local_host_page(bubble = mascot_bubble("Ready", Inf), scheme = "dark")
     result <- js(
       "(() => {
-      const bubble=document.querySelector('#a .mascot-bubble');
-      const dark=getComputedStyle(bubble).backgroundColor;
-      document.body.setAttribute('data-bs-theme','light'); const light=getComputedStyle(bubble).backgroundColor;
-      document.documentElement.setAttribute('data-bs-theme','light');
-      return {dark,light,rootLight:getComputedStyle(bubble).backgroundColor};
+      const bubble=document.querySelector('#a .mascot-bubble'), bg=()=>getComputedStyle(bubble).backgroundColor;
+      const none=bg();
+      document.body.setAttribute('data-bs-theme','dark'); const bootstrap=bg();
+      document.body.removeAttribute('data-bs-theme'); document.body.classList.add('quarto-dark'); const quarto=bg();
+      document.body.classList.remove('quarto-dark'); document.documentElement.setAttribute('data-bs-theme','light');
+      return {none,bootstrap,quarto,rootLight:bg()};
     })()"
     )
-    expect_identical(result$dark, "rgb(33, 37, 41)")
-    expect_identical(result$light, "rgb(255, 255, 255)")
+    # A dark system setting alone keeps the light bubble, matching the drawing's "no signal means light".
+    expect_identical(result$none, "rgb(255, 255, 255)")
+    expect_identical(result$bootstrap, "rgb(33, 37, 41)")
+    expect_identical(result$quarto, "rgb(33, 37, 41)")
     expect_identical(result$rootLight, "rgb(255, 255, 255)")
   })
   it("G3 skips static text in tab order and still pauses while the close button has focus", {
@@ -860,6 +894,10 @@ describe("mascot.host floating placement", {
         scheme = scheme,
         bubble = mascot_bubble("Ready", Inf)
       )
+      # The page, not the system preference, makes the bubble dark.
+      if (scheme == "dark") {
+        js("document.documentElement.dataset.bsTheme='dark'")
+      }
       for (corner in c("top-left", "top-right", "bottom-left", "bottom-right")) {
         js(sprintf(
           "mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'%s',minimise:false}}})",
@@ -916,7 +954,10 @@ describe("mascot.host floating placement", {
   })
   it("minimises with a native control, retains updates and messages, and restores without remounting", {
     skip_without_chrome()
-    js <- local_host_page(placement = mascot_placement(TRUE, minimise = TRUE), bubble = mascot_bubble("Before", Inf))
+    js <- local_host_page(
+      placement = mascot_placement("bottom-right", minimise = TRUE),
+      bubble = mascot_bubble("Before", Inf)
+    )
     js(
       "window.el=document.getElementById('a');window.mountCount=0;const mount=mascot.mount;
       mascot.mount=(...args)=>{mountCount++;return mount(...args);}; el.querySelector('.mascot-minimise').click();
@@ -1058,7 +1099,7 @@ describe("mascot.host restore feedback", {
   it("glows and grows on keyboard focus, with glow only under reduced motion", {
     skip_without_chrome()
     for (reduced in c(FALSE, TRUE)) {
-      js <- local_host_page(reduced = reduced, placement = mascot_placement(TRUE, minimise = TRUE))
+      js <- local_host_page(reduced = reduced, placement = mascot_placement("bottom-right", minimise = TRUE))
       js(
         "const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
         window.restore=el.querySelector('.mascot-restore');restore.focus();"
@@ -1080,6 +1121,23 @@ describe("mascot.host restore feedback", {
 
 
 describe("size and placement review regressions", {
+  it("keeps an inline bubble inside a container that clips overflow, such as a bslib card", {
+    skip_without_chrome()
+    js <- local_host_page(size = 96, viewport = c(1000, 800), bubble = mascot_bubble("All checks finished.", Inf))
+    js(
+      "window.el=document.getElementById('a');window.card=document.createElement('div');
+      card.style.cssText='overflow:hidden;width:320px;margin-left:300px;padding:0';el.before(card);card.append(el);
+      dispatchEvent(new Event('resize'))"
+    )
+    result <- host_layout(
+      js,
+      "const b=el.querySelector('.mascot-bubble').getBoundingClientRect(),c=card.getBoundingClientRect();
+      return {left:b.left,right:b.right,cardLeft:c.left,cardRight:c.right};"
+    )
+    # Without the container bound the bubble starts left of the card and its first words are clipped.
+    expect_gte(result$left, result$cardLeft + 7.99)
+    expect_lte(result$right, result$cardRight - 7.99)
+  })
   it("S3-R1 keeps small inline bubbles inside either viewport edge and preserves reserved space", {
     skip_without_chrome()
     for (size in list(48, mascot_size(120, 48))) {
@@ -1116,7 +1174,7 @@ describe("size and placement review regressions", {
   })
   it("S3-R2 moves focus before hiding a placement control without stealing focus elsewhere", {
     skip_without_chrome()
-    js <- local_host_page(placement = mascot_placement(TRUE, minimise = TRUE))
+    js <- local_host_page(placement = mascot_placement("bottom-right", minimise = TRUE))
     for (floating in c(TRUE, FALSE)) {
       js(
         "window.el=document.getElementById('a');mascot.host.receive({id:'a',patch:{placement:{
@@ -1533,7 +1591,7 @@ describe("mascot.host motion", {
     js <- local_host_page(
       reduced = FALSE,
       motion = FALSE,
-      placement = mascot_placement(TRUE, minimise = TRUE),
+      placement = mascot_placement("bottom-right", minimise = TRUE),
       bubble = mascot_bubble("Ready", Inf)
     )
     r <- js(
@@ -1680,7 +1738,7 @@ describe("mascot.host popup menu", {
     js <- local_host_page(
       popup_menu = c(about = "About"),
       shiny_menu = TRUE,
-      placement = mascot_placement(TRUE, "top-right", TRUE)
+      placement = mascot_placement("top-right", TRUE)
     )
     r <- js(
       "(() => {const el=document.getElementById('a');el.querySelector('.mascot-menu-toggle').click();
@@ -1710,7 +1768,7 @@ describe("mascot.host review corrections", {
           c(about = "About", help = "Help", contact = "Contact", settings = "Settings")
         ),
         shiny_menu = TRUE,
-        placement = if (position == "inline") "inline" else mascot_placement(TRUE, position, TRUE),
+        placement = if (position == "inline") "inline" else mascot_placement(position, TRUE),
         viewport = c(640, 320)
       )
       result <- host_layout(
@@ -1733,7 +1791,7 @@ describe("mascot.host review corrections", {
     js <- local_host_page(
       popup_menu = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
-      placement = mascot_placement(TRUE, minimise = TRUE)
+      placement = mascot_placement("bottom-right", minimise = TRUE)
     )
     result <- js(
       "(() => {const el=document.getElementById('a'),send=patch=>mascot.host.receive({id:'a',patch});
@@ -1762,7 +1820,7 @@ describe("mascot.host review corrections", {
     js <- local_host_page(
       popup_menu = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
-      placement = mascot_placement(TRUE, minimise = TRUE)
+      placement = mascot_placement("bottom-right", minimise = TRUE)
     )
     result <- js(
       "(() => {const el=document.getElementById('a'),button=el.querySelector('.mascot-menu-toggle'),
@@ -1812,7 +1870,7 @@ describe("mascot.host review corrections", {
     js <- local_host_page(
       popup_menu = c(about = "About this app", help = "Help with a longer label", contact = "Contact", more = "More"),
       shiny_menu = TRUE,
-      placement = mascot_placement(TRUE, minimise = TRUE),
+      placement = mascot_placement("bottom-right", minimise = TRUE),
       viewport = c(640, 320)
     )
     js(

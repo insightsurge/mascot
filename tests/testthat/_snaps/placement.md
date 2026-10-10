@@ -1,18 +1,10 @@
-# mascot_placement() / checks all flags, corners, unknown fields and explicit inline options
+# mascot_placement() / checks positions, flags, unknown fields and minimising an inline mascot
 
     Code
-      mascot_placement(position = "top-left")
+      mascot_placement("left")
     Condition
       Error in `mascot_placement()`:
-      ! `position` only works with `floating = TRUE`.
-
----
-
-    Code
-      mascot_placement(TRUE, position = "left")
-    Condition
-      Error in `mascot_placement()`:
-      ! `position` must be one of "top-left", "top-right", "bottom-left", or "bottom-right".
+      ! `position` must be one of "inline", "top-left", "top-right", "bottom-left", or "bottom-right".
       x "left" is not a position.
 
 ---
@@ -21,5 +13,5 @@
       mascot_placement(minimise = TRUE)
     Condition
       Error in `mascot_placement()`:
-      ! `minimise` only works with `floating = TRUE`.
-
+      ! `minimise` needs a corner `position`; an inline mascot cannot be minimised.
+      i Use `mascot_placement("bottom-right", minimise = TRUE)`.

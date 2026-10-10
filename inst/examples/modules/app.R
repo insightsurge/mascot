@@ -6,18 +6,18 @@ library(bslib)
 library(mascot)
 
 review_ui <- function(id, title) {
-  ns <- shiny::NS(id)
-  bslib::card(
-    shiny::tags$h2(title),
-    shiny::checkboxInput(ns("ready"), "Review complete", FALSE),
+  ns <- NS(id)
+  card(
+    h2(title),
+    checkboxInput(ns("ready"), "Review complete", FALSE),
     mascot(id = ns("helper"), mood = "worried", status = "Review still needed")
   )
 }
 
 review_server <- function(id) {
-  shiny::moduleServer(id, function(input, output, session) {
-    ready <- shiny::reactive(isTRUE(input$ready))
-    shiny::observe({
+  moduleServer(id, function(input, output, session) {
+    ready <- reactive(isTRUE(input$ready))
+    observe({
       # Use the local id here: Shiny adds the namespace once.
       updateMascot(
         "helper",
@@ -29,21 +29,25 @@ review_server <- function(id) {
   })
 }
 
-ui <- shiny::tagList(
-  bslib::layout_columns(review_ui("first", "First review"), review_ui("second", "Second review")),
-  shiny::tags$p("The corner helper becomes happy only when both modules finish."),
+ui <- page_fluid(
+  title = "Work in modules",
+  input_dark_mode(id = "dark_mode", mode = "light"),
+  h1("Work in modules"),
+  p("Each module owns its helper; the parent combines what the modules return."),
+  layout_columns(review_ui("first", "First review"), review_ui("second", "Second review")),
+  p("The corner helper becomes happy only when both modules finish."),
   mascot(
     id = "parent",
     mood = "worried",
     status = "Waiting for both reviews",
-    placement = mascot_placement(floating = TRUE, minimise = TRUE)
+    placement = mascot_placement("bottom-right", minimise = TRUE)
   )
 )
 
 server <- function(input, output, session) {
   first <- review_server("first")
   second <- review_server("second")
-  shiny::observe({
+  observe({
     complete <- first() && second()
     updateMascot(
       "parent",
@@ -53,4 +57,4 @@ server <- function(input, output, session) {
   })
 }
 
-shiny::shinyApp(bslib::page_fluid(ui), server)
+shinyApp(ui, server)

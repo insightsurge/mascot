@@ -4,67 +4,75 @@ if (!requireNamespace("bslib", quietly = TRUE)) {
 }
 library(bslib)
 library(mascot)
-ui <- shiny::tagList(bslib::layout_columns(
-  bslib::card(
-    shiny::tags$h2("Tell the helper what changed"),
-    lapply(mascot_moods()$name, function(mood) {
-      shiny::actionButton(paste0("mood_", mood), tools::toTitleCase(mood))
-    }),
-    shiny::textInput("status", "Your status text", "Ready to review"),
-    shiny::actionButton("set_status", "Use this status"),
-    shiny::actionButton("clear_status", "Follow the mood again"),
-    shiny::textInput("message", "Bubble text", "Three rows need a second look."),
-    shiny::checkboxInput("keep", "Keep the bubble until closed", FALSE),
-    shiny::actionButton("show_bubble", "Show bubble"),
-    shiny::actionButton("clear_bubble", "Clear bubble"),
-    shiny::selectInput("gesture", "One-off gesture", mascot_gestures()$name),
-    shiny::actionButton("play_gesture", "Play gesture"),
-    shiny::tags$details(
-      shiny::tags$summary("Size, placement and motion"),
-      shiny::sliderInput("size", "Size in pixels", min = 48, max = 240, value = 160),
-      shiny::checkboxInput("floating", "Float in the bottom-right corner", FALSE),
-      shiny::checkboxInput("animate", "Allow animation", TRUE),
-      shiny::actionButton("reset", "Reset helper settings")
+
+ui <- page_fluid(
+  title = "Meet your helper",
+  input_dark_mode(id = "dark_mode", mode = "light"),
+  h1("Meet your helper"),
+  p("Change a mascot with ordinary Shiny inputs, one setting at a time."),
+  layout_columns(
+    card(
+      h2("Tell the helper what changed"),
+      lapply(mascot_moods()$name, function(mood) {
+        actionButton(paste0("mood_", mood), tools::toTitleCase(mood))
+      }),
+      textInput("status", "Your status text", "Ready to review"),
+      actionButton("set_status", "Use this status"),
+      actionButton("clear_status", "Follow the mood again"),
+      textInput("message", "Bubble text", "Three rows need a second look."),
+      checkboxInput("keep", "Keep the bubble until closed", FALSE),
+      actionButton("show_bubble", "Show bubble"),
+      actionButton("clear_bubble", "Clear bubble"),
+      selectInput("gesture", "One-off gesture", mascot_gestures()$name),
+      actionButton("play_gesture", "Play gesture"),
+      tags$details(
+        tags$summary("Size, placement and motion"),
+        sliderInput("size", "Size in pixels", min = 48, max = 240, value = 160),
+        checkboxInput("floating", "Float in the bottom-right corner", FALSE),
+        checkboxInput("animate", "Allow animation", TRUE),
+        actionButton("reset", "Reset helper settings")
+      )
+    ),
+    card(
+      h2("Your helper"),
+      mascot(id = "helper"),
+      p("Status stays readable when movement is off.")
     )
-  ),
-  bslib::card(
-    shiny::tags$h2("Your helper"),
-    mascot(character = mascot_character("tessa"), id = "helper"),
-    shiny::tags$p("Status stays readable when movement is off.")
   )
-))
+)
 
 server <- function(input, output, session) {
   lapply(mascot_moods()$name, function(mood) {
-    shiny::observeEvent(input[[paste0("mood_", mood)]], {
-      updateMascot("helper", mood = mascot_mood(mood))
-    })
+    observeEvent(input[[paste0("mood_", mood)]], updateMascot("helper", mood = mood))
   })
-  shiny::observeEvent(input$set_status, {
-    shiny::req(nzchar(trimws(input$status)))
-    updateMascot("helper", status = mascot_status(input$status))
+  observeEvent(input$set_status, {
+    req(nzchar(trimws(input$status)))
+    updateMascot("helper", status = input$status)
   })
-  shiny::observeEvent(input$clear_status, updateMascot("helper", status = mascot_status()))
-  shiny::observeEvent(input$show_bubble, {
-    shiny::req(nzchar(trimws(input$message)))
+  observeEvent(input$clear_status, updateMascot("helper", status = mascot_status()))
+  observeEvent(input$show_bubble, {
+    req(nzchar(trimws(input$message)))
     updateMascot("helper", bubble = mascot_bubble(input$message, duration = if (input$keep) Inf else 5))
   })
-  shiny::observeEvent(input$clear_bubble, updateMascot("helper", bubble = mascot_bubble()))
-  shiny::observeEvent(input$play_gesture, updateMascot("helper", gesture = mascot_gesture(input$gesture)))
-  shiny::observeEvent(input$size, updateMascot("helper", size = mascot_size(input$size, small_screen = 72)))
-  shiny::observeEvent(input$floating, {
-    placement <- if (input$floating) {
-      mascot_placement(floating = TRUE, position = "bottom-right", minimise = TRUE)
-    } else {
-      mascot_placement()
-    }
-    updateMascot("helper", placement = placement)
-  })
-  shiny::observeEvent(input$animate, updateMascot("helper", motion = mascot_motion(animate = input$animate)))
-  shiny::observeEvent(input$reset, {
-    shiny::updateSliderInput(session, "size", value = 160)
-    shiny::updateCheckboxInput(session, "floating", value = FALSE)
-    shiny::updateCheckboxInput(session, "animate", value = TRUE)
+  observeEvent(input$clear_bubble, updateMascot("helper", bubble = mascot_bubble()))
+  observeEvent(input$play_gesture, updateMascot("helper", gesture = input$gesture))
+  # ignoreInit: the mascot already starts with these settings.
+  observeEvent(input$size, updateMascot("helper", size = mascot_size(input$size, small_screen = 72)), ignoreInit = TRUE)
+  observeEvent(
+    input$floating,
+    {
+      updateMascot(
+        "helper",
+        placement = mascot_placement(if (input$floating) "bottom-right" else "inline", minimise = input$floating)
+      )
+    },
+    ignoreInit = TRUE
+  )
+  observeEvent(input$animate, updateMascot("helper", motion = input$animate), ignoreInit = TRUE)
+  observeEvent(input$reset, {
+    updateSliderInput(session, "size", value = 160)
+    updateCheckboxInput(session, "floating", value = FALSE)
+    updateCheckboxInput(session, "animate", value = TRUE)
     updateMascot(
       "helper",
       mood = "idle",
@@ -77,4 +85,4 @@ server <- function(input, output, session) {
   })
 }
 
-shiny::shinyApp(bslib::page_fluid(ui), server)
+shinyApp(ui, server)

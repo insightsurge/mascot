@@ -3,6 +3,8 @@
  * A Shiny input binding mounts for its initial value/subscribe and destroys on unsubscribe; static pages mount at DOM ready.
  * Custom messages carry { id, patch }; late state merges by id, including the latest one-off gesture.
  * At most 20 patches wait per id; beyond that the newest are kept and the server re-sends its retained state on mount.
+ * In Shiny development mode, updates waiting 2 s for "x" while "<namespace>-x" is mounted, or for "<namespace>-x" while
+ * "x" is mounted, warn once with the likely namespace fix.
  * Patches are atomic: prepare descriptions/status, ask the engine to validate, then commit host state.
  * Desired character/mood live in data-character/data-mood; data-shown-* and status follow the shown frame.
  * Custom status persists across swaps. Development problems temporarily cover it and use a worried mood;
@@ -48,6 +50,8 @@
   const pending = new Map();
   const playedGestures = new Map();
   const queueLimit = 20;
+  const warnedIds = new Set();
+  const namespaceDelay = 2000;
   let mountSerial = 0;
   const known = new Map();
   const updating = new WeakSet();
@@ -674,8 +678,24 @@
     setProperty(record.el, '--mascot-menu-top', `${top - record.el.getBoundingClientRect().top}px`);
     const shift = parseFloat(record.el.style.getPropertyValue('--mascot-menu-shift')) || 0;
     const natural = rect.left - shift;
-    const left = Math.max(16, Math.min(natural, document.documentElement.clientWidth - 16 - rect.width));
+    const bounds = record.placement.floating ? clipBounds(document.body) : clipBounds(record.el);
+    const left = Math.max(bounds.left, Math.min(natural, bounds.right - rect.width));
     setProperty(record.el, '--mascot-menu-shift', `${left - natural}px`);
+  }
+
+  // Horizontal room for an inline overlay: the viewport, narrowed by any ancestor that clips overflow (a bslib card).
+  function clipBounds(el) {
+    const viewport = 16,
+      inset = 8;
+    let left = viewport,
+      right = document.documentElement.clientWidth - viewport;
+    for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
+      if (getComputedStyle(node).overflowX === 'visible') continue;
+      const rect = node.getBoundingClientRect();
+      left = Math.max(left, rect.left + node.clientLeft + inset);
+      right = Math.min(right, rect.left + node.clientLeft + node.clientWidth - inset);
+    }
+    return { left, right: Math.max(left, right) };
   }
 
   function measure(record) {
@@ -702,8 +722,8 @@
       const rect = region.getBoundingClientRect();
       const shift = parseFloat(record.el.style.getPropertyValue('--mascot-bubble-shift')) || 0;
       const natural = rect.left - shift;
-      const margin = 16;
-      const left = Math.max(margin, Math.min(natural, document.documentElement.clientWidth - margin - rect.width));
+      const bounds = clipBounds(record.el);
+      const left = Math.max(bounds.left, Math.min(natural, bounds.right - rect.width));
       setProperty(record.el, '--mascot-bubble-shift', `${left - natural}px`);
     }
     measureMenu(record);
@@ -1407,7 +1427,32 @@
       gestureRevision: waiting?.gestureRevision || 0,
       description: prepared.description || current,
     });
+    suggestNamespace(id);
     return true;
+  }
+
+  // Development mode only: a missing ns() in a module UI sends updates to "helper" while the page has "first-helper".
+  // Late mascots are normal (renderUI after a login), so warn only when such a namespaced id is on the page.
+  function suggestNamespace(id) {
+    if (warnedIds.has(id) || !window.Shiny?.inDevMode?.()) return;
+    setTimeout(() => {
+      if (!pending.has(id) || warnedIds.has(id)) return;
+      const ids = [...live].map((record) => record.el.id);
+      // A module UI without ns(): the server updates "first-helper" while the page has "helper".
+      const bare = ids.find((other) => id.endsWith(`-${other}`));
+      // An update from outside the module: the server updates "helper" while the page has "first-helper".
+      const namespaced = ids.find((other) => other.endsWith(`-${id}`));
+      if (!bare && !namespaced) return;
+      warnedIds.add(id);
+      const message = bare
+        ? `no mascot "${id}" is on the page, but "${bare}" is; in a module UI use mascot(id = ns("${bare}"))`
+        : `no mascot "${id}" is on the page, but "${namespaced}" is; update it from inside its module, ` +
+          `where updateMascot("${id}") adds the namespace`;
+      warn(message);
+      window.dispatchEvent(
+        new CustomEvent('shiny:client-message', { detail: { headline: 'mascot', message, status: 'warning' } }),
+      );
+    }, namespaceDelay);
   }
 
   function receive(message) {

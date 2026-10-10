@@ -131,7 +131,7 @@ mascot_preview <- function(
     ),
     htmltools::tags$h1(id = paste0(prefix, "-heading"), paste(character$name, "preview")),
     htmltools::tags$p("Compare each mood and size in both modes. Status text keeps the meaning readable."),
-    if (placement$floating) htmltools::tags$p("Floating placement is shown inline in this comparison."),
+    if (placement$position != "inline") htmltools::tags$p("Floating placement is shown inline in this comparison."),
     if (length(menu$items)) htmltools::tags$p("Click menus need Shiny and are inactive in this static preview."),
     if (length(resolved$css)) {
       htmltools::tags$p("Experimental CSS colours are checked in the browser console, not the R contrast list.")

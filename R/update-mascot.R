@@ -222,7 +222,7 @@ updateMascot <- function(
     patch$size <- unclass(as_size_arg(size, environment()))
   }
   if (!is.null(placement)) {
-    patch$placement <- unclass(as_placement_arg(placement, environment()))
+    patch$placement <- placement_wire(as_placement_arg(placement, environment()))
   }
   if (!is.null(theme)) {
     patch$theme <- theme_result$value

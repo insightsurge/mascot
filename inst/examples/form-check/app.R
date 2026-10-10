@@ -5,22 +5,28 @@ if (!requireNamespace("bslib", quietly = TRUE)) {
 library(bslib)
 library(mascot)
 
-ui <- shiny::tagList(bslib::layout_columns(
-  bslib::card(
-    shiny::tags$h2("Review a sample"),
-    shiny::textInput("sample", "Sample label", ""),
-    shiny::numericInput("quantity", "Quantity (1 to 100)", value = 0, min = 0, max = 100),
-    shiny::textOutput("checks"),
-    shiny::tags$p("The form text explains the problem; the mood reinforces it.")
-  ),
-  bslib::card(
-    shiny::tags$h2("Form status"),
-    mascot(id = "helper", mood = "worried", status = "2 fields need attention")
+ui <- page_fluid(
+  title = "Check a form",
+  input_dark_mode(id = "dark_mode", mode = "light"),
+  h1("Check a form"),
+  p("A worried helper names the fields that need attention and becomes happy when both pass."),
+  layout_columns(
+    card(
+      h2("Review a sample"),
+      textInput("sample", "Sample label", ""),
+      numericInput("quantity", "Quantity (1 to 100)", value = 0, min = 0, max = 100),
+      textOutput("checks"),
+      p("The form text explains the problem; the mood reinforces it.")
+    ),
+    card(
+      h2("Form status"),
+      mascot(id = "helper", mood = "worried", status = "2 fields need attention")
+    )
   )
-))
+)
 
 server <- function(input, output, session) {
-  problems <- shiny::reactive({
+  problems <- reactive({
     c(
       if (!nzchar(trimws(input$sample))) "Enter a sample label.",
       if (is.null(input$quantity) || is.na(input$quantity) || input$quantity < 1 || input$quantity > 100) {
@@ -28,10 +34,10 @@ server <- function(input, output, session) {
       }
     )
   })
-  output$checks <- shiny::renderText({
+  output$checks <- renderText({
     if (length(problems())) paste(problems(), collapse = " ") else "Both fields pass."
   })
-  shiny::observe({
+  observe({
     count <- length(problems())
     updateMascot(
       "helper",
@@ -45,4 +51,4 @@ server <- function(input, output, session) {
   })
 }
 
-shiny::shinyApp(bslib::page_fluid(ui), server)
+shinyApp(ui, server)

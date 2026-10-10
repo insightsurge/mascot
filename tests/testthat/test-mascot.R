@@ -163,7 +163,7 @@ describe("message guidance", {
 
 describe("mascot() size and placement", {
   it("writes data attributes without inline layout styles and normalises shortcuts", {
-    tag <- mascot(id = "a", size = mascot_size("20%", 48, FALSE), placement = mascot_placement(TRUE, "top-left", TRUE))
+    tag <- mascot(id = "a", size = mascot_size("20%", 48, FALSE), placement = mascot_placement("top-left", TRUE))
     expect_identical(tag$attribs$`data-size`, "20%")
     expect_identical(tag$attribs$`data-small-screen`, 48)
     expect_identical(tag$attribs$`data-simplify-when-small`, "false")
@@ -173,12 +173,16 @@ describe("mascot() size and placement", {
     expect_null(tag$attribs$style)
     expect_identical(
       as.character(mascot(id = "a", size = 96, placement = "bottom-right")),
-      as.character(mascot(id = "a", size = mascot_size(96), placement = mascot_placement(TRUE)))
+      as.character(mascot(id = "a", size = mascot_size(96), placement = mascot_placement("bottom-right")))
     )
     expect_error(mascot(id = "a", size = NULL), "size")
     expect_error(mascot(id = "a", size = "24px"), "size.*24px")
-    expect_error(mascot(id = "a", placement = list(position = "top-left")), "only works.*floating")
+    expect_error(mascot(id = "a", placement = list(minimise = TRUE)), "corner")
     expect_snapshot(error = TRUE, mascot(id = "a", placement = "fixed"))
+    expect_snapshot(error = TRUE, mascot("helper"))
+    expect_snapshot(error = TRUE, mascot())
+    expect_snapshot(error = TRUE, mascot("typo", id = "a"))
+    expect_error(mascot("{oops}"), "{oops}", fixed = TRUE)
   })
 })
 

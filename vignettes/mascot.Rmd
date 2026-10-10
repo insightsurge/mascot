@@ -102,10 +102,11 @@ updateMascot("helper", status = mascot_status()) # Follow the mood again.
 
 Try `mascot_example("form-check")` for a plain `observe()` that checks two
 fields. It uses no extra validation package. Try `mascot_example("long-task")`
-for thinking, success and failure states. Its short delay uses `ExtendedTask`
-when available and a plain callback otherwise. The delay still blocks R;
-real background work needs an asynchronous task function. Automatic busy and
-validator watchers are not available yet; these apps send explicit updates.
+for a slow step run with `shiny::ExtendedTask`: Tessa thinks while it runs and
+turns happy or worried when it finishes, and the app stays responsive. The
+example's task is a two-second promise; for real work, return
+`mirai::mirai(...)` from the task function. Automatic busy and validator
+watchers are not available yet; these apps send explicit updates.
 
 ## Message bubbles
 
@@ -153,7 +154,7 @@ The default is 160 pixels, inline where you put it in the UI.
 ```{r layout, results="hide"}
 mascot_size(180, small_screen = 72)
 mascot_size("20%")
-mascot_placement(floating = TRUE, position = "bottom-right", minimise = TRUE)
+mascot_placement("bottom-right", minimise = TRUE)
 ```
 
 Percentages use the container width inline and the window width when floating.
@@ -166,15 +167,12 @@ menu hides the action controls until the menu closes.
 
 ```{r layout-update, eval=FALSE}
 updateMascot("helper", size = mascot_size(180, small_screen = 72),
-  placement = mascot_placement(floating = TRUE, minimise = TRUE))
+  placement = mascot_placement("bottom-right", minimise = TRUE))
 updateMascot("helper", placement = mascot_placement()) # Return inline.
 ```
 
 Try the size and placement controls in `mascot_example("basic")`, and the
 parent-owned corner helper in `mascot_example("modules")`.
-
-Each bundled app uses ordinary `bslib` cards. Copy its `app.R` alone into a
-project with shiny, `bslib` and mascot installed; no shared file is needed.
 
 ## Theme and light/dark mode
 
@@ -227,7 +225,7 @@ colours per mode, use `mascot_theme(light = ..., dark = ...)`.
 
 The default `mode = "auto"` follows the nearest valid `data-bs-theme` from the
 mascot's original place in the page, then Quarto's body classes. Without a
-page signal it stays light, even if the system prefers dark. Explicit
+page signal it stays light, even if the system prefers dark; the speech bubble follows the same signal. Explicit
 `"light"` or `"dark"` wins. Plain lists and `bs_theme()` follow the page too.
 A character swap resolves the incoming character's follow rules again.
 
@@ -381,8 +379,8 @@ opening a Viewer; print it when you want to look:
 
 ```{r preview, eval=FALSE}
 page <- mascot_preview(theme = mascot_theme(
-  light = list(body = "#B53D78", sleeve = "#B53D78", limb = "#A94A82"),
-  dark = list(body = "#F2A6CF", sleeve = "#F2A6CF", limb = "#C5B0EB")
+  light = list(body = "#B53D78", rim = "#A94A82"),
+  dark = list(body = "#F2A6CF", rim = "#C5B0EB")
 ))
 page
 attr(page, "contrast")

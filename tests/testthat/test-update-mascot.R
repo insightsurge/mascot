@@ -867,19 +867,24 @@ describe("updateMascot() popup menu", {
       expect_identical(captured$patches[[1]]$id, session$ns("helper"))
       expect_identical(
         captured$patches[[1]]$patch,
-        list(popup_menu = list(items = list(about = "About")))
+        list(popup_menu = list(items = list(about = "About"), direction = "auto"))
       )
       updateMascot("helper", popup_menu = NULL)
       expect_length(captured$patches, 1)
       updateMascot("helper", popup_menu = mascot_popup_menu())
-      expect_identical(captured$patches[[2]]$patch$popup_menu, list(items = NULL))
+      expect_identical(captured$patches[[2]]$patch$popup_menu, list(items = NULL, direction = "auto"))
+      updateMascot("helper", popup_menu = mascot_popup_menu(c(about = "About"), direction = "right"))
+      expect_identical(
+        captured$patches[[3]]$patch$popup_menu,
+        list(items = list(about = "About"), direction = "right")
+      )
       for (bad in list(1, "Help", character(), structure(list(), class = "mascot_popup_menu"))) {
         expect_warning(updateMascot("helper", mood = "happy", popup_menu = bad), "unchanged")
       }
-      expect_length(captured$patches, 2)
+      expect_length(captured$patches, 3)
       local_mocked_bindings(dev_mode = function() TRUE)
       expect_warning(updateMascot("helper", mood = "happy", popup_menu = "Help"), "unchanged")
-      expect_named(captured$patches[[3]]$patch, "problem")
+      expect_named(captured$patches[[4]]$patch, "problem")
       expect_error(updateMascot("helper", popup_menu = session), "session.*must be named")
     })
     expect_identical(names(formals(updateMascot))[9:12], c("motion", "popup_menu", "...", "gesture"))

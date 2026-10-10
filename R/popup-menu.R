@@ -6,7 +6,11 @@
 #' @param items A named character vector of plain-text labels. Names are unique,
 #'   non-empty item ids without whitespace. `NULL` (the default) removes the menu;
 #'   an empty vector is not accepted. Labels are always escaped.
-#' @returns A `mascot_popup_menu` object with an `items` element.
+#' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
+#'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
+#'   (preferring above, then below, then the side towards the page centre). If a
+#'   chosen side has no room, it falls back to the opposite side, then to `"auto"`.
+#' @returns A `mascot_popup_menu` object with `items` and `direction` elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
 #' @details
@@ -38,8 +42,8 @@
 #'   function(input, output, session) helper_server("demo")
 #' )
 #' ```
-#' The menu prefers above the mascot, or below a top floating corner, over any
-#' bubble. It fits the available screen space and can change direction or scroll.
+#' The menu opens from the mascot's on-screen position in the requested direction.
+#' It fits the available screen space and can change direction or scroll.
 #' Action controls hide while the menu is open. Its bubble countdown pauses. The restore
 #' button only restores a minimised mascot; it does not open the menu.
 #' On static pages the mascot stays an image. Run the Shiny example below to try
@@ -47,6 +51,7 @@
 #' @export
 #' @examples
 #' mascot_popup_menu(c(about = "About this app", help = "Help"))
+#' mascot_popup_menu(c(about = "About this app"), direction = "top")
 #' mascot_popup_menu()
 #' mascot(id = "helper", popup_menu = c(about = "About this app"))
 #' @examplesIf interactive()
@@ -59,14 +64,26 @@
 #'     })
 #'   }
 #' )
-mascot_popup_menu <- function(items = NULL) {
+mascot_popup_menu <- function(items = NULL, direction = "auto") {
   checkmate::assert_character(items, min.chars = 1, any.missing = FALSE, min.len = 1, null.ok = TRUE)
-  value <- structure(list(items = items), class = "mascot_popup_menu")
+  if (!isTRUE(checkmate::check_string(direction))) {
+    checkmate::assert_choice(direction, popup_menu_directions())
+  }
+  if (!direction %in% popup_menu_directions()) {
+    abort_choice(direction, popup_menu_directions(), "direction", "direction", environment())
+  }
+  value <- structure(list(items = items, direction = direction), class = "mascot_popup_menu")
   problem <- popup_menu_problem(value)
   if (!is.null(problem)) {
     cli::cli_abort("{problem}")
   }
   value
+}
+
+#' Valid popup menu directions
+#' @noRd
+popup_menu_directions <- function() {
+  c("auto", "top", "bottom", "left", "right")
 }
 
 #' Validate a menu shortcut or helper without throwing
@@ -76,10 +93,19 @@ popup_menu_problem <- function(x) {
   if (inherits(x, "mascot_popup_menu")) {
     if (
       !isTRUE(checkmate::check_list(x, names = "unique")) ||
-        length(x) != 1L ||
-        !setequal(names(x), "items")
+        length(x) != 2L ||
+        !setequal(names(x), c("items", "direction"))
     ) {
-      return("`popup_menu` must have an items field; use mascot_popup_menu().")
+      return("`popup_menu` must have items and direction fields; use mascot_popup_menu().")
+    }
+    if (!isTRUE(checkmate::check_choice(x$direction, popup_menu_directions()))) {
+      return(paste0(
+        "`direction` must be one of ",
+        paste(encodeString(popup_menu_directions(), quote = '"'), collapse = ", "),
+        "; ",
+        if (is.character(x$direction)) encodeString(x$direction, quote = '"') else deparse1(x$direction),
+        " is not a valid direction."
+      ))
     }
     x <- x$items
   }
@@ -102,7 +128,10 @@ as_popup_menu_arg <- function(x, call) {
   checkmate::assert_environment(call)
   check_arg(x, "popup_menu", call)
   value <- if (inherits(x, "mascot_popup_menu")) x else mascot_popup_menu(x)
-  list(items = if (is.null(value$items)) NULL else as.list(value$items))
+  list(
+    items = if (is.null(value$items)) NULL else as.list(value$items),
+    direction = value$direction
+  )
 }
 
 #' Initial menu configuration, escaped for an inert JSON script

@@ -181,6 +181,7 @@
       clearBubble(record);
       return;
     }
+    if (record.menuOpen) closeMenu(record, record.menuEl.contains(document.activeElement));
     stopTimer(record);
     record.bubble = next;
     const el = record.bubbleEl;
@@ -814,6 +815,34 @@
     }
   }
 
+  // Sample once on opening, not on scroll or each animation frame. Canvas artwork
+  // has transparent margins; anchoring to its box leaves a visible gap above the character.
+  function menuInk(record) {
+    const canvas = record.canvas;
+    const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+    let firstY = canvas.height;
+    let lastY = -1;
+    let firstX = canvas.width;
+    let lastX = -1;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        if (data[(y * canvas.width + x) * 4 + 3] === 0) continue;
+        firstY = Math.min(firstY, y);
+        lastY = Math.max(lastY, y);
+        firstX = Math.min(firstX, x);
+        lastX = Math.max(lastX, x);
+      }
+    }
+    return lastY < 0
+      ? { top: 0, bottom: 1, left: 0, right: 1 }
+      : {
+          top: firstY / canvas.height,
+          bottom: (lastY + 1) / canvas.height,
+          left: firstX / canvas.width,
+          right: (lastX + 1) / canvas.width,
+        };
+  }
+
   function measureMenu(record) {
     if (!record.menuEl || !record.menuOpen) return;
     const menu = record.menuEl;
@@ -822,49 +851,114 @@
       record.placement.floating && record.placement.position === 'bottom-right'
         ? parseFloat(record.el.style.getPropertyValue('--mascot-notification-offset')) || 0
         : 0;
-    const height = document.documentElement.clientHeight - notification;
+    const bounds = record.placement.floating ? clipBounds(document.body) : clipBounds(record.el);
+    const ceiling = bounds.top;
+    const floor = Math.min(bounds.bottom, document.documentElement.clientHeight - notification - margin);
+    const gap = 8;
     const canvas = record.canvas.getBoundingClientRect();
-    const anchorBottom = record.placement.floating ? record.el.getBoundingClientRect().bottom : canvas.bottom;
+    const ink = record.menuInk || { top: 0, bottom: 1, left: 0, right: 1 };
+    const anchorTop = canvas.top + ink.top * canvas.height;
+    const anchorBottom = canvas.top + ink.bottom * canvas.height;
+    const anchorLeft = canvas.left + (ink.left ?? 0) * canvas.width;
+    const anchorRight = canvas.left + (ink.right ?? 1) * canvas.width;
+    const anchorWidth = anchorRight - anchorLeft;
+    const anchorCenterX = (anchorLeft + anchorRight) / 2;
+    const anchorCenterY = (anchorTop + anchorBottom) / 2;
+
     const style = getComputedStyle(menu);
-    const wanted = Math.min(
+    const wantedHeight = Math.min(
       menu.scrollHeight + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
       18 * parseFloat(style.fontSize),
     );
-    const above = Math.max(0, Math.min(height - 2 * margin, canvas.top - margin));
-    const below = Math.max(0, Math.min(height - 2 * margin, height - margin - anchorBottom));
-    let downward = record.placement.floating && record.placement.position.startsWith('top');
-    const preferred = downward ? below : above;
-    const alternative = downward ? above : below;
-    if (wanted > preferred && alternative > preferred) downward = !downward;
-    // Even a canvas taller than the viewport must not make the menu unreachable.
-    const available = Math.max(24, downward ? below : above);
-    setProperty(record.el, '--mascot-menu-max-height', `${available}px`);
+    const wantedWidth = menu.scrollWidth + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+
+    const spaceAbove = Math.max(0, anchorTop - gap - ceiling);
+    const spaceBelow = Math.max(0, floor - anchorBottom - gap);
+    const spaceLeft = Math.max(0, anchorLeft - gap - bounds.left);
+    const spaceRight = Math.max(0, bounds.right - anchorRight - gap);
+
+    const hasRoomTop = spaceAbove >= wantedHeight;
+    const hasRoomBottom = spaceBelow >= wantedHeight;
+    const hasRoomLeft = spaceLeft >= wantedWidth;
+    const hasRoomRight = spaceRight >= wantedWidth;
+
+    const resolveAuto = () => {
+      if (hasRoomTop) return 'top';
+      if (hasRoomBottom) return 'bottom';
+      const pageCenter = document.documentElement.clientWidth / 2;
+      const towardsCenter = anchorCenterX < pageCenter ? 'right' : 'left';
+      const awayFromCenter = towardsCenter === 'right' ? 'left' : 'right';
+      const hasRoomTowards = towardsCenter === 'right' ? hasRoomRight : hasRoomLeft;
+      const hasRoomAway = awayFromCenter === 'right' ? hasRoomRight : hasRoomLeft;
+      if (hasRoomTowards) return towardsCenter;
+      if (hasRoomAway) return awayFromCenter;
+      return spaceAbove >= spaceBelow ? 'top' : 'bottom';
+    };
+
+    const requested = record.menu?.direction || 'auto';
+    let chosen = requested;
+    if (requested === 'top') {
+      if (!hasRoomTop) chosen = hasRoomBottom ? 'bottom' : resolveAuto();
+    } else if (requested === 'bottom') {
+      if (!hasRoomBottom) chosen = hasRoomTop ? 'top' : resolveAuto();
+    } else if (requested === 'left') {
+      if (!hasRoomLeft) chosen = hasRoomRight ? 'right' : resolveAuto();
+    } else if (requested === 'right') {
+      if (!hasRoomRight) chosen = hasRoomLeft ? 'left' : resolveAuto();
+    } else {
+      chosen = resolveAuto();
+    }
+
+    const availableHeight =
+      chosen === 'top' ? spaceAbove : chosen === 'bottom' ? spaceBelow : Math.max(24, floor - ceiling);
+    setProperty(record.el, '--mascot-menu-max-height', `${Math.max(24, availableHeight)}px`);
+
     const rect = menu.getBoundingClientRect();
-    const top = Math.max(
-      margin,
-      Math.min(downward ? anchorBottom : canvas.top - rect.height, height - margin - rect.height),
-    );
-    setProperty(record.el, '--mascot-menu-top', `${top - record.el.getBoundingClientRect().top}px`);
-    const shift = parseFloat(record.el.style.getPropertyValue('--mascot-menu-shift')) || 0;
-    const natural = rect.left - shift;
-    const bounds = record.placement.floating ? clipBounds(document.body) : clipBounds(record.el);
-    const left = Math.max(bounds.left, Math.min(natural, bounds.right - rect.width));
-    setProperty(record.el, '--mascot-menu-shift', `${left - natural}px`);
+    let top;
+    let left;
+
+    if (chosen === 'top') {
+      top = Math.max(ceiling, Math.min(anchorTop - gap - rect.height, floor - rect.height));
+      const naturalLeft = anchorLeft + (anchorWidth - rect.width) / 2;
+      left = Math.max(bounds.left, Math.min(naturalLeft, bounds.right - rect.width));
+    } else if (chosen === 'bottom') {
+      top = Math.max(ceiling, Math.min(anchorBottom + gap, floor - rect.height));
+      const naturalLeft = anchorLeft + (anchorWidth - rect.width) / 2;
+      left = Math.max(bounds.left, Math.min(naturalLeft, bounds.right - rect.width));
+    } else if (chosen === 'left') {
+      left = Math.max(bounds.left, Math.min(anchorLeft - gap - rect.width, bounds.right - rect.width));
+      top = Math.max(ceiling, Math.min(anchorCenterY - rect.height / 2, floor - rect.height));
+    } else {
+      left = Math.max(bounds.left, Math.min(anchorRight + gap, bounds.right - rect.width));
+      top = Math.max(ceiling, Math.min(anchorCenterY - rect.height / 2, floor - rect.height));
+    }
+
+    const hostRect = record.el.getBoundingClientRect();
+    setProperty(record.el, '--mascot-menu-top', `${top - hostRect.top}px`);
+    setProperty(record.el, '--mascot-menu-left', `${left - hostRect.left}px`);
   }
 
-  // Horizontal room for an inline overlay: the viewport, narrowed by any ancestor that clips overflow (a bslib card).
+  // Overlay room: the viewport, narrowed by ancestors that clip overflow (such as a bslib card).
   function clipBounds(el) {
     const viewport = 16,
       inset = 8;
     let left = viewport,
-      right = document.documentElement.clientWidth - viewport;
+      right = document.documentElement.clientWidth - viewport,
+      top = viewport,
+      bottom = document.documentElement.clientHeight - viewport;
     for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
-      if (getComputedStyle(node).overflowX === 'visible') continue;
+      const style = getComputedStyle(node);
       const rect = node.getBoundingClientRect();
-      left = Math.max(left, rect.left + node.clientLeft + inset);
-      right = Math.min(right, rect.left + node.clientLeft + node.clientWidth - inset);
+      if (style.overflowX !== 'visible') {
+        left = Math.max(left, rect.left + node.clientLeft + inset);
+        right = Math.min(right, rect.left + node.clientLeft + node.clientWidth - inset);
+      }
+      if (style.overflowY !== 'visible') {
+        top = Math.max(top, rect.top + node.clientTop + inset);
+        bottom = Math.min(bottom, rect.top + node.clientTop + node.clientHeight - inset);
+      }
     }
-    return { left, right: Math.max(left, right) };
+    return { left, right: Math.max(left, right), top, bottom: Math.max(top, bottom) };
   }
 
   function measure(record) {
@@ -1010,15 +1104,21 @@
     watchModes();
   }
 
+  const menuDirections = ['auto', 'top', 'bottom', 'left', 'right'];
+
   function validateMenu(value) {
     if (
       !value ||
       typeof value !== 'object' ||
       Array.isArray(value) ||
-      Object.keys(value).length !== 1 ||
-      !has(value, 'items')
+      !has(value, 'items') ||
+      (Object.keys(value).length === 2 && !has(value, 'direction')) ||
+      Object.keys(value).length > 2
     )
-      throw new Error('popup_menu needs only an items field');
+      throw new Error('popup_menu needs items and optional direction');
+    const direction = has(value, 'direction') && value.direction !== null ? value.direction : 'auto';
+    if (!menuDirections.includes(direction))
+      throw new Error('popup_menu direction must be auto, top, bottom, left or right');
     if (
       value.items !== null &&
       (!value.items ||
@@ -1030,7 +1130,7 @@
         ))
     )
       throw new Error('popup_menu items need non-empty ids without whitespace and plain-text labels');
-    return { items: value.items === null ? null : { ...value.items } };
+    return { items: value.items === null ? null : { ...value.items }, direction };
   }
 
   function measureOpenMenus() {
@@ -1061,11 +1161,13 @@
   function openMenu(record, keyboard) {
     if (record.minimised || !record.menuEl) return;
     for (const other of [...openMenus]) if (other !== record) closeMenu(other);
+    clearBubble(record);
     record.controller.update({ pose: { lookY: -1 } });
     record.menuOpen = true;
     const actionFocused = record.actions.contains(document.activeElement);
     refreshActions(record);
     record.menuEl.hidden = false;
+    record.menuInk = menuInk(record);
     measureMenu(record);
     record.menuButton.setAttribute('aria-expanded', 'true');
     stopTimer(record);

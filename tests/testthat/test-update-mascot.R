@@ -82,10 +82,21 @@ describe("send_update()", {
     }
     send_update(session, "helper", list(mood = "happy"))
     expect_identical(captured$type, "mascot:update")
-    expect_identical(captured$message, list(id = session$ns("helper"), patch = list(mood = "happy")))
+    expect_identical(
+      captured$message,
+      list(
+        id = session$ns("helper"),
+        patch = list(mood = "happy"),
+        revision = 1L,
+        gestureRevision = 0L,
+        fields = list(mood = 1L, problem = 1L),
+        replay = FALSE
+      )
+    )
     expect_error(send_update(NULL, "helper", list()), "'session'")
     expect_error(send_update(session, "has space", list()), "'id'")
     expect_error(send_update(session, "helper", 1), "'patch'")
+    expect_error(send_update(session, "helper", list(), replay = NA), "'replay'")
   })
 })
 
@@ -183,11 +194,11 @@ describe("updateMascot() in a browser", {
     app$run_js("window.oldMascot = document.getElementById('late')")
     app$click("show")
     app$wait_for_js(
-      "document.getElementById('late') !== window.oldMascot && document.getElementById('late')?.dataset.shownMood === 'idle'"
+      "document.getElementById('late') !== window.oldMascot && document.getElementById('late')?.dataset.shownMood === 'happy'"
     )
     expect_null(app$get_js("mascot.host.state(window.oldMascot)"))
     expect_false(app$get_js("window.oldMascot.isConnected"))
-    expect_identical(app$get_js("document.querySelector('#late .mascot-status').textContent"), "Idle")
+    expect_identical(app$get_js("document.querySelector('#late .mascot-status').textContent"), "Ready")
   })
 })
 
@@ -950,5 +961,168 @@ describe("documented Shiny settings", {
       app$click(selector = ".modal-footer button")
       app$wait_for_js("!document.querySelector('.modal.in, .modal.show')")
     }
+  })
+})
+
+describe("retained mascot updates", {
+  it("merges fields, clears superseded moods and restores problems separately", {
+    expect_identical(
+      merge_update_patch(list(mood = "happy", gesture = "nod"), list(character = list(id = "blob"))),
+      list(gesture = "nod", character = list(id = "blob"))
+    )
+    expect_identical(merge_update_patch(list(problem = "Bad"), list(mood = "happy")), list(mood = "happy"))
+    expect_identical(
+      merge_update_patch(list(mood = "happy"), list(problem = "Bad")),
+      list(mood = "happy", problem = "Bad")
+    )
+    expect_error(merge_update_patch(1, list()), "'previous'")
+    expect_error(merge_update_patch(list(), 1), "'patch'")
+  })
+  it("re-sends module state on mount without adding its namespace twice and clears it on session end", {
+    captured <- new.env(parent = emptyenv())
+    captured$messages <- list()
+    # A module's session proxy cannot be assigned to; capture on the root mock session instead.
+    root <- shiny::MockShinySession$new()
+    unlockBinding("sendCustomMessage", root)
+    root$sendCustomMessage <- function(type, message) {
+      captured$messages[[length(captured$messages) + 1L]] <- message
+    }
+    session <- root$makeScope("proxy1")
+    shiny::withReactiveDomain(session, {
+      updateMascot("helper", mood = "thinking", gesture = "nod")
+      updateMascot("helper", mood = "happy", status = "Ready", gesture = "wave")
+    })
+    root$setInputs(`proxy1-helper` = list(mount = 1, revision = 0))
+    expect_length(captured$messages, 3)
+    replay <- captured$messages[[3]]
+    expect_identical(replay$id, "proxy1-helper")
+    expect_true(replay$replay)
+    expect_identical(
+      replay$patch,
+      list(mood = "happy", gesture = "wave", status = list(mode = "custom", text = "Ready"))
+    )
+    expect_identical(replay$revision, 2L)
+    expect_identical(replay$gestureRevision, 2L)
+    root$setInputs(`proxy1-helper` = list(mount = 2, revision = 2))
+    expect_length(captured$messages, 3)
+    root$close()
+    expect_null(root$userData$mascot_updates)
+  })
+  it("recovers startup, earlier-cycle and same-cycle updates for the first renderUI mascots, playing gestures once", {
+    local_shiny_browser()
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      # Record real controller calls, including ones made while dynamic dependencies load.
+      recorder <- shiny::tags$script(htmltools::HTML(
+        "window.gestures=[];window.mascot={};
+        Object.defineProperty(window.mascot,'mount',{configurable:true,set(fn){
+          Object.defineProperty(this,'mount',{configurable:true,writable:true,value:(...args)=>{
+            const p=fn(...args),gesture=p.gesture;
+            p.gesture=name=>{gestures.push({id:args[0].closest('.mascot').id,name,
+              mood:args[0].closest('.mascot').dataset.mood,character:p.current().character});return gesture(name);};return p;
+          }});}});"
+      ))
+      ui <- shiny::fluidPage(
+        recorder,
+        shiny::actionButton("prepare", "Prepare"),
+        shiny::actionButton("show", "Show"),
+        shiny::uiOutput("slot")
+      )
+      server <- function(input, output, session) {
+        visible <- shiny::reactiveVal(FALSE)
+        updateMascot("startup", mood = "happy", gesture = "wave")
+        shiny::observeEvent(input$prepare, {
+          updateMascot("earlier", mood = "thinking", status = "Earlier", gesture = "nod")
+          updateMascot("earlier", mood = "happy", gesture = "wave")
+        })
+        shiny::observeEvent(input$show, {
+          updateMascot("same", mood = "happy", status = "Same cycle", gesture = "nod")
+          visible(TRUE)
+        })
+        output$slot <- shiny::renderUI({
+          if (visible()) shiny::tagList(mascot(id = "startup"), mascot(id = "earlier"), mascot(id = "same"))
+        })
+      }
+      shiny::shinyApp(ui, server)
+    })
+    withr::defer(app$stop())
+    expect_null(app$get_js("document.querySelector('.mascot')"))
+    app$click("prepare")
+    app$click("show")
+    app$wait_for_js("window.gestures.length === 3")
+    app$wait_for_js("['startup','earlier','same'].every(id=>document.getElementById(id).dataset.shownMood==='happy')")
+    for (id in c("startup", "earlier", "same")) {
+      expect_identical(app$get_js(sprintf("document.getElementById('%s').dataset.shownMood", id)), "happy")
+    }
+    expect_identical(app$get_js("document.querySelector('#earlier .mascot-status').textContent"), "Earlier")
+    expect_identical(app$get_js("document.querySelector('#same .mascot-status').textContent"), "Same cycle")
+    expect_identical(app$get_js("gestures.find(x=>x.id==='earlier').name"), "wave")
+    expect_identical(app$get_js("gestures.find(x=>x.id==='same').name"), "nod")
+    expect_true(app$get_js("gestures.every(x=>x.mood==='happy' && x.character==='tessa')"))
+    # A stale re-send and a replacement must both preserve the one-off contract.
+    app$run_js(
+      "const el=document.getElementById('earlier');
+      mascot.host.receive({id:'earlier',patch:{gesture:'wave'},revision:1,gestureRevision:1,replay:true});
+      Shiny.unbindAll(document.getElementById('slot'));
+      Shiny.bindAll(document.getElementById('slot'));"
+    )
+    app$wait_for_idle()
+    expect_equal(app$get_js("gestures.length"), 3)
+  })
+})
+
+describe("bubble visibility in Shiny tabs", {
+  it("pauses a timed bubble in a hidden tab and resumes its remaining lifetime", {
+    local_shiny_browser()
+    app <- shinytest2::AppDriver$new(function() {
+      library(mascot)
+      ui <- shiny::fluidPage(shiny::tabsetPanel(
+        id = "tabs",
+        shiny::tabPanel("Helper", mascot(id = "helper"), shiny::actionButton("say", "Say")),
+        shiny::tabPanel("Other", "Other tab")
+      ))
+      server <- function(input, output, session) {
+        shiny::observeEvent(input$say, updateMascot("helper", bubble = mascot_bubble("Timed", duration = 3)))
+      }
+      shiny::shinyApp(ui, server)
+    })
+    withr::defer(app$stop())
+    app$click("say")
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).bubble !== null")
+    app$click(selector = "a[data-value='Other']")
+    app$wait_for_js("document.querySelector('#helper canvas').getBoundingClientRect().width===0")
+    remaining <- app$get_js("mascot.host.state(document.getElementById('helper')).bubble.remaining")
+    expect_gt(remaining, 0)
+    app$run_js("window.hiddenUntil=Date.now()+3500")
+    app$wait_for_js("Date.now() >= window.hiddenUntil", timeout = 10000)
+    expect_equal(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.remaining"), remaining)
+    app$click(selector = "a[data-value='Helper']")
+    app$wait_for_js("document.querySelector('#helper canvas').getBoundingClientRect().width>0")
+    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.text"), "Timed")
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).bubble === null", timeout = 10000)
+  })
+})
+
+describe("retained development problems", {
+  it("keeps the last good state with a problem overlay and clears the overlay on recovery", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    captured <- new.env(parent = emptyenv())
+    captured$messages <- list()
+    shiny::testServer(function(input, output, session) {}, {
+      session$sendCustomMessage <- function(type, message) {
+        captured$messages[[length(captured$messages) + 1L]] <- message
+      }
+      updateMascot("helper", mood = "happy", status = "Kept", session = session)
+      expect_warning(updateMascot("helper", mood = "missing", status = "Wrong", session = session), "unchanged")
+      session$setInputs(helper = list(mount = 1, revision = 0))
+      patch <- captured$messages[[3]]$patch
+      expect_identical(patch$mood, "happy")
+      expect_identical(patch$status$text, "Kept")
+      expect_match(patch$problem, "missing")
+      updateMascot("helper", mood = "thinking", session = session)
+      session$setInputs(helper = list(mount = 2, revision = 0))
+      expect_null(captured$messages[[5]]$patch$problem)
+      expect_identical(captured$messages[[5]]$patch$mood, "thinking")
+    })
   })
 })

@@ -25,7 +25,8 @@ A \code{mascot_bubble} object with \code{text}, \code{html}, \code{duration} and
 \description{
 A bubble survives mood changes and character swaps. Plain text is escaped;
 use \code{\link[htmltools:HTML]{htmltools::HTML()}} only for HTML you trust. A timed bubble pauses while
-the pointer is over it or focus is inside the mascot, then resumes with the
+the mascot is hidden or minimised, the pointer is over it, or focus is inside
+the mascot, then resumes with the
 time left. The Escape key closes it while focus is inside the mascot. Closing a bubble
 is final until the app supplies a new bubble.
 }

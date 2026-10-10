@@ -85,7 +85,26 @@ describe("mascot.host", {
     expect_length(result$warnings, 5)
     expect_true(all(startsWith(unlist(result$warnings), "mascot: ")))
   })
-  it("merges late state, drops superseded moods and warns for late gestures", {
+  it("bounds the queue for an id that has not appeared and asks the server for its full state", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => {
+      const source = document.getElementById('a');
+      const add = id => {const el=source.cloneNode(true); el.id=id; document.body.append(el); mascot.host.mount(el); return el;};
+      for (let i = 1; i <= 5; i++) mascot.host.receive({id:'few',patch:{mood:'thinking'},revision:i,fields:{mood:i}});
+      for (let i = 1; i <= 25; i++)
+        mascot.host.receive({id:'many',patch:{mood:i % 2 ? 'thinking' : 'happy'},revision:i,fields:{mood:i}});
+      return {few:mascot.host.state(add('few')), many:mascot.host.state(add('many'))};
+    })()"
+    )
+    # Within the limit the mount reports the last revision it applied; beyond it, 0 asks the server to re-send.
+    expect_identical(result$few$revision, 5L)
+    expect_identical(result$few$current$mood, "thinking")
+    expect_identical(result$many$revision, 0L)
+    expect_identical(result$many$current$mood, "thinking")
+  })
+  it("merges late state, drops superseded moods and keeps the latest late gesture", {
     skip_without_chrome()
     js <- local_host_page()
     result <- js(
@@ -98,24 +117,27 @@ describe("mascot.host", {
       send('swap',{mood:'happy'});
       send('swap',{character:{id:blob.id,name:blob.name,json:JSON.stringify(blob)}}); const swap=add('swap');
       const warnings=[], original=console.warn; console.warn=message=>warnings.push(message);
-      send('gesture',{gesture:'wave'}); const gesture=add('gesture'); console.warn=original;
+      const gestures=[], mount=mascot.mount;
+      mascot.mount=(...args)=>{const controller=mount(...args), original=controller.gesture;
+        controller.gesture=name=>{gestures.push({name,character:controller.current().character,mood:controller.current().mood});return original(name);};return controller;};
+      send('gesture',{gesture:'nod'}); send('gesture',{mood:'happy',gesture:'wave'});
+      const gesture=add('gesture'); mascot.mount=mount; console.warn=original;
       send('problem',{mood:'happy',status:{mode:'custom',text:'Kept'}});
       send('problem',{problem:'mascot: bad mood'}); const problem=add('problem');
       send('clear',{problem:'mascot: old error'}); send('clear',{mood:'thinking'}); const clear=add('clear');
       return {late:mascot.host.state(late), text:late.querySelector('.mascot-status').textContent,
         swap:mascot.host.state(swap),first:Object.keys(blob.moods)[0],warnings,
-        gesture:mascot.host.state(gesture),problem:mascot.host.state(problem),clear:mascot.host.state(clear)};
+        gestures,gesture:mascot.host.state(gesture),problem:mascot.host.state(problem),clear:mascot.host.state(clear)};
     })()"
     )
     expect_identical(result$late$current$mood, "happy")
     expect_identical(result$text, "Waiting")
     expect_identical(result$swap$current$character, "blob")
     expect_identical(result$swap$current$mood, result$first)
-    expect_identical(result$gesture$current$mood, "idle")
-    expect_identical(
-      unlist(result$warnings),
-      'mascot: gesture "wave" for "gesture" was dropped: the mascot was not on the page yet'
-    )
+    expect_identical(result$gesture$current$mood, "happy")
+    expect_length(result$warnings, 0)
+    expect_length(result$gestures, 1)
+    expect_identical(result$gestures[[1]], list(name = "wave", character = "tessa", mood = "happy"))
     expect_identical(result$problem$mood, "happy")
     expect_identical(result$problem$current$mood, "worried")
     expect_identical(result$problem$status$text, "Kept")
@@ -373,7 +395,7 @@ describe("mascot.host bubbles", {
     expect_length(result$warnings, 8)
     expect_match(result$warnings[[1]], "unknown gesture")
   })
-  it("queues the latest bubble, starts its lifetime on appearance, and drops gestures", {
+  it("queues the latest bubble, starts its lifetime on appearance, and keeps gestures", {
     skip_without_chrome()
     js <- local_host_page()
     install_bubble_clock(js)
@@ -401,8 +423,7 @@ describe("mascot.host bubbles", {
     expect_equal(result$timers, 1)
     # Queued patches are validated when their mascot mounts, so the warnings follow mount order: compare as a set.
     warnings <- unlist(result$warnings)
-    expect_length(warnings, 2)
-    expect_true(any(grepl('gesture "nod".*was dropped', warnings)))
+    expect_length(warnings, 1)
     expect_true(any(grepl("unknown gesture", warnings)))
     expect_identical(result$invalid$current$mood, "idle")
     expect_null(result$expired)
@@ -1826,5 +1847,87 @@ describe("mascot.host review corrections", {
     expect_lte(r$bottom, 305)
     expect_equal(r$adds, 1)
     expect_equal(r$removes, 1)
+  })
+})
+
+describe("early gesture replay", {
+  it("applies the queued character and mood before the latest gesture and does not replay it on replacement", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE)
+    result <- js(
+      "(() => {
+        const source=document.getElementById('a'),blob=mascot.readCharacter('blob'),calls=[],mount=mascot.mount;
+        mascot.mount=(...args)=>{const p=mount(...args),gesture=p.gesture;
+          p.gesture=name=>{calls.push({name,character:p.current().character,mood:p.current().mood});return gesture(name);};return p;};
+        const patch={character:{id:blob.id,name:blob.name,json:JSON.stringify(blob)},mood:Object.keys(blob.moods)[0],gesture:'wave'};
+        mascot.host.receive({id:'late',patch:{gesture:'nod'},revision:1,gestureRevision:1});
+        mascot.host.receive({id:'late',patch,revision:2,gestureRevision:2});
+        const add=()=>{const el=source.cloneNode(true);el.id='late';document.body.append(el);mascot.host.mount(el);return el;};
+        const el=add(),first=mascot.host.state(el);
+        mascot.host.receive({id:'late',patch,revision:2,gestureRevision:2,replay:true});
+        mascot.host.unmount(el);el.remove();const replacement=add();
+        mascot.host.receive({id:'late',patch,revision:2,gestureRevision:2,replay:true});
+        mascot.mount=mount;
+        return {calls,first,replacement:mascot.host.state(replacement),mood:Object.keys(blob.moods)[0]};
+      })()"
+    )
+    expect_length(result$calls, 1)
+    expect_identical(result$calls[[1]], list(name = "wave", character = "blob", mood = result$mood))
+    expect_identical(result$first$current$character, "blob")
+    expect_false(result$first$current$swapping)
+    expect_identical(result$replacement$current$character, "blob")
+  })
+  it("pauses a bubble under a display-none parent and resumes with the exact remaining time", {
+    skip_without_chrome()
+    js <- local_host_page()
+    install_bubble_clock(js)
+    js(
+      "const el=document.getElementById('a');window.wrapper=document.createElement('div');el.before(wrapper);wrapper.append(el);
+      mascot.host.receive({id:'a',patch:{bubble:{text:'Timed',html:false,closable:true,duration:5}}});bubbleClock.advance(1000);
+      wrapper.style.display='none';"
+    )
+    hidden <- host_layout(js, "return mascot.host.state(document.getElementById('a'));")
+    expect_true(hidden$hidden)
+    expect_equal(hidden$bubble$remaining, 4)
+    js("bubbleClock.tick(10000);wrapper.style.display='';")
+    shown <- host_layout(js, "return mascot.host.state(document.getElementById('a'));")
+    expect_false(shown$hidden)
+    expect_equal(shown$bubble$remaining, 4)
+    expect_false(js(
+      "(() => {bubbleClock.tick(3999);return mascot.host.state(document.getElementById('a')).bubble===null;})()"
+    ))
+    expect_true(js(
+      "(() => {bubbleClock.tick(1);return mascot.host.state(document.getElementById('a')).bubble===null;})()"
+    ))
+  })
+})
+
+describe("mount replies racing live updates", {
+  it("fills missing fields without restarting a live bubble, and keeps problem overlays", {
+    skip_without_chrome()
+    js <- local_host_page()
+    install_bubble_clock(js)
+    result <- js(
+      "(() => {
+      const el=document.getElementById('a'),bubble={text:'Live',html:false,closable:true,duration:5};
+      mascot.host.receive({id:'a',patch:{bubble},revision:2,fields:{bubble:2}});bubbleClock.advance(1000);
+      mascot.host.receive({id:'a',patch:{mood:'happy',bubble},revision:2,fields:{mood:1,bubble:2},replay:true});
+      const filled=mascot.host.state(el);
+      mascot.host.receive({id:'a',patch:{problem:'mascot: bad mood'},revision:3,fields:{problem:3}});
+      mascot.host.receive({id:'a',patch:{status:{mode:'custom',text:'Kept'},problem:'mascot: bad mood'},
+        revision:3,fields:{status:1,problem:3},replay:true});
+      const covered=mascot.host.state(el);
+      mascot.host.receive({id:'a',patch:{mood:'thinking'},revision:4,fields:{mood:4,problem:4}});
+      mascot.host.receive({id:'a',patch:{problem:'mascot: bad mood'},revision:3,fields:{problem:3},replay:true});
+      return {filled,covered,recovered:mascot.host.state(el)};
+    })()"
+    )
+    expect_identical(result$filled$current$mood, "happy")
+    expect_equal(result$filled$bubble$remaining, 4)
+    expect_identical(result$covered$problem, "mascot: bad mood")
+    expect_identical(result$covered$status$text, "Kept")
+    expect_identical(result$covered$current$mood, "worried")
+    expect_null(result$recovered$problem)
+    expect_identical(result$recovered$current$mood, "thinking")
   })
 })

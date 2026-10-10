@@ -78,7 +78,8 @@ such as an invalid form, because a timed message can vanish before it is read.
 When minimised, the status remains available to screen readers. See
 \code{\link[=mascot_placement]{mascot_placement()}} for restore controls and message timing.
 
-In Shiny the mascot uses an input binding with a \code{NULL} input value.
+In Shiny the mascot uses an input binding. Its input value (\verb{input$<id>}) is an
+internal record that tells the server the mascot appeared; do not rely on its contents.
 A module can put the mascot in its UI and update it from its server:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{helper_ui <- function(id) \{

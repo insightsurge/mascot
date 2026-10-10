@@ -20,7 +20,8 @@ Use this helper or a plain gesture name in \code{\link[=updateMascot]{updateMasc
 mood change in the same call applies first, then the gesture. During a
 character swap the engine drops the gesture: the wave within the swap replaces it.
 Reduced motion skips the movement. A gesture sent before the mascot appears
-is dropped with a browser console warning.
+is kept until appearance. Only the latest early gesture plays, once, after
+the queued character and mood are applied.
 }
 \examples{
 mascot_gesture("nod")

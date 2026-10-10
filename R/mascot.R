@@ -50,7 +50,8 @@
 #' When minimised, the status remains available to screen readers. See
 #' [mascot_placement()] for restore controls and message timing.
 #'
-#' In Shiny the mascot uses an input binding with a `NULL` input value.
+#' In Shiny the mascot uses an input binding. Its input value (`input$<id>`) is an
+#' internal record that tells the server the mascot appeared; do not rely on its contents.
 #' A module can put the mascot in its UI and update it from its server:
 #' ```r
 #' helper_ui <- function(id) {

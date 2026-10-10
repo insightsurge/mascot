@@ -149,7 +149,7 @@ describe("the studio's controls", {
     code <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), envir = code)
     for (mode in c("snap", "free")) {
-      pair <- code$code_placement("bottom-right", FALSE, mode)
+      pair <- code$code_placement("bottom-right", TRUE, mode)
       expect_identical(eval(pair$short), list(position = "bottom-right", drag = mode))
       expect_identical(eval(pair$helper), mascot_placement("bottom-right", drag = mode))
       for (style in c("short", "helper")) {
@@ -157,6 +157,85 @@ describe("the studio's controls", {
       }
     }
     expect_false(grepl("simplify_when_small", code$format_expr(code$code_size(120, 72)$helper), fixed = TRUE))
+  })
+  it("uses the package's floating placement default and prints an explicit inline choice", {
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    code <- new.env()
+    sys.source(file.path(dir, "R", "code.R"), envir = code)
+    sys.source(file.path(dir, "R", "data.R"), envir = code)
+    expect_identical(code$defaults$placement, formals(mascot)[["placement"]])
+    expect_identical(formals(code$code_placement), formals(mascot_placement))
+    pair <- code$code_placement()
+    expect_identical(pair$short, "bottom-right")
+    expect_identical(eval(pair$helper), mascot_placement())
+    expect_identical(code$format_expr(pair$helper), "mascot_placement()")
+    inline <- code$code_placement("inline")
+    expect_identical(eval(inline$helper), mascot_placement("inline"))
+    # Inline ignores minimise and drag, so the printed code leaves them out instead of prompting a message.
+    expect_identical(code$code_placement("inline", FALSE, "snap"), inline)
+    hidden <- code$code_placement("top-left", FALSE)
+    expect_identical(eval(hidden$helper), mascot_placement("top-left", minimise = FALSE))
+    expect_identical(eval(hidden$short), list(position = "top-left", minimise = FALSE))
+    call <- code$format_call("mascot", list(id = "helper", placement = inline$short))
+    expect_match(call, 'placement = "inline"', fixed = TRUE)
+    expect_type(parse(text = call), "expression")
+  })
+  it("preserves every menu direction in shortcut and helper code, including an empty menu", {
+    code <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), envir = code)
+    for (items in list(c(about = "About this app"), character())) {
+      for (direction in c("auto", "top", "bottom", "left", "right")) {
+        pair <- code$code_menu(items, direction)
+        expected <- mascot_popup_menu(if (length(items)) items else NULL, direction = direction)
+        expect_identical(eval(pair$helper), expected)
+        for (style in c("short", "helper")) {
+          text <- code$format_expr(pair[[style]])
+          expect_type(parse(text = text), "expression")
+          if (direction != "auto") {
+            expect_identical(eval(parse(text = text)[[1]]), expected)
+            expect_match(text, paste0('direction = "', direction, '"'), fixed = TRUE)
+          } else {
+            expect_false(grepl("direction =", text, fixed = TRUE))
+          }
+        }
+      }
+    }
+  })
+  it("reads every displayed default from the installed function's formals", {
+    skip_if_not_installed("bslib")
+    withr::local_package("shiny")
+    withr::local_package("bslib")
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    ui <- new.env()
+    sys.source(file.path(dir, "R", "guide.R"), envir = ui)
+    sys.source(file.path(dir, "R", "ui.R"), envir = ui)
+    expect_error(ui$argument_default(42, "position"), "string")
+    expect_error(ui$argument_default("mascot_placement", 42), "string")
+    expect_error(ui$argument_default("mascot_placement", "missing_argument"), "position")
+    expect_error(ui$arg_popover_body(42, "position"), "string")
+    expect_error(ui$arg_popover_body("mascot_placement", 42), "string")
+    for (fn in getNamespaceExports("mascot")) {
+      arguments <- formals(getExportedValue("mascot", fn))
+      for (arg in names(arguments)) {
+        value <- deparse1(arguments[[arg]])
+        expected <- if (nzchar(value)) {
+          value
+        } else if (arg == "...") {
+          "empty"
+        } else {
+          "none: required"
+        }
+        expect_null(ui$playground_guide[[fn]]$args[[arg]]$default, info = paste(fn, arg))
+        expect_identical(ui$argument_default(fn, arg), expected, info = paste(fn, arg))
+        # Inspect the text of the actual badge, popover paragraph and guide code tag.
+        field <- ui$arg_field(fn, arg, htmltools::tags$span("Control"))
+        expect_identical(field$children[[1]]$children[[2]]$children[[2]], expected, info = paste(fn, arg))
+        popover <- ui$arg_popover_body(fn, arg)
+        expect_identical(popover[[3]]$children[[2]]$children[[1]], expected, info = paste(fn, arg))
+        block <- ui$arg_block(fn, arg)
+        expect_identical(block$children[[2]]$children[[2]]$children[[1]], expected, info = paste(fn, arg))
+      }
+    }
   })
   it("labels Learn as a call to its selected function and keeps visuals in separate sections", {
     skip_if_not_installed("bslib")
@@ -297,6 +376,11 @@ describe("bundled example apps", {
     state <- "mascot.host.state(document.getElementById('helper'))"
     wait_example_mood(app, "helper", "idle")
     expect_identical(app$get_js("document.querySelectorAll('.mascot').length"), 1L)
+    expect_identical(app$get_value(input = "position"), "inline")
+    expect_identical(app$get_js("document.getElementById('helper').dataset.floating"), "false")
+    app$wait_for_js("document.getElementById('code_ui').textContent.includes('placement = \"inline\"')")
+    expect_match(app$get_value(output = "code_server"), 'placement = "inline"', fixed = TRUE)
+    expect_match(app$get_value(output = "code_app"), 'placement = "inline"', fixed = TRUE)
     select_function <- function(fn) {
       checkmate::assert_string(fn)
       app$click(selector = sprintf('.pg-index-link[data-value="%s"]', fn))
@@ -506,9 +590,16 @@ describe("bundled example apps", {
     app$set_inputs(size_px = 120)
     app$wait_for_js(paste0(state, ".size.size === 120"))
     select_function("mascot_placement")
+    app$set_inputs(position = "bottom-right")
+    app$wait_for_js("document.getElementById('helper').dataset.position === 'bottom-right'")
+    app$wait_for_js("!document.getElementById('code_ui').textContent.includes('placement =')")
     app$set_inputs(position = "top-left")
-    app$set_inputs(minimise = TRUE)
     app$wait_for_js(paste0(state, ".placement.floating && ", state, ".placement.minimise"))
+    app$set_inputs(minimise = FALSE)
+    app$wait_for_js(paste0("!", state, ".placement.minimise"))
+    app$wait_for_js("document.getElementById('code_ui').textContent.includes('minimise = FALSE')")
+    app$set_inputs(minimise = TRUE)
+    app$wait_for_js(paste0(state, ".placement.minimise"))
     app$set_inputs(drag = "snap", position = "bottom-right")
     app$wait_for_js(paste0(state, ".placement.drag === 'snap'"))
     app$run_js(
@@ -535,6 +626,9 @@ describe("bundled example apps", {
     app$wait_for_js(paste0(state, ".colours.body?.toLowerCase() === '#1f6feb'"))
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('mascot_theme(light = list(body')")
     select_function("mascot_popup_menu")
+    app$set_inputs(menu_direction = "right")
+    app$wait_for_js("document.getElementById('code_ui').textContent.includes('direction = \"right\"')")
+    app$wait_for_js(paste0(state, ".popup_menu.direction === 'right'"))
     app$click(selector = "#helper .mascot-menu-toggle")
     app$click(selector = "#helper [role=menuitem][data-item-id=finish]")
     app$wait_for_js("document.querySelector('#helper .mascot-bubble')?.textContent.includes('Finish review')")

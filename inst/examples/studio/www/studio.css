@@ -233,6 +233,7 @@
   border-left-color: var(--bs-warning);
 }
 
+.pg-log-entry.is-message,
 .pg-log-entry.is-event {
   border-left-color: var(--bs-info);
 }

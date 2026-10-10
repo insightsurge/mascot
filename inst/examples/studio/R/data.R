@@ -60,7 +60,7 @@ defaults <- list(
   status = quote(mascot_status()),
   bubble = quote(mascot_bubble()),
   size = 160,
-  placement = "inline",
+  placement = "bottom-right",
   theme = quote(mascot_theme()),
   motion = TRUE,
   popup_menu = quote(mascot_popup_menu())
@@ -79,9 +79,9 @@ mistakes <- list(
     why = "... must be empty, so a typo is an error instead of being silently ignored."
   ),
   `Too small` = list(code = "updateMascot(\"helper\", size = 10)", why = "Sizes start at 24 pixels."),
-  `Minimise without a corner` = list(
-    code = "updateMascot(\"helper\", placement = list(position = \"inline\", minimise = TRUE))",
-    why = "Only a floating mascot can minimise."
+  `Minimise an inline mascot` = list(
+    code = "updateMascot(\"helper\", placement = mascot_placement(\"inline\", minimise = TRUE))",
+    why = "An inline mascot ignores minimise. Not an error: a message says so, and Tessa moves inline."
   ),
   `A bubble that never shows` = list(
     code = "updateMascot(\"helper\", bubble = mascot_bubble(\"Hi\", duration = 0))",
@@ -134,7 +134,10 @@ playground_controls <- list(
     mode = input_id("theme_mode"),
     css = input_id("css_roles", "css_accent")
   ),
-  mascot_popup_menu = list(items = input_id("menu_on", "menu_items")),
+  mascot_popup_menu = list(
+    items = input_id("menu_on", "menu_items"),
+    direction = input_id("menu_direction")
+  ),
   mascot = list(
     character = input_id("character"),
     id = fixed_arg("The studio's mascot is always mascot(id = \"helper\")."),

@@ -63,27 +63,36 @@ code_size <- function(size, small_screen) {
   code_pair(if (length(helper) == 2) size else helper, helper)
 }
 
-code_placement <- function(position, minimise, drag = FALSE) {
+code_placement <- function(position = "bottom-right", minimise = TRUE, drag = FALSE) {
   checkmate::assert_choice(position, c("inline", "top-left", "top-right", "bottom-left", "bottom-right"))
   checkmate::assert_flag(minimise)
   checkmate::assert(checkmate::check_flag(drag), checkmate::check_choice(drag, c("snap", "free")), .var.name = "drag")
+  # An inline mascot ignores minimise and drag (and says so), so the code leaves them out.
+  if (position == "inline") {
+    minimise <- TRUE
+    drag <- FALSE
+  }
+  extras <- list(minimise = if (!minimise) FALSE, drag = if (!identical(drag, FALSE)) drag)
   helper <- helper_call(
     "mascot_placement",
-    position,
-    minimise = if (minimise) TRUE,
-    drag = if (!identical(drag, FALSE)) drag
+    if (!identical(position, "bottom-right")) position,
+    minimise = extras$minimise,
+    drag = extras$drag
   )
-  fields <- list(position = position, minimise = if (minimise) TRUE, drag = if (!identical(drag, FALSE)) drag)
-  short <- if (minimise || !identical(drag, FALSE)) named_call("list", Filter(Negate(is.null), fields)) else position
+  fields <- c(list(position = position), extras)
+  short <- if (!minimise || !identical(drag, FALSE)) named_call("list", Filter(Negate(is.null), fields)) else position
   code_pair(short, helper)
 }
 
-code_menu <- function(items) {
-  if (!length(items)) {
-    return(code_pair(quote(mascot_popup_menu())))
-  }
-  vector <- named_call("c", items)
-  code_pair(vector, helper_call("mascot_popup_menu", vector))
+code_menu <- function(items, direction = "auto") {
+  vector <- if (length(items)) named_call("c", items)
+  helper <- helper_call(
+    "mascot_popup_menu",
+    vector,
+    direction = if (!identical(direction, "auto")) direction
+  )
+  short <- if (length(items) && identical(direction, "auto")) vector else helper
+  code_pair(short, helper)
 }
 
 code_theme <- function(source, light, dark, mode, css_roles, primary, secondary) {

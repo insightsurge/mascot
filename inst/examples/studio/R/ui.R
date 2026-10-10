@@ -5,6 +5,22 @@ the_guide <- function(fn) {
   playground_guide[[fn]]
 }
 
+# Read the expression, without evaluating defaults such as Shiny's reactive domain.
+argument_default <- function(fn, arg) {
+  checkmate::assert_string(fn)
+  checkmate::assert_string(arg)
+  arguments <- formals(getExportedValue("mascot", fn))
+  checkmate::assert_choice(arg, names(arguments))
+  value <- deparse1(arguments[[arg]])
+  if (nzchar(value)) {
+    value
+  } else if (arg == "...") {
+    "empty"
+  } else {
+    "none: required"
+  }
+}
+
 category_functions <- function(category) {
   names(Filter(function(entry) identical(entry$category, category), playground_guide))
 }
@@ -18,11 +34,14 @@ chips <- function(values, class = "pg-chip") {
 }
 
 # The popover behind an argument chip: everything the guide knows about the argument.
-arg_popover_body <- function(entry) {
+arg_popover_body <- function(fn, arg) {
+  checkmate::assert_string(fn)
+  checkmate::assert_string(arg)
+  entry <- the_guide(fn)$args[[arg]]
   tagList(
     tags$p(entry$hint),
     tags$p(tags$strong("Accepts: "), chips(entry$accepts)),
-    tags$p(tags$strong("Default: "), tags$code(entry$default)),
+    tags$p(tags$strong("Default: "), tags$code(argument_default(fn, arg))),
     if (!is.null(entry$null)) tags$p(tags$strong("NULL means: "), entry$null),
     if (!is.null(entry$detail)) tags$p(entry$detail),
     if (!is.null(entry$example)) code_block(entry$example, "pg-code-small")
@@ -30,7 +49,6 @@ arg_popover_body <- function(entry) {
 }
 
 arg_chip <- function(fn, arg) {
-  entry <- the_guide(fn)$args[[arg]]
   trigger <- tags$button(
     type = "button",
     class = "pg-arg-chip",
@@ -38,7 +56,7 @@ arg_chip <- function(fn, arg) {
     tags$code(arg),
     tags$span(class = "pg-info", "i")
   )
-  popover(trigger, arg_popover_body(entry), title = tags$code(paste0(fn, "(", arg, " =)")))
+  popover(trigger, arg_popover_body(fn, arg), title = tags$code(paste0(fn, "(", arg, " =)")))
 }
 
 # One argument: its chip (click for details), the control, and a one-line hint.
@@ -47,7 +65,11 @@ arg_field <- function(fn, arg, input, note = NULL) {
   div(
     class = "pg-field",
     `data-argument` = arg,
-    div(class = "pg-field-head", arg_chip(fn, arg), tags$span(class = "pg-default", "default ", entry$default)),
+    div(
+      class = "pg-field-head",
+      arg_chip(fn, arg),
+      tags$span(class = "pg-default", "default ", argument_default(fn, arg))
+    ),
     div(class = "pg-hint", entry$hint),
     input,
     note
@@ -192,7 +214,7 @@ arg_block <- function(fn, arg) {
   div(
     class = "pg-arg",
     tags$code(class = "pg-arg-name", arg),
-    tags$span(class = "pg-default", "default ", tags$code(entry$default)),
+    tags$span(class = "pg-default", "default ", tags$code(argument_default(fn, arg))),
     tags$span(entry$hint)
   )
 }
@@ -422,6 +444,10 @@ visual_layout <- function() {
     tags$h3(class = "pg-section-title", "Size"),
     uiOutput("size_ruler"),
     tags$h3(class = "pg-section-title", "Placement"),
+    tags$p(
+      class = "pg-muted",
+      "A plain mascot() floats in the bottom-right corner. This studio starts Tessa inline with placement = \"inline\" so she stays on the canvas."
+    ),
     uiOutput("placement_map"),
     div(
       class = "pg-callout",

@@ -22,6 +22,8 @@ roles <- mascot_colour_roles()
 examples <- mascot_examples()
 
 start <- lapply(defaults, code_pair)
+# The canvas opts into inline placement; a plain mascot() now floats in the bottom-right corner.
+start$placement <- code_placement(position = "inline")
 start$bubble <- code_bubble(welcome, FALSE, 8, TRUE)
 start$popup_menu <- code_menu(default_menu)
 
@@ -339,6 +341,7 @@ studio_server <- function(input, output, session) {
   # Evaluates a call and logs it with any warning or error. Returns TRUE when the mascot changed:
   # a wrong value warns and leaves the mascot unchanged; a low-contrast colour warns and is kept.
   run_logged <- function(call, code) {
+    messages <- character()
     warnings <- character()
     unchanged <- FALSE
     error <- NULL
@@ -351,6 +354,10 @@ studio_server <- function(input, output, session) {
             unchanged <<- TRUE
           }
           invokeRestart("muffleWarning")
+        },
+        message = function(m) {
+          messages <<- c(messages, trimws(cli::ansi_strip(conditionMessage(m))))
+          invokeRestart("muffleMessage")
         }
       ),
       error = function(e) error <<- cli::ansi_strip(conditionMessage(e))
@@ -363,6 +370,9 @@ studio_server <- function(input, output, session) {
     if (length(warnings)) {
       add_log(code, "warning", paste(warnings, collapse = "\n"))
       showNotification(paste(warnings, collapse = "\n"), type = "warning", duration = 8)
+    } else if (length(messages)) {
+      add_log(code, "message", paste(messages, collapse = "\n"))
+      showNotification(paste(messages, collapse = "\n"), duration = 8)
     } else {
       add_log(code, "ok")
     }
@@ -452,12 +462,8 @@ studio_server <- function(input, output, session) {
   observeEvent(
     list(input$position, input$minimise, input$drag),
     {
-      floating <- input$position != "inline"
-      if (!floating && isTRUE(input$minimise)) {
-        update_switch("minimise", value = FALSE)
-      }
-      drag <- if (floating && !is.null(input$drag) && input$drag != "FALSE") input$drag else FALSE
-      send(list(placement = code_placement(input$position, floating && isTRUE(input$minimise), drag)))
+      drag <- if (!is.null(input$drag) && input$drag != "FALSE") input$drag else FALSE
+      send(list(placement = code_placement(input$position, isTRUE(input$minimise), drag)))
     },
     ignoreInit = TRUE
   )
@@ -575,7 +581,7 @@ studio_server <- function(input, output, session) {
   })
 
   # Popup menu
-  menu_text <- debounce(reactive(list(input$menu_on, input$menu_items)), 600)
+  menu_text <- debounce(reactive(list(input$menu_on, input$menu_items, input$menu_direction)), 600)
   menu_parsed <- reactive({
     lines <- trimws(strsplit(input$menu_items, "\n", fixed = TRUE)[[1]])
     lines <- lines[nzchar(lines)]
@@ -601,7 +607,7 @@ studio_server <- function(input, output, session) {
       # Switching the menu off works even while the item text has a problem.
       req(!isTRUE(input$menu_on) || is.null(parsed$problem))
       items <- if (isTRUE(input$menu_on)) parsed$items else character()
-      ok <- send(list(popup_menu = code_menu(items)))
+      ok <- send(list(popup_menu = code_menu(items, input$menu_direction %||% "auto")))
       menu_error(if (identical(ok, FALSE) && length(log())) log()[[1]]$message)
     },
     ignoreInit = TRUE
@@ -781,11 +787,14 @@ studio_server <- function(input, output, session) {
       mascot_size = size_code(),
       mascot_placement = code_placement(
         input$position,
-        input$position != "inline" && isTRUE(input$minimise),
-        if (input$position != "inline" && input$drag != "FALSE") input$drag else FALSE
+        isTRUE(input$minimise),
+        if (input$drag != "FALSE") input$drag else FALSE
       ),
       mascot_theme = theme_code(),
-      mascot_popup_menu = code_menu(if (isTRUE(input$menu_on)) menu_parsed()$items else character()),
+      mascot_popup_menu = code_menu(
+        if (isTRUE(input$menu_on)) menu_parsed()$items else character(),
+        input$menu_direction %||% "auto"
+      ),
       NULL
     )
     if (!is.null(pair)) {

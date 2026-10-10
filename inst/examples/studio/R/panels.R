@@ -178,17 +178,18 @@ panel_layout <- function() {
       radioButtons(
         "position",
         "Position",
-        c(Inline = "inline", stats::setNames(corners, tools::toTitleCase(sub("-", " ", corners, fixed = TRUE))))
+        c(Inline = "inline", stats::setNames(corners, tools::toTitleCase(sub("-", " ", corners, fixed = TRUE)))),
+        selected = "inline"
       )
     ),
     arg_field(
       "mascot_placement",
       "minimise",
       tagList(
-        input_switch("minimise", "Show a minimise button", FALSE),
+        input_switch("minimise", "Show a minimise button", TRUE),
         conditionalPanel(
           "input.position == 'inline'",
-          div(class = "pg-note", "Pick a corner first: only a floating mascot can minimise.")
+          div(class = "pg-note", "An inline mascot ignores minimise: pick a corner to try it.")
         )
       )
     ),
@@ -199,7 +200,7 @@ panel_layout <- function() {
         selectInput("drag", "When dropped", c("No dragging (FALSE)" = "FALSE", Snap = "snap", Free = "free")),
         conditionalPanel(
           "input.position == 'inline'",
-          div(class = "pg-note", "Pick a corner first: only a floating mascot can be dragged.")
+          div(class = "pg-note", "An inline mascot ignores drag: pick a corner to try it.")
         ),
         div(class = "pg-live", tags$code("input$helper_position"), textOutput("position_last"))
       )
@@ -280,6 +281,22 @@ panel_menu <- function() {
         uiOutput("menu_problem")
       ),
       note = div(class = "pg-note", "Open the menu with the button on Tessa, then pick an item.")
+    ),
+    arg_field(
+      "mascot_popup_menu",
+      "direction",
+      radioButtons(
+        "menu_direction",
+        NULL,
+        c(
+          "Auto (pick the side with room)" = "auto",
+          "Top" = "top",
+          "Bottom" = "bottom",
+          "Left" = "left",
+          "Right" = "right"
+        ),
+        selected = "auto"
+      )
     )
   )
 }

@@ -158,7 +158,8 @@ Try both gestures in `mascot_example("studio")`.
 
 ## Size and placement
 
-The default is 160 pixels, floating in the bottom-right corner as an assistant.
+The default is 160 pixels, floating in the bottom-right corner as an assistant,
+with a minimise control. Use `minimise = FALSE` to hide that control.
 Use `placement = "inline"` to place a mascot in the page flow.
 
 ```{r layout, results="hide"}
@@ -175,6 +176,11 @@ its minimise control appears on hover or keyboard focus, and stays available
 on touch. The restore button stays reachable while minimised. Opening a mascot
 menu hides the action controls until the menu closes.
 
+Inline mascots ignore `minimise` and `drag`. Explicitly setting either in
+`mascot_placement()` or a placement list gives an informational message,
+including in `updateMascot()`; defaults such as `mascot_placement("inline")`
+stay silent. The browser receives both controls as `FALSE` inline.
+
 ```{r layout-update, eval=FALSE}
 updateMascot("helper", size = mascot_size(180, small_screen = 72),
   placement = mascot_placement("top-left", minimise = TRUE))
@@ -190,6 +196,9 @@ A floating mascot can be dragged by its drawing, with a mouse or a finger.
 Dragging is off by default. With `drag = "snap"` the mascot moves to the
 nearest corner when it is dropped; with `drag = "free"` it stays where it is
 dropped, kept inside the window. A click without movement still opens its menu.
+While minimised, drag the round restore button with the same rules. A click
+without movement restores the mascot; a drag leaves it minimised. After a
+snap, restoring shows the mascot in its new corner.
 
 ```{r drag, eval=FALSE}
 mascot(id = "helper",

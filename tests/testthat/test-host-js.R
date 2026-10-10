@@ -1623,7 +1623,7 @@ describe("mascot.host motion", {
   })
 })
 
-# Synthetic pointer events on the canvas, as a mouse or finger would send them (pointer id 1, primary button).
+# Synthetic pointer events on a drag target (the canvas or the restore button), as a mouse or finger would send them (pointer id 1, primary button).
 drag_js <- paste(
   "window.press=(target,type,x,y)=>target.dispatchEvent(new PointerEvent(type,",
   "{bubbles:true,cancelable:true,pointerId:1,button:0,isPrimary:true,clientX:x,clientY:y}));",
@@ -2449,7 +2449,7 @@ describe("mascot.host dragging", {
     expect_true(result$placed)
     expect_null(result$dropped)
   })
-  it("D3 starts only from the canvas of a floating, draggable, unminimised mascot", {
+  it("D3 ignores other controls and stops dragging after placement changes", {
     skip_without_chrome()
     js <- local_host_page(
       placement = mascot_placement("bottom-right", minimise = TRUE, drag = "snap"),
@@ -2464,8 +2464,6 @@ describe("mascot.host dragging", {
       const out=[];
       for (const selector of ['.mascot-minimise','.mascot-bubble-close','.mascot-bubble a','.mascot-status']) {
         const target=el.querySelector(selector);target.hidden=false;dragBy(target,-500,-400);out.push(same());}
-      el.querySelector('.mascot-minimise').click();dragBy(el.querySelector('.mascot-restore'),-500,-400);
-      out.push(el.dataset.position==='bottom-right');el.querySelector('.mascot-restore').click();
       const c=el.querySelector('canvas');
       press(c,'pointerdown',700,500);press(c,'pointermove',650,450);
       mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'bottom-right',minimise:true,drag:false}}});
@@ -2513,5 +2511,116 @@ describe("mascot.host dragging", {
       return [el.dataset.placed===undefined,el.dataset.dragging===undefined,el.dataset.drag];})()"
     )
     expect_identical(result, list(TRUE, TRUE, "snap"))
+  })
+  it("D5 drags the restore button to a new corner, suppresses the ending click and restores on a still click", {
+    skip_without_chrome()
+    js <- local_host_page(
+      placement = mascot_placement(drag = "snap"),
+      popup_menu = c(about = "About"),
+      shiny_menu = TRUE,
+      size = 100,
+      viewport = c(800, 600)
+    )
+    js(drag_js)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
+      const button=el.querySelector('.mascot-restore'),style=getComputedStyle(button);
+      const touch=style.touchAction,cursor=style.cursor;
+      dragBy(button,-600,-450);button.click();const s=mascot.host.state(el);
+      return {minimised:s.minimised,position:s.placement.position,dragging:s.dragging,
+        menu:s.menuOpen,events:menuEvents,touch,cursor,x:el.getBoundingClientRect().left};"
+    )
+    expect_true(result$minimised)
+    expect_identical(result$position, "top-left")
+    expect_false(result$dragging)
+    expect_false(result$menu)
+    expect_identical(result$events, list(list("a_position", "top-left", list(priority = "event"))))
+    expect_identical(result$touch, "none")
+    expect_identical(result$cursor, "grab")
+    expect_equal(result$x, 16)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a'),button=el.querySelector('.mascot-restore'),r=button.getBoundingClientRect();
+      const x=r.left+r.width/2,y=r.top+r.height/2;
+      press(button,'pointerdown',x,y);press(button,'pointermove',x+2,y+1);press(button,'pointerup',x+2,y+1);
+      button.click();const s=mascot.host.state(el),restored=el.getBoundingClientRect();
+      return {minimised:s.minimised,position:s.placement.position,menu:s.menuOpen,
+        x:restored.left,y:restored.top,events:menuEvents.length};"
+    )
+    expect_false(result$minimised)
+    expect_identical(result$position, "top-left")
+    expect_false(result$menu)
+    expect_equal(result$x, 16)
+    expect_equal(result$y, 16)
+    expect_identical(result$events, 1L)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
+      const button=el.querySelector('.mascot-restore'),r=button.getBoundingClientRect();
+      press(button,'pointerdown',r.left+24,r.top+24);press(button,'pointerup',r.left+24,r.top+24);button.click();
+      return {minimised:mascot.host.state(el).minimised,events:menuEvents.length};"
+    )
+    expect_false(result$minimised)
+    expect_identical(result$events, 1L)
+  })
+  it("D6 reports a minimised free drop, keeps it inside the window and cancels it on a placement update", {
+    skip_without_chrome()
+    js <- local_host_page(
+      placement = mascot_placement("top-left", drag = "free"),
+      shiny_menu = TRUE,
+      size = 100,
+      viewport = c(800, 600)
+    )
+    js(drag_js)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
+      const button=el.querySelector('.mascot-restore');dragBy(button,320,180);button.click();
+      const s=mascot.host.state(el),r=el.getBoundingClientRect();
+      return {minimised:s.minimised,dropped:s.dropped,x:r.left,y:r.top,events:menuEvents};"
+    )
+    expect_true(result$minimised)
+    expect_equal(result$x, 336)
+    expect_equal(result$y, 196)
+    expect_identical(result$dropped, list(x = 336L, y = 196L))
+    expect_identical(result$events, list(list("a_position", list(x = 336L, y = 196L), list(priority = "event"))))
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a'),button=el.querySelector('.mascot-restore');
+      dragBy(button,5000,5000);button.click();const r=el.getBoundingClientRect();
+      return {minimised:mascot.host.state(el).minimised,right:innerWidth-r.right,bottom:innerHeight-r.bottom,
+        event:menuEvents.at(-1)[1],x:r.left,y:r.top};"
+    )
+    expect_true(result$minimised)
+    expect_equal(result$right, 16)
+    expect_equal(result$bottom, 16)
+    expect_equal(result$event$x, round(result$x))
+    expect_equal(result$event$y, round(result$y))
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a');el.querySelector('.mascot-restore').click();
+      const r=el.getBoundingClientRect();return {minimised:mascot.host.state(el).minimised,
+        right:innerWidth-r.right,bottom:innerHeight-r.bottom};"
+    )
+    expect_false(result$minimised)
+    expect_equal(result$right, 16)
+    expect_equal(result$bottom, 16)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
+      const button=el.querySelector('.mascot-restore'),r=button.getBoundingClientRect();
+      press(button,'pointerdown',r.left+24,r.top+24);press(button,'pointermove',r.left-100,r.top-100);
+      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'top-right',minimise:true,drag:false}}});
+      press(button,'pointerup',100,100);button.click();const s=mascot.host.state(el);
+      return {minimised:s.minimised,dragging:s.dragging,dropped:s.dropped,position:s.placement.position,
+        placed:el.dataset.placed===undefined,events:menuEvents.length};"
+    )
+    expect_true(result$minimised)
+    expect_false(result$dragging)
+    expect_null(result$dropped)
+    expect_identical(result$position, "top-right")
+    expect_true(result$placed)
+    expect_identical(result$events, 2L)
   })
 })

@@ -176,19 +176,6 @@ body.quarto-dark {
   left: var(--mascot-drag-left, 1rem);
 }
 
-/* Touch drags must not scroll the page or select text. */
-.mascot[data-floating="true"][data-drag="snap"] .mascot-canvas,
-.mascot[data-floating="true"][data-drag="free"] .mascot-canvas {
-  cursor: grab;
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-.mascot[data-floating="true"][data-dragging="true"] .mascot-canvas {
-  cursor: grabbing;
-}
-
 /* Floating messages do not change the canvas or corner coordinates. */
 .mascot[data-floating="true"] .mascot-bubble-region {
   position: absolute;
@@ -348,6 +335,22 @@ body.quarto-dark {
 .mascot[data-reduced="true"] .mascot-restore:hover,
 .mascot[data-reduced="true"] .mascot-restore:focus-visible {
   transform: none;
+}
+
+/* Touch drags must not scroll the page or select text, including on the restore button. */
+.mascot[data-floating="true"][data-drag="snap"] .mascot-canvas,
+.mascot[data-floating="true"][data-drag="free"] .mascot-canvas,
+.mascot[data-floating="true"][data-drag="snap"] .mascot-restore,
+.mascot[data-floating="true"][data-drag="free"] .mascot-restore {
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.mascot[data-floating="true"][data-dragging="true"] .mascot-canvas,
+.mascot[data-floating="true"][data-dragging="true"] .mascot-restore {
+  cursor: grabbing;
 }
 
 /* Menus share the source page's bubble palette, including when floating. */

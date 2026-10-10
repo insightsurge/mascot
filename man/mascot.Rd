@@ -44,7 +44,10 @@ with a 24-pixel floor. \code{NULL} is not accepted.}
 
 \item{placement}{\code{"bottom-right"} (the default), \code{"floating"}, \code{"inline"}, a corner
 such as \code{"top-left"}, a named list such as \code{list(position = "top-left", minimise = TRUE, drag = "snap")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object.
-\code{minimise} and \code{drag} need a corner. With \code{drag}, each drop sets
+Floating mascots show a minimise control by default; dragging is off.
+Inline mascots ignore \code{minimise} and \code{drag}, with an informational message
+for explicitly supplied values and silence for defaults. With \code{drag},
+visitors can also drag the minimised restore button; each drop sets
 \verb{input$<id>_position} to the corner (\code{"snap"}) or a list with \code{x} and \code{y}
 (\code{"free"}); saving it between visits is the app's job. See
 \code{\link[=mascot_placement]{mascot_placement()}}. \code{NULL} is not accepted.}

@@ -15,7 +15,7 @@ describe("mascot()", {
         `data-size` = 160,
         `data-floating` = "true",
         `data-position` = "bottom-right",
-        `data-minimise` = "false",
+        `data-minimise` = "true",
         `data-drag` = "false",
         `data-reduced` = "auto",
         `data-swap` = "true"
@@ -177,12 +177,38 @@ describe("mascot() size and placement", {
     )
     expect_error(mascot(id = "a", size = NULL), "size")
     expect_error(mascot(id = "a", size = "24px"), "size.*24px")
-    expect_error(mascot(id = "a", placement = list(position = "inline", minimise = TRUE)), "corner")
     expect_snapshot(error = TRUE, mascot(id = "a", placement = "fixed"))
     expect_snapshot(error = TRUE, mascot("helper"))
     expect_snapshot(error = TRUE, mascot())
     expect_snapshot(error = TRUE, mascot("typo", id = "a"))
     expect_error(mascot("{oops}"), "{oops}", fixed = TRUE)
+  })
+  it("silently disables inline defaults and informs about explicit list controls", {
+    for (placement in list("inline", mascot_placement("inline"), list(position = "inline"))) {
+      expect_silent(tag <- mascot(id = "a", placement = placement))
+      expect_identical(tag$attribs$`data-minimise`, "false")
+      expect_identical(tag$attribs$`data-drag`, "false")
+    }
+    for (controls in list(
+      list(minimise = TRUE),
+      list(minimise = FALSE),
+      list(drag = "snap"),
+      list(drag = "free"),
+      list(drag = FALSE)
+    )) {
+      expect_message(
+        tag <- mascot(id = "a", placement = c(list(position = "inline"), controls)),
+        paste0(names(controls), ".*no effect.*inline"),
+        class = "mascot_placement_ignored"
+      )
+      expect_identical(tag$attribs$`data-minimise`, "false")
+      expect_identical(tag$attribs$`data-drag`, "false")
+    }
+    expect_snapshot(invisible(mascot(id = "a", placement = list(position = "inline", minimise = TRUE))))
+    expect_snapshot(invisible(mascot(id = "a", placement = list(position = "inline", drag = "snap"))))
+    expect_snapshot(invisible(mascot(id = "a", placement = mascot_placement("inline", minimise = TRUE))))
+    expect_snapshot(invisible(mascot(id = "a", placement = mascot_placement("inline", drag = "free"))))
+    expect_identical(mascot(id = "a", placement = list(minimise = FALSE))$attribs$`data-minimise`, "false")
   })
 })
 

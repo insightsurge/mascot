@@ -45,7 +45,7 @@
     Code
       print(helper)
     Output
-      mascot_placement(position = "bottom-right", minimise = FALSE, drag = FALSE)
+      mascot_placement(position = "bottom-right", minimise = TRUE, drag = FALSE)
 
 ---
 

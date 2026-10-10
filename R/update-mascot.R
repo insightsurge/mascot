@@ -25,6 +25,11 @@
 #'   in [mascot()]. `NULL` (the default) leaves placement unchanged. Size and
 #'   placement changes keep the mounted engine, its mood and character. A new
 #'   placement replaces any position the visitor dragged the mascot to.
+#'   Floating placement shows a minimise control by default; dragging is off.
+#'   Inline placement ignores `minimise` and `drag`: explicitly supplied values
+#'   give an informational message, defaults stay silent, and the update is sent.
+#'   With dragging enabled, the minimised restore button can also be dragged;
+#'   a click restores it, and a drag leaves it minimised in its new position.
 #' @param theme A theme in the forms accepted by [mascot()]. `NULL` (the
 #'   default) leaves the theme unchanged; `mascot_theme()` restores the
 #'   character's own colours. Themes are resolved again after a character swap.

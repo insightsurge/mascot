@@ -7,7 +7,8 @@
 #' where they are placed in the page flow. Switching back to inline returns the
 #' mascot to its original place in the UI.
 #'
-#' The neutral minimise control appears on hover or keyboard focus. Touch screens
+#' Floating mascots show a minimise control by default; set `minimise = FALSE`
+#' to hide it. The neutral control appears on hover or keyboard focus. Touch screens
 #' keep it visible; an open mascot menu hides it. Its border has a quiet glow.
 #' A minimised mascot is a round restore button in the character's colours.
 #' Its status remains available to screen readers. Updates still apply; bubble
@@ -18,9 +19,11 @@
 #' @section Dragging:
 #' With `drag = "snap"` or `drag = "free"`, visitors can drag a floating mascot
 #' by its drawing, with a mouse, pen or finger. A click without movement still
-#' opens the mascot's menu; the minimise and restore buttons, the bubble's close
-#' button and links in the bubble do not start a drag, and a minimised mascot
-#' cannot be dragged. The bubble and menu move with the mascot.
+#' opens the mascot's menu. While minimised, drag the round restore button:
+#' a click without movement restores the mascot, but a drag never restores it.
+#' After a snap, restoring shows the mascot in the new corner. The minimise
+#' button, the bubble's close button and links in the bubble do not start a drag.
+#' The bubble and menu move with the mascot.
 #'
 #' * `"snap"`: on release the mascot moves to the nearest corner, which becomes
 #'   its `position`, so its bubble opens towards the page centre. Reduced motion,
@@ -39,12 +42,15 @@
 #' @param position A corner to float the mascot (`"bottom-right"`, the default;
 #'   `"top-left"`, `"top-right"` or `"bottom-left"`), or `"inline"` to sit
 #'   where the mascot is placed in the UI. `NULL` is not accepted.
-#' @param minimise A logical flag, defaulting to `FALSE`, to show a minimise
-#'   control. `TRUE` needs a corner `position`. `NULL` is not accepted.
+#' @param minimise A logical flag, defaulting to `TRUE`, to show a minimise
+#'   control on a floating mascot. Has no effect inline: an explicitly supplied
+#'   value gives an informational message; the default stays silent.
+#'   `NULL` is not accepted.
 #' @param drag `FALSE` (the default) for no dragging, `"snap"` to let visitors
 #'   drag the mascot and move it to the nearest corner on release, or `"free"`
-#'   to keep it where it is dropped. Needs a corner `position`. `TRUE` and
-#'   `NULL` are not accepted. See the Dragging section.
+#'   to keep it where it is dropped, including while minimised. Has no effect
+#'   inline: an explicitly supplied value gives an informational message.
+#'   `TRUE` and `NULL` are not accepted. See the Dragging section.
 #' @returns A `mascot_placement` object with `position`, `minimise` and `drag`
 #'   elements.
 #' @family mascot helpers
@@ -66,7 +72,7 @@
 #'     output$where <- shiny::renderText(paste("Dropped in", input$helper_position))
 #'   }
 #' )
-mascot_placement <- function(position = "bottom-right", minimise = FALSE, drag = FALSE) {
+mascot_placement <- function(position = "bottom-right", minimise = TRUE, drag = FALSE) {
   checkmate::assert_string(position)
   checkmate::assert_flag(minimise)
   # drag is a union (FALSE or a mode); the wording for a wrong value comes from abort_drag().
@@ -77,19 +83,25 @@ mascot_placement <- function(position = "bottom-right", minimise = FALSE, drag =
   if (!identical(drag, FALSE) && !isTRUE(drag %in% placement_drags())) {
     abort_drag(drag, environment())
   }
-  if (minimise && position == "inline") {
-    cli::cli_abort(c(
-      "{.arg minimise} needs a corner {.arg position}; an inline mascot cannot be minimised.",
-      "i" = "Use {.code mascot_placement(\"bottom-right\", minimise = TRUE)}."
-    ))
-  }
-  if (!identical(drag, FALSE) && position == "inline") {
-    cli::cli_abort(c(
-      "{.arg drag} needs a corner {.arg position}; an inline mascot cannot be dragged.",
-      "i" = "Use {.code mascot_placement(\"bottom-right\", drag = \"{drag}\")}."
-    ))
+  if (position == "inline") {
+    explicit <- c("minimise", "drag")[c(!missing(minimise), !missing(drag))]
+    inform_placement_ignored(explicit)
+    minimise <- FALSE
+    drag <- FALSE
   }
   structure(list(position = position, minimise = minimise, drag = drag), class = "mascot_placement")
+}
+
+#' Tell developers which explicitly supplied controls have no effect inline
+#' @noRd
+inform_placement_ignored <- function(args) {
+  checkmate::assert_character(args, any.missing = FALSE)
+  for (arg in args) {
+    cli::cli_inform(
+      "{.arg {arg}} has no effect on an inline mascot.",
+      class = "mascot_placement_ignored"
+    )
+  }
 }
 
 #' Report an invalid drag mode, explaining that TRUE is not a mode
@@ -170,12 +182,6 @@ placement_problem <- function(x) {
       if (isTRUE(x$drag)) ". Use \"snap\" to move to the nearest corner or \"free\" to stay where dropped." else "."
     ))
   }
-  if (isTRUE(x$minimise) && identical(x$position, "inline")) {
-    return("`placement` minimise needs a corner position, such as \"bottom-right\".")
-  }
-  if (!is.null(x$drag) && !isFALSE(x$drag) && identical(x$position, "inline")) {
-    return("`placement` drag needs a corner position, such as \"bottom-right\"; an inline mascot cannot be dragged.")
-  }
   NULL
 }
 
@@ -188,6 +194,10 @@ as_placement_arg <- function(x, call) {
     return(x)
   }
   if (is.list(x)) {
+    if (identical(x$position, "inline")) {
+      inform_placement_ignored(intersect(c("minimise", "drag"), names(x)))
+      return(mascot_placement("inline"))
+    }
     return(do.call(mascot_placement, x))
   }
   if (x == "floating") {
@@ -204,8 +214,8 @@ placement_wire <- function(x) {
   list(
     floating = floating,
     position = if (floating) x$position else "bottom-right",
-    minimise = x$minimise,
-    drag = x$drag
+    minimise = if (floating) x$minimise else FALSE,
+    drag = if (floating) x$drag else FALSE
   )
 }
 

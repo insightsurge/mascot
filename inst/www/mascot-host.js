@@ -12,8 +12,9 @@
  * The host owns canvas dimensions (CSS size times pixel ratio), the 300-unit transform and accessible text.
  * Size patches are { size: pixels|percentage, small_screen: pixels|percentage|null }; every size draws in full.
  * Placement patches are { floating: boolean, position: corner, minimise: boolean, drag: false|'snap'|'free' };
- * neither patch remounts the engine. A floating mascot with drag follows a pointer pressed on its canvas (pointer
- * capture; a few pixels of movement before a press becomes a drag, so a click still opens the menu). On release
+ * neither patch remounts the engine. A floating mascot with drag follows a pointer pressed on its canvas or its
+ * restore button while minimised (pointer capture; a few pixels of movement before a press becomes a drag, so a
+ * click still opens the menu or restores). On release
  * "snap" moves to the nearest corner (animated unless motion is reduced), which becomes its position; "free" keeps
  * the dropped point, kept 1rem inside the window on resize, and takes the nearest corner only to orient the bubble
  * and menu. Each drop sets the namespaced id + '_position' (the corner, or { x, y }) with priority 'event'.
@@ -685,7 +686,7 @@
   }
 
   function draggable(record) {
-    return record.placement.floating && record.placement.drag !== false && !record.minimised;
+    return record.placement.floating && record.placement.drag !== false;
   }
 
   // Abandon a gesture without dropping: a placement update or unmount replaces it.
@@ -697,7 +698,7 @@
     record.dragState = null;
     delete record.el.dataset.dragging;
     if (gesture.moved) record.suppressClick = true;
-    if (record.canvas.hasPointerCapture(gesture.pointerId)) record.canvas.releasePointerCapture(gesture.pointerId);
+    if (gesture.target.hasPointerCapture(gesture.pointerId)) gesture.target.releasePointerCapture(gesture.pointerId);
   }
 
   function drop(record) {
@@ -705,7 +706,7 @@
     record.dragState = null;
     delete record.el.dataset.dragging;
     if (!gesture.moved) return;
-    // The click that ends a drag must not open the menu; a touch drag may send no click at all.
+    // The click that ends a drag must not open the menu or restore; a touch drag may send no click at all.
     record.suppressClick = true;
     window.setTimeout(() => {
       record.suppressClick = false;
@@ -740,11 +741,13 @@
     const { el } = record;
     const handlers = {
       pointerdown(event) {
-        if (!draggable(record) || record.dragState || event.button !== 0 || event.target !== record.canvas) return;
+        const target = record.minimised ? record.restoreButton : record.canvas;
+        if (!draggable(record) || record.dragState || event.button !== 0 || !target.contains(event.target)) return;
         record.suppressClick = false;
         record.snapAnimation?.finish();
         const rect = el.getBoundingClientRect();
         record.dragState = {
+          target,
           pointerId: event.pointerId,
           x: event.clientX,
           y: event.clientY,
@@ -754,7 +757,7 @@
           point: null,
         };
         // Synthetic events (tests) have no active pointer to capture; the drag still follows their moves.
-        if (event.isTrusted) record.canvas.setPointerCapture(event.pointerId);
+        if (event.isTrusted) target.setPointerCapture(event.pointerId);
       },
       pointermove(event) {
         const gesture = record.dragState;

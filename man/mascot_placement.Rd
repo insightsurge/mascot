@@ -4,20 +4,23 @@
 \alias{mascot_placement}
 \title{Place a mascot in a floating corner or inline}
 \usage{
-mascot_placement(position = "bottom-right", minimise = FALSE, drag = FALSE)
+mascot_placement(position = "bottom-right", minimise = TRUE, drag = FALSE)
 }
 \arguments{
 \item{position}{A corner to float the mascot (\code{"bottom-right"}, the default;
 \code{"top-left"}, \code{"top-right"} or \code{"bottom-left"}), or \code{"inline"} to sit
 where the mascot is placed in the UI. \code{NULL} is not accepted.}
 
-\item{minimise}{A logical flag, defaulting to \code{FALSE}, to show a minimise
-control. \code{TRUE} needs a corner \code{position}. \code{NULL} is not accepted.}
+\item{minimise}{A logical flag, defaulting to \code{TRUE}, to show a minimise
+control on a floating mascot. Has no effect inline: an explicitly supplied
+value gives an informational message; the default stays silent.
+\code{NULL} is not accepted.}
 
 \item{drag}{\code{FALSE} (the default) for no dragging, \code{"snap"} to let visitors
 drag the mascot and move it to the nearest corner on release, or \code{"free"}
-to keep it where it is dropped. Needs a corner \code{position}. \code{TRUE} and
-\code{NULL} are not accepted. See the Dragging section.}
+to keep it where it is dropped, including while minimised. Has no effect
+inline: an explicitly supplied value gives an informational message.
+\code{TRUE} and \code{NULL} are not accepted. See the Dragging section.}
 }
 \value{
 A \code{mascot_placement} object with \code{position}, \code{minimise} and \code{drag}
@@ -32,7 +35,8 @@ where they are placed in the page flow. Switching back to inline returns the
 mascot to its original place in the UI.
 }
 \details{
-The neutral minimise control appears on hover or keyboard focus. Touch screens
+Floating mascots show a minimise control by default; set \code{minimise = FALSE}
+to hide it. The neutral control appears on hover or keyboard focus. Touch screens
 keep it visible; an open mascot menu hides it. Its border has a quiet glow.
 A minimised mascot is a round restore button in the character's colours.
 Its status remains available to screen readers. Updates still apply; bubble
@@ -44,9 +48,11 @@ motion keeps only the glow.
 
 With \code{drag = "snap"} or \code{drag = "free"}, visitors can drag a floating mascot
 by its drawing, with a mouse, pen or finger. A click without movement still
-opens the mascot's menu; the minimise and restore buttons, the bubble's close
-button and links in the bubble do not start a drag, and a minimised mascot
-cannot be dragged. The bubble and menu move with the mascot.
+opens the mascot's menu. While minimised, drag the round restore button:
+a click without movement restores the mascot, but a drag never restores it.
+After a snap, restoring shows the mascot in the new corner. The minimise
+button, the bubble's close button and links in the bubble do not start a drag.
+The bubble and menu move with the mascot.
 \itemize{
 \item \code{"snap"}: on release the mascot moves to the nearest corner, which becomes
 its \code{position}, so its bubble opens towards the page centre. Reduced motion,

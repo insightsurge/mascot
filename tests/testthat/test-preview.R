@@ -175,7 +175,7 @@ describe("mascot_preview()", {
       list(size = NULL),
       list(size = Inf),
       list(placement = "middle"),
-      list(placement = list(position = "inline", minimise = TRUE)),
+      list(placement = list(drag = TRUE)),
       list(theme = list(eye_whit = "red")),
       list(theme = list(light = "red")),
       list(motion = NULL),

@@ -74,4 +74,3 @@
     Condition
       Error in `mascot()`:
       ! `theme` has unknown or reserved colour roles: "bdoy". Valid roles: outline, feature, eye_white, shine, teeth, eyelid, tongue, body, body_highlight, rim, limb, sleeve, blush, blush_strong, accessory, accessory_detail, sparkle, sparkle_outline, sweat, shadow.
-

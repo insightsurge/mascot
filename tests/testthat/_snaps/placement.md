@@ -52,4 +52,3 @@
     Condition
       Error in `mascot()`:
       ! `placement$drag` must be FALSE, "snap" or "free"; got TRUE. Use "snap" to move to the nearest corner or "free" to stay where dropped.
-

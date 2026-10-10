@@ -67,4 +67,3 @@
       print(helper)
     Output
       mascot_popup_menu(items = c(about = "About"))
-

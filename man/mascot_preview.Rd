@@ -59,7 +59,7 @@ per supplied colour below 3:1. No findings gives a zero-row data frame with
 the same columns. Colours are kept; one combined warning is issued in R.
 }
 \description{
-Compare moods and small drawings on one offline page. Constructing the page
+Compare moods and sizes on one offline page. Constructing the page
 starts no Shiny app, opens no viewer and writes no files. Printing the returned
 page opens the available Viewer or browser. It can also be embedded in an
 R Markdown or Quarto document.
@@ -67,8 +67,8 @@ R Markdown or Quarto document.
 \details{
 Rows are moods; columns are the requested \code{size}, then 48, 32 and 24 CSS pixels.
 The first column preserves percentage and \code{small_screen} settings; fixed
-comparison columns preserve \code{simplify_when_small} but do not change on narrow
-screens. Each cell keeps its status text, since small faces lose fine detail.
+comparison columns do not change on narrow screens. Every size draws the full
+character. Each cell keeps its status text, since small faces lose fine detail.
 
 Both supplied theme maps are shown, even if the theme selected one mode.
 Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's \code{bg} and

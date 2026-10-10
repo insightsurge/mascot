@@ -45,7 +45,7 @@ describe("mascot_preview()", {
       mood = mascot_mood("happy"),
       status = mascot_status("Ready <now>"),
       bubble = mascot_bubble("Check this", duration = Inf),
-      size = mascot_size("20%", small_screen = 96, simplify_when_small = FALSE),
+      size = mascot_size("20%", small_screen = 96),
       placement = mascot_placement("bottom-right", minimise = TRUE),
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "dark"),
       motion = mascot_motion(swap = FALSE),
@@ -60,7 +60,7 @@ describe("mascot_preview()", {
     expect_identical(tags[[1]]$attribs[["data-size"]], "20%")
     expect_identical(tags[[1]]$attribs[["data-small-screen"]], 96)
     expect_null(tags[[2]]$attribs[["data-small-screen"]])
-    expect_true(all(vapply(tags, function(x) x$attribs[["data-simplify-when-small"]] == "false", logical(1))))
+    expect_true(all(vapply(tags, function(x) is.null(x$attribs[["data-simplify-when-small"]]), logical(1))))
     expect_true(all(vapply(tags, function(x) x$attribs[["data-reduced"]] == "auto", logical(1))))
     expect_true(all(vapply(tags, function(x) x$attribs[["data-swap"]] == "false", logical(1))))
     expect_length(preview_nodes(page, ".mascot-preview-no-bubble"), 0)
@@ -338,7 +338,7 @@ describe("mascot_preview() in Chrome", {
     skip_without_chrome()
     js <- local_preview_page(mascot_preview(
       mood = "idle",
-      size = mascot_size("20%", small_screen = 96, simplify_when_small = FALSE)
+      size = mascot_size("20%", small_screen = 96)
     ))
     widths <- unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE)
     expect_identical(widths[c(2:4, 6:8)], rep(c(48L, 32L, 24L), 2))
@@ -350,7 +350,7 @@ describe("mascot_preview() in Chrome", {
       unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE),
       rep(c(96L, 48L, 32L, 24L), 2)
     )
-    expect_true(js("Array.from(document.querySelectorAll('.mascot')).every(el=>mascot.host.state(el).detail==='full')"))
+    expect_true(js("Array.from(document.querySelectorAll('.mascot')).every(el=>!('detail' in mascot.host.state(el)))"))
   })
 })
 

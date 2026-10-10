@@ -119,7 +119,6 @@ mascot <- function(
     `data-status` = mode,
     `data-size` = size$size,
     `data-small-screen` = size$small_screen,
-    `data-simplify-when-small` = tolower(as.character(size$simplify_when_small)),
     `data-floating` = tolower(as.character(placement_wire(placement)$floating)),
     `data-position` = placement_wire(placement)$position,
     `data-minimise` = tolower(as.character(placement$minimise)),

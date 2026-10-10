@@ -86,17 +86,20 @@ describe("the drawing engine (inst/www)", {
     )
   })
 
-  it("simplifies Tessa and skips parts marked for full detail", {
+  it("draws one full character at every size, ignoring a leftover small block", {
     skip_without_chrome()
     js <- local_engine_page()
-    expect_false(identical(js(draw_js("{ detail: 'simple' }")), js(draw_js("{ detail: 'full' }"))))
+    # Given Tessa without the removed small block, and a copy of Blob that still carries one
+    expect_false(js("Object.hasOwn(mascot.readCharacter('tessa'), 'small')"))
     expect_true(js(paste(
-      "(() => { const ch = mascot.readCharacter('blob');",
-      "const draw = detail => { const c = document.createElement('canvas'); c.width = 300; c.height = 300;",
-      "mascot.draw(c.getContext('2d'), ch, { x: 150, baseY: 280, pose: { detail } }); return c.toDataURL(); };",
-      "const before = draw('simple'), fullBefore = draw('full');",
-      "ch.body.push({ shape: 'circle', x: -40, y: 10, r: 10, fill: 'feature', detail: 'full' });",
-      "return draw('simple') === before && draw('full') !== fullBefore; })()"
+      "(() => { const plain = mascot.readCharacter('blob');",
+      "const extra = JSON.parse(JSON.stringify(plain)); extra.id = 'blob-extra';",
+      "extra.small = { faceScale: 2, minLineWidth: 9, hide: ['lashes', 'brows'] };",
+      "if (mascot.validateCharacter(extra).length) return false;",
+      "const draw = (ch, scale) => { const c = document.createElement('canvas'); c.width = 300; c.height = 300;",
+      "mascot.draw(c.getContext('2d'), ch, { x: 150, baseY: 280, pose: { scale } }); return c.toDataURL(); };",
+      # Then both draw the same picture at a small and a full scale
+      "return [24 / 220, 1].every(scale => draw(plain, scale) === draw(extra, scale)); })()"
     )))
   })
 
@@ -300,23 +303,6 @@ describe("the drawing engine (inst/www)", {
       "rect is fill-only",
       fixed = TRUE
     )
-  })
-
-  it("keeps every simple stroke at least the description's minimum screen width", {
-    skip_without_chrome()
-    js <- local_engine_page()
-    # Chrome keeps the canvas transform at lower precision than JavaScript numbers: allow 0.0001 px.
-    expect_true(js(paste(
-      "(() => { return ['tessa', 'blob'].every(name => [24, 32, 48].every(size => {",
-      "const ch = mascot.readCharacter(name), g = document.createElement('canvas').getContext('2d');",
-      "g.scale(0.75, 1.25); const widths = []; const original = g.stroke.bind(g);",
-      "g.stroke = () => { const m = g.getTransform();",
-      "const sum = m.a*m.a + m.b*m.b + m.c*m.c + m.d*m.d;",
-      "const largest = Math.sqrt((sum + Math.sqrt(Math.max(0, sum*sum - 4*(m.a*m.d-m.b*m.c)**2))) / 2);",
-      "widths.push(g.lineWidth * Math.abs(m.a*m.d-m.b*m.c) / largest); original(); };",
-      "mascot.draw(g, ch, { pose: { detail: 'simple', scale: size / 220, rot: 0.2 } });",
-      "return widths.length > 0 && widths.every(w => w >= ch.small.minLineWidth - 1e-4); })); })()"
-    )))
   })
 
   it("checks a description and merges its face style only on first use", {

@@ -56,8 +56,7 @@
       "shape": "path",
       "d": "M0 -81 L26 -65 L-26 -65 Z",
       "fill": "bodyHighlight",
-      "alpha": 0.35,
-      "detail": "full"
+      "alpha": 0.35
     }
   ],
   "shadow": {
@@ -364,6 +363,5 @@
       "blush": "strong",
       "lift": 10
     }
-  },
-  "small": { "faceScale": 1.6, "minLineWidth": 1, "hide": ["lashes", "highlight", "blush", "sweat", "shadow", "sparkle", "brows"] }
+  }
 }

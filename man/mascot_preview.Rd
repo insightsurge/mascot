@@ -37,8 +37,9 @@ string, or \code{\link[=mascot_size]{mascot_size()}} object. Defaults to \code{1
 comparison cell width. \code{NULL} is not accepted.}
 
 \item{placement}{A placement shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}}
-object, defaulting to \code{"inline"}. The preview ignores floating and shows
-every mascot inline in the comparison grid. \code{NULL} is not accepted.}
+object, defaulting to \code{"inline"}. Accepted so the same arguments as
+\code{\link[=mascot]{mascot()}} can be passed, and has no effect in a preview (cells stay in
+their grid). \code{NULL} is not accepted.}
 
 \item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
@@ -49,8 +50,9 @@ for steady faces; \code{TRUE} allows animation subject to the visitor's preferen
 \code{NULL} is not accepted.}
 
 \item{popup_menu}{A named character vector or \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object,
-or \code{NULL} (the default) for no menu. The value is checked; menus remain
-inactive on this static page.}
+or \code{NULL} (the default) for no menu. Accepted so the same arguments as
+\code{\link[=mascot]{mascot()}} can be passed, and has no effect in a preview (menus are
+inactive on a static page).}
 }
 \value{
 A browsable \code{htmltools} tag list. Its \code{contrast} attribute is a data
@@ -108,3 +110,7 @@ Other mascot helpers:
 \code{\link[=mascot_theme]{mascot_theme()}}
 }
 \concept{mascot helpers}
+\section{Experimental}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+Its purpose, arguments and page layout may change before CRAN.
+}

@@ -1,65 +1,85 @@
-# mascot 0.0.2.9000
+# mascot (development version)
 
-* `mascot_studio()` opens the experimental studio with a chosen view, function and character; the studio gains an adjustable Code tray and a Guide window (#38, #218).
+## New features
 
+* `mascot()` adds a character with a mood, a status line and an optional message bubble to a Shiny app or Quarto page. It floats in the bottom-right corner by default (#190, #223).
+  * `placement = "inline"` places it in the page flow; a corner name or `mascot_placement()` gives the other options (#223).
+  * `bubble` shows a message (#196), `size` takes pixels, a percentage or `mascot_size()` (#201), `theme` takes colours, a `bslib::bs_theme()` or `mascot_theme()` (#202), `motion = FALSE` stops animation (#203), and `popup_menu` adds a click menu (#143, #225).
 
-* Floating mascots show a minimise button by default, and a minimised mascot can be dragged; on an inline mascot minimise and drag have no effect and say so in a message instead of an error (#229).
-* `mascot_popup_menu()` gains `direction`: the menu opens from the mascot's on-screen position towards `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`, and falls back to another side when there is no room (#225).
-* Mascot menus open next to the character instead of above its empty canvas area, and only one pop-up shows at a time: opening the menu closes the bubble, and a new bubble closes the menu (#225).
-* `mascot()` and `mascot_placement()` float in the bottom-right corner by default, as an assistant in the corner of the app; use `placement = "inline"` to place a mascot in the page (#223).
-* `mascot_example("studio")` opens mascot studio: a function index, one live Tessa, a folded Learn card and a collapsible code dock that resizes, and an inspector for every argument. Copy UI, server or whole-app code, inspect warnings and errors in the log, and see the page `mascot_preview()` returns on the canvas, or open the bundled examples in their own tab. Tests keep the guide and controls complete as functions and arguments are added (#218).
-* `mascot_placement()` gains `drag`: visitors can drag a floating mascot, which snaps to the nearest corner or stays where dropped; the server receives `input$<id>_position` (#220).
-* `mascot_size()` loses `simplify_when_small`, and characters no longer have a separate small-size drawing: below 72 pixels the simplified face looked worse than the full one, so every size now draws the full character (#219).
-* `mascot_placement()` takes one `position` (`"inline"` or a corner) and `minimise`, replacing `floating` + `position`, so the two can no longer contradict each other; shortcuts are unchanged (#215).
-* `mascot("helper")` without an `id` now explains that the first argument is the character and shows `mascot(id = "helper")` (#215).
-* In Shiny development mode, an update that never finds its mascot because of a namespace slip (`helper` versus `first-helper`) warns once and says how to fix it: `ns()` in the module UI, or update from inside the module (#215).
-* The speech bubble follows the page's light/dark signal like the drawing; a dark system setting alone keeps it light (#215).
-* The long-task example runs its slow step with `shiny::ExtendedTask`, so the app stays responsive; every example has a title, a one-line purpose and a light/dark switch (#215).
-* `updateMascot()` keeps the latest state for a later first mascot and replacements with the same id (#193).
-* Timed bubbles pause while a mascot is hidden and resume with the remaining time (#199).
-* `updateMascot()` keeps the latest early gesture and plays it once when the mascot appears (#200).
+* `mascot_bubble()` sets a speech bubble with escaped text, or HTML only through `htmltools::HTML()` or tags (#196).
+  * `duration` is in seconds (default `5`); `duration = Inf` or `NULL` keeps the bubble until it is closed, replaced or cleared. `closable = FALSE` hides the close button; Escape still closes the bubble (#196).
+  * The countdown pauses while the mascot is hidden or minimised, while the pointer is over the bubble, and while keyboard focus is inside the mascot, then resumes with the time left (#196, #199, #229).
+  * Space is reserved above the mascot, so a bubble never moves the page (#196).
 
-* `mascot_theme()` follows the page by default; absent a page signal, it uses light mode (#213).
-* Themes colour a character through declared follow rules; supplied roles stay exact, and `mascot_colour_roles()` lists leaders and shades (#213).
-* `bs_theme()` contrast checks and `mascot_preview()` use the light and dark backgrounds separately; contrast warnings have class `mascot_contrast` (#213).
-* `mascot_popup_menu()` always supports Enter and Space on its toggle; remove the unreleased `key_bindings` argument (#213).
-* Mascot helpers gain readable `format()` and `print()` methods (#213).
-* Bundled examples are self-contained, copyable `app.R` files using `bslib` cards (#213).
+* `mascot_character()` chooses a character by name. Only Tessa is built in (#190).
 
+* `mascot_colour_roles()` lists a character's colour roles with their colours, the leaders they follow and their shade (#202, #213).
 
-* `mascot_preview()` compares moods, light/dark colours and sizes on an offline page, with contrast findings on the page and in R (#175).
+* `mascot_example()` runs one bundled example app, or with `run = FALSE` returns the path to its `app.R` without copying any file (#178).
 
-* `mascot_examples()` lists five bundled Shiny apps, with a shared layout and separate scenarios for learning each feature (#177).
-* `mascot_example()` opens the requested app or returns its source path without copying files (#178).
-* The Get started article walks through the existing helpers, modules and personalising Tessa, with runnable examples and screenshots of themes and menu actions (#177).
+* `mascot_examples()` lists the five bundled Shiny apps in teaching order. The studio comes first; each other app is a copyable `app.R` for one scenario, built with `bslib` cards (#177, #213).
 
-* Mascot menus fit short screens and keep keyboard focus on the visible control after placement changes (#208).
-* Minimise controls use a neutral glowing border, appear on hover or keyboard focus, and hide while the mascot menu is open; touch controls and restore remain reachable (#208).
-* Shiny examples show live theme and motion settings, a colour reset and a complete module menu (#208).
+* `mascot_gesture()` plays one movement once, without changing the mood: `"nod"` acknowledges an action and `"wave"` greets. Use it on its own or pass a plain name to `updateMascot()` (#196).
 
-* `mascot_popup_menu()` adds app-defined choices through `popup_menu`, with a Shiny input for every choice, optional keyboard controls and a held look-up pose while open (#143).
+* `mascot_gestures()` lists the gestures, with a description of each (#196).
 
-* `mascot()` and `updateMascot()` gain `motion` to stop animation or, with
-  `mascot_motion(swap = FALSE)`, make character changes instant. The visitor's
-  reduced-motion preference is always honoured (#203).
+* `mascot_mood()` chooses a mood for `mascot()` and `updateMascot()`; `"idle"` is the default (#190).
 
-* `mascot()` and `updateMascot()` accept brand colours, named colour lists and light/dark themes through `mascot_theme()`; experimental CSS variables follow the source page (#202).
-* `mascot_colour_roles()` lists each character's original colours and brand slots (#202).
+* `mascot_moods()` lists the built-in moods and what each means. Every character uses the same moods (#190).
 
-* `mascot()` and `updateMascot()` accept pixel or percentage sizes, with narrow-screen sizes through `mascot_size()` (#201).
-* `mascot_placement()` places mascots inline or in a floating corner, above Shiny notifications; optional minimise controls keep updates and messages ready for return (#201).
+* `mascot_motion()` turns off all animation with `animate = FALSE`, or only the character-swap transition with `swap = FALSE`. A visitor's reduced-motion preference is always honoured (#203).
 
-* `mascot()` and `updateMascot()` gain message bubbles with `mascot_bubble()`: escaped text, explicit HTML or
-  self-contained tags, a close button, and a timer that pauses on hover or focus; `duration = Inf` (or `NULL`) keeps a
-  message until it is closed. Space is reserved above the mascot, so a bubble never moves the page (#196).
-* `updateMascot()` gains one-off nod and wave gestures; `mascot_gesture()` chooses one and `mascot_gestures()` lists them (#196).
+* `mascot_placement()` sets where a mascot sits: a floating corner (`"bottom-right"` by default, `"top-left"`, `"top-right"` or `"bottom-left"`) or `"inline"` (#201, #223).
+  * A floating mascot sits 1rem from the window edges, above fixed navigation bars and below modals. A bottom-right mascot moves above Shiny notifications while they show (#201).
+  * `minimise = TRUE` (the default for floating mascots) shows a minimise control. It appears on hover or keyboard focus, stays visible on touch screens, and hides while the mascot menu is open. A minimised mascot becomes a round restore button; updates still apply and bubble countdowns pause until it is restored (#201, #208, #229).
+  * `drag = "snap"` lets visitors drag a floating mascot, or its minimised restore button, to the nearest corner on release. The new corner becomes its `position` (#220).
+  * *Experimental:* `drag = "free"` keeps the mascot where it is dropped, at least 1rem inside the window. The reported position and how to restore it may still change (#220, #224).
+  * In Shiny, each drop sets `input$<id>_position`: a corner name after a snap, or a list with `x` and `y` after a free drop (#220).
+  * Inline mascots ignore `minimise` and `drag`; an explicitly supplied value gives an informational message, not an error (#229).
 
-* `mascot()` adds Tessa to a page with a mood and a status line that follows the mood or shows your own text (#190).
-* `updateMascot()` changes a mascot's character, mood and status together, including inside Shiny modules (#190).
-* `mascot_character()`, `mascot_mood()` and `mascot_status()` describe a mascot's settings;
-  `mascot_moods()` lists the available moods and what they mean (#190).
+* `mascot_popup_menu()` adds a click menu of app-defined items. A chosen item sets `input$<id>_menu` to its ID, so choosing the same item twice triggers the input twice (#143, #213).
+  * `direction` is `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`. The menu opens from the mascot's on-screen position, and falls back to the opposite side when the chosen side has no room (#225).
+  * Opening the menu closes a speech bubble, and a new bubble closes an open menu (#225).
+  * Enter and Space toggle the focused menu control; the arrow keys, Home and End move between items, and Escape closes the menu (#213).
+  * While the menu is open, the mascot looks up. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208).
+
+* `mascot_preview()` (*experimental*) shows an offline page that compares moods, sizes and light and dark colours, with contrast findings on the page and in R (#175, #213). It starts no Shiny app and writes no files; printing the page opens the Viewer or a browser.
+  * Rows are moods; columns are the requested size, then 48, 32 and 24 CSS pixels (#175).
+  * Light and dark backgrounds are checked separately. Contrast warnings have the class `mascot_contrast` (#213).
+
+* `mascot_size()` sets the size in CSS pixels (at least 24) or as a percentage: of the parent width when inline, or of the window width when floating (#201).
+  * `small_screen` sets a different size for screens up to 575.98 pixels wide (#201).
+
+* `mascot_status()` sets the status text beside the mascot. The text is always plain, and `NULL` (the default) follows the mood (#190).
+
+* `mascot_studio()` (*experimental*) opens the studio, an app for exploring the package: a Guide to every exported function and argument, with explanations and the code to copy; a Code tray with UI, Server, App and Log tabs; and a canvas that shows the live mascot, or the page `mascot_preview()` returns when that function is selected (#38, #218).
+  * `view = "examples"` opens the bundled examples instead. `fn` starts on a named function's Guide entry, and `character` chooses the character (#38).
+  * `run = FALSE` returns the app without launching it.
+
+* `mascot_theme()` sets a character's colours and its light or dark mode (#202, #213).
+  * Colours you supply are kept exactly. Roles you leave out follow the character's declared leaders, such as `body`, in priority order; `mascot_colour_roles()` lists them (#213).
+  * `mode = "auto"` (the default) follows the page's light or dark mode, and uses light mode when the page gives no signal (#213).
+  * A chosen colour below 3:1 contrast with its background gives a warning and is kept. `bslib::bs_theme()` contrast checks use the light and dark backgrounds separately (#213).
+  * A `bslib::bs_theme()` fills a character's brand colours with its primary and secondary colours (#202).
+  * *Experimental:* `css` maps colour roles to CSS variables, such as `list(body = "--team-blue")`. The browser reads them, so R cannot check their values (#202).
+
+* `updateMascot()` changes a mascot from the Shiny server: its character, mood, status, bubble, size, placement, theme, motion, click menu and gesture. Arguments left as `NULL` stay unchanged (#190, #196, #201, #202, #203, #143).
+  * An update sent before the mascot appears is kept until it does. The latest state is kept for a later first mascot with the same ID (#193), and only the latest early gesture plays, once (#200).
+  * A new `placement` replaces any position the visitor dragged the mascot to (#220).
+  * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
+
+## Minor improvements and fixes
+
+* The mascot helper objects (`mascot_bubble()`, `mascot_theme()` and the others) print and format readably (#213).
+* `mascot()` without an `id` explains that the first argument is the character, and shows `mascot(id = "helper")` (#215).
+* Every size draws the full character. The separate small-size drawing from 0.0.2 is removed, because below 72 pixels it looked worse than the full face (#219).
+* The speech bubble follows the page's light or dark signal, like the drawing; a dark system setting alone keeps it light (#215).
+* The Shiny examples show live theme and motion settings, a colour reset and a complete module menu (#208). The long-task example runs its slow step with `shiny::ExtendedTask`, so the app stays responsive, and every example has a title, a one-line purpose and a light and dark switch (#215).
+* The Get started article walks through the helpers, modules and personalising Tessa, with runnable examples and screenshots of themes and menu actions (#177).
 
 # mascot 0.0.2
+
+Development milestone; not released on CRAN.
 
 * The drawing engine starts: Tessa, a hexagon character first drawn for an earlier project, is drawn in
   the browser exactly as there. No exported functions yet (#9, #24).
@@ -78,5 +98,7 @@
   nothing (#147).
 
 # mascot 0.0.1
+
+Development milestone; not released on CRAN.
 
 * First development version: the package skeleton, with no user-facing features yet (#23).

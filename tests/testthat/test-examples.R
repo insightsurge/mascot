@@ -513,16 +513,55 @@ describe("bundled example apps", {
     expect_true(app$get_js(guide_removed))
     app$wait_for_js("document.activeElement === window.studioGuideOpener")
     expect_true(app$get_js("document.activeElement === window.studioGuideOpener"))
-    # Every Guide is read-only, including gesture cards and diagrams supplied by nested outputs.
+    # Usage popover opens, closes on Escape, and closes before opening Guide.
+    usage_btn <- '[data-function="mascot_mood"] > bslib-popover > button'
+    app$click(selector = usage_btn)
+    app$wait_for_js("!!document.querySelector('.popover.show')")
+    expect_true(app$get_js("!!document.querySelector('.popover.show')"))
+    # Escape closes the popover
+    app$get_chromote_session()$Input$dispatchKeyEvent(
+      type = "keyDown",
+      key = "Escape",
+      code = "Escape",
+      windowsVirtualKeyCode = 27
+    )
+    app$get_chromote_session()$Input$dispatchKeyEvent(
+      type = "keyUp",
+      key = "Escape",
+      code = "Escape",
+      windowsVirtualKeyCode = 27
+    )
+    app$wait_for_js("!document.querySelector('.popover.show')")
+    expect_true(app$get_js("!document.querySelector('.popover.show')"))
+    # Reopen popover; opening Guide closes it first so nothing floats above the modal
+    app$click(selector = usage_btn)
+    app$wait_for_js("!!document.querySelector('.popover.show')")
+    app$click(selector = '[data-function="mascot_mood"] [data-event="open_guide"]')
+    app$wait_for_js("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=mascot_mood]')")
+    expect_true(app$get_js("!document.querySelector('.popover.show')"))
+    app$click("close_guide")
+    app$wait_for_js(guide_removed)
+
+    # Every Guide is read-only, showing only its own visuals.
     for (fn in setdiff(getNamespaceExports("mascot"), "mascot_mood")) {
       select_function(fn)
       app$click(selector = sprintf('[data-function="%s"] [data-event="open_guide"]', fn))
       app$wait_for_js(sprintf("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=%s]')", fn))
-      if (fn %in% c("mascot_size", "mascot_placement")) {
-        app$wait_for_js("!!document.querySelector('.pg-guide-modal #placement_map .pg-map')")
+      if (fn == "mascot_size") {
+        app$wait_for_js("!!document.querySelector('.pg-guide-modal #size_ruler .pg-ruler')")
+        expect_true(app$get_js("!document.querySelector('.pg-guide-modal #placement_map')"))
       }
-      if (fn %in% c("mascot_theme", "mascot_colour_roles")) {
+      if (fn == "mascot_placement") {
+        app$wait_for_js("!!document.querySelector('.pg-guide-modal #placement_map .pg-map')")
+        expect_true(app$get_js("!document.querySelector('.pg-guide-modal #size_ruler')"))
+      }
+      if (fn == "mascot_colour_roles") {
         app$wait_for_js("!!document.querySelector('.pg-guide-modal #roles_table .pg-table')")
+        expect_true(app$get_js("!document.querySelector('.pg-guide-modal .pg-flow')"))
+      }
+      if (fn == "mascot_theme") {
+        app$wait_for_js("!!document.querySelector('.pg-guide-modal .pg-flow')")
+        expect_true(app$get_js("!document.querySelector('.pg-guide-modal #roles_table')"))
       }
       expect_true(app$get_js(guide_read_only))
       app$click("close_guide")
@@ -828,11 +867,26 @@ describe("bundled example apps", {
       'popup_menu = c(about = "About the preview")',
       fixed = TRUE
     )
+    # Changing a control automatically updates the preview code via debounced rebuild
+    app$run_js("Shiny.setInputValue('preview_status', 'Auto build status');")
+    app$wait_for_js(
+      "document.getElementById('code_preview').textContent.includes('status = \"Auto build status\"')",
+      timeout = 15000
+    )
+    expect_match(
+      app$get_js("document.getElementById('code_preview').textContent"),
+      'status = "Auto build status"',
+      fixed = TRUE
+    )
     app$run_js("window.location.search = '?view=examples'")
     app$wait_for_js("!!document.querySelector('#example_code')", timeout = 15000)
     expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
     expect_identical(
       app$get_js("document.querySelectorAll('#examples_guide_card button, #examples_guide_card input').length"),
+      0L
+    )
+    expect_identical(
+      app$get_js("document.querySelectorAll('#examples_guide_card table').length"),
       0L
     )
   })
@@ -1093,6 +1147,32 @@ describe("studio state and built previews", {
         expect_false(grepl("<(input|select|textarea)\\b|data-event=", html, perl = TRUE), info = fn)
         buttons <- regmatches(html, gregexpr("<button\\b[^>]*>", html, perl = TRUE))[[1]]
         expect_true(all(grepl("data-copy=", buttons, fixed = TRUE)), info = fn)
+        # Verify no Guide contains a visual belonging to another function
+        if (fn == "mascot_size") {
+          expect_match(html, 'id="size_ruler"', fixed = TRUE)
+          expect_false(grepl('id="placement_map"', html, fixed = TRUE))
+        } else if (fn == "mascot_placement") {
+          expect_match(html, 'id="placement_map"', fixed = TRUE)
+          expect_false(grepl('id="size_ruler"', html, fixed = TRUE))
+        } else if (fn == "mascot_colour_roles") {
+          expect_match(html, 'id="roles_table"', fixed = TRUE)
+          expect_false(grepl("pg-flow", html, fixed = TRUE))
+        } else if (fn == "mascot_theme") {
+          expect_match(html, "pg-flow", fixed = TRUE)
+          expect_false(grepl('id="roles_table"', html, fixed = TRUE))
+        } else if (fn == "mascot_status") {
+          expect_match(html, "Status line or speech bubble?", fixed = TRUE)
+          expect_false(grepl("pg-timeline", html, fixed = TRUE))
+        } else if (fn == "mascot_bubble") {
+          expect_match(html, "pg-timeline", fixed = TRUE)
+          expect_false(grepl("Status line or speech bubble?", html, fixed = TRUE))
+        } else if (fn == "mascot") {
+          expect_match(html, "Two calls, one id", fixed = TRUE)
+          expect_false(grepl("What each kind of value does in updateMascot()", html, fixed = TRUE))
+        } else if (fn == "updateMascot") {
+          expect_match(html, "What each kind of value does in updateMascot()", fixed = TRUE)
+          expect_false(grepl("Two calls, one id", html, fixed = TRUE))
+        }
       }
       expect_false(grepl("<(button|input|select|textarea)\\b|data-event=", output$placement_map$html, perl = TRUE))
       guide_page <- get("guide_content", envir = env)
@@ -1143,6 +1223,9 @@ describe("studio state and built previews", {
       session$setInputs(preview_build = 1)
       expect_match(output$code_preview, 'mood = "happy"', fixed = TRUE)
       expect_false(identical(output$code_preview, built))
+      session$setInputs(preview_status = "Auto rebuild status")
+      session$elapse(500)
+      expect_match(output$code_preview, 'status = "Auto rebuild status"', fixed = TRUE)
     })
   })
 })

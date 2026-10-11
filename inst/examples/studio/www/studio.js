@@ -255,8 +255,54 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialise);
   else initialise();
 
+  function closeOpenPopovers() {
+    let closed = false;
+    for (const trigger of document.querySelectorAll(
+      'bslib-popover > button, [data-bs-toggle="popover"], [aria-describedby^="popover"]',
+    )) {
+      const inst = window.bootstrap?.Popover?.getInstance(trigger);
+      if (inst) {
+        inst.hide();
+        closed = true;
+      }
+    }
+    for (const popover of document.querySelectorAll('.popover.show')) {
+      const trigger = document.querySelector(`[aria-describedby="${popover.id}"]`);
+      const inst = trigger && window.bootstrap?.Popover?.getInstance(trigger);
+      if (inst) {
+        inst.hide();
+      } else {
+        popover.classList.remove('show');
+        popover.remove();
+      }
+      closed = true;
+    }
+    return closed;
+  }
+
+  function closeOpenTooltips() {
+    for (const trigger of document.querySelectorAll('[data-bs-toggle="tooltip"], .pg-index [aria-describedby]')) {
+      window.bootstrap?.Tooltip?.getInstance(trigger)?.hide();
+    }
+    for (const tooltip of document.querySelectorAll('.tooltip.show')) {
+      const trigger = document.querySelector(`[aria-describedby="${tooltip.id}"]`);
+      const inst = trigger && window.bootstrap?.Tooltip?.getInstance(trigger);
+      if (inst) {
+        inst.hide();
+      } else {
+        tooltip.classList.remove('show');
+        tooltip.remove();
+      }
+    }
+  }
+
   // Restore the opener after Shiny's modal cleanup, for either dismissal path.
   let guideOpener = null;
+  $(document).on('show.bs.modal', (event) => {
+    if (!event.target.classList.contains('pg-guide-modal')) return;
+    closeOpenPopovers();
+    closeOpenTooltips();
+  });
   $(document).on('hidden.bs.modal', (event) => {
     if (!event.target.classList.contains('pg-guide-modal')) return;
     const opener = guideOpener;
@@ -272,19 +318,34 @@
   document.addEventListener(
     'keydown',
     (event) => {
-      if (event.key !== 'Escape' || !document.querySelector('.pg-guide-modal.show')) return;
-      event.preventDefault();
-      event.stopPropagation();
-      window.Shiny.setInputValue('close_guide', 'escape', { priority: 'event' });
+      if (event.key !== 'Escape') return;
+      if (document.querySelector('.pg-guide-modal.show')) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.Shiny.setInputValue('close_guide', 'escape', { priority: 'event' });
+        return;
+      }
+      if (document.querySelectorAll('.popover.show').length > 0) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeOpenPopovers();
+      }
     },
     true,
   );
 
   // Buttons update the same mounted inputs as the inspector.
   document.addEventListener('click', (event) => {
+    if (!event.target.closest('.popover') && !event.target.closest('bslib-popover, [data-bs-toggle="popover"]')) {
+      closeOpenPopovers();
+    }
     const target = event.target.closest('[data-event]');
     if (target) {
-      if (target.dataset.event === 'open_guide') guideOpener = target;
+      if (target.dataset.event === 'open_guide') {
+        closeOpenPopovers();
+        closeOpenTooltips();
+        guideOpener = target;
+      }
       if (target.dataset.event === 'select_function') {
         selectedFunction = target.dataset.value;
         showControls();

@@ -278,7 +278,7 @@ selected_guide <- function(fn, character = formals(mascot::mascot)$character) {
   # Keep headings with their diagrams or tables; callouts can flow into their own column.
   sections <- list()
   content <- list()
-  for (piece in category_visual(the_guide(fn)$category, character)) {
+  for (piece in function_visual(fn, character)) {
     heading <- inherits(piece, "shiny.tag") && identical(piece$name, "h3")
     callout <- inherits(piece, "shiny.tag") &&
       !is.null(piece$attribs$class) &&
@@ -319,24 +319,32 @@ guide_content <- function(category) {
   info <- playground_categories[[category]]
   tagList(
     tags$p(class = "pg-lead", info$summary),
-    category_visual(category),
     tags$h3(class = "pg-section-title", "Functions"),
     lapply(category_functions(category), function_card)
   )
 }
 
-# ---- Visual explanations, one per category --------------------------------------------------
+# ---- Visual explanations, per function ------------------------------------------------------
 
-category_visual <- function(category, character = formals(mascot::mascot)$character) {
+function_visual <- function(fn, character = formals(mascot::mascot)$character) {
+  checkmate::assert_string(fn)
+  checkmate::assert_string(character)
   switch(
-    category,
-    look = visual_look(),
-    messages = visual_messages(),
-    motion = visual_motion(),
-    layout = visual_layout(),
-    colours = visual_colours(character),
-    menu = visual_menu(),
-    wiring = visual_wiring(),
+    fn,
+    mascot_mood = visual_mood(),
+    mascot_moods = visual_moods(),
+    mascot_status = visual_status(),
+    mascot_bubble = visual_bubble(),
+    mascot_motion = visual_motion(),
+    mascot_gesture = visual_gesture(),
+    mascot_gestures = visual_gestures(),
+    mascot_size = visual_size(),
+    mascot_placement = visual_placement(),
+    mascot_colour_roles = visual_colour_roles(character),
+    mascot_theme = visual_theme(character),
+    mascot_popup_menu = visual_menu(),
+    mascot = visual_mascot(),
+    updateMascot = visual_update_mascot(),
     NULL
   )
 }
@@ -377,7 +385,7 @@ mood_cards <- function(moods) {
   )
 }
 
-visual_look <- function() {
+visual_mood <- function() {
   tagList(
     tags$h3(class = "pg-section-title", paste("The", nrow(mascot_moods()), "moods")),
     data_table(mascot_moods()),
@@ -390,7 +398,14 @@ visual_look <- function() {
   )
 }
 
-visual_messages <- function() {
+visual_moods <- function() {
+  tagList(
+    tags$h3(class = "pg-section-title", paste("The", nrow(mascot_moods()), "moods")),
+    data_table(mascot_moods())
+  )
+}
+
+visual_status <- function() {
   rows <- data.frame(
     ` ` = c("Visible", "Screen readers", "Use it for", "Set it", "Clear it"),
     `Status line` = c(
@@ -411,7 +426,12 @@ visual_messages <- function() {
   )
   tagList(
     tags$h3(class = "pg-section-title", "Status line or speech bubble?"),
-    data_table(rows),
+    data_table(rows)
+  )
+}
+
+visual_bubble <- function() {
+  tagList(
     tags$h3(class = "pg-section-title", "How long a bubble stays"),
     div(
       class = "pg-timeline",
@@ -429,7 +449,6 @@ visual_messages <- function() {
 }
 
 visual_motion <- function() {
-  gestures <- mascot_gestures()
   cell <- function(title, body) div(class = "pg-grid-cell", tags$strong(title), div(class = "pg-muted", body))
   tagList(
     tags$h3(class = "pg-section-title", "What animate and swap do together"),
@@ -451,7 +470,13 @@ visual_motion <- function() {
       "When a visitor turns on reduced motion in their system settings, every change is instant, whatever
       you set here. To try it without changing your settings, use your browser's developer tools: in
       Chrome, Rendering, then \"Emulate CSS media feature prefers-reduced-motion\"."
-    ),
+    )
+  )
+}
+
+visual_gesture <- function() {
+  gestures <- mascot_gestures()
+  tagList(
     tags$h3(class = "pg-section-title", "Gestures"),
     div(
       class = "pg-cards",
@@ -467,22 +492,29 @@ visual_motion <- function() {
   )
 }
 
-visual_layout <- function() {
+visual_gestures <- visual_gesture
+
+visual_size <- function() {
   tagList(
     tags$h3(class = "pg-section-title", "Size"),
     uiOutput("size_ruler"),
-    tags$h3(class = "pg-section-title", "Placement"),
-    tags$p(
-      class = "pg-muted",
-      "A plain mascot() floats in the bottom-right corner. This studio starts the selected character inline with placement = \"inline\" so it stays on the canvas."
-    ),
-    uiOutput("placement_map"),
     div(
       class = "pg-callout",
       tags$strong("Small screens. "),
       "small_screen applies at 576 pixels wide or less. Narrow your browser window to see the mascot switch
       size."
     )
+  )
+}
+
+visual_placement <- function() {
+  tagList(
+    tags$h3(class = "pg-section-title", "Placement"),
+    tags$p(
+      class = "pg-muted",
+      "A plain mascot() floats in the bottom-right corner. This studio starts the selected character inline with placement = \"inline\" so it stays on the canvas."
+    ),
+    uiOutput("placement_map")
   )
 }
 
@@ -555,7 +587,19 @@ roles_table <- function(character) {
   )
 }
 
-visual_colours <- function(character) {
+visual_colour_roles <- function(character) {
+  tagList(
+    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s parts")),
+    tags$p(
+      class = "pg-muted",
+      "Leaders take the colours you give. Followers copy the first leader you set, made the same, lighter or
+      darker, unless you set them yourself. Contrast below 3:1 against the page is kept but warned about."
+    ),
+    uiOutput("roles_table")
+  )
+}
+
+visual_theme <- function(character = formals(mascot::mascot)$character) {
   brand <- studio_brand(character)
   tagList(
     tags$h3(class = "pg-section-title", "Which colour applies"),
@@ -579,14 +623,7 @@ visual_colours <- function(character) {
       div(class = "pg-flow-step", tags$code("bs_theme(secondary =)")),
       div(class = "pg-flow-arrow", "\u2192"),
       div(class = "pg-flow-step", tags$code(brand$secondary), div("and its followers"))
-    ),
-    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s parts")),
-    tags$p(
-      class = "pg-muted",
-      "Leaders take the colours you give. Followers copy the first leader you set, made the same, lighter or
-      darker, unless you set them yourself. Contrast below 3:1 against the page is kept but warned about."
-    ),
-    uiOutput("roles_table")
+    )
   )
 }
 
@@ -617,7 +654,7 @@ visual_menu <- function() {
   )
 }
 
-visual_wiring <- function() {
+visual_mascot <- function() {
   tagList(
     tags$h3(class = "pg-section-title", "Two calls, one id"),
     div(
@@ -647,7 +684,12 @@ visual_wiring <- function() {
         div(class = "pg-muted", "module server"),
         code_block("updateMascot(\"helper\", mood = \"happy\")")
       )
-    ),
+    )
+  )
+}
+
+visual_update_mascot <- function() {
+  tagList(
     tags$h3(class = "pg-section-title", "What each kind of value does in updateMascot()"),
     data_table(data.frame(
       `You pass` = c("nothing (NULL)", "an empty helper", "a value"),

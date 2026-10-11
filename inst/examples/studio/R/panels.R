@@ -125,6 +125,33 @@ panel_messages <- function() {
       class = "pg-actions",
       actionButton("bubble_show", "Show bubble", class = "btn-primary btn-sm"),
       actionButton("bubble_clear", "Clear bubble", class = "btn-outline-primary btn-sm")
+    ),
+    fn_heading("mascot_popup_menu"),
+    arg_field(
+      "mascot_popup_menu",
+      "items",
+      tagList(
+        input_switch("menu_on", "Show the menu", TRUE),
+        textAreaInput("menu_items", "One item per line: id = Label", menu_lines, rows = 4, resize = "vertical"),
+        uiOutput("menu_problem")
+      ),
+      note = div(class = "pg-note", "Open the menu with the button on the mascot, then pick an item.")
+    ),
+    arg_field(
+      "mascot_popup_menu",
+      "direction",
+      radioButtons(
+        "menu_direction",
+        NULL,
+        c(
+          "Auto (pick the side with room)" = "auto",
+          "Top" = "top",
+          "Bottom" = "bottom",
+          "Left" = "left",
+          "Right" = "right"
+        ),
+        selected = "auto"
+      )
     )
   )
 }
@@ -270,39 +297,6 @@ panel_colours <- function() {
   )
 }
 
-panel_menu <- function() {
-  inspector_category(
-    playground_categories$menu$title,
-    value = "menu",
-    fn_heading("mascot_popup_menu"),
-    arg_field(
-      "mascot_popup_menu",
-      "items",
-      tagList(
-        input_switch("menu_on", "Show the menu", TRUE),
-        textAreaInput("menu_items", "One item per line: id = Label", menu_lines, rows = 4, resize = "vertical"),
-        uiOutput("menu_problem")
-      ),
-      note = div(class = "pg-note", "Open the menu with the button on the mascot, then pick an item.")
-    ),
-    arg_field(
-      "mascot_popup_menu",
-      "direction",
-      radioButtons(
-        "menu_direction",
-        NULL,
-        c(
-          "Auto (pick the side with room)" = "auto",
-          "Top" = "top",
-          "Bottom" = "bottom",
-          "Left" = "left",
-          "Right" = "right"
-        ),
-        selected = "auto"
-      )
-    )
-  )
-}
 
 panel_wiring <- function() {
   inspector_category(

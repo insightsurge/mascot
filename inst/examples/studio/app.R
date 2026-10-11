@@ -60,7 +60,6 @@ studio_page <- function(character, fn) {
           panel_motion(),
           panel_layout(),
           panel_colours(),
-          panel_menu(),
           panel_wiring(),
           panel_studio(),
           panel_views()
@@ -266,11 +265,17 @@ preview_page <- function(character) {
         "popup_menu",
         textAreaInput("preview_menu_items", "One item per line: id = Label", "", rows = 3)
       ),
-      actionButton("preview_build", "Build the preview", class = "btn-primary")
+      actionButton("preview_build", "Rebuild", class = "btn-outline-primary btn-sm")
     ),
     card(
       full_screen = TRUE,
-      card_header("The preview page"),
+      card_header(
+        div(
+          class = "d-flex justify-content-between align-items-center w-100",
+          tags$span("The preview page"),
+          uiOutput("preview_status_badge", inline = TRUE)
+        )
+      ),
       div(
         class = "pg-code-wrap",
         code_output("code_preview"),
@@ -289,11 +294,7 @@ examples_page <- layout_columns(
     id = "examples_guide_card",
     full_screen = FALSE,
     card_header("Guide"),
-    card_body(
-      guide_content("examples"),
-      tags$h3(class = "pg-section-title", "The examples"),
-      data_table(examples)
-    )
+    card_body(guide_content("examples"))
   ),
   card(
     full_screen = TRUE,
@@ -1088,31 +1089,90 @@ preview_server <- function(input, output, session) {
     )
     Filter(Negate(is.null), args)
   })
+  preview_inputs <- reactive({
+    req(input$preview_character)
+    list(
+      character = input$preview_character,
+      mood = input$preview_mood,
+      status = input$preview_status,
+      bubble = input$preview_bubble,
+      size = input$preview_size,
+      placement = input$preview_placement,
+      theme_source = input$preview_theme_source,
+      colours = preview_colours(),
+      motion = input$preview_motion,
+      menu_items = input$preview_menu_items
+    )
+  })
+  debounced_preview_inputs <- debounce(preview_inputs, 400)
+  is_building <- reactiveVal(FALSE)
+  last_built_call <- reactiveVal(NULL)
+
+  observeEvent(
+    preview_inputs(),
+    {
+      if (preview_request() > 0) {
+        is_building(TRUE)
+      }
+    },
+    ignoreInit = TRUE
+  )
+
+  observeEvent(
+    debounced_preview_inputs(),
+    {
+      if (preview_request() > 0) {
+        args <- tryCatch(preview_call(), error = function(e) NULL)
+        if (!is.null(args) && !identical(args, last_built_call())) {
+          preview_request(preview_request() + 1)
+        } else {
+          is_building(FALSE)
+        }
+      }
+    },
+    ignoreInit = TRUE
+  )
+
+  output$preview_status_badge <- renderUI({
+    if (is_building()) {
+      tags$span(class = "badge text-bg-secondary pg-building", "Building\u2026")
+    }
+  })
+
   output$code_preview <- renderText({
     req(preview_request() > 0)
     preview()$code
   })
-  # This view builds on its first visit; the button builds a new preview.
+  # This view builds on its first visit; the button forces an immediate rebuild.
   preview_request <- reactiveVal(0)
-  observeEvent(input$preview_build, preview_request(preview_request() + 1))
+  observeEvent(input$preview_build, {
+    is_building(TRUE)
+    preview_request(preview_request() + 1)
+  })
   observeEvent(input$tabs, {
     if (input$tabs == "preview" && preview_request() == 0) preview_request(1)
   })
   preview <- eventReactive(preview_request(), {
     req(preview_request() > 0)
-    args <- preview_call()
+    args <- tryCatch(preview_call(), error = function(e) e)
+    if (inherits(args, "error")) {
+      is_building(FALSE)
+      return(list(error = cli::ansi_strip(conditionMessage(args)), code = "# Review preview arguments"))
+    }
     page <- withCallingHandlers(
       tryCatch(eval(as.call(c(as.name("mascot_preview"), args))), error = function(e) e),
       warning = function(w) {
         if (inherits(w, "mascot_contrast")) invokeRestart("muffleWarning")
       }
     )
+    is_building(FALSE)
     if (inherits(page, "error")) {
       return(list(error = cli::ansi_strip(conditionMessage(page)), code = format_call("mascot_preview", args)))
     }
     preview_count(isolate(preview_count()) + 1)
     file <- sprintf("preview-%s-%d.html", session$token, isolate(preview_count()))
     htmltools::save_html(page, file.path(preview_dir, file), libdir = "lib")
+    last_built_call(args)
     list(file = file, contrast = attr(page, "contrast"), code = format_call("mascot_preview", args))
   })
   output$preview_frame <- renderUI({

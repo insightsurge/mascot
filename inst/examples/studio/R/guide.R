@@ -9,8 +9,8 @@ playground_categories <- list(
     summary = "Who is drawn and how they feel. A mood changes the face, the pose and the default status text."
   ),
   messages = list(
-    title = "Messages",
-    summary = "Words beside the mascot: a status line that is always there, and a speech bubble for news."
+    title = "Messages and menu",
+    summary = "Words and actions on the mascot: a status line that is always there, a speech bubble for news, and a popup menu."
   ),
   motion = list(
     title = "Motion and gestures",
@@ -23,10 +23,6 @@ playground_categories <- list(
   colours = list(
     title = "Colours and theme",
     summary = "Recolour any part of the character, follow your app's brand, and choose light or dark."
-  ),
-  menu = list(
-    title = "Popup menu",
-    summary = "A small menu on the mascot. Each choice arrives in your server as an ordinary Shiny input."
   ),
   wiring = list(
     title = "Wiring it in Shiny",
@@ -255,7 +251,7 @@ playground_guide <- list(
     )
   ),
   mascot_popup_menu = list(
-    category = "menu",
+    category = "messages",
     what = "Adds a small menu to the mascot; each choice becomes a Shiny input.",
     returns = "A mascot_popup_menu object.",
     args = list(
@@ -335,7 +331,7 @@ playground_guide <- list(
         "A menu on the mascot.",
         accepts = c("named character vector", "mascot_popup_menu()"),
         null = "no menu",
-        try = "menu"
+        try = "messages"
       )
     )
   ),
@@ -404,7 +400,7 @@ playground_guide <- list(
         "Set the menu, or mascot_popup_menu() to remove it.",
         accepts = c("named character vector", "mascot_popup_menu()"),
         null = "unchanged",
-        try = "menu"
+        try = "messages"
       ),
       ... = guide_arg(
         "Must be empty: it catches misspelt argument names.",
@@ -502,7 +498,7 @@ playground_guide <- list(
 )
 
 playground_guide$mascot_studio <- list(
-  category = "wiring",
+  category = "examples",
   what = "Opens the studio with your chosen view, function and character.",
   returns = "With run = FALSE, a Shiny app object; otherwise the result after the app stops.",
   args = list(

@@ -2240,6 +2240,46 @@ describe("mascot.host gaze (#241)", {
       return [{lookY:-1},{lookY:1},{look:-1},{look:1}].every(p=>draw({mood:'idle',...p})===rest); })()"
     expect_true(js(still))
   })
+  it("re-aims the gaze when the character changes while the menu is open", {
+    skip_without_chrome()
+    js <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-left", drag = "free"),
+      size = 120,
+      viewport = c(800, 800)
+    )
+    js(spy_poses_js)
+    js(drag_js)
+    js("dragBy(el.querySelector('canvas'), 300, 300)")
+    js("el.querySelector('.mascot-menu-toggle').click()")
+    expect_identical(js("poses.at(-1).look"), -1L)
+    # Given an open menu on the left, when a mirrored character replaces the drawn one, the look is mirrored too.
+    js(
+      "const ch=structuredClone(mascot.readCharacter('tessa'));ch.id='mirror';ch.pose={...ch.pose,flip:-1};
+      mascot.host.receive({id:'a',patch:{character:{id:'mirror',name:'Mirror',json:JSON.stringify(ch)}}});"
+    )
+    expect_true(js("mascot.host.state(el).menuOpen"))
+    expect_identical(js("mascot.host.state(el).gaze"), "left")
+    expect_identical(js("poses.at(-1).look"), 1L)
+  })
+  it("draws eyes without visible pupils exactly the same with or without the gaze, in the real host", {
+    skip_without_chrome()
+    for (mood in c("happy", "idle")) {
+      js <- local_host_page(bubble = mascot_bubble("Read this", Inf), placement = "inline")
+      frames <- js(sprintf(
+        "(() => {const el=document.getElementById('a'),canvas=el.querySelector('canvas');
+        mascot.host.receive({id:'a',patch:{mood:'%s'}});
+        const looking=canvas.toDataURL(),gaze=mascot.host.state(el).gaze;
+        mascot.host.receive({id:'a',patch:{bubble:{clear:true}}});
+        return {gaze,same:canvas.toDataURL()===looking};})()",
+        mood
+      ))
+      expect_identical(frames$gaze, "top")
+      # Happy eyes are closed arcs, so the held gaze changes nothing; open eyes show it.
+      expect_identical(frames$same, mood == "happy", info = mood)
+    }
+  })
   it("mirrors the horizontal look for a mirrored character, so it still faces the menu", {
     skip_without_chrome()
     js <- local_host_page(

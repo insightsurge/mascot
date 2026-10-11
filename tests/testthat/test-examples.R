@@ -1725,72 +1725,136 @@ describe("studio safeguards (#248)", {
     # Each row: the inputs to set (in order; a click is a count), the field of the update it changes, the code it
     # adds, and the milliseconds a debounced control waits. `code = NA` marks a one-off event (gestures): it is
     # sent and appears in the Last tab, never in the UI code.
-    row <- function(inputs, field, code, wait = 0, ui = TRUE) {
+    # `sent` checks this control's own value in the update, beyond any companion input the row also sets.
+    row <- function(inputs, field, code, sent, wait = 0, ui = TRUE) {
       checkmate::assert_list(inputs, min.len = 1)
-      list(inputs = inputs, field = field, code = code, wait = wait, ui = ui)
+      checkmate::assert_function(sent)
+      list(inputs = inputs, field = field, code = code, sent = sent, wait = wait, ui = ui)
     }
     show <- function(...) list(list(...), list(bubble_show = 1))
     rows <- list(
-      mood = row(list(list(mood = "happy")), "mood", 'mood = "happy"'),
-      status_text = row(list(list(status_text = "Saving")), "status", 'status = "Saving"', wait = 700),
-      bubble_text = row(show(bubble_text = "Hi there"), "bubble", 'bubble = "Hi there"'),
-      bubble_html = row(show(bubble_text = "<b>Hi</b>", bubble_html = TRUE), "bubble", 'HTML("<b>Hi</b>")'),
-      bubble_duration = row(show(bubble_text = "Hi", bubble_duration = 9), "bubble", "duration = 9"),
-      bubble_forever = row(show(bubble_text = "Hi", bubble_forever = TRUE), "bubble", "duration = Inf"),
-      bubble_closable = row(show(bubble_text = "Hi", bubble_closable = FALSE), "bubble", "closable = FALSE"),
-      animate = row(list(list(animate = FALSE)), "motion", "motion = FALSE"),
-      swap = row(list(list(swap = FALSE)), "motion", "swap = FALSE"),
-      gesture = row(list(list(gesture = "wave")), "gesture", 'gesture = "wave"', ui = FALSE),
-      size_px = row(list(list(size_px = 120)), "size", "size = 120"),
-      size_unit = row(list(list(size_unit = "pct", size_pct = 40)), "size", 'size = "40%"'),
-      size_pct = row(list(list(size_unit = "pct"), list(size_pct = 50)), "size", 'size = "50%"'),
-      small_on = row(list(list(small_on = TRUE)), "size", "small_screen = 72"),
-      small_px = row(list(list(small_on = TRUE, small_px = 48)), "size", "small_screen = 48"),
-      position = row(list(list(position = "top-left")), "placement", 'placement = "top-left"'),
-      minimise = row(list(list(position = "top-left", minimise = FALSE)), "placement", "minimise = FALSE"),
-      drag = row(list(list(position = "top-left", drag = "snap")), "placement", 'drag = "snap"'),
-      theme_source = row(list(list(theme_source = "bslib")), "theme", "bslib::bs_theme(", wait = 400),
+      mood = row(list(list(mood = "happy")), "mood", 'mood = "happy"', sent = function(p) identical(p$mood, "happy")),
+      status_text = row(
+        list(list(status_text = "Saving")),
+        "status",
+        'status = "Saving"',
+        wait = 700,
+        sent = function(p) identical(p$status$text, "Saving")
+      ),
+      bubble_text = row(show(bubble_text = "Hi there"), "bubble", 'bubble = "Hi there"', sent = function(p) {
+        identical(p$bubble$text, "Hi there")
+      }),
+      bubble_html = row(
+        show(bubble_text = "<b>Hi</b>", bubble_html = TRUE),
+        "bubble",
+        'HTML("<b>Hi</b>")',
+        sent = function(p) isTRUE(p$bubble$html)
+      ),
+      bubble_duration = row(
+        show(bubble_text = "Hi", bubble_duration = 9),
+        "bubble",
+        "duration = 9",
+        sent = function(p) identical(p$bubble$duration, 9)
+      ),
+      bubble_forever = row(
+        show(bubble_text = "Hi", bubble_forever = TRUE),
+        "bubble",
+        "duration = Inf",
+        sent = function(p) is.null(p$bubble$duration)
+      ),
+      bubble_closable = row(
+        show(bubble_text = "Hi", bubble_closable = FALSE),
+        "bubble",
+        "closable = FALSE",
+        sent = function(p) isFALSE(p$bubble$closable)
+      ),
+      animate = row(list(list(animate = FALSE)), "motion", "motion = FALSE", sent = function(p) {
+        isTRUE(p$motion$reduced)
+      }),
+      swap = row(list(list(swap = FALSE)), "motion", "swap = FALSE", sent = function(p) isFALSE(p$motion$swap)),
+      gesture = row(list(list(gesture = "wave")), "gesture", 'gesture = "wave"', ui = FALSE, sent = function(p) {
+        identical(p$gesture, "wave")
+      }),
+      size_px = row(list(list(size_px = 120)), "size", "size = 120", sent = function(p) identical(p$size$size, 120)),
+      size_unit = row(list(list(size_unit = "pct", size_pct = 40)), "size", 'size = "40%"', sent = function(p) {
+        identical(p$size$size, "40%")
+      }),
+      size_pct = row(list(list(size_unit = "pct"), list(size_pct = 50)), "size", 'size = "50%"', sent = function(p) {
+        identical(p$size$size, "50%")
+      }),
+      small_on = row(list(list(small_on = TRUE)), "size", "small_screen = 72", sent = function(p) {
+        identical(p$size$small_screen, 72)
+      }),
+      small_px = row(list(list(small_on = TRUE, small_px = 48)), "size", "small_screen = 48", sent = function(p) {
+        identical(p$size$small_screen, 48)
+      }),
+      position = row(list(list(position = "top-left")), "placement", 'placement = "top-left"', sent = function(p) {
+        identical(p$placement$position, "top-left")
+      }),
+      minimise = row(
+        list(list(position = "top-left", minimise = FALSE)),
+        "placement",
+        "minimise = FALSE",
+        sent = function(p) isFALSE(p$placement$minimise)
+      ),
+      drag = row(list(list(position = "top-left", drag = "snap")), "placement", 'drag = "snap"', sent = function(p) {
+        identical(p$placement$drag, "snap")
+      }),
+      theme_source = row(
+        list(list(theme_source = "bslib")),
+        "theme",
+        "bslib::bs_theme(",
+        wait = 400,
+        sent = function(p) length(p$theme$brand) == 2
+      ),
       theme_mode = row(
         list(list(theme_source = "mascot", light_body = "#1f6feb", theme_mode = "dark")),
         "theme",
         'mode = "dark"',
-        wait = 400
+        wait = 400,
+        sent = function(p) identical(p$theme$mode, "dark")
       ),
       light_body = row(
         list(list(theme_source = "mascot", light_body = "#1f6feb")),
         "theme",
         'light = list(body = "#1f6feb")',
-        wait = 400
+        wait = 400,
+        sent = function(p) identical(tolower(p$theme$light$body), "#1f6feb")
       ),
       dark_body = row(
         list(list(theme_source = "mascot", dark_body = "#9ec5fe")),
         "theme",
         'dark = list(body = "#9ec5fe")',
-        wait = 400
+        wait = 400,
+        sent = function(p) identical(tolower(p$theme$dark$body), "#9ec5fe")
       ),
       css_roles = row(
         list(list(theme_source = "mascot", css_roles = "body")),
         "theme",
         'css = list(body = "--studio-accent")',
-        wait = 400
+        wait = 400,
+        sent = function(p) identical(p$theme$css$body, "--studio-accent")
       ),
       menu_on = row(
         list(list(menu_on = TRUE, menu_items = "about = About")),
         "popup_menu",
         'popup_menu = c(about = "About")',
-        wait = 700
+        wait = 700,
+        sent = function(p) identical(p$popup_menu$items$about, "About")
       ),
       menu_items = row(
         list(list(menu_on = TRUE, menu_items = "help = Help")),
         "popup_menu",
         'c(help = "Help")',
-        wait = 700
+        wait = 700,
+        sent = function(p) identical(p$popup_menu$items$help, "Help")
       ),
       menu_direction = row(
         list(list(menu_on = TRUE, menu_items = "about = About", menu_direction = "top")),
         "popup_menu",
         'direction = "top"',
-        wait = 700
+        wait = 700,
+        sent = function(p) identical(p$popup_menu$direction, "top")
       )
     )
     # mascot_preview() controls change the call that builds the preview, not an update.
@@ -1848,6 +1912,7 @@ describe("studio safeguards (#248)", {
         expect_gt(after$revision, before$revision %||% 0L)
         expect_identical(after$fields[[case$field]], after$revision, info = name)
         expect_false(identical(after$patch[[case$field]], before$patch[[case$field]]), info = name)
+        expect_true(case$sent(after$patch), info = name)
         # The call the studio ran (its Last tab) and the generated UI code.
         expect_match(last_call(), case$code, fixed = TRUE, info = name)
         if (case$ui) {

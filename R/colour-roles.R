@@ -1,9 +1,10 @@
 #' List a character's colour roles
 #'
-#' Roles are written in snake case in R. Colours are the character's own colours,
-#' before any theme is applied. Follow rules list leaders in priority order.
-#' A supplied role wins; otherwise the first supplied or filled leader is used.
-#' With no available leader, the role keeps its original colour.
+#' Lists a character's colour roles (its colour parts) with their own colours,
+#' before any theme is applied. Roles are written in snake case in R. Follow
+#' rules list leaders in priority order. A colour you supply for a role always
+#' wins; otherwise the role follows the first supplied or filled leader. With no
+#' available leader, the role keeps its original colour.
 #' @param character A non-empty built-in character name, defaulting to `"tessa"`.
 #'   `NULL` is not accepted.
 #' @returns A data frame with character columns `role`, `colour`, `follows`
@@ -34,7 +35,7 @@ mascot_colour_roles <- function(character = "tessa") {
   )
 }
 
-#' Read the character's colour metadata from the same description as the engine
+#' Read the character's colour metadata from the same description the mascot uses
 #' @noRd
 character_colour_data <- function(id) {
   checkmate::assert_choice(id, builtin_characters()$id)

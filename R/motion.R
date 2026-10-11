@@ -1,10 +1,12 @@
-#' Set a mascot's motion
+#' Control how the mascot animates
 #'
-#' Stop all animation or just the character-swap animation. The visitor's
-#' reduced-motion preference is always honoured, even when `animate = TRUE`.
-#' Idle breathing and blinking stop five seconds after the last action.
+#' Turn off all animations or only the transition when swapping characters.
+#' If a visitor prefers reduced motion in their system settings, mascot always
+#' respects that choice, even when `animate = TRUE`. Idle breathing and blinking
+#' stop five seconds after the last action.
 #' @param animate A logical flag, defaulting to `TRUE`, to allow animation when
-#'   the visitor allows motion. `FALSE` makes changes instant. `NULL` is not accepted.
+#'   the visitor allows motion. `FALSE` makes changes instant. `NULL` is not
+#'   accepted.
 #' @param swap A logical flag, defaulting to `TRUE`, to animate character changes.
 #'   `FALSE` makes character changes instant while moods can still animate.
 #'   With `animate = FALSE`, this setting has no effect. `NULL` is not accepted.
@@ -83,7 +85,7 @@ motion_problem <- function(x) {
   )
 }
 
-#' Accept a motion flag or helper and map to the engine's settings
+#' Accept a motion flag or helper and map it to the mascot's motion settings
 #' @noRd
 as_motion_arg <- function(x, call) {
   checkmate::assert_environment(call)

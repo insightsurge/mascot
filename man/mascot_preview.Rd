@@ -2,7 +2,7 @@
 % Please edit documentation in R/preview.R
 \name{mascot_preview}
 \alias{mascot_preview}
-\title{Check a mascot's look in light and dark}
+\title{Preview a mascot in light and dark mode}
 \usage{
 mascot_preview(
   character = "tessa",
@@ -27,14 +27,14 @@ to show every mood from \code{\link[=mascot_moods]{mascot_moods()}}.}
 default) follows the mood. Text is escaped, including \code{\link[htmltools:HTML]{htmltools::HTML()}}.}
 
 \item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
-\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the
-default) shows no bubble. A string uses the helper's five-second duration
-and close button. Plain text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply
-HTML. Tags with dependencies or head content are not supported.}
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) shows no bubble. A string
+uses the helper's five-second duration and close button. Plain text is
+escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply HTML. Tags with dependencies or
+head content are not supported.}
 
-\item{size}{A finite number of CSS pixels (at least \code{24}), a positive percentage
-string, or \code{\link[=mascot_size]{mascot_size()}} object. Defaults to \code{160}. Percentages follow the
-comparison cell width. \code{NULL} is not accepted.}
+\item{size}{A finite number of CSS pixels (at least \code{24}), a positive
+percentage string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} object. Defaults to
+\code{160}. Percentages follow the comparison cell width. \code{NULL} is not accepted.}
 
 \item{placement}{A placement shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}}
 object, defaulting to \code{"inline"}. Accepted so the same arguments as
@@ -57,32 +57,34 @@ inactive on a static page).}
 \value{
 A browsable \code{htmltools} tag list. Its \code{contrast} attribute is a data
 frame with \code{role}, \code{colour}, \code{background}, \code{ratio} and \code{mode} columns, one row
-per supplied colour below 3:1. No findings gives a zero-row data frame with
-the same columns. Colours are kept; one combined warning is issued in R.
+per supplied colour below 3:1. With no findings it is a zero-row data frame
+with the same columns. Colours are kept unchanged; one combined warning is
+issued in R.
 }
 \description{
-Compare moods and sizes on one offline page. Constructing the page
-starts no Shiny app, opens no viewer and writes no files. Printing the returned
-page opens the available Viewer or browser. It can also be embedded in an
-R Markdown or Quarto document.
+Compare moods and sizes on a single offline page. Creating the page starts no
+Shiny app, opens no viewer and writes no files. Printing the returned page
+opens the available Viewer or browser. It can also be embedded in an R Markdown
+or Quarto document.
 }
 \details{
-Rows are moods; columns are the requested \code{size}, then 48, 32 and 24 CSS pixels.
-The first column preserves percentage and \code{small_screen} settings; fixed
-comparison columns do not change on narrow screens. Every size draws the full
-character. Each cell keeps its status text, since small faces lose fine detail.
+\strong{Comparison grid.} Rows are moods; columns are the requested \code{size}, then
+48, 32 and 24 CSS pixels. The first column preserves percentage and
+\code{small_screen} settings; fixed comparison columns do not change on narrow
+screens. Every size draws the full character. Each cell keeps its status text,
+since small faces lose fine detail.
 
-Both supplied theme maps are shown, even if the theme selected one mode.
-Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's \code{bg} and
-\code{body-bg-dark}; text uses \code{fg} and \code{body-color-dark}.
-Only supplied colour roles are checked, using the same contrast calculation
-as \code{\link[=mascot]{mascot()}}. Experimental CSS variables are resolved in the browser: their
-warnings appear in its console and cannot be included in the R attribute.
+\strong{Theme and contrast.} Both supplied theme maps are shown, even if the theme
+selected one mode. Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's
+\code{bg} and \code{body-bg-dark}; text uses \code{fg} and \code{body-color-dark}. Only supplied
+colour roles are checked, using the same contrast calculation as \code{\link[=mascot]{mascot()}}.
+Experimental CSS variables are worked out in the browser: their warnings appear
+in its console, outside the R \code{contrast} attribute.
 
-Floating \code{placement} is checked then shown inline for comparison; the preview
-ignores floating so every cell remains in its grid. Click menus are checked
-but remain inactive on this static page. Empty bubble space is omitted here;
-a supplied bubble keeps its space and normal timing.
+\strong{Placement, menus and bubbles.} Floating \code{placement} is checked, then shown
+inline for comparison, so every cell remains in its grid. Click menus are
+checked but remain inactive on this static page. Empty bubble space is omitted
+here; a supplied bubble keeps its normal space and timing.
 }
 \examples{
 page <- mascot_preview(mood = "happy", size = 96)

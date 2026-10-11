@@ -13,12 +13,12 @@ mood_table <- function() {
   )
 }
 
-#' List the mascot moods
+#' List the built-in mascot moods
 #'
 #' Every character uses these moods, in this order.
 #' @returns A data frame with character columns `name` and `description`.
 #' @family mascot helpers
-#' @seealso [mascot()]
+#' @seealso [mascot()], [mascot_mood()]
 #' @export
 #' @examples
 #' mascot_moods()
@@ -28,7 +28,8 @@ mascot_moods <- function() {
 
 #' Choose a mascot mood
 #'
-#' Use this helper or a plain mood name in [mascot()] and [updateMascot()].
+#' Set how the mascot feels and looks. You can use this helper or a plain mood
+#' name in [mascot()] and [updateMascot()].
 #' @param name A non-empty string naming a mood from [mascot_moods()]. Defaults
 #'   to `"idle"`; `NULL` is not accepted.
 #' @returns A `mascot_mood` object with a `name` element.

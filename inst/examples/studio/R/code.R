@@ -1,0 +1,226 @@
+# Each setting is kept as R code, not as a value: the studio evaluates the code to update
+# the mascot and prints the same code for you to copy. Every builder returns two forms: the
+# plain shortcut ("happy") and the helper (mascot_mood("happy")). Both give the same mascot.
+
+code_pair <- function(short, helper = short) {
+  list(short = short, helper = helper)
+}
+
+# c(finish = "Finish review") or list(body = "#1f6feb") as a call, from a named vector.
+named_call <- function(fn, values) {
+  as.call(c(as.name(fn), as.list(values)))
+}
+
+helper_call <- function(fn, ...) {
+  args <- Filter(Negate(is.null), list(...))
+  as.call(c(list(str2lang(fn)), args))
+}
+
+code_character <- function(name) {
+  code_pair(name, helper_call("mascot_character", name))
+}
+
+code_mood <- function(name) {
+  code_pair(name, helper_call("mascot_mood", name))
+}
+
+code_status <- function(text) {
+  if (!nzchar(trimws(text))) {
+    return(code_pair(quote(mascot_status())))
+  }
+  code_pair(text, helper_call("mascot_status", text))
+}
+
+code_bubble <- function(text, html, duration, closable) {
+  if (!nzchar(trimws(text))) {
+    return(code_pair(quote(mascot_bubble())))
+  }
+  value <- if (html) call("HTML", text) else text
+  helper <- helper_call(
+    "mascot_bubble",
+    value,
+    duration = if (!identical(duration, 5)) duration,
+    closable = if (!closable) FALSE
+  )
+  code_pair(if (length(helper) == 2) value else helper, helper)
+}
+
+code_gesture <- function(name) {
+  code_pair(name, helper_call("mascot_gesture", name))
+}
+
+code_motion <- function(animate, swap) {
+  helper <- helper_call("mascot_motion", animate = if (!animate) FALSE, swap = if (!swap) FALSE)
+  code_pair(if (swap) animate else helper, helper)
+}
+
+code_size <- function(size, small_screen) {
+  helper <- helper_call(
+    "mascot_size",
+    size,
+    small_screen = small_screen
+  )
+  code_pair(if (length(helper) == 2) size else helper, helper)
+}
+
+code_placement <- function(position = "bottom-right", minimise = TRUE, drag = FALSE) {
+  checkmate::assert_choice(position, c("inline", "top-left", "top-right", "bottom-left", "bottom-right"))
+  checkmate::assert_flag(minimise)
+  checkmate::assert(checkmate::check_flag(drag), checkmate::check_choice(drag, c("snap", "free")), .var.name = "drag")
+  # An inline mascot ignores minimise and drag (and says so), so the code leaves them out.
+  if (position == "inline") {
+    minimise <- TRUE
+    drag <- FALSE
+  }
+  extras <- list(minimise = if (!minimise) FALSE, drag = if (!identical(drag, FALSE)) drag)
+  helper <- helper_call(
+    "mascot_placement",
+    if (!identical(position, "bottom-right")) position,
+    minimise = extras$minimise,
+    drag = extras$drag
+  )
+  fields <- c(list(position = position), extras)
+  short <- if (!minimise || !identical(drag, FALSE)) named_call("list", Filter(Negate(is.null), fields)) else position
+  code_pair(short, helper)
+}
+
+code_menu <- function(items, direction = "auto") {
+  vector <- if (length(items)) named_call("c", items)
+  helper <- helper_call(
+    "mascot_popup_menu",
+    vector,
+    direction = if (!identical(direction, "auto")) direction
+  )
+  short <- if (length(items) && identical(direction, "auto")) vector else helper
+  code_pair(short, helper)
+}
+
+code_theme <- function(source, light, dark, mode, css_roles, primary, secondary) {
+  if (source == "own") {
+    return(code_pair(quote(mascot_theme())))
+  }
+  if (source == "bslib") {
+    return(code_pair(helper_call("bslib::bs_theme", primary = primary, secondary = secondary)))
+  }
+  css <- if (length(css_roles)) stats::setNames(rep("--studio-accent", length(css_roles)), css_roles)
+  helper <- helper_call(
+    "mascot_theme",
+    light = if (length(light)) named_call("list", light),
+    dark = if (length(dark)) named_call("list", dark),
+    mode = if (mode != "auto") mode,
+    css = if (length(css)) named_call("list", css)
+  )
+  # A plain named list uses one set of colours in both modes.
+  same <- length(light) && identical(light, dark) && mode == "auto" && !length(css)
+  code_pair(if (same) named_call("list", light) else helper, helper)
+}
+
+# Raw strings avoid escaped quotes in copied HTML and other user text. R permits
+# paired (), [] or {} delimiters with any number of dashes outside the brackets.
+format_string <- function(text) {
+  checkmate::assert_string(text, na.ok = FALSE)
+  if (!grepl('"', text, fixed = TRUE)) {
+    return(deparse1(text, width.cutoff = 500))
+  }
+  dash <- ""
+  while (grepl(paste0(")", dash, '"'), text, fixed = TRUE)) {
+    dash <- paste0(dash, "-")
+  }
+  paste0('r"', dash, "(", text, ")", dash, '"')
+}
+
+# Lays out a call on one line when it fits in 80 characters, else one argument per line,
+# nesting the same way for long inner calls such as mascot_theme(light = list(...)).
+format_expr <- function(expr, indent = 0) {
+  if (is.character(expr)) {
+    values <- vapply(expr, format_string, character(1))
+    return(if (length(values) == 1) values else paste0("c(", paste(values, collapse = ", "), ")"))
+  }
+  if (!is.call(expr) || length(expr) < 2) {
+    return(deparse1(expr, width.cutoff = 500))
+  }
+  args <- as.list(expr)[-1]
+  names <- if (is.null(names(args))) rep("", length(args)) else names(args)
+  parts <- vapply(
+    seq_along(args),
+    function(i) {
+      value <- format_expr(args[[i]], indent + 2)
+      if (nzchar(names[i])) paste(arg_name(names[i]), "=", value) else value
+    },
+    character(1)
+  )
+  fn <- deparse1(expr[[1]])
+  one_line <- paste0(fn, "(", paste(parts, collapse = ", "), ")")
+  if (!grepl("\n", one_line, fixed = TRUE) && indent + nchar(one_line) <= 80) {
+    return(one_line)
+  }
+  pad <- strrep(" ", indent + 2)
+  paste0(fn, "(\n", pad, paste(parts, collapse = paste0(",\n", pad)), "\n", strrep(" ", indent), ")")
+}
+
+# A name as R needs it on the left of "=": finish-review becomes `finish-review`.
+arg_name <- function(name) {
+  deparse1(as.name(name), backtick = TRUE)
+}
+
+format_call <- function(fn, args) {
+  format_expr(as.call(c(list(str2lang(fn)), args)))
+}
+
+# Picks the shortcut or helper form of every setting.
+pick_style <- function(pairs, style) {
+  lapply(pairs, function(pair) pair[[style]])
+}
+
+# The observeEvent() that answers the menu: one branch per item, for the app to fill in.
+menu_handler_code <- function(items) {
+  if (!length(items)) {
+    return(NULL)
+  }
+  branches <- vapply(
+    names(items),
+    function(id) sprintf("    %s = {\n      # What \"%s\" does in your app.\n    }", arg_name(id), items[[id]]),
+    character(1)
+  )
+  paste0(
+    "observeEvent(input$helper_menu, {\n  switch(\n    input$helper_menu,\n",
+    paste(branches, collapse = ",\n"),
+    "\n  )\n})"
+  )
+}
+
+# Indent source lines while preserving every line inside a multiline string token.
+indent_code <- function(text, by) {
+  checkmate::assert_string(text)
+  checkmate::assert_count(by)
+  tokens <- utils::getParseData(parse(text = text, keep.source = TRUE))
+  strings <- tokens[tokens$token == "STR_CONST" & tokens$line2 > tokens$line1, ]
+  protected <- unlist(Map(function(first, last) seq.int(first + 1L, last), strings$line1, strings$line2))
+  lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+  indent <- !seq_along(lines) %in% protected
+  lines[indent] <- paste0(strrep(" ", by), lines[indent])
+  paste(lines, collapse = "\n")
+}
+
+# A whole app to paste into app.R: user settings in the UI, one server update to try.
+whole_app_code <- function(ui, menu_handler, packages, css_value = NULL) {
+  checkmate::assert_string(ui)
+  checkmate::assert_string(menu_handler, null.ok = TRUE)
+  checkmate::assert_character(packages, min.chars = 1, any.missing = FALSE)
+  checkmate::assert_string(css_value, null.ok = TRUE)
+  paste0(
+    paste0("library(", packages, ")", collapse = "\n"),
+    "\n\nui <- fluidPage(\n",
+    if (!is.null(css_value)) sprintf("  tags$style(\":root { --studio-accent: %s; }\"),\n", css_value),
+    indent_code(ui, 2),
+    ",\n",
+    "  actionButton(\"celebrate\", \"Celebrate\")\n)\n\n",
+    "server <- function(input, output, session) {\n",
+    "  # One button demonstrates a single server update.\n",
+    "  observeEvent(input$celebrate, {\n",
+    '    updateMascot("helper", mood = "celebrating", bubble = "Review complete.")',
+    "\n  })\n",
+    if (!is.null(menu_handler)) paste0(indent_code(menu_handler, 2), "\n"),
+    "}\n\nshinyApp(ui, server)"
+  )
+}

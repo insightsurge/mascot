@@ -14,8 +14,8 @@ mascot_character(name = "tessa")
 A \code{mascot_character} object with \code{id} and \code{name} elements.
 }
 \description{
-The helper behind \code{\link[=mascot]{mascot()}}'s \code{character} argument. Only Tessa is built in;
-custom characters come later.
+The helper behind the \code{character} argument of \code{\link[=mascot]{mascot()}}. Only Tessa is
+built in; custom characters come later.
 }
 \examples{
 mascot_character()

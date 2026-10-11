@@ -1,9 +1,9 @@
-#' Check a mascot's look in light and dark
+#' Preview a mascot in light and dark mode
 #'
-#' Compare moods and sizes on one offline page. Constructing the page
-#' starts no Shiny app, opens no viewer and writes no files. Printing the returned
-#' page opens the available Viewer or browser. It can also be embedded in an
-#' R Markdown or Quarto document.
+#' Compare moods and sizes on a single offline page. Creating the page starts no
+#' Shiny app, opens no viewer and writes no files. Printing the returned page
+#' opens the available Viewer or browser. It can also be embedded in an R Markdown
+#' or Quarto document.
 #' @evalRd paste0(
 #'   "\\section{Experimental}{\n",
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
@@ -14,9 +14,9 @@
 #' @inheritParams mascot
 #' @param mood A mood name or [mascot_mood()] object, or `NULL` (the default)
 #'   to show every mood from [mascot_moods()].
-#' @param size A finite number of CSS pixels (at least `24`), a positive percentage
-#'   string, or [mascot_size()] object. Defaults to `160`. Percentages follow the
-#'   comparison cell width. `NULL` is not accepted.
+#' @param size A finite number of CSS pixels (at least `24`), a positive
+#'   percentage string such as `"20%"`, or a [mascot_size()] object. Defaults to
+#'   `160`. Percentages follow the comparison cell width. `NULL` is not accepted.
 #' @param placement A placement shortcut, named list or [mascot_placement()]
 #'   object, defaulting to `"inline"`. Accepted so the same arguments as
 #'   [mascot()] can be passed, and has no effect in a preview (cells stay in
@@ -30,25 +30,27 @@
 #'   `NULL` is not accepted.
 #' @returns A browsable `htmltools` tag list. Its `contrast` attribute is a data
 #'   frame with `role`, `colour`, `background`, `ratio` and `mode` columns, one row
-#'   per supplied colour below 3:1. No findings gives a zero-row data frame with
-#'   the same columns. Colours are kept; one combined warning is issued in R.
+#'   per supplied colour below 3:1. With no findings it is a zero-row data frame
+#'   with the same columns. Colours are kept unchanged; one combined warning is
+#'   issued in R.
 #' @details
-#' Rows are moods; columns are the requested `size`, then 48, 32 and 24 CSS pixels.
-#' The first column preserves percentage and `small_screen` settings; fixed
-#' comparison columns do not change on narrow screens. Every size draws the full
-#' character. Each cell keeps its status text, since small faces lose fine detail.
+#' **Comparison grid.** Rows are moods; columns are the requested `size`, then
+#' 48, 32 and 24 CSS pixels. The first column preserves percentage and
+#' `small_screen` settings; fixed comparison columns do not change on narrow
+#' screens. Every size draws the full character. Each cell keeps its status text,
+#' since small faces lose fine detail.
 #'
-#' Both supplied theme maps are shown, even if the theme selected one mode.
-#' Backgrounds are white and `#212529`, or the `bslib` theme's `bg` and
-#' `body-bg-dark`; text uses `fg` and `body-color-dark`.
-#' Only supplied colour roles are checked, using the same contrast calculation
-#' as [mascot()]. Experimental CSS variables are resolved in the browser: their
-#' warnings appear in its console and cannot be included in the R attribute.
+#' **Theme and contrast.** Both supplied theme maps are shown, even if the theme
+#' selected one mode. Backgrounds are white and `#212529`, or the `bslib` theme's
+#' `bg` and `body-bg-dark`; text uses `fg` and `body-color-dark`. Only supplied
+#' colour roles are checked, using the same contrast calculation as [mascot()].
+#' Experimental CSS variables are worked out in the browser: their warnings appear
+#' in its console, outside the R `contrast` attribute.
 #'
-#' Floating `placement` is checked then shown inline for comparison; the preview
-#' ignores floating so every cell remains in its grid. Click menus are checked
-#' but remain inactive on this static page. Empty bubble space is omitted here;
-#' a supplied bubble keeps its space and normal timing.
+#' **Placement, menus and bubbles.** Floating `placement` is checked, then shown
+#' inline for comparison, so every cell remains in its grid. Click menus are
+#' checked but remain inactive on this static page. Empty bubble space is omitted
+#' here; a supplied bubble keeps its normal space and timing.
 #' @family mascot helpers
 #' @seealso [mascot()], [mascot_colour_roles()], [mascot_theme()]
 #' @export
@@ -246,7 +248,7 @@ preview_contrast_labels <- function(contrast) {
   )
 }
 
-#' One mode's table using mascot() markup and the resolved theme wire contract
+#' One mode's table using mascot() markup and the theme as sent to the browser
 #' @noRd
 preview_panel <- function(character, moods, status, bubble, sizes, labels, theme, motion, popup_menu, mode, prefix) {
   checkmate::assert_class(character, "mascot_character")

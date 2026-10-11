@@ -1,11 +1,13 @@
 #' Choose a mascot's click menu
 #'
-#' The app supplies the items and decides what each choice does. Menus appear only
-#' in Shiny. Clicking or touching the mascot opens the menu; Escape or a click
-#' elsewhere closes it. The mascot looks up while the menu is open.
+#' Add a click menu to the mascot in a Shiny app. Clicking or tapping the mascot
+#' opens the menu, and clicking outside or pressing Escape closes it. While the
+#' menu is open, the mascot looks up. You provide the menu choices and
+#' handle the selected item in your Shiny server.
 #' @param items A named character vector of plain-text labels. Names are unique,
-#'   non-empty item ids without whitespace. `NULL` (the default) removes the menu;
-#'   an empty vector is not accepted. Labels are always escaped.
+#'   non-empty item IDs without whitespace (for example `c(about = "About", help = "Help")`).
+#'   Defaults to `NULL`, which removes the menu; an empty vector is not accepted.
+#'   Labels are always escaped.
 #' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
 #'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
 #'   (preferring above, then below, then the side towards the page centre). A
@@ -14,23 +16,24 @@
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
 #' @details
-#' **Where the menu opens.** The menu must fit in the space it can show in. For an
-#' inline mascot that space is the nearest box around it that scrolls or clips its
-#' content (for example a `bslib::card()` body or a sidebar), not the whole window.
-#' For a floating mascot it is the window. When the chosen `direction` has no room
-#' there, the menu opens on the opposite side; when neither side has room, it opens
-#' wherever `"auto"` finds room. So `direction = "bottom"` on a mascot near the
-#' bottom of a card opens above it. Give the mascot room on the side you choose, or
-#' use `"auto"`.
+#' **Where the menu opens.** The menu must fit in the space where it can show. For
+#' an inline mascot, that space is bounded by the nearest container that scrolls
+#' or clips (such as a `bslib::card()` body or a sidebar), not the whole window.
+#' For a floating mascot, it uses the window. When the chosen `direction` has no
+#' room there, the menu opens on the opposite side; when neither side has room, it
+#' opens wherever `"auto"` finds space. So `direction = "bottom"` on a mascot near
+#' the bottom of a card opens above it. Give the mascot room on the chosen side,
+#' or use `"auto"`.
 #'
-#' Enter and Space open or close the focused toggle; arrows, Home, End and
-#' Escape navigate the menu.
-#' Escape returns focus to the mascot. Without items the mascot remains an
-#' image, with its status text.
+#' **Keyboard navigation.** Enter or Space toggles the focused menu control, opening
+#' or closing the menu. Use the arrow keys, Home and End to move between items,
+#' and press Escape to close the menu and return focus to the mascot. Without
+#' menu items, the mascot remains an image with its status text.
 #'
-#' A choice sets `input$helper_menu` for `mascot(id = "helper")` to the item id.
-#' Choosing the same item twice fires twice. In a module, use `ns("helper")` in
-#' the UI and read `input$helper_menu` inside that module's server:
+#' **Reading the selection in Shiny.** Choosing an item sets `input$<id>_menu` to
+#' the item ID (for example, `input$helper_menu` for `mascot(id = "helper")`).
+#' Choosing the same item twice triggers the input twice. In a module, use
+#' `ns("helper")` in the UI and read `input$helper_menu` inside that module's server:
 #' ```r
 #' helper_ui <- function(id) {
 #'   ns <- shiny::NS(id)
@@ -51,10 +54,12 @@
 #'   function(input, output, session) helper_server("demo")
 #' )
 #' ```
+#'
 #' The menu opens from the mascot's on-screen position in the requested direction.
 #' It fits the available screen space and can change direction or scroll.
-#' Action controls hide while the menu is open. Its bubble countdown pauses. The restore
-#' button only restores a minimised mascot; it does not open the menu.
+#' Action controls hide while the menu is open. Opening the menu closes any speech
+#' bubble that is showing.
+#' The restore button only restores a minimised mascot; it does not open the menu.
 #' On static pages the mascot stays an image. Run the Shiny example below to try
 #' the menu.
 #' @export
@@ -143,7 +148,7 @@ as_popup_menu_arg <- function(x, call) {
   )
 }
 
-#' Initial menu configuration, escaped for an inert JSON script
+#' Initial menu configuration, escaped for a data-only script tag
 #' @noRd
 popup_menu_tag <- function(menu) {
   checkmate::assert_list(menu, names = "unique")

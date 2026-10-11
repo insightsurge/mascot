@@ -2,7 +2,7 @@
 % Please edit documentation in R/moods.R
 \name{mascot_moods}
 \alias{mascot_moods}
-\title{List the mascot moods}
+\title{List the built-in mascot moods}
 \usage{
 mascot_moods()
 }
@@ -16,7 +16,7 @@ Every character uses these moods, in this order.
 mascot_moods()
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=mascot_mood]{mascot_mood()}}
 
 Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},

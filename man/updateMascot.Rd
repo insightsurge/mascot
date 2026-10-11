@@ -36,27 +36,32 @@ leaves the mood unchanged.}
 status back to the mood. Text is always escaped.}
 
 \item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
-\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the
-default) leaves the bubble unchanged; \code{mascot_bubble()} clears it. Plain
-text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply HTML. Tags with
-dependencies or head content are not supported.}
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) leaves the bubble unchanged;
+\code{mascot_bubble()} clears it. Plain text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or
+tags supply HTML. Tags with dependencies or head content are not supported.}
 
 \item{size}{A pixel number, percentage string or \code{\link[=mascot_size]{mascot_size()}} object, as
 in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves the size unchanged.}
 
 \item{placement}{A shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}} object, as
-in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves placement unchanged. Size and
-placement changes keep the mounted engine, its mood and character. A new
-placement replaces any position the visitor dragged the mascot to.
-Floating placement shows a minimise control by default; dragging is off.
-Inline placement ignores \code{minimise} and \code{drag}: explicitly supplied values
-give an informational message, defaults stay silent, and the update is sent.
-With dragging enabled, the minimised restore button can also be dragged;
-a click restores it, and a drag leaves it minimised in its new position.}
+in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves placement unchanged.
+\itemize{
+\item Size and placement changes keep the running mascot, its mood and its
+character.
+\item A new placement replaces any position the visitor dragged the mascot to.
+\item Floating placement shows a minimise control by default, and dragging is
+off.
+\item Inline placement ignores \code{minimise} and \code{drag}. Values you supply
+explicitly give an informational message; defaults stay silent. The
+update is still sent.
+\item With dragging enabled, the minimised restore button can also be dragged.
+A click restores it; a drag leaves it minimised in its new position.
+}}
 
 \item{theme}{A theme in the forms accepted by \code{\link[=mascot]{mascot()}}. \code{NULL} (the
 default) leaves the theme unchanged; \code{mascot_theme()} restores the
-character's own colours. Themes are resolved again after a character swap.}
+character's own colours. After a character swap, the theme is applied
+again to the new character's parts.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object, as in \code{\link[=mascot]{mascot()}}.
 \code{NULL} (the default) leaves motion unchanged. Changes apply to the live mascot
@@ -79,34 +84,39 @@ Must be named when supplied. \code{NULL} outside a server or module is an error.
 Called for its side effect; returns \code{NULL} invisibly.
 }
 \description{
-Apply character, mood, status, bubble, size, placement, theme, motion, menu and
-gesture together. Invalid values
-warn and leave the mascot unchanged. In Shiny development mode they also show a worried
-mascot with the problem as its status; the next good update clears it.
-Updates sent before a mascot appears are kept until it appears.
+Update any combination of character, mood, status, bubble, size, placement,
+theme, motion, menu and gesture from your Shiny server. Arguments left as
+\code{NULL} stay unchanged. Invalid values warn and leave the mascot unchanged.
+In Shiny development mode they also show a worried mascot with the problem as
+its status; the next valid update clears it. Updates sent before a mascot
+appears are kept until it appears.
 }
 \details{
-Use the always visible status line for a short description of the current state.
+\strong{Status text and bubbles.} Use the always visible status line for a short
+description of the current state.
 Use a bubble for a message about something that happened; it may time out.
 Use \code{mascot_bubble(..., duration = Inf)} for a message the user must act on,
 such as an invalid form, because a timed message can vanish before it is read.
+Bubbles survive mood changes and swaps; a queued bubble's timer starts when it
+appears. See \code{\link[=mascot_bubble]{mascot_bubble()}}
+for timing and closing behaviour.
 
-In a module use \code{mascot(id = ns("helper"))} in the UI, and
+\strong{Shiny modules.} In a module, use \code{mascot(id = ns("helper"))} in the UI and
 \code{updateMascot("helper")} in its server. The session namespace is added once.
-An invalid \code{id} type, missing session or extra argument is an error.
-A character or mood change applies before the gesture. During a character
-swap the engine drops the gesture: the wave within the swap replaces it. Reduced
-motion skips movement. The latest gesture sent before the mascot appears
-plays once on appearance, after its queued character and mood are applied.
-Bubbles survive mood changes and swaps; a
-queued bubble's timer starts when it appears. Infinite duration is sent as
-JSON \code{null}. See \code{\link[=mascot_bubble]{mascot_bubble()}} for timing and closing behaviour.
-Calling with all update fields \code{NULL} does nothing.
+An invalid \code{id} type, missing session or extra argument is an error. Calling
+with all update arguments \code{NULL} does nothing.
 
-Updates sent before a mascot appears are kept per session, including when
-the first mascot is created by \code{\link[shiny:renderUI]{shiny::renderUI()}} or \code{\link[shiny:insertUI]{shiny::insertUI()}}.
-Only the latest value of each field and the latest early gesture are kept.
-A replacement with the same id receives the retained state; gestures play once.
+\strong{Gestures.} A character or mood change applies before the gesture. During a
+character swap the gesture is skipped, because the wave within the swap
+replaces it. Reduced motion skips movement. The latest gesture sent before the
+mascot appears plays once on appearance, after its queued character and mood
+are applied.
+
+\strong{Queued updates.} Updates sent before a mascot appears are kept per session,
+including when the first mascot is created by \code{\link[shiny:renderUI]{shiny::renderUI()}} or
+\code{\link[shiny:insertUI]{shiny::insertUI()}}. Only the latest value of each argument and the latest early
+gesture are kept. A replacement with the same id receives the retained state;
+gestures play once.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

@@ -16,10 +16,11 @@ A data frame with character columns \code{role}, \code{colour}, \code{follows}
 Roles without a follow rule have \code{NA} in \code{follows} and \code{shade}.
 }
 \description{
-Roles are written in snake case in R. Colours are the character's own colours,
-before any theme is applied. Follow rules list leaders in priority order.
-A supplied role wins; otherwise the first supplied or filled leader is used.
-With no available leader, the role keeps its original colour.
+Lists a character's colour roles (its colour parts) with their own colours,
+before any theme is applied. Roles are written in snake case in R. Follow
+rules list leaders in priority order. A colour you supply for a role always
+wins; otherwise the role follows the first supplied or filled leader. With no
+available leader, the role keeps its original colour.
 }
 \examples{
 mascot_colour_roles()

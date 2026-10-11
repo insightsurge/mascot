@@ -2,13 +2,14 @@
 % Please edit documentation in R/motion.R
 \name{mascot_motion}
 \alias{mascot_motion}
-\title{Set a mascot's motion}
+\title{Control how the mascot animates}
 \usage{
 mascot_motion(animate = TRUE, swap = TRUE)
 }
 \arguments{
 \item{animate}{A logical flag, defaulting to \code{TRUE}, to allow animation when
-the visitor allows motion. \code{FALSE} makes changes instant. \code{NULL} is not accepted.}
+the visitor allows motion. \code{FALSE} makes changes instant. \code{NULL} is not
+accepted.}
 
 \item{swap}{A logical flag, defaulting to \code{TRUE}, to animate character changes.
 \code{FALSE} makes character changes instant while moods can still animate.
@@ -18,9 +19,10 @@ With \code{animate = FALSE}, this setting has no effect. \code{NULL} is not acce
 A \code{mascot_motion} object with \code{animate} and \code{swap} elements.
 }
 \description{
-Stop all animation or just the character-swap animation. The visitor's
-reduced-motion preference is always honoured, even when \code{animate = TRUE}.
-Idle breathing and blinking stop five seconds after the last action.
+Turn off all animations or only the transition when swapping characters.
+If a visitor prefers reduced motion in their system settings, mascot always
+respects that choice, even when \code{animate = TRUE}. Idle breathing and blinking
+stop five seconds after the last action.
 }
 \examples{
 mascot_motion()

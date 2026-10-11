@@ -63,6 +63,20 @@ package can use it as it is); mascot's choices are in `DESCRIPTION`
 - In a git worktree, set `R_LIBS` to what `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout (renv
   keeps a package project's library outside the repo).
 
+## Keep mascot studio up to date
+- `inst/examples/studio/` (`mascot_studio()`) demonstrates every exported function and argument, function by
+  function, for every character; the founder reviews the package through it.
+- **Rule: a PR that adds, removes or changes an exported function or an argument (its name, values, default or
+  behaviour) also updates the studio in the same PR.** No studio follow-up PRs. The places to change: controls
+  (`R/panels.R`), control map (`R/data.R`), code builders (`R/code.R`), studio-only guide data (`R/guide.R`) and,
+  where needed, pictures (`R/ui.R`) and server code (`app.R`). Explanations come from the help pages
+  (`R/help.R` reads them), so update the roxygen, never copy it into the studio.
+- The completeness tests in `tests/testthat/test-examples.R` catch a missing function or argument; they do not catch
+  a changed default or behaviour, so try the change in the studio before the PR and say so in its checks.
+- A tool for creating or remixing characters is a separate app, not part of the studio.
+- After a merge to `main`, merge `main` into any open studio branch and restart a running studio before handing it
+  back for review.
+
 ## Known users: never break them
 - **Every known user is listed in `docs/consumers.md`**: what it uses, since which version, and how to check it
   still works. Read it before changing anything exported or anything a user can see (moods, arguments, defaults,

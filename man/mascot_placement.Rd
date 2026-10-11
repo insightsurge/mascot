@@ -18,31 +18,36 @@ value gives an informational message; the default stays silent.
 
 \item{drag}{\code{FALSE} (the default) for no dragging, \code{"snap"} to let visitors
 drag the mascot and move it to the nearest corner on release, or \code{"free"}
-to keep it where it is dropped, including while minimised. Has no effect
-inline: an explicitly supplied value gives an informational message.
-\code{TRUE} and \code{NULL} are not accepted. See the Dragging section.}
+to keep it where it is dropped, including while minimised.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{%
+\out{<span class='badge text-bg-warning'>Experimental</span>}}}{%
+\strong{[Experimental]}}
+\code{"free"} is experimental: the position it reports and how to restore it
+may change (issue #224). Has no effect inline: an
+explicitly supplied value gives an informational message. \code{TRUE} and
+\code{NULL} are not accepted. See the Dragging section.}
 }
 \value{
 A \code{mascot_placement} object with \code{position}, \code{minimise} and \code{drag}
 elements.
 }
 \description{
-Floating mascots sit in a corner (by default, \code{"bottom-right"}), 1rem from
-the window's edges, above fixed navigation bars and below modals.
+Floating mascots sit in a window corner (by default, \code{"bottom-right"}), 1rem
+from the window edges, above fixed navigation bars and below modals.
 Bottom-right mascots move above Shiny notifications while they are visible.
 Floating mascots hide with their original tab or container. Inline mascots sit
-where they are placed in the page flow. Switching back to inline returns the
-mascot to its original place in the UI.
+where \code{mascot()} is placed in the page flow. Switching back to inline returns
+the mascot to its original place in the UI.
 }
 \details{
 Floating mascots show a minimise control by default; set \code{minimise = FALSE}
-to hide it. The neutral control appears on hover or keyboard focus. Touch screens
-keep it visible; an open mascot menu hides it. Its border has a quiet glow.
-A minimised mascot is a round restore button in the character's colours.
+to hide it. The neutral control appears on hover or keyboard focus. Touch
+screens keep it visible; an open mascot menu hides it. Its border has a quiet
+glow. A minimised mascot is a round restore button in the character's colours.
 Its status remains available to screen readers. Updates still apply; bubble
 countdowns pause until restored. Click, Enter or Space restores the mascot.
-Hover and keyboard focus add a glow and a small growth transition; reduced
-motion keeps only the glow.
+Hover and keyboard focus add a glow and a small growth transition to the
+restore button; reduced motion keeps only the glow.
 }
 \section{Dragging}{
 
@@ -51,8 +56,8 @@ by its drawing, with a mouse, pen or finger. A click without movement still
 opens the mascot's menu. While minimised, drag the round restore button:
 a click without movement restores the mascot, but a drag never restores it.
 After a snap, restoring shows the mascot in the new corner. The minimise
-button, the bubble's close button and links in the bubble do not start a drag.
-The bubble and menu move with the mascot.
+button, the bubble's close button and links in the bubble do not start a
+drag. The bubble and menu move with the mascot.
 \itemize{
 \item \code{"snap"}: on release the mascot moves to the nearest corner, which becomes
 its \code{position}, so its bubble opens towards the page centre. Reduced motion,
@@ -108,3 +113,7 @@ Other mascot helpers:
 \code{\link[=mascot_theme]{mascot_theme()}}
 }
 \concept{mascot helpers}
+\section{Experimental free dragging}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+"free" is experimental: the position it reports and how to restore it may change (issue #224).
+}

@@ -1,8 +1,10 @@
 #' Set a mascot's status text
 #'
-#' Text is always shown as plain text, even when supplied with
-#' [htmltools::HTML()]. With no text, the status follows the shown mood.
-#' @param text A non-empty string, or `NULL` (the default) to follow the mood.
+#' Sets the text label shown next to the mascot. Text is always shown as plain
+#' text, even when supplied with [htmltools::HTML()]. With no text, the status
+#' follows the shown mood.
+#' @param text A non-empty string for the label (for example `"Saving..."`), or
+#'   `NULL` (the default) to follow the mood.
 #' @returns A `mascot_status` object with one `text` element, which may be `NULL`.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]

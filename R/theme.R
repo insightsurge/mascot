@@ -1,19 +1,22 @@
 #' Set a mascot's colours and light or dark mode
 #'
-#' Unset roles follow the first supplied or filled leader declared by the character.
-#' With no supplied leader they keep their original colours. Use
-#' [mascot_colour_roles()] to find the roles for a character. A plain named list
-#' supplied to [mascot()] or [updateMascot()] uses one set in every mode. A
-#' [bslib::bs_theme()] fills the character's declared brand leaders with its primary
-#' and secondary colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
+#' Customise the character's colours and light or dark mode. Roles you do not set
+#' follow the first supplied or filled leader that the character declares (for
+#' example `body`), in the character's priority order. With no supplied leader,
+#' they keep their original colours. Call [mascot_colour_roles()] to find the
+#' roles for a character. A plain named list passed to [mascot()] or
+#' [updateMascot()] uses one set of colours in every mode. A [bslib::bs_theme()]
+#' fills the character's declared brand leaders with its primary and secondary
+#' colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
 #'
-#' A theme survives a character swap: follow rules are resolved again and roles
-#' absent from the incoming character are ignored. An empty helper restores the
-#' character's own colours. A chosen colour below 3:1 contrast warns and is kept
-#' (see "Contrast warnings" below). Supplied colours are kept exactly. Derived
-#' shades keep the hue, with calibrated lightness and saturation shifts. Tessa's
-#' original leaders reproduce derived colours within
-#' 3 units per RGB channel (0--255). Brand colours are the same in both modes.
+#' A theme survives a character swap: follow rules are applied again, and roles
+#' absent from the incoming character are ignored. An empty `mascot_theme()`
+#' restores the character's own colours. A chosen colour below 3:1 contrast
+#' gives a warning and is kept (see "Contrast warnings" below). Supplied colours
+#' are kept exactly.
+#' Derived shades keep the hue, with calibrated lightness and saturation shifts.
+#' Tessa's original leaders reproduce derived colours within 3 units per RGB
+#' channel (0--255). Brand colours are the same in both modes.
 #'
 #' @section Contrast warnings:
 #' A warning appears when a colour chosen by the developer (light, dark, or a
@@ -37,15 +40,16 @@
 #' )
 #' ```
 #' Note that `suppressWarnings()` also works but hides every warning.
-#' @param light,dark Named lists of colour roles, or `NULL` (the default) for the
-#'   character's colours in that mode. Values are colour names, hex strings,
-#'   [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or three red,
-#'   green and blue numbers in 0--255. Single numeric palette indices are not
-#'   accepted. Roles use snake case; `light`, `dark` and `default` are reserved.
-#' @param mode One of `"auto"` (the default), `"light"` or `"dark"`.
-#'   Auto follows the nearest valid `data-bs-theme` in the original source
-#'   context, then Quarto's body classes. With no page signal it uses light.
-#'   Explicit light or dark always wins. `NULL` is not accepted.
+#' @param light,dark Named lists of colour roles, or `NULL` (the default) to keep
+#'   the character's own colours in that mode. Values can be colour names, hex
+#'   strings, [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or
+#'   three RGB numbers (red, green and blue) in 0--255. Single numeric palette
+#'   indices are not accepted. Roles use snake case; `light`, `dark` and
+#'   `default` are reserved.
+#' @param mode Mode selection: `"auto"` (the default), `"light"` or `"dark"`.
+#'   `"auto"` follows the nearest valid `data-bs-theme` in the original source
+#'   context, then Quarto's body classes. With no page signal it uses light mode.
+#'   An explicit light or dark mode always wins. `NULL` is not accepted.
 #' @param css A named list mapping colour roles to CSS variable names such as
 #'   `list(body = "--team-blue")`, or `NULL` (the default) for no CSS source.
 #'   This source is experimental. CSS entries override light and dark entries
@@ -62,7 +66,7 @@
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
 #'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
 #'       lifecycle::badge("experimental"), fixed = TRUE),
-#'   "\nCSS variables are resolved by the browser, so R cannot check their values.\n}"
+#'   "\nCSS variables are worked out by the browser, so R cannot check their values.\n}"
 #' )
 #' @export
 #' @examples
@@ -201,7 +205,7 @@ theme_channels <- function(x) {
   c(channels[1:3, 1], channels[4, 1] / 255)
 }
 
-#' Convert a user colour to the engine's supported forms
+#' Convert a user colour to the forms the mascot supports
 #' @noRd
 theme_colour <- function(x, role) {
   checkmate::assert_string(role)
@@ -237,7 +241,7 @@ theme_contrast <- function(colour, background) {
   (max(values) + 0.05) / (min(values) + 0.05)
 }
 
-#' Resolve one theme for the wire while retaining its brand source for swaps
+#' Prepare one theme for the browser while keeping its brand source for swaps
 #' @noRd
 as_theme_arg <- function(x, call, character = NULL) {
   checkmate::assert_environment(call)

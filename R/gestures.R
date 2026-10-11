@@ -12,7 +12,8 @@ gesture_table <- function() {
 
 #' List the mascot gestures
 #'
-#' Gestures play once and are available only in [updateMascot()].
+#' Gestures play a quick movement once, without changing the mascot's mood.
+#' They are available only in [updateMascot()].
 #' @returns A data frame with character columns `name` and `description`.
 #' @family mascot helpers
 #' @seealso [mascot_gesture()]
@@ -25,12 +26,14 @@ mascot_gestures <- function() {
 
 #' Choose a one-off mascot gesture
 #'
-#' Use this helper or a plain gesture name in [updateMascot()]. A character or
-#' mood change in the same call applies first, then the gesture. During a
-#' character swap the engine drops the gesture: the wave within the swap replaces it.
-#' Reduced motion skips the movement. A gesture sent before the mascot appears
-#' is kept until appearance. Only the latest early gesture plays, once, after
-#' the queued character and mood are applied.
+#' Play a single movement without changing the current mood. Use this helper or
+#' a plain gesture name in [updateMascot()].
+#'
+#' A character or mood change in the same call applies first, then the gesture.
+#' During a character swap the gesture is skipped: the wave within the swap
+#' replaces it. Reduced motion skips the movement. A gesture sent before the
+#' mascot appears is kept until it appears; only the latest early gesture plays,
+#' once, after the queued character and mood are applied.
 #' @param name A required non-empty string: `"nod"` acknowledges an action;
 #'   `"wave"` greets (characters without arms rock instead). See
 #'   [mascot_gestures()] for descriptions. There is no default; `NULL` is not

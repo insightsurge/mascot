@@ -28,6 +28,11 @@ vignettes/figures/*.png
     Source: screenshots of the bundled example apps captured locally in Chrome.
     Copyright (c) Harsh Verma. Licence: MIT.
 
+inst/examples/studio/www/studio.css
+inst/examples/studio/www/studio.js
+    Source: layout, diagrams and the colour picker input of the studio example, written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
 inst/preview/preview.css
     Source: static mascot comparison layout, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.

@@ -45,6 +45,7 @@ describe("mascot exports", {
         "mascot_preview",
         "mascot_examples",
         "mascot_example",
+        "mascot_studio",
         "mascot_character",
         "mascot_mood",
         "mascot_status",

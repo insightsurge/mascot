@@ -43,14 +43,39 @@ colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand =)}.
 \details{
 A theme survives a character swap: follow rules are applied again, and roles
 absent from the incoming character are ignored. An empty \code{mascot_theme()}
-restores the character's own colours. When a theme is applied, a chosen
-colour below 3:1 contrast against the background gives a warning and is kept.
-The background is white in light mode and \verb{#212529} in dark mode, or the
-\code{bslib} theme's light and dark backgrounds. Supplied colours are kept exactly.
+restores the character's own colours. A chosen colour below 3:1 contrast
+gives a warning and is kept (see "Contrast warnings" below). Supplied colours
+are kept exactly.
 Derived shades keep the hue, with calibrated lightness and saturation shifts.
 Tessa's original leaders reproduce derived colours within 3 units per RGB
 channel (0--255). Brand colours are the same in both modes.
 }
+\section{Contrast warnings}{
+
+A warning appears when a colour chosen by the developer (light, dark, or a
+\code{\link[bslib:bs_theme]{bslib::bs_theme()}} brand colour) has contrast below 3:1 against the page
+background (white in light mode, \verb{#212529} in dark mode, or the \code{bslib}
+theme's backgrounds). Contrast is checked when \code{\link[=mascot]{mascot()}} builds the UI,
+when \code{\link[=updateMascot]{updateMascot()}} applies colours with \verb{theme = }, and collected into the
+contrast table by \code{\link[=mascot_preview]{mascot_preview()}}; the character's own colours never warn;
+the colour is always kept.
+
+The warning appears in the R console or server log, in every mode (not only
+Shiny developer mode); app visitors never see it. CSS-variable colours
+(\verb{css =}) are checked in the browser and warn in the browser console.
+
+These warnings have the class \code{mascot_contrast}. To silence only these
+warnings:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{withCallingHandlers(
+  mascot(id = "helper", theme = list(rim = "#f5e6c8")),
+  mascot_contrast = function(w) invokeRestart("muffleWarning")
+)
+}\if{html}{\out{</div>}}
+
+Note that \code{suppressWarnings()} also works but hides every warning.
+}
+
 \examples{
 mascot_theme()
 mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")

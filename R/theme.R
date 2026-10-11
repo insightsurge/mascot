@@ -11,13 +11,35 @@
 #'
 #' A theme survives a character swap: follow rules are applied again, and roles
 #' absent from the incoming character are ignored. An empty `mascot_theme()`
-#' restores the character's own colours. When a theme is applied, a chosen
-#' colour below 3:1 contrast against the background gives a warning and is kept.
-#' The background is white in light mode and `#212529` in dark mode, or the
-#' `bslib` theme's light and dark backgrounds. Supplied colours are kept exactly.
+#' restores the character's own colours. A chosen colour below 3:1 contrast
+#' gives a warning and is kept (see "Contrast warnings" below). Supplied colours
+#' are kept exactly.
 #' Derived shades keep the hue, with calibrated lightness and saturation shifts.
 #' Tessa's original leaders reproduce derived colours within 3 units per RGB
 #' channel (0--255). Brand colours are the same in both modes.
+#'
+#' @section Contrast warnings:
+#' A warning appears when a colour chosen by the developer (light, dark, or a
+#' [bslib::bs_theme()] brand colour) has contrast below 3:1 against the page
+#' background (white in light mode, `#212529` in dark mode, or the `bslib`
+#' theme's backgrounds). Contrast is checked when [mascot()] builds the UI,
+#' when [updateMascot()] applies colours with `theme = `, and collected into the
+#' contrast table by [mascot_preview()]; the character's own colours never warn;
+#' the colour is always kept.
+#'
+#' The warning appears in the R console or server log, in every mode (not only
+#' Shiny developer mode); app visitors never see it. CSS-variable colours
+#' (`css =`) are checked in the browser and warn in the browser console.
+#'
+#' These warnings have the class `mascot_contrast`. To silence only these
+#' warnings:
+#' ```r
+#' withCallingHandlers(
+#'   mascot(id = "helper", theme = list(rim = "#f5e6c8")),
+#'   mascot_contrast = function(w) invokeRestart("muffleWarning")
+#' )
+#' ```
+#' Note that `suppressWarnings()` also works but hides every warning.
 #' @param light,dark Named lists of colour roles, or `NULL` (the default) to keep
 #'   the character's own colours in that mode. Values can be colour names, hex
 #'   strings, [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or

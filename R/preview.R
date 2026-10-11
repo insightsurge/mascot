@@ -4,6 +4,13 @@
 #' Shiny app, opens no viewer and writes no files. Printing the returned page
 #' opens the available Viewer or browser. It can also be embedded in an R Markdown
 #' or Quarto document.
+#' @evalRd paste0(
+#'   "\\section{Experimental}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\nIts purpose, arguments and page layout may change before CRAN.\n}"
+#' )
 #' @inheritParams mascot
 #' @param mood A mood name or [mascot_mood()] object, or `NULL` (the default)
 #'   to show every mood from [mascot_moods()].
@@ -11,11 +18,13 @@
 #'   percentage string such as `"20%"`, or a [mascot_size()] object. Defaults to
 #'   `160`. Percentages follow the comparison cell width. `NULL` is not accepted.
 #' @param placement A placement shortcut, named list or [mascot_placement()]
-#'   object, defaulting to `"inline"`. The preview ignores floating and shows
-#'   every mascot inline in the comparison grid. `NULL` is not accepted.
+#'   object, defaulting to `"inline"`. Accepted so the same arguments as
+#'   [mascot()] can be passed, and has no effect in a preview (cells stay in
+#'   their grid). `NULL` is not accepted.
 #' @param popup_menu A named character vector or [mascot_popup_menu()] object,
-#'   or `NULL` (the default) for no menu. The value is checked; menus remain
-#'   inactive on this static page.
+#'   or `NULL` (the default) for no menu. Accepted so the same arguments as
+#'   [mascot()] can be passed, and has no effect in a preview (menus are
+#'   inactive on a static page).
 #' @param motion A logical flag or [mascot_motion()] object. Defaults to `FALSE`
 #'   for steady faces; `TRUE` allows animation subject to the visitor's preference.
 #'   `NULL` is not accepted.

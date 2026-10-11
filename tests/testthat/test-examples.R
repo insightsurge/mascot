@@ -337,6 +337,10 @@ describe("the studio's controls", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     data <- new.env()
     sys.source(file.path(dir, "R", "data.R"), envir = data)
+    help <- new.env()
+    sys.source(file.path(dir, "R", "help.R"), envir = help)
+    ui <- new.env()
+    sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     app <- shiny::shinyAppDir(dir)
     pages <- lapply(c("", "view=examples"), function(query) {
       as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
@@ -358,11 +362,44 @@ describe("the studio's controls", {
     expect_match(pages[[1]], "Links", fixed = TRUE)
     # mascot_preview() is in the studio page: its canvas part and its controls.
     expect_match(pages[[1]], 'data-canvas="preview"', fixed = TRUE)
+    expect_match(pages[[1]], 'id="preview_card"', fixed = TRUE)
     expect_match(pages[[1]], 'id="preview_menu_items"', fixed = TRUE)
     expect_false(grepl('id="helper"', pages[[2]], fixed = TRUE))
     expect_false(grepl("Use the studio's", pages[[2]], fixed = TRUE))
     expect_false(grepl("Open in a new tab", pages[[2]], fixed = TRUE))
+    # mascot_studio() has no inputs and only a Copy button in its controls.
+    expect_match(pages[[1]], 'id="studio_example_call"', fixed = TRUE)
+    expect_match(pages[[1]], 'data-copy="studio_example_call"', fixed = TRUE)
+    expect_false(grepl('id="studio_view"', pages[[1]], fixed = TRUE))
+    expect_false(grepl('id="studio_fn"', pages[[1]], fixed = TRUE))
+    expect_false(grepl('id="studio_run"', pages[[1]], fixed = TRUE))
     for (fn in getNamespaceExports("mascot")) {
+      if (fn == "mascot_studio") {
+        # mascot_studio() is the launcher of this studio: checked for read-only argument rows instead of controls.
+        for (arg in names(formals(getExportedValue("mascot", fn)))) {
+          expect_true(
+            grepl(sprintf('class="pg-arg"[^>]*data-argument="%s"', arg), pages[[1]]) ||
+              grepl(sprintf('data-argument="%s"[^>]*class="pg-arg"', arg), pages[[1]]),
+            info = paste(fn, arg)
+          )
+          expect_true(
+            grepl(sprintf('class="pg-arg-name">%s</code>', arg), pages[[1]], fixed = TRUE),
+            info = paste(fn, arg)
+          )
+          expect_true(
+            grepl(ui$argument_default(fn, arg), pages[[1]], fixed = TRUE),
+            info = paste(fn, arg)
+          )
+          h <- help$help_arg(fn, arg)
+          if (!is.null(h)) {
+            expect_true(
+              grepl(help$html_text(h), help$html_text(pages[[1]]), fixed = TRUE),
+              info = paste(fn, arg)
+            )
+          }
+        }
+        next
+      }
       for (arg in names(formals(getExportedValue("mascot", fn)))) {
         control <- data$playground_controls[[fn]][[arg]]
         expect_false(is.null(control), info = paste(fn, arg))
@@ -630,6 +667,26 @@ describe("bundled example apps", {
       if (fn == "mascot_theme") {
         app$wait_for_js("!!document.querySelector('.pg-guide-modal .pg-flow')")
         expect_true(app$get_js("!document.querySelector('.pg-guide-modal #roles_table')"))
+      }
+      if (fn == "mascot_studio") {
+        expect_identical(
+          app$get_js(
+            "document.querySelectorAll('#studio_inspector [data-function=mascot_studio] input, #studio_inspector [data-function=mascot_studio] select, #studio_inspector [data-function=mascot_studio] textarea').length"
+          ),
+          0L
+        )
+        expect_identical(
+          app$get_js(
+            "document.querySelectorAll('#studio_inspector [data-function=mascot_studio] .pg-function-controls button:not([data-copy])').length"
+          ),
+          0L
+        )
+        expect_identical(
+          app$get_js(
+            "document.querySelectorAll('#studio_inspector [data-function=mascot_studio] button[data-copy]').length"
+          ),
+          1L
+        )
       }
       expect_true(app$get_js(guide_read_only))
       app$click("close_guide")
@@ -906,6 +963,18 @@ describe("bundled example apps", {
       "!!document.getElementById('preview_menu_items') &&
       !document.querySelector('#studio_inspector [data-function=mascot_preview]').hidden"
     ))
+    expect_true(app$get_js("document.querySelector('#preview_card .bslib-full-screen-enter') !== null"))
+    app$click(selector = "#preview_card .bslib-full-screen-enter")
+    app$wait_for_js("document.getElementById('preview_card').getAttribute('data-full-screen') === 'true'")
+    expect_true(app$get_js("document.getElementById('preview_card').getBoundingClientRect().height > 400"))
+    app$click(selector = ".bslib-full-screen-exit")
+    app$wait_for_js("document.getElementById('preview_card').getAttribute('data-full-screen') === 'false'")
+    app$click(selector = "#preview_card .bslib-full-screen-enter")
+    app$wait_for_js("document.getElementById('preview_card').getAttribute('data-full-screen') === 'true'")
+    app$run_js(
+      "document.getElementById('preview_card').dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))"
+    )
+    app$wait_for_js("document.getElementById('preview_card').getAttribute('data-full-screen') === 'false'")
     expect_identical(app$get_js("document.querySelector('#code_tabs .nav-link.active').textContent.trim()"), "Preview")
     app$wait_for_js("document.getElementById('code_preview').textContent.includes('mascot_preview(')")
     # The colour pickers are drawn by the server for the selected character; change them once Shiny has bound them.
@@ -1178,10 +1247,7 @@ describe("studio state and built previews", {
         menu_on = TRUE,
         menu_items = "finish = Finish review",
         menu_direction = "auto",
-        mistake = "Misspell an argument",
-        studio_view = "studio",
-        studio_fn = "",
-        studio_run = FALSE
+        mistake = "Misspell an argument"
       )
       session$setInputs(task_run = 1)
       expect_identical(state$mood$short, "thinking")
@@ -1230,6 +1296,8 @@ describe("studio state and built previews", {
       expect_match(example_call, 'run = FALSE', fixed = TRUE)
       example_path <- eval(parse(text = example_call), envir = env)
       expect_true(file.exists(example_path))
+      session$setInputs(select_function = "mascot_studio")
+      expect_identical(output$code_function, 'mascot_studio(fn = "mascot_theme")')
       unchanged <- shiny::reactiveValuesToList(state)
       custom_messages <- list()
       guide <- get("selected_guide", envir = env)

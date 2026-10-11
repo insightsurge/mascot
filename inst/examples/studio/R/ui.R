@@ -235,6 +235,7 @@ arg_block <- function(fn, arg) {
   checkmate::assert_string(arg)
   div(
     class = "pg-arg",
+    `data-argument` = arg,
     tags$code(class = "pg-arg-name", arg),
     tags$span(class = "pg-default", "default ", tags$code(argument_default(fn, arg))),
     div(class = "pg-help", help_arg(fn, arg))

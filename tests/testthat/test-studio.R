@@ -27,6 +27,13 @@ describe("mascot_studio()", {
     # mascot_preview() is an entry of the studio, not a view of its own.
     expect_match(page(studio), 'data-value="mascot_preview"', fixed = TRUE)
     expect_match(page(studio), 'id="preview_build"', fixed = TRUE)
+    expect_match(page(studio), 'id="preview_card"', fixed = TRUE)
+    expect_match(page(studio), 'data-full-screen="false"', fixed = TRUE)
+    expect_match(page(studio), 'id="studio_example_call"', fixed = TRUE)
+    expect_match(page(studio), 'data-copy="studio_example_call"', fixed = TRUE)
+    expect_false(grepl('id="studio_view"', page(studio), fixed = TRUE))
+    expect_false(grepl('id="studio_fn"', page(studio), fixed = TRUE))
+    expect_false(grepl('id="studio_run"', page(studio), fixed = TRUE))
     expect_false(grepl("view=preview", page(studio), fixed = TRUE))
     examples <- mascot_studio("examples", run = FALSE)
     expect_match(page(examples), 'id="example_name"', fixed = TRUE)
@@ -75,6 +82,7 @@ describe("mascot_studio()", {
     preview$wait_for_js("!!document.querySelector('iframe.pg-preview')", timeout = 15000)
     expect_true(preview$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     expect_false(preview$get_js("document.querySelector('[data-canvas=preview]').hidden"))
+    expect_true(preview$get_js("document.querySelector('#preview_card .bslib-full-screen-enter') !== null"))
     examples <- shinytest2::AppDriver$new(function() {
       library(mascot)
       mascot_studio("examples", run = FALSE)

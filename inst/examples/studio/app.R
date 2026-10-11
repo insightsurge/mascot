@@ -113,7 +113,14 @@ studio_page <- function(character, fn) {
               ),
               uiOutput("preview_status_badge", inline = TRUE)
             ),
-            uiOutput("preview_frame", class = "pg-preview-frame")
+            bslib::card(
+              id = "preview_card",
+              full_screen = TRUE,
+              bslib::card_body(
+                padding = 0,
+                uiOutput("preview_frame", class = "pg-preview-frame")
+              )
+            )
           )
         ),
         div(
@@ -1127,18 +1134,7 @@ studio_server <- function(input, output, session) {
       mascot_colour_roles = format_call(fn, list(character = current_character())),
       mascot_preview = format_call(fn, tryCatch(preview_args(), error = function(e) list())),
       mascot_example = format_call(fn, list(name = examples$name[1], run = FALSE)),
-      mascot_studio = format_call(
-        fn,
-        Filter(
-          Negate(is.null),
-          list(
-            view = input$studio_view,
-            fn = if (nzchar(input$studio_fn %||% "")) input$studio_fn,
-            character = current_character(),
-            run = isTRUE(input$studio_run)
-          )
-        )
-      ),
+      mascot_studio = format_call(fn, list(fn = "mascot_theme")),
       format_call(fn, list())
     )
   })

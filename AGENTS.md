@@ -64,11 +64,16 @@ package can use it as it is); mascot's choices are in `DESCRIPTION`
   keeps a package project's library outside the repo).
 
 ## Keep mascot studio up to date
-- `inst/examples/studio/` (`mascot_example("studio")`) demonstrates every exported function and argument, and the
-  founder reviews the package through it. **Every PR that changes an export, an argument, a default or visible
-  behaviour checks the studio** and adds, changes or removes its controls, explanations (`R/guide.R`), control map
-  (`R/data.R`) and code builders (`R/code.R`) in the same PR. The completeness tests in
-  `tests/testthat/test-examples.R` catch a missing argument; they do not catch a changed default or behaviour.
+- `inst/examples/studio/` (`mascot_studio()`) demonstrates every exported function and argument, function by
+  function, for every character; the founder reviews the package through it.
+- **Rule: a PR that adds, removes or changes an exported function or an argument (its name, values, default or
+  behaviour) also updates the studio in the same PR.** No studio follow-up PRs. The places to change: controls
+  (`R/panels.R`), control map (`R/data.R`), code builders (`R/code.R`), studio-only guide data (`R/guide.R`) and,
+  where needed, pictures (`R/ui.R`) and server code (`app.R`). Explanations come from the help pages
+  (`R/help.R` reads them), so update the roxygen, never copy it into the studio.
+- The completeness tests in `tests/testthat/test-examples.R` catch a missing function or argument; they do not catch
+  a changed default or behaviour, so try the change in the studio before the PR and say so in its checks.
+- A tool for creating or remixing characters is a separate app, not part of the studio.
 - After a merge to `main`, merge `main` into any open studio branch and restart a running studio before handing it
   back for review.
 

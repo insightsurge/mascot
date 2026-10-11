@@ -203,11 +203,3 @@ character_mistakes <- function(character) {
   }
   result
 }
-
-playground_controls$mascot_studio <- list(
-  view = input_id("studio_view"),
-  ... = fixed_arg("Empty; later arguments are named."),
-  fn = input_id("studio_fn"),
-  character = input_id("character"),
-  run = input_id("studio_run")
-)

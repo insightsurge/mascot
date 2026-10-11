@@ -351,29 +351,17 @@ panel_wiring <- function() {
 panel_studio <- function() {
   inspector_function(
     "mascot_studio",
-    arg_field("mascot_studio", "view", selectInput("studio_view", "Start in", c("studio", "examples"))),
-    arg_field(
-      "mascot_studio",
-      "fn",
-      selectInput(
-        "studio_fn",
-        "First function",
-        c("Default (NULL)" = "", stats::setNames(names(playground_guide), names(playground_guide)))
-      )
+    div(class = "pg-hint", "Opens this studio."),
+    div(
+      class = "pg-code-wrap",
+      code_block('mascot_studio(fn = "mascot_theme")', "pg-code-small", id = "studio_example_call"),
+      copy_button("studio_example_call")
     ),
-    arg_field(
-      "mascot_studio",
-      "character",
-      div(class = "pg-note", "Uses the character selected under mascot_character().")
-    ),
-    arg_field("mascot_studio", "run", input_switch("studio_run", "Launch interactively (TRUE)", TRUE)),
-    arg_field(
-      "mascot_studio",
-      "...",
-      div(
-        class = "pg-note",
-        "Name every argument after view. The studio shows the call; paste it into your R console to launch a new app."
-      )
+    div(
+      class = "pg-args",
+      lapply(names(formals(mascot::mascot_studio)), function(arg) {
+        arg_block("mascot_studio", arg)
+      })
     )
   )
 }

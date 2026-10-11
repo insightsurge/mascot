@@ -10,8 +10,9 @@
 #' A theme survives a character swap: follow rules are resolved again and roles
 #' absent from the incoming character are ignored. An empty helper restores the
 #' character's own colours. A chosen colour below 3:1 contrast warns and is kept
-#' (see "Contrast warnings" below). Supplied colours are kept exactly. Derived shades keep the hue, with calibrated lightness and
-#' saturation shifts. Tessa's original leaders reproduce derived colours within
+#' (see "Contrast warnings" below). Supplied colours are kept exactly. Derived
+#' shades keep the hue, with calibrated lightness and saturation shifts. Tessa's
+#' original leaders reproduce derived colours within
 #' 3 units per RGB channel (0--255). Brand colours are the same in both modes.
 #'
 #' @section Contrast warnings:

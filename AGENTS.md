@@ -113,6 +113,10 @@ GitHub Pages are in `docs/deploy.md`. Keep `_pkgdown.yml` current (`pkgdown::che
 in light and dark before a PR that changes docs, exports or examples. Link to files in `docs/` with full GitHub URLs
 (they aren't part of the site). The brand's source of truth is the website repo's `brand/`; record where copied values
 came from.
+- **Recommended (not a gate): keep the package small.** The tarball is about 1.2 MB of CRAN's 5 MB, mostly vignette
+  screenshots. Put screenshot-heavy articles on the website only (pkgdown articles in `vignettes/articles/`, which
+  are not shipped in the package) and keep the package's own vignette short. Compress PNGs and prefer SVG for
+  diagrams. On a release PR, check the gate's `tarball` line.
 
 ## Workflow
 - **Every change starts with an issue** (goal + "done when" checklist, labels, milestone) placed in the epic tree:

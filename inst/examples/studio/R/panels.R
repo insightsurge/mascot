@@ -121,7 +121,10 @@ panel_messages <- function() {
         ),
         input_switch("bubble_html", "Treat as HTML (wraps it in HTML())", FALSE)
       ),
-      note = div(class = "pg-hint", "Duration and the close button below apply the next time you click Show bubble.")
+      note = div(
+        class = "pg-hint",
+        "The HTML switch, duration and close button below apply the next time you click Show bubble."
+      )
     ),
     arg_field(
       "mascot_bubble",

@@ -2069,7 +2069,11 @@ describe("studio bubble controls (#249)", {
     expect_lt(at("bubble_show"), at("bubble_html"))
     expect_lt(at("bubble_show"), at("bubble_duration"))
     expect_lt(at("bubble_clear"), at("bubble_duration"))
-    expect_match(page, "Duration and the close button below apply the next time you click Show bubble.", fixed = TRUE)
+    expect_match(
+      page,
+      "The HTML switch, duration and close button below apply the next time you click Show bubble.",
+      fixed = TRUE
+    )
   })
 })
 

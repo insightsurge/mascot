@@ -33,10 +33,6 @@ try_button <- function(event, value, label, class = "btn-outline-primary") {
   tags$button(type = "button", class = paste("btn btn-sm", class), `data-event` = event, `data-value` = value, label)
 }
 
-chips <- function(values, class = "pg-chip") {
-  lapply(values, function(value) tags$span(class = class, value))
-}
-
 # The popover behind an argument chip: the argument's help text (what it accepts, what NULL means and
 # the details), its default read from the function's formals and, when the help page has one, an
 # example that supplies the argument.
@@ -46,7 +42,7 @@ arg_popover_body <- function(fn, arg) {
   help <- help_arg(fn, arg)
   example <- help_arg_example(fn, arg)
   tagList(
-    div(class = "pg-help", if (is.null(help)) tags$p("This argument has no help text.") else help),
+    div(class = "pg-help", if (is.null(help)) tags$p(help_page(fn)$title) else help),
     tags$p(tags$strong("Default: "), tags$code(argument_default(fn, arg))),
     if (!is.null(example)) {
       tagList(tags$p(tags$strong("Example from the help page:")), code_block(example, "pg-code-small"))
@@ -59,7 +55,7 @@ arg_hint <- function(fn, arg) {
   checkmate::assert_string(fn)
   checkmate::assert_string(arg)
   help <- help_arg(fn, arg)
-  if (is.null(help)) "" else first_sentence(html_text(help))
+  if (is.null(help)) help_page(fn)$title else first_sentence(html_text(help))
 }
 
 arg_chip <- function(fn, arg) {
@@ -180,7 +176,12 @@ wiring_links <- function(fn) {
       tags$p(
         class = "pg-hint",
         "Choose ",
-        tags$code(paste0(helper, "()")),
+        tags$a(
+          href = "#",
+          `data-event` = "select_function",
+          `data-value` = helper,
+          tags$code(paste0(helper, "()"))
+        ),
         " in the function index to set this argument."
       )
     )
@@ -393,7 +394,7 @@ visual_mood <- function() {
       class = "pg-callout",
       tags$strong("The mood never speaks alone. "),
       "The status line under the mascot names the mood (or shows your text), so the meaning is there for
-      screen readers and for anyone who cannot tell the faces apart. Choose mascot_mood() in the index to try it."
+      screen readers and for anyone who cannot tell the faces apart. Try moods with the cards in Controls."
     )
   )
 }
@@ -727,6 +728,8 @@ guide_help <- function(fn) {
       class = "pg-hint",
       "Each argument's help text is in the i beside its control. Read more in the Get started article: ",
       tags$a(href = vignette_url(heading), target = "_blank", rel = "noopener", heading),
+      ". Offline: ",
+      tags$code('vignette("mascot", package = "mascot")'),
       "."
     )
   )

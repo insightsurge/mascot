@@ -353,6 +353,7 @@
     }
     const target = event.target.closest('[data-event]');
     if (target) {
+      if (target.tagName === 'A') event.preventDefault();
       if (target.dataset.event === 'open_guide') {
         closeOpenPopovers();
         closeOpenTooltips();

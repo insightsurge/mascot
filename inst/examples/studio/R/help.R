@@ -4,6 +4,7 @@
 # before app.R attaches mascot, so everything here is a function that runs later.
 
 help_cache <- new.env(parent = emptyenv())
+help_example_cache <- new.env(parent = emptyenv())
 
 rd_tag <- function(x) {
   attr(x, "Rd_tag")
@@ -117,7 +118,11 @@ first_sentence <- function(text) {
 help_page <- function(fn) {
   checkmate::assert_string(fn)
   if (is.null(help_cache[[fn]])) {
-    rd <- help_rd(fn)
+    rd <- tryCatch(help_rd(fn), error = function(e) NULL)
+    if (is.null(rd)) {
+      text <- paste0("Help unavailable for ", fn, "()")
+      return(list(title = text, description = htmltools::tags$p(text), args = list(), unavailable = TRUE))
+    }
     section <- function(tag) {
       found <- rd_sections(rd, tag)
       if (length(found)) rd_html(found[[1]], tag)
@@ -151,15 +156,27 @@ help_arg <- function(fn, arg) {
 # The \examples of a help page as one text per top-level expression.
 help_examples <- function(fn) {
   checkmate::assert_string(fn)
+  if (!is.null(help_example_cache[[fn]])) {
+    return(help_example_cache[[fn]])
+  }
+  rd <- tryCatch(help_rd(fn), error = function(e) NULL)
+  if (is.null(rd)) {
+    return(character())
+  }
   file <- tempfile(fileext = ".R")
   on.exit(unlink(file), add = TRUE)
-  tools::Rd2ex(help_rd(fn), out = file)
+  tools::Rd2ex(rd, out = file)
   if (!file.exists(file)) {
     return(character())
   }
   lines <- readLines(file, warn = FALSE)
   exprs <- parse(text = lines[!startsWith(lines, "###")], keep.source = TRUE)
-  vapply(attr(exprs, "srcref"), function(ref) paste(as.character(ref), collapse = "\n"), character(1))
+  help_example_cache[[fn]] <- vapply(
+    attr(exprs, "srcref"),
+    function(ref) paste(as.character(ref), collapse = "\n"),
+    character(1)
+  )
+  help_example_cache[[fn]]
 }
 
 # The first example of the function's help page that supplies the argument, or NULL. Positional

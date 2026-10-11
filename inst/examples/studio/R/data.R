@@ -50,7 +50,6 @@ bubble_examples <- list(
 )
 
 default_menu <- c(finish = "Finish review", reset = "Reset helper", about = "About this studio")
-menu_lines <- paste(names(default_menu), "=", default_menu, collapse = "\n")
 welcome <- "Hello! Choose a function and change its controls and I will follow."
 
 # What mascot() uses when an argument is left out, as shortcut code.
@@ -183,6 +182,17 @@ playground_controls <- list(
 studio_characters <- function() {
   id <- formals(mascot::mascot)$character
   stats::setNames(id, mascot::mascot_character(id)$name)
+}
+
+# Count shipped characters rather than the selector's current discovery adapter.
+studio_character_hint <- function(directory = system.file("characters", package = "mascot", mustWork = TRUE)) {
+  checkmate::assert_directory_exists(directory)
+  files <- list.files(directory, pattern = "[.]json$")
+  if (length(files) != 1) {
+    return(NULL)
+  }
+  id <- sub("[.]json$", "", files)
+  paste(mascot::mascot_character(id)$name, "is the only built-in character so far.")
 }
 
 # The public listing has no brand column yet. Read the package's shipped data,

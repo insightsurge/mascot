@@ -78,7 +78,8 @@ panel_look <- function(moods = mascot_moods(), character = formals(mascot::masco
     arg_field(
       "mascot_character",
       "name",
-      selectInput("character", "Character", studio_characters(), selected = character)
+      selectInput("character", "Character", studio_characters(), selected = character),
+      note = if (!is.null(studio_character_hint())) div(class = "pg-hint", studio_character_hint())
     ),
     fn_heading("mascot_mood"),
     arg_field(
@@ -131,11 +132,11 @@ panel_messages <- function() {
       "mascot_popup_menu",
       "items",
       tagList(
-        input_switch("menu_on", "Show the menu", TRUE),
-        textAreaInput("menu_items", "One item per line: id = Label", menu_lines, rows = 4, resize = "vertical"),
+        input_switch("menu_on", "Show the menu", FALSE),
+        textAreaInput("menu_items", "One item per line: id = Label", "", rows = 4, resize = "vertical"),
         uiOutput("menu_problem")
       ),
-      note = div(class = "pg-note", "Open the menu with the button on the mascot, then pick an item.")
+      note = div(class = "pg-note", "Click or tap the mascot to open its menu, then pick an item.")
     ),
     arg_field(
       "mascot_popup_menu",
@@ -162,7 +163,12 @@ panel_motion <- function(gestures = mascot_gestures()) {
     value = "motion",
     fn_heading("mascot_motion"),
     arg_field("mascot_motion", "animate", input_switch("animate", "Animate changes", TRUE)),
-    arg_field("mascot_motion", "swap", input_switch("swap", "Animate character swaps", TRUE)),
+    arg_field(
+      "mascot_motion",
+      "swap",
+      input_switch("swap", "Animate character swaps", TRUE),
+      note = div(class = "pg-hint", "This shows when a second character exists.")
+    ),
     fn_heading("mascot_gesture"),
     arg_field(
       "mascot_gesture",
@@ -172,6 +178,7 @@ panel_motion <- function(gestures = mascot_gestures()) {
         lapply(gestures$name, function(name) try_button("gesture", name, tools::toTitleCase(name)))
       )
     ),
+    div(class = "pg-note", "One-off gestures appear in the Last tab, not in UI, Server or App."),
     fn_heading("mascot_gestures"),
     div(class = "pg-hint", "No arguments. Its table is shown as the gesture cards in the Guide.")
   )
@@ -206,6 +213,11 @@ panel_layout <- function() {
       )
     ),
     fn_heading("mascot_placement"),
+    div(
+      class = "pg-note",
+      "A floating mascot sits above the page, so here it can cover the Controls panel; ",
+      "turn on dragging to move it aside."
+    ),
     arg_field(
       "mascot_placement",
       "position",
@@ -327,7 +339,7 @@ panel_wiring <- function() {
       "updateMascot",
       "...",
       tagList(
-        selectInput("mistake", "Try a mistake", names(mistakes)),
+        selectInput("mistake", "Demonstration: try a mistake in ...", names(mistakes)),
         uiOutput("mistake_code"),
         actionButton("mistake_run", "Run it", class = "btn-outline-danger btn-sm")
       ),
@@ -339,7 +351,8 @@ panel_wiring <- function() {
       tagList(
         div(
           class = "pg-hint",
-          "A slow step: thinking now, then happy (or worried) two seconds later. The second call names session = session explicitly, as a callback outside a reactive context would."
+          "Demonstration: a slow step using session. Thinking now, then happy (or worried) two seconds later. ",
+          "The second call names session = session explicitly, as a callback outside a reactive context would."
         ),
         input_switch("task_fail", "Make the task fail", FALSE),
         actionButton("task_run", "Run a 2-second task", class = "btn-outline-primary btn-sm")

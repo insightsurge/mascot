@@ -501,6 +501,17 @@ describe("bundled example apps", {
     expect_true(app$get_js(
       "document.getElementById('code_tray_body').contains(document.getElementById('studio_panels_card')) && !document.getElementById('code_tray_header').contains(document.querySelector('.bslib-full-screen-enter')) && document.querySelector('#studio_panels_card .bslib-full-screen-enter') !== null"
     ))
+    # E1: the code itself is visible in the open tray at 1440 x 900 without scrolling.
+    app$wait_for_js("document.getElementById('studio_dock').getAnimations().length === 0")
+    expect_true(app$get_js(
+      "(() => {
+      const tray = document.getElementById('code_tray_body');
+      const code = document.getElementById('code_ui').getBoundingClientRect();
+      const visible = tray.getBoundingClientRect();
+      return tray.scrollTop === 0 && code.top >= visible.top &&
+        code.top + 20 < Math.min(visible.bottom, window.innerHeight);
+    })()"
+    ))
     # The tray's own header bar is the only Code control: there is no toolbar button.
     expect_identical(app$get_js("document.querySelectorAll('#code_toggle').length"), 0L)
     expect_identical(app$get_js("document.getElementById('code_tray_toggle').textContent.trim()"), "Code")
@@ -516,8 +527,15 @@ describe("bundled example apps", {
     ))
     expect_identical(
       app$get_js("document.querySelectorAll('#studio_inspector [data-event=select_function]').length"),
-      0L
+      19L
     )
+    select_function("mascot")
+    app$click(selector = '[data-function=mascot] a[data-event=select_function][data-value=mascot_status]')
+    app$wait_for_js(
+      "Shiny.shinyapp.$inputValues.select_function === 'mascot_status' &&
+      !document.querySelector('#studio_inspector [data-function=mascot_status]').hidden"
+    )
+    select_function("mascot_mood")
     expect_identical(app$get_js("document.querySelectorAll('#status_text').length"), 1L)
     app$run_js("window.studioStatusInput = document.getElementById('status_text')")
     expect_match(
@@ -610,7 +628,11 @@ describe("bundled example apps", {
       "(() => { const example = document.querySelector('.pg-guide-example').getBoundingClientRect(); const table = document.querySelector('.pg-guide-visual .pg-table').getBoundingClientRect(); const callout = document.querySelector('.pg-guide-visual .pg-callout').getBoundingClientRect(); return table.left > example.left && callout.left > table.left && Math.abs(table.top - example.top) < 80; })()"
     ))
     expect_true(app$get_js(
-      "(() => { const code = document.getElementById('code_function').getBoundingClientRect(); const copy = document.querySelector('[data-copy=code_function]').getBoundingClientRect(); return copy.bottom <= code.top; })()"
+      "(() => {
+        const code = document.getElementById('code_function').getBoundingClientRect();
+        const copy = document.querySelector('[data-copy=code_function]').getBoundingClientRect();
+        return copy.top >= code.top && copy.right <= code.right;
+      })()"
     ))
     guide_removed <- "!document.querySelector('.pg-guide-modal') && !document.getElementById('shiny-modal-wrapper') && !document.querySelector('.modal-backdrop') && !document.body.classList.contains('modal-open')"
     app$click("close_guide")
@@ -860,7 +882,7 @@ describe("bundled example apps", {
     app$wait_for_js(highlight_swatch_matches)
     expect_true(app$get_js(highlight_swatch_matches))
     select_function("mascot_popup_menu")
-    app$set_inputs(menu_direction = "right")
+    app$set_inputs(menu_on = TRUE, menu_items = "finish = Finish review", menu_direction = "right")
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('direction = \"right\"')")
     app$wait_for_js(paste0(state, ".popup_menu.direction === 'right'"))
     app$click(selector = "#helper .mascot-menu-toggle")
@@ -1249,6 +1271,13 @@ describe("studio state and built previews", {
         menu_direction = "auto",
         mistake = "Misspell an argument"
       )
+      for (code in c(output$code_ui, output$code_server, output$code_app)) {
+        expect_false(grepl("Hello! Choose a function|About this studio", code))
+      }
+      for (fn in c("mascot", "updateMascot")) {
+        session$setInputs(select_function = fn)
+        expect_false(grepl("Hello! Choose a function|About this studio", output$code_function))
+      }
       session$setInputs(task_run = 1)
       expect_identical(state$mood$short, "thinking")
       expect_identical(messages$mood$value, "thinking")
@@ -1266,6 +1295,39 @@ describe("studio state and built previews", {
       session$setInputs(helper_position = "top-left")
       expect_identical(state$placement, placement_code("top-left", TRUE, "snap"))
       expect_identical(messages$position$value, "top-left")
+      task(list(fail = TRUE, ends = Sys.time() - 1))
+      session$flushReact()
+      expect_match(messages$bubble_text$value, "Three rows")
+      task(list(fail = FALSE, ends = Sys.time() - 1))
+      session$flushReact()
+      expect_null(eval(state$bubble$helper)$text)
+      expect_identical(messages$bubble_text$value, "")
+      expect_false(messages$bubble_forever$value)
+      session$setInputs(send_many = 1)
+      expect_identical(messages$bubble_text$value, "All 120 rows passed.")
+      expect_true(messages$bubble_forever$value)
+      # Browser input acknowledgements are separate from server update messages.
+      session$setInputs(
+        bubble_text = messages$bubble_text$value,
+        bubble_html = messages$bubble_html$value,
+        bubble_forever = messages$bubble_forever$value,
+        bubble_closable = messages$bubble_closable$value,
+        select_function = "mascot_bubble"
+      )
+      expect_identical(eval(parse(text = output$code_function))$text, eval(state$bubble$helper)$text)
+      expect_identical(eval(parse(text = output$code_function))$duration, Inf)
+      session$setInputs(menu_items = "missing equals", select_function = "mascot_popup_menu")
+      for (code in c(output$code_function, output$menu_code, output$code_ui, output$code_server, output$code_app)) {
+        expect_match(code, "^# .*id = Label")
+      }
+      session$setInputs(menu_items = "finish = Finish review")
+      session$elapse(700)
+      session$setInputs(contrast_check = 1)
+      expect_match(output$contrast$html, "Every colour checked")
+      session$setInputs(theme_source = "mascot", theme_mode = "dark")
+      expect_match(output$contrast$html, "[Ss]tale")
+      session$setInputs(theme_source = "own", theme_mode = "auto")
+      session$elapse(400)
       bubble <- state$bubble
       session$setInputs(helper_menu = "finish")
       expect_identical(state$bubble, bubble)
@@ -1276,6 +1338,7 @@ describe("studio state and built previews", {
       session$setInputs(menu_on = FALSE)
       session$elapse(700)
       expect_false(grepl("observeEvent(input$helper_menu", output$code_app, fixed = TRUE))
+      session$setInputs(mood = "happy")
       # Re-selecting the available character exercises the same atomic update as a future character swap.
       # Mood must be present even when it matches state: the engine resets mood on a changed character id.
       session$setInputs(mood = messages$mood$value)
@@ -1425,7 +1488,176 @@ describe("studio state and built previews", {
       session$setInputs(preview_menu_items = "no label here")
       session$elapse(500)
       expect_match(output$preview_problem$html, "id = Label", fixed = TRUE)
-      expect_match(output$code_preview, 'status = "Auto rebuild status"', fixed = TRUE)
+      expect_match(output$code_preview, "^# .*id = Label")
+      expect_match(output$code_function, "^# .*id = Label")
+      session$setInputs(preview_menu_items = "")
+      session$elapse(500)
+      expect_match(output$preview_frame$html, "iframe")
+      session$setInputs(preview_menu_items = "same = One\nsame = Two")
+      session$elapse(500)
+      expect_match(output$code_preview, "^# ")
+      expect_false(grepl("mascot_preview(", output$code_preview, fixed = TRUE))
+      expect_identical(last_preview_attempt()$outcome, "error")
+      session$setInputs(preview_menu_items = "")
+      session$elapse(500)
+      expect_match(output$preview_frame$html, "iframe")
+      expect_identical(last_preview_attempt()$outcome, "ok")
+      expect_identical(last_preview_attempt()$args, last_built_call())
+      session$setInputs(preview_menu_items = "same = One\nsame = Two")
+      session$elapse(500)
+      expect_match(output$code_preview, "^# ")
+      session$setInputs(select_function = "mascot_mood", preview_menu_items = "")
+      session$elapse(500)
+      expect_identical(last_preview_attempt()$outcome, "error")
+      session$setInputs(select_function = "mascot_preview")
+      session$elapse(500)
+      expect_match(output$preview_frame$html, "iframe")
+      expect_identical(last_preview_attempt()$outcome, "ok")
+      files <- list.files(preview_dir, pattern = "^preview-.*[.]html$")
+      expect_length(files, 2)
+      expect_true(all(file.exists(file.path(
+        preview_dir,
+        sprintf(
+          "preview-%s-%d.html",
+          session$token,
+          c(preview_count() - 1, preview_count())
+        )
+      ))))
     })
+  })
+})
+
+
+describe("studio round 8 help and copied apps", {
+  it("keeps a missing help page local while strict lookup still fails", {
+    skip_if_not_installed("bslib")
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+    env <- environment(app$serverFuncSource())
+    missing <- get("help_rd", env)("mascot_bubble")
+    cache <- get("help_cache", env)
+    cache$db <- Filter(function(rd) !identical(rd, missing), get("help_db", env)())
+    cache$mascot_bubble <- NULL
+    if (exists("help_example_cache", env)) {
+      example_cache <- get("help_example_cache", env)
+      example_cache$mascot_bubble <- NULL
+    }
+    expect_error(get("help_rd", env)("mascot_bubble"), "no help page")
+    page <- as.character(get("studio_page", env)(formals(mascot)$character, "mascot_bubble"))
+    expect_match(page, "Help unavailable for mascot_bubble()", fixed = TRUE)
+    expect_match(page, get("help_page", env)("mascot_mood")$title, fixed = TRUE)
+    expect_match(
+      as.character(get("selected_guide", env)("mascot_bubble")),
+      "Help unavailable for mascot_bubble()",
+      fixed = TRUE
+    )
+  })
+  it("parses help examples only once per function", {
+    env <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "help.R"), env)
+    original <- env$help_rd
+    calls <- 0L
+    env$help_rd <- function(fn) {
+      calls <<- calls + 1L
+      original(fn)
+    }
+    first <- env$help_examples("mascot_bubble")
+    expect_gt(length(first), 0)
+    expect_identical(env$help_examples("mascot_bubble"), first)
+    expect_identical(calls, 1L)
+  })
+  it("starts copied apps with the user's settings and preserves multiline bubble strings", {
+    env <- new.env()
+    dir <- dirname(mascot_example("studio", FALSE))
+    sys.source(file.path(dir, "R", "code.R"), env)
+    sys.source(file.path(dir, "R", "data.R"), env)
+    bubble_calls <- function(expr) {
+      if (!is.call(expr)) {
+        return(list())
+      }
+      if (identical(expr[[1]], as.name("mascot")) && !is.null(expr$bubble)) {
+        return(list(expr))
+      }
+      Reduce(c, lapply(as.list(expr)[-1], bubble_calls), init = list())
+    }
+    cases <- c(env$bubble_examples, list(list(text = 'Both )" and )-" occur\n  with spaces.', html = FALSE)))
+    for (example in cases) {
+      pair <- env$code_bubble(example$text, example$html, Inf, FALSE)
+      for (style in c("short", "helper")) {
+        ui <- env$format_call("mascot", list(id = "helper", mood = "worried", bubble = pair[[style]]))
+        code <- env$whole_app_code(ui, NULL, c("shiny", "mascot"))
+        parsed <- parse(text = code)
+        call <- parsed[[3]][[3]][[2]]
+        expect_identical(call[[1]], as.name("mascot"))
+        expect_identical(call$mood, "worried")
+        # Find the user's call independently of its UI/server placement, so this also catches A8 alone.
+        calls <- Reduce(c, lapply(as.list(parsed), bubble_calls), init = list())
+        expect_length(calls, 1)
+        bubble <- eval(calls[[1]]$bubble, envir = list(HTML = htmltools::HTML, mascot_bubble = mascot_bubble))
+        expect_identical(as.character(bubble$text), example$text)
+        expect_identical(bubble$duration, Inf)
+        expect_match(code, 'actionButton("celebrate", "Celebrate")', fixed = TRUE)
+        expect_match(code, 'updateMascot("helper", mood = "celebrating", bubble = "Review complete.")', fixed = TRUE)
+        expect_false(grepl("Apply my settings", code, fixed = TRUE))
+      }
+    }
+  })
+  it("hides the single-character hint when more character files are shipped", {
+    env <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "data.R"), env)
+    expect_identical(
+      env$studio_character_hint(),
+      paste(mascot_character()$name, "is the only built-in character so far.")
+    )
+    directory <- withr::local_tempdir()
+    file.create(file.path(directory, c("one.json", "two.json")))
+    expect_null(env$studio_character_hint(directory))
+  })
+  it("removes unused initialisation and presentation helpers", {
+    dir <- dirname(mascot_example("studio", FALSE))
+    app <- parse(file.path(dir, "app.R"))
+    assigned <- vapply(
+      as.list(app),
+      function(expr) {
+        if (is.call(expr) && identical(expr[[1]], as.name("<-")) && is.symbol(expr[[2]])) {
+          as.character(expr[[2]])
+        } else {
+          ""
+        }
+      },
+      character(1)
+    )
+    expect_false(any(c("moods", "start_mascot") %in% assigned))
+    env <- new.env()
+    sys.source(file.path(dir, "R", "ui.R"), env)
+    expect_false(exists("chips", envir = env, inherits = FALSE))
+  })
+  it("provides helper links and concrete instructions beside controls", {
+    skip_if_not_installed("bslib")
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+    env <- environment(app$serverFuncSource())
+    page <- as.character(get("studio_page", env)(formals(mascot)$character, "mascot"))
+    for (fn in c("mascot", "updateMascot")) {
+      for (arg in setdiff(names(get("the_guide", env)(fn)$args), c("id", "...", "session"))) {
+        links <- as.character(htmltools::tagList(get("wiring_links", env)(fn)))
+        expect_match(links, paste0('data-value="mascot_', arg, '"'), fixed = TRUE)
+        expect_match(links, 'data-event="select_function"', fixed = TRUE)
+      }
+    }
+    for (text in c("cover the Controls panel", "second character", "Demonstration:", "One-off gestures")) {
+      expect_match(page, text, fixed = TRUE)
+    }
+    expect_false(grepl("inspector", get("html_text", env)(page), ignore.case = TRUE))
+    expect_match(page, "Click or tap the mascot to open its menu", fixed = TRUE)
+    expect_match(
+      page,
+      paste(names(get("studio_characters", env)()), "is the only built-in character so far"),
+      fixed = TRUE
+    )
+    expect_match(as.character(get("guide_help", env)("mascot")), 'vignette("mascot", package = "mascot")', fixed = TRUE)
+    expect_match(
+      as.character(get("function_visual", env)("mascot_mood")),
+      "Try moods with the cards in Controls",
+      fixed = TRUE
+    )
   })
 })

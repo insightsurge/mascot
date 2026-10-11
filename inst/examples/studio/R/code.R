@@ -189,20 +189,38 @@ menu_handler_code <- function(items) {
   )
 }
 
-# A whole app to paste into a new app.R: the mascot starts plain, and a button applies the settings.
-whole_app_code <- function(update, menu_handler, packages, css_value = NULL) {
-  indent <- function(text, by) gsub("\n", paste0("\n", strrep(" ", by)), text, fixed = TRUE)
+# Indent source lines while preserving every line inside a multiline string token.
+indent_code <- function(text, by) {
+  checkmate::assert_string(text)
+  checkmate::assert_count(by)
+  tokens <- utils::getParseData(parse(text = text, keep.source = TRUE))
+  strings <- tokens[tokens$token == "STR_CONST" & tokens$line2 > tokens$line1, ]
+  protected <- unlist(Map(function(first, last) seq.int(first + 1L, last), strings$line1, strings$line2))
+  lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+  indent <- !seq_along(lines) %in% protected
+  lines[indent] <- paste0(strrep(" ", by), lines[indent])
+  paste(lines, collapse = "\n")
+}
+
+# A whole app to paste into app.R: user settings in the UI, one server update to try.
+whole_app_code <- function(ui, menu_handler, packages, css_value = NULL) {
+  checkmate::assert_string(ui)
+  checkmate::assert_string(menu_handler, null.ok = TRUE)
+  checkmate::assert_character(packages, min.chars = 1, any.missing = FALSE)
+  checkmate::assert_string(css_value, null.ok = TRUE)
   paste0(
     paste0("library(", packages, ")", collapse = "\n"),
     "\n\nui <- fluidPage(\n",
     if (!is.null(css_value)) sprintf("  tags$style(\":root { --studio-accent: %s; }\"),\n", css_value),
-    "  mascot(id = \"helper\"),\n",
-    "  actionButton(\"apply\", \"Apply my settings\")\n)\n\n",
+    indent_code(ui, 2),
+    ",\n",
+    "  actionButton(\"celebrate\", \"Celebrate\")\n)\n\n",
     "server <- function(input, output, session) {\n",
-    "  observeEvent(input$apply, {\n    ",
-    indent(update, 4),
+    "  # One button demonstrates a single server update.\n",
+    "  observeEvent(input$celebrate, {\n",
+    '    updateMascot("helper", mood = "celebrating", bubble = "Review complete.")',
     "\n  })\n",
-    if (!is.null(menu_handler)) paste0("  ", indent(menu_handler, 2), "\n"),
+    if (!is.null(menu_handler)) paste0(indent_code(menu_handler, 2), "\n"),
     "}\n\nshinyApp(ui, server)"
   )
 }

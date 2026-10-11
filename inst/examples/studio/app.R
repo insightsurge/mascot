@@ -1,6 +1,6 @@
 # The mascot studio: every exported function and argument, live, with explanations.
 # Run it with mascot::mascot_example("studio"). Shiny first loads the files in R/ (the
-# explanations, data, code builders, inspector controls and guide pieces) and serves www/ (styles
+# explanations, data, code builders, Controls and guide pieces) and serves www/ (styles
 # and the colour picker).
 library(shiny)
 if (!requireNamespace("bslib", quietly = TRUE)) {
@@ -17,7 +17,6 @@ if (!exists("playground_guide")) {
   }
 }
 
-moods <- mascot_moods()
 examples <- mascot_examples()
 
 start <- lapply(defaults, code_pair)
@@ -38,8 +37,6 @@ server_args <- function(state, style) {
 }
 
 # ---- Pages -------------------------------------------------------------------------------
-
-start_mascot <- do.call(mascot, lapply(ui_args(start, "short"), eval))
 
 studio_page <- function(character, fn) {
   checkmate::assert_string(character)
@@ -340,14 +337,18 @@ ui <- function(request) {
 # ---- Server ------------------------------------------------------------------------------
 
 studio_server <- function(input, output, session) {
-  state <- do.call(reactiveValues, start)
-  last_call <- reactiveVal("No update yet. Change a setting in the inspector.")
+  # Welcome content belongs to the live studio; copied code starts with empty user messages and menu.
+  settings <- start
+  settings$bubble <- code_pair(defaults$bubble)
+  settings$popup_menu <- code_pair(defaults$popup_menu)
+  state <- do.call(reactiveValues, settings)
+  last_call <- reactiveVal("No update yet. Change a setting in Controls.")
   log <- reactiveVal(list())
   selected_function <- reactiveVal("mascot_mood")
   current_character <- reactive(input$character %||% defaults$character)
   character_name <- reactive(mascot_character(current_character())$name)
   roles <- reactive(mascot_colour_roles(current_character()))
-  output$character_caption <- renderText(paste(character_name(), "follows the arguments in the inspector."))
+  output$character_caption <- renderText(paste(character_name(), "follows the arguments in Controls."))
   output$code_caption <- renderText(paste("Code for", character_name(), "with the current settings."))
   observeEvent(input$initial_function, selected_function(input$initial_function), once = TRUE)
   observeEvent(
@@ -409,6 +410,16 @@ studio_server <- function(input, output, session) {
     !unchanged
   }
 
+  sync_bubble_controls <- function(pair) {
+    checkmate::assert_list(pair)
+    bubble <- eval(pair$helper)
+    updateTextAreaInput(session, "bubble_text", value = as.character(bubble$text %||% ""))
+    update_switch("bubble_html", value = inherits(bubble$text, "html"), session = session)
+    update_switch("bubble_forever", value = is.infinite(bubble$duration), session = session)
+    updateSliderInput(session, "bubble_duration", value = if (is.finite(bubble$duration)) bubble$duration else 5)
+    update_switch("bubble_closable", value = bubble$closable, session = session)
+  }
+
   # Sends the changed settings in one updateMascot() call; TRUE when it ran, FALSE on an error,
   # NA when nothing changed. force sends unchanged ones too (a bubble shown twice, a gesture);
   # with_session names the session, for calls that run outside the reactive context.
@@ -433,6 +444,9 @@ studio_server <- function(input, output, session) {
         state[[field]] <- pairs[[field]]
         if (field == "mood") {
           session$sendInputMessage("mood", list(value = eval(pairs[[field]]$short)))
+        }
+        if (field == "bubble") {
+          sync_bubble_controls(pairs[[field]])
         }
         if (field == "status") {
           value <- eval(pairs[[field]]$helper)$text
@@ -666,12 +680,22 @@ studio_server <- function(input, output, session) {
       reset_colour(input$reset_mode, role)
     }
   )
+  contrast_settings <- reactive(list(
+    character = current_character(),
+    theme = theme_now(),
+    accepted_theme = state$theme,
+    css = input$css_accent
+  ))
+  checked_contrast <- eventReactive(input$contrast_check, contrast_settings())
   output$contrast <- renderUI({
-    input$contrast_check
-    theme <- isolate(state$theme)
     req(input$contrast_check)
+    checked <- checked_contrast()
+    if (!identical(checked, contrast_settings())) {
+      return(div(class = "pg-note", "Stale contrast result: settings changed. Check contrast again."))
+    }
+    theme <- checked$theme
     preview <- tryCatch(
-      suppressWarnings(mascot_preview(character = isolate(current_character()), theme = eval(theme$short))),
+      suppressWarnings(mascot_preview(character = checked$character, theme = eval(theme$short))),
       error = function(e) e
     )
     if (inherits(preview, "error")) {
@@ -708,7 +732,7 @@ studio_server <- function(input, output, session) {
   # Popup menu
   menu_text <- debounce(reactive(list(input$menu_on, input$menu_items, input$menu_direction)), 600)
   menu_parsed <- reactive({
-    lines <- trimws(strsplit(input$menu_items, "\n", fixed = TRUE)[[1]])
+    lines <- trimws(strsplit(input$menu_items %||% "", "\n", fixed = TRUE)[[1]])
     lines <- lines[nzchar(lines)]
     bad <- !grepl("=", lines, fixed = TRUE)
     if (any(bad)) {
@@ -732,7 +756,7 @@ studio_server <- function(input, output, session) {
       # Switching the menu off works even while the item text has a problem.
       req(!isTRUE(input$menu_on) || is.null(parsed$problem))
       items <- if (isTRUE(input$menu_on)) parsed$items else character()
-      ok <- send(list(popup_menu = code_menu(items, input$menu_direction %||% "auto")))
+      ok <- send(list(popup_menu = code_menu(items, input$menu_direction %||% "auto")), force = TRUE)
       menu_error(if (identical(ok, FALSE) && length(log())) log()[[1]]$message)
     },
     ignoreInit = TRUE
@@ -768,6 +792,9 @@ studio_server <- function(input, output, session) {
   })
   output$menu_last <- renderText(menu_last())
   output$menu_code <- renderText({
+    if (!is.null(menu_parsed()$problem)) {
+      return(problem_comment(menu_parsed()$problem))
+    }
     code <- menu_handler_code(menu_parsed()$items)
     if (is.null(code)) "# Add items to see the server code." else code
   })
@@ -812,15 +839,13 @@ studio_server <- function(input, output, session) {
         bubble = code_bubble("Three rows have no batch date.", FALSE, Inf, TRUE)
       )
     } else {
-      list(mood = code_mood("happy"), status = code_status("All 120 rows checked"))
+      list(
+        mood = code_mood("happy"),
+        status = code_status("All 120 rows checked"),
+        bubble = code_bubble("", FALSE, 5, TRUE)
+      )
     }
     send(pairs, force = TRUE, with_session = TRUE)
-    if (job$fail) {
-      updateTextAreaInput(session, "bubble_text", value = "Three rows have no batch date.")
-      update_switch("bubble_html", value = FALSE)
-      update_switch("bubble_forever", value = TRUE)
-      update_switch("bubble_closable", value = TRUE)
-    }
     task(NULL)
     session$sendCustomMessage("studio:task", FALSE)
   })
@@ -930,6 +955,7 @@ studio_server <- function(input, output, session) {
   preview_count <- reactiveVal(0)
   is_building <- reactiveVal(FALSE)
   last_built_call <- reactiveVal(NULL)
+  last_preview_attempt <- reactiveVal(NULL)
   preview_inputs <- reactive(tryCatch(preview_args(), error = function(e) conditionMessage(e)))
   debounced_preview_inputs <- debounce(preview_inputs, 400)
   build_preview <- function() {
@@ -939,8 +965,8 @@ studio_server <- function(input, output, session) {
   # The page is built on the first visit, and again when the arguments changed since the last build.
   observeEvent(preview_selected(), {
     if (preview_selected()) {
-      args <- tryCatch(preview_args(), error = function(e) NULL)
-      if (preview_request() == 0 || (!is.null(args) && !identical(args, last_built_call()))) {
+      args <- preview_inputs()
+      if (preview_request() == 0 || !identical(args, last_preview_attempt()$args)) {
         build_preview()
       }
     }
@@ -954,8 +980,8 @@ studio_server <- function(input, output, session) {
     debounced_preview_inputs(),
     {
       if (preview_selected() && preview_request() > 0) {
-        args <- tryCatch(preview_args(), error = function(e) NULL)
-        if (!is.null(args) && !identical(args, last_built_call())) {
+        args <- preview_inputs()
+        if (!identical(args, last_preview_attempt()$args)) {
           preview_request(preview_request() + 1)
         } else {
           is_building(FALSE)
@@ -967,10 +993,12 @@ studio_server <- function(input, output, session) {
   observeEvent(input$preview_build, build_preview())
   built_preview <- eventReactive(preview_request(), {
     req(preview_request() > 0)
+    attempt <- preview_inputs()
+    last_preview_attempt(list(args = attempt, outcome = "error"))
     args <- tryCatch(preview_args(), error = function(e) e)
     if (inherits(args, "error")) {
       is_building(FALSE)
-      return(list(error = cli::ansi_strip(conditionMessage(args)), code = "# Review the preview arguments"))
+      return(list(error = cli::ansi_strip(conditionMessage(args)), code = problem_comment(conditionMessage(args))))
     }
     page <- withCallingHandlers(
       tryCatch(eval(as.call(c(as.name("mascot_preview"), args))), error = function(e) e),
@@ -980,11 +1008,17 @@ studio_server <- function(input, output, session) {
     )
     is_building(FALSE)
     if (inherits(page, "error")) {
-      return(list(error = cli::ansi_strip(conditionMessage(page)), code = format_call("mascot_preview", args)))
+      return(list(error = cli::ansi_strip(conditionMessage(page)), code = problem_comment(conditionMessage(page))))
     }
     preview_count(isolate(preview_count()) + 1)
     file <- sprintf("preview-%s-%d.html", session$token, isolate(preview_count()))
     htmltools::save_html(page, file.path(preview_dir, file), libdir = "lib")
+    # Leave the current and preceding page available while the iframe loads.
+    older <- seq_len(max(0L, isolate(preview_count()) - 2L))
+    if (length(older)) {
+      unlink(file.path(preview_dir, sprintf("preview-%s-%d.html", session$token, older)))
+    }
+    last_preview_attempt(list(args = args, outcome = "ok"))
     last_built_call(args)
     list(file = file, contrast = attr(page, "contrast"), code = format_call("mascot_preview", args))
   })
@@ -1005,12 +1039,27 @@ studio_server <- function(input, output, session) {
       title = "mascot_preview() page"
     )
   })
-  output$code_preview <- renderText({
+  preview_code <- reactive({
+    problem <- tryCatch(
+      {
+        preview_args()
+        NULL
+      },
+      error = function(e) conditionMessage(e)
+    )
+    if (!is.null(problem)) {
+      return(problem_comment(problem))
+    }
     if (preview_request() == 0) {
       return("# Select mascot_preview() in the index to build a preview.")
     }
-    built_preview()$code
+    result <- built_preview()
+    if (!identical(preview_inputs(), last_preview_attempt()$args)) {
+      return("# Building preview for the current settings.")
+    }
+    result$code
   })
+  output$code_preview <- renderText(preview_code())
   output$preview_contrast <- renderUI({
     req(preview_request() > 0)
     findings <- built_preview()$contrast
@@ -1036,12 +1085,26 @@ studio_server <- function(input, output, session) {
     }
   })
 
+  problem_comment <- function(problem) {
+    checkmate::assert_string(problem)
+    paste0("# ", gsub("[\r\n]+", " ", cli::ansi_strip(problem)))
+  }
+  settings_problem <- reactive({
+    if (isTRUE(input$menu_on)) menu_parsed()$problem %||% menu_error()
+  })
+
   # Code card
   output$code_ui <- renderText({
+    if (!is.null(settings_problem())) {
+      return(problem_comment(settings_problem()))
+    }
     current <- reactiveValuesToList(state)
     format_call("mascot", ui_args(current, style()))
   })
   output$code_server <- renderText({
+    if (!is.null(settings_problem())) {
+      return(problem_comment(settings_problem()))
+    }
     args <- server_args(reactiveValuesToList(state), style())
     if (length(args) == 1) {
       paste0("# ", character_name(), " is in the default state: nothing to update.")
@@ -1051,15 +1114,13 @@ studio_server <- function(input, output, session) {
   })
   output$code_app <- renderText({
     current <- reactiveValuesToList(state)
-    args <- server_args(current, style())
-    update <- if (length(args) == 1) {
-      "# Change a setting in the studio first."
-    } else {
-      format_call("updateMascot", args)
+    if (!is.null(settings_problem())) {
+      return(problem_comment(settings_problem()))
     }
+    ui <- format_call("mascot", ui_args(current, style()))
     theme <- paste(deparse(current$theme$short), collapse = "")
     whole_app_code(
-      update,
+      ui,
       menu_handler_code(eval(current$popup_menu$helper)$items),
       c("shiny", if (grepl("bs_theme", theme, fixed = TRUE)) "bslib", "mascot"),
       if (grepl("--studio-accent", theme, fixed = TRUE)) input$css_accent
@@ -1097,6 +1158,12 @@ studio_server <- function(input, output, session) {
   output$roles_table <- renderUI(roles_table(current_character()))
   output$code_function <- renderText({
     fn <- selected_function()
+    if (fn %in% c("mascot", "updateMascot", "mascot_popup_menu") && !is.null(settings_problem())) {
+      return(problem_comment(settings_problem()))
+    }
+    if (fn == "mascot_preview") {
+      return(preview_code())
+    }
     pair <- switch(
       fn,
       mascot_character = code_character(input$character),
@@ -1132,7 +1199,6 @@ studio_server <- function(input, output, session) {
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
       updateMascot = format_call("updateMascot", server_args(reactiveValuesToList(state), style())),
       mascot_colour_roles = format_call(fn, list(character = current_character())),
-      mascot_preview = format_call(fn, tryCatch(preview_args(), error = function(e) list())),
       mascot_example = format_call(fn, list(name = examples$name[1], run = FALSE)),
       mascot_studio = format_call(fn, list(fn = "mascot_theme")),
       format_call(fn, list())

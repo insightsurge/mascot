@@ -95,3 +95,13 @@ describe("mascot_studio()", {
     expect_identical(examples$get_js("document.querySelectorAll('#example_name').length"), 0L)
   })
 })
+
+describe("the studio on older R", {
+  it("defines its own %||%, which base R has only from R 4.4", {
+    data <- new.env(parent = baseenv())
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), envir = data)
+    expect_true(exists("%||%", envir = data, inherits = FALSE))
+    expect_identical(data$`%||%`(NULL, "b"), "b")
+    expect_identical(data$`%||%`("a", "b"), "a")
+  })
+})

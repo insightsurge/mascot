@@ -198,6 +198,10 @@ theme_channels <- function(x) {
     }
     return(if (count == 3L) c(channels, 1) else channels)
   }
+  # bslib can return short hex ("#000"), which col2rgb() rejects on older R; expand it for every supported R.
+  if (grepl("^#[0-9a-fA-F]{3,4}$", x)) {
+    x <- paste0("#", paste(rep(strsplit(substring(x, 2), "")[[1]], each = 2), collapse = ""))
+  }
   channels <- tryCatch(grDevices::col2rgb(x, alpha = TRUE), error = function(error) NULL)
   if (is.null(channels)) {
     return(NULL)

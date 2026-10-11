@@ -151,3 +151,11 @@ describe("theme_tag()", {
     expect_match(as.character(theme_tag(list(text = "</script>"))), "<\\/script>", fixed = TRUE)
   })
 })
+
+describe("theme_channels()", {
+  it("reads short hex colours, as bslib returns them, on every supported R version", {
+    expect_identical(theme_channels("#000"), c(red = 0, green = 0, blue = 0, alpha = 1))
+    expect_identical(theme_channels("#f80"), theme_channels("#ff8800"))
+    expect_identical(theme_channels("#f80c"), theme_channels("#ff8800cc"))
+  })
+})

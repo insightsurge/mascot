@@ -1,6 +1,9 @@
 # Plain data for the studio: bubble examples, the starting menu, the mistakes to try and the
 # defaults of mascot(). Shiny sources this before app.R attaches mascot, so it calls no mascot code.
 
+# Base R has %||% only from R 4.4; the package supports R 4.1, so the studio keeps its own copy.
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
 corners <- c("top-left", "top-right", "bottom-left", "bottom-right")
 
 bubble_examples <- list(

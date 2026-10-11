@@ -75,6 +75,7 @@
 
 ## Minor improvements and fixes
 
+* `mascot_theme()` reads short hex colours such as `"#000"`, which `bslib::bs_theme()` can return, on every supported R version, and the studio runs on R 4.1 to 4.3 (#255).
 * The mascot helper objects (`mascot_bubble()`, `mascot_theme()` and the others) print and format readably (#213).
 * `mascot()` without an `id` explains that the first argument is the character, and shows `mascot(id = "helper")` (#215).
 * Every size draws the full character. The separate small-size drawing from 0.0.2 is removed, because below 72 pixels it looked worse than the full face (#219).

@@ -55,6 +55,7 @@
 * `mascot_studio()` (*experimental*) opens the studio, an app for exploring the package: a Guide to every exported function and argument, with explanations and the code to copy; a Code tray with UI, Server, App and Log tabs; and a canvas that shows the live mascot, or the page `mascot_preview()` returns when that function is selected (#38, #218).
   * `view = "examples"` opens the bundled examples instead. `fn` starts on a named function's Guide entry, and `character` chooses the character (#38).
   * `run = FALSE` returns the app without launching it.
+  * Show bubble sits right under the message box, and always shows the example just chosen, even when clicked at once (#249).
 
 * `mascot_theme()` sets a character's colours and its light or dark mode (#202, #213).
   * Colours you supply are kept exactly. Roles you leave out follow the character's declared leaders, such as `body`, in priority order; `mascot_colour_roles()` lists them (#213).

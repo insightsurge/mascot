@@ -1973,3 +1973,37 @@ describe("studio safeguards (#248)", {
     expect_false(identical(start$position, formals(mascot)$placement))
   })
 })
+
+describe("studio bubble controls (#249)", {
+  it("shows the chosen example even when Show arrives before the browser fills the inputs", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    examples <- get("bubble_examples", parts$env)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      # Given an example chosen and Show clicked at once: the server has not yet heard the filled inputs.
+      session$setInputs(bubble_example = "Checklist", bubble_show = 1)
+      # Then the bubble sent is the example's, not the text still in the input.
+      expect_identical(input$bubble_text, start$bubble_text)
+      sent <- session$userData$mascot_updates[[session$ns("helper")]]$patch$bubble
+      expect_identical(sent$text, examples$Checklist$text)
+      expect_true(sent$html)
+      expect_match(last_call(), "Before you submit", fixed = TRUE)
+      # When the visitor then types, Show sends what they typed.
+      session$setInputs(bubble_text = "Typed by hand", bubble_html = FALSE)
+      session$setInputs(bubble_show = 2)
+      sent <- session$userData$mascot_updates[[session$ns("helper")]]$patch$bubble
+      expect_identical(sent$text, "Typed by hand")
+      expect_false(sent$html)
+    })
+  })
+  it("puts Show bubble right under the message box, before the duration and close settings", {
+    page <- studio_parts()$page
+    at <- function(id) regexpr(sprintf('id="%s"', id), page, fixed = TRUE)[[1]]
+    expect_gt(at("bubble_show"), at("bubble_text"))
+    expect_lt(at("bubble_show"), at("bubble_html"))
+    expect_lt(at("bubble_show"), at("bubble_duration"))
+    expect_lt(at("bubble_clear"), at("bubble_duration"))
+    expect_match(page, "Duration and the close button below apply the next time you click Show bubble.", fixed = TRUE)
+  })
+})

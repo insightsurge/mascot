@@ -416,6 +416,9 @@ studio_server <- function(input, output, session) {
   sync_bubble_controls <- function(pair) {
     checkmate::assert_list(pair)
     bubble <- eval(pair$helper)
+    # Show reads the draft (see bubble_draft below), so it follows the controls at once too.
+    bubble_draft$text <- as.character(bubble$text %||% "")
+    bubble_draft$html <- isTRUE(bubble$html)
     updateTextAreaInput(session, "bubble_text", value = as.character(bubble$text %||% ""))
     update_switch("bubble_html", value = isTRUE(bubble$html), session = session)
     update_switch("bubble_forever", value = is.infinite(bubble$duration), session = session)
@@ -501,21 +504,29 @@ studio_server <- function(input, output, session) {
     updateTextInput(session, "status_text", value = "")
     send(list(status = code_status("")))
   })
+  # The bubble content Show sends. An example fills it at once: the browser reports the example's text only after
+  # it has filled the inputs, so a quick Show must not read the inputs and send the previous text (#249).
+  bubble_draft <- reactiveValues(text = NULL, html = NULL)
+  observeEvent(input$bubble_text, bubble_draft$text <- input$bubble_text)
+  observeEvent(input$bubble_html, bubble_draft$html <- input$bubble_html)
   observeEvent(
     input$bubble_example,
     {
       example <- bubble_examples[[input$bubble_example]]
+      bubble_draft$text <- example$text
+      bubble_draft$html <- example$html
       updateTextAreaInput(session, "bubble_text", value = example$text)
       update_switch("bubble_html", value = example$html)
     },
-    ignoreInit = TRUE
+    ignoreInit = TRUE,
+    # Before Show when both arrive together.
+    priority = 1
   )
   observeEvent(input$bubble_show, {
     duration <- if (input$bubble_forever) Inf else as.numeric(input$bubble_duration)
-    send(
-      list(bubble = code_bubble(input$bubble_text, input$bubble_html, duration, input$bubble_closable)),
-      force = TRUE
-    )
+    text <- bubble_draft$text %||% input$bubble_text
+    html <- bubble_draft$html %||% input$bubble_html
+    send(list(bubble = code_bubble(text, html, duration, input$bubble_closable)), force = TRUE)
   })
   observeEvent(input$bubble_clear, send(list(bubble = code_bubble("", FALSE, 5, TRUE)), force = TRUE))
 

@@ -113,8 +113,15 @@ panel_messages <- function() {
       tagList(
         selectInput("bubble_example", "Start from an example", names(bubble_examples)),
         textAreaInput("bubble_text", "Bubble content", bubble_examples[[1]]$text, rows = 5, resize = "vertical"),
+        # Right under the message box, so the next step after typing is in view.
+        div(
+          class = "pg-actions",
+          actionButton("bubble_show", "Show bubble", class = "btn-primary btn-sm"),
+          actionButton("bubble_clear", "Clear bubble", class = "btn-outline-primary btn-sm")
+        ),
         input_switch("bubble_html", "Treat as HTML (wraps it in HTML())", FALSE)
-      )
+      ),
+      note = div(class = "pg-hint", "Duration and the close button below apply the next time you click Show bubble.")
     ),
     arg_field(
       "mascot_bubble",
@@ -125,11 +132,6 @@ panel_messages <- function() {
       )
     ),
     arg_field("mascot_bubble", "closable", input_switch("bubble_closable", "Show a close button", TRUE)),
-    div(
-      class = "pg-actions",
-      actionButton("bubble_show", "Show bubble", class = "btn-primary btn-sm"),
-      actionButton("bubble_clear", "Clear bubble", class = "btn-outline-primary btn-sm")
-    ),
     fn_heading("mascot_popup_menu"),
     arg_field(
       "mascot_popup_menu",

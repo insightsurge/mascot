@@ -1665,3 +1665,311 @@ describe("studio round 8 help and copied apps", {
     )
   })
 })
+
+# The studio app's own environment (its server, data and code builders) and its page, built without a browser.
+studio_parts <- function() {
+  testthat::skip_if_not_installed("bslib")
+  app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+  page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
+  list(env = environment(app$serverFuncSource()), page = as.character(page))
+}
+
+# The value each control starts with on the page, by input id, as the browser first reports it to the server.
+studio_start_values <- function(page) {
+  checkmate::assert_string(page)
+  attribute <- function(tag, name) {
+    checkmate::assert_string(tag)
+    checkmate::assert_string(name)
+    match <- regmatches(tag, regexec(sprintf(' %s="([^"]*)"', name), tag))[[1]]
+    if (length(match)) match[[2]] else NULL
+  }
+  unescape <- function(text) {
+    checkmate::assert_string(text)
+    for (entity in names(entities <- c("&lt;" = "<", "&gt;" = ">", "&quot;" = '"', "&#39;" = "'", "&amp;" = "&"))) {
+      text <- gsub(entity, entities[[entity]], text, fixed = TRUE)
+    }
+    text
+  }
+  tags <- function(pattern) regmatches(page, gregexpr(pattern, page, perl = TRUE))[[1]]
+  values <- list()
+  for (tag in tags('<input class="js-range-slider"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- as.numeric(attribute(tag, "data-from"))
+  }
+  for (tag in tags('<input id="[^"]+" class="form-check-input" type="checkbox"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- grepl(" checked", tag, fixed = TRUE)
+  }
+  for (tag in tags('<input id="[^"]+" type="text"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- attribute(tag, "value")
+  }
+  for (tag in tags('(?s)<textarea id="[^"]+"[^>]*>.*?</textarea>')) {
+    values[[attribute(tag, "id")]] <- unescape(sub("(?s)^<textarea[^>]*>(.*)</textarea>$", "\\1", tag, perl = TRUE))
+  }
+  for (tag in tags('(?s)<div id="[^"]+" class="[^"]*shiny-input-radiogroup.*?</div>\\s*</div>')) {
+    id <- attribute(tag, "id")
+    checked <- regmatches(tag, regexec(sprintf('name="%s" value="([^"]*)" checked', id), tag))[[1]]
+    values[[id]] <- checked[[2]]
+  }
+  for (tag in tags('(?s)<select id="[^"]+".*?</select>')) {
+    options <- regmatches(tag, gregexpr('<option value="[^"]*"( selected)?', tag))[[1]]
+    chosen <- grep("selected", options, fixed = TRUE, value = TRUE)
+    values[[attribute(tag, "id")]] <- unescape(attribute(c(chosen, options)[[1]], "value"))
+  }
+  values$mood <- attribute(tags('<div id="mood" [^>]*>'), "data-value")
+  values
+}
+
+describe("studio safeguards (#248)", {
+  it("changes each control's argument in the update sent and in the generated code", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    # Each row: the inputs to set (in order; a click is a count), the field of the update it changes, the code it
+    # adds, and the milliseconds a debounced control waits. `code = NA` marks a one-off event (gestures): it is
+    # sent and appears in the Last tab, never in the UI code.
+    row <- function(inputs, field, code, wait = 0, ui = TRUE) {
+      checkmate::assert_list(inputs, min.len = 1)
+      list(inputs = inputs, field = field, code = code, wait = wait, ui = ui)
+    }
+    show <- function(...) list(list(...), list(bubble_show = 1))
+    rows <- list(
+      mood = row(list(list(mood = "happy")), "mood", 'mood = "happy"'),
+      status_text = row(list(list(status_text = "Saving")), "status", 'status = "Saving"', wait = 700),
+      bubble_text = row(show(bubble_text = "Hi there"), "bubble", 'bubble = "Hi there"'),
+      bubble_html = row(show(bubble_text = "<b>Hi</b>", bubble_html = TRUE), "bubble", 'HTML("<b>Hi</b>")'),
+      bubble_duration = row(show(bubble_text = "Hi", bubble_duration = 9), "bubble", "duration = 9"),
+      bubble_forever = row(show(bubble_text = "Hi", bubble_forever = TRUE), "bubble", "duration = Inf"),
+      bubble_closable = row(show(bubble_text = "Hi", bubble_closable = FALSE), "bubble", "closable = FALSE"),
+      animate = row(list(list(animate = FALSE)), "motion", "motion = FALSE"),
+      swap = row(list(list(swap = FALSE)), "motion", "swap = FALSE"),
+      gesture = row(list(list(gesture = "wave")), "gesture", 'gesture = "wave"', ui = FALSE),
+      size_px = row(list(list(size_px = 120)), "size", "size = 120"),
+      size_unit = row(list(list(size_unit = "pct", size_pct = 40)), "size", 'size = "40%"'),
+      size_pct = row(list(list(size_unit = "pct"), list(size_pct = 50)), "size", 'size = "50%"'),
+      small_on = row(list(list(small_on = TRUE)), "size", "small_screen = 72"),
+      small_px = row(list(list(small_on = TRUE, small_px = 48)), "size", "small_screen = 48"),
+      position = row(list(list(position = "top-left")), "placement", 'placement = "top-left"'),
+      minimise = row(list(list(position = "top-left", minimise = FALSE)), "placement", "minimise = FALSE"),
+      drag = row(list(list(position = "top-left", drag = "snap")), "placement", 'drag = "snap"'),
+      theme_source = row(list(list(theme_source = "bslib")), "theme", "bslib::bs_theme(", wait = 400),
+      theme_mode = row(
+        list(list(theme_source = "mascot", light_body = "#1f6feb", theme_mode = "dark")),
+        "theme",
+        'mode = "dark"',
+        wait = 400
+      ),
+      light_body = row(
+        list(list(theme_source = "mascot", light_body = "#1f6feb")),
+        "theme",
+        'light = list(body = "#1f6feb")',
+        wait = 400
+      ),
+      dark_body = row(
+        list(list(theme_source = "mascot", dark_body = "#9ec5fe")),
+        "theme",
+        'dark = list(body = "#9ec5fe")',
+        wait = 400
+      ),
+      css_roles = row(
+        list(list(theme_source = "mascot", css_roles = "body")),
+        "theme",
+        'css = list(body = "--studio-accent")',
+        wait = 400
+      ),
+      menu_on = row(
+        list(list(menu_on = TRUE, menu_items = "about = About")),
+        "popup_menu",
+        'popup_menu = c(about = "About")',
+        wait = 700
+      ),
+      menu_items = row(
+        list(list(menu_on = TRUE, menu_items = "help = Help")),
+        "popup_menu",
+        'c(help = "Help")',
+        wait = 700
+      ),
+      menu_direction = row(
+        list(list(menu_on = TRUE, menu_items = "about = About", menu_direction = "top")),
+        "popup_menu",
+        'direction = "top"',
+        wait = 700
+      )
+    )
+    # mascot_preview() controls change the call that builds the preview, not an update.
+    preview_rows <- list(
+      preview_mood = list(list(preview_mood = "happy"), 'mood = "happy"'),
+      preview_status = list(list(preview_status = "Ready"), 'status = "Ready"'),
+      preview_bubble = list(list(preview_bubble = "Hi"), 'bubble = "Hi"'),
+      preview_size = list(list(preview_size = 96), "size = 96"),
+      preview_placement = list(list(preview_placement = "top-left"), 'placement = "top-left"'),
+      preview_theme_source = list(
+        list(preview_theme_source = "custom", preview_body = "#1f6feb"),
+        'theme = list(body = "#1f6feb")'
+      ),
+      preview_motion = list(list(preview_motion = TRUE), "motion = TRUE"),
+      preview_menu_items = list(list(preview_menu_items = "about = About"), 'popup_menu = c(about = "About")')
+    )
+    # Controls without a row, and why. Anything else in the control map needs a row above.
+    exempt <- c(
+      # TODO(#162): with one built-in character, the selector cannot change. When mascot_characters() lands, add a
+      # row that swaps to a second character, compare the selector with the full list, and use a fixture
+      # character with different colour roles for a real swap.
+      character = "one built-in character",
+      bubble_example = "fills the bubble controls; tested with Show bubble (#249)",
+      mistake = "demonstrates invalid calls, which change nothing",
+      mistake_run = "demonstrates invalid calls, which change nothing",
+      task_run = "demonstrates the session argument with a timed task",
+      preview_width = "the width the preview page is shown at, not an argument",
+      example_name = "the Examples view, not the mascot",
+      example_run = "the Examples view, not the mascot"
+    )
+    controls <- unlist(get("playground_controls", parts$env))
+    format_call <- get("format_call", parts$env)
+    mapped <- unique(gsub('^id="|"$', "", grep("^id=", controls, value = TRUE)))
+    events <- unique(gsub(
+      '^data-event="|"$',
+      "",
+      grep("^data-event=", controls, value = TRUE)
+    ))
+    expect_setequal(setdiff(c(mapped, events), c(names(rows), names(preview_rows), names(exempt))), character())
+    for (name in names(rows)) {
+      case <- rows[[name]]
+      shiny::testServer(get("studio_server", parts$env), {
+        do.call(session$setInputs, start)
+        updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
+        before <- updates()
+        for (inputs in case$inputs) {
+          do.call(session$setInputs, inputs)
+        }
+        if (case$wait) {
+          session$elapse(case$wait)
+        }
+        after <- updates()
+        # The update sent: a new revision that carries this field with a new value.
+        expect_false(is.null(after), info = name)
+        expect_gt(after$revision, before$revision %||% 0L)
+        expect_identical(after$fields[[case$field]], after$revision, info = name)
+        expect_false(identical(after$patch[[case$field]], before$patch[[case$field]]), info = name)
+        # The call the studio ran (its Last tab) and the generated UI code.
+        expect_match(last_call(), case$code, fixed = TRUE, info = name)
+        if (case$ui) {
+          expect_match(output$code_ui, case$code, fixed = TRUE, info = name)
+        } else {
+          expect_false(grepl(case$code, output$code_ui, fixed = TRUE), info = name)
+        }
+      })
+    }
+    for (name in names(preview_rows)) {
+      case <- preview_rows[[name]]
+      shiny::testServer(get("studio_server", parts$env), {
+        do.call(session$setInputs, start)
+        unchanged <- format_call("mascot_preview", preview_args())
+        expect_false(grepl(case[[2]], unchanged, fixed = TRUE), info = name)
+        do.call(session$setInputs, case[[1]])
+        expect_match(format_call("mascot_preview", preview_args()), case[[2]], fixed = TRUE, info = name)
+      })
+    }
+  })
+  it("starts every control at the package's default, apart from the studio's listed choices", {
+    parts <- studio_parts()
+    # The studio's R/ files load into a parent of the app's environment, hence the inherited lookup.
+    env <- mget(
+      c(
+        "defaults",
+        "start",
+        "code_pair",
+        "format_expr",
+        "code_bubble",
+        "code_motion",
+        "code_size",
+        "code_placement",
+        "code_menu",
+        "code_theme"
+      ),
+      envir = parts$env,
+      inherits = TRUE
+    )
+    start <- studio_start_values(parts$page)
+    # The studio's deliberate departures from the package defaults, and why.
+    overrides <- c(
+      placement = "the live mascot sits inline in the studio canvas, not in a window corner",
+      bubble = "the live mascot greets the visitor with a welcome bubble",
+      popup_menu = "the live mascot starts with a demonstration menu"
+    )
+    # The live mascot starts from the defaults plus the overrides, and nothing else.
+    initial <- lapply(env$defaults, env$code_pair)
+    changed <- Filter(function(field) !identical(env$start[[field]], initial[[field]]), names(env$defaults))
+    expect_setequal(changed, names(overrides))
+    # Copied code starts from the defaults except the placement, which the canvas needs.
+    expect_identical(env$defaults$placement, formals(mascot)$placement)
+    # Every default the studio leaves out of code draws the same mascot as leaving the argument out.
+    expect_setequal(names(env$defaults), setdiff(names(formals(mascot)), "id"))
+    # mascot_theme() writes the neutral theme (mode "auto", no colours) where NULL writes none; the engine reads
+    # both as the same automatic theme, so that one block is checked and then set aside.
+    neutral <- '<script type="application/json" data-mascot-theme="">{"light":null,"dark":null,"mode":"auto","css":null,"brand":null}</script>'
+    for (field in names(env$defaults)) {
+      args <- stats::setNames(list(eval(env$defaults[[field]])), field)
+      html <- as.character(do.call(mascot, c(list(id = "x"), args)))
+      if (field == "theme") {
+        expect_match(html, neutral, fixed = TRUE)
+        lines <- strsplit(html, "\n", fixed = TRUE)[[1]]
+        html <- paste(lines[trimws(lines) != neutral], collapse = "\n")
+      }
+      expect_identical(html, as.character(mascot(id = "x")), info = field)
+    }
+    # The code builders leave out an argument only when it has the helper's default value.
+    defaults_of <- function(fn) formals(getExportedValue("mascot", fn))
+    bubble <- defaults_of("mascot_bubble")
+    expect_identical(
+      env$format_expr(env$code_bubble("Hi", FALSE, bubble$duration, bubble$closable)$helper),
+      'mascot_bubble("Hi")'
+    )
+    expect_identical(eval(env$code_bubble("Hi", FALSE, bubble$duration, bubble$closable)$helper), mascot_bubble("Hi"))
+    motion <- defaults_of("mascot_motion")
+    expect_identical(env$code_motion(motion$animate, motion$swap)$helper, quote(mascot_motion()))
+    size <- defaults_of("mascot_size")
+    expect_identical(eval(env$code_size(formals(mascot)$size, size$small_screen)$short), formals(mascot)$size)
+    expect_identical(formals(env$code_placement), defaults_of("mascot_placement"))
+    expect_identical(env$code_menu(c(a = "A"), defaults_of("mascot_popup_menu")$direction)$short, quote(c(a = "A")))
+    expect_false(grepl(
+      "mode",
+      deparse1(
+        env$code_theme("mascot", c(body = "#1f6feb"), NULL, defaults_of("mascot_theme")$mode, NULL, "", "")$helper
+      )
+    ))
+    # Each control starts at the value its argument has by default (the overrides above aside).
+    expected <- list(
+      status_text = "", # status = NULL follows the mood
+      bubble_duration = bubble$duration,
+      bubble_forever = is.infinite(bubble$duration),
+      bubble_closable = bubble$closable,
+      bubble_html = FALSE, # plain text unless wrapped in HTML()
+      animate = motion$animate,
+      swap = motion$swap,
+      size_unit = "px",
+      size_px = formals(mascot)$size,
+      small_on = !is.null(size$small_screen),
+      minimise = defaults_of("mascot_placement")$minimise,
+      drag = as.character(defaults_of("mascot_placement")$drag),
+      theme_source = "own", # theme = NULL keeps the character's own colours
+      theme_mode = defaults_of("mascot_theme")$mode,
+      menu_on = FALSE, # popup_menu = NULL shows no menu
+      menu_items = "",
+      menu_direction = defaults_of("mascot_popup_menu")$direction,
+      mood = formals(mascot)$mood,
+      character = formals(mascot)$character,
+      preview_mood = "", # mood = NULL shows every mood
+      preview_status = "",
+      preview_bubble = "",
+      preview_size = formals(mascot_preview)$size,
+      preview_placement = formals(mascot_preview)$placement,
+      preview_theme_source = "own",
+      preview_motion = formals(mascot_preview)$motion,
+      preview_menu_items = ""
+    )
+    for (id in names(expected)) {
+      expect_identical(start[[id]], expected[[id]], info = id)
+    }
+    # The listed override, as a control: the position starts inline.
+    expect_identical(start$position, "inline")
+    expect_false(identical(start$position, formals(mascot)$placement))
+  })
+})

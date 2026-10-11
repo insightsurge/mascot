@@ -10,8 +10,8 @@
 #'   Labels are always escaped.
 #' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
 #'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
-#'   (preferring above, then below, then towards the page centre). A chosen side is
-#'   a preference: see "Where the menu opens" below.
+#'   (preferring above, then below, then the side towards the page centre). A
+#'   chosen side is a preference: see "Where the menu opens" below.
 #' @returns A `mascot_popup_menu` object with `items` and `direction` elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
@@ -25,10 +25,10 @@
 #' the bottom of a card opens above it. Give the mascot room on the chosen side,
 #' or use `"auto"`.
 #'
-#' **Keyboard navigation.** Press Enter or Space to open the menu. Use the arrow
-#' keys, Home and End to move between items, and press Escape to close the menu
-#' and return focus to the mascot. Without menu items, the mascot remains an image
-#' with its status text.
+#' **Keyboard navigation.** Enter or Space toggles the focused menu control, opening
+#' or closing the menu. Use the arrow keys, Home and End to move between items,
+#' and press Escape to close the menu and return focus to the mascot. Without
+#' menu items, the mascot remains an image with its status text.
 #'
 #' **Reading the selection in Shiny.** Choosing an item sets `input$<id>_menu` to
 #' the item ID (for example, `input$helper_menu` for `mascot(id = "helper")`).
@@ -56,6 +56,7 @@
 #' ```
 #'
 #' The menu opens from the mascot's on-screen position in the requested direction.
+#' It fits the available screen space and can change direction or scroll.
 #' Action controls hide while the menu is open, and speech bubble timers pause.
 #' The restore button only restores a minimised mascot; it does not open the menu.
 #' On static pages the mascot stays an image. Run the Shiny example below to try

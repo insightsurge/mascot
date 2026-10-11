@@ -7,13 +7,14 @@
 mascot_bubble(text = NULL, duration = 5, closable = TRUE)
 }
 \arguments{
-\item{text}{A non-empty string, text marked with \code{\link[htmltools:HTML]{htmltools::HTML()}}, or an
-\code{htmltools} tag or tag list. Tags with dependencies or head content are
-not supported. \code{NULL} (the default) clears the bubble.}
+\item{text}{A non-empty string, optionally marked with \code{\link[htmltools:HTML]{htmltools::HTML()}},
+or an \code{htmltools} tag or tag list. HTML-marked strings and tags are shown as
+HTML. Tags with dependencies or head content are not supported and give an
+error. \code{NULL} (the default) clears the bubble.}
 
-\item{duration}{How long the bubble stays visible, in seconds. Defaults to
-\code{5}. Use \code{Inf} or \code{NULL} to keep the bubble until closed, replaced, or
-cleared.}
+\item{duration}{How long the bubble stays visible: a number greater than zero,
+in seconds. Defaults to \code{5}. Use \code{Inf} or \code{NULL} to keep the bubble until it
+is closed, replaced or cleared.}
 
 \item{closable}{A logical flag, defaulting to \code{TRUE}, to show a close button.
 \code{FALSE} hides the button; the Escape key still closes the bubble. \code{NULL}

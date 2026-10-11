@@ -10,38 +10,46 @@ mascot_theme(light = NULL, dark = NULL, mode = "auto", css = NULL)
 \item{light, dark}{Named lists of colour roles, or \code{NULL} (the default) to keep
 the character's own colours in that mode. Values can be colour names, hex
 strings, \code{\link[grDevices:rgb]{grDevices::rgb()}} output, CSS \code{rgb()} or \code{rgba()} strings, or
-RGB numbers in 0--255. Roles use snake case; \code{light}, \code{dark} and \code{default}
-are reserved.}
+three RGB numbers (red, green and blue) in 0--255. Single numeric palette
+indices are not accepted. Roles use snake case; \code{light}, \code{dark} and
+\code{default} are reserved.}
 
 \item{mode}{Mode selection: \code{"auto"} (the default), \code{"light"} or \code{"dark"}.
-\code{"auto"} follows Bootstrap's \code{data-bs-theme} or Quarto body classes. With no
-page signal, it uses light mode. An explicit mode always overrides the page.
-\code{NULL} is not accepted.}
+\code{"auto"} follows the nearest valid \code{data-bs-theme} in the original source
+context, then Quarto's body classes. With no page signal it uses light mode.
+An explicit light or dark mode always wins. \code{NULL} is not accepted.}
 
 \item{css}{A named list mapping colour roles to CSS variable names such as
 \code{list(body = "--team-blue")}, or \code{NULL} (the default) for no CSS source.
 This source is experimental. CSS entries override light and dark entries
-for the same role. Missing variables fall back to the character's own
-colour and log a warning in the browser console.}
+for the same role. Missing or invalid variables use the character's own
+colour and warn in the browser console; low contrast also warns there and
+keeps the colour. Variables are read from the original source context,
+including when the mascot floats.}
 }
 \value{
 A \code{mascot_theme} object describing colours, CSS sources and mode.
 }
 \description{
-Customise the character's colours and coordinate with light or dark mode.
-When you recolour a primary part (such as \code{body}), related accent parts
-follow automatically to match. Call \code{\link[=mascot_colour_roles]{mascot_colour_roles()}} to see the
-available colour parts for each character. A simple named list passed to
-\code{\link[=mascot]{mascot()}} or \code{\link[=updateMascot]{updateMascot()}} uses the same colours in both light and dark
-modes. Supplying a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} automatically colours the mascot's brand
-parts with your app's primary and secondary colours (including themes loaded
-from \verb{_brand.yml}).
+Customise the character's colours and light or dark mode. Roles you do not set
+follow the first supplied or filled leader that the character declares (for
+example \code{body}), in the character's priority order. With no supplied leader,
+they keep their original colours. Call \code{\link[=mascot_colour_roles]{mascot_colour_roles()}} to find the
+roles for a character. A plain named list passed to \code{\link[=mascot]{mascot()}} or
+\code{\link[=updateMascot]{updateMascot()}} uses one set of colours in every mode. A \code{\link[bslib:bs_theme]{bslib::bs_theme()}}
+fills the character's declared brand leaders with its primary and secondary
+colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand =)}.
 }
 \details{
-Your colour settings carry over when you switch characters. Calling an empty
-\code{mascot_theme()} restores the character's default colours. If any custom
-colour falls below 3:1 contrast against the background, mascot issues a
-helpful warning while keeping your chosen colour.
+A theme survives a character swap: follow rules are resolved again, and roles
+absent from the incoming character are ignored. An empty \code{mascot_theme()}
+restores the character's own colours. When a theme is applied, a chosen
+colour below 3:1 contrast against the background gives a warning and is kept.
+The background is white in light mode and \verb{#212529} in dark mode, or the
+\code{bslib} theme's light and dark backgrounds. Supplied colours are kept exactly.
+Derived shades keep the hue, with calibrated lightness and saturation shifts.
+Tessa's original leaders reproduce derived colours within 3 units per RGB
+channel (0--255). Brand colours are the same in both modes.
 }
 \examples{
 mascot_theme()

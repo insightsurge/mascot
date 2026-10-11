@@ -21,9 +21,9 @@ mascot(
 \item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object. Defaults
 to \code{"tessa"}. \code{NULL} is not accepted.}
 
-\item{id}{A unique string identifier on the page without whitespace. In a
-Shiny module, use \code{ns("helper")} in the UI and \code{"helper"} in the server;
-\code{\link[=updateMascot]{updateMascot()}} adds the module namespace automatically.}
+\item{id}{A required non-empty string without whitespace, unique on the
+page. In a Shiny module use \code{ns("helper")} in the UI and \code{"helper"} in
+the server; \code{\link[=updateMascot]{updateMascot()}} adds the module namespace once.}
 
 \item{mood}{A mood name or \code{\link[=mascot_mood]{mascot_mood()}} object. Defaults to \code{"idle"}.
 See \code{\link[=mascot_moods]{mascot_moods()}} for available choices. \code{NULL} is not accepted.}
@@ -32,44 +32,48 @@ See \code{\link[=mascot_moods]{mascot_moods()}} for available choices. \code{NUL
 default) follows the mood. Text is escaped, including \code{\link[htmltools:HTML]{htmltools::HTML()}}.}
 
 \item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
-\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) shows no bubble. A plain
-string displays for five seconds with a close button. Plain text is
-escaped; use \code{\link[htmltools:HTML]{htmltools::HTML()}} or tag lists to include HTML. Tags
-with dependencies or head content are not supported.}
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) shows no bubble. A string
+uses the helper's five-second duration and close button. Plain text is
+escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply HTML. Tags with dependencies or
+head content are not supported.}
 
-\item{size}{A size in pixels (at least \code{24}), a percentage string such as
-\code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} object. Defaults to \code{160}. Percentages
-follow the container width when inline and window width when floating,
-with a 24-pixel floor. \code{NULL} is not accepted.}
+\item{size}{A finite number of CSS pixels (at least \code{24}), a positive
+percentage string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} object. Defaults to
+\code{160}. Percentages follow the parent width when inline and the window width
+when floating, with a 24-pixel floor. \code{NULL} is not accepted.}
 
-\item{placement}{Where to position the mascot: \code{"bottom-right"} (the default),
-\code{"floating"}, \code{"inline"}, a corner such as \code{"top-left"}, a named list, or a
-\code{\link[=mascot_placement]{mascot_placement()}} object. Floating mascots include a minimise control
-by default; dragging is off. Inline mascots sit in the page flow and ignore
-minimise and drag settings. See \code{\link[=mascot_placement]{mascot_placement()}}. \code{NULL} is not accepted.}
+\item{placement}{\code{"bottom-right"} (the default), \code{"floating"}, \code{"inline"}, a corner
+such as \code{"top-left"}, a named list such as \code{list(position = "top-left", minimise = TRUE, drag = "snap")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object.
+Floating mascots show a minimise control by default; dragging is off.
+Inline mascots sit in the page flow and ignore \code{minimise} and \code{drag}, with an
+informational message for explicitly supplied values and silence for
+defaults. With \code{drag}, visitors can also drag the minimised restore button;
+each drop sets \verb{input$<id>_position} to the corner (\code{"snap"}) or a list with
+\code{x} and \code{y} (\code{"free"}); saving it between visits is the app's job. See
+\code{\link[=mascot_placement]{mascot_placement()}}. \code{NULL} is not accepted.}
 
-\item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} object, or a
-\code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's default
-colours. Unset roles retain their default colours in both modes.}
+\item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
+\code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
+colours. Unset roles keep their original colours in both modes.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object. \code{TRUE} (the default)
 allows animation while honouring the visitor's reduced-motion preference.
 \code{FALSE} stops animation. \code{NULL} is not accepted.}
 
-\item{popup_menu}{A named character vector of menu items or a
+\item{popup_menu}{A named character vector of item labels or a
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object. \code{NULL} (the default) shows no menu.
-Selecting an item sets \verb{input$<id>_menu} to the item id. In a module, use
-\code{ns("helper")} in the UI and read \code{input$helper_menu} in the module server.
-Press Enter or Space to toggle the menu when focused. See
-\code{\link[=mascot_popup_menu]{mascot_popup_menu()}}.}
+A choice sets \verb{input$<id>_menu} to the item id, including repeated choices.
+In a module, use \code{ns("helper")} in the UI and read \code{input$helper_menu} in
+that module's server. Enter and Space toggle the focused menu control;
+see \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} for the module example and guidance.}
 }
 \value{
 An \code{htmltools} tag with its engine dependency attached.
 }
 \description{
-Draw a character with a mood, a status line, and an optional message bubble.
-The status shows the capitalised mood word until custom text is supplied.
-It follows the mood again when \code{\link[=mascot_status]{mascot_status()}} is passed without text.
+Draw a character with a mood, a status line and an optional message bubble.
+The status shows the capitalised mood word until the app sets its own text.
+It follows the mood again when \code{\link[=mascot_status]{mascot_status()}} is supplied without text.
 }
 \details{
 Use the always visible status line for a short description of the current state.

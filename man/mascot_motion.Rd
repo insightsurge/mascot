@@ -8,7 +8,7 @@ mascot_motion(animate = TRUE, swap = TRUE)
 }
 \arguments{
 \item{animate}{A logical flag, defaulting to \code{TRUE}, to allow animation when
-the visitor allows motion. \code{FALSE} makes all changes instant. \code{NULL} is not
+the visitor allows motion. \code{FALSE} makes changes instant. \code{NULL} is not
 accepted.}
 
 \item{swap}{A logical flag, defaulting to \code{TRUE}, to animate character changes.
@@ -22,7 +22,7 @@ A \code{mascot_motion} object with \code{animate} and \code{swap} elements.
 Turn off all animations or only the transition when swapping characters.
 If a visitor prefers reduced motion in their system settings, mascot always
 respects that choice, even when \code{animate = TRUE}. Idle breathing and blinking
-pause five seconds after the last action to save battery.
+stop five seconds after the last action.
 }
 \examples{
 mascot_motion()

@@ -10,20 +10,20 @@ mascot_size(size = 160, small_screen = NULL)
 \item{size}{A finite number of CSS pixels (at least \code{24}), or a positive
 percentage string such as \code{"20\%"}. Defaults to \code{160}; \code{NULL} is not accepted.}
 
-\item{small_screen}{An optional size for mobile screens (under 576 CSS pixels
-wide), in the same forms as \code{size}. Defaults to \code{NULL}, which keeps \code{size} on
-all screen widths.}
+\item{small_screen}{An optional size for small screens (at most 575.98 CSS
+pixels wide), in the same forms as \code{size}. \code{NULL} (the default) uses \code{size}
+at every screen width.}
 }
 \value{
 A \code{mascot_size} object with \code{size} and \code{small_screen} elements.
 }
 \description{
 Control the size of the mascot in pixels or as a percentage. Percentage
-sizes scale to the parent container when inline, and to the window width when
+sizes follow the parent's content width when inline, and the window width when
 floating. The rendered canvas is never smaller than 24 CSS pixels.
-Screens narrower than 576 CSS pixels switch automatically to \code{small_screen}
-when supplied. Because fine facial details are harder to see at 24 or 32
-pixels, the status text ensures the mascot's meaning is always clear.
+Screens at most 575.98 CSS pixels wide use \code{small_screen}, if supplied.
+The full character is drawn at every size; fine face details are harder to
+read at 32 and 24 pixels, so the status text carries the meaning.
 }
 \examples{
 mascot_size()

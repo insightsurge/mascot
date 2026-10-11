@@ -7,8 +7,8 @@
 mascot_mood(name = "idle")
 }
 \arguments{
-\item{name}{A mood name from \code{\link[=mascot_moods]{mascot_moods()}}. Defaults to \code{"idle"}; \code{NULL} is
-not accepted.}
+\item{name}{A non-empty string naming a mood from \code{\link[=mascot_moods]{mascot_moods()}}. Defaults
+to \code{"idle"}; \code{NULL} is not accepted.}
 }
 \value{
 A \code{mascot_mood} object with a \code{name} element.

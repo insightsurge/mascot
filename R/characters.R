@@ -6,11 +6,11 @@ builtin_characters <- function() {
 
 #' Choose a mascot character
 #'
-#' The helper behind the `character` argument of [mascot()]. Currently Tessa
-#' is the only built-in character.
+#' The helper behind the `character` argument of [mascot()]. Only Tessa is
+#' built in; custom characters come later.
 #'
-#' @param name A string naming a built-in character. Defaults to `"tessa"`.
-#'   `NULL` is not accepted.
+#' @param name A non-empty string naming a built-in character. Defaults to
+#'   `"tessa"`; `NULL` is not accepted.
 #' @returns A `mascot_character` object with `id` and `name` elements.
 #' @family mascot helpers
 #' @seealso [mascot()]

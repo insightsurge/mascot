@@ -14,8 +14,8 @@ Labels are always escaped.}
 
 \item{direction}{Direction to open the menu from the mascot: \code{"auto"} (the default),
 \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. \code{"auto"} picks the side with room
-(preferring above, then below, then towards the page centre). A chosen side is
-a preference: see "Where the menu opens" below.}
+(preferring above, then below, then the side towards the page centre). A
+chosen side is a preference: see "Where the menu opens" below.}
 }
 \value{
 A \code{mascot_popup_menu} object with \code{items} and \code{direction} elements.
@@ -36,10 +36,10 @@ opens wherever \code{"auto"} finds space. So \code{direction = "bottom"} on a ma
 the bottom of a card opens above it. Give the mascot room on the chosen side,
 or use \code{"auto"}.
 
-\strong{Keyboard navigation.} Press Enter or Space to open the menu. Use the arrow
-keys, Home and End to move between items, and press Escape to close the menu
-and return focus to the mascot. Without menu items, the mascot remains an image
-with its status text.
+\strong{Keyboard navigation.} Enter or Space toggles the focused menu control, opening
+or closing the menu. Use the arrow keys, Home and End to move between items,
+and press Escape to close the menu and return focus to the mascot. Without
+menu items, the mascot remains an image with its status text.
 
 \strong{Reading the selection in Shiny.} Choosing an item sets \verb{input$<id>_menu} to
 the item ID (for example, \code{input$helper_menu} for \code{mascot(id = "helper")}).
@@ -67,6 +67,7 @@ shiny::shinyApp(
 }\if{html}{\out{</div>}}
 
 The menu opens from the mascot's on-screen position in the requested direction.
+It fits the available screen space and can change direction or scroll.
 Action controls hide while the menu is open, and speech bubble timers pause.
 The restore button only restores a minimised mascot; it does not open the menu.
 On static pages the mascot stays an image. Run the Shiny example below to try

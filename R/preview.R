@@ -1,43 +1,47 @@
 #' Preview a mascot in light and dark mode
 #'
 #' Compare moods and sizes on a single offline page. Creating the page starts no
-#' Shiny app, opens no viewer and writes no files to disk. Printing the returned
-#' page opens it in your IDE Viewer or default browser. It can also be embedded
-#' directly in an R Markdown or Quarto document.
+#' Shiny app, opens no viewer and writes no files. Printing the returned page
+#' opens the available Viewer or browser. It can also be embedded in an R Markdown
+#' or Quarto document.
 #' @inheritParams mascot
 #' @param mood A mood name or [mascot_mood()] object, or `NULL` (the default)
 #'   to show every mood from [mascot_moods()].
-#' @param size Mascot size: a number of CSS pixels (at least `24`), a percentage
-#'   string such as `"20%"`, or a [mascot_size()] object. Defaults to `160`.
-#'   Percentages follow the comparison cell width. `NULL` is not accepted.
+#' @param size A finite number of CSS pixels (at least `24`), a positive
+#'   percentage string such as `"20%"`, or a [mascot_size()] object. Defaults to
+#'   `160`. Percentages follow the comparison cell width. `NULL` is not accepted.
 #' @param placement A placement shortcut, named list or [mascot_placement()]
-#'   object, defaulting to `"inline"`. The preview shows every mascot inline in
-#'   the comparison grid. `NULL` is not accepted.
+#'   object, defaulting to `"inline"`. The preview ignores floating and shows
+#'   every mascot inline in the comparison grid. `NULL` is not accepted.
 #' @param popup_menu A named character vector or [mascot_popup_menu()] object,
-#'   or `NULL` (the default) for no menu. The menu is validated, but stays
+#'   or `NULL` (the default) for no menu. The value is checked; menus remain
 #'   inactive on this static page.
 #' @param motion A logical flag or [mascot_motion()] object. Defaults to `FALSE`
 #'   for steady faces; `TRUE` allows animation subject to the visitor's preference.
 #'   `NULL` is not accepted.
 #' @returns A browsable `htmltools` tag list. Its `contrast` attribute is a data
-#'   frame with `role`, `colour`, `background`, `ratio` and `mode` columns, with
-#'   one row for each supplied colour below 3:1 contrast.
+#'   frame with `role`, `colour`, `background`, `ratio` and `mode` columns, one row
+#'   per supplied colour below 3:1. With no findings it is a zero-row data frame
+#'   with the same columns. Colours are kept unchanged; one combined warning is
+#'   issued in R.
 #' @details
-#' **Comparison grid.** Rows show moods; columns show your chosen `size`,
-#' followed by reference sizes at 48, 32 and 24 CSS pixels. The first column
-#' preserves percentage and `small_screen` settings; fixed comparison columns do
-#' not change on narrow screens. Every size draws the complete character. Each
-#' cell keeps its status text, making the meaning clear even when small faces
-#' lose fine details.
+#' **Comparison grid.** Rows are moods; columns are the requested `size`, then
+#' 48, 32 and 24 CSS pixels. The first column preserves percentage and
+#' `small_screen` settings; fixed comparison columns do not change on narrow
+#' screens. Every size draws the full character. Each cell keeps its status text,
+#' since small faces lose fine detail.
 #'
-#' **Theme and contrast.** Both light and dark theme panels are shown side by
-#' side. Backgrounds default to white and `#212529`, or the `bslib` theme's light
-#' and dark background colours. Only supplied colour roles are checked for contrast.
-#' Any colour below 3:1 contrast against the background produces a warning and is
-#' recorded in the `contrast` attribute.
+#' **Theme and contrast.** Both supplied theme maps are shown, even if the theme
+#' selected one mode. Backgrounds are white and `#212529`, or the `bslib` theme's
+#' `bg` and `body-bg-dark`; text uses `fg` and `body-color-dark`. Only supplied
+#' colour roles are checked, using the same contrast calculation as [mascot()].
+#' Experimental CSS variables are resolved in the browser: their warnings appear
+#' in its console, outside the R `contrast` attribute.
 #'
-#' Floating placement is displayed inline so every cell stays neatly in the
-#' comparison grid. Click menus remain inactive on this static page.
+#' **Placement, menus and bubbles.** Floating `placement` is checked, then shown
+#' inline for comparison, so every cell remains in its grid. Click menus are
+#' checked but remain inactive on this static page. Empty bubble space is omitted
+#' here; a supplied bubble keeps its normal space and timing.
 #' @family mascot helpers
 #' @seealso [mascot()], [mascot_colour_roles()], [mascot_theme()]
 #' @export

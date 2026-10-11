@@ -33,7 +33,8 @@ the value returned by \code{\link[shiny:runApp]{shiny::runApp()}} after the app 
 }
 \description{
 Explore the package's functions, try their controls with live feedback, and
-copy the working R code into your own app. Choices belong to the returned
+copy the working R code into your own app. This first interface is
+experimental and may change before CRAN. Choices belong to the returned
 app; no global options are changed.
 }
 \examples{

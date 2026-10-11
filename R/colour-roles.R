@@ -1,14 +1,15 @@
 #' List a character's colour roles
 #'
-#' Lists the colour parts of a character and their default colours before
-#' applying a theme. When you customise colours, follower parts automatically
-#' derive their shade from the first leader part you set, unless you customise
-#' them directly. Without a matching leader, parts keep their original colours.
-#' @param character A built-in character name, defaulting to `"tessa"`.
+#' Lists a character's colour roles (its colour parts) with their own colours,
+#' before any theme is applied. Roles are written in snake case in R. Follow
+#' rules list leaders in priority order. A colour you supply for a role always
+#' wins; otherwise the role follows the first supplied or filled leader. With no
+#' available leader, the role keeps its original colour.
+#' @param character A non-empty built-in character name, defaulting to `"tessa"`.
 #'   `NULL` is not accepted.
 #' @returns A data frame with character columns `role`, `colour`, `follows`
 #'   (comma-separated leaders) and `shade` (`same`, `lighter` or `darker`).
-#'   Roles without a follow rule show `NA` in `follows` and `shade`.
+#'   Roles without a follow rule have `NA` in `follows` and `shade`.
 #' @family mascot helpers
 #' @seealso [mascot_theme()], [mascot()]
 #' @export

@@ -10,13 +10,13 @@ mascot_moods()
 A data frame with character columns \code{name} and \code{description}.
 }
 \description{
-Every character shares this exact set of moods.
+Every character uses these moods, in this order.
 }
 \examples{
 mascot_moods()
 }
 \seealso{
-\code{\link[=mascot_mood]{mascot_mood()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=mascot_mood]{mascot_mood()}}
 
 Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},

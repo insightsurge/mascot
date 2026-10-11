@@ -1,9 +1,9 @@
 #' List the bundled example apps
 #'
-#' Lists the example apps included with mascot. Start with the studio to
-#' explore every function interactively. Other examples provide copyable
-#' Shiny apps for common scenarios. All examples run offline and use the
-#' `bslib` package.
+#' Start with the studio: every exported function and argument, live, with
+#' explanations and the code to copy. The other examples are each one copyable
+#' `app.R` for one scenario. All work offline and need the optional `bslib`
+#' package.
 #' @returns A data frame with character columns `name`, `title` and `description`,
 #'   in teaching order. `name` is accepted by [mascot_example()].
 #' @family mascot examples
@@ -28,13 +28,15 @@ mascot_examples <- function() {
 
 #' Run or locate a bundled example app
 #'
-#' Launches a bundled example app in your browser or returns the file path
-#' to its source code. Pass `run = FALSE` to inspect the code or run it with
-#' [shiny::runApp()].
-#' @param name A string from [mascot_examples()]'s `name` column. `NULL` is
-#'   not accepted.
-#' @param run A logical flag. `TRUE` (the default) launches the app in an
-#'   interactive session. `FALSE` returns its `app.R` path without launching it.
+#' Opens only the requested example, like [shiny::runExample()]. No files are
+#' copied or written by this function. Use `run = FALSE` to read the app's code
+#' or pass its directory to [shiny::runApp()]. Each scenario's `app.R` can be
+#' copied alone into a project with Shiny, `bslib` and mascot installed; the
+#' studio is a folder, with its helpers in `R/` and its styles in `www/`.
+#' @param name A required non-empty string from [mascot_examples()]'s `name`
+#'   column. `NULL` is not accepted.
+#' @param run A logical flag, defaulting to `TRUE`, to launch the app in an
+#'   interactive R session. `FALSE` returns its `app.R` path without launching it.
 #'   `NULL` is not accepted.
 #' @returns With `run = FALSE`, an absolute path to the existing `app.R` file.
 #'   With `run = TRUE`, the value returned by [shiny::runApp()] after the app stops.

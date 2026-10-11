@@ -7,24 +7,24 @@
 mascot_gesture(name)
 }
 \arguments{
-\item{name}{Gesture name: \code{"nod"} acknowledges an action; \code{"wave"} greets
-(characters without arms rock instead). See \code{\link[=mascot_gestures]{mascot_gestures()}} for the full
-list. Required; \code{NULL} is not accepted.}
+\item{name}{A required non-empty string: \code{"nod"} acknowledges an action;
+\code{"wave"} greets (characters without arms rock instead). See
+\code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions. There is no default; \code{NULL} is not
+accepted.}
 }
 \value{
 A \code{mascot_gesture} object with a \code{name} element.
 }
 \description{
-Play a single movement without altering the current mood. You can use this
-helper or a plain gesture name in \code{\link[=updateMascot]{updateMascot()}}.
+Play a single movement without changing the current mood. Use this helper or
+a plain gesture name in \code{\link[=updateMascot]{updateMascot()}}.
 }
 \details{
-If a character or mood change is sent in the same call, that change happens
-first, followed by the gesture. If you switch characters in the same call, the
-gesture is skipped because the character switch already includes a wave.
-Visitors who prefer reduced motion do not see the gesture animate. If you send
-a gesture before the mascot appears, it waits and plays once as soon as the
-mascot appears.
+A character or mood change in the same call applies first, then the gesture.
+During a character swap the engine drops the gesture: the wave within the swap
+replaces it. Reduced motion skips the movement. A gesture sent before the
+mascot appears is kept until it appears; only the latest early gesture plays,
+once, after the queued character and mood are applied.
 }
 \examples{
 mascot_gesture("nod")

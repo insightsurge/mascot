@@ -7,16 +7,16 @@
 mascot_status(text = NULL)
 }
 \arguments{
-\item{text}{A short string for the label (for example \code{"Saving..."}), or \code{NULL}
-(the default) to follow the current mood.}
+\item{text}{A non-empty string for the label (for example \code{"Saving..."}), or
+\code{NULL} (the default) to follow the mood.}
 }
 \value{
 A \code{mascot_status} object with one \code{text} element, which may be \code{NULL}.
 }
 \description{
-Displays an accessible text label next to the mascot. Text is always shown
-as plain text (HTML tags are escaped). When no custom text is supplied (\code{NULL}),
-the status text automatically shows the current mood name.
+Sets the text label shown next to the mascot. Text is always shown as plain
+text, even when supplied with \code{\link[htmltools:HTML]{htmltools::HTML()}}. With no text, the status
+follows the shown mood.
 }
 \examples{
 mascot_status("Saving")

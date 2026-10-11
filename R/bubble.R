@@ -11,12 +11,13 @@
 #' Use a bubble for a message about something that happened; it may time out.
 #' Use `duration = Inf` for a message the user must act on, such as an invalid form,
 #' because a timed message can vanish before it is read.
-#' @param text A non-empty string, text marked with [htmltools::HTML()], or an
-#'   `htmltools` tag or tag list. Tags with dependencies or head content are
-#'   not supported. `NULL` (the default) clears the bubble.
-#' @param duration How long the bubble stays visible, in seconds. Defaults to
-#'   `5`. Use `Inf` or `NULL` to keep the bubble until closed, replaced, or
-#'   cleared.
+#' @param text A non-empty string, optionally marked with [htmltools::HTML()],
+#'   or an `htmltools` tag or tag list. HTML-marked strings and tags are shown as
+#'   HTML. Tags with dependencies or head content are not supported and give an
+#'   error. `NULL` (the default) clears the bubble.
+#' @param duration How long the bubble stays visible: a number greater than zero,
+#'   in seconds. Defaults to `5`. Use `Inf` or `NULL` to keep the bubble until it
+#'   is closed, replaced or cleared.
 #' @param closable A logical flag, defaulting to `TRUE`, to show a close button.
 #'   `FALSE` hides the button; the Escape key still closes the bubble. `NULL`
 #'   is not accepted.

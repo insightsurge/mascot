@@ -7,11 +7,11 @@
 mascot_example(name, run = TRUE)
 }
 \arguments{
-\item{name}{A string from \code{\link[=mascot_examples]{mascot_examples()}}'s \code{name} column. \code{NULL} is
-not accepted.}
+\item{name}{A required non-empty string from \code{\link[=mascot_examples]{mascot_examples()}}'s \code{name}
+column. \code{NULL} is not accepted.}
 
-\item{run}{A logical flag. \code{TRUE} (the default) launches the app in an
-interactive session. \code{FALSE} returns its \code{app.R} path without launching it.
+\item{run}{A logical flag, defaulting to \code{TRUE}, to launch the app in an
+interactive R session. \code{FALSE} returns its \code{app.R} path without launching it.
 \code{NULL} is not accepted.}
 }
 \value{
@@ -19,9 +19,11 @@ With \code{run = FALSE}, an absolute path to the existing \code{app.R} file.
 With \code{run = TRUE}, the value returned by \code{\link[shiny:runApp]{shiny::runApp()}} after the app stops.
 }
 \description{
-Launches a bundled example app in your browser or returns the file path
-to its source code. Pass \code{run = FALSE} to inspect the code or run it with
-\code{\link[shiny:runApp]{shiny::runApp()}}.
+Opens only the requested example, like \code{\link[shiny:runExample]{shiny::runExample()}}. No files are
+copied or written by this function. Use \code{run = FALSE} to read the app's code
+or pass its directory to \code{\link[shiny:runApp]{shiny::runApp()}}. Each scenario's \code{app.R} can be
+copied alone into a project with Shiny, \code{bslib} and mascot installed; the
+studio is a folder, with its helpers in \verb{R/} and its styles in \verb{www/}.
 }
 \examples{
 basename(mascot_example("form-check", run = FALSE))

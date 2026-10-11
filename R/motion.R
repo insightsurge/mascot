@@ -3,9 +3,9 @@
 #' Turn off all animations or only the transition when swapping characters.
 #' If a visitor prefers reduced motion in their system settings, mascot always
 #' respects that choice, even when `animate = TRUE`. Idle breathing and blinking
-#' pause five seconds after the last action to save battery.
+#' stop five seconds after the last action.
 #' @param animate A logical flag, defaulting to `TRUE`, to allow animation when
-#'   the visitor allows motion. `FALSE` makes all changes instant. `NULL` is not
+#'   the visitor allows motion. `FALSE` makes changes instant. `NULL` is not
 #'   accepted.
 #' @param swap A logical flag, defaulting to `TRUE`, to animate character changes.
 #'   `FALSE` makes character changes instant while moods can still animate.

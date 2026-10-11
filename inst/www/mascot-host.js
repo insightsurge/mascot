@@ -779,8 +779,10 @@
     const handlers = {
       pointerdown(event) {
         const target = record.minimised ? record.restoreButton : record.canvas;
+        // A new press starts afresh, even when dragging was switched off: a cancelled touch drag may never have sent
+        // the click that clears this, and the next real click must not be lost.
+        if (!record.dragState && event.button === 0 && target.contains(event.target)) record.suppressClick = false;
         if (!draggable(record) || record.dragState || event.button !== 0 || !target.contains(event.target)) return;
-        record.suppressClick = false;
         record.snapAnimation?.finish();
         const rect = el.getBoundingClientRect();
         record.dragState = {
@@ -845,6 +847,8 @@
       },
       keydown(event) {
         if (!active(event) || !['Enter', ' '].includes(event.key)) return;
+        // Like a native button: shortcuts with Ctrl, Alt or Meta belong to the browser or the app.
+        if (event.ctrlKey || event.altKey || event.metaKey) return;
         // Space would otherwise scroll the page; a held key sends one click, not a stream.
         event.preventDefault();
         if (!event.repeat) send();

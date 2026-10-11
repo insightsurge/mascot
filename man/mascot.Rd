@@ -87,15 +87,6 @@ When minimised, the status remains available to screen readers. See
 
 In Shiny the mascot uses an input binding. Its input value (\verb{input$<id>}) is an
 internal value that tells the server the mascot appeared; do not rely on its contents.
-
-\strong{Clicks (experimental).} Without a \code{popup_menu}, clicking or tapping the
-mascot, or pressing Enter or Space while it has keyboard focus, sets
-\verb{input$<id>_click} to the number of clicks since the mascot appeared, so the
-app can attach its own action, such as opening a help panel:
-\code{shiny::observeEvent(input$helper_click, ...)}. Dragging a floating mascot
-never counts as a click. With a menu, the menu keeps the click and
-\verb{input$<id>_click} is not set. Screen readers still announce the mascot as an
-image, so offer the same action through a visible control too.
 A module can put the mascot in its UI and update it from its server:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{helper_ui <- function(id) \{
@@ -108,6 +99,15 @@ helper_server <- function(id) \{
   \})
 \}
 }\if{html}{\out{</div>}}
+
+\strong{Clicks (experimental).} Without a \code{popup_menu}, clicking or tapping the
+mascot, or pressing Enter or Space while it has keyboard focus, sets
+\verb{input$<id>_click} to the number of clicks since the mascot appeared, so the
+app can attach its own action, such as opening a help panel:
+\code{shiny::observeEvent(input$helper_click, ...)}. Dragging a floating mascot
+never counts as a click. With a menu, the menu keeps the click and
+\verb{input$<id>_click} is not set. Screen readers still announce the mascot as an
+image, so offer the same action through a visible control too.
 }
 \examples{
 mascot(id = "helper", mood = "happy")

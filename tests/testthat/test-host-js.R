@@ -2347,6 +2347,42 @@ describe("mascot.host click input (#237)", {
     expect_true(r$position)
     expect_identical(r$after, 1L)
   })
+  it("counts the next click after a drag that a placement update cancelled mid-way", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = mascot_placement("top-left", drag = "snap"))
+    js(drag_js)
+    r <- js(paste0(
+      "(() => {const canvas=document.querySelector('#a canvas'),box=canvas.getBoundingClientRect(),
+        x=box.left+box.width/2,y=box.top+box.height/2;
+      // A touch drag in progress when the app turns dragging off: no pointerup or click ever arrives.
+      press(canvas,'pointerdown',x,y);press(canvas,'pointermove',x+40,y+40);
+      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'top-left',minimise:true,drag:false}}});
+      const now=canvas.getBoundingClientRect(),cx=now.left+now.width/2,cy=now.top+now.height/2;
+      press(canvas,'pointerdown',cx,cy);press(canvas,'pointerup',cx,cy);canvas.click();
+      return ",
+      clicks,
+      ".length;})()"
+    ))
+    expect_identical(r, 1L)
+  })
+  it("ignores Enter and Space held with Ctrl, Alt or Meta, like a native button", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline")
+    r <- js(paste0(
+      "(() => {const canvas=document.querySelector('#a canvas');canvas.focus();
+      for (const modifier of ['ctrlKey','altKey','metaKey']) for (const key of ['Enter',' '])
+        canvas.dispatchEvent(new KeyboardEvent('keydown',{key,[modifier]:true,bubbles:true,cancelable:true}));
+      const modified=",
+      clicks,
+      ".length;
+      canvas.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',shiftKey:true,bubbles:true,cancelable:true}));
+      return {modified,shift:",
+      clicks,
+      ".length};})()"
+    ))
+    expect_identical(r$modified, 0L)
+    expect_identical(r$shift, 1L)
+  })
   it("leaves the click to the menu when there is one, and sends again once it is removed", {
     skip_without_chrome()
     js <- local_host_page(shiny_menu = TRUE, popup_menu = c(about = "About"), placement = "inline")

@@ -59,15 +59,6 @@
 #'
 #' In Shiny the mascot uses an input binding. Its input value (`input$<id>`) is an
 #' internal value that tells the server the mascot appeared; do not rely on its contents.
-#'
-#' **Clicks (experimental).** Without a `popup_menu`, clicking or tapping the
-#' mascot, or pressing Enter or Space while it has keyboard focus, sets
-#' `input$<id>_click` to the number of clicks since the mascot appeared, so the
-#' app can attach its own action, such as opening a help panel:
-#' `shiny::observeEvent(input$helper_click, ...)`. Dragging a floating mascot
-#' never counts as a click. With a menu, the menu keeps the click and
-#' `input$<id>_click` is not set. Screen readers still announce the mascot as an
-#' image, so offer the same action through a visible control too.
 #' A module can put the mascot in its UI and update it from its server:
 #' ```r
 #' helper_ui <- function(id) {
@@ -80,6 +71,15 @@
 #'   })
 #' }
 #' ```
+#'
+#' **Clicks (experimental).** Without a `popup_menu`, clicking or tapping the
+#' mascot, or pressing Enter or Space while it has keyboard focus, sets
+#' `input$<id>_click` to the number of clicks since the mascot appeared, so the
+#' app can attach its own action, such as opening a help panel:
+#' `shiny::observeEvent(input$helper_click, ...)`. Dragging a floating mascot
+#' never counts as a click. With a menu, the menu keeps the click and
+#' `input$<id>_click` is not set. Screen readers still announce the mascot as an
+#' image, so offer the same action through a visible control too.
 #' @evalRd paste0(
 #'   "\\section{Experimental click input}{\n",
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",

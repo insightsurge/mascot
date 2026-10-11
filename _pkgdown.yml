@@ -71,6 +71,7 @@ reference:
       - mascot_preview
       - mascot_examples
       - mascot_example
+      - mascot_studio
 
 articles:
   - title: Get started

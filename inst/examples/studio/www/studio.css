@@ -183,7 +183,8 @@
 
 /* Stage and code */
 .pg-code-wrap {
-  position: relative;
+  display: grid;
+  min-width: 0;
 }
 
 .pg-code {
@@ -202,9 +203,10 @@
 }
 
 .pg-copy {
-  position: absolute;
-  top: 0.4rem;
-  right: 0.4rem;
+  position: static;
+  justify-self: end;
+  grid-row: 1;
+  margin-bottom: 0.35rem;
 }
 
 .pg-log {
@@ -255,7 +257,17 @@
   font-size: 0.8rem;
   background: var(--bs-tertiary-bg);
   border-radius: 0.3rem;
-  padding: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 2.5ch;
+  /* Long signatures wrap between arguments, with later lines indented under the call. */
+  white-space: pre-wrap;
+  text-indent: -2ch;
+}
+
+/* Code in a popover wraps instead of scrolling sideways. */
+.popover pre,
+.popover code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .pg-args {
@@ -582,26 +594,11 @@
 }
 
 /* Layout E: index, live canvas and dock, then the argument inspector. */
-.pg-studio {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  height: 100%;
-  min-height: 0;
-  flex: 1;
-  gap: 0;
-  border: 1px solid var(--bs-border-color);
-}
-
-.pg-index,
-.pg-inspector {
+.pg-index {
   overflow: auto;
   min-height: 0;
   padding: 0.75rem;
   background: var(--bs-body-bg);
-}
-
-.pg-inspector {
-  border-left: 1px solid var(--bs-border-color);
 }
 
 .pg-index h2 {
@@ -653,9 +650,11 @@
 }
 
 .pg-centre {
-  --pg-dock-height: 42%;
+  --pg-dock-height: 280px;
+  /* Fills the main area of the inspector's sidebar layout, so the dock's share is of a fixed height. */
+  flex: 1 1 0;
   display: grid;
-  grid-template-rows: auto minmax(min-content, 1fr) minmax(0, var(--pg-dock-height));
+  grid-template-rows: auto minmax(min-content, 1fr) auto;
   position: relative;
   min-width: 0;
   min-height: 0;
@@ -821,112 +820,92 @@
   background: var(--bs-primary-bg-subtle);
 }
 
-/* One accordion shares the available height; its open panel scrolls internally. */
+.pg-dock {
+  height: var(--pg-dock-height);
+  max-height: var(--pg-dock-height);
+  transition: max-height 180ms ease;
+}
+.pg-dock.is-closed {
+  max-height: 0;
+  border: 0;
+  overflow: hidden;
+}
 .pg-dock > .card {
   flex: 1;
   min-height: 0;
   margin: 0;
-  overflow: hidden;
 }
-
-.pg-dock > .card > .card-body,
-#studio_panels {
+.pg-tray-body {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
-.pg-dock > .card > .card-body {
-  padding: 0;
-  overflow: hidden;
-}
-
-#studio_panels > .accordion-item {
-  display: flex;
-  flex-direction: column;
-  flex: none;
-  min-height: 0;
-}
-
-#studio_panels > .accordion-item:has(> .accordion-collapse.show),
-#studio_panels > .accordion-item:has(> .collapsing) {
-  flex: 1;
-}
-
-#studio_panels .accordion-header {
-  flex: none;
-}
-
-#studio_panels .accordion-collapse.show {
   flex: 1;
   min-height: 0;
   overflow: auto;
 }
-
-.pg-centre.is-dock-collapsed {
-  grid-template-rows: auto minmax(min-content, 1fr) auto;
-}
-
-.pg-centre.is-dock-collapsed .pg-grip {
-  display: none;
-}
-
 .pg-function-name {
   font-size: 1rem;
   margin: 0 0 0.5rem;
 }
-
-/* The full-screen Learn view flows individual sections across the available width. */
-#studio_panels_card[data-full-screen="true"] .pg-learn-columns {
+.pg-guide-modal .modal-dialog {
+  width: calc(100% - 32px);
+  max-width: 90rem;
+}
+.pg-guide-modal .modal-body {
+  max-height: 80vh;
+  overflow: auto;
+}
+.pg-guide-modal .pg-guide-columns {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
   grid-auto-rows: max-content;
-  height: auto;
-  flex: none;
   align-content: start;
   align-items: start;
   gap: 1.25rem;
 }
-
-#studio_panels_card[data-full-screen="true"] .pg-learn-columns > * {
+.pg-guide-modal .pg-guide-columns > * {
   grid-column: auto;
   grid-row: auto;
   min-width: 0;
 }
-
-#studio_panels_card[data-full-screen="true"] .pg-learn-columns > :has(> .pg-guide-visual),
-#studio_panels_card[data-full-screen="true"] .pg-guide-visual {
+.pg-guide-modal .pg-guide-columns > :has(> .pg-guide-visual),
+.pg-guide-modal .pg-guide-visual {
   display: contents;
 }
-
-#studio_panels_card[data-full-screen="true"] .pg-learn-piece {
+.pg-guide-piece {
   min-width: 0;
   overflow: auto;
 }
-
-#studio_panels_card[data-full-screen="true"] .pg-learn-columns .pg-section-title {
+.pg-guide-columns .pg-section-title {
   margin-top: 0;
 }
-
-#studio_panels_card[data-full-screen="true"] .pg-learn-columns p,
-#studio_panels_card[data-full-screen="true"] .pg-learn-columns .pg-callout {
-  max-width: 65ch;
+.pg-guide-modal pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
-
-@media (max-width: 991px) {
-  .pg-studio {
-    display: block;
-    height: auto;
-    overflow: auto;
+body.is-resizing {
+  user-select: none;
+  cursor: ns-resize;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-dock {
+    transition: none;
   }
-
+}
+@media (max-width: 575.98px) {
   .pg-centre {
     height: 52rem;
   }
-
-  .pg-inspector {
-    border-left: 0;
-    border-top: 1px solid var(--bs-border-color);
+  .pg-toolbar,
+  .pg-canvas,
+  .pg-dock .tabbable > .tab-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .pg-studio,
+  .pg-centre,
+  .pg-tray-body,
+  .pg-dock {
+    min-width: 0;
+    max-width: 100%;
   }
 }

@@ -1,5 +1,8 @@
 # mascot 0.0.2.9000
 
+* `mascot_studio()` opens the experimental studio with a chosen view, function and character; the studio gains an adjustable Code tray and a Guide window (#38, #218).
+
+
 * Floating mascots show a minimise button by default, and a minimised mascot can be dragged; on an inline mascot minimise and drag have no effect and say so in a message instead of an error (#229).
 * `mascot_popup_menu()` gains `direction`: the menu opens from the mascot's on-screen position towards `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`, and falls back to another side when there is no room (#225).
 * Mascot menus open next to the character instead of above its empty canvas area, and only one pop-up shows at a time: opening the menu closes the bubble, and a new bubble closes the menu (#225).

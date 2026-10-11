@@ -16,6 +16,7 @@
       el.value = value;
     }
     subscribe(el, callback) {
+      if (el.dataset.cssVar) document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
       $(el).on('input.pgColour change.pgColour', () => {
         if (el.dataset.cssVar) document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
         callback(true);
@@ -76,7 +77,7 @@
       }
       group.hidden = !selected;
     }
-    inspector.scrollTop = 0;
+    (inspector.closest('.sidebar-content') || inspector).scrollTop = 0;
     for (const button of document.querySelectorAll('.pg-index-link')) {
       button.setAttribute('aria-current', String(button.dataset.value === selectedFunction));
     }
@@ -86,7 +87,15 @@
     for (const el of document.querySelectorAll('input.pg-colour[data-css-var]')) {
       document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
     }
+    const centre = document.getElementById('studio_centre');
+    selectedFunction = centre?.dataset.initialFunction || selectedFunction;
     showControls();
+    $(document).one('shiny:connected', () => {
+      if (centre) {
+        window.Shiny.setInputValue('initial_function', selectedFunction);
+        window.Shiny.setInputValue('initial_character', centre.dataset.initialCharacter);
+      }
+    });
     const index = document.querySelector('.pg-index');
     index?.addEventListener('show.bs.tooltip', (event) => {
       const button = event.target.closest('.pg-index-link') ?? event.target.querySelector('.pg-index-link');
@@ -99,13 +108,36 @@
         if (trigger !== event.target) window.bootstrap.Tooltip.getInstance(trigger)?.hide();
       }
     });
-    const centre = document.getElementById('studio_centre');
-    const dock = document.getElementById('studio_panels');
-    function syncDock() {
-      centre?.classList.toggle('is-dock-collapsed', !dock?.querySelector('.accordion-collapse.show, .collapsing'));
+    const dock = document.getElementById('studio_dock');
+    const toggle = document.getElementById('code_toggle');
+    const saved = (() => {
+      try {
+        return JSON.parse(sessionStorage.getItem('mascot-studio-tray') || 'null');
+      } catch {
+        return null;
+      }
+    })();
+    let open = saved?.open ?? !window.matchMedia('(max-width: 575.98px)').matches;
+    function saveTray() {
+      try {
+        sessionStorage.setItem('mascot-studio-tray', JSON.stringify({ open, height }));
+      } catch {
+        /* Storage can be unavailable; the controls still work. */
+      }
     }
-    dock?.addEventListener('shown.bs.collapse', syncDock);
-    dock?.addEventListener('hidden.bs.collapse', syncDock);
+    function syncDock() {
+      if (!dock) return;
+      if (!open && dock.contains(document.activeElement)) toggle?.focus();
+      dock.classList.toggle('is-closed', !open);
+      dock.inert = !open;
+      dock.setAttribute('aria-hidden', String(!open));
+      toggle?.setAttribute('aria-expanded', String(open));
+    }
+    toggle?.addEventListener('click', () => {
+      open = !open;
+      syncDock();
+      saveTray();
+    });
     function placementControls() {
       const inline = document.querySelector('#position input:checked')?.value === 'inline';
       const minimise = document.getElementById('minimise');
@@ -122,10 +154,22 @@
     }
     $(document).on('shiny:inputchanged', (event) => {
       if (event.name === 'position') setTimeout(placementControls, 0);
+      if (event.name === 'bubble_forever') setTimeout(durationControl, 0);
     });
+    function durationControl() {
+      const disabled = document.getElementById('bubble_forever')?.checked === true;
+      const slider = $('#bubble_duration').data('ionRangeSlider');
+      slider?.update({ disable: disabled });
+      document.getElementById('bubble_seconds')?.setAttribute('aria-disabled', String(disabled));
+    }
     placementControls();
+    durationControl();
+    window.Shiny.addCustomMessageHandler('studio:task', (busy) => {
+      const button = document.getElementById('task_run');
+      if (button) button.disabled = busy;
+    });
     const grip = document.getElementById('dock_grip');
-    let height = 42;
+    let height = Number.isFinite(saved?.height) ? saved.height : 33;
     let drag = null;
     function resize(value) {
       if (!centre || !grip || !centre.clientHeight) return;
@@ -144,7 +188,7 @@
       );
       const minimum = Math.min(25, maximum);
       height = Math.max(minimum, Math.min(maximum, value));
-      centre.style.setProperty('--pg-dock-height', `${height}%`);
+      centre.style.setProperty('--pg-dock-height', `${(height / 100) * centre.clientHeight}px`);
       grip.setAttribute('aria-valuemin', String(Math.round(minimum)));
       grip.setAttribute('aria-valuemax', String(Math.round(maximum)));
       grip.setAttribute('aria-valuenow', String(Math.round(height)));
@@ -159,6 +203,9 @@
     }
     grip?.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
+      open = true;
+      syncDock();
+      document.body.classList.add('is-resizing');
       drag = { y: event.clientY, height };
       grip.setPointerCapture(event.pointerId);
       event.preventDefault();
@@ -166,28 +213,66 @@
     grip?.addEventListener('pointermove', (event) => {
       if (drag) resize(drag.height + ((drag.y - event.clientY) / centre.clientHeight) * 100);
     });
-    grip?.addEventListener('pointerup', () => {
+    function stopResize(event) {
+      if (grip.hasPointerCapture(event.pointerId)) grip.releasePointerCapture(event.pointerId);
       drag = null;
-    });
-    grip?.addEventListener('pointercancel', () => {
-      drag = null;
+      document.body.classList.remove('is-resizing');
+      saveTray();
+    }
+    grip?.addEventListener('pointerup', stopResize);
+    grip?.addEventListener('pointercancel', stopResize);
+    grip?.addEventListener('dblclick', () => {
+      resize(33);
+      saveTray();
     });
     grip?.addEventListener('keydown', (event) => {
       if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
+      open = true;
+      syncDock();
       resize(event.key === 'Home' ? 25 : event.key === 'End' ? 80 : height + (event.key === 'ArrowUp' ? 5 : -5));
+      saveTray();
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialise);
   else initialise();
 
+  // Restore the opener after Shiny's modal cleanup, for either dismissal path.
+  let guideOpener = null;
+  $(document).on('hidden.bs.modal', (event) => {
+    if (!event.target.classList.contains('pg-guide-modal')) return;
+    const opener = guideOpener;
+    guideOpener = null;
+    setTimeout(() => {
+      if (opener?.isConnected && opener.getClientRects().length) opener.focus();
+    }, 0);
+  });
+
+  // Use Shiny's modal lifecycle for both dismissal paths. Capture Escape before
+  // Bootstrap or Shiny's modal wrapper consumes it, then let removeModal() hide
+  // the modal and perform Shiny's normal unbinding and backdrop cleanup.
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key !== 'Escape' || !document.querySelector('.pg-guide-modal.show')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      window.Shiny.setInputValue('close_guide', 'escape', { priority: 'event' });
+    },
+    true,
+  );
+
   // Buttons update the same mounted inputs as the inspector.
   document.addEventListener('click', (event) => {
     const target = event.target.closest('[data-event]');
     if (target) {
+      if (target.dataset.event === 'open_guide') guideOpener = target;
       if (target.dataset.event === 'select_function') {
         selectedFunction = target.dataset.value;
         showControls();
+        // Choosing a function opens the controls again if they were collapsed.
+        const layout = document.getElementById('inspector_sidebar')?.closest('.bslib-sidebar-layout');
+        if (layout) window.bslib?.Sidebar?.getInstance(layout)?.toggle('open');
       }
       if (target.dataset.event === 'try_mood') {
         const mood = document.getElementById('mood');
@@ -230,9 +315,16 @@
   function paintSwatches() {
     const el = document.getElementById('helper');
     const state = el && window.mascot?.host?.state ? window.mascot.host.state(el) : null;
+    // Match the public role spelling from mascot_colour_roles(), including multiword keys.
+    const colours = Object.fromEntries(
+      Object.entries(state?.colours || {}).map(([key, value]) => [
+        key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(),
+        value,
+      ]),
+    );
     for (const swatch of document.querySelectorAll('.pg-resolved')) {
       const active = state && swatch.dataset.mode === state.mode;
-      swatch.style.background = active ? state.colours[swatch.dataset.role] || swatch.dataset.default : 'transparent';
+      swatch.style.background = active ? colours[swatch.dataset.role] || swatch.dataset.default : 'transparent';
       swatch.classList.toggle('is-idle', !active);
       swatch.title = active ? 'In use now' : `Used when the mascot is in ${swatch.dataset.mode} mode`;
     }

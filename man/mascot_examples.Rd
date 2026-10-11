@@ -22,6 +22,7 @@ mascot_examples()
 \code{\link[=mascot_example]{mascot_example()}}
 
 Other mascot examples:
-\code{\link[=mascot_example]{mascot_example()}}
+\code{\link[=mascot_example]{mascot_example()}},
+\code{\link[=mascot_studio]{mascot_studio()}}
 }
 \concept{mascot examples}

@@ -18,7 +18,6 @@ if (!exists("playground_guide")) {
 }
 
 moods <- mascot_moods()
-roles <- mascot_colour_roles()
 examples <- mascot_examples()
 
 start <- lapply(defaults, code_pair)
@@ -42,48 +41,89 @@ server_args <- function(state, style) {
 
 start_mascot <- do.call(mascot, lapply(ui_args(start, "short"), eval))
 
-studio_page <- bslib::layout_sidebar(
-  sidebar = bslib::sidebar(function_index(), width = 250, open = "desktop", title = "Functions"),
-  div(
-    class = "pg-studio",
-    id = "studio_shell",
-    div(
-      class = "pg-centre",
-      id = "studio_centre",
-      div(
-        class = "pg-toolbar pg-card-head",
-        actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm")
-      ),
-      div(
-        class = "pg-canvas",
-        id = "studio_canvas",
-        div(class = "pg-stage", start_mascot),
-        uiOutput("stage_note"),
-        div(class = "pg-canvas-caption pg-muted", "Tessa follows the arguments in the inspector.")
-      ),
-      div(
-        class = "pg-dock",
-        id = "studio_dock",
-        tags$div(
-          id = "dock_grip",
-          class = "pg-grip",
-          role = "separator",
-          tabindex = "0",
-          `aria-label` = "Resize the open Learn or Code panel",
-          `aria-orientation` = "horizontal",
-          `aria-valuemin` = "25",
-          `aria-valuemax` = "80",
-          `aria-valuenow` = "42",
-          title = "Drag to resize, or use the up and down arrow keys"
+studio_page <- function(character, fn) {
+  checkmate::assert_string(character)
+  checkmate::assert_string(fn)
+  initial <- start
+  initial$character <- code_character(character)
+  start_mascot <- do.call(mascot, lapply(ui_args(initial, "short"), eval))
+  bslib::layout_sidebar(
+    sidebar = bslib::sidebar(function_index(), width = 250, open = "desktop", title = "Functions"),
+    # The inspector is a right-hand sidebar inside the main area, so it collapses the bslib way too.
+    bslib::layout_sidebar(
+      sidebar = bslib::sidebar(
+        div(
+          class = "pg-inspector",
+          id = "studio_inspector",
+          panel_look(character = character),
+          panel_messages(),
+          panel_motion(),
+          panel_layout(),
+          panel_colours(),
+          panel_menu(),
+          panel_wiring(),
+          panel_studio(),
+          panel_views()
         ),
-        bslib::card(
-          id = "studio_panels_card",
-          full_screen = TRUE,
-          bslib::accordion(
-            bslib::accordion_panel(uiOutput("learn_title", inline = TRUE), uiOutput("learn"), value = "learn"),
-            bslib::accordion_panel(
-              "Code",
-              div(class = "pg-hint pg-code-purpose", "Code for Tessa as she is now."),
+        id = "inspector_sidebar",
+        title = "Controls",
+        position = "right",
+        width = 330,
+        open = "desktop"
+      ),
+      class = "pg-studio",
+      id = "studio_shell",
+      border = TRUE,
+      border_radius = FALSE,
+      padding = 0,
+      gap = 0,
+      div(
+        class = "pg-centre",
+        id = "studio_centre",
+        `data-initial-function` = fn,
+        `data-initial-character` = character,
+        div(
+          class = "pg-toolbar pg-card-head",
+          actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm"),
+          tags$button(
+            type = "button",
+            id = "code_toggle",
+            class = "btn btn-outline-primary btn-sm",
+            `aria-expanded` = "true",
+            `aria-controls` = "code_tray_body",
+            "Code"
+          )
+        ),
+        div(
+          class = "pg-canvas",
+          id = "studio_canvas",
+          div(class = "pg-stage", start_mascot),
+          uiOutput("stage_note"),
+          div(class = "pg-canvas-caption pg-muted", textOutput("character_caption", inline = TRUE))
+        ),
+        div(
+          class = "pg-dock",
+          id = "studio_dock",
+          tags$div(
+            id = "dock_grip",
+            class = "pg-grip",
+            role = "separator",
+            tabindex = "0",
+            `aria-label` = "Resize the Code tray",
+            `aria-orientation` = "horizontal",
+            `aria-valuemin` = "25",
+            `aria-valuemax` = "80",
+            `aria-valuenow` = "33",
+            title = "Drag to resize, or use the up and down arrow keys"
+          ),
+          bslib::card(
+            id = "studio_panels_card",
+            full_screen = TRUE,
+            bslib::card_header("Code"),
+            div(
+              id = "code_tray_body",
+              class = "pg-tray-body",
+              div(class = "pg-hint pg-code-purpose", textOutput("code_caption", inline = TRUE)),
               div(
                 class = "pg-code-style",
                 popover(
@@ -106,12 +146,12 @@ studio_page <- bslib::layout_sidebar(
                 id = "code_tabs",
                 nav_panel(
                   "UI",
-                  div(class = "pg-hint", "A mascot() call that starts the way Tessa looks now."),
+                  div(class = "pg-hint", "A mascot() call with the current settings."),
                   div(class = "pg-code-wrap", code_output("code_ui"), copy_button("code_ui"))
                 ),
                 nav_panel(
                   "Server",
-                  div(class = "pg-hint", "One updateMascot() call that turns a plain mascot into Tessa as she is now."),
+                  div(class = "pg-hint", "One updateMascot() call that applies the current settings."),
                   div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))
                 ),
                 nav_panel(
@@ -134,90 +174,93 @@ studio_page <- bslib::layout_sidebar(
                   uiOutput("log")
                 )
               ),
-              value = "code"
-            ),
-            id = "studio_panels",
-            multiple = FALSE,
-            open = "code"
+            )
           )
         )
       )
-    ),
-    tags$aside(
-      class = "pg-inspector",
-      id = "studio_inspector",
-      `aria-label` = "Function controls",
-      panel_look(),
-      panel_messages(),
-      panel_motion(),
-      panel_layout(),
-      panel_colours(),
-      panel_menu(),
-      panel_wiring()
     )
   )
-)
+}
 
-preview_page <- layout_sidebar(
-  sidebar = sidebar(
-    title = "mascot_preview() arguments",
-    width = 380,
-    arg_field("mascot_preview", "character", selectInput("preview_character", "Character", c(Tessa = "tessa"))),
-    arg_field(
-      "mascot_preview",
-      "mood",
-      selectInput("preview_mood", "Mood", c("Every mood (NULL)" = "", stats::setNames(moods$name, moods$name)))
-    ),
-    arg_field("mascot_preview", "status", textInput("preview_status", "Status text", placeholder = "Empty: each mood")),
-    arg_field("mascot_preview", "bubble", textInput("preview_bubble", "Bubble text", placeholder = "Empty: no bubble")),
-    arg_field(
-      "mascot_preview",
-      "size",
-      tagList(
-        sliderInput("preview_size", "Pixels", min = 48, max = 240, value = 120, step = 8),
-        radioButtons(
-          "preview_width",
-          "Show the page at",
-          c("Full width" = "full", "Phone width (375 px)" = "phone"),
-          inline = TRUE
+preview_page <- function(character) {
+  checkmate::assert_string(character)
+  layout_sidebar(
+    sidebar = sidebar(
+      title = "mascot_preview() arguments",
+      width = 380,
+      arg_field(
+        "mascot_preview",
+        "character",
+        selectInput("preview_character", "Character", studio_characters(), selected = character)
+      ),
+      arg_field(
+        "mascot_preview",
+        "mood",
+        selectInput("preview_mood", "Mood", c("Every mood (NULL)" = "", stats::setNames(moods$name, moods$name)))
+      ),
+      arg_field(
+        "mascot_preview",
+        "status",
+        textInput("preview_status", "Status text", placeholder = "Empty: each mood")
+      ),
+      arg_field(
+        "mascot_preview",
+        "bubble",
+        textInput("preview_bubble", "Bubble text", placeholder = "Empty: no bubble")
+      ),
+      arg_field(
+        "mascot_preview",
+        "size",
+        tagList(
+          sliderInput("preview_size", "Pixels", min = 48, max = 240, value = 120, step = 8),
+          radioButtons(
+            "preview_width",
+            "Show the page at",
+            c("Full width" = "full", "Phone width (375 px)" = "phone"),
+            inline = TRUE
+          )
+        ),
+        note = div(class = "pg-note", "Phone width changes the page width; the selected pixel size stays the same.")
+      ),
+      arg_field(
+        "mascot_preview",
+        "placement",
+        selectInput("preview_placement", "Placement", c("inline", corners))
+      ),
+      arg_field(
+        "mascot_preview",
+        "theme",
+        tagList(
+          radioButtons(
+            "preview_theme_source",
+            "Colours",
+            c("Character's own colours" = "own", "Your colours" = "custom")
+          ),
+          conditionalPanel("input.preview_theme_source == 'custom'", uiOutput("preview_pickers"))
         )
       ),
-      note = div(class = "pg-note", "At phone width, small_screen sizes apply, as on a real phone.")
+      arg_field("mascot_preview", "motion", input_switch("preview_motion", "Animate", FALSE)),
+      arg_field(
+        "mascot_preview",
+        "popup_menu",
+        textAreaInput("preview_menu_items", "One item per line: id = Label", "", rows = 3)
+      ),
+      actionButton("preview_build", "Build the preview", class = "btn-primary")
     ),
-    arg_field(
-      "mascot_preview",
-      "placement",
-      selectInput("preview_placement", "Placement", c("inline", corners))
+    card(
+      full_screen = TRUE,
+      card_header("The preview page"),
+      div(
+        class = "pg-code-wrap",
+        code_output("code_preview"),
+        copy_button("code_preview")
+      ),
+      uiOutput("preview_frame"),
+      uiOutput("preview_contrast")
     ),
-    arg_field(
-      "mascot_preview",
-      "theme",
-      tagList(
-        div(class = "pg-css", colour_input("preview_body", "#3f8a66", "Body colour"), tags$code("body")),
-        div(class = "pg-css", colour_input("preview_rim", "#d9b35c", "Rim colour"), tags$code("rim"))
-      )
-    ),
-    arg_field("mascot_preview", "motion", input_switch("preview_motion", "Animate", FALSE)),
-    arg_field(
-      "mascot_preview",
-      "popup_menu",
-      textAreaInput("preview_menu_items", "One item per line: id = Label", "", rows = 3)
-    ),
-    actionButton("preview_build", "Build the preview", class = "btn-primary")
-  ),
-  card(
-    full_screen = TRUE,
-    card_header("The preview page"),
-    div(
-      class = "pg-code-wrap",
-      code_output("code_preview"),
-      copy_button("code_preview")
-    ),
-    uiOutput("preview_frame"),
-    uiOutput("preview_contrast")
-  ),
-  card(full_screen = TRUE, card_header("Guide"), card_body(guide_content("preview")))
-)
+    card(full_screen = TRUE, card_header("Guide"), card_body(guide_content("preview")))
+  )
+}
 
 examples_page <- layout_columns(
   col_widths = breakpoints(sm = 12, lg = c(5, 7)),
@@ -265,7 +308,7 @@ view_link <- function(label, view, new_tab = TRUE) {
   checkmate::assert_flag(new_tab)
   bslib::nav_item(tags$a(
     class = "nav-link",
-    href = if (view == "studio") "?" else paste0("?view=", view),
+    href = paste0("?view=", view),
     target = if (new_tab) "_blank",
     rel = "noopener",
     label,
@@ -275,6 +318,13 @@ view_link <- function(label, view, new_tab = TRUE) {
 
 ui <- function(request) {
   view <- view_from_request(request)
+  query <- shiny::parseQueryString(request$QUERY_STRING %||% "")
+  character <- if (!is.null(query$character) && query$character %in% unname(studio_characters())) {
+    query$character
+  } else {
+    defaults$character
+  }
+  fn <- if (!is.null(query$fn) && query$fn %in% names(playground_guide)) query$fn else "mascot_mood"
   page_navbar(
     title = "mascot studio",
     id = "tabs",
@@ -285,9 +335,13 @@ ui <- function(request) {
       tags$link(rel = "stylesheet", href = "studio.css"),
       tags$script(src = "studio.js")
     ),
-    if (view == "studio") nav_panel("Studio", value = "studio", studio_page) else view_link("Studio", "studio", FALSE),
+    if (view == "studio") {
+      nav_panel("Studio", value = "studio", studio_page(character, fn))
+    } else {
+      view_link("Studio", "studio", FALSE)
+    },
     if (view == "preview") {
-      nav_panel("Static preview", value = "preview", preview_page)
+      nav_panel("Static preview", value = "preview", preview_page(character))
     } else {
       view_link("Static preview", "preview")
     },
@@ -328,6 +382,21 @@ studio_server <- function(input, output, session) {
   last_call <- reactiveVal("No update yet. Change a setting in the inspector.")
   log <- reactiveVal(list())
   selected_function <- reactiveVal("mascot_mood")
+  current_character <- reactive(input$character %||% defaults$character)
+  session$userData$studio_character <- current_character
+  character_name <- reactive(mascot_character(current_character())$name)
+  roles <- reactive(mascot_colour_roles(current_character()))
+  output$character_caption <- renderText(paste(character_name(), "follows the arguments in the inspector."))
+  output$code_caption <- renderText(paste("Code for", character_name(), "with the current settings."))
+  observeEvent(input$initial_function, selected_function(input$initial_function), once = TRUE)
+  observeEvent(
+    input$initial_character,
+    {
+      updateSelectInput(session, "character", selected = input$initial_character)
+      state$character <- code_character(input$initial_character)
+    },
+    once = TRUE
+  )
   menu_last <- reactiveVal("nothing yet")
   menu_error <- reactiveVal(NULL)
 
@@ -382,7 +451,7 @@ studio_server <- function(input, output, session) {
   # Sends the changed settings in one updateMascot() call; TRUE when it ran, FALSE on an error,
   # NA when nothing changed. force sends unchanged ones too (a bubble shown twice, a gesture);
   # with_session names the session, for calls that run outside the reactive context.
-  send <- function(pairs, force = FALSE, with_session = FALSE) {
+  send <- function(pairs, force = FALSE, with_session = FALSE, remember = TRUE) {
     if (!force) {
       pairs <- Filter(
         Negate(is.null),
@@ -398,9 +467,16 @@ studio_server <- function(input, output, session) {
     code <- format_call("updateMascot", args)
     last_call(code)
     ok <- run_logged(as.call(c(as.name("updateMascot"), args)), code)
-    if (ok) {
+    if (ok && remember) {
       for (field in intersect(names(pairs), names(defaults))) {
         state[[field]] <- pairs[[field]]
+        if (field == "mood") {
+          session$sendInputMessage("mood", list(value = eval(pairs[[field]]$short)))
+        }
+        if (field == "status") {
+          value <- eval(pairs[[field]]$helper)$text
+          updateTextInput(session, "status_text", value = value %||% "")
+        }
       }
     }
     invisible(ok)
@@ -413,10 +489,32 @@ studio_server <- function(input, output, session) {
     selected_function(input$select_function)
     nav_select("tabs", "studio")
   })
+  observeEvent(input$open_guide, {
+    selected_function(input$open_guide)
+    showModal(tagAppendAttributes(
+      modalDialog(
+        title = paste0("Guide: ", input$open_guide, "()"),
+        uiOutput("guide"),
+        size = "l",
+        easyClose = TRUE,
+        footer = actionButton("close_guide", "Close", class = "btn-primary")
+      ),
+      class = "pg-guide-modal"
+    ))
+  })
+  observeEvent(input$close_guide, removeModal())
   observeEvent(input$reset_all, session$reload())
 
   # Character and mood
-  observeEvent(input$character, send(list(character = code_character(input$character))), ignoreInit = TRUE)
+  observeEvent(
+    input$character,
+    # A character swap resets the engine's mood unless the same update supplies it.
+    send(
+      list(character = code_character(input$character), theme = theme_now(), mood = code_mood(input$mood)),
+      force = TRUE
+    ),
+    ignoreInit = TRUE
+  )
   observeEvent(input$mood, send(list(mood = code_mood(input$mood))), ignoreInit = TRUE)
 
   # Messages
@@ -469,6 +567,10 @@ studio_server <- function(input, output, session) {
   )
   position_last <- reactiveVal("Nothing yet: drag a floating mascot to receive an event.")
   observeEvent(input$helper_position, {
+    if (is.character(input$helper_position) && input$helper_position %in% corners) {
+      state$placement <- code_placement(input$helper_position, isTRUE(input$minimise), "snap")
+      updateRadioButtons(session, "position", selected = input$helper_position)
+    }
     value <- format_expr(input$helper_position)
     position_last(value)
     add_log(paste0("input$helper_position  # ", value), "event", "The visitor dropped the mascot.")
@@ -481,46 +583,109 @@ studio_server <- function(input, output, session) {
       size_ruler(input$size_px, paste(input$size_px, "px"))
     }
   })
-  output$placement_map <- renderUI(placement_map(input$position, isTRUE(input$minimise)))
+  output$placement_map <- renderUI(placement_map(input$position, isTRUE(input$minimise), character_name()))
   output$stage_note <- renderUI({
     if (input$position == "inline") {
       return(NULL)
     }
     div(
       class = "pg-note",
-      "Tessa is floating in the ",
+      character_name(),
+      " is floating in the ",
       sub("-", " ", input$position, fixed = TRUE),
-      " corner of the window. Choose Inline to bring her back here."
+      " corner of the window. Choose Inline to bring the mascot back here."
     )
   })
+
+  # Colour inputs rebuild only when the character changes; source switches retain them.
+  picker_roles <- new.env(parent = emptyenv())
+  role_values <- function(mode) {
+    checkmate::assert_choice(mode, c("light", "dark"))
+    values <- stats::setNames(
+      lapply(roles()$role, function(role) isolate(input[[paste0(mode, "_", role)]])),
+      roles()$role
+    )
+    values <- reconcile_colour_values(picker_roles[[mode]], roles(), values)
+    picker_roles[[mode]] <- roles()
+    values
+  }
+  output$theme_light <- renderUI(arg_field(
+    "mascot_theme",
+    "light",
+    role_pickers("light", roles(), role_values("light"), character_name())
+  ))
+  output$theme_dark <- renderUI(arg_field(
+    "mascot_theme",
+    "dark",
+    role_pickers("dark", roles(), role_values("dark"), character_name())
+  ))
+  output$theme_css <- renderUI(arg_field(
+    "mascot_theme",
+    "css",
+    tagList(
+      div(
+        class = "pg-css",
+        colour_input(
+          "css_accent",
+          isolate(input$css_accent) %||% "#7b4fd6",
+          "Value of --studio-accent",
+          `data-css-var` = "--studio-accent"
+        ),
+        tags$code("--studio-accent")
+      ),
+      checkboxGroupInput(
+        "css_roles",
+        "Parts that read the variable",
+        roles()$role,
+        selected = intersect(isolate(input$css_roles), roles()$role),
+        inline = TRUE
+      )
+    )
+  ))
+  output$theme_brand <- renderUI({
+    brand <- studio_brand(current_character())
+    tagList(lapply(c("primary", "secondary"), function(slot) {
+      label <- paste(tools::toTitleCase(slot), "colours", brand[[slot]] %||% "no mapped part", "for", character_name())
+      div(
+        class = "pg-css",
+        colour_input(
+          paste0("bs_", slot),
+          isolate(input[[paste0("bs_", slot)]]) %||% if (slot == "primary") "#1f6feb" else "#966600",
+          label
+        ),
+        tags$span(label)
+      )
+    }))
+  })
+  for (id in c("theme_light", "theme_dark", "theme_css", "theme_brand")) {
+    outputOptions(output, id, suspendWhenHidden = FALSE)
+  }
 
   # Colours and theme
   picked <- function(mode) {
     values <- vapply(
-      roles$role,
+      roles()$role,
       function(role) {
         value <- input[[paste0(mode, "_", role)]]
         if (is.null(value)) NA_character_ else value
       },
       character(1)
     )
-    keep <- !is.na(values) & tolower(values) != tolower(roles$colour)
-    stats::setNames(tolower(values[keep]), roles$role[keep])
+    keep <- !is.na(values) & tolower(values) != tolower(roles()$colour)
+    stats::setNames(tolower(values[keep]), roles()$role[keep])
   }
-  theme_code <- debounce(
-    reactive({
-      code_theme(
-        input$theme_source,
-        picked("light"),
-        picked("dark"),
-        input$theme_mode,
-        input$css_roles,
-        input$bs_primary,
-        input$bs_secondary
-      )
-    }),
-    300
-  )
+  theme_now <- reactive({
+    code_theme(
+      input$theme_source %||% "own",
+      picked("light"),
+      picked("dark"),
+      input$theme_mode %||% "auto",
+      intersect(input$css_roles, roles()$role),
+      input$bs_primary %||% "#1f6feb",
+      input$bs_secondary %||% "#966600"
+    )
+  })
+  theme_code <- debounce(theme_now, 300)
   observeEvent(theme_code(), send(list(theme = theme_code())), ignoreInit = TRUE)
   # The browser reads the variable again only when the theme is sent, so resend it.
   observeEvent(
@@ -529,7 +694,7 @@ studio_server <- function(input, output, session) {
     ignoreInit = TRUE
   )
   reset_colour <- function(mode, role) {
-    session$sendInputMessage(paste0(mode, "_", role), list(value = roles$colour[roles$role == role]))
+    session$sendInputMessage(paste0(mode, "_", role), list(value = roles()$colour[roles()$role == role]))
   }
   observeEvent(input$reset_colour, {
     parts <- strsplit(input$reset_colour, ":", fixed = TRUE)[[1]]
@@ -537,7 +702,7 @@ studio_server <- function(input, output, session) {
   })
   observeEvent(
     input$reset_mode,
-    for (role in roles$role) {
+    for (role in roles()$role) {
       reset_colour(input$reset_mode, role)
     }
   )
@@ -546,7 +711,7 @@ studio_server <- function(input, output, session) {
     theme <- isolate(state$theme)
     req(input$contrast_check)
     preview <- tryCatch(
-      suppressWarnings(mascot_preview(theme = eval(theme$short))),
+      suppressWarnings(mascot_preview(character = isolate(current_character()), theme = eval(theme$short))),
       error = function(e) e
     )
     if (inherits(preview, "error")) {
@@ -613,7 +778,7 @@ studio_server <- function(input, output, session) {
     ignoreInit = TRUE
   )
   observeEvent(input$helper_menu, {
-    items <- menu_parsed()$items
+    items <- eval(state$popup_menu$helper)$items
     label <- if (input$helper_menu %in% names(items)) items[[input$helper_menu]] else input$helper_menu
     menu_last(sprintf("\"%s\" (%s)", input$helper_menu, label))
     add_log(
@@ -636,7 +801,8 @@ studio_server <- function(input, output, session) {
           bubble = code_bubble(paste0("You chose \"", label, "\"."), FALSE, 4, TRUE),
           gesture = code_gesture("nod")
         ),
-        force = TRUE
+        force = TRUE,
+        remember = FALSE
       )
     }
   })
@@ -660,53 +826,72 @@ studio_server <- function(input, output, session) {
     session$sendInputMessage("mood", list(value = "celebrating"))
     updateTextInput(session, "status_text", value = "Review complete")
   })
-  # A slow step: the first call runs now; the second runs two seconds later, outside the reactive
-  # context, so it names the session. For real slow work, see mascot_example("long-task").
+  # A slow step: one job at a time, finished by a timer observer. The completion call
+  # names the session explicitly, as a callback outside a reactive context would. For real slow work, see mascot_example("long-task").
+  task <- reactiveVal(NULL)
   observeEvent(input$task_run, {
+    if (!is.null(task())) {
+      return()
+    }
     send(list(mood = code_mood("thinking"), status = code_status("Checking 120 rows")), force = TRUE)
-    fail <- isTRUE(input$task_fail)
-    later::later(
-      function() {
-        # isolate(): the callback reads reactive values outside any observer.
-        withReactiveDomain(
-          session,
-          isolate({
-            if (fail) {
-              send(
-                list(
-                  mood = code_mood("worried"),
-                  status = code_status("Check failed"),
-                  bubble = code_bubble("Three rows have no batch date.", FALSE, Inf, TRUE)
-                ),
-                force = TRUE,
-                with_session = TRUE
-              )
-            } else {
-              send(
-                list(mood = code_mood("happy"), status = code_status("All 120 rows checked")),
-                force = TRUE,
-                with_session = TRUE
-              )
-            }
-          })
-        )
-      },
-      2
-    )
+    task(list(fail = isTRUE(input$task_fail), ends = Sys.time() + 2))
+    session$sendCustomMessage("studio:task", TRUE)
+  })
+  observe({
+    job <- task()
+    req(!is.null(job))
+    remaining <- as.numeric(difftime(job$ends, Sys.time(), units = "secs"))
+    if (remaining > 0) {
+      invalidateLater(ceiling(remaining * 1000), session)
+      return()
+    }
+    pairs <- if (job$fail) {
+      list(
+        mood = code_mood("worried"),
+        status = code_status("Check failed"),
+        bubble = code_bubble("Three rows have no batch date.", FALSE, Inf, TRUE)
+      )
+    } else {
+      list(mood = code_mood("happy"), status = code_status("All 120 rows checked"))
+    }
+    send(pairs, force = TRUE, with_session = TRUE)
+    if (job$fail) {
+      updateTextAreaInput(session, "bubble_text", value = "Three rows have no batch date.")
+      update_switch("bubble_html", value = FALSE)
+      update_switch("bubble_forever", value = TRUE)
+      update_switch("bubble_closable", value = TRUE)
+    }
+    task(NULL)
+    session$sendCustomMessage("studio:task", FALSE)
   })
   output$mistake_code <- renderUI({
-    mistake <- mistakes[[input$mistake]]
+    mistake <- character_mistakes(current_character())[[input$mistake]]
     tagList(code_block(mistake$code, "pg-code-small"), div(class = "pg-hint", mistake$why))
   })
   observeEvent(input$mistake_run, {
-    mistake <- mistakes[[input$mistake]]
+    mistake <- character_mistakes(current_character())[[input$mistake]]
     call <- str2lang(mistake$code)
     last_call(mistake$code)
-    # A mistake that still changes Tessa (low contrast) updates the state the code card shows.
+    # Store normalised builder output only for the two mistakes that really change state.
     if (run_logged(call, mistake$code) && identical(call[[2]], "helper")) {
-      args <- as.list(call)[-(1:2)]
-      for (field in intersect(names(args), names(defaults))) {
-        state[[field]] <- code_pair(args[[field]])
+      if (input$mistake == "Minimise an inline mascot") {
+        state$placement <- code_placement("inline")
+        updateRadioButtons(session, "position", selected = "inline")
+        update_switch("minimise", value = TRUE)
+        updateSelectInput(session, "drag", selected = "FALSE")
+      } else if (input$mistake == "Low contrast") {
+        role <- roles()$role[1]
+        light <- stats::setNames("#f8f9fa", role)
+        state$theme <- code_theme("mascot", light, light, "auto", NULL, NULL, NULL)
+        updateRadioButtons(session, "theme_source", selected = "mascot")
+        updateRadioButtons(session, "theme_mode", selected = "auto")
+        updateCheckboxGroupInput(session, "css_roles", selected = character())
+        for (mode in c("light", "dark")) {
+          for (part in roles()$role) {
+            reset_colour(mode, part)
+          }
+          session$sendInputMessage(paste0(mode, "_", role), list(value = "#f8f9fa"))
+        }
       }
     }
     nav_select("code_tabs", "Log")
@@ -719,7 +904,11 @@ studio_server <- function(input, output, session) {
   })
   output$code_server <- renderText({
     args <- server_args(reactiveValuesToList(state), style())
-    if (length(args) == 1) "# Tessa is in her default state: nothing to update." else format_call("updateMascot", args)
+    if (length(args) == 1) {
+      paste0("# ", character_name(), " is in the default state: nothing to update.")
+    } else {
+      format_call("updateMascot", args)
+    }
   })
   output$code_app <- renderText({
     current <- reactiveValuesToList(state)
@@ -732,7 +921,7 @@ studio_server <- function(input, output, session) {
     theme <- paste(deparse(current$theme$short), collapse = "")
     whole_app_code(
       update,
-      menu_handler_code(menu_parsed()$items),
+      menu_handler_code(eval(current$popup_menu$helper)$items),
       c("shiny", if (grepl("bs_theme", theme, fixed = TRUE)) "bslib", "mascot"),
       if (grepl("--studio-accent", theme, fixed = TRUE)) input$css_accent
     )
@@ -765,10 +954,8 @@ studio_server <- function(input, output, session) {
   outputOptions(output, "log", suspendWhenHidden = FALSE)
 
   # A reference for the selected function, with code made from its current controls.
-  output$learn_title <- renderText(paste0("Learn: ", selected_function(), "()"))
-  output$learn <- renderUI(selected_learn(selected_function()))
-  outputOptions(output, "learn", suspendWhenHidden = FALSE)
-  output$roles_table <- renderUI(roles_table(input$roles_character))
+  output$guide <- renderUI(selected_guide(selected_function(), current_character()))
+  output$roles_table <- renderUI(roles_table(current_character()))
   output$code_function <- renderText({
     fn <- selected_function()
     pair <- switch(
@@ -788,7 +975,7 @@ studio_server <- function(input, output, session) {
       mascot_placement = code_placement(
         input$position,
         isTRUE(input$minimise),
-        if (input$drag != "FALSE") input$drag else FALSE
+        if (isTRUE(input$drag != "FALSE")) input$drag else FALSE
       ),
       mascot_theme = theme_code(),
       mascot_popup_menu = code_menu(
@@ -799,13 +986,26 @@ studio_server <- function(input, output, session) {
     )
     if (!is.null(pair)) {
       # A bslib theme is a supported alternative to mascot_theme(), shown exactly as supplied.
-      return(format_expr(pair$helper))
+      return(format_expr(if (fn == "mascot_theme") pair$short else pair$helper))
     }
     switch(
       fn,
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
       updateMascot = format_call("updateMascot", server_args(reactiveValuesToList(state), style())),
-      mascot_colour_roles = format_call(fn, list(character = input$roles_character)),
+      mascot_colour_roles = format_call(fn, list(character = current_character())),
+      mascot_example = format_call(fn, list(name = examples$name[1], run = FALSE)),
+      mascot_studio = format_call(
+        fn,
+        Filter(
+          Negate(is.null),
+          list(
+            view = input$studio_view,
+            fn = if (nzchar(input$studio_fn %||% "")) input$studio_fn,
+            character = current_character(),
+            run = isTRUE(input$studio_run)
+          )
+        )
+      ),
       format_call(fn, list())
     )
   })
@@ -813,6 +1013,29 @@ studio_server <- function(input, output, session) {
 }
 
 preview_server <- function(input, output, session) {
+  output$preview_pickers <- renderUI({
+    req(input$preview_character)
+    roles <- mascot_colour_roles(input$preview_character)
+    tagList(lapply(roles$role, function(role) {
+      div(
+        class = "pg-css",
+        colour_input(paste0("preview_", role), roles$colour[match(role, roles$role)], paste("Preview", role)),
+        tags$code(role)
+      )
+    }))
+  })
+  outputOptions(output, "preview_pickers", suspendWhenHidden = FALSE)
+  preview_colours <- reactive({
+    roles <- mascot_colour_roles(input$preview_character)
+    values <- vapply(
+      roles$role,
+      function(role) input[[paste0("preview_", role)]] %||% roles$colour[match(role, roles$role)],
+      character(1)
+    )
+    # Only the parts changed from the character's own colours go into the code.
+    changed <- tolower(values) != tolower(roles$colour)
+    stats::setNames(values[changed], roles$role[changed])
+  })
   # Static preview
   prefix <- paste0("studio-preview-", session$token)
   preview_dir <- file.path(tempdir(), prefix)
@@ -824,25 +1047,30 @@ preview_server <- function(input, output, session) {
   })
   preview_count <- reactiveVal(0)
   preview_call <- reactive({
-    req(input$preview_character, input$preview_body, input$preview_rim)
+    req(input$preview_character)
     lines <- trimws(strsplit(input$preview_menu_items, "\n", fixed = TRUE)[[1]])
     lines <- lines[nzchar(lines)]
     validate(need(all(grepl("=", lines, fixed = TRUE)), "Write each menu item as id = Label."))
     items <- stats::setNames(trimws(sub("^[^=]*=", "", lines)), trimws(sub("=.*$", "", lines)))
     args <- list(
-      character = if (input$preview_character != "tessa") input$preview_character,
+      character = if (input$preview_character != defaults$character) input$preview_character,
       mood = if (nzchar(input$preview_mood)) input$preview_mood,
       status = if (nzchar(trimws(input$preview_status))) input$preview_status,
       bubble = if (nzchar(trimws(input$preview_bubble))) input$preview_bubble,
       size = if (input$preview_size != 160) as.numeric(input$preview_size),
       placement = if (input$preview_placement != "inline") input$preview_placement,
-      theme = named_call("list", list(body = input$preview_body, rim = input$preview_rim)),
+      theme = if (input$preview_theme_source == "custom" && length(preview_colours())) {
+        named_call("list", preview_colours())
+      },
       motion = if (input$preview_motion) TRUE,
       popup_menu = if (length(items)) named_call("c", items)
     )
     Filter(Negate(is.null), args)
   })
-  output$code_preview <- renderText(format_call("mascot_preview", preview_call()))
+  output$code_preview <- renderText({
+    req(preview_request() > 0)
+    preview()$code
+  })
   # This view builds on its first visit; the button builds a new preview.
   preview_request <- reactiveVal(0)
   observeEvent(input$preview_build, preview_request(preview_request() + 1))
@@ -859,12 +1087,12 @@ preview_server <- function(input, output, session) {
       }
     )
     if (inherits(page, "error")) {
-      return(list(error = cli::ansi_strip(conditionMessage(page))))
+      return(list(error = cli::ansi_strip(conditionMessage(page)), code = format_call("mascot_preview", args)))
     }
     preview_count(isolate(preview_count()) + 1)
     file <- sprintf("preview-%s-%d.html", session$token, isolate(preview_count()))
     htmltools::save_html(page, file.path(preview_dir, file), libdir = "lib")
-    list(file = file, contrast = attr(page, "contrast"))
+    list(file = file, contrast = attr(page, "contrast"), code = format_call("mascot_preview", args))
   })
   output$preview_frame <- renderUI({
     if (preview_request() == 0) {

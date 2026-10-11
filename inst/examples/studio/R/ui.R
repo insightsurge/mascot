@@ -2,7 +2,32 @@
 # cards for the guide, and the small diagrams that explain each category.
 
 the_guide <- function(fn) {
-  playground_guide[[fn]]
+  checkmate::assert_string(fn)
+  entry <- playground_guide[[fn]]
+  session <- shiny::getDefaultReactiveDomain()
+  character <- if (!is.null(session$userData$studio_character)) {
+    session$userData$studio_character()
+  } else {
+    formals(mascot::mascot)$character
+  }
+  if (fn == "mascot_theme") {
+    roles <- mascot::mascot_colour_roles(character)$role
+    brand <- studio_brand(character)
+    replacements <- c(body = brand$primary %||% roles[1], rim = brand$secondary %||% roles[min(2, length(roles))])
+    for (arg in names(entry$args)) {
+      for (field in c("hint", "example")) {
+        text <- entry$args[[arg]][[field]]
+        if (is.null(text)) {
+          next
+        }
+        for (part in names(replacements)) {
+          text <- gsub(paste0("\\b", part, "\\b"), replacements[[part]], text)
+        }
+        entry$args[[arg]][[field]] <- text
+      }
+    }
+  }
+  entry
 }
 
 # Read the expression, without evaluating defaults such as Shiny's reactive domain.
@@ -93,6 +118,7 @@ inspector_function <- function(fn, ...) {
       code_block(signature(fn), "pg-signature"),
       title = paste0(fn, "()")
     ),
+    try_button("open_guide", fn, paste0("Guide: ", fn, "()")),
     div(class = "pg-returns", tags$strong("Returns: "), the_guide(fn)$returns),
     div(class = "pg-function-controls", ...)
   )
@@ -126,7 +152,7 @@ function_index <- function() {
   tags$nav(
     class = "pg-index",
     `aria-label` = "Functions by category",
-    lapply(setdiff(names(playground_categories), c("preview", "examples")), function(category) {
+    lapply(names(playground_categories), function(category) {
       tagList(
         tags$h2(playground_categories[[category]]$title),
         lapply(category_functions(category), function(fn) {
@@ -246,42 +272,45 @@ function_card <- function(fn, example = FALSE) {
   )
 }
 
-selected_learn <- function(fn) {
+selected_guide <- function(fn, character = formals(mascot::mascot)$character) {
   checkmate::assert_string(fn)
+  checkmate::assert_string(character)
   # Keep headings with their diagrams or tables; callouts can flow into their own column.
   sections <- list()
   content <- list()
-  for (piece in category_visual(the_guide(fn)$category)) {
+  for (piece in category_visual(the_guide(fn)$category, character)) {
     heading <- inherits(piece, "shiny.tag") && identical(piece$name, "h3")
     callout <- inherits(piece, "shiny.tag") &&
       !is.null(piece$attribs$class) &&
       grepl("pg-callout", piece$attribs$class, fixed = TRUE)
     if ((heading || callout) && length(content)) {
-      sections <- c(sections, list(div(class = "pg-learn-piece", content)))
+      sections <- c(sections, list(div(class = "pg-guide-piece", content)))
       content <- list()
     }
     content <- c(content, list(piece))
     if (callout) {
-      sections <- c(sections, list(div(class = "pg-learn-piece", content)))
+      sections <- c(sections, list(div(class = "pg-guide-piece", content)))
       content <- list()
     }
   }
   if (length(content)) {
-    sections <- c(sections, list(div(class = "pg-learn-piece", content)))
+    sections <- c(sections, list(div(class = "pg-guide-piece", content)))
   }
   div(
-    `data-learn-function` = fn,
+    `data-guide-function` = fn,
     tagAppendAttributes(
       bslib::layout_columns(
         col_widths = bslib::breakpoints(sm = 12, lg = c(6, 6)),
         div(
-          class = "pg-learn-example",
+          class = "pg-guide-example",
           tags$h3(class = "pg-section-title", paste0("Example: how to call ", fn, "()")),
           div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
         ),
-        div(class = "pg-guide-visual", sections)
+        div(class = "pg-guide-visual", sections),
+        guide_arguments(fn),
+        guide_mistakes(fn, character)
       ),
-      class = "pg-learn-columns"
+      class = "pg-guide-columns"
     )
   )
 }
@@ -298,14 +327,14 @@ guide_content <- function(category) {
 
 # ---- Visual explanations, one per category --------------------------------------------------
 
-category_visual <- function(category) {
+category_visual <- function(category, character = formals(mascot::mascot)$character) {
   switch(
     category,
     look = visual_look(),
     messages = visual_messages(),
     motion = visual_motion(),
     layout = visual_layout(),
-    colours = visual_colours(),
+    colours = visual_colours(character),
     menu = visual_menu(),
     wiring = visual_wiring(),
     NULL
@@ -350,7 +379,7 @@ mood_cards <- function(moods) {
 
 visual_look <- function() {
   tagList(
-    tags$h3(class = "pg-section-title", "The five moods"),
+    tags$h3(class = "pg-section-title", paste("The", nrow(mascot_moods()), "moods")),
     data_table(mascot_moods()),
     div(
       class = "pg-callout",
@@ -446,7 +475,7 @@ visual_layout <- function() {
     tags$h3(class = "pg-section-title", "Placement"),
     tags$p(
       class = "pg-muted",
-      "A plain mascot() floats in the bottom-right corner. This studio starts Tessa inline with placement = \"inline\" so she stays on the canvas."
+      "A plain mascot() floats in the bottom-right corner. This studio starts the selected character inline with placement = \"inline\" so it stays on the canvas."
     ),
     uiOutput("placement_map"),
     div(
@@ -472,16 +501,16 @@ size_ruler <- function(pixels, label) {
   )
 }
 
-placement_map <- function(position, minimise) {
-  corner <- function(name) {
-    active <- identical(position, name)
+placement_map <- function(position, minimise, name = mascot::mascot_character()$name) {
+  corner <- function(corner_id) {
+    active <- identical(position, corner_id)
     tags$button(
       type = "button",
-      class = paste("pg-map-corner", paste0("pg-", name), if (active) "is-active"),
+      class = paste("pg-map-corner", paste0("pg-", corner_id), if (active) "is-active"),
       `data-event` = "set_position",
-      `data-value` = name,
-      `aria-label` = paste("Float in the", sub("-", " ", name, fixed = TRUE), "corner"),
-      if (active) "Tessa"
+      `data-value` = corner_id,
+      `aria-label` = paste("Float in the", sub("-", " ", corner_id, fixed = TRUE), "corner"),
+      if (active) name
     )
   }
   inline_active <- identical(position, "inline")
@@ -496,7 +525,7 @@ placement_map <- function(position, minimise) {
         class = paste("pg-map-inline", if (inline_active) "is-active"),
         `data-event` = "set_position",
         `data-value` = "inline",
-        if (inline_active) "Tessa, inline" else "inline"
+        if (inline_active) paste0(name, ", inline") else "inline"
       ),
       div(class = "pg-map-line short"),
       div(class = "pg-map-line")
@@ -532,7 +561,8 @@ roles_table <- function(character) {
   )
 }
 
-visual_colours <- function() {
+visual_colours <- function(character) {
+  brand <- studio_brand(character)
   tagList(
     tags$h3(class = "pg-section-title", "Which colour applies"),
     div(
@@ -550,13 +580,13 @@ visual_colours <- function() {
       class = "pg-flow",
       div(class = "pg-flow-step", tags$code("bs_theme(primary =)")),
       div(class = "pg-flow-arrow", "\u2192"),
-      div(class = "pg-flow-step", tags$code("body"), div("and its followers")),
+      div(class = "pg-flow-step", tags$code(brand$primary), div("and its followers")),
       div(class = "pg-flow-gap"),
       div(class = "pg-flow-step", tags$code("bs_theme(secondary =)")),
       div(class = "pg-flow-arrow", "\u2192"),
-      div(class = "pg-flow-step", tags$code("rim"), div("and its followers"))
+      div(class = "pg-flow-step", tags$code(brand$secondary), div("and its followers"))
     ),
-    tags$h3(class = "pg-section-title", "Tessa's parts"),
+    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s parts")),
     tags$p(
       class = "pg-muted",
       "Leaders take the colours you give. Followers copy the first leader you set, made the same, lighter or
@@ -638,5 +668,95 @@ visual_wiring <- function() {
       nothing, so the mascot never ends up half updated. A misspelt argument name or a call outside a
       server is an error, because that is a mistake in the code rather than in the data."
     )
+  )
+}
+
+# Each Guide section has one builder so further material can grow independently.
+guide_arguments <- function(fn) {
+  checkmate::assert_string(fn)
+  div(
+    class = "pg-guide-piece",
+    tags$h3(class = "pg-section-title", "Argument details"),
+    lapply(names(the_guide(fn)$args), function(arg) {
+      tagList(
+        tags$h4(tags$code(arg)),
+        arg_popover_body(fn, arg)
+      )
+    }),
+    if (!length(the_guide(fn)$args)) tags$p("No arguments.")
+  )
+}
+
+# Evaluate only against a disposable mock session. No message reaches the live mascot.
+guide_mistakes <- function(fn, character) {
+  checkmate::assert_string(fn)
+  checkmate::assert_string(character)
+  cases <- guide_mistake_calls(fn, character)
+  div(
+    class = "pg-guide-piece pg-guide-mistakes",
+    tags$h3(class = "pg-section-title", "Warnings, errors and common mistakes"),
+    if (!length(cases)) tags$p("This listing takes no arguments. Use its returned names rather than typing guesses."),
+    lapply(cases, function(code) {
+      messages <- character()
+      mock <- shiny::MockShinySession$new()
+      on.exit(mock$close(), add = TRUE)
+      env <- new.env(parent = environment())
+      env$session <- mock
+      tryCatch(
+        withCallingHandlers(
+          eval(str2lang(code), env),
+          warning = function(w) {
+            messages <<- c(messages, paste("Warning:", cli::ansi_strip(conditionMessage(w))))
+            invokeRestart("muffleWarning")
+          },
+          message = function(m) {
+            messages <<- c(messages, paste("Message:", trimws(cli::ansi_strip(conditionMessage(m)))))
+            invokeRestart("muffleMessage")
+          }
+        ),
+        error = function(e) messages <<- c(messages, paste("Error:", cli::ansi_strip(conditionMessage(e))))
+      )
+      tagList(
+        code_block(code, "pg-code-small"),
+        code_block(
+          if (length(messages)) {
+            paste(messages, collapse = "\n")
+          } else {
+            "No R warning or error. Check the id against your UI; the browser receives updates for that id only."
+          },
+          "pg-log-message"
+        )
+      )
+    })
+  )
+}
+
+guide_mistake_calls <- function(fn, character) {
+  checkmate::assert_string(fn)
+  checkmate::assert_string(character)
+  role <- mascot_colour_roles(character)$role[1]
+  switch(
+    fn,
+    updateMascot = vapply(
+      character_mistakes(character),
+      function(x) sub(")$", ", session = session)", x$code),
+      character(1)
+    ),
+    mascot = 'mascot(id = "has spaces")',
+    mascot_character = 'mascot_character("unknown-character")',
+    mascot_mood = 'mascot_mood("sleepy")',
+    mascot_status = 'mascot_status(1)',
+    mascot_bubble = 'mascot_bubble("Hi", duration = 0)',
+    mascot_motion = 'mascot_motion(animate = "yes")',
+    mascot_gesture = 'mascot_gesture("unknown-gesture")',
+    mascot_size = 'mascot_size(10)',
+    mascot_placement = c('mascot_placement("unknown-position")', 'mascot_placement("inline", minimise = TRUE)'),
+    mascot_colour_roles = sprintf('mascot_colour_roles(mascot_character(%s))', format_string(character)),
+    mascot_theme = format_call("mascot_theme", list(light = named_call("list", stats::setNames("not-a-colour", role)))),
+    mascot_popup_menu = 'mascot_popup_menu(c("has spaces" = "Action"))',
+    mascot_preview = 'mascot_preview(size = 10)',
+    mascot_example = 'mascot_example("unknown-example", run = FALSE)',
+    mascot_studio = 'mascot_studio(view = "unknown-view", run = FALSE)',
+    character()
   )
 }

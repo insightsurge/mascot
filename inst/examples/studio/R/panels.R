@@ -12,17 +12,17 @@ colour_groups <- function(roles) {
   )
   groups <- lapply(groups, intersect, roles$role)
   groups$`Other parts` <- setdiff(roles$role, unlist(groups))
-  groups
+  Filter(length, groups)
 }
 
 # ---- Inspector controls, grouped by function -----------------------------------------------
 
-role_picker <- function(mode, role, roles) {
+role_picker <- function(mode, role, roles, value = NULL) {
   row <- roles[roles$role == role, ]
   follows <- if (is.na(row$follows)) "leader" else paste0("follows ", row$follows, " (", row$shade, ")")
   div(
     class = "pg-role",
-    colour_input(paste0(mode, "_", role), row$colour, paste(role, "in", mode, "mode")),
+    colour_input(paste0(mode, "_", role), value %||% row$colour, paste(role, "in", mode, "mode")),
     div(class = "pg-role-text", tags$code(role), div(class = "pg-muted", follows)),
     tags$span(
       class = "pg-resolved",
@@ -42,13 +42,16 @@ role_picker <- function(mode, role, roles) {
   )
 }
 
-role_pickers <- function(mode, roles) {
+role_pickers <- function(mode, roles, values = list(), name = mascot_character()$name) {
   role_groups <- colour_groups(roles)
   tagList(
     div(
       class = "pg-hint",
-      "Each picker starts at Tessa's own colour. Change one to add it to the theme; \u00d7 takes it out again.
-      The round swatch shows the colour in use now."
+      paste0(
+        "Each picker starts at ",
+        name,
+        "'s own colour. Change one to add it to the theme; \u00d7 takes it out again. The round swatch shows the colour in use now."
+      )
     ),
     do.call(
       bslib::accordion,
@@ -56,23 +59,27 @@ role_pickers <- function(mode, roles) {
         lapply(names(Filter(length, role_groups)), function(group) {
           bslib::accordion_panel(
             group,
-            lapply(role_groups[[group]], function(role) role_picker(mode, role, roles)),
+            lapply(role_groups[[group]], function(role) role_picker(mode, role, roles, values[[role]])),
             value = group
           )
         }),
-        list(open = "Body")
+        list(open = names(role_groups)[1])
       )
     ),
     try_button("reset_mode", mode, paste("Reset", mode, "colours"), "btn-outline-primary")
   )
 }
 
-panel_look <- function(moods = mascot_moods()) {
+panel_look <- function(moods = mascot_moods(), character = formals(mascot::mascot)$character) {
   inspector_category(
     playground_categories$look$title,
     value = "look",
     fn_heading("mascot_character"),
-    arg_field("mascot_character", "name", selectInput("character", "Character", c(Tessa = "tessa"))),
+    arg_field(
+      "mascot_character",
+      "name",
+      selectInput("character", "Character", studio_characters(), selected = character)
+    ),
     fn_heading("mascot_mood"),
     arg_field(
       "mascot_mood",
@@ -80,7 +87,7 @@ panel_look <- function(moods = mascot_moods()) {
       mood_cards(moods)
     ),
     fn_heading("mascot_moods"),
-    div(class = "pg-hint", "No arguments. Its table is in the Learn card; choose mascot_mood() to try a mood.")
+    div(class = "pg-hint", "No arguments. Its table is in the Guide; choose mascot_mood() to try a mood.")
   )
 }
 
@@ -109,7 +116,7 @@ panel_messages <- function() {
       "mascot_bubble",
       "duration",
       tagList(
-        sliderInput("bubble_duration", "Seconds", min = 1, max = 30, value = 5),
+        div(id = "bubble_seconds", sliderInput("bubble_duration", "Seconds", min = 1, max = 30, value = 5)),
         input_switch("bubble_forever", "Until closed (Inf)", FALSE)
       )
     ),
@@ -139,7 +146,7 @@ panel_motion <- function(gestures = mascot_gestures()) {
       )
     ),
     fn_heading("mascot_gestures"),
-    div(class = "pg-hint", "No arguments. Its table is shown as the gesture cards in the Learn card.")
+    div(class = "pg-hint", "No arguments. Its table is shown as the gesture cards in the Guide.")
   )
 }
 
@@ -208,60 +215,56 @@ panel_layout <- function() {
   )
 }
 
-panel_colours <- function(roles = mascot_colour_roles()) {
+panel_colours <- function() {
   tagList(
     inspector_function(
       "mascot_theme",
       radioButtons(
         "theme_source",
         "Where the colours come from",
-        c(
-          "Tessa's own colours: mascot_theme()" = "own",
-          "Your colours: mascot_theme(light, dark, ...)" = "mascot",
-          "Your app's brand: bslib::bs_theme()" = "bslib"
-        )
+        c("Character's own colours" = "own", "Your colours" = "mascot", "Your app's brand" = "bslib")
       ),
-      arg_field(
-        "mascot_theme",
-        "mode",
-        radioButtons(
-          "theme_mode",
-          NULL,
-          c("Follow the page switch (auto)" = "auto", "Always light" = "light", "Always dark" = "dark")
-        ),
-        note = div(class = "pg-note", "The page switch is the moon or sun button at the top right.")
+      div(
+        class = "pg-hint",
+        "The settings below change with your choice: pick a source to see only the controls for it."
       ),
-      arg_field("mascot_theme", "light", role_pickers("light", roles)),
-      arg_field("mascot_theme", "dark", role_pickers("dark", roles)),
-      arg_field(
-        "mascot_theme",
-        "css",
-        tagList(
-          div(
-            class = "pg-css",
-            colour_input("css_accent", "#7b4fd6", "Value of --studio-accent", `data-css-var` = "--studio-accent"),
-            div(tags$code("--studio-accent"), div(class = "pg-muted", "a CSS variable this page defines"))
-          ),
-          checkboxGroupInput("css_roles", "Parts that read the variable", roles$role, inline = TRUE)
-        )
-      ),
-      div(class = "pg-note", "Light, dark and CSS settings apply when you choose Your colours above."),
       conditionalPanel(
-        "input.theme_source == 'bslib'",
-        div(class = "pg-fn-what", "A bslib theme passed as theme: primary colours body, secondary colours rim."),
-        div(class = "pg-css", colour_input("bs_primary", "#1f6feb", "Primary colour"), tags$code("primary")),
-        div(class = "pg-css", colour_input("bs_secondary", "#966600", "Secondary colour"), tags$code("secondary"))
+        "input.theme_source == 'own'",
+        div(class = "pg-note", "Uses the character's own colours in light and dark mode.")
       ),
-      actionButton("contrast_check", "Check contrast", class = "btn-outline-primary btn-sm"),
-      uiOutput("contrast")
+      conditionalPanel(
+        "input.theme_source == 'mascot'",
+        arg_field(
+          "mascot_theme",
+          "mode",
+          radioButtons(
+            "theme_mode",
+            "Colour mode",
+            c("Follow the page switch (auto)" = "auto", "Always light" = "light", "Always dark" = "dark")
+          )
+        ),
+        bslib::navset_tab(
+          bslib::nav_panel("Light", uiOutput("theme_light")),
+          bslib::nav_panel("Dark", uiOutput("theme_dark")),
+          bslib::nav_panel("CSS variables", uiOutput("theme_css"))
+        )
+      ),
+      conditionalPanel("input.theme_source == 'bslib'", uiOutput("theme_brand")),
+      conditionalPanel(
+        "input.theme_source != 'own'",
+        actionButton("contrast_check", "Check contrast", class = "btn-outline-primary btn-sm"),
+        uiOutput("contrast")
+      )
     ),
     inspector_function(
       "mascot_colour_roles",
       arg_field(
         "mascot_colour_roles",
         "character",
-        selectInput("roles_character", "Character", c(Tessa = "tessa")),
-        note = div(class = "pg-note", "Its table is in the Learn card, with every part's colour and what it follows.")
+        div(
+          class = "pg-note",
+          "Uses the character selected under mascot_character(). Its parts are listed in the Guide."
+        )
       )
     )
   )
@@ -280,7 +283,7 @@ panel_menu <- function() {
         textAreaInput("menu_items", "One item per line: id = Label", menu_lines, rows = 4, resize = "vertical"),
         uiOutput("menu_problem")
       ),
-      note = div(class = "pg-note", "Open the menu with the button on Tessa, then pick an item.")
+      note = div(class = "pg-note", "Open the menu with the button on the mascot, then pick an item.")
     ),
     arg_field(
       "mascot_popup_menu",
@@ -310,7 +313,7 @@ panel_wiring <- function() {
       "mascot",
       "id",
       code_block("mascot(id = \"helper\")", "pg-code-small"),
-      note = div(class = "pg-note", "Tessa always uses id = \"helper\" in this studio.")
+      note = div(class = "pg-note", "The mascot always uses id = \"helper\" in this studio.")
     ),
     wiring_links("mascot"),
     fn_heading("updateMascot"),
@@ -342,12 +345,76 @@ panel_wiring <- function() {
       tagList(
         div(
           class = "pg-hint",
-          "A slow step: thinking now, then happy (or worried) two seconds later. The second call runs
-          outside the reactive context, so it passes session = session."
+          "A slow step: thinking now, then happy (or worried) two seconds later. The second call names session = session explicitly, as a callback outside a reactive context would."
         ),
         input_switch("task_fail", "Make the task fail", FALSE),
         actionButton("task_run", "Run a 2-second task", class = "btn-outline-primary btn-sm")
       )
     )
+  )
+}
+
+panel_studio <- function() {
+  inspector_function(
+    "mascot_studio",
+    arg_field("mascot_studio", "view", selectInput("studio_view", "Start in", c("studio", "preview", "examples"))),
+    arg_field(
+      "mascot_studio",
+      "fn",
+      selectInput(
+        "studio_fn",
+        "First function",
+        c("Default (NULL)" = "", stats::setNames(names(playground_guide), names(playground_guide)))
+      )
+    ),
+    arg_field(
+      "mascot_studio",
+      "character",
+      div(class = "pg-note", "Uses the character selected under mascot_character().")
+    ),
+    arg_field("mascot_studio", "run", input_switch("studio_run", "Launch interactively (TRUE)", TRUE)),
+    arg_field(
+      "mascot_studio",
+      "...",
+      div(
+        class = "pg-note",
+        "Name every argument after view. The studio shows the call; paste it into your R console to launch a new app."
+      )
+    )
+  )
+}
+
+panel_views <- function() {
+  tagList(lapply(c("mascot_preview", "mascot_examples", "mascot_example"), function(fn) {
+    view <- if (fn == "mascot_preview") "preview" else "examples"
+    inspector_function(
+      fn,
+      tags$a(
+        class = "btn btn-outline-primary btn-sm",
+        href = paste0("?view=", view),
+        target = "_blank",
+        rel = "noopener",
+        paste("Open", if (view == "preview") "Static preview" else "Examples")
+      ),
+      div(class = "pg-note", "This view has its own controls and opens in a new tab.")
+    )
+  }))
+}
+
+# Keep explicit overrides for shared roles; untouched pickers adopt the new palette.
+reconcile_colour_values <- function(old_roles, roles, values) {
+  checkmate::assert_data_frame(old_roles, null.ok = TRUE)
+  checkmate::assert_data_frame(roles)
+  checkmate::assert_list(values)
+  stats::setNames(
+    lapply(roles$role, function(role) {
+      value <- values[[role]]
+      if (is.null(old_roles) || !role %in% old_roles$role || is.null(value)) {
+        return(NULL)
+      }
+      old <- old_roles$colour[match(role, old_roles$role)]
+      if (tolower(value) == tolower(old)) NULL else value
+    }),
+    roles$role
   )
 }

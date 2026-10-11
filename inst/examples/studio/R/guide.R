@@ -53,7 +53,7 @@ playground_guide <- list(
     returns = "A mascot_character object with the character's id and display name.",
     args = list(
       name = guide_arg(
-        "The character's id. Tessa (\"tessa\") is the only built-in character so far.",
+        "The character's id, from the character selector.",
         accepts = c("string"),
         detail = "An unknown name is an error that lists the valid names. When more characters arrive,
           changing the character on a live mascot plays a short swap animation."
@@ -215,7 +215,7 @@ playground_guide <- list(
     args = list(
       character = guide_arg(
         "The character whose parts to list.",
-        accepts = c("string", "mascot_character()")
+        accepts = c("string")
       )
     )
   ),
@@ -272,7 +272,7 @@ playground_guide <- list(
         "Side to open towards: \"auto\", \"top\", \"bottom\", \"left\" or \"right\".",
         accepts = c("\"auto\"", "\"top\"", "\"bottom\"", "\"left\"", "\"right\""),
         detail = "\"auto\" picks the side with room (preferring above, then below, then the side towards the
-          page centre). If a chosen side has no room, it falls back to the opposite side, then to \"auto\".",
+          page centre). For an inline mascot, room means its nearest scrolling box, including the studio canvas; a floating mascot uses the window. If a chosen side has no room, it falls back to the opposite side, then to \"auto\".",
         example = "mascot_popup_menu(c(about = \"About\"), direction = \"right\")"
       )
     )
@@ -498,5 +498,18 @@ playground_guide <- list(
           the folder to shiny::runApp()."
       )
     )
+  )
+)
+
+playground_guide$mascot_studio <- list(
+  category = "wiring",
+  what = "Opens the studio with your chosen view, function and character.",
+  returns = "With run = FALSE, a Shiny app object; otherwise the result after the app stops.",
+  args = list(
+    view = guide_arg("The first view to open.", c('"studio"', '"preview"', '"examples"')),
+    ... = guide_arg("Must be empty; every later argument must be named.", "nothing"),
+    fn = guide_arg("A function name without parentheses.", "string", null = "starts with mascot_mood()"),
+    character = guide_arg("The starting character's id.", "string"),
+    run = guide_arg("Launch interactively, or return the app object.", c("TRUE", "FALSE"))
   )
 )

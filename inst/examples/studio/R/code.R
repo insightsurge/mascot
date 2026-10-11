@@ -13,7 +13,7 @@ named_call <- function(fn, values) {
 
 helper_call <- function(fn, ...) {
   args <- Filter(Negate(is.null), list(...))
-  as.call(c(as.name(fn), args))
+  as.call(c(list(str2lang(fn)), args))
 }
 
 code_character <- function(name) {
@@ -100,7 +100,7 @@ code_theme <- function(source, light, dark, mode, css_roles, primary, secondary)
     return(code_pair(quote(mascot_theme())))
   }
   if (source == "bslib") {
-    return(code_pair(helper_call("bs_theme", primary = primary, secondary = secondary)))
+    return(code_pair(helper_call("bslib::bs_theme", primary = primary, secondary = secondary)))
   }
   css <- if (length(css_roles)) stats::setNames(rep("--studio-accent", length(css_roles)), css_roles)
   helper <- helper_call(
@@ -160,11 +160,11 @@ format_expr <- function(expr, indent = 0) {
 
 # A name as R needs it on the left of "=": finish-review becomes `finish-review`.
 arg_name <- function(name) {
-  if (identical(make.names(name), name)) name else paste0("`", name, "`")
+  deparse1(as.name(name), backtick = TRUE)
 }
 
 format_call <- function(fn, args) {
-  format_expr(as.call(c(as.name(fn), args)))
+  format_expr(as.call(c(list(str2lang(fn)), args)))
 }
 
 # Picks the shortcut or helper form of every setting.
@@ -189,7 +189,7 @@ menu_handler_code <- function(items) {
   )
 }
 
-# A whole app to paste into a new app.R: Tessa starts plain, and a button applies the settings.
+# A whole app to paste into a new app.R: the mascot starts plain, and a button applies the settings.
 whole_app_code <- function(update, menu_handler, packages, css_value = NULL) {
   indent <- function(text, by) gsub("\n", paste0("\n", strrep(" ", by)), text, fixed = TRUE)
   paste0(

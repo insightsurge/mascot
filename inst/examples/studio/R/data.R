@@ -55,7 +55,7 @@ welcome <- "Hello! Choose a function and change its controls and I will follow."
 
 # What mascot() uses when an argument is left out, as shortcut code.
 defaults <- list(
-  character = "tessa",
+  character = formals(mascot::mascot)$character,
   mood = "idle",
   status = quote(mascot_status()),
   bubble = quote(mascot_bubble()),
@@ -81,7 +81,7 @@ mistakes <- list(
   `Too small` = list(code = "updateMascot(\"helper\", size = 10)", why = "Sizes start at 24 pixels."),
   `Minimise an inline mascot` = list(
     code = "updateMascot(\"helper\", placement = mascot_placement(\"inline\", minimise = TRUE))",
-    why = "An inline mascot ignores minimise. Not an error: a message says so, and Tessa moves inline."
+    why = "An inline mascot ignores minimise. Not an error: a message says so, and the mascot moves inline."
   ),
   `A bubble that never shows` = list(
     code = "updateMascot(\"helper\", bubble = mascot_bubble(\"Hi\", duration = 0))",
@@ -127,12 +127,12 @@ playground_controls <- list(
     small_screen = input_id("small_on", "small_px")
   ),
   mascot_placement = list(position = input_id("position"), minimise = input_id("minimise"), drag = input_id("drag")),
-  mascot_colour_roles = list(character = input_id("roles_character")),
+  mascot_colour_roles = list(character = input_id("character")),
   mascot_theme = list(
-    light = input_id("light_body"),
-    dark = input_id("dark_body"),
+    light = fixed_arg("Pickers are built from the selected character roles in theme_light."),
+    dark = fixed_arg("Pickers are built from the selected character roles in theme_dark."),
     mode = input_id("theme_mode"),
-    css = input_id("css_roles", "css_accent")
+    css = fixed_arg("CSS role checkboxes are built from the selected character; css_accent sets their variable.")
   ),
   mascot_popup_menu = list(
     items = input_id("menu_on", "menu_items"),
@@ -172,9 +172,42 @@ playground_controls <- list(
     bubble = input_id("preview_bubble"),
     size = input_id("preview_size", "preview_width"),
     placement = input_id("preview_placement"),
-    theme = input_id("preview_body", "preview_rim"),
+    theme = input_id("preview_theme_source"),
     motion = input_id("preview_motion"),
     popup_menu = input_id("preview_menu_items")
   ),
   mascot_example = list(name = input_id("example_name"), run = input_id("example_run"))
+)
+
+# Change only this helper when public character discovery becomes available (#162).
+studio_characters <- function() {
+  id <- formals(mascot::mascot)$character
+  stats::setNames(id, mascot::mascot_character(id)$name)
+}
+
+# The public listing has no brand column yet. Read the package's shipped data,
+# keeping this adaptation in one place until a public brand mapping is available.
+studio_brand <- function(character) {
+  checkmate::assert_string(character)
+  id <- mascot::mascot_character(character)$id
+  file <- system.file("characters", paste0(id, ".json"), package = "mascot", mustWork = TRUE)
+  jsonlite::fromJSON(file)$brand
+}
+
+character_mistakes <- function(character) {
+  checkmate::assert_string(character)
+  role <- mascot::mascot_colour_roles(character)$role[1]
+  result <- mistakes
+  for (name in c("Not a colour", "Low contrast")) {
+    result[[name]]$code <- sub("body =", paste0(arg_name(role), " ="), result[[name]]$code, fixed = TRUE)
+  }
+  result
+}
+
+playground_controls$mascot_studio <- list(
+  view = input_id("studio_view"),
+  ... = fixed_arg("Empty; later arguments are named."),
+  fn = input_id("studio_fn"),
+  character = input_id("character"),
+  run = input_id("studio_run")
 )

@@ -35,7 +35,7 @@
 #' selected one mode. Backgrounds are white and `#212529`, or the `bslib` theme's
 #' `bg` and `body-bg-dark`; text uses `fg` and `body-color-dark`. Only supplied
 #' colour roles are checked, using the same contrast calculation as [mascot()].
-#' Experimental CSS variables are resolved in the browser: their warnings appear
+#' Experimental CSS variables are worked out in the browser: their warnings appear
 #' in its console, outside the R `contrast` attribute.
 #'
 #' **Placement, menus and bubbles.** Floating `placement` is checked, then shown
@@ -239,7 +239,7 @@ preview_contrast_labels <- function(contrast) {
   )
 }
 
-#' One mode's table using mascot() markup and the resolved theme wire contract
+#' One mode's table using mascot() markup and the theme as sent to the browser
 #' @noRd
 preview_panel <- function(character, moods, status, bubble, sizes, labels, theme, motion, popup_menu, mode, prefix) {
   checkmate::assert_class(character, "mascot_character")

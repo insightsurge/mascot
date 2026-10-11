@@ -35,7 +35,7 @@ mascot_colour_roles <- function(character = "tessa") {
   )
 }
 
-#' Read the character's colour metadata from the same description as the engine
+#' Read the character's colour metadata from the same description the mascot uses
 #' @noRd
 character_colour_data <- function(id) {
   checkmate::assert_choice(id, builtin_characters()$id)

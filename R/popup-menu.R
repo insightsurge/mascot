@@ -148,7 +148,7 @@ as_popup_menu_arg <- function(x, call) {
   )
 }
 
-#' Initial menu configuration, escaped for an inert JSON script
+#' Initial menu configuration, escaped for a data-only script tag
 #' @noRd
 popup_menu_tag <- function(menu) {
   checkmate::assert_list(menu, names = "unique")

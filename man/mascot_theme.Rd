@@ -41,7 +41,7 @@ fills the character's declared brand leaders with its primary and secondary
 colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand =)}.
 }
 \details{
-A theme survives a character swap: follow rules are resolved again, and roles
+A theme survives a character swap: follow rules are applied again, and roles
 absent from the incoming character are ignored. An empty \code{mascot_theme()}
 restores the character's own colours. When a theme is applied, a chosen
 colour below 3:1 contrast against the background gives a warning and is kept.
@@ -82,5 +82,5 @@ Other mascot helpers:
 \concept{mascot helpers}
 \section{Experimental CSS source}{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
-CSS variables are resolved by the browser, so R cannot check their values.
+CSS variables are worked out by the browser, so R cannot check their values.
 }

@@ -76,7 +76,7 @@ since small faces lose fine detail.
 selected one mode. Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's
 \code{bg} and \code{body-bg-dark}; text uses \code{fg} and \code{body-color-dark}. Only supplied
 colour roles are checked, using the same contrast calculation as \code{\link[=mascot]{mascot()}}.
-Experimental CSS variables are resolved in the browser: their warnings appear
+Experimental CSS variables are worked out in the browser: their warnings appear
 in its console, outside the R \code{contrast} attribute.
 
 \strong{Placement, menus and bubbles.} Floating \code{placement} is checked, then shown

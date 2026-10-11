@@ -85,7 +85,7 @@ motion_problem <- function(x) {
   )
 }
 
-#' Accept a motion flag or helper and map to the engine's settings
+#' Accept a motion flag or helper and map it to the mascot's motion settings
 #' @noRd
 as_motion_arg <- function(x, call) {
   checkmate::assert_environment(call)

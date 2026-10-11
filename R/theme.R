@@ -9,7 +9,7 @@
 #' fills the character's declared brand leaders with its primary and secondary
 #' colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
 #'
-#' A theme survives a character swap: follow rules are resolved again, and roles
+#' A theme survives a character swap: follow rules are applied again, and roles
 #' absent from the incoming character are ignored. An empty `mascot_theme()`
 #' restores the character's own colours. When a theme is applied, a chosen
 #' colour below 3:1 contrast against the background gives a warning and is kept.
@@ -44,7 +44,7 @@
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
 #'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
 #'       lifecycle::badge("experimental"), fixed = TRUE),
-#'   "\nCSS variables are resolved by the browser, so R cannot check their values.\n}"
+#'   "\nCSS variables are worked out by the browser, so R cannot check their values.\n}"
 #' )
 #' @export
 #' @examples
@@ -183,7 +183,7 @@ theme_channels <- function(x) {
   c(channels[1:3, 1], channels[4, 1] / 255)
 }
 
-#' Convert a user colour to the engine's supported forms
+#' Convert a user colour to the forms the mascot supports
 #' @noRd
 theme_colour <- function(x, role) {
   checkmate::assert_string(role)
@@ -219,7 +219,7 @@ theme_contrast <- function(colour, background) {
   (max(values) + 0.05) / (min(values) + 0.05)
 }
 
-#' Resolve one theme for the wire while retaining its brand source for swaps
+#' Prepare one theme for the browser while keeping its brand source for swaps
 #' @noRd
 as_theme_arg <- function(x, call, character = NULL) {
   checkmate::assert_environment(call)

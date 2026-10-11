@@ -22,17 +22,22 @@
 #' @param size A pixel number, percentage string or [mascot_size()] object, as
 #'   in [mascot()]. `NULL` (the default) leaves the size unchanged.
 #' @param placement A shortcut, named list or [mascot_placement()] object, as
-#'   in [mascot()]. `NULL` (the default) leaves placement unchanged. Size and
-#'   placement changes keep the running mascot, its mood and character. A new
-#'   placement replaces any position the visitor dragged the mascot to.
-#'   Floating placement shows a minimise control by default; dragging is off.
-#'   Inline placement ignores `minimise` and `drag`: explicitly supplied values
-#'   give an informational message, defaults stay silent, and the update is sent.
-#'   With dragging enabled, the minimised restore button can also be dragged;
-#'   a click restores it, and a drag leaves it minimised in its new position.
+#'   in [mascot()]. `NULL` (the default) leaves placement unchanged.
+#'
+#'   - Size and placement changes keep the running mascot, its mood and its
+#'     character.
+#'   - A new placement replaces any position the visitor dragged the mascot to.
+#'   - Floating placement shows a minimise control by default, and dragging is
+#'     off.
+#'   - Inline placement ignores `minimise` and `drag`. Values you supply
+#'     explicitly give an informational message; defaults stay silent. The
+#'     update is still sent.
+#'   - With dragging enabled, the minimised restore button can also be dragged.
+#'     A click restores it; a drag leaves it minimised in its new position.
 #' @param theme A theme in the forms accepted by [mascot()]. `NULL` (the
 #'   default) leaves the theme unchanged; `mascot_theme()` restores the
-#'   character's own colours. Themes are resolved again after a character swap.
+#'   character's own colours. After a character swap, the theme is applied
+#'   again to the new character's parts.
 #' @param motion A logical flag or [mascot_motion()] object, as in [mascot()].
 #'   `NULL` (the default) leaves motion unchanged. Changes apply to the live mascot
 #'   without restarting it; the visitor's reduced-motion preference still applies.
@@ -52,23 +57,23 @@
 #' Use `mascot_bubble(..., duration = Inf)` for a message the user must act on,
 #' such as an invalid form, because a timed message can vanish before it is read.
 #' Bubbles survive mood changes and swaps; a queued bubble's timer starts when it
-#' appears. An infinite duration is sent as JSON `null`. See [mascot_bubble()]
+#' appears. See [mascot_bubble()]
 #' for timing and closing behaviour.
 #'
 #' **Shiny modules.** In a module, use `mascot(id = ns("helper"))` in the UI and
 #' `updateMascot("helper")` in its server. The session namespace is added once.
 #' An invalid `id` type, missing session or extra argument is an error. Calling
-#' with all update fields `NULL` does nothing.
+#' with all update arguments `NULL` does nothing.
 #'
 #' **Gestures.** A character or mood change applies before the gesture. During a
-#' character swap the engine drops the gesture, because the wave within the swap
+#' character swap the gesture is skipped, because the wave within the swap
 #' replaces it. Reduced motion skips movement. The latest gesture sent before the
 #' mascot appears plays once on appearance, after its queued character and mood
 #' are applied.
 #'
 #' **Queued updates.** Updates sent before a mascot appears are kept per session,
 #' including when the first mascot is created by [shiny::renderUI()] or
-#' [shiny::insertUI()]. Only the latest value of each field and the latest early
+#' [shiny::insertUI()]. Only the latest value of each argument and the latest early
 #' gesture are kept. A replacement with the same id receives the retained state;
 #' gestures play once.
 #' @returns Called for its side effect; returns `NULL` invisibly.
@@ -321,7 +326,7 @@ send_update <- function(session, id, patch, replay = FALSE) {
   )
 }
 
-#' Merge the latest fields using the browser queue's replacement rules
+#' Merge the latest arguments using the browser queue's replacement rules
 #' @noRd
 merge_update_patch <- function(previous, patch) {
   checkmate::assert_list(previous, names = "unique")

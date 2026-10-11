@@ -219,7 +219,7 @@ as_placement_arg <- function(x, call) {
   mascot_placement(x)
 }
 
-#' The browser's placement fields: floating, the corner (bottom-right when inline), minimise and drag
+#' The browser's placement settings: floating, the corner (bottom-right when inline), minimise and drag
 #' @noRd
 placement_wire <- function(x) {
   checkmate::assert_class(x, "mascot_placement")

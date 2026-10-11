@@ -44,7 +44,7 @@
 #'   In a module, use `ns("helper")` in the UI and read `input$helper_menu` in
 #'   that module's server. Enter and Space toggle the focused menu control;
 #'   see [mascot_popup_menu()] for the module example and guidance.
-#' @returns An `htmltools` tag with its engine dependency attached.
+#' @returns An `htmltools` tag with the mascot's web dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]
 #' @details
@@ -57,7 +57,7 @@
 #' [mascot_placement()] for restore controls and message timing.
 #'
 #' In Shiny the mascot uses an input binding. Its input value (`input$<id>`) is an
-#' internal record that tells the server the mascot appeared; do not rely on its contents.
+#' internal value that tells the server the mascot appeared; do not rely on its contents.
 #' A module can put the mascot in its UI and update it from its server:
 #' ```r
 #' helper_ui <- function(id) {

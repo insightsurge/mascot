@@ -8,12 +8,21 @@
 #'   an empty vector is not accepted. Labels are always escaped.
 #' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
 #'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
-#'   (preferring above, then below, then the side towards the page centre). If a
-#'   chosen side has no room, it falls back to the opposite side, then to `"auto"`.
+#'   (preferring above, then below, then the side towards the page centre). A
+#'   chosen side is a preference: see "Where the menu opens" below.
 #' @returns A `mascot_popup_menu` object with `items` and `direction` elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
 #' @details
+#' **Where the menu opens.** The menu must fit in the space it can show in. For an
+#' inline mascot that space is the nearest box around it that scrolls or clips its
+#' content (for example a `bslib::card()` body or a sidebar), not the whole window.
+#' For a floating mascot it is the window. When the chosen `direction` has no room
+#' there, the menu opens on the opposite side; when neither side has room, it opens
+#' wherever `"auto"` finds room. So `direction = "bottom"` on a mascot near the
+#' bottom of a card opens above it. Give the mascot room on the side you choose, or
+#' use `"auto"`.
+#'
 #' Enter and Space open or close the focused toggle; arrows, Home, End and
 #' Escape navigate the menu.
 #' Escape returns focus to the mascot. Without items the mascot remains an

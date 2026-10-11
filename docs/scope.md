@@ -39,14 +39,14 @@ risks) is in the character design records, kept on the `design-assets` branch (`
 Neer and Tessa with the five moods (idle, thinking, happy, worried, celebrating) with smooth transitions; a busy mood driven
 by Shiny's own busy events; reacting to a `shinyvalidate` validator; message bubbles; light and dark mode following
 bslib's `input_dark_mode()`, Quarto's toggle or the system setting; themes from `_brand.yml`, a `bs_theme()` or CSS;
-a floating, fixed, inline or dismissible card that never covers Shiny's own messages; a Quarto shortcode; a gallery
-app with a character chooser.
+a floating, fixed, inline or dismissible card that never covers Shiny's own messages; a gallery app with a character
+chooser. The Quarto shortcode follows in 0.2.0.
 
 ## Releases (draft)
 | Release | Theme | Contents |
 |---|---|---|
-| 0.1.0 | Live mascot | Neer and Tessa on a multi-character engine; moods with wiggle-then-change; light/dark; themes; the Shiny widget, `updateMascot()`, validator binding, busy mood, message bubble, placement; a Quarto extension; the gallery; AI skills for Claude, Codex and Gemini; groundwork for hints |
-| 0.2.0 | Static assets | A shared wardrobe (outfits, accessories, held items any character can wear); avatars (PNG/SVG); hex stickers; the pharma theme pack, if 0.1.0 is received well |
+| 0.1.0 | Live mascot | Neer and Tessa on a multi-character engine; moods with wiggle-then-change; light/dark; themes; the Shiny widget, `updateMascot()`, validator binding, busy mood, message bubble, placement; the gallery; groundwork for hints. The first CRAN release: the R interface comes first, because the Quarto shortcode and the AI skills build on it |
+| 0.2.0 | Quarto, static assets and pharma | The Quarto extension and shortcode (the playbook site's first use); AI skills for Claude, Codex and Gemini; a shared wardrobe (outfits, accessories, held items any character can wear); avatars (PNG/SVG); hex stickers; the pharma theme pack, if 0.1.0 is received well |
 | 0.3.0 | Ojas and the builder | Ojas; a visual character builder; more shapes; SVG and Lottie export |
 | Later | Hints and app events | A quiet hint giver, off by default: a help list in the bubble, a "what's this?" mode, hints when validation fails, dragging the mascot onto an element; reactions to custom app events |
 | Later | Trailers | A trailer base built on the static helpers, then trailers, then storyboard YAML |

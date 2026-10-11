@@ -1154,6 +1154,30 @@ describe("size and placement review regressions", {
     expect_gte(result$left, result$cardLeft + 7.99)
     expect_lte(result$right, result$cardRight - 7.99)
   })
+  it("settles the inline bubble shift when page CSS turns the shift off, as mascot_preview() does (#244)", {
+    skip_without_chrome()
+    js <- local_host_page(size = 48, viewport = c(575, 800), bubble = mascot_bubble("Read this message", Inf))
+    # Given a bubble that needs shifting at the left edge, on a page whose CSS keeps the bubble where it is.
+    js(
+      "window.el=document.getElementById('a');const style=document.createElement('style');
+      style.textContent='.mascot-bubble-region{transform:none}';document.head.append(style);
+      el.style.cssText='position:absolute;left:0;top:0';dispatchEvent(new Event('resize'))"
+    )
+    # When the page measures again and again, the shift it records stays the same: no endless measuring loop.
+    shift <- function() {
+      host_layout(
+        js,
+        "dispatchEvent(new Event('resize'));return el.style.getPropertyValue('--mascot-bubble-shift');"
+      )
+    }
+    first <- shift()
+    expect_identical(shift(), first)
+    expect_identical(shift(), first)
+    expect_identical(
+      host_layout(js, "return getComputedStyle(el.querySelector('.mascot-bubble-region')).transform;"),
+      "none"
+    )
+  })
   it("S3-R1 keeps small inline bubbles inside either viewport edge and preserves reserved space", {
     skip_without_chrome()
     for (size in list(48, mascot_size(120, 48))) {

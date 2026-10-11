@@ -988,7 +988,11 @@
     if (!record.placement.floating) {
       const region = record.bubbleEl.parentElement;
       const rect = region.getBoundingClientRect();
-      const shift = parseFloat(record.el.style.getPropertyValue('--mascot-bubble-shift')) || 0;
+      // Subtract only a shift that is applied: page CSS may turn the transform off (mascot_preview() does), and
+      // subtracting an unapplied shift would grow it on every measure, an endless loop through the page observer.
+      // The variable, not the computed matrix, gives the exact value; a rounded matrix would never settle either.
+      const applied = getComputedStyle(region).transform !== 'none';
+      const shift = applied ? parseFloat(record.el.style.getPropertyValue('--mascot-bubble-shift')) || 0 : 0;
       const natural = rect.left - shift;
       const bounds = clipBounds(record.el);
       const left = Math.max(bounds.left, Math.min(natural, bounds.right - rect.width));

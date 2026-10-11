@@ -46,6 +46,7 @@
 * `mascot_preview()` (*experimental*) shows an offline page that compares moods, sizes and light and dark colours, with contrast findings on the page and in R (#175, #213). It starts no Shiny app and writes no files; printing the page opens the Viewer or a browser.
   * Rows are moods; columns are the requested size, then 48, 32 and 24 CSS pixels (#175).
   * Light and dark backgrounds are checked separately. Contrast warnings have the class `mascot_contrast` (#213).
+  * Each cell is wide enough for its bubble, so bubbles no longer cover neighbouring cells at any size (#244).
 
 * `mascot_size()` sets the size in CSS pixels (at least 24) or as a percentage: of the parent width when inline, or of the window width when floating (#201).
   * `small_screen` sets a different size for screens up to 575.98 pixels wide (#201).

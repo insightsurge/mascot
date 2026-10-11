@@ -356,6 +356,55 @@ describe("mascot_preview() in Chrome", {
   })
 })
 
+describe("mascot_preview() bubbles in Chrome", {
+  it("P4 keeps every bubble inside its own cell at each size, in light and dark, wide or narrow and scrolled", {
+    skip_without_chrome()
+    # Bubble boxes that leave their own cell, or show over another cell, as "cell" or "cell/other" indexes. Each
+    # panel's table scrolls sideways and clips what is out of view, so only the visible parts are compared.
+    overlaps <- "(() => {
+      const cells = [...document.querySelectorAll('.mascot-preview-cell')];
+      const visible = el => {
+        const box = el.getBoundingClientRect(), clip = el.closest('.mascot-preview-scroll').getBoundingClientRect();
+        return {left: Math.max(box.left, clip.left), right: Math.min(box.right, clip.right),
+          top: Math.max(box.top, clip.top), bottom: Math.min(box.bottom, clip.bottom)};
+      };
+      const shown = cells.map(visible);
+      const inside = (a, b) => a.left >= b.left - 0.5 && a.right <= b.right + 0.5 &&
+        a.top >= b.top - 0.5 && a.bottom <= b.bottom + 0.5;
+      const touch = (a, b) => a.left < b.right - 0.5 && a.right > b.left + 0.5 &&
+        a.top < b.bottom - 0.5 && a.bottom > b.top + 0.5;
+      const problems = [];
+      cells.forEach((cell, i) => {
+        const bubble = cell.querySelector('.mascot-bubble');
+        if (bubble.hidden) return problems.push('hidden ' + i);
+        if (!inside(bubble.getBoundingClientRect(), cell.getBoundingClientRect())) problems.push(String(i));
+        const box = visible(bubble);
+        shown.forEach((other, j) => { if (j !== i && touch(box, other)) problems.push(i + '/' + j); });
+      });
+      return problems;
+    })()"
+    settle <- "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+    message <- "A longer message that wraps over several lines in the bubble."
+    for (size in list(160, 24, mascot_size("20%"))) {
+      js <- local_preview_page(mascot_preview(size = size, bubble = mascot_bubble(message, duration = Inf)))
+      # Both panels (light and dark), every mood and all four size columns carry a bubble.
+      expect_identical(js("document.querySelectorAll('.mascot-preview-cell .mascot-bubble:not([hidden])').length"), 40L)
+      expect_identical(unlist(js(overlaps)), NULL, info = deparse1(unclass(size)))
+      # A narrow window scrolls the tables sideways; bubbles in cells out of view must not move into view.
+      session <- attr(js, "session")
+      session$Emulation$setDeviceMetricsOverride(width = 700, height = 1000, deviceScaleFactor = 1, mobile = FALSE)
+      js(settle)
+      expect_true(js(
+        "[...document.querySelectorAll('.mascot-preview-scroll')].every(el => el.scrollWidth > el.clientWidth)"
+      ))
+      expect_identical(unlist(js(overlaps)), NULL, info = deparse1(unclass(size)))
+      js("document.querySelectorAll('.mascot-preview-scroll').forEach(el => { el.scrollLeft = el.scrollWidth; })")
+      js(settle)
+      expect_identical(unlist(js(overlaps)), NULL, info = deparse1(unclass(size)))
+    }
+  })
+})
+
 describe("bslib preview dark surface in Chrome", {
   it("P213 paints the dark panel with body-bg-dark", {
     skip_without_chrome()

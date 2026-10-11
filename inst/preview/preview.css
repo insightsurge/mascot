@@ -98,8 +98,16 @@
   visibility: hidden;
 }
 
-.mascot-preview:not(.mascot-preview-no-bubble) .mascot-preview-cell {
-  min-width: 18rem;
+/* Each cell reserves the bubble's width (16em, as .mascot-bubble-region in mascot.css), so a bubble centred on its
+   mascot stays inside its own cell at every size; the height is already reserved by the bubble region. */
+.mascot-preview:not(.mascot-preview-no-bubble) .mascot-preview-stage {
+  min-width: 16em;
+}
+
+/* With room reserved, the host's shift that keeps inline bubbles on screen is not needed here: it would move the
+   bubble of a cell scrolled out of view over its neighbours. */
+.mascot-preview .mascot-bubble-region {
+  transform: none;
 }
 
 @media (max-width: 70rem) {

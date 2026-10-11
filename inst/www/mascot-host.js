@@ -39,7 +39,10 @@
  * Choices set the already namespaced id + '_menu' with priority 'event'. Labels always use textContent.
  * Enter/Space operate the focused toggle; navigation stays within the focused menu. No global keyboard listeners.
  * A shared outside-pointer listener exists only while a menu is open; teardown removes it when unused.
- * Open menus hold lookY=-1 and pause bubble timers; closing clears only lookY, preserving the mood.
+ * Open menus pause bubble timers. The mascot looks towards what it shows: an open menu's side as finally chosen
+ * (after any fallback), otherwise its bubble's side (above inline and bottom-corner mascots, below top-corner ones).
+ * The gaze is a held look/lookY pose, so it is instant and never animated; closing clears only those fields,
+ * preserving the mood. Only pupils move, so eyes without visible pupils keep their look.
  * Menus prefer above the canvas (below top corners), fitting/flipping to actual viewport space on resize/scroll.
  * Action controls use a separate strip: hover/focus reveals it, touch keeps it available, open menus hide it.
  * Restore stays reachable while minimised. Placement focus falls back to the visible menu toggle or image.
@@ -156,6 +159,7 @@
     record.bubbleText.textContent = '';
     record.bubbleEl.querySelector('.mascot-bubble-close')?.remove();
     record.hover = false;
+    refreshGaze(record);
   }
 
   function validateBubble(next) {
@@ -205,6 +209,7 @@
       el.append(button);
     }
     el.hidden = false;
+    refreshGaze(record);
     resumeTimer(record);
   }
 
@@ -685,6 +690,35 @@
     return record.motion.reduced === true || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
+  // The side of the canvas the mascot looks towards: an open menu's chosen side, else its shown bubble's side.
+  function gazeSide(record) {
+    if (record.menuOpen) return record.menuSide;
+    if (!record.bubble) return null;
+    return record.placement.floating && record.placement.position.startsWith('top') ? 'bottom' : 'top';
+  }
+
+  // A held pose rather than motion, so it applies at once with or without reduced motion. A mirrored pose (flip)
+  // mirrors the pupils too, so the horizontal look is flipped back to point at the same side of the page.
+  function gazePose(record, side) {
+    const description = record.descriptions.get(record.character);
+    const flip = Math.sign(ns.drawing.resolvePose(description, { mood: record.mood }).flip) || 1;
+    return {
+      look: side === 'left' ? -flip : side === 'right' ? flip : null,
+      lookY: side === 'top' ? -1 : side === 'bottom' ? 1 : null,
+    };
+  }
+
+  function refreshGaze(record) {
+    if (!record.controller) return;
+    const side = gazeSide(record);
+    const pose = gazePose(record, side);
+    const key = JSON.stringify(pose);
+    record.gazeSide = side;
+    if (key === record.gaze) return;
+    record.controller.update({ pose });
+    record.gaze = key;
+  }
+
   function draggable(record) {
     return record.placement.floating && record.placement.drag !== false;
   }
@@ -722,6 +756,7 @@
     layout(record);
     watchNotifications();
     measure(record);
+    refreshGaze(record);
     if (!free && !reducedMotion(record)) {
       const last = record.el.getBoundingClientRect();
       record.snapAnimation = record.el.animate(
@@ -912,6 +947,7 @@
       chosen = resolveAuto();
     }
 
+    record.menuSide = chosen;
     const availableHeight =
       chosen === 'top' ? spaceAbove : chosen === 'bottom' ? spaceBelow : Math.max(24, floor - ceiling);
     setProperty(record.el, '--mascot-menu-max-height', `${Math.max(24, availableHeight)}px`);
@@ -939,6 +975,7 @@
     const hostRect = record.el.getBoundingClientRect();
     setProperty(record.el, '--mascot-menu-top', `${top - hostRect.top}px`);
     setProperty(record.el, '--mascot-menu-left', `${left - hostRect.left}px`);
+    refreshGaze(record);
   }
 
   // Overlay room: the viewport, narrowed by ancestors that clip overflow (such as a bslib card).
@@ -1160,7 +1197,8 @@
       window.removeEventListener('scroll', measureOpenMenus, true);
     }
     refreshActions(record);
-    if (clearPose) record.controller.update({ pose: { lookY: null } });
+    record.menuSide = null;
+    if (clearPose) refreshGaze(record);
     if (focus) record.menuButton.focus();
     resumeTimer(record);
   }
@@ -1169,7 +1207,6 @@
     if (record.minimised || !record.menuEl) return;
     for (const other of [...openMenus]) if (other !== record) closeMenu(other);
     clearBubble(record);
-    record.controller.update({ pose: { lookY: -1 } });
     record.menuOpen = true;
     const actionFocused = record.actions.contains(document.activeElement);
     refreshActions(record);
@@ -1346,6 +1383,9 @@
         JSON.parse(el.querySelector('script[data-mascot-popup-menu]')?.textContent || '{"items":null}'),
       ),
       menuOpen: false,
+      menuSide: null,
+      gaze: JSON.stringify({ look: null, lookY: null }),
+      gazeSide: null,
       menuButton: null,
       menuEl: null,
       menuHandlers: null,
@@ -1425,6 +1465,7 @@
       el.addEventListener('click', record.handlers.clickPlacement);
       watch(record);
       measure(record);
+      refreshGaze(record);
     } catch (error) {
       unwatch(record);
       unlistenDrag(record);
@@ -1507,7 +1548,7 @@
     }
 
     const enginePatch = { ...prepared.enginePatch };
-    if (prepared.menu && record.menuOpen) enginePatch.pose = { lookY: null };
+    if (prepared.menu && record.menuOpen) enginePatch.pose = { look: null, lookY: null };
     try {
       if (!has(patch, 'mood') && record.problem && !prepared.changed) enginePatch.mood = record.problemMood;
       // Synchronous engine notifications must not expose a partially committed host patch.
@@ -1523,6 +1564,7 @@
     } finally {
       updating.delete(record);
     }
+    if (enginePatch.pose) record.gaze = JSON.stringify(enginePatch.pose);
 
     const { description, changed } = prepared;
     const status = prepared.status || record.status;
@@ -1572,6 +1614,7 @@
       refreshTheme(record);
     }
     if (has(patch, 'bubble')) replaceBubble(record, prepared.bubble);
+    refreshGaze(record);
     if (has(patch, 'gesture')) record.controller.gesture(patch.gesture);
     return true;
   }
@@ -1817,6 +1860,7 @@
       motion: { ...record.motion },
       popup_menu: JSON.parse(JSON.stringify(record.menu)),
       menuOpen: record.menuOpen,
+      gaze: record.gazeSide,
       theme: JSON.parse(JSON.stringify(record.theme)),
       mode: record.mode,
       colours: { ...record.colours },

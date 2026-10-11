@@ -2007,3 +2007,12 @@ describe("studio bubble controls (#249)", {
     expect_match(page, "Duration and the close button below apply the next time you click Show bubble.", fixed = TRUE)
   })
 })
+
+describe("studio engine behaviours", {
+  it("explains beside the menu direction that the mascot looks towards its menu and bubble (#241)", {
+    page <- studio_parts()$page
+    note <- regexpr("the mascot looks towards the side the menu opened on", page, fixed = TRUE)[[1]]
+    expect_gt(note, regexpr('id="menu_direction"', page, fixed = TRUE)[[1]])
+    expect_match(page, "It also looks towards a bubble.", fixed = TRUE)
+  })
+})

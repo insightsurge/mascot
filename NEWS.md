@@ -10,6 +10,7 @@
   * `duration` is in seconds (default `5`); `duration = Inf` or `NULL` keeps the bubble until it is closed, replaced or cleared. `closable = FALSE` hides the close button; Escape still closes the bubble (#196).
   * The countdown pauses while the mascot is hidden or minimised, while the pointer is over the bubble, and while keyboard focus is inside the mascot, then resumes with the time left (#196, #199, #229).
   * Space is reserved above the mascot, so a bubble never moves the page (#196).
+  * While a bubble shows, the mascot looks towards it: up when it is above, down when it is below a top-corner mascot. Only the pupils move, at once and without animation, so eyes without visible pupils keep their look (#241).
 
 * `mascot_character()` chooses a character by name. Only Tessa is built in (#190).
 
@@ -41,7 +42,7 @@
   * `direction` is `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`. The menu opens from the mascot's on-screen position, and falls back to the opposite side when the chosen side has no room (#225).
   * Opening the menu closes a speech bubble, and a new bubble closes an open menu (#225).
   * Enter and Space toggle the focused menu control; the arrow keys, Home and End move between items, and Escape closes the menu (#213).
-  * While the menu is open, the mascot looks up. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208).
+  * While the menu is open, the mascot looks towards it: up, down, left or right, on the side where the menu actually opened, after any fallback. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208, #241).
 
 * `mascot_preview()` (*experimental*) shows an offline page that compares moods, sizes and light and dark colours, with contrast findings on the page and in R (#175, #213). It starts no Shiny app and writes no files; printing the page opens the Viewer or a browser.
   * Rows are moods; columns are the requested size, then 48, 32 and 24 CSS pixels (#175).

@@ -2,7 +2,8 @@
 #'
 #' Add a click menu to the mascot in a Shiny app. Clicking or tapping the mascot
 #' opens the menu, and clicking outside or pressing Escape closes it. While the
-#' menu is open, the mascot looks up. You provide the menu choices and
+#' menu is open, the mascot looks towards it, on the side where it actually
+#' opened (see "Where the menu opens" below). You provide the menu choices and
 #' handle the selected item in your Shiny server.
 #' @param items A named character vector of plain-text labels. Names are unique,
 #'   non-empty item IDs without whitespace (for example `c(about = "About", help = "Help")`).

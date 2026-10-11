@@ -31,7 +31,9 @@ timed countdown pauses while the mascot is hidden or minimised, while the
 pointer is over the bubble, or while keyboard focus is anywhere inside the
 mascot, and resumes with the time left. Pressing Escape while
 focused inside the mascot closes the bubble. Closing a bubble removes it
-until the app supplies a new one.
+until the app supplies a new one. While the bubble shows, the mascot looks
+towards it: up when the bubble is above (inline and bottom corners), down
+when it is below (top corners).
 }
 \details{
 Use the always visible status line for a short description of the current state.

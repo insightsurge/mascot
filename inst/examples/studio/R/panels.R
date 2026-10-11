@@ -157,6 +157,11 @@ panel_messages <- function() {
           "Right" = "right"
         ),
         selected = "auto"
+      ),
+      note = div(
+        class = "pg-note",
+        "Open the menu and watch the eyes: the mascot looks towards the side the menu opened on, ",
+        "which can differ from the one chosen when that side has no room. It also looks towards a bubble."
       )
     )
   )

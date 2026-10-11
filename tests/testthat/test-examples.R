@@ -464,14 +464,14 @@ example_driver <- function(name, width = 1100) {
     },
     list(NAME = name)
   )
-  shinytest2::AppDriver$new(app_function, width = width, height = 900, load_timeout = 30000)
+  app_driver(app_function, width = width, height = 900)
 }
 
 wait_example_mood <- function(app, id, mood) {
   checkmate::assert_r6(app, "AppDriver")
   checkmate::assert_string(id)
   checkmate::assert_string(mood)
-  app$wait_for_js(sprintf("document.getElementById('%s')?.dataset.shownMood === '%s'", id, mood), timeout = 15000)
+  app$wait_for_js(sprintf("document.getElementById('%s')?.dataset.shownMood === '%s'", id, mood))
   expect_identical(app$get_js(sprintf("document.getElementById('%s').dataset.shownMood", id)), mood)
 }
 
@@ -736,7 +736,7 @@ describe("bundled example apps", {
     expect_true(app$get_js("document.activeElement === window.studioGuideOpener"))
     app$click(selector = "#studio_panels_card .bslib-full-screen-enter")
     app$wait_for_js("document.getElementById('studio_panels_card').getAttribute('data-full-screen') === 'true'")
-    expect_true(app$get_js("document.getElementById('studio_panels_card').getBoundingClientRect().height > 300"))
+    app$wait_for_js("document.getElementById('studio_panels_card').getBoundingClientRect().height > 300")
     app$run_js(
       "document.getElementById('studio_panels_card').dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))"
     )
@@ -898,7 +898,7 @@ describe("bundled example apps", {
     app$click("task_run")
     wait_example_mood(app, "helper", "thinking")
     expect_true(app$get_js("document.getElementById('task_run').disabled"))
-    app$wait_for_js(paste0(state, ".status.text === 'All 120 rows checked'"), timeout = 15000)
+    app$wait_for_js(paste0(state, ".status.text === 'All 120 rows checked'"))
     app$wait_for_js("document.getElementById('code_last').textContent.includes('session = session')")
     app$wait_for_js(
       "document.getElementById('mood').dataset.value === 'happy' && document.getElementById('status_text').value === 'All 120 rows checked'"
@@ -978,7 +978,7 @@ describe("bundled example apps", {
     expect_false(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     expect_true(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     app$click(selector = '.pg-index-link[data-value="mascot_preview"]')
-    app$wait_for_js("!!document.querySelector('iframe.pg-preview')", timeout = 15000)
+    app$wait_for_js("!!document.querySelector('iframe.pg-preview')")
     expect_true(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     expect_false(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     expect_true(app$get_js(
@@ -1002,8 +1002,7 @@ describe("bundled example apps", {
     # The colour pickers are drawn by the server for the selected character; change them once Shiny has bound them.
     app$wait_for_js(
       "Shiny.shinyapp.$inputValues.preview_body !== undefined &&
-      Shiny.shinyapp.$inputValues.preview_rim !== undefined",
-      timeout = 15000
+      Shiny.shinyapp.$inputValues.preview_rim !== undefined"
     )
     app$run_js(
       "(() => {
@@ -1021,8 +1020,7 @@ describe("bundled example apps", {
     # No button is pressed: the page rebuilds by itself once the controls settle, and the code matches it.
     app$wait_for_js(
       "document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"') &&
-      document.getElementById('code_preview').textContent.includes('About the preview')",
-      timeout = 15000
+      document.getElementById('code_preview').textContent.includes('About the preview')"
     )
     app$wait_for_js("document.querySelector('iframe.pg-preview').classList.contains('is-phone')")
     expect_match(
@@ -1039,10 +1037,9 @@ describe("bundled example apps", {
       Shiny.setInputValue('preview_status', 'Auto build status');"
     )
     app$wait_for_js(
-      "document.getElementById('code_preview').textContent.includes('status = \"Auto build status\"')",
-      timeout = 15000
+      "document.getElementById('code_preview').textContent.includes('status = \"Auto build status\"')"
     )
-    app$wait_for_js("document.querySelectorAll('.pg-building').length === 0", timeout = 15000)
+    app$wait_for_js("document.querySelectorAll('.pg-building').length === 0")
     expect_true(app$get_js("window.sawBuilding"))
     expect_match(
       app$get_js("document.getElementById('code_preview').textContent"),
@@ -1063,7 +1060,7 @@ describe("bundled example apps", {
     )
     # Each URL starts a new Shiny session and builds only its own view.
     app$run_js("window.location.search = '?view=examples'")
-    app$wait_for_js("!!document.querySelector('#example_code')", timeout = 15000)
+    app$wait_for_js("!!document.querySelector('#example_code')")
     expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
     expect_identical(
       app$get_js("document.querySelectorAll('#examples_guide_card button, #examples_guide_card input').length"),

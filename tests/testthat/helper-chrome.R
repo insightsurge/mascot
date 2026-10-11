@@ -6,6 +6,17 @@
 # chromote's default 10 seconds to start Chrome, hence the longer timeout.
 test_browser_env <- new.env(parent = emptyenv())
 
+# Milliseconds any browser test waits for a signal (a Shiny value, a DOM state, a finished animation) before it fails.
+# One generous limit for every wait: a busy machine or a slow CI runner can take seconds to answer, while a passing
+# wait returns as soon as its signal arrives, so a long limit costs nothing on a fast machine (#250). Never sleep for a
+# fixed time instead: wait for the signal.
+browser_timeout <- 30000
+
+# Start a Shiny app in Chrome with the shared timeout for loading and for every wait, click and value it reads.
+app_driver <- function(...) {
+  shinytest2::AppDriver$new(..., load_timeout = browser_timeout, timeout = browser_timeout)
+}
+
 test_browser <- function() {
   if (is.null(test_browser_env$browser)) {
     tmp <- file.path(tempdir(), "chrome-tmp")
@@ -14,6 +25,8 @@ test_browser <- function() {
       list(chromote.timeout = 60),
       withr::with_envvar(c(TMPDIR = tmp), chromote::Chromote$new())
     )
+    # Sessions opened from this browser inherit the limit, in seconds, for navigation and page commands.
+    test_browser_env$browser$default_timeout <- browser_timeout / 1000
     withr::defer(test_browser_env$browser$close(), envir = testthat::teardown_env())
   }
   test_browser_env$browser

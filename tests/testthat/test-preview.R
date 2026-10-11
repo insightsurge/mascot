@@ -252,7 +252,9 @@ local_preview_page <- function(page, env = parent.frame()) {
     "new Promise((resolve,reject)=>{const start=performance.now();const check=()=>{",
     "if(document.readyState==='complete' && document.querySelector('.mascot')?.dataset.shownMood)",
     "requestAnimationFrame(()=>requestAnimationFrame(resolve));",
-    "else if(performance.now()-start>15000)reject(new Error('preview did not mount'));",
+    "else if(performance.now()-start>",
+    browser_timeout,
+    ")reject(new Error('preview did not mount'));",
     "else requestAnimationFrame(check)};check()})"
   ))
   attr(evaluate, "session") <- session

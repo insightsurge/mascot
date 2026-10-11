@@ -55,7 +55,7 @@ describe("mascot_studio()", {
     skip_if_not_installed("bslib")
     skip_if(is.null(chromote::find_chrome()), "Chrome is unavailable")
     withr::local_envvar(TMPDIR = withr::local_tempdir())
-    app <- shinytest2::AppDriver$new(
+    app <- app_driver(
       function() {
         library(mascot)
         mascot_studio(fn = "mascot_theme", run = FALSE)
@@ -70,7 +70,7 @@ describe("mascot_studio()", {
     expect_false(app$get_js("document.querySelector('[data-function=mascot_theme]').hidden"))
     expect_identical(app$get_value(input = "character"), formals(mascot)$character)
     # Starting on mascot_preview() shows its page on the canvas in place of the live mascot.
-    preview <- shinytest2::AppDriver$new(
+    preview <- app_driver(
       function() {
         library(mascot)
         mascot_studio(fn = "mascot_preview", run = FALSE)
@@ -79,11 +79,11 @@ describe("mascot_studio()", {
       height = 900
     )
     withr::defer(preview$stop())
-    preview$wait_for_js("!!document.querySelector('iframe.pg-preview')", timeout = 15000)
+    preview$wait_for_js("!!document.querySelector('iframe.pg-preview')")
     expect_true(preview$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     expect_false(preview$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     expect_true(preview$get_js("document.querySelector('#preview_card .bslib-full-screen-enter') !== null"))
-    examples <- shinytest2::AppDriver$new(function() {
+    examples <- app_driver(function() {
       library(mascot)
       mascot_studio("examples", run = FALSE)
     })

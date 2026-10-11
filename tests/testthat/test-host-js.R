@@ -94,23 +94,34 @@ describe("mascot.host", {
       const add = id => {const el=source.cloneNode(true); el.id=id; document.body.append(el); mascot.host.mount(el); return el;};
       console.warn = message => warnings.push(message);
       window.addEventListener('shiny:client-message', event => events.push(event.detail.message));
+      // Hold the host's two-second namespace timers and run them on demand: no waiting on the clock.
+      const realTimeout = window.setTimeout, held = [], delays = [];
+      window.setTimeout = (fn, delay, ...rest) => delay === 2000 ? (held.push(fn), delays.push(delay), 0) :
+        realTimeout(fn, delay, ...rest);
+      const elapse = () => held.splice(0).forEach(fn => fn());
       add('first-helper');
       window.Shiny = {inDevMode: () => false};
       mascot.host.receive({id:'helper',patch:{mood:'happy'}});
-      await new Promise(resolve => setTimeout(resolve, 2200));
-      const production = warnings.length;
+      elapse();
+      const production = warnings.length, productionTimers = delays.length;
       window.Shiny = {inDevMode: () => true};
       mascot.host.receive({id:'helper',patch:{mood:'thinking'}});
       mascot.host.receive({id:'helper',patch:{mood:'happy'}});
       mascot.host.receive({id:'later',patch:{mood:'happy'}});
       add('summary');
       mascot.host.receive({id:'second-summary',patch:{mood:'happy'}});
-      await new Promise(resolve => setTimeout(resolve, 2200));
+      const early = warnings.length;
+      elapse();
+      window.setTimeout = realTimeout;
       console.warn = original; delete window.Shiny;
-      return {production, warnings, events};
+      return {production, productionTimers, early, timers: delays.length, warnings, events};
     })()"
     )
     expect_identical(result$production, 0L)
+    expect_identical(result$productionTimers, 0L)
+    # Nothing warns before the delay has passed; afterwards each missed id warns once.
+    expect_identical(result$early, 0L)
+    expect_gte(result$timers, 3L)
     expect_length(result$warnings, 2)
     expect_match(result$warnings[[1]], 'no mascot "helper".*"first-helper".*from inside its module')
     expect_match(result$warnings[[2]], 'no mascot "second-summary".*"summary".*ns\\("summary"\\)')

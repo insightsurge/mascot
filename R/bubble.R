@@ -2,8 +2,9 @@
 #'
 #' A speech bubble stays visible across mood changes and character swaps.
 #' Plain text is escaped; use [htmltools::HTML()] only for HTML you trust. A
-#' timed countdown pauses while the mascot is hidden, minimised, hovered over,
-#' or focused, and resumes with the remaining time. Pressing Escape while
+#' timed countdown pauses while the mascot is hidden or minimised, while the
+#' pointer is over the bubble, or while keyboard focus is anywhere inside the
+#' mascot, and resumes with the time left. Pressing Escape while
 #' focused inside the mascot closes the bubble. Closing a bubble removes it
 #' until the app supplies a new one.
 #'

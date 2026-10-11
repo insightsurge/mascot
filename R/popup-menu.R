@@ -2,7 +2,7 @@
 #'
 #' Add a click menu to the mascot in a Shiny app. Clicking or tapping the mascot
 #' opens the menu, and clicking outside or pressing Escape closes it. While the
-#' menu is open, the mascot looks up towards it. You provide the menu choices and
+#' menu is open, the mascot looks up. You provide the menu choices and
 #' handle the selected item in your Shiny server.
 #' @param items A named character vector of plain-text labels. Names are unique,
 #'   non-empty item IDs without whitespace (for example `c(about = "About", help = "Help")`).
@@ -57,7 +57,8 @@
 #'
 #' The menu opens from the mascot's on-screen position in the requested direction.
 #' It fits the available screen space and can change direction or scroll.
-#' Action controls hide while the menu is open, and speech bubble timers pause.
+#' Action controls hide while the menu is open. Opening the menu closes any speech
+#' bubble that is showing.
 #' The restore button only restores a minimised mascot; it does not open the menu.
 #' On static pages the mascot stays an image. Run the Shiny example below to try
 #' the menu.

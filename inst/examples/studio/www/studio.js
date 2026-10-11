@@ -67,7 +67,17 @@
   window.Shiny.inputBindings.register(new MoodBinding(), 'mascotStudio.mood');
 
   let selectedFunction = 'mascot_mood';
+  // The canvas shows the live mascot, or the page mascot_preview() returns while that function is selected.
+  // Hiding (not removing) keeps the mascot and its state as they were.
+  function showCanvas() {
+    const canvas = document.getElementById('studio_canvas');
+    if (!canvas) return;
+    const mode = selectedFunction === 'mascot_preview' ? 'preview' : 'mascot';
+    canvas.dataset.mode = mode;
+    for (const part of canvas.querySelectorAll('[data-canvas]')) part.hidden = part.dataset.canvas !== mode;
+  }
   function showControls() {
+    showCanvas();
     const inspector = document.getElementById('studio_inspector');
     if (!inspector) return;
     for (const group of inspector.querySelectorAll('[data-function]')) {
@@ -109,7 +119,6 @@
       }
     });
     const dock = document.getElementById('studio_dock');
-    const toggle = document.getElementById('code_toggle');
     const header = document.getElementById('code_tray_header');
     const headerToggle = document.getElementById('code_tray_toggle');
     const trayBody = document.getElementById('code_tray_body');
@@ -124,7 +133,7 @@
     let open = saved?.open ?? !window.matchMedia('(max-width: 575.98px)').matches;
     function saveTray() {
       try {
-        sessionStorage.setItem('mascot-studio-tray', JSON.stringify({ open, height }));
+        sessionStorage.setItem('mascot-studio-tray', JSON.stringify({ open, height: preferred }));
       } catch {
         /* Storage can be unavailable; the controls still work. */
       }
@@ -139,10 +148,8 @@
         trayBody.inert = !open;
         trayBody.setAttribute('aria-hidden', String(!open));
       }
-      for (const button of [toggle, headerToggle]) {
-        button?.setAttribute('aria-expanded', String(open));
-        button?.setAttribute('aria-label', `${open ? 'Collapse' : 'Expand'} Code tray`);
-      }
+      headerToggle?.setAttribute('aria-expanded', String(open));
+      headerToggle?.setAttribute('aria-label', `${open ? 'Collapse' : 'Expand'} Code tray`);
     }
     function toggleTray() {
       if (open && card?.dataset.fullScreen === 'true') document.querySelector('.bslib-full-screen-exit')?.click();
@@ -150,7 +157,6 @@
       syncDock();
       saveTray();
     }
-    toggle?.addEventListener('click', toggleTray);
     header?.addEventListener('click', toggleTray);
     function placementControls() {
       const inline = document.querySelector('#position input:checked')?.value === 'inline';
@@ -184,8 +190,10 @@
     });
     const grip = document.getElementById('dock_grip');
     let height = Number.isFinite(saved?.height) ? saved.height : 33;
+    // The height the visitor chose. A crowded canvas (the mascot_preview() page) lowers the height shown, not this.
+    let preferred = height;
     let drag = null;
-    function resize(value) {
+    function resize(value, chosen = true) {
       if (!centre || !grip || !centre.clientHeight) return;
       const dockStyle = getComputedStyle(dock);
       const borders = parseFloat(dockStyle.borderTopWidth) + parseFloat(dockStyle.borderBottomWidth);
@@ -193,9 +201,12 @@
       const canvas = document.getElementById('studio_canvas');
       const style = getComputedStyle(canvas);
       // Include the reserved bubble region, character, status and caption in the canvas floor.
+      // The preview page grows to fill the canvas, so only its own minimum height counts.
       const contentHeight = [...canvas.children].reduce((total, child) => {
+        if (child.hidden) return total;
         const childStyle = getComputedStyle(child);
-        return total + child.offsetHeight + parseFloat(childStyle.marginTop) + parseFloat(childStyle.marginBottom);
+        const own = child.dataset.canvas === 'preview' ? parseFloat(childStyle.minHeight) : child.offsetHeight;
+        return total + own + parseFloat(childStyle.marginTop) + parseFloat(childStyle.marginBottom);
       }, parseFloat(style.paddingTop) + parseFloat(style.paddingBottom));
       const canvasHeight = Math.max(parseFloat(style.minHeight), contentHeight);
       const toolbarHeight = centre.querySelector('.pg-toolbar').offsetHeight;
@@ -205,15 +216,16 @@
       );
       const minimum = Math.min(25, maximum);
       height = Math.max(minimum, Math.min(maximum, value));
+      if (chosen) preferred = height;
       centre.style.setProperty('--pg-dock-height', `${(height / 100) * centre.clientHeight}px`);
       grip.setAttribute('aria-valuemin', String(Math.round(minimum)));
       grip.setAttribute('aria-valuemax', String(Math.round(maximum)));
       grip.setAttribute('aria-valuenow', String(Math.round(height)));
     }
     syncDock();
-    resize(height);
+    resize(height, false);
     if (centre) {
-      const observer = new ResizeObserver(() => resize(height));
+      const observer = new ResizeObserver(() => resize(preferred, false));
       observer.observe(centre);
       observer.observe(centre.querySelector('.pg-toolbar'));
       observer.observe(header);

@@ -1,33 +1,12 @@
 # Building blocks for the studio's UI: argument fields with their explanations, function
 # cards for the guide, and the small diagrams that explain each category.
 
+# What the studio keeps about a function itself (R/guide.R). Its words come from the help page: see
+# help_page() in R/help.R.
 the_guide <- function(fn) {
   checkmate::assert_string(fn)
-  entry <- playground_guide[[fn]]
-  session <- shiny::getDefaultReactiveDomain()
-  character <- if (!is.null(session$userData$studio_character)) {
-    session$userData$studio_character()
-  } else {
-    formals(mascot::mascot)$character
-  }
-  if (fn == "mascot_theme") {
-    roles <- mascot::mascot_colour_roles(character)$role
-    brand <- studio_brand(character)
-    replacements <- c(body = brand$primary %||% roles[1], rim = brand$secondary %||% roles[min(2, length(roles))])
-    for (arg in names(entry$args)) {
-      for (field in c("hint", "example")) {
-        text <- entry$args[[arg]][[field]]
-        if (is.null(text)) {
-          next
-        }
-        for (part in names(replacements)) {
-          text <- gsub(paste0("\\b", part, "\\b"), replacements[[part]], text)
-        }
-        entry$args[[arg]][[field]] <- text
-      }
-    }
-  }
-  entry
+  checkmate::assert_choice(fn, names(playground_guide))
+  playground_guide[[fn]]
 }
 
 # Read the expression, without evaluating defaults such as Shiny's reactive domain.
@@ -58,19 +37,29 @@ chips <- function(values, class = "pg-chip") {
   lapply(values, function(value) tags$span(class = class, value))
 }
 
-# The popover behind an argument chip: everything the guide knows about the argument.
+# The popover behind an argument chip: the argument's help text (what it accepts, what NULL means and
+# the details), its default read from the function's formals and, when the help page has one, an
+# example that supplies the argument.
 arg_popover_body <- function(fn, arg) {
   checkmate::assert_string(fn)
   checkmate::assert_string(arg)
-  entry <- the_guide(fn)$args[[arg]]
+  help <- help_arg(fn, arg)
+  example <- help_arg_example(fn, arg)
   tagList(
-    tags$p(entry$hint),
-    tags$p(tags$strong("Accepts: "), chips(entry$accepts)),
+    div(class = "pg-help", if (is.null(help)) tags$p("This argument has no help text.") else help),
     tags$p(tags$strong("Default: "), tags$code(argument_default(fn, arg))),
-    if (!is.null(entry$null)) tags$p(tags$strong("NULL means: "), entry$null),
-    if (!is.null(entry$detail)) tags$p(entry$detail),
-    if (!is.null(entry$example)) code_block(entry$example, "pg-code-small")
+    if (!is.null(example)) {
+      tagList(tags$p(tags$strong("Example from the help page:")), code_block(example, "pg-code-small"))
+    }
   )
+}
+
+# One line for the control: the first sentence of the argument's help text.
+arg_hint <- function(fn, arg) {
+  checkmate::assert_string(fn)
+  checkmate::assert_string(arg)
+  help <- help_arg(fn, arg)
+  if (is.null(help)) "" else first_sentence(html_text(help))
 }
 
 arg_chip <- function(fn, arg) {
@@ -81,12 +70,18 @@ arg_chip <- function(fn, arg) {
     tags$code(arg),
     tags$span(class = "pg-info", "i")
   )
-  popover(trigger, arg_popover_body(fn, arg), title = tags$code(paste0(fn, "(", arg, " =)")))
+  popover(
+    trigger,
+    arg_popover_body(fn, arg),
+    title = tags$code(paste0(fn, "(", arg, " =)")),
+    options = list(customClass = "pg-help-popover")
+  )
 }
 
-# One argument: its chip (click for details), the control, and a one-line hint.
+# One argument: its chip (click for the help text), the control, and a one-line hint.
 arg_field <- function(fn, arg, input, note = NULL) {
-  entry <- the_guide(fn)$args[[arg]]
+  checkmate::assert_string(fn)
+  checkmate::assert_string(arg)
   div(
     class = "pg-field",
     `data-argument` = arg,
@@ -95,7 +90,7 @@ arg_field <- function(fn, arg, input, note = NULL) {
       arg_chip(fn, arg),
       tags$span(class = "pg-default", "default ", argument_default(fn, arg))
     ),
-    div(class = "pg-hint", entry$hint),
+    div(class = "pg-hint", arg_hint(fn, arg)),
     input,
     note
   )
@@ -112,14 +107,14 @@ inspector_function <- function(fn, ...) {
     `data-function` = fn,
     hidden = if (fn != "mascot_mood") NA,
     tags$h2(class = "pg-function-name", tags$code(paste0(fn, "()"))),
-    div(class = "pg-fn-what", the_guide(fn)$what),
+    div(class = "pg-fn-what", help_page(fn)$title),
     bslib::popover(
       tags$button(type = "button", class = "btn btn-outline-primary btn-sm", "Usage"),
       code_block(signature(fn), "pg-signature"),
       title = paste0(fn, "()")
     ),
     try_button("open_guide", fn, paste0("Guide: ", fn, "()")),
-    div(class = "pg-returns", tags$strong("Returns: "), the_guide(fn)$returns),
+    div(class = "pg-returns", tags$strong("Returns: "), div(class = "pg-help", help_page(fn)$value)),
     div(class = "pg-function-controls", ...)
   )
 }
@@ -164,9 +159,9 @@ function_index <- function() {
               `data-value` = fn,
               `aria-current` = if (fn == "mascot_mood") "true" else "false",
               tags$code(paste0(fn, "()")),
-              tags$span(the_guide(fn)$what)
+              tags$span(help_page(fn)$title)
             ),
-            the_guide(fn)$what,
+            help_page(fn)$title,
             options = list(trigger = "hover")
           )
         })
@@ -236,24 +231,27 @@ signature <- function(fn) {
 }
 
 arg_block <- function(fn, arg) {
-  entry <- the_guide(fn)$args[[arg]]
+  checkmate::assert_string(fn)
+  checkmate::assert_string(arg)
   div(
     class = "pg-arg",
     tags$code(class = "pg-arg-name", arg),
     tags$span(class = "pg-default", "default ", tags$code(argument_default(fn, arg))),
-    tags$span(entry$hint)
+    div(class = "pg-help", help_arg(fn, arg))
   )
 }
 
 function_card <- function(fn, example = FALSE) {
-  entry <- the_guide(fn)
+  checkmate::assert_string(fn)
+  checkmate::assert_flag(example)
+  help <- help_page(fn)
   arguments <- names(formals(get(fn, envir = asNamespace("mascot"))))
   bslib::card(
     full_screen = FALSE,
     `data-guide-function` = fn,
     bslib::card_header(tags$code(paste0(fn, "()"))),
     tags$h3(class = "pg-section-title", "Description"),
-    tags$p(entry$what),
+    div(class = "pg-help", help$description),
     tags$h3(class = "pg-section-title", "Usage"),
     code_block(signature(fn), "pg-signature"),
     tags$h3(class = "pg-section-title", "Arguments"),
@@ -262,7 +260,8 @@ function_card <- function(fn, example = FALSE) {
     } else {
       tags$p(class = "pg-muted", "No arguments.")
     },
-    div(class = "pg-returns", tags$span(class = "pg-muted", "Returns"), entry$returns),
+    tags$h3(class = "pg-section-title", "Returns"),
+    div(class = "pg-help", help$value),
     if (example) {
       tagList(
         tags$h3(class = "pg-section-title", "Example"),
@@ -307,7 +306,7 @@ selected_guide <- function(fn, character = formals(mascot::mascot)$character) {
           div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
         ),
         div(class = "pg-guide-visual", sections),
-        guide_arguments(fn),
+        guide_help(fn),
         guide_mistakes(fn, character)
       ),
       class = "pg-guide-columns"
@@ -707,19 +706,28 @@ visual_update_mascot <- function() {
   )
 }
 
-# Each Guide section has one builder so further material can grow independently.
-guide_arguments <- function(fn) {
+# Each Guide section has one builder so further material can grow independently. This one is the
+# function's help page (description, details and value), with a link to the matching section of the
+# Get started article. Each argument's help text is in the popover of its control instead.
+guide_help <- function(fn) {
   checkmate::assert_string(fn)
+  help <- help_page(fn)
+  heading <- the_guide(fn)$vignette
   div(
-    class = "pg-guide-piece",
-    tags$h3(class = "pg-section-title", "Argument details"),
-    lapply(names(the_guide(fn)$args), function(arg) {
-      tagList(
-        tags$h4(tags$code(arg)),
-        arg_popover_body(fn, arg)
-      )
-    }),
-    if (!length(the_guide(fn)$args)) tags$p("No arguments.")
+    class = "pg-guide-piece pg-guide-help",
+    tags$h3(class = "pg-section-title", paste0("Help page: ", fn, "()")),
+    div(class = "pg-help", help$description),
+    if (!is.null(help$details)) {
+      tagList(tags$h4(class = "pg-help-heading", "Details"), div(class = "pg-help", help$details))
+    },
+    tags$h4(class = "pg-help-heading", "Returns"),
+    div(class = "pg-help", help$value),
+    tags$p(
+      class = "pg-hint",
+      "Each argument's help text is in the i beside its control. Read more in the Get started article: ",
+      tags$a(href = vignette_url(heading), target = "_blank", rel = "noopener", heading),
+      "."
+    )
   )
 }
 

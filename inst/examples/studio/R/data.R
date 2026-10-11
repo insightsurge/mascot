@@ -166,7 +166,7 @@ playground_controls <- list(
     session = input_id("task_run")
   ),
   mascot_preview = list(
-    character = input_id("preview_character"),
+    character = input_id("character"),
     mood = input_id("preview_mood"),
     status = input_id("preview_status"),
     bubble = input_id("preview_bubble"),

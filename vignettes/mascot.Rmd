@@ -51,17 +51,17 @@ There is no `mascotOutput()` or `renderMascot()`. Give each mascot its own id.
 
 ## Open an example
 
-Start with mascot studio. Select a function in the index on the left; its
-arguments appear in the inspector on the right. One live Tessa follows your
-changes. Open the Learn card under the canvas for a live example and a visual
-explanation; its full-screen button gives it more room. The collapsible dock
-holds UI, server and whole-app code to copy, plus the last call and event log.
-Drag its top edge to resize it. The function index uses a collapsible sidebar,
-and Show all controls folds the inspector by function. Static preview and
-Examples open their own tabs, with independent preview colours and menu items.
+Start with mascot studio, `mascot_studio()`. Select a function in the index on
+the left; its arguments appear in the controls on the right, and one live Tessa
+follows your changes. Each argument's information button shows its help text,
+and the Guide button opens the function's help with pictures and common
+mistakes. Selecting `mascot_preview()` shows its static page in place of the
+live mascot. The Code tray under the canvas holds UI, server and whole-app code
+to copy, plus the last call and an event log; collapse it from its header, drag
+its top edge to resize it, or open it full screen. Both side panels collapse.
 The four other apps each show one scenario.
 
-![Mascot studio: a function index on the left, Tessa above the Learn card and code dock in the centre, and the selected function's argument controls on the right.](figures/studio-light.png)
+![Mascot studio: a function index on the left, Tessa above the Code tray in the centre, and the selected function's controls on the right.](figures/studio-light.png)
 
 ```{r catalogue}
 mascot_examples()

@@ -62,6 +62,7 @@ studio_page <- function(character, fn) {
           panel_colours(),
           panel_wiring(),
           panel_studio(),
+          panel_preview(),
           panel_views()
         ),
         id = "inspector_sidebar",
@@ -83,22 +84,37 @@ studio_page <- function(character, fn) {
         `data-initial-character` = character,
         div(
           class = "pg-toolbar pg-card-head",
-          actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm"),
-          tags$button(
-            type = "button",
-            id = "code_toggle",
-            class = "btn btn-outline-primary btn-sm",
-            `aria-expanded` = "true",
-            `aria-controls` = "code_tray_body",
-            "Code"
-          )
+          actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm")
         ),
         div(
           class = "pg-canvas",
           id = "studio_canvas",
-          div(class = "pg-stage", start_mascot),
-          uiOutput("stage_note"),
-          div(class = "pg-canvas-caption pg-muted", textOutput("character_caption", inline = TRUE))
+          `data-mode` = "mascot",
+          # The live mascot and the static preview share the canvas: the selected function decides which
+          # one shows (www/studio.js). Hiding keeps the mascot, and its state, exactly as it was.
+          div(class = "pg-stage", `data-canvas` = "mascot", start_mascot),
+          uiOutput("stage_note", `data-canvas` = "mascot"),
+          div(
+            class = "pg-canvas-caption pg-muted",
+            `data-canvas` = "mascot",
+            textOutput("character_caption", inline = TRUE)
+          ),
+          div(
+            class = "pg-preview-stage",
+            `data-canvas` = "preview",
+            hidden = NA,
+            div(
+              class = "pg-preview-head",
+              tags$span(
+                class = "pg-muted",
+                "The page ",
+                tags$code("mascot_preview()"),
+                " returns for the arguments in Controls."
+              ),
+              uiOutput("preview_status_badge", inline = TRUE)
+            ),
+            uiOutput("preview_frame", class = "pg-preview-frame")
+          )
         ),
         div(
           class = "pg-dock",
@@ -184,6 +200,13 @@ studio_page <- function(character, fn) {
                     div(class = "pg-code-wrap", code_output("code_last"), copy_button("code_last"))
                   ),
                   nav_panel(
+                    "Preview",
+                    value = "preview",
+                    div(class = "pg-hint", "The mascot_preview() call that built the page on the canvas."),
+                    div(class = "pg-code-wrap", code_output("code_preview"), copy_button("code_preview")),
+                    uiOutput("preview_contrast")
+                  ),
+                  nav_panel(
                     "Log",
                     div(
                       class = "pg-card-head",
@@ -199,92 +222,6 @@ studio_page <- function(character, fn) {
         )
       )
     )
-  )
-}
-
-preview_page <- function(character) {
-  checkmate::assert_string(character)
-  layout_sidebar(
-    sidebar = sidebar(
-      title = "mascot_preview() arguments",
-      width = 380,
-      arg_field(
-        "mascot_preview",
-        "character",
-        selectInput("preview_character", "Character", studio_characters(), selected = character)
-      ),
-      arg_field(
-        "mascot_preview",
-        "mood",
-        selectInput("preview_mood", "Mood", c("Every mood (NULL)" = "", stats::setNames(moods$name, moods$name)))
-      ),
-      arg_field(
-        "mascot_preview",
-        "status",
-        textInput("preview_status", "Status text", placeholder = "Empty: each mood")
-      ),
-      arg_field(
-        "mascot_preview",
-        "bubble",
-        textInput("preview_bubble", "Bubble text", placeholder = "Empty: no bubble")
-      ),
-      arg_field(
-        "mascot_preview",
-        "size",
-        tagList(
-          sliderInput("preview_size", "Pixels", min = 48, max = 240, value = 120, step = 8),
-          radioButtons(
-            "preview_width",
-            "Show the page at",
-            c("Full width" = "full", "Phone width (375 px)" = "phone"),
-            inline = TRUE
-          )
-        ),
-        note = div(class = "pg-note", "Phone width changes the page width; the selected pixel size stays the same.")
-      ),
-      arg_field(
-        "mascot_preview",
-        "placement",
-        selectInput("preview_placement", "Placement", c("inline", corners))
-      ),
-      arg_field(
-        "mascot_preview",
-        "theme",
-        tagList(
-          radioButtons(
-            "preview_theme_source",
-            "Colours",
-            c("Character's own colours" = "own", "Your colours" = "custom")
-          ),
-          conditionalPanel("input.preview_theme_source == 'custom'", uiOutput("preview_pickers"))
-        )
-      ),
-      arg_field("mascot_preview", "motion", input_switch("preview_motion", "Animate", FALSE)),
-      arg_field(
-        "mascot_preview",
-        "popup_menu",
-        textAreaInput("preview_menu_items", "One item per line: id = Label", "", rows = 3)
-      ),
-      actionButton("preview_build", "Rebuild", class = "btn-outline-primary btn-sm")
-    ),
-    card(
-      full_screen = TRUE,
-      card_header(
-        div(
-          class = "d-flex justify-content-between align-items-center w-100",
-          tags$span("The preview page"),
-          uiOutput("preview_status_badge", inline = TRUE)
-        )
-      ),
-      div(
-        class = "pg-code-wrap",
-        code_output("code_preview"),
-        copy_button("code_preview")
-      ),
-      uiOutput("preview_frame"),
-      uiOutput("preview_contrast")
-    ),
-    card(id = "preview_guide_card", full_screen = FALSE, card_header("Guide"), card_body(guide_content("preview")))
   )
 }
 
@@ -322,7 +259,7 @@ examples_page <- layout_columns(
 view_from_request <- function(request) {
   checkmate::assert(checkmate::check_list(request), checkmate::check_environment(request), .var.name = "request")
   query <- shiny::parseQueryString(if (is.null(request$QUERY_STRING)) "" else request$QUERY_STRING)
-  if (is.null(query$view) || !query$view %in% c("preview", "examples")) "studio" else query$view
+  if (is.null(query$view) || !query$view %in% "examples") "studio" else query$view
 }
 
 view_link <- function(label, view, new_tab = TRUE) {
@@ -363,11 +300,6 @@ ui <- function(request) {
     } else {
       view_link("Studio", "studio", FALSE)
     },
-    if (view == "preview") {
-      nav_panel("Static preview", value = "preview", preview_page(character))
-    } else {
-      view_link("Static preview", "preview")
-    },
     if (view == "examples") {
       nav_panel("Examples", value = "examples", examples_page)
     } else {
@@ -406,7 +338,6 @@ studio_server <- function(input, output, session) {
   log <- reactiveVal(list())
   selected_function <- reactiveVal("mascot_mood")
   current_character <- reactive(input$character %||% defaults$character)
-  session$userData$studio_character <- current_character
   character_name <- reactive(mascot_character(current_character())$name)
   roles <- reactive(mascot_colour_roles(current_character()))
   output$character_caption <- renderText(paste(character_name(), "follows the arguments in the inspector."))
@@ -919,6 +850,185 @@ studio_server <- function(input, output, session) {
     nav_select("code_tabs", "Log")
   })
 
+  # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
+  # selection). While the function is selected the canvas shows the page the call returns, in place
+  # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
+  # rebuilds the page after a short pause, with a "Building..." badge until it is shown.
+  preview_selected <- reactive(identical(selected_function(), "mascot_preview"))
+  output$preview_pickers <- renderUI({
+    tagList(lapply(roles()$role, function(role) {
+      div(
+        class = "pg-css",
+        colour_input(paste0("preview_", role), roles()$colour[match(role, roles()$role)], paste("Preview", role)),
+        tags$code(role)
+      )
+    }))
+  })
+  outputOptions(output, "preview_pickers", suspendWhenHidden = FALSE)
+  preview_colours <- reactive({
+    values <- vapply(
+      roles()$role,
+      function(role) input[[paste0("preview_", role)]] %||% roles()$colour[match(role, roles()$role)],
+      character(1)
+    )
+    # Only the parts changed from the character's own colours go into the code.
+    changed <- tolower(values) != tolower(roles()$colour)
+    stats::setNames(values[changed], roles()$role[changed])
+  })
+  preview_args <- reactive({
+    own <- formals(mascot::mascot_preview)
+    lines <- trimws(strsplit(input$preview_menu_items %||% "", "\n", fixed = TRUE)[[1]])
+    lines <- lines[nzchar(lines)]
+    validate(need(all(grepl("=", lines, fixed = TRUE)), "Write each menu item as id = Label."))
+    items <- stats::setNames(trimws(sub("^[^=]*=", "", lines)), trimws(sub("=.*$", "", lines)))
+    mood <- input$preview_mood %||% ""
+    status <- input$preview_status %||% ""
+    bubble <- input$preview_bubble %||% ""
+    size <- input$preview_size %||% own$size
+    placement <- input$preview_placement %||% own$placement
+    args <- list(
+      character = if (current_character() != own$character) current_character(),
+      mood = if (nzchar(mood)) mood,
+      status = if (nzchar(trimws(status))) status,
+      bubble = if (nzchar(trimws(bubble))) bubble,
+      size = if (size != own$size) as.numeric(size),
+      placement = if (placement != own$placement) placement,
+      theme = if (identical(input$preview_theme_source, "custom") && length(preview_colours())) {
+        named_call("list", preview_colours())
+      },
+      motion = if (isTRUE(input$preview_motion)) TRUE,
+      popup_menu = if (length(items)) named_call("c", items)
+    )
+    Filter(Negate(is.null), args)
+  })
+  output$preview_problem <- renderUI({
+    problem <- tryCatch(
+      {
+        preview_args()
+        NULL
+      },
+      error = function(e) conditionMessage(e)
+    )
+    if (!is.null(problem)) div(class = "pg-note pg-warn", problem)
+  })
+  prefix <- paste0("studio-preview-", session$token)
+  preview_dir <- file.path(tempdir(), prefix)
+  dir.create(preview_dir, showWarnings = FALSE)
+  addResourcePath(prefix, preview_dir)
+  session$onSessionEnded(function() {
+    removeResourcePath(prefix)
+    unlink(preview_dir, recursive = TRUE)
+  })
+  preview_request <- reactiveVal(0)
+  preview_count <- reactiveVal(0)
+  is_building <- reactiveVal(FALSE)
+  last_built_call <- reactiveVal(NULL)
+  preview_inputs <- reactive(tryCatch(preview_args(), error = function(e) conditionMessage(e)))
+  debounced_preview_inputs <- debounce(preview_inputs, 400)
+  build_preview <- function() {
+    is_building(TRUE)
+    preview_request(preview_request() + 1)
+  }
+  # The page is built on the first visit, and again when the arguments changed since the last build.
+  observeEvent(preview_selected(), {
+    if (preview_selected()) {
+      args <- tryCatch(preview_args(), error = function(e) NULL)
+      if (preview_request() == 0 || (!is.null(args) && !identical(args, last_built_call()))) {
+        build_preview()
+      }
+    }
+  })
+  observeEvent(
+    preview_inputs(),
+    if (preview_selected() && preview_request() > 0) is_building(TRUE),
+    ignoreInit = TRUE
+  )
+  observeEvent(
+    debounced_preview_inputs(),
+    {
+      if (preview_selected() && preview_request() > 0) {
+        args <- tryCatch(preview_args(), error = function(e) NULL)
+        if (!is.null(args) && !identical(args, last_built_call())) {
+          preview_request(preview_request() + 1)
+        } else {
+          is_building(FALSE)
+        }
+      }
+    },
+    ignoreInit = TRUE
+  )
+  observeEvent(input$preview_build, build_preview())
+  built_preview <- eventReactive(preview_request(), {
+    req(preview_request() > 0)
+    args <- tryCatch(preview_args(), error = function(e) e)
+    if (inherits(args, "error")) {
+      is_building(FALSE)
+      return(list(error = cli::ansi_strip(conditionMessage(args)), code = "# Review the preview arguments"))
+    }
+    page <- withCallingHandlers(
+      tryCatch(eval(as.call(c(as.name("mascot_preview"), args))), error = function(e) e),
+      warning = function(w) {
+        if (inherits(w, "mascot_contrast")) invokeRestart("muffleWarning")
+      }
+    )
+    is_building(FALSE)
+    if (inherits(page, "error")) {
+      return(list(error = cli::ansi_strip(conditionMessage(page)), code = format_call("mascot_preview", args)))
+    }
+    preview_count(isolate(preview_count()) + 1)
+    file <- sprintf("preview-%s-%d.html", session$token, isolate(preview_count()))
+    htmltools::save_html(page, file.path(preview_dir, file), libdir = "lib")
+    last_built_call(args)
+    list(file = file, contrast = attr(page, "contrast"), code = format_call("mascot_preview", args))
+  })
+  output$preview_status_badge <- renderUI({
+    if (is_building()) tags$span(class = "badge text-bg-secondary pg-building", "Building\u2026")
+  })
+  output$preview_frame <- renderUI({
+    if (preview_request() == 0) {
+      return(div(class = "pg-hint", "Select mascot_preview() to build the page."))
+    }
+    result <- built_preview()
+    if (!is.null(result$error)) {
+      return(div(class = "pg-note pg-warn", result$error))
+    }
+    tags$iframe(
+      class = paste("pg-preview", if (identical(input$preview_width, "phone")) "is-phone"),
+      src = paste0(prefix, "/", result$file),
+      title = "mascot_preview() page"
+    )
+  })
+  output$code_preview <- renderText({
+    if (preview_request() == 0) {
+      return("# Select mascot_preview() in the index to build a preview.")
+    }
+    built_preview()$code
+  })
+  output$preview_contrast <- renderUI({
+    req(preview_request() > 0)
+    findings <- built_preview()$contrast
+    if (is.null(findings)) {
+      return(NULL)
+    }
+    if (!nrow(findings)) {
+      return(div(class = "pg-note pg-ok", "attr(page, \"contrast\") is empty: no colour below 3:1."))
+    }
+    findings$ratio <- format(round(findings$ratio, 2), nsmall = 2)
+    tagList(div(class = "pg-note pg-warn", "attr(page, \"contrast\") lists colours below 3:1:"), data_table(findings))
+  })
+  outputOptions(output, "code_preview", suspendWhenHidden = FALSE)
+  # The Code tray follows the selected function: its Preview tab for mascot_preview(), the usual tabs otherwise.
+  observeEvent(selected_function(), {
+    if (preview_selected()) {
+      nav_show("code_tabs", "preview", select = TRUE)
+    } else {
+      if (identical(input$code_tabs, "preview")) {
+        nav_select("code_tabs", "UI")
+      }
+      nav_hide("code_tabs", "preview")
+    }
+  })
+
   # Code card
   output$code_ui <- renderText({
     current <- reactiveValuesToList(state)
@@ -1015,6 +1125,7 @@ studio_server <- function(input, output, session) {
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
       updateMascot = format_call("updateMascot", server_args(reactiveValuesToList(state), style())),
       mascot_colour_roles = format_call(fn, list(character = current_character())),
+      mascot_preview = format_call(fn, tryCatch(preview_args(), error = function(e) list())),
       mascot_example = format_call(fn, list(name = examples$name[1], run = FALSE)),
       mascot_studio = format_call(
         fn,
@@ -1032,175 +1143,6 @@ studio_server <- function(input, output, session) {
     )
   })
   outputOptions(output, "code_function", suspendWhenHidden = FALSE)
-}
-
-preview_server <- function(input, output, session) {
-  output$preview_pickers <- renderUI({
-    req(input$preview_character)
-    roles <- mascot_colour_roles(input$preview_character)
-    tagList(lapply(roles$role, function(role) {
-      div(
-        class = "pg-css",
-        colour_input(paste0("preview_", role), roles$colour[match(role, roles$role)], paste("Preview", role)),
-        tags$code(role)
-      )
-    }))
-  })
-  outputOptions(output, "preview_pickers", suspendWhenHidden = FALSE)
-  preview_colours <- reactive({
-    roles <- mascot_colour_roles(input$preview_character)
-    values <- vapply(
-      roles$role,
-      function(role) input[[paste0("preview_", role)]] %||% roles$colour[match(role, roles$role)],
-      character(1)
-    )
-    # Only the parts changed from the character's own colours go into the code.
-    changed <- tolower(values) != tolower(roles$colour)
-    stats::setNames(values[changed], roles$role[changed])
-  })
-  # Static preview
-  prefix <- paste0("studio-preview-", session$token)
-  preview_dir <- file.path(tempdir(), prefix)
-  dir.create(preview_dir, showWarnings = FALSE)
-  addResourcePath(prefix, preview_dir)
-  session$onSessionEnded(function() {
-    removeResourcePath(prefix)
-    unlink(preview_dir, recursive = TRUE)
-  })
-  preview_count <- reactiveVal(0)
-  preview_call <- reactive({
-    req(input$preview_character)
-    lines <- trimws(strsplit(input$preview_menu_items, "\n", fixed = TRUE)[[1]])
-    lines <- lines[nzchar(lines)]
-    validate(need(all(grepl("=", lines, fixed = TRUE)), "Write each menu item as id = Label."))
-    items <- stats::setNames(trimws(sub("^[^=]*=", "", lines)), trimws(sub("=.*$", "", lines)))
-    args <- list(
-      character = if (input$preview_character != defaults$character) input$preview_character,
-      mood = if (nzchar(input$preview_mood)) input$preview_mood,
-      status = if (nzchar(trimws(input$preview_status))) input$preview_status,
-      bubble = if (nzchar(trimws(input$preview_bubble))) input$preview_bubble,
-      size = if (input$preview_size != 160) as.numeric(input$preview_size),
-      placement = if (input$preview_placement != "inline") input$preview_placement,
-      theme = if (input$preview_theme_source == "custom" && length(preview_colours())) {
-        named_call("list", preview_colours())
-      },
-      motion = if (input$preview_motion) TRUE,
-      popup_menu = if (length(items)) named_call("c", items)
-    )
-    Filter(Negate(is.null), args)
-  })
-  preview_inputs <- reactive({
-    req(input$preview_character)
-    list(
-      character = input$preview_character,
-      mood = input$preview_mood,
-      status = input$preview_status,
-      bubble = input$preview_bubble,
-      size = input$preview_size,
-      placement = input$preview_placement,
-      theme_source = input$preview_theme_source,
-      colours = preview_colours(),
-      motion = input$preview_motion,
-      menu_items = input$preview_menu_items
-    )
-  })
-  debounced_preview_inputs <- debounce(preview_inputs, 400)
-  is_building <- reactiveVal(FALSE)
-  last_built_call <- reactiveVal(NULL)
-
-  observeEvent(
-    preview_inputs(),
-    {
-      if (preview_request() > 0) {
-        is_building(TRUE)
-      }
-    },
-    ignoreInit = TRUE
-  )
-
-  observeEvent(
-    debounced_preview_inputs(),
-    {
-      if (preview_request() > 0) {
-        args <- tryCatch(preview_call(), error = function(e) NULL)
-        if (!is.null(args) && !identical(args, last_built_call())) {
-          preview_request(preview_request() + 1)
-        } else {
-          is_building(FALSE)
-        }
-      }
-    },
-    ignoreInit = TRUE
-  )
-
-  output$preview_status_badge <- renderUI({
-    if (is_building()) {
-      tags$span(class = "badge text-bg-secondary pg-building", "Building\u2026")
-    }
-  })
-
-  output$code_preview <- renderText({
-    req(preview_request() > 0)
-    preview()$code
-  })
-  # This view builds on its first visit; the button forces an immediate rebuild.
-  preview_request <- reactiveVal(0)
-  observeEvent(input$preview_build, {
-    is_building(TRUE)
-    preview_request(preview_request() + 1)
-  })
-  observeEvent(input$tabs, {
-    if (input$tabs == "preview" && preview_request() == 0) preview_request(1)
-  })
-  preview <- eventReactive(preview_request(), {
-    req(preview_request() > 0)
-    args <- tryCatch(preview_call(), error = function(e) e)
-    if (inherits(args, "error")) {
-      is_building(FALSE)
-      return(list(error = cli::ansi_strip(conditionMessage(args)), code = "# Review preview arguments"))
-    }
-    page <- withCallingHandlers(
-      tryCatch(eval(as.call(c(as.name("mascot_preview"), args))), error = function(e) e),
-      warning = function(w) {
-        if (inherits(w, "mascot_contrast")) invokeRestart("muffleWarning")
-      }
-    )
-    is_building(FALSE)
-    if (inherits(page, "error")) {
-      return(list(error = cli::ansi_strip(conditionMessage(page)), code = format_call("mascot_preview", args)))
-    }
-    preview_count(isolate(preview_count()) + 1)
-    file <- sprintf("preview-%s-%d.html", session$token, isolate(preview_count()))
-    htmltools::save_html(page, file.path(preview_dir, file), libdir = "lib")
-    last_built_call(args)
-    list(file = file, contrast = attr(page, "contrast"), code = format_call("mascot_preview", args))
-  })
-  output$preview_frame <- renderUI({
-    if (preview_request() == 0) {
-      return(div(class = "pg-hint", "Choose the arguments on the left, then build the preview."))
-    }
-    result <- preview()
-    if (!is.null(result$error)) {
-      return(div(class = "pg-note pg-warn", result$error))
-    }
-    tags$iframe(
-      class = paste("pg-preview", if (input$preview_width == "phone") "is-phone"),
-      src = paste0(prefix, "/", result$file),
-      title = "mascot_preview() page"
-    )
-  })
-  output$preview_contrast <- renderUI({
-    req(preview_request() > 0)
-    findings <- preview()$contrast
-    if (is.null(findings)) {
-      return(NULL)
-    }
-    if (!nrow(findings)) {
-      return(div(class = "pg-note pg-ok", "attr(page, \"contrast\") is empty: no colour below 3:1."))
-    }
-    findings$ratio <- format(round(findings$ratio, 2), nsmall = 2)
-    tagList(div(class = "pg-note pg-warn", "attr(page, \"contrast\") lists colours below 3:1:"), data_table(findings))
-  })
 }
 
 examples_server <- function(input, output, session) {
@@ -1247,11 +1189,10 @@ server <- function(input, output, session) {
   observeEvent(
     input$tabs,
     {
-      req(input$tabs %in% c("studio", "preview", "examples"))
+      req(input$tabs %in% c("studio", "examples"))
       switch(
         input$tabs,
         studio = studio_server(input, output, session),
-        preview = preview_server(input, output, session),
         examples = examples_server(input, output, session)
       )
     },

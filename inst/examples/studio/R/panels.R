@@ -351,7 +351,7 @@ panel_wiring <- function() {
 panel_studio <- function() {
   inspector_function(
     "mascot_studio",
-    arg_field("mascot_studio", "view", selectInput("studio_view", "Start in", c("studio", "preview", "examples"))),
+    arg_field("mascot_studio", "view", selectInput("studio_view", "Start in", c("studio", "examples"))),
     arg_field(
       "mascot_studio",
       "fn",
@@ -378,17 +378,80 @@ panel_studio <- function() {
   )
 }
 
+# mascot_preview(): its arguments, read from the package for the selected character. The canvas shows
+# the page the call returns while this function is selected; the Code tray shows the call.
+panel_preview <- function(moods = mascot_moods()) {
+  fn <- "mascot_preview"
+  inspector_function(
+    fn,
+    arg_field(
+      fn,
+      "character",
+      div(class = "pg-note", "Uses the character selected under mascot_character().")
+    ),
+    arg_field(
+      fn,
+      "mood",
+      selectInput("preview_mood", "Mood", c("Every mood (NULL)" = "", stats::setNames(moods$name, moods$name)))
+    ),
+    arg_field(fn, "status", textInput("preview_status", "Status text", placeholder = "Empty: each mood")),
+    arg_field(fn, "bubble", textInput("preview_bubble", "Bubble text", placeholder = "Empty: no bubble")),
+    arg_field(
+      fn,
+      "size",
+      tagList(
+        sliderInput(
+          "preview_size",
+          "Pixels",
+          min = 48,
+          max = 240,
+          value = formals(mascot::mascot_preview)$size,
+          step = 8
+        ),
+        radioButtons(
+          "preview_width",
+          "Show the page at",
+          c("Full width" = "full", "Phone width (375 px)" = "phone"),
+          inline = TRUE
+        )
+      ),
+      note = div(class = "pg-note", "Phone width changes the page width; the selected pixel size stays the same.")
+    ),
+    arg_field(fn, "placement", selectInput("preview_placement", "Placement", c("inline", corners))),
+    arg_field(
+      fn,
+      "theme",
+      tagList(
+        radioButtons(
+          "preview_theme_source",
+          "Colours",
+          c("Character's own colours" = "own", "Your colours" = "custom")
+        ),
+        conditionalPanel("input.preview_theme_source == 'custom'", uiOutput("preview_pickers"))
+      )
+    ),
+    arg_field(fn, "motion", input_switch("preview_motion", "Animate", FALSE)),
+    arg_field(
+      fn,
+      "popup_menu",
+      textAreaInput("preview_menu_items", "One item per line: id = Label", "", rows = 3),
+      note = uiOutput("preview_problem")
+    ),
+    actionButton("preview_build", "Rebuild now", class = "btn-outline-primary btn-sm")
+  )
+}
+
+# The two example functions open the Examples view, which has its own controls.
 panel_views <- function() {
-  tagList(lapply(c("mascot_preview", "mascot_examples", "mascot_example"), function(fn) {
-    view <- if (fn == "mascot_preview") "preview" else "examples"
+  tagList(lapply(c("mascot_examples", "mascot_example"), function(fn) {
     inspector_function(
       fn,
       tags$a(
         class = "btn btn-outline-primary btn-sm",
-        href = paste0("?view=", view),
+        href = "?view=examples",
         target = "_blank",
         rel = "noopener",
-        paste("Open", if (view == "preview") "Static preview" else "Examples")
+        "Open Examples"
       ),
       div(class = "pg-note", "This view has its own controls and opens in a new tab.")
     )

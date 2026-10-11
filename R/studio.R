@@ -3,8 +3,8 @@
 #' Explore the package's functions, try their controls and copy the resulting
 #' code. This first interface is experimental and may change before CRAN.
 #' Choices belong to the returned app; no global options are changed.
-#' @param view A string: `"studio"` (the default), `"preview"` for static
-#'   previews, or `"examples"` for the bundled examples.
+#' @param view A string: `"studio"` (the default) or `"examples"` for the
+#'   bundled examples.
 #' @param ... Must be empty. All arguments after `view` must be named.
 #' @param fn A function name in the studio's guide, without parentheses.
 #'   `NULL` starts with `mascot_mood()`. Used in the studio view only.
@@ -28,7 +28,7 @@
 #' app <- mascot_studio(fn = "mascot_theme", run = FALSE)
 #' inherits(app, "shiny.appobj")
 mascot_studio <- function(view = "studio", ..., fn = NULL, character = formals(mascot)$character, run = TRUE) {
-  checkmate::assert_choice(view, c("studio", "preview", "examples"))
+  checkmate::assert_choice(view, c("studio", "examples"))
   checkmate::assert_list(list(...), len = 0)
   checkmate::assert_string(fn, min.chars = 1, null.ok = TRUE)
   checkmate::assert_string(character, min.chars = 1)

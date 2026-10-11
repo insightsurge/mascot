@@ -1,6 +1,6 @@
 describe("mascot_studio()", {
   it("validates each argument and requires later arguments to be named", {
-    for (bad in list(NULL, NA_character_, 42, "unknown", c("studio", "preview"))) {
+    for (bad in list(NULL, NA_character_, 42, "unknown", "preview", c("studio", "examples"))) {
       expect_error(mascot_studio(view = bad, run = FALSE), "Assertion on 'view' failed")
     }
     expect_error(mascot_studio("studio", "mascot_theme", run = FALSE), "Assertion on 'list")
@@ -19,22 +19,21 @@ describe("mascot_studio()", {
     skip_if_not_installed("bslib")
     before <- options()
     studio <- mascot_studio(fn = "mascot_theme", run = FALSE)
-    preview <- mascot_studio("preview", run = FALSE)
     expect_s3_class(studio, "shiny.appobj")
     page <- function(app, query = "") {
       as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
     }
     expect_match(page(studio), 'data-initial-function="mascot_theme"', fixed = TRUE)
-    expect_match(page(preview), 'id="preview_build"', fixed = TRUE)
-    expect_false(grepl('id="helper"', page(preview), fixed = TRUE))
+    # mascot_preview() is an entry of the studio, not a view of its own.
+    expect_match(page(studio), 'data-value="mascot_preview"', fixed = TRUE)
+    expect_match(page(studio), 'id="preview_build"', fixed = TRUE)
+    expect_false(grepl("view=preview", page(studio), fixed = TRUE))
     examples <- mascot_studio("examples", run = FALSE)
     expect_match(page(examples), 'id="example_name"', fixed = TRUE)
-    for (other in list(preview, examples)) {
-      expect_match(page(other), 'href="?view=studio"', fixed = TRUE)
-      expect_match(page(other, "view=studio"), 'id="helper"', fixed = TRUE)
-      expect_false(grepl('id="preview_build"', page(other, "view=studio"), fixed = TRUE))
-      expect_false(grepl('id="example_name"', page(other, "view=studio"), fixed = TRUE))
-    }
+    expect_match(page(examples), 'href="?view=studio"', fixed = TRUE)
+    expect_false(grepl('id="helper"', page(examples), fixed = TRUE))
+    expect_match(page(examples, "view=studio"), 'id="helper"', fixed = TRUE)
+    expect_false(grepl('id="example_name"', page(examples, "view=studio"), fixed = TRUE))
     expect_identical(options(), before)
   })
   it("passes its app to Shiny when launched interactively", {
@@ -63,17 +62,19 @@ describe("mascot_studio()", {
     )
     expect_false(app$get_js("document.querySelector('[data-function=mascot_theme]').hidden"))
     expect_identical(app$get_value(input = "character"), formals(mascot)$character)
-    preview <- shinytest2::AppDriver$new(function() {
-      library(mascot)
-      mascot_studio("preview", run = FALSE)
-    })
+    # Starting on mascot_preview() shows its page on the canvas in place of the live mascot.
+    preview <- shinytest2::AppDriver$new(
+      function() {
+        library(mascot)
+        mascot_studio(fn = "mascot_preview", run = FALSE)
+      },
+      width = 1440,
+      height = 900
+    )
     withr::defer(preview$stop())
-    preview$wait_for_js("!!document.querySelector('iframe.pg-preview')")
-    expect_identical(preview$get_js("document.querySelectorAll('#helper').length"), 0L)
-    preview$click(selector = 'a[href="?view=studio"]')
-    preview$wait_for_js("!!document.getElementById('helper') && !!document.getElementById('studio_inspector')")
-    expect_identical(preview$get_js("new URLSearchParams(location.search).get('view')"), "studio")
-    expect_identical(preview$get_js("document.querySelectorAll('#preview_build').length"), 0L)
+    preview$wait_for_js("!!document.querySelector('iframe.pg-preview')", timeout = 15000)
+    expect_true(preview$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
+    expect_false(preview$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     examples <- shinytest2::AppDriver$new(function() {
       library(mascot)
       mascot_studio("examples", run = FALSE)

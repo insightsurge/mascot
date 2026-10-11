@@ -270,6 +270,43 @@
   overflow-wrap: anywhere;
 }
 
+/* Help-page text (tools::Rd2HTML() output) in popovers, cards and the Guide. */
+.pg-help {
+  font-size: 0.85rem;
+}
+
+.pg-help p {
+  margin: 0 0 0.5rem;
+}
+
+.pg-help > :last-child {
+  margin-bottom: 0;
+}
+
+.pg-help pre {
+  font-size: 0.8rem;
+  background: var(--bs-tertiary-bg);
+  border-radius: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pg-help-heading {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0.9rem 0 0.35rem;
+}
+
+.pg-help-popover {
+  --bs-popover-max-width: 30rem;
+}
+
+.pg-help-popover .popover-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
 .pg-args {
   display: grid;
   gap: 0.6rem;
@@ -561,26 +598,43 @@
   font-size: 0.9rem;
 }
 
-/* Static preview */
+/* The page mascot_preview() returns, in place of the live mascot on the canvas. */
+.pg-canvas [hidden] {
+  display: none;
+}
+
+/* The page fills the canvas: the head keeps its height and the frame takes the rest. */
+.pg-preview-stage {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  width: 100%;
+  min-height: 16rem;
+}
+
+.pg-preview-frame {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.pg-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+  font-size: 0.8rem;
+}
+
 .pg-preview {
   width: 100%;
-  height: 34rem;
+  flex: 1 1 auto;
+  min-height: 14rem;
   border: 1px solid var(--bs-border-color);
   border-radius: 0.5rem;
-  margin: 0.75rem 0;
-}
-
-.pg-card-head .shiny-input-container {
-  width: auto;
-  margin: 0;
-}
-
-.pg-card-head .shiny-options-group {
-  margin: 0;
-}
-
-.pg-card-head .form-check-inline {
-  margin-bottom: 0;
+  margin: 0.5rem 0 0;
+  background: var(--bs-body-bg);
 }
 
 .pg-preview.is-phone {
@@ -807,6 +861,10 @@
   font-size: 0.8rem;
   border: 0;
   padding: 0;
+}
+
+.pg-arg > .pg-help {
+  flex: 1 1 100%;
 }
 
 .pg-inspector-function[hidden] {

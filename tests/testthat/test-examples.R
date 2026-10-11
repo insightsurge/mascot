@@ -28,6 +28,7 @@ describe("mascot_examples()", {
             "R/code.R",
             "R/data.R",
             "R/guide.R",
+            "R/help.R",
             "R/panels.R",
             "R/ui.R",
             "www/studio.css",
@@ -60,21 +61,73 @@ describe("mascot_examples()", {
       }
     }
   })
-  it("explains every exported function and argument in the studio", {
+  it("keeps in guide.R only what the help pages do not have", {
     guide <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "guide.R"), envir = guide)
     exports <- getNamespaceExports("mascot")
     expect_setequal(names(guide$playground_guide), exports)
     for (fn in exports) {
       entry <- guide$playground_guide[[fn]]
+      # The category, the vignette section and, per argument, where it can be tried: no description, argument
+      # text or return value (those are read from the help page).
+      expect_setequal(names(entry), c("category", "vignette", "args"))
       expect_setequal(as.character(names(entry$args)), as.character(names(formals(getExportedValue("mascot", fn)))))
       expect_true(entry$category %in% names(guide$playground_categories), info = fn)
-      expect_true(all(nzchar(c(entry$what, entry$returns))), info = fn)
+      expect_true(nzchar(entry$vignette), info = fn)
       for (arg in names(entry$args)) {
-        expect_true(nzchar(entry$args[[arg]]$hint), info = paste(fn, arg))
+        expect_true(all(names(entry$args[[arg]]) %in% "try"), info = paste(fn, arg))
         expect_true(is.null(entry$args[[arg]]$try) || entry$args[[arg]]$try %in% names(guide$playground_categories))
       }
     }
+    # Everything left is a short label, never a sentence of explanation.
+    prose <- Filter(function(text) nchar(text) > 40, unlist(lapply(guide$playground_guide, unlist)))
+    expect_length(prose, 0)
+  })
+  it("reads every description, argument and return value from the package's help pages", {
+    skip_if_not_installed("htmltools")
+    help <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), envir = help)
+    # Letters and digits only, so markup, quotes and line wrapping do not matter.
+    plain <- function(text) tolower(gsub("[^[:alnum:]]", "", text))
+    for (fn in getNamespaceExports("mascot")) {
+      rd <- help$help_rd(fn)
+      page <- help$help_page(fn)
+      file <- withr::local_tempfile(fileext = ".txt")
+      suppressMessages(tools::Rd2txt(rd, out = file, options = list(underline_titles = FALSE)))
+      reference <- plain(paste(readLines(file, warn = FALSE), collapse = " "))
+      expect_true(nzchar(page$title), info = fn)
+      expect_true(grepl(plain(page$title), reference, fixed = TRUE), info = fn)
+      expect_true(grepl(plain(help$html_text(page$description)), reference, fixed = TRUE), info = fn)
+      expect_true(grepl(plain(help$html_text(page$value)), reference, fixed = TRUE), info = fn)
+      if (!is.null(page$details)) {
+        expect_true(grepl(plain(help$html_text(page$details)), reference, fixed = TRUE), info = fn)
+      }
+      for (arg in names(formals(getExportedValue("mascot", fn)))) {
+        text <- help$help_arg(fn, arg)
+        expect_false(is.null(text), info = paste(fn, arg))
+        expect_true(grepl(plain(help$html_text(text)), reference, fixed = TRUE), info = paste(fn, arg))
+      }
+    }
+  })
+  it("renders help text as HTML and finds the help example that supplies an argument", {
+    help <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), envir = help)
+    expect_error(help$help_page(42), "string")
+    expect_error(help$help_arg("mascot_bubble", 42), "string")
+    expect_error(help$help_rd("not_a_mascot_function"), "no help page")
+    expect_error(help$help_arg_example("mascot_bubble", NA_character_), "Assertion on 'arg' failed")
+    expect_error(help$first_sentence(42), "string")
+    expect_error(help$vignette_anchor(42), "string")
+    expect_identical(help$html_text("<p>0&ndash;255 &amp; &#39;x&#39;</p>"), "0\u2013255 & 'x'")
+    expect_identical(help$first_sentence("One. Two."), "One.")
+    expect_identical(help$first_sentence("No full stop"), "No full stop")
+    expect_identical(help$vignette_anchor("Theme and light/dark mode"), "theme-and-lightdark-mode")
+    expect_match(help$vignette_url("Motion"), "^https://.*#motion$")
+    html <- as.character(help$help_arg("mascot_bubble", "duration"))
+    expect_match(html, "<code>Inf</code>", fixed = TRUE)
+    expect_false(grepl("<h3", html, fixed = TRUE))
+    expect_true(length(help$help_examples("mascot_bubble")) > 0)
+    expect_match(help$help_arg_example("mascot_bubble", "duration"), "duration =", fixed = TRUE)
   })
 })
 
@@ -208,6 +261,7 @@ describe("the studio's controls", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     ui <- new.env()
     sys.source(file.path(dir, "R", "guide.R"), envir = ui)
+    sys.source(file.path(dir, "R", "help.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     expect_error(ui$argument_default(42, "position"), "string")
@@ -232,7 +286,12 @@ describe("the studio's controls", {
         field <- ui$arg_field(fn, arg, htmltools::tags$span("Control"))
         expect_identical(field$children[[1]]$children[[2]]$children[[2]], expected, info = paste(fn, arg))
         popover <- ui$arg_popover_body(fn, arg)
-        expect_identical(popover[[3]]$children[[2]]$children[[1]], expected, info = paste(fn, arg))
+        expect_identical(popover[[2]]$children[[2]]$children[[1]], expected, info = paste(fn, arg))
+        # The popover carries the argument's whole help text, read from the help page.
+        expect_true(
+          grepl(as.character(ui$help_arg(fn, arg)), as.character(popover), fixed = TRUE),
+          info = paste(fn, arg)
+        )
         block <- ui$arg_block(fn, arg)
         expect_identical(block$children[[2]]$children[[2]]$children[[1]], expected, info = paste(fn, arg))
       }
@@ -245,6 +304,7 @@ describe("the studio's controls", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     ui <- new.env()
     sys.source(file.path(dir, "R", "guide.R"), envir = ui)
+    sys.source(file.path(dir, "R", "help.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
@@ -263,6 +323,10 @@ describe("the studio's controls", {
       expect_match(html, paste0("Example: how to call ", fn, "()"), fixed = TRUE)
       expect_match(html, 'id="code_function"', fixed = TRUE)
       expect_match(html, "pg-guide-piece", fixed = TRUE)
+      # The Guide shows the help page's description, details and value; each argument's text is in Controls.
+      expect_true(grepl(as.character(ui$help_page(fn)$description), html, fixed = TRUE), info = fn)
+      expect_true(grepl(as.character(ui$help_page(fn)$value), html, fixed = TRUE), info = fn)
+      expect_false(grepl("Argument details", html, fixed = TRUE), info = fn)
     }
   })
   it("has a control on the page, or a stated reason, for every exported argument", {
@@ -274,7 +338,7 @@ describe("the studio's controls", {
     data <- new.env()
     sys.source(file.path(dir, "R", "data.R"), envir = data)
     app <- shiny::shinyAppDir(dir)
-    pages <- lapply(c("", "view=preview", "view=examples"), function(query) {
+    pages <- lapply(c("", "view=examples"), function(query) {
       as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
     })
     for (page in pages) {
@@ -286,14 +350,16 @@ describe("the studio's controls", {
     expect_match(pages[[1]], 'id="studio_panels_card"', fixed = TRUE)
     expect_false(grepl('id="learn_card"', pages[[1]], fixed = TRUE))
     expect_false(grepl('id="code_dock"', pages[[1]], fixed = TRUE))
-    expect_match(pages[[1]], 'href="?view=preview"', fixed = TRUE)
+    expect_false(grepl("view=preview", html, fixed = TRUE))
+    expect_false(grepl('id="code_toggle"', pages[[1]], fixed = TRUE))
     expect_match(pages[[1]], 'href="?view=examples"', fixed = TRUE)
     expect_match(pages[[1]], 'href="https://github.com/insightsurge/mascot"', fixed = TRUE)
     expect_match(pages[[1]], 'href="https://mascot-pkg.web.app/"', fixed = TRUE)
     expect_match(pages[[1]], "Links", fixed = TRUE)
-    expect_false(grepl('id="preview_body"', pages[[1]], fixed = TRUE))
+    # mascot_preview() is in the studio page: its canvas part and its controls.
+    expect_match(pages[[1]], 'data-canvas="preview"', fixed = TRUE)
+    expect_match(pages[[1]], 'id="preview_menu_items"', fixed = TRUE)
     expect_false(grepl('id="helper"', pages[[2]], fixed = TRUE))
-    expect_false(grepl('id="helper"', pages[[3]], fixed = TRUE))
     expect_false(grepl("Use the studio's", pages[[2]], fixed = TRUE))
     expect_false(grepl("Open in a new tab", pages[[2]], fixed = TRUE))
     for (fn in getNamespaceExports("mascot")) {
@@ -398,7 +464,9 @@ describe("bundled example apps", {
     expect_true(app$get_js(
       "document.getElementById('code_tray_body').contains(document.getElementById('studio_panels_card')) && !document.getElementById('code_tray_header').contains(document.querySelector('.bslib-full-screen-enter')) && document.querySelector('#studio_panels_card .bslib-full-screen-enter') !== null"
     ))
-    expect_identical(app$get_js("document.getElementById('code_toggle').textContent.trim()"), "Code")
+    # The tray's own header bar is the only Code control: there is no toolbar button.
+    expect_identical(app$get_js("document.querySelectorAll('#code_toggle').length"), 0L)
+    expect_identical(app$get_js("document.getElementById('code_tray_toggle').textContent.trim()"), "Code")
     expect_true(app$get_js(
       "document.getElementById('code_tray_body').contains(document.getElementById('code_style')) && !document.querySelector('.pg-toolbar #code_style')"
     ))
@@ -468,7 +536,7 @@ describe("bundled example apps", {
     app$run_js(
       "for (const button of [...document.querySelectorAll('.pg-index-link')].slice(0, 2)) button.querySelector('span').style.removeProperty('width')"
     )
-    expect_identical(app$get_js("document.getElementById('code_toggle').getAttribute('aria-expanded')"), "true")
+    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "true")
     # The canvas includes the reserved bubble space and status with either panel open.
     canvas_fits <- "(() => {
       const canvas = document.getElementById('studio_canvas').getBoundingClientRect();
@@ -596,6 +664,8 @@ describe("bundled example apps", {
     app$wait_for_js("document.getElementById('studio_panels_card').getAttribute('data-full-screen') === 'false'")
     app$wait_for_js(canvas_fits)
     expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-index-link code')).whiteSpace"), "nowrap")
+    # The dock's height transitions after full screen ends: measure it only once the transition has finished.
+    app$wait_for_js("document.getElementById('studio_dock').getAnimations().length === 0")
     grip_height <- app$get_js("document.getElementById('studio_dock').getBoundingClientRect().height")
     app$run_js(
       "document.getElementById('dock_grip').dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}))"
@@ -604,10 +674,15 @@ describe("bundled example apps", {
     app$wait_for_js(canvas_fits)
     expect_true(app$get_js(canvas_fits))
     expect_identical(
-      app$get_js("[...document.querySelectorAll('#code_tabs .nav-link')].map(el => el.textContent.trim()).join('|')"),
+      app$get_js(
+        "[...document.querySelectorAll('#code_tabs .nav-link')].filter(el => el.getClientRects().length > 0)
+        .map(el => el.textContent.trim()).join('|')"
+      ),
       "UI|Server|App|Last|Log"
     )
-    expect_true(app$get_js("document.querySelector('a[href=\"?view=preview\"]').target === '_blank'"))
+    # There is no Static preview view: mascot_preview() is an entry of the function index.
+    expect_identical(app$get_js("document.querySelectorAll('a[href=\"?view=preview\"]').length"), 0L)
+    expect_identical(app$get_js("document.querySelectorAll('.pg-index-link[data-value=mascot_preview]').length"), 1L)
     expect_true(app$get_js("document.querySelector('a[href=\"?view=examples\"]').target === '_blank'"))
     app$run_js(
       "[...document.querySelectorAll('.dropdown-toggle')].find(el => el.textContent.includes('Links')).click()"
@@ -633,13 +708,20 @@ describe("bundled example apps", {
       "!document.querySelector('#studio_inspector [data-function=mascot_status]').hidden && document.getElementById('status_text').getClientRects().length > 0"
     ))
     expect_true(app$get_js("document.querySelector('#studio_inspector [data-function=mascot_mood]').hidden"))
-    expect_true(app$get_js(
+    # Its title and return value are the help page's own words.
+    status_help <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), envir = status_help)
+    status_page <- status_help$help_page("mascot_status")
+    expect_true(app$get_js(sprintf(
       "(() => {
       const panel = document.querySelector('#studio_inspector [data-function=mascot_status]');
-      return panel.textContent.includes('Usage') && panel.textContent.includes('Returns:') &&
-        panel.textContent.includes('always visible line');
-    })()"
-    ))
+      const text = panel.textContent.replace(/\\s+/g, ' ');
+      return text.includes('Usage') && text.includes('Returns:') &&
+        text.includes(%s) && text.includes(%s);
+    })()",
+      jsonlite::toJSON(status_page$title, auto_unbox = TRUE),
+      jsonlite::toJSON(status_help$html_text(status_page$value), auto_unbox = TRUE)
+    )))
     app$set_inputs(status_text = "Checking 120 rows")
     app$wait_for_js(paste0(state, ".status.text === 'Checking 120 rows'"))
     select_function("mascot_bubble")
@@ -781,7 +863,6 @@ describe("bundled example apps", {
     app$wait_for_js(tray_settled)
     app$wait_for_js(sprintf("document.getElementById('studio_canvas').clientHeight > %f", expanded_canvas_height))
     expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "false")
-    expect_identical(app$get_js("document.getElementById('code_toggle').getAttribute('aria-expanded')"), "false")
     expect_identical(
       app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-controls')"),
       "code_tray_body"
@@ -804,28 +885,30 @@ describe("bundled example apps", {
     expect_true(app$get_js(
       "!document.getElementById('code_tray_body').inert && getComputedStyle(document.getElementById('dock_grip')).display !== 'none'"
     ))
-    app$click(selector = "#code_toggle")
+    # The header bar itself collapses and expands the tray, and the chevron button does the same from the keyboard.
+    app$click(selector = "#code_tray_header")
     app$wait_for_js("document.getElementById('studio_dock').classList.contains('is-closed')")
-    expect_identical(app$get_js("document.getElementById('code_toggle').getAttribute('aria-expanded')"), "false")
     expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "false")
-    expect_identical(app$get_js("document.getElementById('code_toggle').textContent.trim()"), "Code")
-    app$click(selector = "#code_toggle")
+    app$click(selector = "#code_tray_header")
     app$wait_for_js("!document.getElementById('studio_dock').classList.contains('is-closed')")
     expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "true")
     expect_true(app$get_js("JSON.parse(sessionStorage.getItem('mascot-studio-tray')).open === true"))
     expect_true(app$get_js("JSON.parse(sessionStorage.getItem('mascot-studio-tray')).height > 0"))
-    # Each URL starts a new Shiny session and builds only its own view.
-    app$run_js("window.location.search = '?view=preview'")
+    # mascot_preview() is a normal entry of the index: its page replaces the live mascot on the canvas, its
+    # arguments are in Controls and its call is in the Code tray. Selecting another function brings the mascot back.
+    expect_false(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
+    expect_true(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
+    app$click(selector = '.pg-index-link[data-value="mascot_preview"]')
     app$wait_for_js("!!document.querySelector('iframe.pg-preview')", timeout = 15000)
-    expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
-    expect_identical(
-      app$get_js("document.querySelectorAll('#preview_guide_card button, #preview_guide_card input').length"),
-      0L
-    )
+    expect_true(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
+    expect_false(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     expect_true(app$get_js(
-      "!!document.getElementById('preview_body') && !!document.getElementById('preview_menu_items')"
+      "!!document.getElementById('preview_menu_items') &&
+      !document.querySelector('#studio_inspector [data-function=mascot_preview]').hidden"
     ))
-    # The pickers are drawn by the server for the preview's character; change them once Shiny has bound them.
+    expect_identical(app$get_js("document.querySelector('#code_tabs .nav-link.active').textContent.trim()"), "Preview")
+    app$wait_for_js("document.getElementById('code_preview').textContent.includes('mascot_preview(')")
+    # The colour pickers are drawn by the server for the selected character; change them once Shiny has bound them.
     app$wait_for_js(
       "Shiny.shinyapp.$inputValues.preview_body !== undefined &&
       Shiny.shinyapp.$inputValues.preview_rim !== undefined",
@@ -840,44 +923,54 @@ describe("bundled example apps", {
     })()"
     )
     app$run_js("Shiny.setInputValue('preview_theme_source', 'custom')")
-    # A view opened by URL is a new page: shinytest2's input helpers stay with the first page, so use Shiny's own API.
     app$run_js(
       "Shiny.setInputValue('preview_menu_items', 'about = About the preview');
       document.querySelector('input[name=preview_width][value=phone]').click();"
     )
-    # ColourBinding debounces input events by 250 ms; the phone radio sends immediately. Wait for the requested
-    # colours to be sent to Shiny before Build captures them in the last-built preview and code.
+    # No button is pressed: the page rebuilds by itself once the controls settle, and the code matches it.
     app$wait_for_js(
-      "Shiny.shinyapp.$inputValues.preview_body === '#1f6feb' &&
-      Shiny.shinyapp.$inputValues.preview_rim === '#966600' &&
-      Shiny.shinyapp.$inputValues.preview_theme_source === 'custom' &&
-      Shiny.shinyapp.$inputValues.preview_menu_items === 'about = About the preview'",
+      "document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"') &&
+      document.getElementById('code_preview').textContent.includes('About the preview')",
       timeout = 15000
     )
-    app$wait_for_js("document.querySelector('iframe.pg-preview').classList.contains('is-phone')")
-    app$run_js("document.getElementById('preview_build').click()")
-    app$wait_for_js(
-      "document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"')",
-      timeout = 15000
-    )
-    app$wait_for_js("document.getElementById('code_preview').textContent.includes('About the preview')")
     app$wait_for_js("document.querySelector('iframe.pg-preview').classList.contains('is-phone')")
     expect_match(
       app$get_js("document.getElementById('code_preview').textContent"),
       'popup_menu = c(about = "About the preview")',
       fixed = TRUE
     )
-    # Changing a control automatically updates the preview code via debounced rebuild
-    app$run_js("Shiny.setInputValue('preview_status', 'Auto build status');")
+    # A visible "Building" badge shows between a change and the rebuilt page.
+    app$run_js(
+      "window.sawBuilding = false;
+      new MutationObserver(() => {
+        if (document.querySelector('.pg-building')) window.sawBuilding = true;
+      }).observe(document.body, {childList: true, subtree: true});
+      Shiny.setInputValue('preview_status', 'Auto build status');"
+    )
     app$wait_for_js(
       "document.getElementById('code_preview').textContent.includes('status = \"Auto build status\"')",
       timeout = 15000
     )
+    app$wait_for_js("document.querySelectorAll('.pg-building').length === 0", timeout = 15000)
+    expect_true(app$get_js("window.sawBuilding"))
     expect_match(
       app$get_js("document.getElementById('code_preview').textContent"),
       'status = "Auto build status"',
       fixed = TRUE
     )
+    # Another function brings the live mascot back, in the state it was left in.
+    app$click(selector = '.pg-index-link[data-value="mascot_mood"]')
+    app$wait_for_js("document.querySelector('[data-canvas=preview]').hidden")
+    expect_false(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
+    expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 1L)
+    expect_identical(
+      app$get_js(
+        "[...document.querySelectorAll('#code_tabs .nav-link')].filter(el => el.getClientRects().length > 0)
+        .map(el => el.textContent.trim()).join('|')"
+      ),
+      "UI|Server|App|Last|Log"
+    )
+    # Each URL starts a new Shiny session and builds only its own view.
     app$run_js("window.location.search = '?view=examples'")
     app$wait_for_js("!!document.querySelector('#example_code')", timeout = 15000)
     expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
@@ -997,16 +1090,17 @@ describe("studio round 4 regression guards", {
     app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
     env <- environment(app$serverFuncSource())
     map <- get("placement_map", envir = env)
-    guide <- get("the_guide", envir = env)
+    hint <- get("arg_hint", envir = env)
     for (corner in c("top-left", "top-right", "bottom-left", "bottom-right")) {
       html <- as.character(map(corner, FALSE, "Review character"))
       expect_match(html, sprintf('data-value="%s"[^>]*>\\s*Review character\\s*</span>', corner))
       expect_false(grepl("<button", html, fixed = TRUE))
     }
     expect_match(as.character(map("inline", FALSE, "Review character")), "Review character, inline")
-    hint <- guide("mascot_character")$args$name$hint
-    expect_false(grepl("Selected:", hint, fixed = TRUE))
-    expect_match(hint, "character selector", fixed = TRUE)
+    # The one-line hint is the first sentence of the argument's help text, so it cannot depend on the selection.
+    text <- hint("mascot_character", "name")
+    expect_false(grepl("Selected:", text, fixed = TRUE))
+    expect_match(text, "built-in character", fixed = TRUE)
   })
   it("gets character labels and defaults from the package", {
     dir <- dirname(mascot_example("studio", run = FALSE))
@@ -1198,13 +1292,37 @@ describe("studio state and built previews", {
       expect_identical(modal_messages[[3]]$type, "remove")
     })
   })
-  it("shows the call that built the preview until another build is requested", {
+  it("shows the call that built the preview and rebuilds it after a pause", {
     skip_if_not_installed("bslib")
     app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
     env <- environment(app$serverFuncSource())
-    shiny::testServer(env$preview_server, {
+    shiny::testServer(env$studio_server, {
       session$setInputs(
-        preview_character = formals(mascot)$character,
+        character = formals(mascot)$character,
+        mood = "idle",
+        status_text = "",
+        code_style = "short",
+        bubble_text = "Hello",
+        bubble_html = FALSE,
+        bubble_forever = FALSE,
+        bubble_duration = 5,
+        bubble_closable = TRUE,
+        theme_source = "own",
+        theme_mode = "auto",
+        css_roles = character(),
+        css_accent = "#123456",
+        position = "inline",
+        minimise = FALSE,
+        drag = "FALSE",
+        size_unit = "px",
+        size_px = 160,
+        small_on = FALSE,
+        animate = TRUE,
+        swap = TRUE,
+        menu_on = FALSE,
+        menu_items = "",
+        menu_direction = "auto",
+        mistake = "Misspell an argument",
         preview_theme_source = "own",
         preview_mood = "idle",
         preview_status = "",
@@ -1213,18 +1331,32 @@ describe("studio state and built previews", {
         preview_placement = "inline",
         preview_motion = FALSE,
         preview_menu_items = "",
-        preview_width = "full",
-        tabs = "preview"
+        preview_width = "full"
       )
+      # Nothing is built until mascot_preview() is selected.
+      expect_match(output$code_preview, "Select mascot_preview()", fixed = TRUE)
+      session$setInputs(select_function = "mascot_preview")
+      session$elapse(500)
       built <- output$code_preview
+      expect_match(built, "mascot_preview(", fixed = TRUE)
       expect_false(grepl("theme =", built, fixed = TRUE))
+      expect_identical(output$code_function, built)
+      expect_false(is_building())
       session$setInputs(preview_mood = "happy")
-      expect_identical(output$code_preview, built)
-      session$setInputs(preview_build = 1)
+      # The new arguments are pending (Building...) until the pause ends; then the page and its code follow.
+      expect_true(is_building())
+      session$elapse(500)
+      expect_false(is_building())
       expect_match(output$code_preview, 'mood = "happy"', fixed = TRUE)
       expect_false(identical(output$code_preview, built))
       session$setInputs(preview_status = "Auto rebuild status")
       session$elapse(500)
+      expect_match(output$code_preview, 'status = "Auto rebuild status"', fixed = TRUE)
+      expect_true(file.exists(file.path(preview_dir, sprintf("preview-%s-%d.html", session$token, preview_count()))))
+      # A menu line that is not "id = Label" is reported and nothing is rebuilt from it.
+      session$setInputs(preview_menu_items = "no label here")
+      session$elapse(500)
+      expect_match(output$preview_problem$html, "id = Label", fixed = TRUE)
       expect_match(output$code_preview, 'status = "Auto rebuild status"', fixed = TRUE)
     })
   })

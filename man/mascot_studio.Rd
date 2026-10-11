@@ -13,8 +13,8 @@ mascot_studio(
 )
 }
 \arguments{
-\item{view}{A string: \code{"studio"} (the default), \code{"preview"} for static
-previews, or \code{"examples"} for the bundled examples.}
+\item{view}{A string: \code{"studio"} (the default) or \code{"examples"} for the
+bundled examples.}
 
 \item{...}{Must be empty. All arguments after \code{view} must be named.}
 

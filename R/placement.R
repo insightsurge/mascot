@@ -1,29 +1,27 @@
 #' Place a mascot in a floating corner or inline
 #'
-#' Floating mascots sit in a corner (by default, `"bottom-right"`), 1rem from
-#' the window's edges, above fixed navigation bars and below modals.
-#' Bottom-right mascots move above Shiny notifications while they are visible.
-#' Floating mascots hide with their original tab or container. Inline mascots sit
-#' where they are placed in the page flow. Switching back to inline returns the
+#' Floating mascots sit in a window corner (by default, `"bottom-right"`), 1rem
+#' from the window edges, above navigation bars and below modals. Mascots placed
+#' in the bottom-right corner move above Shiny notifications while visible.
+#' Floating mascots hide when their container or tab is hidden. Inline mascots sit
+#' in the page flow where mascot() is placed. Switching back to inline returns the
 #' mascot to its original place in the UI.
 #'
 #' Floating mascots show a minimise control by default; set `minimise = FALSE`
-#' to hide it. The neutral control appears on hover or keyboard focus. Touch screens
-#' keep it visible; an open mascot menu hides it. Its border has a quiet glow.
-#' A minimised mascot is a round restore button in the character's colours.
-#' Its status remains available to screen readers. Updates still apply; bubble
-#' countdowns pause until restored. Click, Enter or Space restores the mascot.
-#' Hover and keyboard focus add a glow and a small growth transition; reduced
-#' motion keeps only the glow.
+#' to hide it. The control appears on hover or keyboard focus, remains visible on
+#' touch screens, and hides while the menu is open. A minimised mascot is a
+#' round restore button in the character's colours. Its status remains available
+#' to screen readers, updates still apply, and bubble countdowns pause until
+#' restored. Click, Enter, or Space restores the mascot.
 #'
 #' @section Dragging:
 #' With `drag = "snap"` or `drag = "free"`, visitors can drag a floating mascot
-#' by its drawing, with a mouse, pen or finger. A click without movement still
-#' opens the mascot's menu. While minimised, drag the round restore button:
-#' a click without movement restores the mascot, but a drag never restores it.
-#' After a snap, restoring shows the mascot in the new corner. The minimise
-#' button, the bubble's close button and links in the bubble do not start a drag.
-#' The bubble and menu move with the mascot.
+#' by its drawing, with a mouse, pen, or finger. A click without movement opens
+#' the mascot's menu. While minimised, visitors can drag the round restore
+#' button: a click restores the mascot, but a drag leaves it minimised in its
+#' new position. After a snap, restoring shows the mascot in the new corner.
+#' The minimise button, bubble close button, and links in the bubble do not
+#' start a drag. The bubble and menu move with the mascot.
 #'
 #' * `"snap"`: on release the mascot moves to the nearest corner, which becomes
 #'   its `position`, so its bubble opens towards the page centre. Reduced motion,
@@ -32,29 +30,40 @@
 #'   window, and stays inside when the window is resized.
 #'
 #' In Shiny each drop sets `input$<id>_position`, read in the module that owns
-#' the mascot, like `input$<id>_menu`: the corner name, such as `"top-left"`,
-#' after a snap, or a list with `x` and `y`, the mascot's top-left corner in
-#' CSS pixels from the window's top-left, after a free drop. A later
-#' [updateMascot()] with `placement` replaces the dragged position. Dragging
-#' has no keyboard alternative; the minimise control stays reachable by keyboard.
-#' Remembering a position between visits is the app's job: for example, save
-#' the corner and pass it back as `position` next time.
+#' the mascot: the corner name, such as `"top-left"`, after a snap, or a list
+#' with `x` and `y` CSS pixels from the window top-left after a free drop. A later
+#' [updateMascot()] with `placement` replaces the dragged position. Dragging has
+#' no keyboard alternative; the minimise control stays reachable by keyboard.
+#' Storing a position between visits is the app's responsibility.
 #' @param position A corner to float the mascot (`"bottom-right"`, the default;
-#'   `"top-left"`, `"top-right"` or `"bottom-left"`), or `"inline"` to sit
-#'   where the mascot is placed in the UI. `NULL` is not accepted.
+#'   `"top-left"`, `"top-right"`, or `"bottom-left"`), or `"inline"` to sit in
+#'   the page flow. `NULL` is not accepted.
 #' @param minimise A logical flag, defaulting to `TRUE`, to show a minimise
 #'   control on a floating mascot. Has no effect inline: an explicitly supplied
 #'   value gives an informational message; the default stays silent.
 #'   `NULL` is not accepted.
 #' @param drag `FALSE` (the default) for no dragging, `"snap"` to let visitors
 #'   drag the mascot and move it to the nearest corner on release, or `"free"`
-#'   to keep it where it is dropped, including while minimised. Has no effect
-#'   inline: an explicitly supplied value gives an informational message.
-#'   `TRUE` and `NULL` are not accepted. See the Dragging section.
+#'   to keep it where it is dropped, including while minimised.
+#'   \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{%
+#'   \out{<span class='badge text-bg-warning'>Experimental</span>}}}{%
+#'   \strong{[Experimental]}}
+#'   `"free"` is experimental: the position it reports and how to restore it
+#'   may change (issue #224). `"snap"` stays stable. Has no effect inline: an
+#'   explicitly supplied value gives an informational message. `TRUE` and
+#'   `NULL` are not accepted. See the Dragging section.
 #' @returns A `mascot_placement` object with `position`, `minimise` and `drag`
 #'   elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]
+#' @evalRd paste0(
+#'   "\\section{Experimental free dragging}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\n\"free\" is experimental: the position it reports and how to restore ",
+#'   "it may change (issue #224). \"snap\" stays stable.\n}"
+#' )
 #' @export
 #' @examples
 #' mascot_placement()

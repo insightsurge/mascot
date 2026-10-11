@@ -1,14 +1,16 @@
-#' Set a mascot's size
+#' Set the mascot's size
 #'
-#' Percentage sizes follow the parent's content width when inline, and the window
-#' width when floating. The rendered canvas is never smaller than 24 CSS pixels.
-#' Screens at most 575.98 CSS pixels wide use `small_screen`, if supplied.
-#' The full character is drawn at every size; fine face details are harder to
-#' read at 32 and 24 pixels, so the status text carries the meaning.
-#' @param size A finite number of CSS pixels, at least `24`, or a positive
+#' Control the size of the mascot in pixels or as a percentage. Percentage
+#' sizes scale to the parent container when inline, and to the window width when
+#' floating. The rendered canvas is never smaller than 24 CSS pixels.
+#' Screens narrower than 576 CSS pixels switch automatically to `small_screen`
+#' when supplied. Because fine facial details are harder to see at 24 or 32
+#' pixels, the status text ensures the mascot's meaning is always clear.
+#' @param size A finite number of CSS pixels (at least `24`), or a positive
 #'   percentage string such as `"20%"`. Defaults to `160`; `NULL` is not accepted.
-#' @param small_screen A size in the same forms as `size`, or `NULL` (the default)
-#'   to use `size` at every screen width.
+#' @param small_screen An optional size for mobile screens (under 576 CSS pixels
+#'   wide), in the same forms as `size`. Defaults to `NULL`, which keeps `size` on
+#'   all screen widths.
 #' @returns A `mascot_size` object with `size` and `small_screen` elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()]

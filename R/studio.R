@@ -1,14 +1,14 @@
-#' Open the mascot studio
+#' Launch the interactive mascot studio
 #'
-#' Explore the package's functions, try their controls and copy the resulting
-#' code. This first interface is experimental and may change before CRAN.
-#' Choices belong to the returned app; no global options are changed.
-#' @param view A string: `"studio"` (the default) or `"examples"` for the
-#'   bundled examples.
+#' Explore the package's functions, try their controls with live feedback, and
+#' copy the working R code into your own app. Choices belong to the returned
+#' app; no global options are changed.
+#' @param view Which view to open: `"studio"` (the default) for the function
+#'   playground, or `"examples"` for the gallery of bundled examples.
 #' @param ... Must be empty. All arguments after `view` must be named.
-#' @param fn A function name in the studio's guide, without parentheses.
+#' @param fn A function name in the studio's Guide, without parentheses.
 #'   `NULL` starts with `mascot_mood()`. Used in the studio view only.
-#' @param character A character id from the studio's character selector.
+#' @param character A character ID from the studio's character selector.
 #'   Defaults to the default character of [mascot()].
 #' @param run A logical flag. `TRUE` launches in an interactive R session;
 #'   `FALSE` returns the app without launching it.

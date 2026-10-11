@@ -393,8 +393,8 @@ visual_mood <- function() {
     div(
       class = "pg-callout",
       tags$strong("The mood never speaks alone. "),
-      "The status line under the mascot names the mood (or shows your text), so the meaning is there for
-      screen readers and for anyone who cannot tell the faces apart. Try moods with the cards in Controls."
+      "The status line under the mascot names the mood (or displays your custom text), providing clear meaning for
+      screen readers and anyone who cannot distinguish facial expressions. Try moods with the cards in Controls."
     )
   )
 }
@@ -442,9 +442,9 @@ visual_bubble <- function() {
     div(
       class = "pg-callout pg-callout-warn",
       tags$strong("HTML is trusted as it is. "),
-      "Plain text is escaped, so it is always safe. Wrap only your own content in HTML(), never text a
-      visitor typed: it could run code in other visitors' browsers. Bootstrap classes such as badge, table
-      and progress work inside the bubble because your bslib page already has Bootstrap."
+      "Plain text is escaped and always safe. Wrap only your own content in HTML(), never untrusted visitor
+      input. Bootstrap classes such as badge, table, and progress work inside the bubble because bslib includes
+      Bootstrap."
     )
   )
 }
@@ -468,9 +468,9 @@ visual_motion <- function() {
     div(
       class = "pg-callout",
       tags$strong("The visitor decides first. "),
-      "When a visitor turns on reduced motion in their system settings, every change is instant, whatever
-      you set here. To try it without changing your settings, use your browser's developer tools: in
-      Chrome, Rendering, then \"Emulate CSS media feature prefers-reduced-motion\"."
+      "When a visitor enables reduced motion in system settings, all animations become instant regardless of your
+      settings here. To test this without altering system preferences, use browser developer tools (in Chrome:
+      Rendering > \"Emulate CSS media feature prefers-reduced-motion\")."
     )
   )
 }
@@ -513,7 +513,7 @@ visual_placement <- function() {
     tags$h3(class = "pg-section-title", "Placement"),
     tags$p(
       class = "pg-muted",
-      "A plain mascot() floats in the bottom-right corner. This studio starts the selected character inline with placement = \"inline\" so it stays on the canvas."
+      "A default mascot() floats in the bottom-right corner. This studio displays the character inline with placement = \"inline\" so it remains on the canvas."
     ),
     uiOutput("placement_map")
   )
@@ -561,14 +561,14 @@ placement_map <- function(position, minimise, name = mascot::mascot_character()$
     div(
       class = "pg-muted pg-map-caption",
       if (inline_active) {
-        "Inline: the mascot sits where mascot() is in your UI and scrolls with the page."
+        "Inline: the mascot sits where mascot() is placed in your UI and scrolls with the page."
       } else {
         paste0(
           "Floating in the ",
           sub("-", " ", position, fixed = TRUE),
           " corner of the window",
           if (minimise) ", with a minimise button" else "",
-          ". Choose a position in Controls to move it."
+          ". Choose a corner in Controls to move it."
         )
       }
     )
@@ -593,8 +593,8 @@ visual_colour_roles <- function(character) {
     tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s parts")),
     tags$p(
       class = "pg-muted",
-      "Leaders take the colours you give. Followers copy the first leader you set, made the same, lighter or
-      darker, unless you set them yourself. Contrast below 3:1 against the page is kept but warned about."
+      "Leaders adopt the colours you supply. Followers copy the first leader you customise, shaded the same, lighter, or
+      darker, unless you customise them directly. Low contrast against the page triggers a warning but is preserved."
     ),
     uiOutput("roles_table")
   )
@@ -701,9 +701,9 @@ visual_update_mascot <- function() {
     div(
       class = "pg-callout",
       tags$strong("All or nothing. "),
-      "updateMascot() checks every value first. If one is wrong, it warns, names the problem and sends
-      nothing, so the mascot never ends up half updated. A misspelt argument name or a call outside a
-      server is an error, because that is a mistake in the code rather than in the data."
+      "updateMascot() validates all values first. If any value is invalid, it warns, reports the issue, and sends
+      nothing, preventing partial updates. Calling with an invalid argument name or outside a server session
+      produces an error."
     )
   )
 }
@@ -726,7 +726,7 @@ guide_help <- function(fn) {
     div(class = "pg-help", help$value),
     tags$p(
       class = "pg-hint",
-      "Each argument's help text is in the i beside its control. Read more in the Get started article: ",
+      "Each argument's help text is available via the i icon beside its control. Read more in the Get started article: ",
       tags$a(href = vignette_url(heading), target = "_blank", rel = "noopener", heading),
       ". Offline: ",
       tags$code('vignette("mascot", package = "mascot")'),

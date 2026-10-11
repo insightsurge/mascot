@@ -2,7 +2,7 @@
 % Please edit documentation in R/moods.R
 \name{mascot_moods}
 \alias{mascot_moods}
-\title{List the mascot moods}
+\title{List the built-in mascot moods}
 \usage{
 mascot_moods()
 }
@@ -10,13 +10,13 @@ mascot_moods()
 A data frame with character columns \code{name} and \code{description}.
 }
 \description{
-Every character uses these moods, in this order.
+Every character shares this exact set of moods.
 }
 \examples{
 mascot_moods()
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}
+\code{\link[=mascot_mood]{mascot_mood()}}
 
 Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},

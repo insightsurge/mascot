@@ -1320,8 +1320,15 @@ describe("studio state and built previews", {
       for (code in c(output$code_function, output$menu_code, output$code_ui, output$code_server, output$code_app)) {
         expect_match(code, "^# .*id = Label")
       }
+      # Ids the package rejects (duplicates) also give a comment, not a runnable handler.
+      session$setInputs(menu_on = TRUE, menu_items = "same = One\nsame = Two")
+      session$elapse(700)
+      expect_match(output$menu_code, "^# ")
       session$setInputs(menu_items = "finish = Finish review")
       session$elapse(700)
+      # An HTML bubble keeps its HTML switch on after it is shown.
+      session$setInputs(bubble_text = "<b>Saved</b>", bubble_html = TRUE, bubble_show = 1)
+      expect_true(messages$bubble_html$value)
       session$setInputs(contrast_check = 1)
       expect_match(output$contrast$html, "Every colour checked")
       session$setInputs(theme_source = "mascot", theme_mode = "dark")

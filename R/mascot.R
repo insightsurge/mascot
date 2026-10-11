@@ -1,49 +1,44 @@
 #' Add a mascot to a page
 #'
-#' Draw a character with a mood, a status line and an optional message bubble. The status shows the
-#' capitalised mood word until the app sets its own text. It follows the mood
-#' again after [mascot_status()] is supplied without text.
+#' Draw a character with a mood, a status line, and an optional message bubble.
+#' The status shows the capitalised mood word until custom text is supplied.
+#' It follows the mood again when [mascot_status()] is passed without text.
 #'
 #' @param character A character name or [mascot_character()] object. Defaults
 #'   to `"tessa"`. `NULL` is not accepted.
-#' @param id A required non-empty string without whitespace, unique on the
-#'   page. In a Shiny module use `ns("helper")` in the UI and `"helper"` in
-#'   the server; [updateMascot()] adds the module namespace once.
+#' @param id A unique string identifier on the page without whitespace. In a
+#'   Shiny module, use `ns("helper")` in the UI and `"helper"` in the server;
+#'   [updateMascot()] adds the module namespace automatically.
 #' @param mood A mood name or [mascot_mood()] object. Defaults to `"idle"`.
-#'   See [mascot_moods()] for choices. `NULL` is not accepted.
+#'   See [mascot_moods()] for available choices. `NULL` is not accepted.
 #' @param status A non-empty string or [mascot_status()] object. `NULL` (the
 #'   default) follows the mood. Text is escaped, including [htmltools::HTML()].
 #' @param bubble A non-empty string, an `htmltools` tag or tag list, or a
-#'   [mascot_bubble()] object. `NULL` (the
-#'   default) shows no bubble. A string uses the helper's five-second duration
-#'   and close button. Plain text is escaped; [htmltools::HTML()] or tags supply
-#'   HTML. Tags with dependencies or head content are not supported.
-#' @param size A finite number of CSS pixels (at least `24`), a positive percentage
-#'   string such as `"20%"`, or a [mascot_size()] object. Defaults to `160`.
-#'   Percentages follow the parent width when inline and window width when floating,
+#'   [mascot_bubble()] object. `NULL` (the default) shows no bubble. A plain
+#'   string displays for five seconds with a close button. Plain text is
+#'   escaped; use [htmltools::HTML()] or tag lists to include HTML. Tags
+#'   with dependencies or head content are not supported.
+#' @param size A size in pixels (at least `24`), a percentage string such as
+#'   `"20%"`, or a [mascot_size()] object. Defaults to `160`. Percentages
+#'   follow the container width when inline and window width when floating,
 #'   with a 24-pixel floor. `NULL` is not accepted.
-#' @param placement `"bottom-right"` (the default), `"floating"`, `"inline"`, a corner
-#'   such as `"top-left"`, a named list such as `list(position = "top-left",
-#'   minimise = TRUE, drag = "snap")`, or a [mascot_placement()] object.
-#'   Floating mascots show a minimise control by default; dragging is off.
-#'   Inline mascots ignore `minimise` and `drag`, with an informational message
-#'   for explicitly supplied values and silence for defaults. With `drag`,
-#'   visitors can also drag the minimised restore button; each drop sets
-#'   `input$<id>_position` to the corner (`"snap"`) or a list with `x` and `y`
-#'   (`"free"`); saving it between visits is the app's job. See
-#'   [mascot_placement()]. `NULL` is not accepted.
-#' @param theme A named list of colour roles, a [bslib::bs_theme()] or a
-#'   [mascot_theme()] object. `NULL` (the default) keeps the character's own
-#'   colours. Unset roles keep their original colours in both modes.
+#' @param placement Where to position the mascot: `"bottom-right"` (the default),
+#'   `"floating"`, `"inline"`, a corner such as `"top-left"`, a named list, or a
+#'   [mascot_placement()] object. Floating mascots include a minimise control
+#'   by default; dragging is off. Inline mascots sit in the page flow and ignore
+#'   minimise and drag settings. See [mascot_placement()]. `NULL` is not accepted.
+#' @param theme A named list of colour roles, a [bslib::bs_theme()] object, or a
+#'   [mascot_theme()] object. `NULL` (the default) keeps the character's default
+#'   colours. Unset roles retain their default colours in both modes.
 #' @param motion A logical flag or [mascot_motion()] object. `TRUE` (the default)
 #'   allows animation while honouring the visitor's reduced-motion preference.
 #'   `FALSE` stops animation. `NULL` is not accepted.
-#' @param popup_menu A named character vector of item labels or a
+#' @param popup_menu A named character vector of menu items or a
 #'   [mascot_popup_menu()] object. `NULL` (the default) shows no menu.
-#'   A choice sets `input$<id>_menu` to the item id, including repeated choices.
-#'   In a module, use `ns("helper")` in the UI and read `input$helper_menu` in
-#'   that module's server. Enter and Space operate the focused menu toggle;
-#'   see [mascot_popup_menu()] for the module example and guidance.
+#'   Selecting an item sets `input$<id>_menu` to the item id. In a module, use
+#'   `ns("helper")` in the UI and read `input$helper_menu` in the module server.
+#'   Press Enter or Space to toggle the menu when focused. See
+#'   [mascot_popup_menu()].
 #' @returns An `htmltools` tag with its engine dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]

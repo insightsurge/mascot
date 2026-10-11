@@ -1,36 +1,32 @@
 #' Set a mascot's colours and light or dark mode
 #'
-#' Unset roles follow the first supplied or filled leader declared by the character.
-#' With no supplied leader they keep their original colours. Use
-#' [mascot_colour_roles()] to find the roles for a character. A plain named list
-#' supplied to [mascot()] or [updateMascot()] uses one set in every mode. A
-#' [bslib::bs_theme()] fills the character's declared brand leaders with its primary
-#' and secondary colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
+#' Customise the character's colours and coordinate with light or dark mode.
+#' When you recolour a primary part (such as `body`), related accent parts
+#' follow automatically to match. Call [mascot_colour_roles()] to see the
+#' available colour parts for each character. A simple named list passed to
+#' [mascot()] or [updateMascot()] uses the same colours in both light and dark
+#' modes. Supplying a [bslib::bs_theme()] automatically colours the mascot's brand
+#' parts with your app's primary and secondary colours (including themes loaded
+#' from `_brand.yml`).
 #'
-#' A theme survives a character swap: follow rules are resolved again and roles
-#' absent from the incoming character are ignored. An empty helper restores the
-#' character's own colours. When applied, a chosen colour below 3:1 contrast
-#' warns and is kept. The background is white in light mode and `#212529` in dark
-#' mode, or the `bslib` theme's light and dark backgrounds. Supplied colours are
-#' kept exactly. Derived shades keep the hue, with calibrated lightness and
-#' saturation shifts. Tessa's original leaders reproduce derived colours within
-#' 3 units per RGB channel (0--255). Brand colours are the same in both modes.
-#' @param light,dark Named lists of colour roles, or `NULL` (the default) for the
-#'   character's colours in that mode. Values are colour names, hex strings,
-#'   [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or three red,
-#'   green and blue numbers in 0--255. Single numeric palette indices are not
-#'   accepted. Roles use snake case; `light`, `dark` and `default` are reserved.
-#' @param mode One of `"auto"` (the default), `"light"` or `"dark"`.
-#'   Auto follows the nearest valid `data-bs-theme` in the original source
-#'   context, then Quarto's body classes. With no page signal it uses light.
-#'   Explicit light or dark always wins. `NULL` is not accepted.
+#' Your colour settings carry over when you switch characters. Calling an empty
+#' `mascot_theme()` restores the character's default colours. If any custom
+#' colour falls below 3:1 contrast against the background, mascot issues a
+#' helpful warning while keeping your chosen colour.
+#' @param light,dark Named lists of colour roles, or `NULL` (the default) to keep
+#'   the character's own colours in that mode. Values can be colour names, hex
+#'   strings, [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or
+#'   RGB numbers in 0--255. Roles use snake case; `light`, `dark` and `default`
+#'   are reserved.
+#' @param mode Mode selection: `"auto"` (the default), `"light"` or `"dark"`.
+#'   `"auto"` follows Bootstrap's `data-bs-theme` or Quarto body classes. With no
+#'   page signal, it uses light mode. An explicit mode always overrides the page.
+#'   `NULL` is not accepted.
 #' @param css A named list mapping colour roles to CSS variable names such as
 #'   `list(body = "--team-blue")`, or `NULL` (the default) for no CSS source.
 #'   This source is experimental. CSS entries override light and dark entries
-#'   for the same role. Missing or invalid variables use the character's own
-#'   colour and warn in the browser console; low contrast also warns there and
-#'   keeps the colour. Variables are read from the original source context,
-#'   including when the mascot floats.
+#'   for the same role. Missing variables fall back to the character's own
+#'   colour and log a warning in the browser console.
 #' @returns A `mascot_theme` object describing colours, CSS sources and mode.
 #' @family mascot helpers
 #' @seealso [mascot_colour_roles()], [mascot()], [updateMascot()],

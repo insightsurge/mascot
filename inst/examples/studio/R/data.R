@@ -50,7 +50,7 @@ bubble_examples <- list(
 )
 
 default_menu <- c(finish = "Finish review", reset = "Reset helper", about = "About this studio")
-welcome <- "Hello! Choose a function and change its controls and I will follow."
+welcome <- "Hello! Choose a function in the function index, change its controls, and I will follow."
 
 # What mascot() uses when an argument is left out, as shortcut code.
 defaults <- list(
@@ -67,38 +67,38 @@ defaults <- list(
 mistakes <- list(
   `Leave out an argument name` = list(
     code = "updateMascot(\"helper\", \"happy\")",
-    why = "The second argument is character, not mood, so \"happy\" is read as a character name: a warning, no change."
+    why = "The second argument is character, not mood. The value \"happy\" is treated as a character name, giving a warning and no change."
   ),
   `A mood that does not exist` = list(
     code = "updateMascot(\"helper\", mood = \"sleepy\")",
-    why = "A warning that lists the valid moods; the mascot keeps its mood."
+    why = "Displays a warning listing valid moods. The mascot keeps its current mood."
   ),
   `Misspell an argument` = list(
     code = "updateMascot(\"helper\", moood = \"happy\")",
-    why = "... must be empty, so a typo is an error instead of being silently ignored."
+    why = "... must be empty, so typos produce an error rather than being ignored."
   ),
-  `Too small` = list(code = "updateMascot(\"helper\", size = 10)", why = "Sizes start at 24 pixels."),
+  `Too small` = list(code = "updateMascot(\"helper\", size = 10)", why = "Sizes must be at least 24 pixels."),
   `Minimise an inline mascot` = list(
     code = "updateMascot(\"helper\", placement = mascot_placement(\"inline\", minimise = TRUE))",
-    why = "An inline mascot ignores minimise. Not an error: a message says so, and the mascot moves inline."
+    why = "An inline mascot ignores minimise. An informational message explains this, and the mascot sits inline."
   ),
   `A bubble that never shows` = list(
     code = "updateMascot(\"helper\", bubble = mascot_bubble(\"Hi\", duration = 0))",
-    why = "duration must be more than zero; use Inf to keep a bubble."
+    why = "duration must be greater than zero. Use Inf to keep the bubble open."
   ),
   `Not a colour` = list(
     code = "updateMascot(\"helper\", theme = list(body = \"not-a-colour\"))",
-    why = "Colours are checked in R before anything is sent."
+    why = "Colours are validated in R before sending to the browser."
   ),
   `Low contrast` = list(
     code = "updateMascot(\"helper\", theme = list(body = \"#f8f9fa\"))",
-    why = "The colour is applied, with a warning that it is hard to see on a light page."
+    why = "The colour is applied, with a warning if contrast against the page is low."
   ),
   `The wrong id` = list(
     code = "updateMascot(\"helpr\", mood = \"happy\")",
     why = paste(
-      "No error and no change: R cannot see the page. With shiny::devmode(TRUE), the browser console",
-      "names the likely slip."
+      "No error and no change: the server cannot see browser elements. With shiny::devmode(TRUE), the browser",
+      "console reports the missing element."
     )
   )
 )

@@ -2,7 +2,7 @@
 % Please edit documentation in R/studio.R
 \name{mascot_studio}
 \alias{mascot_studio}
-\title{Open the mascot studio}
+\title{Launch the interactive mascot studio}
 \usage{
 mascot_studio(
   view = "studio",
@@ -13,15 +13,15 @@ mascot_studio(
 )
 }
 \arguments{
-\item{view}{A string: \code{"studio"} (the default) or \code{"examples"} for the
-bundled examples.}
+\item{view}{Which view to open: \code{"studio"} (the default) for the function
+playground, or \code{"examples"} for the gallery of bundled examples.}
 
 \item{...}{Must be empty. All arguments after \code{view} must be named.}
 
-\item{fn}{A function name in the studio's guide, without parentheses.
+\item{fn}{A function name in the studio's Guide, without parentheses.
 \code{NULL} starts with \code{mascot_mood()}. Used in the studio view only.}
 
-\item{character}{A character id from the studio's character selector.
+\item{character}{A character ID from the studio's character selector.
 Defaults to the default character of \code{\link[=mascot]{mascot()}}.}
 
 \item{run}{A logical flag. \code{TRUE} launches in an interactive R session;
@@ -32,9 +32,9 @@ With \code{run = FALSE}, a \code{shiny.appobj} object. With \code{run = TRUE},
 the value returned by \code{\link[shiny:runApp]{shiny::runApp()}} after the app stops.
 }
 \description{
-Explore the package's functions, try their controls and copy the resulting
-code. This first interface is experimental and may change before CRAN.
-Choices belong to the returned app; no global options are changed.
+Explore the package's functions, try their controls with live feedback, and
+copy the working R code into your own app. Choices belong to the returned
+app; no global options are changed.
 }
 \examples{
 app <- mascot_studio(fn = "mascot_theme", run = FALSE)

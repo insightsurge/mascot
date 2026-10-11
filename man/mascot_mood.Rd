@@ -7,14 +7,15 @@
 mascot_mood(name = "idle")
 }
 \arguments{
-\item{name}{A non-empty string naming a mood from \code{\link[=mascot_moods]{mascot_moods()}}. Defaults
-to \code{"idle"}; \code{NULL} is not accepted.}
+\item{name}{A mood name from \code{\link[=mascot_moods]{mascot_moods()}}. Defaults to \code{"idle"}; \code{NULL} is
+not accepted.}
 }
 \value{
 A \code{mascot_mood} object with a \code{name} element.
 }
 \description{
-Use this helper or a plain mood name in \code{\link[=mascot]{mascot()}} and \code{\link[=updateMascot]{updateMascot()}}.
+Set how the mascot feels and looks. You can use this helper or a plain mood
+name in \code{\link[=mascot]{mascot()}} and \code{\link[=updateMascot]{updateMascot()}}.
 }
 \examples{
 mascot_mood()

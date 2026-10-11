@@ -21,9 +21,9 @@ updateMascot(
 )
 }
 \arguments{
-\item{id}{A required non-empty string without whitespace, unique on the
-page. In a Shiny module use \code{ns("helper")} in the UI and \code{"helper"} in
-the server; \code{\link[=updateMascot]{updateMascot()}} adds the module namespace once.}
+\item{id}{A unique string identifier on the page without whitespace. In a
+Shiny module, use \code{ns("helper")} in the UI and \code{"helper"} in the server;
+\code{\link[=updateMascot]{updateMascot()}} adds the module namespace automatically.}
 
 \item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object. \code{NULL}
 (the default) leaves the character unchanged.}
@@ -32,35 +32,31 @@ the server; \code{\link[=updateMascot]{updateMascot()}} adds the module namespac
 leaves the mood unchanged.}
 
 \item{status}{A non-empty string or \code{\link[=mascot_status]{mascot_status()}} object. \code{NULL}
-(the default) leaves the status unchanged; \code{mascot_status()} hands the
-status back to the mood. Text is always escaped.}
+(the default) leaves the status unchanged; \code{mascot_status()} resets the
+status text back to the current mood name. Text is always escaped.}
 
-\item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
-\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the
-default) leaves the bubble unchanged; \code{mascot_bubble()} clears it. Plain
-text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply HTML. Tags with
-dependencies or head content are not supported.}
+\item{bubble}{A message string, an \code{htmltools} tag or tag list, or a
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) leaves the bubble unchanged;
+\code{mascot_bubble()} clears it. Plain text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or
+tags supply HTML. Tags with dependencies or head content are not supported.}
 
 \item{size}{A pixel number, percentage string or \code{\link[=mascot_size]{mascot_size()}} object, as
 in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves the size unchanged.}
 
 \item{placement}{A shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}} object, as
 in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves placement unchanged. Size and
-placement changes keep the mounted engine, its mood and character. A new
+placement changes keep the mounted mascot, its mood and character. A new
 placement replaces any position the visitor dragged the mascot to.
 Floating placement shows a minimise control by default; dragging is off.
-Inline placement ignores \code{minimise} and \code{drag}: explicitly supplied values
-give an informational message, defaults stay silent, and the update is sent.
-With dragging enabled, the minimised restore button can also be dragged;
-a click restores it, and a drag leaves it minimised in its new position.}
+Inline placement ignores \code{minimise} and \code{drag}.}
 
 \item{theme}{A theme in the forms accepted by \code{\link[=mascot]{mascot()}}. \code{NULL} (the
 default) leaves the theme unchanged; \code{mascot_theme()} restores the
-character's own colours. Themes are resolved again after a character swap.}
+character's default colours. Themes are resolved again after a character swap.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object, as in \code{\link[=mascot]{mascot()}}.
-\code{NULL} (the default) leaves motion unchanged. Changes apply to the live mascot
-without restarting it; the visitor's reduced-motion preference still applies.}
+\code{NULL} (the default) leaves motion unchanged. Changes apply immediately to
+the live mascot; the visitor's reduced-motion preference still applies.}
 
 \item{popup_menu}{A named character vector or \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object.
 \code{NULL} (the default) leaves the menu unchanged; \code{mascot_popup_menu()} removes
@@ -79,34 +75,31 @@ Must be named when supplied. \code{NULL} outside a server or module is an error.
 Called for its side effect; returns \code{NULL} invisibly.
 }
 \description{
-Apply character, mood, status, bubble, size, placement, theme, motion, menu and
-gesture together. Invalid values
-warn and leave the mascot unchanged. In Shiny development mode they also show a worried
-mascot with the problem as its status; the next good update clears it.
-Updates sent before a mascot appears are kept until it appears.
+Update any combination of character, mood, status, speech bubble, size,
+placement, theme, motion, menu and gesture from your Shiny server.
+Unspecified arguments (\code{NULL}) remain unchanged. Invalid values warn and
+leave the mascot unchanged. In Shiny development mode, an invalid value also
+displays a worried mascot showing the problem in its status text.
+Updates sent before a mascot appears are queued and applied as soon as it mounts.
 }
 \details{
-Use the always visible status line for a short description of the current state.
-Use a bubble for a message about something that happened; it may time out.
-Use \code{mascot_bubble(..., duration = Inf)} for a message the user must act on,
-such as an invalid form, because a timed message can vanish before it is read.
+\strong{Status text vs speech bubbles.} Use the always visible status line for a
+short description of the current state. Use a bubble for a message about
+something that happened; it may time out. Use \code{duration = Inf} for a message
+the user must act on, such as an invalid form, because a timed message can
+vanish before it is read.
 
-In a module use \code{mascot(id = ns("helper"))} in the UI, and
-\code{updateMascot("helper")} in its server. The session namespace is added once.
-An invalid \code{id} type, missing session or extra argument is an error.
-A character or mood change applies before the gesture. During a character
-swap the engine drops the gesture: the wave within the swap replaces it. Reduced
-motion skips movement. The latest gesture sent before the mascot appears
-plays once on appearance, after its queued character and mood are applied.
-Bubbles survive mood changes and swaps; a
-queued bubble's timer starts when it appears. Infinite duration is sent as
-JSON \code{null}. See \code{\link[=mascot_bubble]{mascot_bubble()}} for timing and closing behaviour.
-Calling with all update fields \code{NULL} does nothing.
+\strong{Using mascots in Shiny modules.} In a module, use \code{mascot(id = ns("helper"))}
+in the UI, and \code{updateMascot("helper")} in its server. Shiny handles the session
+namespace automatically.
 
-Updates sent before a mascot appears are kept per session, including when
-the first mascot is created by \code{\link[shiny:renderUI]{shiny::renderUI()}} or \code{\link[shiny:insertUI]{shiny::insertUI()}}.
-Only the latest value of each field and the latest early gesture are kept.
-A replacement with the same id receives the retained state; gestures play once.
+\strong{Order of updates.} A character or mood change applies before gestures play.
+Swapping characters automatically includes a wave, skipping any additional
+gesture in the same call.
+
+\strong{Queued updates.} Updates sent before a mascot finishes appearing (including
+inside \code{\link[shiny:renderUI]{shiny::renderUI()}} or \code{\link[shiny:insertUI]{shiny::insertUI()}}) are saved and applied as
+soon as the mascot mounts.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

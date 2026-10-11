@@ -12,7 +12,8 @@ gesture_table <- function() {
 
 #' List the mascot gestures
 #'
-#' Gestures play once and are available only in [updateMascot()].
+#' Gestures play a quick movement once, without changing the mascot's mood.
+#' They are available only in [updateMascot()].
 #' @returns A data frame with character columns `name` and `description`.
 #' @family mascot helpers
 #' @seealso [mascot_gesture()]
@@ -25,16 +26,18 @@ mascot_gestures <- function() {
 
 #' Choose a one-off mascot gesture
 #'
-#' Use this helper or a plain gesture name in [updateMascot()]. A character or
-#' mood change in the same call applies first, then the gesture. During a
-#' character swap the engine drops the gesture: the wave within the swap replaces it.
-#' Reduced motion skips the movement. A gesture sent before the mascot appears
-#' is kept until appearance. Only the latest early gesture plays, once, after
-#' the queued character and mood are applied.
-#' @param name A required non-empty string: `"nod"` acknowledges an action;
-#'   `"wave"` greets (characters without arms rock instead). See
-#'   [mascot_gestures()] for descriptions. There is no default; `NULL` is not
-#'   accepted.
+#' Play a single movement without altering the current mood. You can use this
+#' helper or a plain gesture name in [updateMascot()].
+#'
+#' If a character or mood change is sent in the same call, that change happens
+#' first, followed by the gesture. If you switch characters in the same call, the
+#' gesture is skipped because the character switch already includes a wave.
+#' Visitors who prefer reduced motion do not see the gesture animate. If you send
+#' a gesture before the mascot appears, it waits and plays once as soon as the
+#' mascot appears.
+#' @param name Gesture name: `"nod"` acknowledges an action; `"wave"` greets
+#'   (characters without arms rock instead). See [mascot_gestures()] for the full
+#'   list. Required; `NULL` is not accepted.
 #' @returns A `mascot_gesture` object with a `name` element.
 #' @family mascot helpers
 #' @seealso [updateMascot()]

@@ -1,10 +1,11 @@
 #' Update a mascot in a Shiny app
 #'
-#' Apply character, mood, status, bubble, size, placement, theme, motion, menu and
-#' gesture together. Invalid values
-#' warn and leave the mascot unchanged. In Shiny development mode they also show a worried
-#' mascot with the problem as its status; the next good update clears it.
-#' Updates sent before a mascot appears are kept until it appears.
+#' Update any combination of character, mood, status, speech bubble, size,
+#' placement, theme, motion, menu and gesture from your Shiny server.
+#' Unspecified arguments (`NULL`) remain unchanged. Invalid values warn and
+#' leave the mascot unchanged. In Shiny development mode, an invalid value also
+#' displays a worried mascot showing the problem in its status text.
+#' Updates sent before a mascot appears are queued and applied as soon as it mounts.
 #'
 #' @inheritParams mascot
 #' @param character A character name or [mascot_character()] object. `NULL`
@@ -12,30 +13,26 @@
 #' @param mood A mood name or [mascot_mood()] object. `NULL` (the default)
 #'   leaves the mood unchanged.
 #' @param status A non-empty string or [mascot_status()] object. `NULL`
-#'   (the default) leaves the status unchanged; `mascot_status()` hands the
-#'   status back to the mood. Text is always escaped.
-#' @param bubble A non-empty string, an `htmltools` tag or tag list, or a
-#'   [mascot_bubble()] object. `NULL` (the
-#'   default) leaves the bubble unchanged; `mascot_bubble()` clears it. Plain
-#'   text is escaped; [htmltools::HTML()] or tags supply HTML. Tags with
-#'   dependencies or head content are not supported.
+#'   (the default) leaves the status unchanged; `mascot_status()` resets the
+#'   status text back to the current mood name. Text is always escaped.
+#' @param bubble A message string, an `htmltools` tag or tag list, or a
+#'   [mascot_bubble()] object. `NULL` (the default) leaves the bubble unchanged;
+#'   `mascot_bubble()` clears it. Plain text is escaped; [htmltools::HTML()] or
+#'   tags supply HTML. Tags with dependencies or head content are not supported.
 #' @param size A pixel number, percentage string or [mascot_size()] object, as
 #'   in [mascot()]. `NULL` (the default) leaves the size unchanged.
 #' @param placement A shortcut, named list or [mascot_placement()] object, as
 #'   in [mascot()]. `NULL` (the default) leaves placement unchanged. Size and
-#'   placement changes keep the mounted engine, its mood and character. A new
+#'   placement changes keep the mounted mascot, its mood and character. A new
 #'   placement replaces any position the visitor dragged the mascot to.
 #'   Floating placement shows a minimise control by default; dragging is off.
-#'   Inline placement ignores `minimise` and `drag`: explicitly supplied values
-#'   give an informational message, defaults stay silent, and the update is sent.
-#'   With dragging enabled, the minimised restore button can also be dragged;
-#'   a click restores it, and a drag leaves it minimised in its new position.
+#'   Inline placement ignores `minimise` and `drag`.
 #' @param theme A theme in the forms accepted by [mascot()]. `NULL` (the
 #'   default) leaves the theme unchanged; `mascot_theme()` restores the
-#'   character's own colours. Themes are resolved again after a character swap.
+#'   character's default colours. Themes are resolved again after a character swap.
 #' @param motion A logical flag or [mascot_motion()] object, as in [mascot()].
-#'   `NULL` (the default) leaves motion unchanged. Changes apply to the live mascot
-#'   without restarting it; the visitor's reduced-motion preference still applies.
+#'   `NULL` (the default) leaves motion unchanged. Changes apply immediately to
+#'   the live mascot; the visitor's reduced-motion preference still applies.
 #' @param popup_menu A named character vector or [mascot_popup_menu()] object.
 #'   `NULL` (the default) leaves the menu unchanged; `mascot_popup_menu()` removes
 #'   it. Choices arrive as `input$<id>_menu` in the module that owns the mascot.
@@ -46,27 +43,23 @@
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.
 #' @details
-#' Use the always visible status line for a short description of the current state.
-#' Use a bubble for a message about something that happened; it may time out.
-#' Use `mascot_bubble(..., duration = Inf)` for a message the user must act on,
-#' such as an invalid form, because a timed message can vanish before it is read.
+#' **Status text vs speech bubbles.** Use the always visible status line for a
+#' short description of the current state. Use a bubble for a message about
+#' something that happened; it may time out. Use `duration = Inf` for a message
+#' the user must act on, such as an invalid form, because a timed message can
+#' vanish before it is read.
 #'
-#' In a module use `mascot(id = ns("helper"))` in the UI, and
-#' `updateMascot("helper")` in its server. The session namespace is added once.
-#' An invalid `id` type, missing session or extra argument is an error.
-#' A character or mood change applies before the gesture. During a character
-#' swap the engine drops the gesture: the wave within the swap replaces it. Reduced
-#' motion skips movement. The latest gesture sent before the mascot appears
-#' plays once on appearance, after its queued character and mood are applied.
-#' Bubbles survive mood changes and swaps; a
-#' queued bubble's timer starts when it appears. Infinite duration is sent as
-#' JSON `null`. See [mascot_bubble()] for timing and closing behaviour.
-#' Calling with all update fields `NULL` does nothing.
+#' **Using mascots in Shiny modules.** In a module, use `mascot(id = ns("helper"))`
+#' in the UI, and `updateMascot("helper")` in its server. Shiny handles the session
+#' namespace automatically.
 #'
-#' Updates sent before a mascot appears are kept per session, including when
-#' the first mascot is created by [shiny::renderUI()] or [shiny::insertUI()].
-#' Only the latest value of each field and the latest early gesture are kept.
-#' A replacement with the same id receives the retained state; gestures play once.
+#' **Order of updates.** A character or mood change applies before gestures play.
+#' Swapping characters automatically includes a wave, skipping any additional
+#' gesture in the same call.
+#'
+#' **Queued updates.** Updates sent before a mascot finishes appearing (including
+#' inside [shiny::renderUI()] or [shiny::insertUI()]) are saved and applied as
+#' soon as the mascot mounts.
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
 #' @seealso [mascot()], [mascot_motion()] for a complete Shiny settings example

@@ -2,7 +2,7 @@
 % Please edit documentation in R/preview.R
 \name{mascot_preview}
 \alias{mascot_preview}
-\title{Check a mascot's look in light and dark}
+\title{Preview a mascot in light and dark mode}
 \usage{
 mascot_preview(
   character = "tessa",
@@ -27,60 +27,58 @@ to show every mood from \code{\link[=mascot_moods]{mascot_moods()}}.}
 default) follows the mood. Text is escaped, including \code{\link[htmltools:HTML]{htmltools::HTML()}}.}
 
 \item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
-\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the
-default) shows no bubble. A string uses the helper's five-second duration
-and close button. Plain text is escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply
-HTML. Tags with dependencies or head content are not supported.}
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) shows no bubble. A plain
+string displays for five seconds with a close button. Plain text is
+escaped; use \code{\link[htmltools:HTML]{htmltools::HTML()}} or tag lists to include HTML. Tags
+with dependencies or head content are not supported.}
 
-\item{size}{A finite number of CSS pixels (at least \code{24}), a positive percentage
-string, or \code{\link[=mascot_size]{mascot_size()}} object. Defaults to \code{160}. Percentages follow the
-comparison cell width. \code{NULL} is not accepted.}
+\item{size}{Mascot size: a number of CSS pixels (at least \code{24}), a percentage
+string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} object. Defaults to \code{160}.
+Percentages follow the comparison cell width. \code{NULL} is not accepted.}
 
 \item{placement}{A placement shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}}
-object, defaulting to \code{"inline"}. The preview ignores floating and shows
-every mascot inline in the comparison grid. \code{NULL} is not accepted.}
+object, defaulting to \code{"inline"}. The preview shows every mascot inline in
+the comparison grid. \code{NULL} is not accepted.}
 
-\item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
-\code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
-colours. Unset roles keep their original colours in both modes.}
+\item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} object, or a
+\code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's default
+colours. Unset roles retain their default colours in both modes.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object. Defaults to \code{FALSE}
 for steady faces; \code{TRUE} allows animation subject to the visitor's preference.
 \code{NULL} is not accepted.}
 
 \item{popup_menu}{A named character vector or \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object,
-or \code{NULL} (the default) for no menu. The value is checked; menus remain
+or \code{NULL} (the default) for no menu. The menu is validated, but stays
 inactive on this static page.}
 }
 \value{
 A browsable \code{htmltools} tag list. Its \code{contrast} attribute is a data
-frame with \code{role}, \code{colour}, \code{background}, \code{ratio} and \code{mode} columns, one row
-per supplied colour below 3:1. No findings gives a zero-row data frame with
-the same columns. Colours are kept; one combined warning is issued in R.
+frame with \code{role}, \code{colour}, \code{background}, \code{ratio} and \code{mode} columns, with
+one row for each supplied colour below 3:1 contrast.
 }
 \description{
-Compare moods and sizes on one offline page. Constructing the page
-starts no Shiny app, opens no viewer and writes no files. Printing the returned
-page opens the available Viewer or browser. It can also be embedded in an
-R Markdown or Quarto document.
+Compare moods and sizes on a single offline page. Creating the page starts no
+Shiny app, opens no viewer and writes no files to disk. Printing the returned
+page opens it in your IDE Viewer or default browser. It can also be embedded
+directly in an R Markdown or Quarto document.
 }
 \details{
-Rows are moods; columns are the requested \code{size}, then 48, 32 and 24 CSS pixels.
-The first column preserves percentage and \code{small_screen} settings; fixed
-comparison columns do not change on narrow screens. Every size draws the full
-character. Each cell keeps its status text, since small faces lose fine detail.
+\strong{Comparison grid.} Rows show moods; columns show your chosen \code{size},
+followed by reference sizes at 48, 32 and 24 CSS pixels. The first column
+preserves percentage and \code{small_screen} settings; fixed comparison columns do
+not change on narrow screens. Every size draws the complete character. Each
+cell keeps its status text, making the meaning clear even when small faces
+lose fine details.
 
-Both supplied theme maps are shown, even if the theme selected one mode.
-Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's \code{bg} and
-\code{body-bg-dark}; text uses \code{fg} and \code{body-color-dark}.
-Only supplied colour roles are checked, using the same contrast calculation
-as \code{\link[=mascot]{mascot()}}. Experimental CSS variables are resolved in the browser: their
-warnings appear in its console and cannot be included in the R attribute.
+\strong{Theme and contrast.} Both light and dark theme panels are shown side by
+side. Backgrounds default to white and \verb{#212529}, or the \code{bslib} theme's light
+and dark background colours. Only supplied colour roles are checked for contrast.
+Any colour below 3:1 contrast against the background produces a warning and is
+recorded in the \code{contrast} attribute.
 
-Floating \code{placement} is checked then shown inline for comparison; the preview
-ignores floating so every cell remains in its grid. Click menus are checked
-but remain inactive on this static page. Empty bubble space is omitted here;
-a supplied bubble keeps its space and normal timing.
+Floating placement is displayed inline so every cell stays neatly in the
+comparison grid. Click menus remain inactive on this static page.
 }
 \examples{
 page <- mascot_preview(mood = "happy", size = 96)

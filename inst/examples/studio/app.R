@@ -45,7 +45,7 @@ studio_page <- function(character, fn) {
   initial$character <- code_character(character)
   start_mascot <- do.call(mascot, lapply(ui_args(initial, "short"), eval))
   bslib::layout_sidebar(
-    sidebar = bslib::sidebar(function_index(), width = 250, open = "desktop", title = "Functions"),
+    sidebar = bslib::sidebar(function_index(), width = 250, open = "desktop", title = "Function index"),
     # The inspector is a right-hand sidebar inside the main area, so it collapses the bslib way too.
     bslib::layout_sidebar(
       sidebar = bslib::sidebar(
@@ -185,22 +185,22 @@ studio_page <- function(character, fn) {
                   id = "code_tabs",
                   nav_panel(
                     "UI",
-                    div(class = "pg-hint", "A mascot() call with the current settings."),
+                    div(class = "pg-hint", "A mascot() UI call with the current settings."),
                     div(class = "pg-code-wrap", code_output("code_ui"), copy_button("code_ui"))
                   ),
                   nav_panel(
                     "Server",
-                    div(class = "pg-hint", "One updateMascot() call that applies the current settings."),
+                    div(class = "pg-hint", "An updateMascot() server call with the current settings."),
                     div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))
                   ),
                   nav_panel(
                     "App",
-                    div(class = "pg-hint", "A complete app.R: paste it into a new file and run it."),
+                    div(class = "pg-hint", "A complete Shiny app: copy and run it in a new file."),
                     div(class = "pg-code-wrap", code_output("code_app"), copy_button("code_app"))
                   ),
                   nav_panel(
                     "Last",
-                    div(class = "pg-hint", "The call the studio just ran in its server."),
+                    div(class = "pg-hint", "The latest server call run by the studio."),
                     div(class = "pg-code-wrap", code_output("code_last"), copy_button("code_last"))
                   ),
                   nav_panel(
@@ -214,7 +214,10 @@ studio_page <- function(character, fn) {
                     "Log",
                     div(
                       class = "pg-card-head",
-                      div(class = "pg-hint", "Every call and menu choice, newest first, with warnings and errors."),
+                      div(
+                        class = "pg-hint",
+                        "Recent calls and menu selections, newest first, including warnings and errors."
+                      ),
                       actionButton("log_clear", "Clear", class = "btn-outline-primary btn-sm")
                     ),
                     uiOutput("log")
@@ -414,7 +417,7 @@ studio_server <- function(input, output, session) {
     checkmate::assert_list(pair)
     bubble <- eval(pair$helper)
     updateTextAreaInput(session, "bubble_text", value = as.character(bubble$text %||% ""))
-    update_switch("bubble_html", value = inherits(bubble$text, "html"), session = session)
+    update_switch("bubble_html", value = isTRUE(bubble$html), session = session)
     update_switch("bubble_forever", value = is.infinite(bubble$duration), session = session)
     updateSliderInput(session, "bubble_duration", value = if (is.finite(bubble$duration)) bubble$duration else 5)
     update_switch("bubble_closable", value = bubble$closable, session = session)
@@ -792,8 +795,10 @@ studio_server <- function(input, output, session) {
   })
   output$menu_last <- renderText(menu_last())
   output$menu_code <- renderText({
-    if (!is.null(menu_parsed()$problem)) {
-      return(problem_comment(menu_parsed()$problem))
+    # Rejected items (a missing "=", or ids the package refuses) get a comment, never runnable code.
+    problem <- menu_parsed()$problem %||% menu_error()
+    if (!is.null(problem)) {
+      return(problem_comment(problem))
     }
     code <- menu_handler_code(menu_parsed()$items)
     if (is.null(code)) "# Add items to see the server code." else code

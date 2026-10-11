@@ -7,28 +7,29 @@
 mascot_bubble(text = NULL, duration = 5, closable = TRUE)
 }
 \arguments{
-\item{text}{A non-empty string, optionally marked with \code{\link[htmltools:HTML]{htmltools::HTML()}},
-or an \code{htmltools} tag or tag list, rendered as HTML. Tags with dependencies
-or head content are not supported and give an error. \code{NULL} (the default)
-clears the bubble.}
+\item{text}{A non-empty string, text marked with \code{\link[htmltools:HTML]{htmltools::HTML()}}, or an
+\code{htmltools} tag or tag list. Tags with dependencies or head content are
+not supported. \code{NULL} (the default) clears the bubble.}
 
-\item{duration}{A number greater than zero, in seconds. Defaults to \code{5};
-\code{Inf} or \code{NULL} keeps the bubble until closed, replaced or cleared.}
+\item{duration}{How long the bubble stays visible, in seconds. Defaults to
+\code{5}. Use \code{Inf} or \code{NULL} to keep the bubble until closed, replaced, or
+cleared.}
 
 \item{closable}{A logical flag, defaulting to \code{TRUE}, to show a close button.
-\code{FALSE} hides the button; the Escape key still closes the bubble. \code{NULL} is not accepted.}
+\code{FALSE} hides the button; the Escape key still closes the bubble. \code{NULL}
+is not accepted.}
 }
 \value{
-A \code{mascot_bubble} object with \code{text}, \code{html}, \code{duration} and
+A \code{mascot_bubble} object with \code{text}, \code{html}, \code{duration}, and
 \code{closable} elements. \code{text} is a plain string or \code{NULL}; \code{html} is a flag.
 }
 \description{
-A bubble survives mood changes and character swaps. Plain text is escaped;
-use \code{\link[htmltools:HTML]{htmltools::HTML()}} only for HTML you trust. A timed bubble pauses while
-the mascot is hidden or minimised, the pointer is over it, or focus is inside
-the mascot, then resumes with the
-time left. The Escape key closes it while focus is inside the mascot. Closing a bubble
-is final until the app supplies a new bubble.
+A speech bubble stays visible across mood changes and character swaps.
+Plain text is escaped; use \code{\link[htmltools:HTML]{htmltools::HTML()}} only for HTML you trust. A
+timed countdown pauses while the mascot is hidden, minimised, hovered over,
+or focused, and resumes with the remaining time. Pressing Escape while
+focused inside the mascot closes the bubble. Closing a bubble removes it
+until the app supplies a new one.
 }
 \details{
 Use the always visible status line for a short description of the current state.

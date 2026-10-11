@@ -50,7 +50,7 @@ role_pickers <- function(mode, roles, values = list(), name = mascot_character()
       paste0(
         "Each picker starts at ",
         name,
-        "'s own colour. Change one to add it to the theme; \u00d7 takes it out again. The round swatch shows the colour in use now."
+        "'s colour. Change one to add it to the theme. Click \u00d7 to remove it. The round swatch shows the colour in use now."
       )
     ),
     do.call(
@@ -88,7 +88,10 @@ panel_look <- function(moods = mascot_moods(), character = formals(mascot::masco
       mood_cards(moods)
     ),
     fn_heading("mascot_moods"),
-    div(class = "pg-hint", "No arguments. Its table is in the Guide; choose mascot_mood() to try a mood.")
+    div(
+      class = "pg-hint",
+      "No arguments. See its table in the Guide, or choose mascot_mood() in the function index to try a mood."
+    )
   )
 }
 
@@ -136,7 +139,7 @@ panel_messages <- function() {
         textAreaInput("menu_items", "One item per line: id = Label", "", rows = 4, resize = "vertical"),
         uiOutput("menu_problem")
       ),
-      note = div(class = "pg-note", "Click or tap the mascot to open its menu, then pick an item.")
+      note = div(class = "pg-note", "Click or tap the mascot to open its menu, then choose an item.")
     ),
     arg_field(
       "mascot_popup_menu",
@@ -145,7 +148,7 @@ panel_messages <- function() {
         "menu_direction",
         NULL,
         c(
-          "Auto (pick the side with room)" = "auto",
+          "Auto (open where there is room)" = "auto",
           "Top" = "top",
           "Bottom" = "bottom",
           "Left" = "left",
@@ -178,9 +181,12 @@ panel_motion <- function(gestures = mascot_gestures()) {
         lapply(gestures$name, function(name) try_button("gesture", name, tools::toTitleCase(name)))
       )
     ),
-    div(class = "pg-note", "One-off gestures appear in the Last tab, not in UI, Server or App."),
+    div(
+      class = "pg-note",
+      "One-off gestures appear in the Last tab of the Code tray, not in UI, Server, or App."
+    ),
     fn_heading("mascot_gestures"),
-    div(class = "pg-hint", "No arguments. Its table is shown as the gesture cards in the Guide.")
+    div(class = "pg-hint", "No arguments. See the gesture cards in the Guide.")
   )
 }
 
@@ -235,7 +241,7 @@ panel_layout <- function() {
         input_switch("minimise", "Show a minimise button", TRUE),
         conditionalPanel(
           "input.position == 'inline'",
-          div(class = "pg-note", "An inline mascot ignores minimise: pick a corner to try it.")
+          div(class = "pg-note", "An inline mascot ignores minimise. Pick a corner position to try it.")
         )
       )
     ),
@@ -246,7 +252,7 @@ panel_layout <- function() {
         selectInput("drag", "When dropped", c("No dragging (FALSE)" = "FALSE", Snap = "snap", Free = "free")),
         conditionalPanel(
           "input.position == 'inline'",
-          div(class = "pg-note", "An inline mascot ignores drag: pick a corner to try it.")
+          div(class = "pg-note", "An inline mascot ignores drag. Pick a corner position to try it.")
         ),
         div(class = "pg-live", tags$code("input$helper_position"), textOutput("position_last"))
       )
@@ -261,7 +267,11 @@ panel_colours <- function() {
       radioButtons(
         "theme_source",
         "Where the colours come from",
-        c("Character's own colours" = "own", "Your colours" = "mascot", "Your app's brand" = "bslib")
+        c(
+          "Character's own colours" = "own",
+          "Your colours" = "mascot",
+          "Your app's brand: bslib::bs_theme() instead of mascot_theme()" = "bslib"
+        )
       ),
       div(
         class = "pg-hint",
@@ -288,7 +298,11 @@ panel_colours <- function() {
           bslib::nav_panel("CSS variables", uiOutput("theme_css"))
         )
       ),
-      conditionalPanel("input.theme_source == 'bslib'", uiOutput("theme_brand")),
+      conditionalPanel(
+        "input.theme_source == 'bslib'",
+        div(class = "pg-note", "mascot(theme = ) also accepts a bslib theme; it colours the character's brand parts."),
+        uiOutput("theme_brand")
+      ),
       conditionalPanel(
         "input.theme_source != 'own'",
         actionButton("contrast_check", "Check contrast", class = "btn-outline-primary btn-sm"),
@@ -302,7 +316,7 @@ panel_colours <- function() {
         "character",
         div(
           class = "pg-note",
-          "Uses the character selected under mascot_character(). Its parts are listed in the Guide."
+          "Uses the character chosen under mascot_character(). Its colour parts appear in the Guide."
         )
       )
     )
@@ -332,18 +346,18 @@ panel_wiring <- function() {
     div(
       class = "pg-field",
       div(class = "pg-field-head", tags$strong("Several changes in one call")),
-      div(class = "pg-hint", "One message to the browser: mood, status, bubble and a gesture together."),
+      div(class = "pg-hint", "Send one message to update mood, status, bubble, and gesture together."),
       actionButton("send_many", "Celebrate a finished review", class = "btn-outline-primary btn-sm")
     ),
     arg_field(
       "updateMascot",
       "...",
       tagList(
-        selectInput("mistake", "Demonstration: try a mistake in ...", names(mistakes)),
+        selectInput("mistake", "Demonstration: try an invalid call in ...", names(mistakes)),
         uiOutput("mistake_code"),
         actionButton("mistake_run", "Run it", class = "btn-outline-danger btn-sm")
       ),
-      note = div(class = "pg-note", "The result appears in the Log tab of the dock.")
+      note = div(class = "pg-note", "The result appears in the Log tab of the Code tray.")
     ),
     arg_field(
       "updateMascot",
@@ -351,8 +365,8 @@ panel_wiring <- function() {
       tagList(
         div(
           class = "pg-hint",
-          "Demonstration: a slow step using session. Thinking now, then happy (or worried) two seconds later. ",
-          "The second call names session = session explicitly, as a callback outside a reactive context would."
+          "Demonstrates a slow task using session: thinking now, then happy (or worried) two seconds later. ",
+          "The second call passes session explicitly, as an asynchronous callback would."
         ),
         input_switch("task_fail", "Make the task fail", FALSE),
         actionButton("task_run", "Run a 2-second task", class = "btn-outline-primary btn-sm")
@@ -364,7 +378,7 @@ panel_wiring <- function() {
 panel_studio <- function() {
   inspector_function(
     "mascot_studio",
-    div(class = "pg-hint", "Opens this studio."),
+    div(class = "pg-hint", "Launches the mascot studio."),
     div(
       class = "pg-code-wrap",
       code_block('mascot_studio(fn = "mascot_theme")', "pg-code-small", id = "studio_example_call"),
@@ -388,7 +402,7 @@ panel_preview <- function(moods = mascot_moods()) {
     arg_field(
       fn,
       "character",
-      div(class = "pg-note", "Uses the character selected under mascot_character().")
+      div(class = "pg-note", "Uses the character chosen under mascot_character().")
     ),
     arg_field(
       fn,
@@ -416,7 +430,7 @@ panel_preview <- function(moods = mascot_moods()) {
           inline = TRUE
         )
       ),
-      note = div(class = "pg-note", "Phone width changes the page width; the selected pixel size stays the same.")
+      note = div(class = "pg-note", "Phone width narrows the page; the mascot pixel size stays unchanged.")
     ),
     arg_field(fn, "placement", selectInput("preview_placement", "Placement", c("inline", corners))),
     arg_field(

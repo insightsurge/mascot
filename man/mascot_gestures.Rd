@@ -10,7 +10,8 @@ mascot_gestures()
 A data frame with character columns \code{name} and \code{description}.
 }
 \description{
-Gestures play once and are available only in \code{\link[=updateMascot]{updateMascot()}}.
+Gestures play a quick movement once, without changing the mascot's mood.
+They are available only in \code{\link[=updateMascot]{updateMascot()}}.
 }
 \examples{
 mascot_gestures()

@@ -7,15 +7,15 @@
 mascot_character(name = "tessa")
 }
 \arguments{
-\item{name}{A non-empty string naming a built-in character. Defaults to
-\code{"tessa"}; \code{NULL} is not accepted.}
+\item{name}{A string naming a built-in character. Defaults to \code{"tessa"}.
+\code{NULL} is not accepted.}
 }
 \value{
 A \code{mascot_character} object with \code{id} and \code{name} elements.
 }
 \description{
-The helper behind \code{\link[=mascot]{mascot()}}'s \code{character} argument. Only Tessa is built in;
-custom characters come later.
+The helper behind the \code{character} argument of \code{\link[=mascot]{mascot()}}. Currently Tessa
+is the only built-in character.
 }
 \examples{
 mascot_character()

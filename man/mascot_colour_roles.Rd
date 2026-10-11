@@ -7,19 +7,19 @@
 mascot_colour_roles(character = "tessa")
 }
 \arguments{
-\item{character}{A non-empty built-in character name, defaulting to \code{"tessa"}.
+\item{character}{A built-in character name, defaulting to \code{"tessa"}.
 \code{NULL} is not accepted.}
 }
 \value{
 A data frame with character columns \code{role}, \code{colour}, \code{follows}
 (comma-separated leaders) and \code{shade} (\code{same}, \code{lighter} or \code{darker}).
-Roles without a follow rule have \code{NA} in \code{follows} and \code{shade}.
+Roles without a follow rule show \code{NA} in \code{follows} and \code{shade}.
 }
 \description{
-Roles are written in snake case in R. Colours are the character's own colours,
-before any theme is applied. Follow rules list leaders in priority order.
-A supplied role wins; otherwise the first supplied or filled leader is used.
-With no available leader, the role keeps its original colour.
+Lists the colour parts of a character and their default colours before
+applying a theme. When you customise colours, follower parts automatically
+derive their shade from the first leader part you set, unless you customise
+them directly. Without a matching leader, parts keep their original colours.
 }
 \examples{
 mascot_colour_roles()

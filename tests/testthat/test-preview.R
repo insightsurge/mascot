@@ -253,7 +253,8 @@ local_preview_page <- function(page, env = parent.frame()) {
     "if(document.readyState==='complete' && document.querySelector('.mascot')?.dataset.shownMood)",
     "requestAnimationFrame(()=>requestAnimationFrame(resolve));",
     "else if(performance.now()-start>",
-    browser_timeout,
+    # Shorter than the browser's own limit, so this clearer message is the one that reaches the test.
+    browser_timeout - 5000,
     ")reject(new Error('preview did not mount'));",
     "else requestAnimationFrame(check)};check()})"
   ))

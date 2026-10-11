@@ -1157,9 +1157,13 @@ describe("bubble visibility in Shiny tabs", {
     app$wait_for_js("document.querySelector('#helper canvas').getBoundingClientRect().width===0")
     remaining <- app$get_js("mascot.host.state(document.getElementById('helper')).bubble.remaining")
     expect_gt(remaining, 0)
-    app$run_js("window.hiddenUntil=Date.now()+3500")
-    app$wait_for_js("Date.now() >= window.hiddenUntil")
+    # Move the page's clock 3.5 seconds on (longer than the bubble's 3) instead of waiting: a countdown still
+    # running while hidden would now read 0, while a paused one keeps its time.
+    app$run_js(
+      "window.realNow=performance.now.bind(performance);performance.now=()=>realNow()+3500;"
+    )
     expect_equal(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.remaining"), remaining)
+    app$run_js("performance.now=window.realNow")
     app$click(selector = "a[data-value='Helper']")
     app$wait_for_js("document.querySelector('#helper canvas').getBoundingClientRect().width>0")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.text"), "Timed")

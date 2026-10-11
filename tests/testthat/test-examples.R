@@ -396,7 +396,7 @@ describe("bundled example apps", {
     code_panel <- "#code_tray_body"
     expect_identical(app$get_js("document.querySelectorAll('#studio_dock .accordion').length"), 0L)
     expect_true(app$get_js(
-      "document.getElementById('studio_panels_card').contains(document.getElementById('code_tray_body')) && document.querySelector('#studio_panels_card .bslib-full-screen-enter') !== null"
+      "document.getElementById('code_tray_body').contains(document.getElementById('studio_panels_card')) && !document.getElementById('code_tray_header').contains(document.querySelector('.bslib-full-screen-enter')) && document.querySelector('#studio_panels_card .bslib-full-screen-enter') !== null"
     ))
     expect_identical(app$get_js("document.getElementById('code_toggle').textContent.trim()"), "Code")
     expect_true(app$get_js(
@@ -485,6 +485,12 @@ describe("bundled example apps", {
     )
     app$click(selector = '[data-function="mascot_mood"] [data-event="open_guide"]')
     app$wait_for_js("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=mascot_mood]')")
+    guide_read_only <- "(() => {
+      const modal = document.querySelector('.pg-guide-modal.show');
+      return !!modal && modal.querySelectorAll('input, select, textarea, [contenteditable=true], [data-event]').length === 0 &&
+        modal.querySelectorAll('button:not(#close_guide):not([data-copy])').length === 0;
+    })()"
+    expect_true(app$get_js(guide_read_only))
     expect_identical(
       app$get_js("document.querySelector('.pg-guide-example .pg-section-title').textContent"),
       "Example: how to call mascot_mood()"
@@ -507,6 +513,22 @@ describe("bundled example apps", {
     expect_true(app$get_js(guide_removed))
     app$wait_for_js("document.activeElement === window.studioGuideOpener")
     expect_true(app$get_js("document.activeElement === window.studioGuideOpener"))
+    # Every Guide is read-only, including gesture cards and diagrams supplied by nested outputs.
+    for (fn in setdiff(getNamespaceExports("mascot"), "mascot_mood")) {
+      select_function(fn)
+      app$click(selector = sprintf('[data-function="%s"] [data-event="open_guide"]', fn))
+      app$wait_for_js(sprintf("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=%s]')", fn))
+      if (fn %in% c("mascot_size", "mascot_placement")) {
+        app$wait_for_js("!!document.querySelector('.pg-guide-modal #placement_map .pg-map')")
+      }
+      if (fn %in% c("mascot_theme", "mascot_colour_roles")) {
+        app$wait_for_js("!!document.querySelector('.pg-guide-modal #roles_table .pg-table')")
+      }
+      expect_true(app$get_js(guide_read_only))
+      app$click("close_guide")
+      app$wait_for_js(guide_removed)
+    }
+    select_function("mascot_mood")
     # Reopen the same Guide and exercise a real keyboard Escape, including cleanup.
     app$click(selector = '[data-function="mascot_mood"] [data-event="open_guide"]')
     app$wait_for_js("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=mascot_mood]')")
@@ -528,7 +550,7 @@ describe("bundled example apps", {
     expect_true(app$get_js("document.activeElement === window.studioGuideOpener"))
     app$click(selector = "#studio_panels_card .bslib-full-screen-enter")
     app$wait_for_js("document.getElementById('studio_panels_card').getAttribute('data-full-screen') === 'true'")
-    expect_true(app$get_js("document.getElementById('code_tray_body').getBoundingClientRect().height > 300"))
+    expect_true(app$get_js("document.getElementById('studio_panels_card').getBoundingClientRect().height > 300"))
     app$run_js(
       "document.getElementById('studio_panels_card').dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))"
     )
@@ -705,18 +727,62 @@ describe("bundled example apps", {
     )
     app$wait_for_js(canvas_fits)
     expect_true(app$get_js(canvas_fits))
+    # The header remains visible when collapsed; both controls reflect the same state and height.
+    tray_settled <- "(() => {
+      const dock = document.getElementById('studio_dock');
+      // During the max-height transition the computed max-height is the in-between value, so wait for it to end.
+      return dock.getAnimations().length === 0 &&
+        Math.abs(dock.getBoundingClientRect().height - parseFloat(getComputedStyle(dock).maxHeight)) < 1;
+    })()"
+    app$wait_for_js(tray_settled)
+    expanded_canvas_height <- app$get_js("document.getElementById('studio_canvas').clientHeight")
+    expanded_tray_height <- app$get_js("document.getElementById('studio_dock').getBoundingClientRect().height")
+    app$click(selector = "#code_tray_header")
+    app$wait_for_js("document.getElementById('studio_dock').classList.contains('is-closed')")
+    app$wait_for_js(tray_settled)
+    app$wait_for_js(sprintf("document.getElementById('studio_canvas').clientHeight > %f", expanded_canvas_height))
+    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "false")
+    expect_identical(app$get_js("document.getElementById('code_toggle').getAttribute('aria-expanded')"), "false")
+    expect_identical(
+      app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-controls')"),
+      "code_tray_body"
+    )
+    expect_true(app$get_js(
+      "document.getElementById('code_tray_header').getClientRects().length > 0 &&
+      document.getElementById('code_tray_body').getClientRects().length === 0 &&
+      document.getElementById('code_tray_body').inert && getComputedStyle(document.getElementById('dock_grip')).display === 'none'"
+    ))
+    collapsed_canvas_height <- app$get_js("document.getElementById('studio_canvas').clientHeight")
+    app$click(selector = "#code_tray_toggle")
+    app$wait_for_js("!document.getElementById('studio_dock').classList.contains('is-closed')")
+    app$wait_for_js(tray_settled)
+    app$wait_for_js(sprintf("document.getElementById('studio_canvas').clientHeight < %f", collapsed_canvas_height))
+    expect_true(app$get_js(sprintf(
+      "Math.abs(document.getElementById('studio_dock').getBoundingClientRect().height - %f) < 2",
+      expanded_tray_height
+    )))
+    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "true")
+    expect_true(app$get_js(
+      "!document.getElementById('code_tray_body').inert && getComputedStyle(document.getElementById('dock_grip')).display !== 'none'"
+    ))
     app$click(selector = "#code_toggle")
     app$wait_for_js("document.getElementById('studio_dock').classList.contains('is-closed')")
     expect_identical(app$get_js("document.getElementById('code_toggle').getAttribute('aria-expanded')"), "false")
+    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "false")
     expect_identical(app$get_js("document.getElementById('code_toggle').textContent.trim()"), "Code")
     app$click(selector = "#code_toggle")
     app$wait_for_js("!document.getElementById('studio_dock').classList.contains('is-closed')")
+    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "true")
     expect_true(app$get_js("JSON.parse(sessionStorage.getItem('mascot-studio-tray')).open === true"))
     expect_true(app$get_js("JSON.parse(sessionStorage.getItem('mascot-studio-tray')).height > 0"))
     # Each URL starts a new Shiny session and builds only its own view.
     app$run_js("window.location.search = '?view=preview'")
     app$wait_for_js("!!document.querySelector('iframe.pg-preview')", timeout = 15000)
     expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
+    expect_identical(
+      app$get_js("document.querySelectorAll('#preview_guide_card button, #preview_guide_card input').length"),
+      0L
+    )
     expect_true(app$get_js(
       "!!document.getElementById('preview_body') && !!document.getElementById('preview_menu_items')"
     ))
@@ -765,6 +831,10 @@ describe("bundled example apps", {
     app$run_js("window.location.search = '?view=examples'")
     app$wait_for_js("!!document.querySelector('#example_code')", timeout = 15000)
     expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
+    expect_identical(
+      app$get_js("document.querySelectorAll('#examples_guide_card button, #examples_guide_card input').length"),
+      0L
+    )
   })
   it("E2 form-check names invalid fields and becomes happy when both pass", {
     local_shiny_browser()
@@ -876,7 +946,8 @@ describe("studio round 4 regression guards", {
     guide <- get("the_guide", envir = env)
     for (corner in c("top-left", "top-right", "bottom-left", "bottom-right")) {
       html <- as.character(map(corner, FALSE, "Review character"))
-      expect_match(html, sprintf('data-value="%s"[^>]*>\\s*Review character\\s*</button>', corner))
+      expect_match(html, sprintf('data-value="%s"[^>]*>\\s*Review character\\s*</span>', corner))
+      expect_false(grepl("<button", html, fixed = TRUE))
     }
     expect_match(as.character(map("inline", FALSE, "Review character")), "Review character, inline")
     hint <- guide("mascot_character")$args$name$hint
@@ -1017,7 +1088,20 @@ describe("studio state and built previews", {
       for (fn in names(get("playground_guide", envir = env))) {
         expect_match(as.character(guide(fn)), "Warnings, errors and common mistakes", fixed = TRUE)
         session$setInputs(select_function = fn)
-        expect_match(output$guide$html, "Warnings, errors and common mistakes", fixed = TRUE)
+        html <- output$guide$html
+        expect_match(html, "Warnings, errors and common mistakes", fixed = TRUE)
+        expect_false(grepl("<(input|select|textarea)\\b|data-event=", html, perl = TRUE), info = fn)
+        buttons <- regmatches(html, gregexpr("<button\\b[^>]*>", html, perl = TRUE))[[1]]
+        expect_true(all(grepl("data-copy=", buttons, fixed = TRUE)), info = fn)
+      }
+      expect_false(grepl("<(button|input|select|textarea)\\b|data-event=", output$placement_map$html, perl = TRUE))
+      guide_page <- get("guide_content", envir = env)
+      for (category in c("preview", "examples")) {
+        expect_false(grepl(
+          "<(button|input|select|textarea)\\b|data-event=",
+          as.character(guide_page(category)),
+          perl = TRUE
+        ))
       }
       expect_identical(shiny::reactiveValuesToList(state), unchanged)
       expect_length(Filter(function(x) startsWith(x$type, "mascot:"), custom_messages), 0)

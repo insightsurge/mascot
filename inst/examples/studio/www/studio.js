@@ -110,6 +110,10 @@
     });
     const dock = document.getElementById('studio_dock');
     const toggle = document.getElementById('code_toggle');
+    const header = document.getElementById('code_tray_header');
+    const headerToggle = document.getElementById('code_tray_toggle');
+    const trayBody = document.getElementById('code_tray_body');
+    const card = document.getElementById('studio_panels_card');
     const saved = (() => {
       try {
         return JSON.parse(sessionStorage.getItem('mascot-studio-tray') || 'null');
@@ -127,17 +131,27 @@
     }
     function syncDock() {
       if (!dock) return;
-      if (!open && dock.contains(document.activeElement)) toggle?.focus();
+      if (!open && (trayBody?.contains(document.activeElement) || document.activeElement?.id === 'dock_grip')) {
+        headerToggle?.focus();
+      }
       dock.classList.toggle('is-closed', !open);
-      dock.inert = !open;
-      dock.setAttribute('aria-hidden', String(!open));
-      toggle?.setAttribute('aria-expanded', String(open));
+      if (trayBody) {
+        trayBody.inert = !open;
+        trayBody.setAttribute('aria-hidden', String(!open));
+      }
+      for (const button of [toggle, headerToggle]) {
+        button?.setAttribute('aria-expanded', String(open));
+        button?.setAttribute('aria-label', `${open ? 'Collapse' : 'Expand'} Code tray`);
+      }
     }
-    toggle?.addEventListener('click', () => {
+    function toggleTray() {
+      if (open && card?.dataset.fullScreen === 'true') document.querySelector('.bslib-full-screen-exit')?.click();
       open = !open;
       syncDock();
       saveTray();
-    });
+    }
+    toggle?.addEventListener('click', toggleTray);
+    header?.addEventListener('click', toggleTray);
     function placementControls() {
       const inline = document.querySelector('#position input:checked')?.value === 'inline';
       const minimise = document.getElementById('minimise');
@@ -173,6 +187,9 @@
     let drag = null;
     function resize(value) {
       if (!centre || !grip || !centre.clientHeight) return;
+      const dockStyle = getComputedStyle(dock);
+      const borders = parseFloat(dockStyle.borderTopWidth) + parseFloat(dockStyle.borderBottomWidth);
+      dock.style.setProperty('--pg-dock-header-height', `${header.offsetHeight + borders}px`);
       const canvas = document.getElementById('studio_canvas');
       const style = getComputedStyle(canvas);
       // Include the reserved bubble region, character, status and caption in the canvas floor.
@@ -199,6 +216,7 @@
       const observer = new ResizeObserver(() => resize(height));
       observer.observe(centre);
       observer.observe(centre.querySelector('.pg-toolbar'));
+      observer.observe(header);
       for (const child of document.getElementById('studio_canvas').children) observer.observe(child);
     }
     grip?.addEventListener('pointerdown', (event) => {
@@ -297,17 +315,6 @@
           copy.textContent = 'Copy failed';
         },
       );
-    }
-  });
-
-  // Placement shortcuts retain their keyboard focus when their diagram is rebuilt.
-  $(document).on('shiny:value', (event) => {
-    if (event.name === 'placement_map') {
-      const focused = document.activeElement?.closest('#placement_map [data-value]')?.dataset.value;
-      if (!focused) return;
-      setTimeout(() => {
-        document.querySelector(`#placement_map [data-value="${focused}"]`)?.focus();
-      }, 0);
     }
   });
 

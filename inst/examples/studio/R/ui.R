@@ -249,7 +249,7 @@ function_card <- function(fn, example = FALSE) {
   entry <- the_guide(fn)
   arguments <- names(formals(get(fn, envir = asNamespace("mascot"))))
   bslib::card(
-    full_screen = TRUE,
+    full_screen = FALSE,
     `data-guide-function` = fn,
     bslib::card_header(tags$code(paste0(fn, "()"))),
     tags$h3(class = "pg-section-title", "Description"),
@@ -460,8 +460,7 @@ visual_motion <- function() {
           class = "pg-card-mini",
           div(class = "pg-card-title", tools::toTitleCase(gestures$name[i])),
           div(class = "pg-muted", gestures$description[i]),
-          div(class = "pg-card-foot", tags$code(sprintf("gesture = \"%s\"", gestures$name[i]))),
-          try_button("gesture", gestures$name[i], "Play it")
+          div(class = "pg-card-foot", tags$code(sprintf("gesture = \"%s\"", gestures$name[i])))
         )
       })
     )
@@ -504,12 +503,9 @@ size_ruler <- function(pixels, label) {
 placement_map <- function(position, minimise, name = mascot::mascot_character()$name) {
   corner <- function(corner_id) {
     active <- identical(position, corner_id)
-    tags$button(
-      type = "button",
+    tags$span(
       class = paste("pg-map-corner", paste0("pg-", corner_id), if (active) "is-active"),
-      `data-event` = "set_position",
       `data-value` = corner_id,
-      `aria-label` = paste("Float in the", sub("-", " ", corner_id, fixed = TRUE), "corner"),
       if (active) name
     )
   }
@@ -520,10 +516,8 @@ placement_map <- function(position, minimise, name = mascot::mascot_character()$
     div(
       class = "pg-map-page",
       div(class = "pg-map-line"),
-      tags$button(
-        type = "button",
+      tags$span(
         class = paste("pg-map-inline", if (inline_active) "is-active"),
-        `data-event` = "set_position",
         `data-value` = "inline",
         if (inline_active) paste0(name, ", inline") else "inline"
       ),
@@ -541,7 +535,7 @@ placement_map <- function(position, minimise, name = mascot::mascot_character()$
           sub("-", " ", position, fixed = TRUE),
           " corner of the window",
           if (minimise) ", with a minimise button" else "",
-          ". Click a corner to move it."
+          ". Choose a position in Controls to move it."
         )
       }
     )

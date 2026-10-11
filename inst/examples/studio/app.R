@@ -116,64 +116,85 @@ studio_page <- function(character, fn) {
             `aria-valuenow` = "33",
             title = "Drag to resize, or use the up and down arrow keys"
           ),
-          bslib::card(
-            id = "studio_panels_card",
-            full_screen = TRUE,
-            bslib::card_header("Code"),
-            div(
-              id = "code_tray_body",
-              class = "pg-tray-body",
-              div(class = "pg-hint pg-code-purpose", textOutput("code_caption", inline = TRUE)),
-              div(
-                class = "pg-code-style",
-                popover(
-                  tags$button(
-                    type = "button",
-                    class = "pg-arg-chip",
-                    `aria-label` = "Shortcuts or helpers?",
-                    "Code style",
-                    tags$span(class = "pg-info", "i")
-                  ),
-                  p("Shortcuts are plain values: mood = \"happy\"."),
-                  p(
-                    "Helpers are mascot_*() calls: mood = mascot_mood(\"happy\"). Use them for settings beyond the main value, such as a bubble's duration. Both give the same mascot."
-                  ),
-                  title = "Shortcuts or helpers?"
-                ),
-                radioButtons("code_style", NULL, c(Shortcuts = "short", Helpers = "helper"), inline = TRUE)
-              ),
-              navset_underline(
-                id = "code_tabs",
-                nav_panel(
-                  "UI",
-                  div(class = "pg-hint", "A mascot() call with the current settings."),
-                  div(class = "pg-code-wrap", code_output("code_ui"), copy_button("code_ui"))
-                ),
-                nav_panel(
-                  "Server",
-                  div(class = "pg-hint", "One updateMascot() call that applies the current settings."),
-                  div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))
-                ),
-                nav_panel(
-                  "App",
-                  div(class = "pg-hint", "A complete app.R: paste it into a new file and run it."),
-                  div(class = "pg-code-wrap", code_output("code_app"), copy_button("code_app"))
-                ),
-                nav_panel(
-                  "Last",
-                  div(class = "pg-hint", "The call the studio just ran in its server."),
-                  div(class = "pg-code-wrap", code_output("code_last"), copy_button("code_last"))
-                ),
-                nav_panel(
-                  "Log",
+          # The header bar only collapses the tray; full screen belongs to the card inside the body,
+          # so the two buttons never overlap and full screen is offered only while the code shows.
+          div(
+            id = "code_tray_header",
+            class = "pg-tray-header",
+            tags$button(
+              type = "button",
+              id = "code_tray_toggle",
+              class = "pg-tray-toggle",
+              `aria-expanded` = "true",
+              `aria-controls` = "code_tray_body",
+              `aria-label` = "Collapse Code tray",
+              tags$span("Code"),
+              shiny::icon("chevron-up", class = "pg-tray-chevron")
+            )
+          ),
+          div(
+            id = "code_tray_body",
+            class = "pg-tray-body",
+            bslib::card(
+              id = "studio_panels_card",
+              full_screen = TRUE,
+              bslib::card_body(
+                # The caption and the code style switch share one line to save height.
+                div(
+                  class = "pg-code-intro",
+                  div(class = "pg-hint pg-code-purpose", textOutput("code_caption", inline = TRUE)),
                   div(
-                    class = "pg-card-head",
-                    div(class = "pg-hint", "Every call and menu choice, newest first, with warnings and errors."),
-                    actionButton("log_clear", "Clear", class = "btn-outline-primary btn-sm")
+                    class = "pg-code-style",
+                    popover(
+                      tags$button(
+                        type = "button",
+                        class = "pg-arg-chip",
+                        `aria-label` = "Shortcuts or helpers?",
+                        "Code style",
+                        tags$span(class = "pg-info", "i")
+                      ),
+                      p("Shortcuts are plain values: mood = \"happy\"."),
+                      p(
+                        "Helpers are mascot_*() calls: mood = mascot_mood(\"happy\"). Use them for settings beyond the main value, such as a bubble's duration. Both give the same mascot."
+                      ),
+                      title = "Shortcuts or helpers?"
+                    ),
+                    radioButtons("code_style", NULL, c(Shortcuts = "short", Helpers = "helper"), inline = TRUE)
+                  )
+                ),
+                navset_underline(
+                  id = "code_tabs",
+                  nav_panel(
+                    "UI",
+                    div(class = "pg-hint", "A mascot() call with the current settings."),
+                    div(class = "pg-code-wrap", code_output("code_ui"), copy_button("code_ui"))
                   ),
-                  uiOutput("log")
-                )
-              ),
+                  nav_panel(
+                    "Server",
+                    div(class = "pg-hint", "One updateMascot() call that applies the current settings."),
+                    div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))
+                  ),
+                  nav_panel(
+                    "App",
+                    div(class = "pg-hint", "A complete app.R: paste it into a new file and run it."),
+                    div(class = "pg-code-wrap", code_output("code_app"), copy_button("code_app"))
+                  ),
+                  nav_panel(
+                    "Last",
+                    div(class = "pg-hint", "The call the studio just ran in its server."),
+                    div(class = "pg-code-wrap", code_output("code_last"), copy_button("code_last"))
+                  ),
+                  nav_panel(
+                    "Log",
+                    div(
+                      class = "pg-card-head",
+                      div(class = "pg-hint", "Every call and menu choice, newest first, with warnings and errors."),
+                      actionButton("log_clear", "Clear", class = "btn-outline-primary btn-sm")
+                    ),
+                    uiOutput("log")
+                  )
+                ),
+              )
             )
           )
         )
@@ -258,19 +279,20 @@ preview_page <- function(character) {
       uiOutput("preview_frame"),
       uiOutput("preview_contrast")
     ),
-    card(full_screen = TRUE, card_header("Guide"), card_body(guide_content("preview")))
+    card(id = "preview_guide_card", full_screen = FALSE, card_header("Guide"), card_body(guide_content("preview")))
   )
 }
 
 examples_page <- layout_columns(
   col_widths = breakpoints(sm = 12, lg = c(5, 7)),
   card(
-    full_screen = TRUE,
+    id = "examples_guide_card",
+    full_screen = FALSE,
     card_header("Guide"),
     card_body(
       guide_content("examples"),
       tags$h3(class = "pg-section-title", "The examples"),
-      data_table(examples, cells = list(name = function(value) try_button("example_pick", value, value)))
+      data_table(examples)
     )
   ),
   card(
@@ -483,7 +505,6 @@ studio_server <- function(input, output, session) {
   }
 
   # Clicks on buttons that carry data-event and data-value arrive as input$<event>.
-  observeEvent(input$set_position, updateRadioButtons(session, "position", selected = input$set_position))
   observeEvent(input$select_function, {
     req(input$select_function %in% names(playground_guide))
     selected_function(input$select_function)
@@ -1124,7 +1145,6 @@ preview_server <- function(input, output, session) {
 
 examples_server <- function(input, output, session) {
   # Examples
-  observeEvent(input$example_pick, updateSelectInput(session, "example_name", selected = input$example_pick))
   output$example_result <- renderUI({
     name <- input$example_name
     path <- mascot_example(name, run = FALSE)

@@ -43,6 +43,8 @@
  * (after any fallback), otherwise its bubble's side (above inline and bottom-corner mascots, below top-corner ones).
  * The gaze is a held look/lookY pose, so it is instant and never animated; closing clears only those fields,
  * preserving the mood. Only pupils move, so eyes without visible pupils keep their look.
+ * Without a menu (Shiny only), a click on the canvas, or Enter or Space while it has focus, sets the namespaced
+ * id + '_click' to a count of clicks since mounting, with priority 'event'. A drag's ending click never counts.
  * Menus prefer above the canvas (below top corners), fitting/flipping to actual viewport space on resize/scroll.
  * Action controls use a separate strip: hover/focus reveals it, touch keeps it available, open menus hide it.
  * Restore stays reachable while minimised. Placement focus falls back to the visible menu toggle or image.
@@ -829,6 +831,34 @@
     for (const [name, handler] of Object.entries(handlers)) el.addEventListener(name, handler, name === 'click');
   }
 
+  // Without a menu the click is the app's: Shiny receives a count. A drag's click is stopped before it arrives here.
+  function listenClick(record) {
+    const active = (event) =>
+      event.target === record.canvas && !record.menuButton && Boolean(window.Shiny?.setInputValue);
+    const send = () => {
+      record.clicks += 1;
+      window.Shiny.setInputValue(`${record.el.id}_click`, record.clicks, { priority: 'event' });
+    };
+    record.clickHandlers = {
+      click(event) {
+        if (active(event)) send();
+      },
+      keydown(event) {
+        if (!active(event) || !['Enter', ' '].includes(event.key)) return;
+        // Space would otherwise scroll the page; a held key sends one click, not a stream.
+        event.preventDefault();
+        if (!event.repeat) send();
+      },
+    };
+    for (const [name, handler] of Object.entries(record.clickHandlers)) record.el.addEventListener(name, handler);
+  }
+
+  function unlistenClick(record) {
+    if (!record.clickHandlers) return;
+    for (const [name, handler] of Object.entries(record.clickHandlers)) record.el.removeEventListener(name, handler);
+    record.clickHandlers = null;
+  }
+
   function unlistenDrag(record) {
     if (!record.dragHandlers) return;
     cancelDrag(record);
@@ -1386,6 +1416,8 @@
       menuSide: null,
       gaze: JSON.stringify({ look: null, lookY: null }),
       gazeSide: null,
+      clicks: 0,
+      clickHandlers: null,
       menuButton: null,
       menuEl: null,
       menuHandlers: null,
@@ -1456,6 +1488,7 @@
       });
       listenBubble(record);
       listenDrag(record);
+      listenClick(record);
       replaceMenu(record, record.menu);
       record.handlers.clickPlacement = (event) => {
         if (!record.actions.hidden && event.target.closest('.mascot-minimise') === record.minimiseButton)
@@ -1469,6 +1502,7 @@
     } catch (error) {
       unwatch(record);
       unlistenDrag(record);
+      unlistenClick(record);
       removeMenu(record);
       if (record.handlers) {
         for (const [name, handler] of Object.entries(record.handlers))
@@ -1838,6 +1872,7 @@
     stopTimer(record);
     unwatch(record);
     unlistenDrag(record);
+    unlistenClick(record);
     for (const [name, handler] of Object.entries(record.handlers))
       el.removeEventListener(name === 'clickPlacement' ? 'click' : name, handler);
     record.actions.remove();
@@ -1861,6 +1896,7 @@
       popup_menu: JSON.parse(JSON.stringify(record.menu)),
       menuOpen: record.menuOpen,
       gaze: record.gazeSide,
+      clicks: record.clicks,
       theme: JSON.parse(JSON.stringify(record.theme)),
       mode: record.mode,
       colours: { ...record.colours },

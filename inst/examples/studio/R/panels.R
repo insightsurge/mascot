@@ -163,6 +163,22 @@ panel_messages <- function() {
         "Open the menu and watch the eyes: the mascot looks towards the side the menu opened on, ",
         "which can differ from the one chosen when that side has no room. It also looks towards a bubble."
       )
+    ),
+    div(
+      class = "pg-field",
+      id = "click_field",
+      div(
+        class = "pg-field-head",
+        tags$strong("Clicks without a menu"),
+        tags$span(class = "badge text-bg-warning", "Experimental")
+      ),
+      div(
+        class = "pg-hint",
+        "Without a menu, clicking the mascot, or pressing Enter or Space on it, sets input$helper_click. ",
+        "With a menu, the click opens the menu instead. This studio answers a click with a wave."
+      ),
+      actionButton("click_try", "Remove the menu to try clicks", class = "btn-outline-primary btn-sm"),
+      div(class = "pg-live", tags$code("input$helper_click"), textOutput("click_last"))
     )
   )
 }

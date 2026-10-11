@@ -2015,4 +2015,27 @@ describe("studio engine behaviours", {
     expect_gt(note, regexpr('id="menu_direction"', page, fixed = TRUE)[[1]])
     expect_match(page, "It also looks towards a bubble.", fixed = TRUE)
   })
+  it("shows input$helper_click live, answers it with a wave and can remove the menu to try it (#237)", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    expect_match(parts$page, 'id="click_last"', fixed = TRUE)
+    expect_match(parts$page, "Experimental", fixed = TRUE)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      expect_match(output$click_last, "Nothing yet", fixed = TRUE)
+      updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
+      # The button removes the menu, so the next click reaches the app.
+      session$setInputs(click_try = 1)
+      expect_null(updates()$patch$popup_menu$items)
+      expect_identical(updates()$fields$popup_menu, updates()$revision)
+      session$setInputs(helper_click = 1)
+      expect_identical(output$click_last, "1 click")
+      expect_match(last_call(), 'gesture = "wave"', fixed = TRUE)
+      # The log is newest first: the click event, then the studio's wave in answer.
+      expect_identical(log()[[2]]$code, "input$helper_click  # 1")
+      expect_identical(log()[[1]]$code, 'updateMascot("helper", gesture = "wave")')
+      session$setInputs(helper_click = 2)
+      expect_identical(output$click_last, "2 clicks")
+    })
+  })
 })

@@ -2262,6 +2262,104 @@ describe("mascot.host gaze (#241)", {
   })
 })
 
+describe("mascot.host click input (#237)", {
+  clicks <- "menuEvents.filter(e => e[0] === 'a_click')"
+  it("sends a count for each click, Enter or Space on a mascot without a menu", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline")
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),canvas=el.querySelector('canvas');
+      canvas.click();canvas.click();canvas.focus();
+      const key=(k,repeat=false)=>{const e=new KeyboardEvent('keydown',{key:k,repeat,bubbles:true,cancelable:true});
+        canvas.dispatchEvent(e);return e.defaultPrevented;};
+      const enter=key('Enter'),space=key(' '),held=key('Enter',true),other=key('a');
+      el.querySelector('.mascot-status').click();
+      return {events:",
+      clicks,
+      ",enter,space,held,other,clicks:mascot.host.state(el).clicks};})()"
+    ))
+    expect_identical(
+      r$events,
+      lapply(1:4, function(count) list("a_click", count, list(priority = "event")))
+    )
+    expect_true(r$enter)
+    expect_true(r$space)
+    # A held key and other keys send nothing; Space and Enter are kept from scrolling or submitting.
+    expect_true(r$held)
+    expect_false(r$other)
+    expect_identical(r$clicks, 4L)
+  })
+  it("never counts a drag, and counts a press that does not move", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = mascot_placement("top-left", drag = "snap"))
+    js(drag_js)
+    r <- js(paste0(
+      "(() => {const canvas=document.querySelector('#a canvas');
+      dragBy(canvas,400,400);canvas.click();const afterDrag=",
+      clicks,
+      ".length;
+      dragBy(canvas,1,1);canvas.click();
+      return {afterDrag,after:",
+      clicks,
+      ".length,position:menuEvents.some(e=>e[0]==='a_position')};})()"
+    ))
+    expect_identical(r$afterDrag, 0L)
+    expect_true(r$position)
+    expect_identical(r$after, 1L)
+  })
+  it("leaves the click to the menu when there is one, and sends again once it is removed", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, popup_menu = c(about = "About"), placement = "inline")
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),toggle=el.querySelector('.mascot-menu-toggle');
+      toggle.click();const open=mascot.host.state(el).menuOpen;toggle.click();
+      toggle.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+      toggle.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+      const withMenu=",
+      clicks,
+      ".length;
+      mascot.host.receive({id:'a',patch:{popup_menu:{items:null}}});
+      el.querySelector('canvas').click();
+      return {open,withMenu,after:",
+      clicks,
+      ".length};})()"
+    ))
+    expect_true(r$open)
+    expect_identical(r$withMenu, 0L)
+    expect_identical(r$after, 1L)
+  })
+  it("sends nothing from the restore button, the bubble, a static page or after unmounting", {
+    skip_without_chrome()
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = mascot_placement("bottom-right"),
+      bubble = mascot_bubble("Read this", Inf)
+    )
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a');
+      el.querySelector('.mascot-bubble-close').click();
+      el.querySelector('.mascot-minimise').click();el.querySelector('.mascot-restore').click();
+      const controls=",
+      clicks,
+      ".length;
+      const canvas=el.querySelector('canvas');mascot.host.unmount(el);canvas.click();
+      return {controls,after:",
+      clicks,
+      ".length};})()"
+    ))
+    expect_identical(r$controls, 0L)
+    expect_identical(r$after, 0L)
+    # Without Shiny the mascot stays an image: a click changes nothing and raises no error.
+    static <- local_host_page(placement = "inline")
+    expect_identical(
+      static(
+        "(() => {const el=document.getElementById('a');el.querySelector('canvas').click();return mascot.host.state(el).clicks;})()"
+      ),
+      0L
+    )
+  })
+})
+
 describe("mascot.host review corrections", {
   it("A1 keeps short-screen menu choices reachable in every corner and inline", {
     skip_without_chrome()

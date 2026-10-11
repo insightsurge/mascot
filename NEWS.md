@@ -5,6 +5,7 @@
 * `mascot()` adds a character with a mood, a status line and an optional message bubble to a Shiny app or Quarto page. It floats in the bottom-right corner by default (#190, #223).
   * `placement = "inline"` places it in the page flow; a corner name or `mascot_placement()` gives the other options (#223).
   * `bubble` shows a message (#196), `size` takes pixels, a percentage or `mascot_size()` (#201), `theme` takes colours, a `bslib::bs_theme()` or `mascot_theme()` (#202), `motion = FALSE` stops animation (#203), and `popup_menu` adds a click menu (#143, #225).
+  * *Experimental:* without a menu, clicking the mascot, or pressing Enter or Space on it, sets `input$<id>_click` to the number of clicks, so an app can attach its own action. A drag never counts as a click. The input's name and value may change before CRAN (#237).
 
 * `mascot_bubble()` sets a speech bubble with escaped text, or HTML only through `htmltools::HTML()` or tags (#196).
   * `duration` is in seconds (default `5`); `duration = Inf` or `NULL` keeps the bubble until it is closed, replaced or cleared. `closable = FALSE` hides the close button; Escape still closes the bubble (#196).
@@ -41,6 +42,7 @@
 * `mascot_popup_menu()` adds a click menu of app-defined items. A chosen item sets `input$<id>_menu` to its ID, so choosing the same item twice triggers the input twice (#143, #213).
   * `direction` is `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`. The menu opens from the mascot's on-screen position, and falls back to the opposite side when the chosen side has no room (#225).
   * Opening the menu closes a speech bubble, and a new bubble closes an open menu (#225).
+  * With a menu, a click opens the menu and does not set `input$<id>_click` (#237).
   * Enter and Space toggle the focused menu control; the arrow keys, Home and End move between items, and Escape closes the menu (#213).
   * While the menu is open, the mascot looks towards it: up, down, left or right, on the side where the menu actually opened, after any fallback. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208, #241).
 

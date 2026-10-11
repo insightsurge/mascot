@@ -805,6 +805,18 @@ studio_server <- function(input, output, session) {
     }
   })
   output$menu_last <- renderText(menu_last())
+  # Clicks reach the app only without a menu: the button removes the menu, as switching it off does.
+  observeEvent(input$click_try, {
+    update_switch("menu_on", value = FALSE, session = session)
+    send(list(popup_menu = code_menu(character(), input$menu_direction %||% "auto")), force = TRUE)
+  })
+  click_last <- reactiveVal("Nothing yet: remove the menu, then click or tap the mascot.")
+  observeEvent(input$helper_click, {
+    click_last(paste(input$helper_click, if (input$helper_click == 1) "click" else "clicks"))
+    add_log(sprintf("input$helper_click  # %s", input$helper_click), "event", "The visitor clicked the mascot.")
+    send(list(gesture = code_gesture("wave")), force = TRUE, remember = FALSE)
+  })
+  output$click_last <- renderText(click_last())
   output$menu_code <- renderText({
     # Rejected items (a missing "=", or ids the package refuses) get a comment, never runnable code.
     problem <- menu_parsed()$problem %||% menu_error()

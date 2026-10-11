@@ -258,3 +258,45 @@ describe("mascot() popup menu", {
     expect_error(mascot(id = "a", popup_menu = c("Help")), "items.*names must")
   })
 })
+
+describe("mascot() clicks in a Shiny browser (#237)", {
+  it("sets input$<id>_click in a module for clicks and Enter, and leaves a menu's click to the menu", {
+    local_shiny_browser()
+    app <- app_driver(function() {
+      library(mascot)
+      ui <- function(id) {
+        ns <- shiny::NS(id)
+        shiny::tagList(
+          mascot(id = ns("helper"), placement = "inline"),
+          shiny::textOutput(ns("clicks")),
+          mascot(id = ns("menu"), placement = "inline", popup_menu = c(about = "About")),
+          shiny::textOutput(ns("menu_clicks"))
+        )
+      }
+      shiny::shinyApp(shiny::fluidPage(ui("module")), function(input, output, session) {
+        shiny::moduleServer("module", function(input, output, session) {
+          output$clicks <- shiny::renderText(if (is.null(input$helper_click)) 0 else input$helper_click)
+          output$menu_clicks <- shiny::renderText(if (is.null(input$menu_click)) 0 else input$menu_click)
+        })
+      })
+    })
+    withr::defer(app$stop())
+    app$wait_for_js("!!document.querySelector('#module-menu .mascot-menu-toggle')")
+    # Given a mascot without a menu: each click and each Enter on it reaches its module's server.
+    app$click(selector = "#module-helper canvas")
+    app$wait_for_js("document.getElementById('module-clicks').textContent === '1'")
+    app$click(selector = "#module-helper canvas")
+    app$wait_for_js("document.getElementById('module-clicks').textContent === '2'")
+    app$run_js(
+      "const canvas=document.querySelector('#module-helper canvas');canvas.focus();
+      canvas.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));"
+    )
+    app$wait_for_js("document.getElementById('module-clicks').textContent === '3'")
+    # With a menu, the click opens the menu and sets no click input.
+    app$click(selector = "#module-menu .mascot-menu-toggle")
+    app$wait_for_js("mascot.host.state(document.getElementById('module-menu')).menuOpen")
+    app$wait_for_idle()
+    expect_identical(app$get_js("document.getElementById('module-menu_clicks').textContent"), "0")
+    expect_null(app$get_value(input = "module-menu_click"))
+  })
+})

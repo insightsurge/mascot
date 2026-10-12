@@ -66,22 +66,15 @@ mascot("still", motion = FALSE)
 shiny::shinyApp(
   shiny::fluidPage(
     shiny::checkboxInput("idle", "Allow idle movement", TRUE),
-    shiny::checkboxInput("dark", "Dark mascot colours", FALSE),
-    shiny::actionButton("reset", "Use the character's colours"),
+    shiny::actionButton("nod", "Nod"),
     mascot("helper")
   ),
   function(input, output, session) {
     shiny::observeEvent(input$idle, {
       update_mascot("helper", motion = mascot_motion_settings(idle = input$idle))
     })
-    shiny::observeEvent(input$dark, {
-      update_mascot("helper", theme = mascot_theme(
-        light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"),
-        mode = if (input$dark) "dark" else "light"
-      ))
-    }, ignoreInit = TRUE)
-    shiny::observeEvent(input$reset, {
-      update_mascot("helper", theme = mascot_theme())
+    shiny::observeEvent(input$nod, {
+      update_mascot("helper", gesture = "nod")
     })
   }
 )

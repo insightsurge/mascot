@@ -140,8 +140,15 @@ panel_messages <- function() {
       "mascot_popup_menu",
       "items",
       tagList(
-        input_switch("menu_on", "Show the menu", FALSE),
-        textAreaInput("menu_items", "One item per line: id = Label", "", rows = 4, resize = "vertical"),
+        # The controls start with the menu the mascot starts with (start$popup_menu in app.R).
+        input_switch("menu_on", "Show the menu", TRUE),
+        textAreaInput(
+          "menu_items",
+          "One item per line: id = Label",
+          paste(names(default_menu), "=", default_menu, collapse = "\n"),
+          rows = 4,
+          resize = "vertical"
+        ),
         uiOutput("menu_problem")
       ),
       note = div(class = "pg-note", "Click or tap the mascot to open its menu, then choose an item.")

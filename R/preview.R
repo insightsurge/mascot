@@ -138,16 +138,16 @@ mascot_preview <- function(
     `aria-labelledby` = paste0(prefix, "-heading"),
     # Only safe converted colours go in custom properties; layout lives in CSS.
     style = paste0(
-      "--mascot-preview-light-bg:",
+      "--_mascot-preview-light-bg:",
       surfaces$background[["light"]],
       ";",
-      "--mascot-preview-dark-bg:",
+      "--_mascot-preview-dark-bg:",
       surfaces$background[["dark"]],
       ";",
-      "--mascot-preview-light-fg:",
+      "--_mascot-preview-light-fg:",
       surfaces$foreground[["light"]],
       ";",
-      "--mascot-preview-dark-fg:",
+      "--_mascot-preview-dark-fg:",
       surfaces$foreground[["dark"]],
       ";"
     ),

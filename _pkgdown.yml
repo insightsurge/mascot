@@ -60,6 +60,7 @@ reference:
       - mascot_popup_menu
       - mascot_motion_settings
       - mascot_theme
+      - mascot_styling
       - mascot_colour_roles
       - mascot_status
       - mascot_bubble

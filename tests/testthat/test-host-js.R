@@ -1180,7 +1180,7 @@ describe("size and placement review regressions", {
     shift <- function() {
       host_layout(
         js,
-        "dispatchEvent(new Event('resize'));return el.style.getPropertyValue('--mascot-bubble-shift');"
+        "dispatchEvent(new Event('resize'));return el.style.getPropertyValue('--_mascot-bubble-shift');"
       )
     }
     first <- shift()

@@ -368,9 +368,19 @@ panel_layout <- function() {
 }
 
 panel_colours <- function() {
+  styling <- help_rd("mascot_styling")
   tagList(
     inspector_function(
       "mascot_theme",
+      tags$details(
+        tags$summary("Styling panels and the restore button with CSS"),
+        div(
+          class = "pg-help",
+          lapply(rd_sections(styling, "\\section"), function(section) {
+            tagList(tags$h4(rd_text(section[[1]])), rd_html(section[[2]]))
+          })
+        )
+      ),
       arg_field("mascot_theme", "...", NULL),
       radioButtons(
         "theme_source",

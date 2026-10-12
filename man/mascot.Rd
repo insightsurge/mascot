@@ -43,7 +43,11 @@ head content are not supported.}
 \item{size}{A finite number of CSS pixels (at least \code{24}), a positive
 percentage string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} object. Defaults to
 \code{160}. Percentages follow the parent width when inline and the window width
-when floating, with a 24-pixel floor. \code{NULL} is not accepted.}
+when floating, with a 24-pixel floor. On screens at most 575.98 CSS pixels
+wide, floating mascots scale down to a phone size by default (\code{"auto"}),
+while inline mascots stay unchanged. Pass \code{\link[=mascot_size]{mascot_size()}} with
+\code{small_screen = NULL} to keep the same size everywhere. \code{NULL} is not
+accepted.}
 
 \item{placement}{\code{"bottom-right"} (the default), \code{"inline"}, a corner
 such as \code{"top-left"}, a named list such as \code{list(position = "top-left", minimise = TRUE, drag = "snap")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object.

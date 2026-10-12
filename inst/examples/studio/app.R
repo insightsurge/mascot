@@ -560,7 +560,15 @@ studio_server <- function(input, output, session) {
   size_code <- reactive({
     # Sliders send whole numbers as integers; the code shows plain numbers.
     size <- if (input$size_unit == "pct") paste0(input$size_pct, "%") else as.numeric(input$size_px)
-    code_size(size, if (input$small_on) as.numeric(input$small_px))
+    mode <- input$small_mode %||% "auto"
+    small_screen <- switch(
+      mode,
+      auto = "auto",
+      same = NULL,
+      number = as.numeric(input$small_px),
+      "auto"
+    )
+    code_size(size, small_screen)
   })
   observeEvent(size_code(), send(list(size = size_code())), ignoreInit = TRUE)
   observeEvent(

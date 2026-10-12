@@ -176,6 +176,11 @@ body.quarto-dark {
   .mascot {
     --mascot-size: var(--mascot-size-small, var(--mascot-size-default, 160px));
   }
+
+  /* Phone size chosen by the founder in the studio. */
+  .mascot[data-floating="true"][data-small-screen="auto"] {
+    --mascot-size: min(var(--mascot-size-default, 160px), 96px);
+  }
 }
 
 .mascot [hidden] {

@@ -21,7 +21,11 @@
 #' @param size A finite number of CSS pixels (at least `24`), a positive
 #'   percentage string such as `"20%"`, or a [mascot_size()] object. Defaults to
 #'   `160`. Percentages follow the parent width when inline and the window width
-#'   when floating, with a 24-pixel floor. `NULL` is not accepted.
+#'   when floating, with a 24-pixel floor. On screens at most 575.98 CSS pixels
+#'   wide, floating mascots scale down to a phone size by default (`"auto"`),
+#'   while inline mascots stay unchanged. Pass [mascot_size()] with
+#'   `small_screen = NULL` to keep the same size everywhere. `NULL` is not
+#'   accepted.
 #' @param placement `"bottom-right"` (the default), `"inline"`, a corner
 #'   such as `"top-left"`, a named list such as `list(position = "top-left",
 #'   minimise = TRUE, drag = "snap")`, or a [mascot_placement()] object.

@@ -308,8 +308,20 @@ panel_layout <- function() {
       "mascot_size",
       "small_screen",
       tagList(
-        input_switch("small_on", "Use a different size on small screens", FALSE),
-        conditionalPanel("input.small_on", sliderInput("small_px", "Pixels", min = 24, max = 160, value = 72, step = 4))
+        radioButtons(
+          "small_mode",
+          NULL,
+          c(
+            "Auto (phone size when floating)" = "auto",
+            "Same size on every screen (NULL)" = "same",
+            "Specific size (pixels)" = "number"
+          ),
+          selected = "auto"
+        ),
+        conditionalPanel(
+          "input.small_mode == 'number'",
+          sliderInput("small_px", "Pixels", min = 24, max = 160, value = 72, step = 4)
+        )
       )
     ),
     fn_heading("mascot_placement"),

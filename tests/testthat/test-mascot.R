@@ -13,6 +13,7 @@ describe("mascot()", {
         `data-mood` = "idle",
         `data-status` = "mood",
         `data-size` = 160,
+        `data-small-screen` = "auto",
         `data-floating` = "true",
         `data-position` = "bottom-right",
         `data-minimise` = "true",

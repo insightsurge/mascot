@@ -61,8 +61,8 @@
   * Light and dark backgrounds are checked separately. Contrast warnings have the class `mascot_contrast` (#213).
   * Each cell is wide enough for its bubble, so bubbles no longer cover neighbouring cells at any size (#244).
 
-* `mascot_size(size = 160, ..., small_screen = NULL)` sets the size in CSS pixels (at least 24) or as a percentage: of the parent width when inline, or of the window width when floating (#201).
-  * `small_screen` sets a different size for screens up to 575.98 pixels wide (#201).
+* `mascot_size(size = 160, ..., small_screen = "auto")` sets the size in CSS pixels (at least 24) or as a percentage: of the parent width when inline, or of the window width when floating (#201).
+  * `small_screen = "auto"` (the default) scales floating mascots down on phones (at most 96 pixels) while leaving inline mascots unchanged. `small_screen = NULL` keeps the same size on every screen (#261).
 
 * `mascot_status()` sets the status text beside the mascot. The text is always plain, and `NULL` (the default) follows the mood (#190).
 
@@ -84,6 +84,8 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* The studio's sidebars use an opaque page background on phones, hiding the floating mascot beneath them in light and dark mode (#265).
 
 * Helper print methods show calls using only non-default public arguments; their fields are internal. Listings return base data frames with stable existing columns and the accepted value in the first column (#259).
 

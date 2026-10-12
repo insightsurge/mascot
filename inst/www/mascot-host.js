@@ -10,7 +10,8 @@
  * Custom status persists across swaps. Development problems temporarily cover it and use a worried mood;
  * the next good patch clears the problem and restores the earlier mood unless it chooses another.
  * The host owns canvas dimensions (CSS size times pixel ratio), the 300-unit transform and accessible text.
- * Size patches are { size: pixels|percentage, small_screen: pixels|percentage|null }; every size draws in full.
+ * Size patches are { size: pixels|percentage, small_screen: pixels|percentage|'auto'|null }; every size draws in full.
+ * 'auto' leaves the phone size to the CSS rule for floating mascots; null keeps one size at every width.
  * Placement patches are { floating: boolean, position: corner, minimise: boolean, drag: false|'snap'|'free' };
  * neither patch remounts the engine. A floating mascot with drag follows a pointer pressed on its canvas or its
  * restore button while minimised (pointer capture; a few pixels of movement before a press becomes a drag, so a
@@ -564,7 +565,7 @@
     )
       throw new Error('size needs size and small_screen fields');
     validateSizeValue(next.size);
-    if (next.small_screen !== null) validateSizeValue(next.small_screen);
+    if (next.small_screen !== null && next.small_screen !== 'auto') validateSizeValue(next.small_screen);
     return { ...next };
   }
 
@@ -587,6 +588,7 @@
   }
 
   function sizeAttribute(value) {
+    if (value === 'auto') return 'auto';
     return typeof value === 'string' && value.endsWith('%') ? value : Number(value);
   }
 
@@ -685,7 +687,11 @@
     if (placement.floating && point) placeAt(record, point);
     else unplace(record);
     el.style.setProperty('--mascot-size-default', sizeCSS(size.size, placement.floating));
-    el.style.setProperty('--mascot-size-small', sizeCSS(size.small_screen ?? size.size, placement.floating));
+    if (size.small_screen === null || size.small_screen === 'auto') {
+      el.style.removeProperty('--mascot-size-small');
+    } else {
+      el.style.setProperty('--mascot-size-small', sizeCSS(size.small_screen, placement.floating));
+    }
     record.minimiseButton.hidden = !placement.floating || !placement.minimise || record.minimised;
     record.restoreButton.hidden = !record.minimised;
     record.canvas.hidden = record.minimised;

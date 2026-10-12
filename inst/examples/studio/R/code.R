@@ -92,13 +92,17 @@ code_motion <- function(
   code_pair(helper, helper)
 }
 
-code_size <- function(size, small_screen) {
-  helper <- helper_call(
-    "mascot_size",
-    size,
-    small_screen = small_screen
-  )
-  code_pair(if (length(helper) == 2) size else helper, helper)
+code_size <- function(size, small_screen = "auto") {
+  if (identical(small_screen, "auto")) {
+    helper <- helper_call("mascot_size", size)
+    code_pair(if (length(helper) == 2) size else helper, helper)
+  } else if (is.null(small_screen)) {
+    helper <- as.call(list(quote(mascot_size), size, small_screen = NULL))
+    code_pair(helper, helper)
+  } else {
+    helper <- helper_call("mascot_size", size, small_screen = small_screen)
+    code_pair(helper, helper)
+  }
 }
 
 code_placement <- function(position = "bottom-right", ..., minimise = TRUE, drag = "none") {

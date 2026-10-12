@@ -14,9 +14,10 @@ names and types. The first column is the value you pass to the matching function
 }
 \description{
 Start with the studio: every exported function and argument, live, with
-explanations and the code to copy. The other examples are each one copyable
-\code{app.R} for one scenario. All work offline and need the optional \code{bslib}
-package.
+explanations and the code to copy. The other examples show one scenario each.
+All work offline. The studio and single-file examples need optional \code{bslib};
+the \code{golem} example needs optional \code{golem}. The rhino-shaped example uses
+plain Shiny without rhino or box.
 }
 \examples{
 mascot_examples()

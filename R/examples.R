@@ -1,9 +1,10 @@
 #' List the bundled example apps
 #'
 #' Start with the studio: every exported function and argument, live, with
-#' explanations and the code to copy. The other examples are each one copyable
-#' `app.R` for one scenario. All work offline and need the optional `bslib`
-#' package.
+#' explanations and the code to copy. The other examples show one scenario each.
+#' All work offline. The studio and single-file examples need optional `bslib`;
+#' the `golem` example needs optional `golem`. The rhino-shaped example uses
+#' plain Shiny without rhino or box.
 #' @returns A data frame with character columns `name`, `title` and `description`,
 #'   in teaching order. `name` is accepted by [mascot_example()].
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
@@ -15,14 +16,24 @@
 #' mascot_examples()
 mascot_examples <- function() {
   data.frame(
-    name = c("studio", "form-check", "long-task", "modules", "branding"),
-    title = c("Mascot studio", "Check a form", "Show task progress", "Work in modules", "Personalise Tessa"),
+    name = c("studio", "form-check", "long-task", "modules", "branding", "golem", "rhino"),
+    title = c(
+      "Mascot studio",
+      "Check a form",
+      "Show task progress",
+      "Work in modules",
+      "Personalise Tessa",
+      "Work in golem",
+      "Use a rhino-shaped structure"
+    ),
     description = c(
       "Every function and argument, live, with explanations and the code to copy.",
       "A worried helper names invalid fields and becomes happy when both pass.",
       "Thinking during a slow step, then success or a lasting error bubble.",
       "Two module helpers and a parent-owned floating helper.",
-      "Brand colours, light/dark mode and an About menu. Requires bslib."
+      "Brand colours, light/dark mode and an About menu. Requires bslib.",
+      "Function-built UI, golem runtime options and two nested review modules. Requires golem.",
+      "Plain Shiny view modules with two nested reviews; no rhino or box needed."
     ),
     stringsAsFactors = FALSE
   )
@@ -32,9 +43,10 @@ mascot_examples <- function() {
 #'
 #' Opens only the requested example, like [shiny::runExample()]. No files are
 #' copied or written by this function. Use `run = FALSE` to read the app's code
-#' or pass its directory to [shiny::runApp()]. Each scenario's `app.R` can be
-#' copied alone into a project with Shiny, `bslib` and mascot installed; the
-#' studio is a folder, with its helpers in `R/` and its styles in `www/`.
+#' or pass its directory to [shiny::runApp()]. The single-file scenarios can be
+#' copied into a project with Shiny, `bslib` and mascot installed. Copy the whole
+#' folder for the studio, `golem` and rhino-shaped examples; `golem` also needs the
+#' `golem` package.
 #' @param name A required non-empty string from [mascot_examples()]'s `name`
 #'   column. `NULL` is not accepted.
 #' @param ... Must be empty. Forces the arguments after it to be named.

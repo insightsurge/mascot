@@ -74,6 +74,13 @@
 #'
 #' In Shiny the mascot uses an input binding. Its input value (`input$<id>`) is an
 #' internal value that tells the server the mascot appeared; do not rely on its contents.
+#'
+#' **In modules, `golem` and rhino apps.** Use the module's `ns()` in the UI and
+#' its local id in the server. `session$ns("helper")` also works in the server;
+#' the namespace is added once. In nested modules, namespace the child module's
+#' id in the parent UI and call its server with the local child id. Inputs such
+#' as `input$helper_menu`, `input$helper_click`, `input$helper_position` and
+#' `input$helper_minimised` belong to that child module.
 #' A module can put the mascot in its UI and update it from its server:
 #' ```r
 #' helper_ui <- function(id) {
@@ -86,6 +93,14 @@
 #'   })
 #' }
 #' ```
+#'
+#' The same pattern works in the function-built `app_ui()` of a `golem` app and in
+#' rhino's `app/view/` modules using [shiny::moduleServer()]. The engine's
+#' scripts and styles are attached through [htmltools::htmlDependency()],
+#' including with [shiny::renderUI()], and shared by mascots on the page.
+#' No app-side copying of engine files is needed. Try
+#' `mascot_example("golem")` (requires `golem`) or `mascot_example("rhino")`
+#' (a plain Shiny structure without rhino or box).
 #'
 #' **Showing the mascot later.** To add the mascot only when it is needed, build
 #' it in the server with [shiny::renderUI()] and place [shiny::uiOutput()] in the

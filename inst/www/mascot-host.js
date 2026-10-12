@@ -941,6 +941,7 @@
     }
     stopTimer(record);
     record.minimised = value;
+    window.Shiny?.setInputValue?.(`${record.el.id}_minimised`, value, { priority: 'event' });
     layout(record);
     if (moving) {
       const target = (value ? record.restoreButton : record.canvas).getBoundingClientRect();

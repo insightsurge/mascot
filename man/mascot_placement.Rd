@@ -82,6 +82,8 @@ CSS pixels from the window's top-left, after a free drop. A later
 has no keyboard alternative; the minimise control stays reachable by keyboard.
 Remembering a position between visits is the app's job: for example, save
 the corner and pass it back as \code{position} next time.
+In Shiny, minimising or restoring sets \verb{input$<id>_minimised} to a logical
+flag in the module that owns the mascot.
 }
 
 \examples{

@@ -3290,7 +3290,13 @@ describe("mascot.host dragging", {
     expect_identical(result$position, "top-left")
     expect_false(result$dragging)
     expect_false(result$menu)
-    expect_identical(result$events, list(list("a_position", "top-left", list(priority = "event"))))
+    expect_identical(
+      result$events,
+      list(
+        list("a_minimised", TRUE, list(priority = "event")),
+        list("a_position", "top-left", list(priority = "event"))
+      )
+    )
     expect_identical(result$touch, "none")
     expect_identical(result$cursor, "grab")
     expect_equal(result$x, 16)
@@ -3301,23 +3307,39 @@ describe("mascot.host dragging", {
       press(button,'pointerdown',x,y);press(button,'pointermove',x+2,y+1);press(button,'pointerup',x+2,y+1);
       button.click();const s=mascot.host.state(el),restored=el.getBoundingClientRect();
       return {minimised:s.minimised,position:s.placement.position,menu:s.menuOpen,
-        x:restored.left,y:restored.top,events:menuEvents.length};"
+        x:restored.left,y:restored.top,events:menuEvents};"
     )
     expect_false(result$minimised)
     expect_identical(result$position, "top-left")
     expect_false(result$menu)
     expect_equal(result$x, 16)
     expect_equal(result$y, 16)
-    expect_identical(result$events, 1L)
+    expect_identical(
+      result$events,
+      list(
+        list("a_minimised", TRUE, list(priority = "event")),
+        list("a_position", "top-left", list(priority = "event")),
+        list("a_minimised", FALSE, list(priority = "event"))
+      )
+    )
     result <- host_layout(
       js,
       "const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
       const button=el.querySelector('.mascot-restore'),r=button.getBoundingClientRect();
       press(button,'pointerdown',r.left+24,r.top+24);press(button,'pointerup',r.left+24,r.top+24);button.click();
-      return {minimised:mascot.host.state(el).minimised,events:menuEvents.length};"
+      return {minimised:mascot.host.state(el).minimised,events:menuEvents};"
     )
     expect_false(result$minimised)
-    expect_identical(result$events, 1L)
+    expect_identical(
+      result$events,
+      list(
+        list("a_minimised", TRUE, list(priority = "event")),
+        list("a_position", "top-left", list(priority = "event")),
+        list("a_minimised", FALSE, list(priority = "event")),
+        list("a_minimised", TRUE, list(priority = "event")),
+        list("a_minimised", FALSE, list(priority = "event"))
+      )
+    )
   })
   it("D6 reports a minimised free drop, keeps it inside the window and cancels it on a placement update", {
     skip_without_chrome()
@@ -3339,7 +3361,13 @@ describe("mascot.host dragging", {
     expect_equal(result$x, 336)
     expect_equal(result$y, 196)
     expect_identical(result$dropped, list(x = 336L, y = 196L))
-    expect_identical(result$events, list(list("a_position", list(x = 336L, y = 196L), list(priority = "event"))))
+    expect_identical(
+      result$events,
+      list(
+        list("a_minimised", TRUE, list(priority = "event")),
+        list("a_position", list(x = 336L, y = 196L), list(priority = "event"))
+      )
+    )
     result <- host_layout(
       js,
       "const el=document.getElementById('a'),button=el.querySelector('.mascot-restore');
@@ -3369,14 +3397,18 @@ describe("mascot.host dragging", {
       mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'top-right',minimise:true,drag:false}}});
       press(button,'pointerup',100,100);button.click();const s=mascot.host.state(el);
       return {minimised:s.minimised,dragging:s.dragging,dropped:s.dropped,position:s.placement.position,
-        placed:el.dataset.placed===undefined,events:menuEvents.length};"
+        placed:el.dataset.placed===undefined,events:menuEvents};"
     )
     expect_true(result$minimised)
     expect_false(result$dragging)
     expect_null(result$dropped)
     expect_identical(result$position, "top-right")
     expect_true(result$placed)
-    expect_identical(result$events, 2L)
+    expect_identical(
+      vapply(result$events, `[[`, character(1), 1L),
+      c("a_minimised", "a_position", "a_position", "a_minimised", "a_minimised")
+    )
+    expect_identical(lapply(result$events[c(1, 4, 5)], `[[`, 2L), list(TRUE, FALSE, TRUE))
   })
 })
 

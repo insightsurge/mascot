@@ -1,24 +1,24 @@
 describe("mascot_examples()", {
-  it("lists the studio and four scenario apps in order with readable metadata", {
+  it("lists the studio and six scenario apps in order with readable metadata", {
     examples <- mascot_examples()
     expect_s3_class(examples, "data.frame")
     expect_named(examples, c("name", "title", "description"))
-    expect_identical(examples$name, c("studio", "form-check", "long-task", "modules", "branding"))
+    expect_identical(examples$name, c("studio", "form-check", "long-task", "modules", "branding", "golem", "rhino"))
     expect_true(all(vapply(examples, is.character, logical(1))))
     expect_true(all(nzchar(unlist(examples))))
     expect_identical(anyDuplicated(examples$name), 0L)
     expect_match(examples$description[examples$name == "branding"], "Requires bslib")
   })
-  it("copies each scenario's app.R alone, or the studio's folder, and builds it without a server", {
+  it("copies single-file scenarios and the studio and rhino folders, and builds it without a server", {
     # mascot is already attached by the test run; attaching it here would detach it on exit.
     withr::local_package("shiny")
     if (requireNamespace("bslib", quietly = TRUE)) {
       withr::local_package("bslib")
     }
-    for (name in mascot_examples()$name) {
+    for (name in setdiff(mascot_examples()$name, "golem")) {
       file <- mascot_example(name, run = FALSE)
       expect_true(file.exists(file), info = name)
-      # The studio is a folder (app.R, R/ and www/); every other example is one file.
+      # The studio and framework examples need their whole folder.
       sources <- list.files(dirname(file), recursive = TRUE)
       if (name == "studio") {
         expect_setequal(
@@ -35,6 +35,8 @@ describe("mascot_examples()", {
             "www/studio.js"
           )
         )
+      } else if (name == "rhino") {
+        expect_setequal(sources, c("app.R", "app/view/main.R", "app/view/review.R"))
       } else {
         expect_identical(sources, "app.R", info = name)
       }
@@ -44,7 +46,7 @@ describe("mascot_examples()", {
       for (script in list.files(dir, pattern = "[.]R$", recursive = TRUE, full.names = TRUE)) {
         expect_type(parse(script), "expression")
       }
-      if (!requireNamespace("bslib", quietly = TRUE)) {
+      if (name != "rhino" && !requireNamespace("bslib", quietly = TRUE)) {
         # shinyAppDir() reads app.R on the first request.
         expect_error(shiny::shinyAppDir(dir)$httpHandler(list(PATH_INFO = "/")), "example needs bslib")
       } else {
@@ -2354,5 +2356,63 @@ describe("studio motion settings builders", {
       mascot_motion_settings(messages = c("bubble", "tooltip"))
     )
     expect_error(env$code_motion(messages = c("follow", "menu")), "Choose Follow others")
+  })
+})
+
+
+describe("framework examples", {
+  it("copies the golem folder and retains its runtime options", {
+    skip_if_not_installed("golem")
+    file <- mascot_example("golem", run = FALSE)
+    expect_setequal(
+      list.files(dirname(file), recursive = TRUE),
+      c("app.R", "R/app_ui.R", "R/app_server.R", "R/mod-review.R")
+    )
+    copy <- withr::local_tempdir()
+    expect_true(file.copy(dirname(file), copy, recursive = TRUE))
+    dir <- file.path(copy, "golem")
+    withr::local_dir(dir)
+    for (script in list.files(dir, pattern = "[.]R$", recursive = TRUE, full.names = TRUE)) {
+      expect_type(parse(script), "expression")
+    }
+    app <- source("app.R", local = new.env())$value
+    expect_s3_class(app, "shiny.appobj")
+    expect_identical(app$appOptions$golem_options, list(title = "Reviews in golem", complete = "Review complete"))
+  })
+  it("runs golem runtime helpers with two independent nested modules", {
+    skip_if_not_installed("golem")
+    local_shiny_browser()
+    app <- example_driver("golem")
+    withr::defer(app$stop())
+    app$wait_for_js("document.querySelector('h1').textContent === 'Reviews in golem'")
+    app$wait_for_js("!!mascot.host.state(document.getElementById('first-review-helper'))")
+    app$click("first-review-complete")
+    app$wait_for_js(
+      "mascot.host.state(document.getElementById('first-review-helper')).status.text === 'Review complete'"
+    )
+    expect_identical(app$get_js("mascot.host.state(document.getElementById('first-review-helper')).mood"), "happy")
+    expect_identical(app$get_js("mascot.host.state(document.getElementById('second-review-helper')).mood"), "idle")
+    app$click(selector = "#first-review-helper .mascot-menu-toggle")
+    app$click(selector = "#first-review-helper [role=menuitem]")
+    app$wait_for_js("document.getElementById('first-review-choice').textContent === 'about'")
+    expect_identical(app$get_value(output = "first-review-choice"), "about")
+    expect_identical(app$get_js("document.getElementById('second-review-choice').textContent"), "")
+    app$click("second-review-complete")
+    app$wait_for_js("mascot.host.state(document.getElementById('second-review-helper')).mood === 'happy'")
+    expect_equal(app$get_js("document.querySelectorAll('script[src$=\"/mascot-host.js\"]').length"), 1)
+  })
+  it("runs plain Shiny view modules in the rhino-shaped folder", {
+    local_shiny_browser()
+    app <- example_driver("rhino")
+    withr::defer(app$stop())
+    app$wait_for_js("!!mascot.host.state(document.getElementById('second-review-helper'))")
+    app$click("second-review-complete")
+    app$wait_for_js("mascot.host.state(document.getElementById('second-review-helper')).mood === 'happy'")
+    expect_identical(app$get_js("mascot.host.state(document.getElementById('first-review-helper')).mood"), "idle")
+    app$click(selector = "#second-review-helper .mascot-menu-toggle")
+    app$click(selector = "#second-review-helper [role=menuitem]")
+    app$wait_for_js("document.getElementById('second-review-choice').textContent === 'about'")
+    expect_identical(app$get_value(output = "second-review-choice"), "about")
+    expect_identical(app$get_js("document.getElementById('first-review-choice').textContent"), "")
   })
 })

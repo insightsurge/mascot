@@ -449,3 +449,22 @@ describe("static motion switches", {
     expect_identical(off[["data-messages"]], "")
   })
 })
+
+
+describe("mascot resources in modules", {
+  it("resolves one offline dependency for a function-built UI with nested modules", {
+    ui <- function() {
+      shiny::fluidPage(
+        mascot(shiny::NS("first")(shiny::NS("review")("helper"))),
+        mascot(shiny::NS("second")(shiny::NS("review")("helper")))
+      )
+    }
+    dependencies <- htmltools::renderTags(ui())$dependencies
+    engine <- Filter(function(dep) dep$name == "mascot", dependencies)
+    expect_length(engine, 1)
+    expect_identical(engine[[1]]$script, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
+    expect_identical(engine[[1]]$stylesheet, "mascot.css")
+    expect_identical(engine[[1]]$src$file, system.file("www", package = "mascot"))
+    expect_false(grepl("https?://", engine[[1]]$src$file))
+  })
+})

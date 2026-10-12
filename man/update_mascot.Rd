@@ -118,7 +118,8 @@ appears. See \code{\link[=mascot_bubble]{mascot_bubble()}}
 for timing and closing behaviour.
 
 \strong{Shiny modules.} In a module, use \code{mascot(ns("helper"))} in the UI and
-\code{update_mascot("helper")} in its server. The session namespace is added once.
+\code{update_mascot("helper")} in its server. A \code{session$ns("helper")} id is also
+accepted, including in nested modules. The session namespace is added once.
 An invalid \code{id} type, missing session or extra argument is an error. Calling
 with all update arguments \code{NULL} does nothing.
 

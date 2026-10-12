@@ -77,7 +77,8 @@
 #' for timing and closing behaviour.
 #'
 #' **Shiny modules.** In a module, use `mascot(ns("helper"))` in the UI and
-#' `update_mascot("helper")` in its server. The session namespace is added once.
+#' `update_mascot("helper")` in its server. A `session$ns("helper")` id is also
+#' accepted, including in nested modules. The session namespace is added once.
 #' An invalid `id` type, missing session or extra argument is an error. Calling
 #' with all update arguments `NULL` does nothing.
 #'
@@ -281,6 +282,12 @@ send_update <- function(session, id, patch, replay = FALSE) {
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   checkmate::assert_list(patch, names = "unique")
   checkmate::assert_flag(replay)
+  # Accept the local id and session$ns(id), including nested module sessions.
+  # Observe the local input so retained updates also replay after a remount.
+  prefix <- session$ns("")
+  if (nzchar(prefix) && startsWith(id, prefix)) {
+    id <- substring(id, nchar(prefix) + 1L)
+  }
   key <- session$ns(id)
   if (is.null(session$userData$mascot_updates)) {
     session$userData$mascot_updates <- new.env(parent = emptyenv())

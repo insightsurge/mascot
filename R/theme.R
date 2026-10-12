@@ -63,6 +63,7 @@
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
 #' @seealso [mascot_colour_roles()], [mascot()], [update_mascot()],
+#'   [mascot_styling] for panel and button CSS hooks,
 #'   [mascot_motion_settings()] for a complete Shiny settings example
 #' @evalRd paste0(
 #'   "\\section{Experimental CSS source}{\n",

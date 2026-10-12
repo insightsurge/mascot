@@ -124,7 +124,7 @@ describe("responsive size behaviour and CSS rules", {
 
     # CSS rule present
     expect_true(grepl(".mascot[data-floating=\"true\"][data-small-screen=\"auto\"]", css_text, fixed = TRUE))
-    expect_true(grepl("min(var(--mascot-size-default, 160px), 96px)", css_text, fixed = TRUE))
+    expect_true(grepl("min(var(--_mascot-size-default, 160px), 96px)", css_text, fixed = TRUE))
   })
 })
 

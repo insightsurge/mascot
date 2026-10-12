@@ -138,9 +138,9 @@
       );
       const colours = record.palettes.get(snapshot.character) || record.descriptions.get(snapshot.character).colours;
       const fallback = Object.values(colours)[0];
-      setProperty(record.el, '--mascot-button-bg', colours.body || fallback);
-      setProperty(record.el, '--mascot-button-fg', colours.outline || fallback);
-      setProperty(record.el, '--mascot-button-glow', colours.rim || colours.body || fallback);
+      setProperty(record.el, '--_mascot-restore-bg', colours.body || fallback);
+      setProperty(record.el, '--_mascot-restore-fg', colours.outline || fallback);
+      setProperty(record.el, '--_mascot-restore-glow', colours.rim || colours.body || fallback);
     }
     const text = record.problem || (record.status.mode === 'mood' ? label(snapshot.mood) : record.status.text);
     if (record.statusEl.textContent !== text) record.statusEl.textContent = text;
@@ -453,7 +453,7 @@
       const style = getComputedStyle(source);
       const background =
         browserColour(
-          style.getPropertyValue('--bs-body-bg').trim() || style.getPropertyValue('--mascot-bubble-bg').trim(),
+          style.getPropertyValue('--bs-body-bg').trim() || style.getPropertyValue('--_mascot-panel-bg').trim(),
         ) || (mode === 'dark' ? '#212529' : '#ffffff');
       for (const [role, variable] of Object.entries(theme.css)) {
         if (!has(description.colours, role)) continue;
@@ -612,6 +612,16 @@
     });
   }
 
+  const stylingHooks = [
+    'panel-bg',
+    'panel-color',
+    'panel-border',
+    'restore-bg',
+    'restore-fg',
+    'restore-glow',
+    'z-index',
+  ];
+
   function syncSource(record) {
     const { anchor, el } = record;
     if (!anchor) return;
@@ -625,11 +635,13 @@
     const values = {
       font: style.font,
       color: style.color,
-      bg: style.getPropertyValue('--bs-body-bg') || style.getPropertyValue('--mascot-bubble-bg'),
-      text: style.getPropertyValue('--bs-body-color') || style.getPropertyValue('--mascot-bubble-color'),
-      border: style.getPropertyValue('--bs-border-color') || style.getPropertyValue('--mascot-bubble-border'),
+      bg: style.getPropertyValue('--bs-body-bg') || style.getPropertyValue('--_mascot-panel-bg'),
+      text: style.getPropertyValue('--bs-body-color') || style.getPropertyValue('--_mascot-panel-color'),
+      border: style.getPropertyValue('--bs-border-color') || style.getPropertyValue('--_mascot-panel-border'),
     };
-    for (const [key, value] of Object.entries(values)) setProperty(el, `--mascot-source-${key}`, value);
+    // Keep inherited hooks from the original container without writing the public properties.
+    for (const hook of stylingHooks) values[hook] = style.getPropertyValue(`--mascot-${hook}`);
+    for (const [key, value] of Object.entries(values)) setProperty(el, `--_mascot-source-${key}`, value);
   }
 
   function portal(record, floating, teardown = false) {
@@ -653,7 +665,8 @@
       record.anchor = null;
       el.removeAttribute('data-shiny-no-bind-input');
       delete el.dataset.sourceHidden;
-      for (const key of ['font', 'color', 'bg', 'text', 'border']) el.style.removeProperty(`--mascot-source-${key}`);
+      for (const key of ['font', 'color', 'bg', 'text', 'border', ...stylingHooks])
+        el.style.removeProperty(`--_mascot-source-${key}`);
       if (teardown) el.classList.remove('shiny-bound-input');
       else syncBinding(record);
     }
@@ -686,11 +699,11 @@
     const point = record.dragState?.point || record.dropped;
     if (placement.floating && point) placeAt(record, point);
     else unplace(record);
-    el.style.setProperty('--mascot-size-default', sizeCSS(size.size, placement.floating));
+    el.style.setProperty('--_mascot-size-default', sizeCSS(size.size, placement.floating));
     if (size.small_screen === null || size.small_screen === 'auto') {
-      el.style.removeProperty('--mascot-size-small');
+      el.style.removeProperty('--_mascot-size-small');
     } else {
-      el.style.setProperty('--mascot-size-small', sizeCSS(size.small_screen, placement.floating));
+      el.style.setProperty('--_mascot-size-small', sizeCSS(size.small_screen, placement.floating));
     }
     record.minimiseButton.hidden = !placement.floating || !placement.minimise || record.minimised;
     record.restoreButton.hidden = !record.minimised;
@@ -730,15 +743,15 @@
 
   function placeAt(record, point) {
     const { x, y } = clampPoint(record, point);
-    setProperty(record.el, '--mascot-drag-left', `${x}px`);
-    setProperty(record.el, '--mascot-drag-top', `${y}px`);
+    setProperty(record.el, '--_mascot-drag-left', `${x}px`);
+    setProperty(record.el, '--_mascot-drag-top', `${y}px`);
     record.el.dataset.placed = 'true';
   }
 
   function unplace(record) {
     delete record.el.dataset.placed;
-    record.el.style.removeProperty('--mascot-drag-left');
-    record.el.style.removeProperty('--mascot-drag-top');
+    record.el.style.removeProperty('--_mascot-drag-left');
+    record.el.style.removeProperty('--_mascot-drag-top');
   }
 
   function reducedMotion(record) {
@@ -992,19 +1005,19 @@
   }
 
   // The shared panel placement (#233): put a shown panel on the requested side of the painted character, falling back
-  // to the opposite side and then to "auto", inside the room the page gives. Sets --mascot-<name>-top, -left and
+  // to the opposite side and then to "auto", inside the room the page gives. Sets --_mascot-<name>-top, -left and
   // -max-height/-max-width on the mascot, the chosen side as the panel's data-side and its tail offset; returns the side.
   function placePanel(record, panel, requested, name, capEm = Infinity) {
     const margin = 16;
     const notification =
       record.placement.floating && record.placement.position === 'bottom-right'
-        ? parseFloat(record.el.style.getPropertyValue('--mascot-notification-offset')) || 0
+        ? parseFloat(record.el.style.getPropertyValue('--_mascot-notification-offset')) || 0
         : 0;
     const bounds = record.placement.floating ? clipBounds(document.body) : clipBounds(record.el);
     const ceiling = bounds.top;
     const floor = Math.min(bounds.bottom, document.documentElement.clientHeight - notification - margin);
     // Constrain width before measuring, so a tooltip's wrapped height determines the side and available height.
-    setProperty(record.el, `--mascot-${name}-max-width`, `${Math.max(0, bounds.right - bounds.left)}px`);
+    setProperty(record.el, `--_mascot-${name}-max-width`, `${Math.max(0, bounds.right - bounds.left)}px`);
     const gap = 8;
     const canvas = record.canvas.getBoundingClientRect();
     const ink = record.ink || { top: 0, bottom: 1, left: 0, right: 1 };
@@ -1061,7 +1074,7 @@
 
     const availableHeight =
       chosen === 'top' ? spaceAbove : chosen === 'bottom' ? spaceBelow : Math.max(24, floor - ceiling);
-    setProperty(record.el, `--mascot-${name}-max-height`, `${Math.max(24, availableHeight)}px`);
+    setProperty(record.el, `--_mascot-${name}-max-height`, `${Math.max(24, availableHeight)}px`);
 
     const rect = panel.getBoundingClientRect();
     let top;
@@ -1084,13 +1097,13 @@
     }
 
     const hostRect = record.el.getBoundingClientRect();
-    setProperty(record.el, `--mascot-${name}-top`, `${top - hostRect.top}px`);
-    setProperty(record.el, `--mascot-${name}-left`, `${left - hostRect.left}px`);
+    setProperty(record.el, `--_mascot-${name}-top`, `${top - hostRect.top}px`);
+    setProperty(record.el, `--_mascot-${name}-left`, `${left - hostRect.left}px`);
     // The tail points at the character's centre, kept off the panel's rounded corners.
     const vertical = chosen === 'top' || chosen === 'bottom';
     const length = vertical ? rect.width : rect.height;
     const offset = vertical ? anchorCenterX - left : anchorCenterY - top;
-    setProperty(panel, '--mascot-panel-tail', `${Math.max(12, Math.min(offset, length - 12))}px`);
+    setProperty(panel, '--_mascot-panel-tail', `${Math.max(12, Math.min(offset, length - 12))}px`);
     panel.dataset.side = chosen;
     return chosen;
   }
@@ -1156,11 +1169,11 @@
       // subtracting an unapplied shift would grow it on every measure, an endless loop through the page observer.
       // The variable, not the computed matrix, gives the exact value; a rounded matrix would never settle either.
       const applied = getComputedStyle(region).transform !== 'none';
-      const shift = applied ? parseFloat(record.el.style.getPropertyValue('--mascot-bubble-shift')) || 0 : 0;
+      const shift = applied ? parseFloat(record.el.style.getPropertyValue('--_mascot-bubble-shift')) || 0 : 0;
       const natural = rect.left - shift;
       const bounds = clipBounds(record.el);
       const left = Math.max(bounds.left, Math.min(natural, bounds.right - rect.width));
-      setProperty(record.el, '--mascot-bubble-shift', `${left - natural}px`);
+      setProperty(record.el, '--_mascot-bubble-shift', `${left - natural}px`);
     }
     measureMenu(record);
     measureTooltip(record);
@@ -1203,8 +1216,8 @@
     for (const record of live) {
       if (record.placement.floating && record.placement.position === 'bottom-right') {
         const value = `${offset}px`;
-        if (record.el.style.getPropertyValue('--mascot-notification-offset') !== value)
-          record.el.style.setProperty('--mascot-notification-offset', value);
+        if (record.el.style.getPropertyValue('--_mascot-notification-offset') !== value)
+          record.el.style.setProperty('--_mascot-notification-offset', value);
         measureMenu(record);
       }
     }

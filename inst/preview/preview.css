@@ -1,6 +1,6 @@
 /* Comparison-page styles only; the live mascot host keeps its own layout. */
 .mascot-preview {
-  --mascot-preview-border: #dee2e6;
+  --_mascot-preview-border: #dee2e6;
   box-sizing: border-box;
   max-width: 100%;
   padding: 1.5rem;
@@ -18,7 +18,7 @@
 .mascot-preview-contrast {
   margin-block: 1rem 1.5rem;
   padding: 1rem;
-  border: 1px solid var(--mascot-preview-border);
+  border: 1px solid var(--_mascot-preview-border);
   border-radius: 0.75rem;
 }
 
@@ -31,21 +31,21 @@
 .mascot-preview-mode {
   min-width: 0;
   padding: 1rem;
-  border: 1px solid var(--mascot-preview-border);
+  border: 1px solid var(--_mascot-preview-border);
   border-radius: 0.75rem;
 }
 
 .mascot-preview-mode[data-bs-theme="light"] {
-  --bs-body-bg: var(--mascot-preview-light-bg);
-  --bs-body-color: var(--mascot-preview-light-fg);
+  --bs-body-bg: var(--_mascot-preview-light-bg);
+  --bs-body-color: var(--_mascot-preview-light-fg);
   background: var(--bs-body-bg);
   color: var(--bs-body-color);
 }
 
 .mascot-preview-mode[data-bs-theme="dark"] {
-  --bs-body-bg: var(--mascot-preview-dark-bg);
-  --bs-body-color: var(--mascot-preview-dark-fg);
-  --mascot-preview-border: #495057;
+  --bs-body-bg: var(--_mascot-preview-dark-bg);
+  --bs-body-color: var(--_mascot-preview-dark-fg);
+  --_mascot-preview-border: #495057;
   background: var(--bs-body-bg);
   color: var(--bs-body-color);
 }
@@ -69,7 +69,7 @@
 .mascot-preview th,
 .mascot-preview td {
   padding: 0.75rem;
-  border-bottom: 1px solid var(--mascot-preview-border);
+  border-bottom: 1px solid var(--_mascot-preview-border);
   text-align: left;
   vertical-align: middle;
 }

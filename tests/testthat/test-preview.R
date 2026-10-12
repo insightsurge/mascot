@@ -108,10 +108,10 @@ describe("mascot_preview()", {
       ),
       class = "mascot_contrast"
     )
-    expect_match(as.character(page), "--mascot-preview-light-bg:#FEFEFE", fixed = TRUE)
+    expect_match(as.character(page), "--_mascot-preview-light-bg:#FEFEFE", fixed = TRUE)
     theme <- bslib::bs_theme(bg = "#fefefe", fg = "#222222", primary = "#1f6feb", secondary = "#966600")
     dark <- theme_colour(bslib::bs_get_variables(theme, "body-bg-dark")[[1]], "bg")
-    expect_match(as.character(page), paste0("--mascot-preview-dark-bg:", dark), fixed = TRUE)
+    expect_match(as.character(page), paste0("--_mascot-preview-dark-bg:", dark), fixed = TRUE)
     wire <- preview_theme(preview_nodes(page, ".mascot")[[1]])
     expect_identical(wire$brand, list(primary = "#1F6FEB", secondary = "#966600"))
     # bslib derives a dark background from a near-white bg; both brand colours are too dark for it.

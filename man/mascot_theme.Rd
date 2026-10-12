@@ -91,6 +91,7 @@ mascot("brand", theme = bslib::bs_theme(primary = "#1f6feb"))
 }
 \seealso{
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}},
+\link{mascot_styling} for panel and button CSS hooks,
 \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} for a complete Shiny settings example
 
 Other mascot helpers:

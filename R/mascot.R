@@ -43,7 +43,8 @@
 #'   A choice sets `input$<id>_menu` to the item id, including repeated choices.
 #'   In a module, use `ns("helper")` in the UI and read `input$helper_menu` in
 #'   that module's server. Enter and Space toggle the focused menu control;
-#'   see [mascot_popup_menu()] for the module example and guidance.
+#'   see [mascot_popup_menu()] for the module example and guidance. With a menu,
+#'   a click opens the menu and `input$<id>_click` is not set (see Details).
 #' @returns An `htmltools` tag with the mascot's web dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]
@@ -70,6 +71,23 @@
 #'   })
 #' }
 #' ```
+#'
+#' **Clicks (experimental).** Without a `popup_menu`, clicking or tapping the
+#' mascot, or pressing Enter or Space while it has keyboard focus, sets
+#' `input$<id>_click` to the number of clicks since the mascot appeared, so the
+#' app can attach its own action, such as opening a help panel:
+#' `shiny::observeEvent(input$helper_click, ...)`. Dragging a floating mascot
+#' never counts as a click. With a menu, the menu keeps the click and
+#' `input$<id>_click` is not set. Screen readers still announce the mascot as an
+#' image, so offer the same action through a visible control too.
+#' @evalRd paste0(
+#'   "\\section{Experimental click input}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\nThe name and value of \\code{input$<id>_click} may change before CRAN,",
+#'   " when the package's Shiny inputs are reviewed.\n}"
+#' )
 #' @export
 #' @examples
 #' mascot(id = "helper", mood = "happy")

@@ -94,23 +94,34 @@ describe("mascot.host", {
       const add = id => {const el=source.cloneNode(true); el.id=id; document.body.append(el); mascot.host.mount(el); return el;};
       console.warn = message => warnings.push(message);
       window.addEventListener('shiny:client-message', event => events.push(event.detail.message));
+      // Hold the host's two-second namespace timers and run them on demand: no waiting on the clock.
+      const realTimeout = window.setTimeout, held = [], delays = [];
+      window.setTimeout = (fn, delay, ...rest) => delay === 2000 ? (held.push(fn), delays.push(delay), 0) :
+        realTimeout(fn, delay, ...rest);
+      const elapse = () => held.splice(0).forEach(fn => fn());
       add('first-helper');
       window.Shiny = {inDevMode: () => false};
       mascot.host.receive({id:'helper',patch:{mood:'happy'}});
-      await new Promise(resolve => setTimeout(resolve, 2200));
-      const production = warnings.length;
+      elapse();
+      const production = warnings.length, productionTimers = delays.length;
       window.Shiny = {inDevMode: () => true};
       mascot.host.receive({id:'helper',patch:{mood:'thinking'}});
       mascot.host.receive({id:'helper',patch:{mood:'happy'}});
       mascot.host.receive({id:'later',patch:{mood:'happy'}});
       add('summary');
       mascot.host.receive({id:'second-summary',patch:{mood:'happy'}});
-      await new Promise(resolve => setTimeout(resolve, 2200));
+      const early = warnings.length;
+      elapse();
+      window.setTimeout = realTimeout;
       console.warn = original; delete window.Shiny;
-      return {production, warnings, events};
+      return {production, productionTimers, early, timers: delays.length, warnings, events};
     })()"
     )
     expect_identical(result$production, 0L)
+    expect_identical(result$productionTimers, 0L)
+    # Nothing warns before the delay has passed; afterwards each missed id warns once.
+    expect_identical(result$early, 0L)
+    expect_gte(result$timers, 3L)
     expect_length(result$warnings, 2)
     expect_match(result$warnings[[1]], 'no mascot "helper".*"first-helper".*from inside its module')
     expect_match(result$warnings[[2]], 'no mascot "second-summary".*"summary".*ns\\("summary"\\)')
@@ -399,7 +410,8 @@ describe("mascot.host bubbles", {
     expect_identical(result$swap$bubble, result$mood$bubble)
     expect_true(result$swap$current$swapping)
     expect_identical(result$text, "Kept")
-    expect_identical(unlist(result$calls), c("update", "nod", "update", "wave"))
+    # The first update turns the gaze towards the new bubble (#241); each gesture still follows its own update.
+    expect_identical(unlist(result$calls), c("update", "update", "nod", "update", "wave"))
   })
   it("rejects unknown gestures and malformed bubbles without committing any field", {
     skip_without_chrome()
@@ -1143,6 +1155,30 @@ describe("size and placement review regressions", {
     expect_gte(result$left, result$cardLeft + 7.99)
     expect_lte(result$right, result$cardRight - 7.99)
   })
+  it("settles the inline bubble shift when page CSS turns the shift off, as mascot_preview() does (#244)", {
+    skip_without_chrome()
+    js <- local_host_page(size = 48, viewport = c(575, 800), bubble = mascot_bubble("Read this message", Inf))
+    # Given a bubble that needs shifting at the left edge, on a page whose CSS keeps the bubble where it is.
+    js(
+      "window.el=document.getElementById('a');const style=document.createElement('style');
+      style.textContent='.mascot-bubble-region{transform:none}';document.head.append(style);
+      el.style.cssText='position:absolute;left:0;top:0';dispatchEvent(new Event('resize'))"
+    )
+    # When the page measures again and again, the shift it records stays the same: no endless measuring loop.
+    shift <- function() {
+      host_layout(
+        js,
+        "dispatchEvent(new Event('resize'));return el.style.getPropertyValue('--mascot-bubble-shift');"
+      )
+    }
+    first <- shift()
+    expect_identical(shift(), first)
+    expect_identical(shift(), first)
+    expect_identical(
+      host_layout(js, "return getComputedStyle(el.querySelector('.mascot-bubble-region')).transform;"),
+      "none"
+    )
+  })
   it("S3-R1 keeps small inline bubbles inside either viewport edge and preserves reserved space", {
     skip_without_chrome()
     for (size in list(48, mascot_size(120, 48))) {
@@ -1648,7 +1684,7 @@ describe("mascot.host popup menu", {
       const initial=menu.hidden;button.click();const rect=menu.getBoundingClientRect(),edges=rect.left>=15&&rect.right<=305;const pose=calls.at(-1).pose.lookY;
       const label=menu.firstChild.textContent,escaped=menu.querySelector('b')===null;
       menu.firstChild.click();button.click();menu.firstChild.click();
-      const cleared=calls.at(-1).pose.lookY===undefined;
+      const cleared=calls.at(-1).pose.lookY===undefined&&calls.at(-1).pose.look===undefined;
       button.click();document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
       const outside=menu.hidden;button.click();button.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
       return {initial,edges,pose,label,escaped,cleared,outside,escape:menu.hidden,focus:document.activeElement===button,
@@ -2087,6 +2123,318 @@ describe("mascot.host popup menu", {
   })
 })
 
+
+# Wraps the mounted controller so each held pose the host sends is recorded in window.poses.
+spy_poses_js <- paste(
+  "window.el=document.getElementById('a');mascot.host.unmount(el);window.poses=[];const mount=mascot.mount;",
+  "mascot.mount=(...args)=>{const c=mount(...args),update=c.update;",
+  "c.update=patch=>{if(patch.pose)poses.push(patch.pose);return update(patch);};return c;};",
+  "mascot.host.mount(el);mascot.mount=mount;"
+)
+
+describe("mascot.host gaze (#241)", {
+  looks <- list(
+    top = list(look = NULL, lookY = -1),
+    bottom = list(look = NULL, lookY = 1),
+    left = list(look = -1, lookY = NULL),
+    right = list(look = 1, lookY = NULL)
+  )
+  it("looks towards the side the menu opens on and back when it closes", {
+    skip_without_chrome()
+    for (side in names(looks)) {
+      js <- local_host_page(
+        popup_menu = mascot_popup_menu(c(about = "About"), direction = side),
+        shiny_menu = TRUE,
+        placement = mascot_placement("top-left", drag = "free"),
+        size = 120,
+        viewport = c(800, 800)
+      )
+      js(spy_poses_js)
+      js(drag_js)
+      # Given the mascot in the middle of the window, with room on every side.
+      js("dragBy(el.querySelector('canvas'), 300, 300)")
+      js("el.querySelector('.mascot-menu-toggle').click()")
+      expect_identical(js("mascot.host.state(el).gaze"), side)
+      expect_identical(
+        js("JSON.stringify(poses.at(-1))"),
+        as.character(jsonlite::toJSON(looks[[side]], null = "null", auto_unbox = TRUE))
+      )
+      js("el.querySelector('.mascot-menu-toggle').click()")
+      expect_null(js("mascot.host.state(el).gaze"))
+      expect_identical(js("JSON.stringify(poses.at(-1))"), '{"look":null,"lookY":null}')
+    }
+  })
+  it("follows the side the menu actually opens on after a fallback", {
+    skip_without_chrome()
+    js <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "top"),
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-left", FALSE),
+      viewport = c(800, 600)
+    )
+    js(spy_poses_js)
+    # A top-corner mascot has no room above it, so the menu opens below.
+    js("el.querySelector('.mascot-menu-toggle').click()")
+    expect_identical(js("mascot.host.state(el).gaze"), "bottom")
+    expect_identical(js("poses.at(-1).lookY"), 1L)
+  })
+  it("looks towards a shown bubble, above or below by placement, and back when it closes", {
+    skip_without_chrome()
+    bubble <- mascot_bubble("Read this", Inf)
+    for (case in list(
+      c("inline", "top"),
+      c("bottom-right", "top"),
+      c("top-left", "bottom"),
+      c("top-right", "bottom")
+    )) {
+      js <- local_host_page(bubble = bubble, placement = case[[1]], viewport = c(800, 800))
+      expect_identical(js("mascot.host.state(document.getElementById('a')).gaze"), case[[2]], info = case[[1]])
+      js(spy_poses_js)
+      expect_identical(js("mascot.host.state(el).gaze"), case[[2]], info = case[[1]])
+      js("mascot.host.receive({id:'a',patch:{bubble:{clear:true}}})")
+      expect_null(js("mascot.host.state(el).gaze"))
+      expect_identical(js("JSON.stringify(poses.at(-1))"), '{"look":null,"lookY":null}')
+    }
+  })
+  it("turns from the bubble to an opening menu, and from the menu to a new bubble", {
+    skip_without_chrome()
+    js <- local_host_page(
+      bubble = mascot_bubble("Read this", Inf),
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "right"),
+      shiny_menu = TRUE,
+      placement = "inline",
+      viewport = c(800, 800)
+    )
+    expect_identical(js("mascot.host.state(document.getElementById('a')).gaze"), "top")
+    js("document.querySelector('#a .mascot-menu-toggle').click()")
+    expect_identical(js("mascot.host.state(document.getElementById('a')).gaze"), "right")
+    js("mascot.host.receive({id:'a',patch:{bubble:{text:'New',html:false,closable:true,duration:null}}})")
+    expect_false(js("mascot.host.state(document.getElementById('a')).menuOpen"))
+    expect_identical(js("mascot.host.state(document.getElementById('a')).gaze"), "top")
+  })
+  it("moves the eyes at once, with no animation frames, when motion is reduced", {
+    skip_without_chrome()
+    js <- local_host_page(bubble = mascot_bubble("Read this", Inf), reduced = TRUE, placement = "inline")
+    r <- js(host_motion_js(
+      "const queuedAtMount=queued.size,pose=calls.at(-1).pose;
+      send({bubble:{clear:true}});const cleared=calls.at(-1).pose;
+      return {queuedAtMount,lookY:pose.lookY,cleared:cleared.lookY===undefined,queued:queued.size};"
+    ))
+    expect_identical(r$lookY, -1L)
+    expect_true(r$cleared)
+    expect_identical(r$queuedAtMount, 0L)
+    expect_identical(r$queued, 0L)
+  })
+  it("leaves eyes without visible pupils, or without pupil travel, exactly as they were", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    # Happy eyes are closed arcs: no pupils to move.
+    expect_identical(js(draw_js('{mood:"happy",lookY:-1}')), js(draw_js('{mood:"happy"}')))
+    expect_false(identical(js(draw_js('{mood:"idle",lookY:-1}')), js(draw_js('{mood:"idle"}'))))
+    # A character whose pupils have no travel keeps its look in every direction.
+    still <- "(() => { const ch=structuredClone(window.mascot.readCharacter('tessa'));
+      ch.id='still'; ch.face.style={...(ch.face.style||{}),pupil:{lookX:0,lookY:0}};
+      const draw=pose=>{const c=document.createElement('canvas');c.width=c.height=300;
+        window.mascot.draw(c.getContext('2d'),ch,{x:150,baseY:280,pose,frame:0});return c.toDataURL();};
+      const rest=draw({mood:'idle'});
+      return [{lookY:-1},{lookY:1},{look:-1},{look:1}].every(p=>draw({mood:'idle',...p})===rest); })()"
+    expect_true(js(still))
+  })
+  it("re-aims the gaze when the character changes while the menu is open", {
+    skip_without_chrome()
+    js <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-left", drag = "free"),
+      size = 120,
+      viewport = c(800, 800)
+    )
+    js(spy_poses_js)
+    js(drag_js)
+    js("dragBy(el.querySelector('canvas'), 300, 300)")
+    js("el.querySelector('.mascot-menu-toggle').click()")
+    expect_identical(js("poses.at(-1).look"), -1L)
+    # Given an open menu on the left, when a mirrored character replaces the drawn one, the look is mirrored too.
+    js(
+      "const ch=structuredClone(mascot.readCharacter('tessa'));ch.id='mirror';ch.pose={...ch.pose,flip:-1};
+      mascot.host.receive({id:'a',patch:{character:{id:'mirror',name:'Mirror',json:JSON.stringify(ch)}}});"
+    )
+    expect_true(js("mascot.host.state(el).menuOpen"))
+    expect_identical(js("mascot.host.state(el).gaze"), "left")
+    expect_identical(js("poses.at(-1).look"), 1L)
+  })
+  it("draws eyes without visible pupils exactly the same with or without the gaze, in the real host", {
+    skip_without_chrome()
+    for (mood in c("happy", "idle")) {
+      js <- local_host_page(bubble = mascot_bubble("Read this", Inf), placement = "inline")
+      frames <- js(sprintf(
+        "(() => {const el=document.getElementById('a'),canvas=el.querySelector('canvas');
+        mascot.host.receive({id:'a',patch:{mood:'%s'}});
+        const looking=canvas.toDataURL(),gaze=mascot.host.state(el).gaze;
+        mascot.host.receive({id:'a',patch:{bubble:{clear:true}}});
+        return {gaze,same:canvas.toDataURL()===looking};})()",
+        mood
+      ))
+      expect_identical(frames$gaze, "top")
+      # Happy eyes are closed arcs, so the held gaze changes nothing; open eyes show it.
+      expect_identical(frames$same, mood == "happy", info = mood)
+    }
+  })
+  it("mirrors the horizontal look for a mirrored character, so it still faces the menu", {
+    skip_without_chrome()
+    js <- local_host_page(
+      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-left", drag = "free"),
+      size = 120,
+      viewport = c(800, 800)
+    )
+    js(spy_poses_js)
+    js(drag_js)
+    js(
+      "const ch=structuredClone(mascot.readCharacter('tessa'));ch.id='mirror';ch.pose={...ch.pose,flip:-1};
+      mascot.host.receive({id:'a',patch:{character:{id:'mirror',name:'Mirror',json:JSON.stringify(ch)}}});"
+    )
+    js("dragBy(el.querySelector('canvas'), 300, 300)")
+    js("el.querySelector('.mascot-menu-toggle').click()")
+    expect_identical(js("mascot.host.state(el).gaze"), "left")
+    expect_identical(js("poses.at(-1).look"), 1L)
+  })
+})
+
+describe("mascot.host click input (#237)", {
+  clicks <- "menuEvents.filter(e => e[0] === 'a_click')"
+  it("sends a count for each click, Enter or Space on a mascot without a menu", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline")
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),canvas=el.querySelector('canvas');
+      canvas.click();canvas.click();canvas.focus();
+      const key=(k,repeat=false)=>{const e=new KeyboardEvent('keydown',{key:k,repeat,bubbles:true,cancelable:true});
+        canvas.dispatchEvent(e);return e.defaultPrevented;};
+      const enter=key('Enter'),space=key(' '),held=key('Enter',true),other=key('a');
+      el.querySelector('.mascot-status').click();
+      return {events:",
+      clicks,
+      ",enter,space,held,other,clicks:mascot.host.state(el).clicks};})()"
+    ))
+    expect_identical(
+      r$events,
+      lapply(1:4, function(count) list("a_click", count, list(priority = "event")))
+    )
+    expect_true(r$enter)
+    expect_true(r$space)
+    # A held key and other keys send nothing; Space and Enter are kept from scrolling or submitting.
+    expect_true(r$held)
+    expect_false(r$other)
+    expect_identical(r$clicks, 4L)
+  })
+  it("never counts a drag, and counts a press that does not move", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = mascot_placement("top-left", drag = "snap"))
+    js(drag_js)
+    r <- js(paste0(
+      "(() => {const canvas=document.querySelector('#a canvas');
+      dragBy(canvas,400,400);canvas.click();const afterDrag=",
+      clicks,
+      ".length;
+      dragBy(canvas,1,1);canvas.click();
+      return {afterDrag,after:",
+      clicks,
+      ".length,position:menuEvents.some(e=>e[0]==='a_position')};})()"
+    ))
+    expect_identical(r$afterDrag, 0L)
+    expect_true(r$position)
+    expect_identical(r$after, 1L)
+  })
+  it("counts the next click after a drag that a placement update cancelled mid-way", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = mascot_placement("top-left", drag = "snap"))
+    js(drag_js)
+    r <- js(paste0(
+      "(() => {const canvas=document.querySelector('#a canvas'),box=canvas.getBoundingClientRect(),
+        x=box.left+box.width/2,y=box.top+box.height/2;
+      // A touch drag in progress when the app turns dragging off: no pointerup or click ever arrives.
+      press(canvas,'pointerdown',x,y);press(canvas,'pointermove',x+40,y+40);
+      mascot.host.receive({id:'a',patch:{placement:{floating:true,position:'top-left',minimise:true,drag:false}}});
+      const now=canvas.getBoundingClientRect(),cx=now.left+now.width/2,cy=now.top+now.height/2;
+      press(canvas,'pointerdown',cx,cy);press(canvas,'pointerup',cx,cy);canvas.click();
+      return ",
+      clicks,
+      ".length;})()"
+    ))
+    expect_identical(r, 1L)
+  })
+  it("ignores Enter and Space held with Ctrl, Alt or Meta, like a native button", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline")
+    r <- js(paste0(
+      "(() => {const canvas=document.querySelector('#a canvas');canvas.focus();
+      for (const modifier of ['ctrlKey','altKey','metaKey']) for (const key of ['Enter',' '])
+        canvas.dispatchEvent(new KeyboardEvent('keydown',{key,[modifier]:true,bubbles:true,cancelable:true}));
+      const modified=",
+      clicks,
+      ".length;
+      canvas.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',shiftKey:true,bubbles:true,cancelable:true}));
+      return {modified,shift:",
+      clicks,
+      ".length};})()"
+    ))
+    expect_identical(r$modified, 0L)
+    expect_identical(r$shift, 1L)
+  })
+  it("leaves the click to the menu when there is one, and sends again once it is removed", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, popup_menu = c(about = "About"), placement = "inline")
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),toggle=el.querySelector('.mascot-menu-toggle');
+      toggle.click();const open=mascot.host.state(el).menuOpen;toggle.click();
+      toggle.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+      toggle.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+      const withMenu=",
+      clicks,
+      ".length;
+      mascot.host.receive({id:'a',patch:{popup_menu:{items:null}}});
+      el.querySelector('canvas').click();
+      return {open,withMenu,after:",
+      clicks,
+      ".length};})()"
+    ))
+    expect_true(r$open)
+    expect_identical(r$withMenu, 0L)
+    expect_identical(r$after, 1L)
+  })
+  it("sends nothing from the restore button, the bubble, a static page or after unmounting", {
+    skip_without_chrome()
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = mascot_placement("bottom-right"),
+      bubble = mascot_bubble("Read this", Inf)
+    )
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a');
+      el.querySelector('.mascot-bubble-close').click();
+      el.querySelector('.mascot-minimise').click();el.querySelector('.mascot-restore').click();
+      const controls=",
+      clicks,
+      ".length;
+      const canvas=el.querySelector('canvas');mascot.host.unmount(el);canvas.click();
+      return {controls,after:",
+      clicks,
+      ".length};})()"
+    ))
+    expect_identical(r$controls, 0L)
+    expect_identical(r$after, 0L)
+    # Without Shiny the mascot stays an image: a click changes nothing and raises no error.
+    static <- local_host_page(placement = "inline")
+    expect_identical(
+      static(
+        "(() => {const el=document.getElementById('a');el.querySelector('canvas').click();return mascot.host.state(el).clicks;})()"
+      ),
+      0L
+    )
+  })
+})
 
 describe("mascot.host review corrections", {
   it("A1 keeps short-screen menu choices reachable in every corner and inline", {

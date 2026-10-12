@@ -113,7 +113,17 @@ panel_messages <- function() {
       tagList(
         selectInput("bubble_example", "Start from an example", names(bubble_examples)),
         textAreaInput("bubble_text", "Bubble content", bubble_examples[[1]]$text, rows = 5, resize = "vertical"),
+        # Right under the message box, so the next step after typing is in view.
+        div(
+          class = "pg-actions",
+          actionButton("bubble_show", "Show bubble", class = "btn-primary btn-sm"),
+          actionButton("bubble_clear", "Clear bubble", class = "btn-outline-primary btn-sm")
+        ),
         input_switch("bubble_html", "Treat as HTML (wraps it in HTML())", FALSE)
+      ),
+      note = div(
+        class = "pg-hint",
+        "The HTML switch, duration and close button below apply the next time you click Show bubble."
       )
     ),
     arg_field(
@@ -125,11 +135,6 @@ panel_messages <- function() {
       )
     ),
     arg_field("mascot_bubble", "closable", input_switch("bubble_closable", "Show a close button", TRUE)),
-    div(
-      class = "pg-actions",
-      actionButton("bubble_show", "Show bubble", class = "btn-primary btn-sm"),
-      actionButton("bubble_clear", "Clear bubble", class = "btn-outline-primary btn-sm")
-    ),
     fn_heading("mascot_popup_menu"),
     arg_field(
       "mascot_popup_menu",
@@ -155,7 +160,28 @@ panel_messages <- function() {
           "Right" = "right"
         ),
         selected = "auto"
+      ),
+      note = div(
+        class = "pg-note",
+        "Open the menu and watch the eyes: the mascot looks towards the side the menu opened on, ",
+        "which can differ from the one chosen when that side has no room. It also looks towards a bubble."
       )
+    ),
+    div(
+      class = "pg-field",
+      id = "click_field",
+      div(
+        class = "pg-field-head",
+        tags$strong("Clicks without a menu"),
+        tags$span(class = "badge text-bg-warning", "Experimental")
+      ),
+      div(
+        class = "pg-hint",
+        "Without a menu, clicking the mascot, or pressing Enter or Space on it, sets input$helper_click. ",
+        "With a menu, the click opens the menu instead. This studio answers a click with a wave."
+      ),
+      actionButton("click_try", "Remove the menu to try clicks", class = "btn-outline-primary btn-sm"),
+      div(class = "pg-live", tags$code("input$helper_click"), textOutput("click_last"))
     )
   )
 }

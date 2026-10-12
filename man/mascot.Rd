@@ -65,7 +65,8 @@ allows animation while honouring the visitor's reduced-motion preference.
 A choice sets \verb{input$<id>_menu} to the item id, including repeated choices.
 In a module, use \code{ns("helper")} in the UI and read \code{input$helper_menu} in
 that module's server. Enter and Space toggle the focused menu control;
-see \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} for the module example and guidance.}
+see \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} for the module example and guidance. With a menu,
+a click opens the menu and \verb{input$<id>_click} is not set (see Details).}
 }
 \value{
 An \code{htmltools} tag with the mascot's web dependency attached.
@@ -98,6 +99,15 @@ helper_server <- function(id) \{
   \})
 \}
 }\if{html}{\out{</div>}}
+
+\strong{Clicks (experimental).} Without a \code{popup_menu}, clicking or tapping the
+mascot, or pressing Enter or Space while it has keyboard focus, sets
+\verb{input$<id>_click} to the number of clicks since the mascot appeared, so the
+app can attach its own action, such as opening a help panel:
+\code{shiny::observeEvent(input$helper_click, ...)}. Dragging a floating mascot
+never counts as a click. With a menu, the menu keeps the click and
+\verb{input$<id>_click} is not set. Screen readers still announce the mascot as an
+image, so offer the same action through a visible control too.
 }
 \examples{
 mascot(id = "helper", mood = "happy")
@@ -118,3 +128,7 @@ Other mascots in Shiny:
 \code{\link[=updateMascot]{updateMascot()}}
 }
 \concept{mascots in Shiny}
+\section{Experimental click input}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+The name and value of \code{input$<id>_click} may change before CRAN, when the package's Shiny inputs are reviewed.
+}

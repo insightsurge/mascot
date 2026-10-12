@@ -84,7 +84,8 @@ in its console, outside the R \code{contrast} attribute.
 \strong{Placement, menus and bubbles.} Floating \code{placement} is checked, then shown
 inline for comparison, so every cell remains in its grid. Click menus are
 checked but remain inactive on this static page. Empty bubble space is omitted
-here; a supplied bubble keeps its normal space and timing.
+here; a supplied bubble keeps its normal space and timing, and each cell is
+wide enough to hold it, so bubbles never cover neighbouring cells.
 }
 \examples{
 page <- mascot_preview(mood = "happy", size = 96)

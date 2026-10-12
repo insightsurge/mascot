@@ -164,7 +164,7 @@ describe("mascot_placement()", {
 describe("dragging in a Shiny browser", {
   it("reports a snapped corner in a module and a free drop point, and a placement update replaces them", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(
+    app <- app_driver(
       function() {
         library(mascot)
         module_ui <- function(id) {

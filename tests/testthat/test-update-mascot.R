@@ -109,7 +109,7 @@ describe("dev_mode()", {
 describe("updateMascot() in a browser", {
   it("changes mood, sets plain status text and returns it to the mood", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       ui <- shiny::fluidPage(
         mascot(id = "helper"),
@@ -145,7 +145,7 @@ describe("updateMascot() in a browser", {
   })
   it("updates a module mascot using its local server id", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       module_ui <- function(id) {
         ns <- shiny::NS(id)
@@ -165,7 +165,7 @@ describe("updateMascot() in a browser", {
   })
   it("keeps updates before renderUI and destroys the replaced element's record", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       # A permanent mascot loads the dependency and message handler before the late one exists.
       ui <- shiny::fluidPage(
@@ -272,7 +272,7 @@ describe("updateMascot() bubbles and gestures", {
 describe("server bubbles and gestures in a browser", {
   it("shows a server bubble, accepts a gesture and lets the user close it", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       ui <- shiny::fluidPage(mascot(id = "helper"), shiny::actionButton("go", "Go"))
       server <- function(input, output, session) {
@@ -531,7 +531,7 @@ describe("updateMascot() size and placement", {
 describe("size and placement in a Shiny browser", {
   it("floats, minimises and restores with mouse, Enter and Space while retaining server updates", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       shiny::shinyApp(
         shiny::fluidPage(
@@ -614,7 +614,7 @@ describe("size and placement in a Shiny browser", {
   })
   it("measures a module mascot when its hidden tab opens and accepts a local-id layout update", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       module_ui <- function(id) {
         ns <- shiny::NS(id)
@@ -654,7 +654,7 @@ describe("size and placement in a Shiny browser", {
 describe("floating mascots in dynamic module UI", {
   it("S3-R3 preserves tab visibility, avoids duplicate bindings and tears down the original controller on replacement", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       module_ui <- function(id) {
         ns <- shiny::NS(id)
@@ -685,7 +685,7 @@ describe("floating mascots in dynamic module UI", {
     })
     withr::defer(app$stop())
     app$click(selector = "a[data-value='Helper']")
-    app$wait_for_js("Shiny.shinyapp.$inputValues['.clientdata_output_mod-dynamic_hidden'] === false", timeout = 15000)
+    app$wait_for_js("Shiny.shinyapp.$inputValues['.clientdata_output_mod-dynamic_hidden'] === false")
     app$wait_for_js("document.querySelector('#mod-helper canvas')?.getBoundingClientRect().width === 64")
     app$run_js("window.old=document.getElementById('mod-helper')")
     expect_true(app$get_js("old.parentElement===document.body"))
@@ -693,8 +693,7 @@ describe("floating mascots in dynamic module UI", {
     expect_false(app$get_js("old.classList.contains('shiny-bound-input')"))
     app$click(selector = "#mod-replace")
     app$wait_for_js(
-      "document.getElementById('mod-helper') !== old && mascot.host.state(old) === null",
-      timeout = 15000
+      "document.getElementById('mod-helper') !== old && mascot.host.state(old) === null"
     )
     expect_equal(app$get_js("document.querySelectorAll('#mod-helper').length"), 1)
     expect_equal(app$get_js("document.querySelectorAll('.mascot-source.shiny-bound-input').length"), 1)
@@ -770,7 +769,7 @@ describe("theme in a Shiny browser", {
   it("T4 follows a bslib dark-mode input with no mode argument or server theme updates", {
     local_shiny_browser()
     skip_if_not_installed("bslib")
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       shiny::shinyApp(
         bslib::page_fluid(
@@ -856,7 +855,7 @@ describe("updateMascot() motion", {
 describe("motion in a Shiny browser", {
   it("M5 changes motion from an app setting without replacing the canvas", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       shiny::shinyApp(
         shiny::fluidPage(
@@ -927,7 +926,7 @@ describe("updateMascot() popup menu", {
 describe("popup menu in a Shiny browser", {
   it("P6 receives repeated choices in a module and opens the app's modal", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       ui <- function(id) {
         ns <- shiny::NS(id)
@@ -992,7 +991,7 @@ describe("documented Shiny settings", {
       },
       list(APP = expression)
     )
-    app <- shinytest2::AppDriver$new(app_function)
+    app <- app_driver(app_function)
     withr::defer(app$stop())
     app$wait_for_js("!!window.mascot?.host?.state(document.getElementById('helper'))")
     app$set_inputs(animate = FALSE)
@@ -1015,7 +1014,7 @@ describe("documented Shiny settings", {
     expressions <- parse(text = paste(unlist(block), collapse = ""))
     app_function <- function() NULL
     body(app_function) <- as.call(c(list(quote(`{`), quote(library(mascot))), as.list(expressions)))
-    app <- shinytest2::AppDriver$new(app_function)
+    app <- app_driver(app_function)
     withr::defer(app$stop())
     app$wait_for_js("!!document.querySelector('#demo-helper .mascot-menu-toggle')")
     for (i in 1:2) {
@@ -1075,7 +1074,7 @@ describe("retained mascot updates", {
   })
   it("recovers startup, earlier-cycle and same-cycle updates for the first renderUI mascots, playing gestures once", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       # Record real controller calls, including ones made while dynamic dependencies load.
       recorder <- shiny::tags$script(htmltools::HTML(
@@ -1139,7 +1138,7 @@ describe("retained mascot updates", {
 describe("bubble visibility in Shiny tabs", {
   it("pauses a timed bubble in a hidden tab and resumes its remaining lifetime", {
     local_shiny_browser()
-    app <- shinytest2::AppDriver$new(function() {
+    app <- app_driver(function() {
       library(mascot)
       ui <- shiny::fluidPage(shiny::tabsetPanel(
         id = "tabs",
@@ -1158,13 +1157,17 @@ describe("bubble visibility in Shiny tabs", {
     app$wait_for_js("document.querySelector('#helper canvas').getBoundingClientRect().width===0")
     remaining <- app$get_js("mascot.host.state(document.getElementById('helper')).bubble.remaining")
     expect_gt(remaining, 0)
-    app$run_js("window.hiddenUntil=Date.now()+3500")
-    app$wait_for_js("Date.now() >= window.hiddenUntil", timeout = 10000)
+    # Move the page's clock 3.5 seconds on (longer than the bubble's 3) instead of waiting: a countdown still
+    # running while hidden would now read 0, while a paused one keeps its time.
+    app$run_js(
+      "window.realNow=performance.now.bind(performance);performance.now=()=>realNow()+3500;"
+    )
     expect_equal(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.remaining"), remaining)
+    app$run_js("performance.now=window.realNow")
     app$click(selector = "a[data-value='Helper']")
     app$wait_for_js("document.querySelector('#helper canvas').getBoundingClientRect().width>0")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.text"), "Timed")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).bubble === null", timeout = 10000)
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).bubble === null")
   })
 })
 

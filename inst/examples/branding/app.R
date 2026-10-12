@@ -44,31 +44,31 @@ server <- function(input, output, session) {
   observeEvent(
     input$palette,
     {
-      updateMascot("helper", theme = if (input$palette == "rose") rose else brand)
+      update_mascot("helper", theme = if (input$palette == "rose") rose else brand)
     },
     ignoreInit = TRUE
   )
   observeEvent(input$personalise, {
     req(nzchar(trimws(input$status)), nzchar(trimws(input$message)))
-    updateMascot("helper", status = mascot_status(input$status), bubble = mascot_bubble(input$message, Inf))
+    update_mascot("helper", status = mascot_status(input$status), bubble = mascot_bubble(input$message, duration = Inf))
   })
-  observeEvent(input$celebrate, updateMascot("helper", mood = "celebrating", status = "Review complete"))
-  observeEvent(input$original, updateMascot("helper", theme = mascot_theme()))
+  observeEvent(input$celebrate, update_mascot("helper", mood = "celebrating", status = "Review complete"))
+  observeEvent(input$original, update_mascot("helper", theme = mascot_theme()))
   observeEvent(input$brand, {
-    updateMascot("helper", theme = if (input$palette == "rose") rose else brand)
+    update_mascot("helper", theme = if (input$palette == "rose") rose else brand)
   })
   observeEvent(input$helper_menu, {
     if (input$helper_menu == "finish") {
-      updateMascot(
+      update_mascot(
         "helper",
         mood = "happy",
         status = "Review complete",
-        bubble = mascot_bubble("All checks finished.", Inf),
+        bubble = mascot_bubble("All checks finished.", duration = Inf),
         gesture = mascot_gesture("nod")
       )
     }
     if (input$helper_menu == "reset") {
-      updateMascot("helper", mood = "idle", status = "Ready for your team's review", bubble = mascot_bubble())
+      update_mascot("helper", mood = "idle", status = "Ready for your team's review", bubble = mascot_bubble())
     }
     if (input$helper_menu == "about") {
       showModal(modalDialog(

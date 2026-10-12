@@ -10,7 +10,7 @@ review_ui <- function(id, title) {
   card(
     h2(title),
     checkboxInput(ns("ready"), "Review complete", FALSE),
-    mascot(id = ns("helper"), mood = "worried", status = "Review still needed", placement = "inline")
+    mascot(ns("helper"), mood = "worried", status = "Review still needed", placement = "inline")
   )
 }
 
@@ -19,7 +19,7 @@ review_server <- function(id) {
     ready <- reactive(isTRUE(input$ready))
     observe({
       # Use the local id here: Shiny adds the namespace once.
-      updateMascot(
+      update_mascot(
         "helper",
         mood = if (ready()) "happy" else "worried",
         status = if (ready()) "Review complete" else "Review still needed"
@@ -49,7 +49,7 @@ server <- function(input, output, session) {
   second <- review_server("second")
   observe({
     complete <- first() && second()
-    updateMascot(
+    update_mascot(
       "parent",
       mood = if (complete) "happy" else "worried",
       status = if (complete) "Both reviews complete" else "Waiting for both reviews"

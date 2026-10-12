@@ -7,7 +7,7 @@ package starts using mascot, with a way to check it still works. A PR that may a
 | User | Repo or location | Uses | Version | How to check it still works | Status |
 |---|---|---|---|---|---|
 | R Engineering Playbook site (first suggested user; the engine's birthplace) | insightsurge/r-engineering-playbook | Today: its own engine in `tools/animate/` (trailers, thumbnails, popup player), not this package. Planned: the Quarto shortcode in 0.2.0 (#37), later trailers (#56) | none yet | Render the site; open an article in light and dark; trailers still play. Its handoff lists every use of the engine (`dev/handoffs/brand-ui/animation-engine-package.md`) | planned |
-| The founder's Shiny apps | to be added, one row per app | Planned: `mascotOutput()`/`renderMascot()`, `updateMascot()`, `watch_validator()`, busy mood, light/dark | none yet | The app starts, the mascot renders, a mood change works (a shinytest2 smoke test) | planned |
+| The founder's Shiny apps | to be added, one row per app | Planned: `mascot()` in the UI and `update_mascot()` in the server, busy mood, light/dark | none yet | The app starts, the mascot renders, a mood change works (a shinytest2 smoke test) | planned |
 | Tanmay (R package author, outside trial) | to be added | Trial of 0.1.0 before CRAN (#43) | GitHub | Their feedback issues are closed | planned |
 
 ## Rules

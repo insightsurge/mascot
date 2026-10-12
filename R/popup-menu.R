@@ -1,7 +1,7 @@
 #' Choose a mascot's click menu
 #'
 #' Make a click on the mascot open a menu in a Shiny app. Pass it as `click` to
-#' [mascot()] or [updateMascot()]. Clicking or tapping the mascot opens the
+#' [mascot()] or [update_mascot()]. Clicking or tapping the mascot opens the
 #' menu, and clicking outside or pressing Escape closes it. While the menu is
 #' open, the mascot looks towards it, on the side where it actually opened (see
 #' "Where the menu opens" below). You provide the menu choices and handle the
@@ -9,10 +9,10 @@
 #' [mascot_action()] instead.
 #' @param items A named character vector of plain-text labels. Names are unique,
 #'   non-empty item IDs without whitespace (for example `c(about = "About", help = "Help")`).
-#'   Defaults to `NULL`, an empty helper: in [updateMascot()], it removes the
+#'   Defaults to `NULL`, an empty helper: in [update_mascot()], it removes the
 #'   click, so the mascot is a picture again. An empty vector is not accepted.
 #'   Labels are always escaped.
-#' @param ... Must be empty. Extra arguments are errors.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
 #'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
 #'   (preferring above, then below, then the side towards the page centre). A
@@ -26,8 +26,9 @@
 #'   the label.
 #' @returns A `mascot_popup_menu` object with `items`, `direction`, `label` and
 #'   `tooltip` elements.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot()], [updateMascot()], [mascot_action()]
+#' @seealso [mascot()], [update_mascot()], [mascot_action()]
 #' @details
 #' **Where the menu opens.** The menu must fit in the space where it can show. For
 #' an inline mascot, that space is bounded by the nearest container that scrolls
@@ -46,7 +47,7 @@
 #' mascot.
 #'
 #' **Reading the selection in Shiny.** Choosing an item sets `input$<id>_menu` to
-#' the item ID (for example, `input$helper_menu` for `mascot(id = "helper")`).
+#' the item ID (for example, `input$helper_menu` for `mascot("helper")`).
 #' Choosing the same item twice triggers the input twice. Opening and closing the
 #' menu also set `input$<id>_click`, as every activation of the mascot does (see
 #' [mascot_action()]); an app that observes it runs its action in addition to the
@@ -55,7 +56,7 @@
 #' ```r
 #' helper_ui <- function(id) {
 #'   ns <- shiny::NS(id)
-#'   mascot(id = ns("helper"), click = mascot_popup_menu(
+#'   mascot(ns("helper"), click = mascot_popup_menu(
 #'     c(about = "About this app")))
 #' }
 #' helper_server <- function(id) {
@@ -87,10 +88,10 @@
 #' mascot_popup_menu(c(about = "About this app"), label = "Help and settings")
 #' mascot_popup_menu(c(about = "About this app"), label = "Help and settings", tooltip = FALSE)
 #' mascot_popup_menu()
-#' mascot(id = "helper", click = mascot_popup_menu(c(about = "About this app")))
+#' mascot("helper", click = mascot_popup_menu(c(about = "About this app")))
 #' @examplesIf interactive()
 #' shiny::shinyApp(
-#'   shiny::fluidPage(mascot(id = "helper", click = mascot_popup_menu(
+#'   shiny::fluidPage(mascot("helper", click = mascot_popup_menu(
 #'     c(about = "About this app")))),
 #'   function(input, output, session) {
 #'     shiny::observeEvent(input$helper_menu, {
@@ -99,12 +100,14 @@
 #'   }
 #' )
 mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NULL, tooltip = TRUE) {
-  checkmate::assert_character(items, min.chars = 1, any.missing = FALSE, min.len = 1, null.ok = TRUE)
-  if (!isTRUE(checkmate::check_string(direction))) {
-    checkmate::assert_choice(direction, popup_menu_directions())
-  }
-  checkmate::assert_string(label, min.chars = 1, pattern = "\\S", null.ok = TRUE)
-  checkmate::assert_flag(tooltip)
+  with_mascot_asserts({
+    checkmate::assert_character(items, min.chars = 1, any.missing = FALSE, min.len = 1, null.ok = TRUE)
+    if (!isTRUE(checkmate::check_string(direction))) {
+      checkmate::assert_choice(direction, popup_menu_directions())
+    }
+    checkmate::assert_string(label, min.chars = 1, pattern = "\\S", null.ok = TRUE)
+    checkmate::assert_flag(tooltip)
+  })
   if (...length() > 0L) {
     abort_dots(names(substitute(list(...)))[-1L], ...length(), c("direction", "label"), environment())
   }
@@ -117,7 +120,7 @@ mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NUL
   )
   problem <- popup_menu_problem(value)
   if (!is.null(problem)) {
-    cli::cli_abort("{problem}")
+    cli::cli_abort("{problem}", class = "mascot_error")
   }
   value
 }
@@ -169,14 +172,18 @@ popup_menu_problem <- function(x) {
 #' @export
 #' @noRd
 format.mascot_popup_menu <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_popup_menu")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_popup_menu")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_popup_menu <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_popup_menu")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_popup_menu")
+  })
   cli::cat_line(format(x))
   invisible(x)
 }

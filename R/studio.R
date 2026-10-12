@@ -6,7 +6,7 @@
 #' app; no global options are changed.
 #' @param view Which view to open: `"studio"` (the default) for the function
 #'   playground, or `"examples"` for the gallery of bundled examples.
-#' @param ... Must be empty. All arguments after `view` must be named.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param fn A function name in the studio's Guide, without parentheses.
 #'   `NULL` starts with `mascot_mood()`. Used in the studio view only.
 #' @param character A character ID from the studio's character selector.
@@ -28,19 +28,26 @@
 #' @examples
 #' app <- mascot_studio(fn = "mascot_theme", run = FALSE)
 #' inherits(app, "shiny.appobj")
-mascot_studio <- function(view = "studio", ..., fn = NULL, character = formals(mascot)$character, run = TRUE) {
-  checkmate::assert_choice(view, c("studio", "examples"))
-  checkmate::assert_list(list(...), len = 0)
-  checkmate::assert_string(fn, min.chars = 1, null.ok = TRUE)
-  checkmate::assert_string(character, min.chars = 1)
-  checkmate::assert_flag(run)
+mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", run = TRUE) {
+  with_mascot_asserts({
+    checkmate::assert_choice(view, c("studio", "examples"))
+    checkmate::assert_string(fn, min.chars = 1, null.ok = TRUE)
+    checkmate::assert_string(character, min.chars = 1)
+    checkmate::assert_flag(run)
+  })
+  if (...length() > 0L) {
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("fn", "character", "run"), environment())
+  }
   path <- dirname(mascot_example("studio", run = FALSE))
   guide <- new.env(parent = baseenv())
   sys.source(file.path(path, "R", "guide.R"), envir = guide)
   data <- new.env(parent = baseenv())
   sys.source(file.path(path, "R", "data.R"), envir = data)
-  checkmate::assert_choice(fn, names(guide$playground_guide), null.ok = TRUE)
-  checkmate::assert_choice(character, unname(data$studio_characters()))
+  # These choices are available only after loading the studio data.
+  with_mascot_asserts({
+    checkmate::assert_choice(fn, names(guide$playground_guide), null.ok = TRUE)
+    checkmate::assert_choice(character, unname(data$studio_characters()))
+  })
   app <- shiny::shinyAppDir(path)
   handler <- app$httpHandler
   initial <- list(view = view, fn = if (is.null(fn)) "mascot_mood" else fn, character = character)
@@ -62,10 +69,13 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = formals(m
     return(app)
   }
   if (!example_interactive()) {
-    cli::cli_abort(c(
-      "Running {.fn mascot_studio} needs an interactive R session.",
-      "i" = "Use {.code mascot_studio(run = FALSE)} to return the app."
-    ))
+    cli::cli_abort(
+      c(
+        "Running {.fn mascot_studio} needs an interactive R session.",
+        "i" = "Use {.code mascot_studio(run = FALSE)} to return the app."
+      ),
+      class = "mascot_error"
+    )
   }
   shiny::runApp(app)
 }

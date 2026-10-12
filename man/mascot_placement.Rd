@@ -4,19 +4,26 @@
 \alias{mascot_placement}
 \title{Place a mascot in a floating corner or inline}
 \usage{
-mascot_placement(position = "bottom-right", minimise = TRUE, drag = FALSE)
+mascot_placement(
+  position = "bottom-right",
+  ...,
+  minimise = TRUE,
+  drag = "none"
+)
 }
 \arguments{
 \item{position}{A corner to float the mascot (\code{"bottom-right"}, the default;
 \code{"top-left"}, \code{"top-right"} or \code{"bottom-left"}), or \code{"inline"} to sit
 where the mascot is placed in the UI. \code{NULL} is not accepted.}
 
+\item{...}{Must be empty. Forces the arguments after it to be named.}
+
 \item{minimise}{A logical flag, defaulting to \code{TRUE}, to show a minimise
 control on a floating mascot. Has no effect inline: an explicitly supplied
 value gives an informational message; the default stays silent.
 \code{NULL} is not accepted.}
 
-\item{drag}{\code{FALSE} (the default) for no dragging, \code{"snap"} to let visitors
+\item{drag}{\code{"none"} (the default) for no dragging, \code{"snap"} to let visitors
 drag the mascot and move it to the nearest corner on release, or \code{"free"}
 to keep it where it is dropped, including while minimised.
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{%
@@ -24,12 +31,13 @@ to keep it where it is dropped, including while minimised.
 \strong{[Experimental]}}
 \code{"free"} is experimental: the position it reports and how to restore it
 may change (issue #224). Has no effect inline: an
-explicitly supplied value gives an informational message. \code{TRUE} and
+explicitly supplied value gives an informational message. \code{TRUE}, \code{FALSE} and
 \code{NULL} are not accepted. See the Dragging section.}
 }
 \value{
 A \code{mascot_placement} object with \code{position}, \code{minimise} and \code{drag}
 elements.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 Floating mascots sit in a window corner (by default, \code{"bottom-right"}), 1rem
@@ -70,7 +78,7 @@ In Shiny each drop sets \verb{input$<id>_position}, read in the module that owns
 the mascot, like \verb{input$<id>_menu}: the corner name, such as \code{"top-left"},
 after a snap, or a list with \code{x} and \code{y}, the mascot's top-left corner in
 CSS pixels from the window's top-left, after a free drop. A later
-\code{\link[=updateMascot]{updateMascot()}} with \code{placement} replaces the dragged position. Dragging
+\code{\link[=update_mascot]{update_mascot()}} with \code{placement} replaces the dragged position. Dragging
 has no keyboard alternative; the minimise control stays reachable by keyboard.
 Remembering a position between visits is the app's job: for example, save
 the corner and pass it back as \code{position} next time.
@@ -81,11 +89,11 @@ mascot_placement()
 mascot_placement("top-left")
 mascot_placement("bottom-right", minimise = TRUE)
 mascot_placement("bottom-right", drag = "snap")
-mascot(id = "helper", placement = list(position = "top-left", drag = "free"))
+mascot("helper", placement = list(position = "top-left", drag = "free"))
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   shiny::fluidPage(
-    mascot(id = "helper", placement = mascot_placement("bottom-right", drag = "snap")),
+    mascot("helper", placement = mascot_placement("bottom-right", drag = "snap")),
     shiny::textOutput("where")
   ),
   function(input, output, session) {
@@ -95,7 +103,7 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},

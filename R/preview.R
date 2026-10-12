@@ -32,7 +32,7 @@
 #'   frame with `role`, `colour`, `background`, `ratio` and `mode` columns, one row
 #'   per supplied colour below 3:1. With no findings it is a zero-row data frame
 #'   with the same columns. Colours are kept unchanged; one combined warning is
-#'   issued in R.
+#'   issued in R unless `mascot.contrast_warnings` is `FALSE`.
 #' @details
 #' **Comparison grid.** Rows are moods; columns are the requested `size`, then
 #' 48, 32 and 24 CSS pixels. The first column preserves percentage and
@@ -62,6 +62,7 @@
 #' mascot_preview()
 mascot_preview <- function(
   character = "tessa",
+  ...,
   mood = NULL,
   status = NULL,
   bubble = NULL,
@@ -90,16 +91,24 @@ mascot_preview <- function(
       }
     }
   )
+  if (...length() > 0L) {
+    abort_dots(
+      names(substitute(list(...)))[-1L],
+      ...length(),
+      c("mood", "status", "bubble", "size", "placement", "theme", "motion", "click"),
+      environment()
+    )
+  }
   surfaces <- preview_surfaces(theme)
   contrast <- preview_contrast(resolved, surfaces$background)
   lines <- preview_contrast_labels(contrast)
-  if (nrow(contrast)) {
+  if (nrow(contrast) && contrast_warnings(always = TRUE)) {
     cli::cli_warn(
       c(
         "Preview colours have contrast below 3:1; the colours are kept.",
         "i" = "{paste(lines, collapse = '\n')}"
       ),
-      class = "mascot_contrast"
+      class = c("mascot_contrast", "mascot_warning")
     )
   }
   sizes <- c(

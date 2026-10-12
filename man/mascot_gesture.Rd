@@ -4,20 +4,23 @@
 \alias{mascot_gesture}
 \title{Choose a one-off mascot gesture}
 \usage{
-mascot_gesture(name)
+mascot_gesture(name, ...)
 }
 \arguments{
 \item{name}{A required non-empty string: \code{"nod"} acknowledges an action;
 \code{"wave"} greets (characters without arms rock instead). See
 \code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions. There is no default; \code{NULL} is not
 accepted.}
+
+\item{...}{Must be empty. Forces the arguments after it to be named.}
 }
 \value{
 A \code{mascot_gesture} object with a \code{name} element.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 Play a single movement without changing the current mood. Use this helper or
-a plain gesture name in \code{\link[=updateMascot]{updateMascot()}}.
+a plain gesture name in \code{\link[=update_mascot]{update_mascot()}}.
 }
 \details{
 A character or mood change in the same call applies first, then the gesture.
@@ -31,7 +34,7 @@ mascot_gesture("nod")
 mascot_gesture("wave")
 }
 \seealso{
-\code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=update_mascot]{update_mascot()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},

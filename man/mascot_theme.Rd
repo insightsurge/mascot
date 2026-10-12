@@ -4,9 +4,11 @@
 \alias{mascot_theme}
 \title{Set a mascot's colours and light or dark mode}
 \usage{
-mascot_theme(light = NULL, dark = NULL, mode = "auto", css = NULL)
+mascot_theme(..., light = NULL, dark = NULL, mode = "auto", css = NULL)
 }
 \arguments{
+\item{...}{Must be empty. Forces the arguments after it to be named.}
+
 \item{light, dark}{Named lists of colour roles, or \code{NULL} (the default) to keep
 the character's own colours in that mode. Values can be colour names, hex
 strings, \code{\link[grDevices:rgb]{grDevices::rgb()}} output, CSS \code{rgb()} or \code{rgba()} strings, or
@@ -29,6 +31,7 @@ including when the mascot floats.}
 }
 \value{
 A \code{mascot_theme} object describing colours, CSS sources and mode.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 Customise the character's colours and light or dark mode. Roles you do not set
@@ -36,7 +39,7 @@ follow the first supplied or filled leader that the character declares (for
 example \code{body}), in the character's priority order. With no supplied leader,
 they keep their original colours. Call \code{\link[=mascot_colour_roles]{mascot_colour_roles()}} to find the
 roles for a character. A plain named list passed to \code{\link[=mascot]{mascot()}} or
-\code{\link[=updateMascot]{updateMascot()}} uses one set of colours in every mode. A \code{\link[bslib:bs_theme]{bslib::bs_theme()}}
+\code{\link[=update_mascot]{update_mascot()}} uses one set of colours in every mode. A \code{\link[bslib:bs_theme]{bslib::bs_theme()}}
 fills the character's declared brand leaders with its primary and secondary
 colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand =)}.
 }
@@ -56,19 +59,20 @@ A warning appears when a colour chosen by the developer (light, dark, or a
 \code{\link[bslib:bs_theme]{bslib::bs_theme()}} brand colour) has contrast below 3:1 against the page
 background (white in light mode, \verb{#212529} in dark mode, or the \code{bslib}
 theme's backgrounds). Contrast is checked when \code{\link[=mascot]{mascot()}} builds the UI,
-when \code{\link[=updateMascot]{updateMascot()}} applies colours with \verb{theme = }, and collected into the
+when \code{\link[=update_mascot]{update_mascot()}} applies colours with \verb{theme = }, and collected into the
 contrast table by \code{\link[=mascot_preview]{mascot_preview()}}; the character's own colours never warn;
 the colour is always kept.
 
-The warning appears in the R console or server log, in every mode (not only
-Shiny developer mode); app visitors never see it. CSS-variable colours
-(\verb{css =}) are checked in the browser and warn in the browser console.
+R warnings appear only when \code{\link[shiny:in_devmode]{shiny::in_devmode()}} is \code{TRUE}, and always in
+\code{\link[=mascot_preview]{mascot_preview()}} and the studio. Set \code{options(mascot.contrast_warnings = TRUE)}
+or \code{FALSE} to force them on or off everywhere. Visitors never see R warnings.
+CSS-variable colours (\verb{css =}) are checked and warn in the browser console.
 
 These warnings have the class \code{mascot_contrast}. To silence only these
 warnings:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{withCallingHandlers(
-  mascot(id = "helper", theme = list(rim = "#f5e6c8")),
+  mascot("helper", theme = list(rim = "#f5e6c8")),
   mascot_contrast = function(w) invokeRestart("muffleWarning")
 )
 }\if{html}{\out{</div>}}
@@ -80,13 +84,13 @@ Note that \code{suppressWarnings()} also works but hides every warning.
 mascot_theme()
 mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
 mascot_theme(css = list(body = "--team-blue"))
-mascot(id = "helper", theme = list(body = "#1f6feb"))
+mascot("helper", theme = list(body = "#1f6feb"))
 \dontshow{if (requireNamespace("bslib", quietly = TRUE)) withAutoprint(\{ # examplesIf}
-mascot(id = "brand", theme = bslib::bs_theme(primary = "#1f6feb"))
+mascot("brand", theme = bslib::bs_theme(primary = "#1f6feb"))
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}},
+\code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}},
 \code{\link[=mascot_motion]{mascot_motion()}} for a complete Shiny settings example
 
 Other mascot helpers:

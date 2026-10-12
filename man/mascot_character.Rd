@@ -12,6 +12,7 @@ mascot_character(name = "tessa")
 }
 \value{
 A \code{mascot_character} object with \code{id} and \code{name} elements.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 The helper behind the \code{character} argument of \code{\link[=mascot]{mascot()}}. Only Tessa is

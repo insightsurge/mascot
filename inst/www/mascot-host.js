@@ -1969,7 +1969,7 @@
       const message = bare
         ? `no mascot "${id}" is on the page, but "${bare}" is; in a module UI use mascot(id = ns("${bare}"))`
         : `no mascot "${id}" is on the page, but "${namespaced}" is; update it from inside its module, ` +
-          `where updateMascot("${id}") adds the namespace`;
+          `where update_mascot("${id}") adds the namespace`;
       warn(message);
       window.dispatchEvent(
         new CustomEvent('shiny:client-message', { detail: { headline: 'mascot', message, status: 'warning' } }),

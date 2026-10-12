@@ -4,19 +4,13 @@
 \alias{mascot_studio}
 \title{Launch the interactive mascot studio}
 \usage{
-mascot_studio(
-  view = "studio",
-  ...,
-  fn = NULL,
-  character = formals(mascot)$character,
-  run = TRUE
-)
+mascot_studio(view = "studio", ..., fn = NULL, character = "tessa", run = TRUE)
 }
 \arguments{
 \item{view}{Which view to open: \code{"studio"} (the default) for the function
 playground, or \code{"examples"} for the gallery of bundled examples.}
 
-\item{...}{Must be empty. All arguments after \code{view} must be named.}
+\item{...}{Must be empty. Forces the arguments after it to be named.}
 
 \item{fn}{A function name in the studio's Guide, without parentheses.
 \code{NULL} starts with \code{mascot_mood()}. Used in the studio view only.}

@@ -20,7 +20,7 @@ ui <- page_fluid(
     ),
     card(
       h2("Form status"),
-      mascot(id = "helper", mood = "worried", status = "2 fields need attention", placement = "inline")
+      mascot("helper", mood = "worried", status = "2 fields need attention", placement = "inline")
     )
   )
 )
@@ -39,7 +39,7 @@ server <- function(input, output, session) {
   })
   observe({
     count <- length(problems())
-    updateMascot(
+    update_mascot(
       "helper",
       mood = if (count) "worried" else "happy",
       status = if (count) {

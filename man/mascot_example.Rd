@@ -4,11 +4,13 @@
 \alias{mascot_example}
 \title{Run or locate a bundled example app}
 \usage{
-mascot_example(name, run = TRUE)
+mascot_example(name, ..., run = TRUE)
 }
 \arguments{
 \item{name}{A required non-empty string from \code{\link[=mascot_examples]{mascot_examples()}}'s \code{name}
 column. \code{NULL} is not accepted.}
+
+\item{...}{Must be empty. Forces the arguments after it to be named.}
 
 \item{run}{A logical flag, defaulting to \code{TRUE}, to launch the app in an
 interactive R session. \code{FALSE} returns its \code{app.R} path without launching it.

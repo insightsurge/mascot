@@ -7,6 +7,26 @@
 \description{
 Adds a character drawn in code to 'Shiny' apps and 'Quarto' sites. The character shows a mood and animates when the mood changes, follows light and dark mode, and takes its colours from the theme. It works offline and uses no AI-generated images.
 }
+\section{Conditions}{
+
+Building UI with \code{\link[=mascot]{mascot()}} or helpers errors on invalid values;
+\code{\link[=update_mascot]{update_mascot()}} warns and leaves the mascot unchanged. All errors raised by
+mascot, including checkmate assertions, carry class \code{mascot_error}. Warnings
+have class \code{mascot_warning} and messages have class \code{mascot_message}. Invalid
+update values also carry
+\code{mascot_update_ignored}; low contrast carries \code{mascot_contrast}, and messages
+about inline placement carry \code{mascot_placement_ignored}. Checkmate assertion
+errors keep checkmate's message, line by line.
+}
+
+\section{Options}{
+
+\code{options(mascot.contrast_warnings = TRUE)} forces R contrast warnings on;
+\code{FALSE} forces them off everywhere. By default they appear only when
+\code{\link[shiny:in_devmode]{shiny::in_devmode()}} is \code{TRUE}, and always in \code{\link[=mascot_preview]{mascot_preview()}} and the
+studio. Colours are kept unchanged.
+}
+
 \seealso{
 Useful links:
 \itemize{

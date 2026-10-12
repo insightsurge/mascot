@@ -3,74 +3,75 @@
     Code
       print(helper)
     Output
-      mascot_character(id = "tessa", name = "Tessa")
+      mascot_character()
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_mood(name = "idle")
+      mascot_mood()
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_status(text = "Saving")
+      mascot_status("Saving")
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_bubble(text = "Ready", html = FALSE, duration = Inf, closable = TRUE)
+      mascot_bubble("Ready", duration = Inf)
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_gesture(name = "nod")
+      mascot_gesture("nod")
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_size(size = "20%", small_screen = NULL)
+      mascot_size("20%")
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_placement(position = "bottom-right", minimise = TRUE, drag = FALSE)
+      mascot_placement()
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_theme(light = list(body = "#c2185b"), dark = NULL, mode = "auto", css = NULL)
+      mascot_theme(light = list(body = "#c2185b"))
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_motion(animate = FALSE, swap = TRUE)
+      mascot_motion(FALSE)
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_popup_menu(items = c(about = "About"), direction = "auto", label = NULL, tooltip = TRUE)
+      mascot_popup_menu(c(about = "About"))
 
 ---
 
     Code
       print(helper)
     Output
-      mascot_action(label = "Open help", tooltip = TRUE, disabled = FALSE)
+      mascot_action("Open help")
+

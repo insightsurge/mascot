@@ -39,7 +39,7 @@ bubble_examples <- list(
   ),
   `Keys and code` = list(
     html = TRUE,
-    text = "Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to run <code>updateMascot()</code>."
+    text = "Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to run <code>update_mascot()</code>."
   ),
   Badges = list(
     html = TRUE,
@@ -70,36 +70,36 @@ defaults <- list(
 )
 mistakes <- list(
   `Leave out an argument name` = list(
-    code = "updateMascot(\"helper\", \"happy\")",
-    why = "The second argument is character, not mood. The value \"happy\" is treated as a character name, giving a warning and no change."
+    code = "update_mascot(\"helper\", \"happy\")",
+    why = "Arguments after id must be named. An unnamed mood is caught by ... and gives an error."
   ),
   `A mood that does not exist` = list(
-    code = "updateMascot(\"helper\", mood = \"sleepy\")",
+    code = "update_mascot(\"helper\", mood = \"sleepy\")",
     why = "Displays a warning listing valid moods. The mascot keeps its current mood."
   ),
   `Misspell an argument` = list(
-    code = "updateMascot(\"helper\", moood = \"happy\")",
+    code = "update_mascot(\"helper\", moood = \"happy\")",
     why = "... must be empty, so typos produce an error rather than being ignored."
   ),
-  `Too small` = list(code = "updateMascot(\"helper\", size = 10)", why = "Sizes must be at least 24 pixels."),
+  `Too small` = list(code = "update_mascot(\"helper\", size = 10)", why = "Sizes must be at least 24 pixels."),
   `Minimise an inline mascot` = list(
-    code = "updateMascot(\"helper\", placement = mascot_placement(\"inline\", minimise = TRUE))",
+    code = "update_mascot(\"helper\", placement = mascot_placement(\"inline\", minimise = TRUE))",
     why = "An inline mascot ignores minimise. An informational message explains this, and the mascot sits inline."
   ),
   `A bubble that never shows` = list(
-    code = "updateMascot(\"helper\", bubble = mascot_bubble(\"Hi\", duration = 0))",
+    code = "update_mascot(\"helper\", bubble = mascot_bubble(\"Hi\", duration = 0))",
     why = "duration must be greater than zero. Use Inf to keep the bubble open."
   ),
   `Not a colour` = list(
-    code = "updateMascot(\"helper\", theme = list(body = \"not-a-colour\"))",
+    code = "update_mascot(\"helper\", theme = list(body = \"not-a-colour\"))",
     why = "Colours are validated in R before sending to the browser."
   ),
   `Low contrast` = list(
-    code = "updateMascot(\"helper\", theme = list(body = \"#f8f9fa\"))",
+    code = "update_mascot(\"helper\", theme = list(body = \"#f8f9fa\"))",
     why = "The colour is applied, with a warning if contrast against the page is low."
   ),
   `The wrong id` = list(
-    code = "updateMascot(\"helpr\", mood = \"happy\")",
+    code = "update_mascot(\"helpr\", mood = \"happy\")",
     why = paste(
       "No error and no change: the server cannot see browser elements. With shiny::devmode(TRUE), the browser",
       "console reports the missing element."
@@ -119,19 +119,27 @@ playground_controls <- list(
   mascot_mood = list(name = input_id("mood")),
   mascot_status = list(text = input_id("status_text")),
   mascot_bubble = list(
+    ... = fixed_arg("Must be empty: optional arguments are named."),
     text = input_id("bubble_text", "bubble_example", "bubble_html"),
     duration = input_id("bubble_duration", "bubble_forever"),
     closable = input_id("bubble_closable")
   ),
   mascot_motion = list(animate = input_id("animate"), swap = input_id("swap")),
-  mascot_gesture = list(name = input_event("gesture")),
+  mascot_gesture = list(... = fixed_arg("Must be empty: optional arguments are named."), name = input_event("gesture")),
   mascot_size = list(
+    ... = fixed_arg("Must be empty: optional arguments are named."),
     size = input_id("size_unit", "size_px", "size_pct"),
     small_screen = input_id("small_on", "small_px")
   ),
-  mascot_placement = list(position = input_id("position"), minimise = input_id("minimise"), drag = input_id("drag")),
+  mascot_placement = list(
+    position = input_id("position"),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    minimise = input_id("minimise"),
+    drag = input_id("drag")
+  ),
   mascot_colour_roles = list(character = input_id("character")),
   mascot_theme = list(
+    ... = fixed_arg("Must be empty: optional arguments are named."),
     light = fixed_arg("Pickers are built from the selected character roles in theme_light."),
     dark = fixed_arg("Pickers are built from the selected character roles in theme_dark."),
     mode = input_id("theme_mode"),
@@ -151,8 +159,9 @@ playground_controls <- list(
     tooltip = input_id("menu_tooltip")
   ),
   mascot = list(
+    ... = fixed_arg("Must be empty: optional arguments are named."),
     character = input_id("character"),
-    id = fixed_arg("The studio's mascot is always mascot(id = \"helper\")."),
+    id = fixed_arg("The studio's mascot is always mascot(\"helper\")."),
     mood = input_id("mood"),
     status = input_id("status_text"),
     bubble = input_id("bubble_text"),
@@ -162,7 +171,7 @@ playground_controls <- list(
     motion = input_id("animate"),
     click = input_id("action_on", "menu_on")
   ),
-  updateMascot = list(
+  update_mascot = list(
     id = input_id("mistake"),
     character = input_id("character"),
     mood = input_id("mood"),
@@ -178,6 +187,7 @@ playground_controls <- list(
     session = input_id("task_run")
   ),
   mascot_preview = list(
+    ... = fixed_arg("Must be empty: optional arguments are named."),
     character = input_id("character"),
     mood = input_id("preview_mood"),
     status = input_id("preview_status"),
@@ -188,7 +198,11 @@ playground_controls <- list(
     motion = input_id("preview_motion"),
     click = input_id("preview_menu_items")
   ),
-  mascot_example = list(name = input_id("example_name"), run = input_id("example_run"))
+  mascot_example = list(
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    name = input_id("example_name"),
+    run = input_id("example_run")
+  )
 )
 
 # Change only this helper when public character discovery becomes available (#162).

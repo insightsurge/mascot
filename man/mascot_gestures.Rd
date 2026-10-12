@@ -8,10 +8,12 @@ mascot_gestures()
 }
 \value{
 A data frame with character columns \code{name} and \code{description}.
+A base data frame. Columns may be added at the end in later versions; existing columns keep their
+names and types. The first column is the value you pass to the matching function.
 }
 \description{
 Gestures play a quick movement once, without changing the mascot's mood.
-They are available only in \code{\link[=updateMascot]{updateMascot()}}.
+They are available only in \code{\link[=update_mascot]{update_mascot()}}.
 }
 \examples{
 mascot_gestures()

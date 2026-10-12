@@ -17,6 +17,8 @@ mood_table <- function() {
 #'
 #' Every character uses these moods, in this order.
 #' @returns A data frame with character columns `name` and `description`.
+#'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
+#'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers
 #' @seealso [mascot()], [mascot_mood()]
 #' @export
@@ -29,10 +31,11 @@ mascot_moods <- function() {
 #' Choose a mascot mood
 #'
 #' Set how the mascot feels and looks. You can use this helper or a plain mood
-#' name in [mascot()] and [updateMascot()].
+#' name in [mascot()] and [update_mascot()].
 #' @param name A non-empty string naming a mood from [mascot_moods()]. Defaults
 #'   to `"idle"`; `NULL` is not accepted.
 #' @returns A `mascot_mood` object with a `name` element.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
 #' @seealso [mascot()]
 #' @export
@@ -40,7 +43,9 @@ mascot_moods <- function() {
 #' mascot_mood()
 #' mascot_mood("happy")
 mascot_mood <- function(name = "idle") {
-  checkmate::assert_string(name, min.chars = 1)
+  with_mascot_asserts({
+    checkmate::assert_string(name, min.chars = 1)
+  })
   if (!name %in% mood_table()$name) {
     abort_choice(name, mood_table()$name, "name", "mood", environment())
   }
@@ -57,14 +62,18 @@ mood_label <- function(name) {
 #' @export
 #' @noRd
 format.mascot_mood <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_mood")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_mood")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_mood <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_mood")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_mood")
+  })
   cli::cat_line(format(x))
   invisible(x)
 }

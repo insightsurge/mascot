@@ -2,16 +2,16 @@
 #'
 #' Turn the mascot into a button for one action of your Shiny app, such as
 #' opening a help panel or a chat. Pass it as `click` to [mascot()] or
-#' [updateMascot()], and handle the click in your server with
+#' [update_mascot()], and handle the click in your server with
 #' `shiny::observeEvent(input$<id>_click, ...)`. For a choice of several actions,
 #' use [mascot_popup_menu()] instead.
 #'
 #' @param label The action's name: one string containing a non-whitespace
 #'   character that says what a click does, such as `"Open help"`. Screen readers
 #'   announce the mascot as a button with this name, and the tooltip shows it.
-#'   `NULL` (the default) makes an empty helper: in [updateMascot()], it removes
+#'   `NULL` (the default) makes an empty helper: in [update_mascot()], it removes
 #'   the click, so the mascot is a picture again.
-#' @param ... Must be empty. Extra arguments are errors.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param tooltip A flag. `TRUE` (the default) shows the label in a tooltip when
 #'   the pointer rests on the mascot or the keyboard focuses it. `FALSE` hides the
 #'   tooltip; screen readers still announce the label.
@@ -21,8 +21,9 @@
 #'   a long task, and send `mascot_action(..., disabled = FALSE)` afterwards.
 #' @returns A `mascot_action` object with `label`, `tooltip` and `disabled`
 #'   elements.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot()], [updateMascot()], [mascot_popup_menu()]
+#' @seealso [mascot()], [update_mascot()], [mascot_popup_menu()]
 #' @details
 #' **What a click sends.** Every activation of the button sets
 #' `input$<id>_click` to the number of activations since the mascot appeared, so
@@ -47,10 +48,10 @@
 #' mascot_action("Open help")
 #' mascot_action("Open help", tooltip = FALSE)
 #' mascot_action()
-#' mascot(id = "helper", click = "Open help")
+#' mascot("helper", click = "Open help")
 #' @examplesIf interactive()
 #' shiny::shinyApp(
-#'   shiny::fluidPage(mascot(id = "helper", click = "Open help")),
+#'   shiny::fluidPage(mascot("helper", click = "Open help")),
 #'   function(input, output, session) {
 #'     shiny::observeEvent(input$helper_click, {
 #'       shiny::showModal(shiny::modalDialog("Help for this app"))
@@ -58,9 +59,11 @@
 #'   }
 #' )
 mascot_action <- function(label = NULL, ..., tooltip = TRUE, disabled = FALSE) {
-  checkmate::assert_string(label, min.chars = 1, pattern = "\\S", null.ok = TRUE)
-  checkmate::assert_flag(tooltip)
-  checkmate::assert_flag(disabled)
+  with_mascot_asserts({
+    checkmate::assert_string(label, min.chars = 1, pattern = "\\S", null.ok = TRUE)
+    checkmate::assert_flag(tooltip)
+    checkmate::assert_flag(disabled)
+  })
   if (...length() > 0L) {
     abort_dots(names(substitute(list(...)))[-1L], ...length(), c("tooltip", "disabled"), environment())
   }
@@ -158,14 +161,18 @@ click_tag <- function(click) {
 #' @export
 #' @noRd
 format.mascot_action <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_action")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_action")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_action <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_action")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_action")
+  })
   cli::cat_line(format(x))
   invisible(x)
 }

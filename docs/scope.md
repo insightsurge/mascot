@@ -45,7 +45,7 @@ chooser. The Quarto shortcode follows in 0.2.0.
 ## Releases (draft)
 | Release | Theme | Contents |
 |---|---|---|
-| 0.1.0 | Live mascot | Neer and Tessa on a multi-character engine; moods with wiggle-then-change; light/dark; themes; the Shiny widget, `updateMascot()`, validator binding, busy mood, message bubble, placement; the gallery; groundwork for hints. The first CRAN release: the R interface comes first, because the Quarto shortcode and the AI skills build on it |
+| 0.1.0 | Live mascot | Neer and Tessa on a multi-character engine; moods with wiggle-then-change; light/dark; themes; the Shiny widget, `update_mascot()`, validator binding, busy mood, message bubble, placement; the gallery; groundwork for hints. The first CRAN release: the R interface comes first, because the Quarto shortcode and the AI skills build on it |
 | 0.2.0 | Quarto, static assets and pharma | The Quarto extension and shortcode (the playbook site's first use); AI skills for Claude, Codex and Gemini; a shared wardrobe (outfits, accessories, held items any character can wear); avatars (PNG/SVG); hex stickers; the pharma theme pack, if 0.1.0 is received well |
 | 0.3.0 | Ojas and the builder | Ojas; a visual character builder; more shapes; SVG and Lottie export |
 | Later | Hints and app events | A quiet hint giver, off by default: a help list in the bubble, a "what's this?" mode, hints when validation fails, dragging the mascot onto an element; reactions to custom app events |

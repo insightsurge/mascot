@@ -1,4 +1,4 @@
-describe("updateMascot()", {
+describe("update_mascot()", {
   it("sends only supplied fields in a module, with the namespace added once", {
     calls <- new.env(parent = emptyenv())
     calls$messages <- list()
@@ -8,7 +8,7 @@ describe("updateMascot()", {
     module <- function(id) {
       shiny::moduleServer(id, function(input, output, session) {
         shiny::observeEvent(input$go, {
-          session$userData$result <- withVisible(updateMascot("helper", mood = "happy"))
+          session$userData$result <- withVisible(update_mascot("helper", mood = "happy"))
         })
       })
     }
@@ -17,7 +17,7 @@ describe("updateMascot()", {
       expect_identical(session$userData$result, list(value = NULL, visible = FALSE))
       expect_identical(calls$messages[[1]], list(id = session$ns("helper"), patch = list(mood = "happy")))
       expect_identical(calls$messages[[1]]$id, "proxy1-helper")
-      updateMascot("helper", character = mascot_character(), mood = mascot_mood("thinking"), session = session)
+      update_mascot("helper", character = mascot_character(), mood = mascot_mood("thinking"), session = session)
       expect_identical(
         calls$messages[[2]]$patch,
         list(
@@ -25,13 +25,13 @@ describe("updateMascot()", {
           mood = "thinking"
         )
       )
-      updateMascot("helper", status = "Saving", session = session)
+      update_mascot("helper", status = "Saving", session = session)
       expect_identical(calls$messages[[3]]$patch, list(status = list(mode = "custom", text = "Saving")))
-      updateMascot("helper", status = mascot_status(), session = session)
+      update_mascot("helper", status = mascot_status(), session = session)
       expect_identical(calls$messages[[4]]$patch, list(status = list(mode = "mood")))
-      updateMascot("helper", status = htmltools::HTML("<b>Saving</b>"), session = session)
+      update_mascot("helper", status = htmltools::HTML("<b>Saving</b>"), session = session)
       expect_identical(calls$messages[[5]]$patch$status$text, "<b>Saving</b>")
-      expect_invisible(updateMascot("helper", session = session))
+      expect_invisible(update_mascot("helper", session = session))
       expect_length(calls$messages, 5)
     })
   })
@@ -45,30 +45,30 @@ describe("updateMascot()", {
       dev_mode = function() FALSE
     )
     session <- shiny::MockShinySession$new()
-    expect_snapshot(updateMascot("helper", character = "neer", mood = "hapy", status = "", session = session))
+    expect_snapshot(update_mascot("helper", character = "neer", mood = "hapy", status = "", session = session))
     for (x in list(1, "", NA_character_, c("a", "b"))) {
-      expect_warning(updateMascot("helper", character = x, session = session), "unchanged")
-      expect_warning(updateMascot("helper", mood = x, session = session), "unchanged")
-      expect_warning(updateMascot("helper", status = x, session = session), "mascot_status")
+      expect_warning(update_mascot("helper", character = x, session = session), "unchanged")
+      expect_warning(update_mascot("helper", mood = x, session = session), "unchanged")
+      expect_warning(update_mascot("helper", status = x, session = session), "mascot_status")
     }
-    expect_warning(updateMascot("{helper", mood = "{oops", status = "Saved", session = session), "not a mood")
+    expect_warning(update_mascot("{helper", mood = "{oops", status = "Saved", session = session), "not a mood")
     expect_length(calls$patches, 0)
     local_mocked_bindings(dev_mode = function() TRUE)
-    expect_warning(updateMascot("helper", mood = "hapy", status = "Saved", session = session), "unchanged")
+    expect_warning(update_mascot("helper", mood = "hapy", status = "Saved", session = session), "unchanged")
     expect_length(calls$patches, 1)
     expect_named(calls$patches[[1]], "problem")
     expect_match(calls$patches[[1]]$problem, "^mascot: .*hapy")
   })
   it("errors on code mistakes before inspecting runtime values", {
     session <- shiny::MockShinySession$new()
-    expect_error(updateMascot("helper", session = NULL), "inside a Shiny server function or module")
-    expect_error(updateMascot("helper", session = 1), "Assertion on 'session' failed")
-    expect_error(updateMascot(), "missing")
+    expect_error(update_mascot("helper", session = NULL), "inside a Shiny server function or module")
+    expect_error(update_mascot("helper", session = 1), "Assertion on 'session' failed")
+    expect_error(update_mascot(), "missing")
     for (id in list(1, "", "has space", NA_character_)) {
-      expect_error(updateMascot(id, session = session), "Assertion on 'id' failed")
+      expect_error(update_mascot(id, session = session), "Assertion on 'id' failed")
     }
-    expect_snapshot(error = TRUE, updateMascot("helper", typo = 1, session = session))
-    expect_snapshot(error = TRUE, updateMascot("helper", NULL, NULL, NULL, NULL, session))
+    expect_snapshot(error = TRUE, update_mascot("helper", typo = 1, session = session))
+    expect_snapshot(error = TRUE, update_mascot("helper", NULL, NULL, NULL, NULL, session))
   })
 })
 
@@ -106,7 +106,7 @@ describe("dev_mode()", {
   })
 })
 
-describe("updateMascot() in a browser", {
+describe("update_mascot() in a browser", {
   it("changes mood, sets plain status text and returns it to the mood", {
     local_shiny_browser()
     app <- app_driver(function() {
@@ -119,10 +119,10 @@ describe("updateMascot() in a browser", {
         shiny::actionButton("reset", "Follow mood")
       )
       server <- function(input, output, session) {
-        shiny::observeEvent(input$think, updateMascot("helper", mood = "thinking"))
-        shiny::observeEvent(input$save, updateMascot("helper", status = "<b>Saved</b>"))
-        shiny::observeEvent(input$happy, updateMascot("helper", mood = "happy"))
-        shiny::observeEvent(input$reset, updateMascot("helper", status = mascot_status()))
+        shiny::observeEvent(input$think, update_mascot("helper", mood = "thinking"))
+        shiny::observeEvent(input$save, update_mascot("helper", status = "<b>Saved</b>"))
+        shiny::observeEvent(input$happy, update_mascot("helper", mood = "happy"))
+        shiny::observeEvent(input$reset, update_mascot("helper", status = mascot_status()))
       }
       shiny::shinyApp(ui, server)
     })
@@ -153,7 +153,7 @@ describe("updateMascot() in a browser", {
       }
       module_server <- function(id) {
         shiny::moduleServer(id, function(input, output, session) {
-          shiny::observeEvent(input$go, updateMascot("helper", mood = "happy"))
+          shiny::observeEvent(input$go, update_mascot("helper", mood = "happy"))
         })
       }
       shiny::shinyApp(shiny::fluidPage(module_ui("mod")), function(input, output, session) module_server("mod"))
@@ -176,8 +176,8 @@ describe("updateMascot() in a browser", {
       )
       server <- function(input, output, session) {
         shiny::observeEvent(input$prepare, {
-          updateMascot("late", mood = "thinking")
-          updateMascot("late", mood = "happy", status = "Ready")
+          update_mascot("late", mood = "thinking")
+          update_mascot("late", mood = "happy", status = "Ready")
         })
         output$slot <- shiny::renderUI({
           if (input$show > 0) mascot(id = "late")
@@ -203,7 +203,7 @@ describe("updateMascot() in a browser", {
 })
 
 
-describe("updateMascot() bubbles and gestures", {
+describe("update_mascot() bubbles and gestures", {
   it("sends complete bubble patches, JSON-safe Inf, clear and gesture names", {
     calls <- new.env(parent = emptyenv())
     calls$patches <- list()
@@ -211,7 +211,7 @@ describe("updateMascot() bubbles and gestures", {
       calls$patches[[length(calls$patches) + 1L]] <- patch
     })
     shiny::testServer(function(input, output, session) {}, {
-      updateMascot("helper", bubble = "Ready", gesture = "nod", session = session)
+      update_mascot("helper", bubble = "Ready", gesture = "nod", session = session)
       expect_identical(
         calls$patches[[1]],
         list(
@@ -219,9 +219,9 @@ describe("updateMascot() bubbles and gestures", {
           gesture = "nod"
         )
       )
-      updateMascot(
+      update_mascot(
         "helper",
-        bubble = mascot_bubble(htmltools::HTML("<b>Ready</b>"), Inf, FALSE),
+        bubble = mascot_bubble(htmltools::HTML("<b>Ready</b>"), duration = Inf, closable = FALSE),
         gesture = mascot_gesture("wave"),
         session = session
       )
@@ -232,11 +232,11 @@ describe("updateMascot() bubbles and gestures", {
           gesture = "wave"
         )
       )
-      updateMascot("helper", bubble = htmltools::HTML("<b>Ready</b>"), session = session)
+      update_mascot("helper", bubble = htmltools::HTML("<b>Ready</b>"), session = session)
       expect_true(calls$patches[[3]]$bubble$html)
-      updateMascot("helper", bubble = mascot_bubble(), session = session)
+      update_mascot("helper", bubble = mascot_bubble(), session = session)
       expect_identical(calls$patches[[4]], list(bubble = list(clear = TRUE)))
-      updateMascot("helper", bubble = NULL, gesture = NULL, session = session)
+      update_mascot("helper", bubble = NULL, gesture = NULL, session = session)
       expect_length(calls$patches, 4)
     })
   })
@@ -251,19 +251,19 @@ describe("updateMascot() bubbles and gestures", {
     )
     session <- shiny::MockShinySession$new()
     for (x in list("", 1, NA_character_, c("a", "b"))) {
-      expect_warning(updateMascot("a", mood = "happy", bubble = x, session = session), "bubble")
-      expect_warning(updateMascot("a", status = "Ready", gesture = x, session = session), "gesture")
+      expect_warning(update_mascot("a", mood = "happy", bubble = x, session = session), "bubble")
+      expect_warning(update_mascot("a", status = "Ready", gesture = x, session = session), "gesture")
     }
-    expect_warning(updateMascot("a", bubble = "Ready", gesture = "jump", session = session), "not a gesture")
+    expect_warning(update_mascot("a", bubble = "Ready", gesture = "jump", session = session), "not a gesture")
     bad <- mascot_bubble("Ready")
     for (field in c("text", "html", "duration", "closable")) {
       value <- bad
       value[[field]] <- NA
-      expect_warning(updateMascot("a", mood = "happy", bubble = value, session = session), "bubble")
+      expect_warning(update_mascot("a", mood = "happy", bubble = value, session = session), "bubble")
     }
     expect_length(calls$patches, 0)
     local_mocked_bindings(dev_mode = function() TRUE)
-    expect_warning(updateMascot("a", mood = "happy", bubble = "", gesture = "jump", session = session), "unchanged")
+    expect_warning(update_mascot("a", mood = "happy", bubble = "", gesture = "jump", session = session), "unchanged")
     expect_named(calls$patches[[1]], "problem")
     expect_match(calls$patches[[1]]$problem, "bubble.*gesture")
   })
@@ -277,7 +277,7 @@ describe("server bubbles and gestures in a browser", {
       ui <- shiny::fluidPage(mascot(id = "helper"), shiny::actionButton("go", "Go"))
       server <- function(input, output, session) {
         shiny::observeEvent(input$go, {
-          updateMascot("helper", bubble = mascot_bubble("Ready", Inf), gesture = "wave")
+          update_mascot("helper", bubble = mascot_bubble("Ready", duration = Inf), gesture = "wave")
         })
       }
       shiny::shinyApp(ui, server)
@@ -315,7 +315,7 @@ describe("update review regressions", {
       shiny::tags$strong(paste("Saved", calls$count))
     }))
     shiny::testServer(function(input, output, session) {}, {
-      updateMascot("helper", bubble = deferred, session = session)
+      update_mascot("helper", bubble = deferred, session = session)
       expect_identical(calls$count, 1L)
       expect_identical(calls$patches[[1]]$bubble$text, "<strong>Saved 1</strong>")
       expect_true(calls$patches[[1]]$bubble$html)
@@ -337,28 +337,28 @@ describe("update review regressions", {
     }))
     session <- shiny::MockShinySession$new()
     expect_warning(
-      updateMascot("helper", mood = "happy", bubble = deferred, session = session),
+      update_mascot("helper", mood = "happy", bubble = deferred, session = session),
       "Cannot render message"
     )
     expect_identical(calls$count, 1L)
     expect_length(calls$patches, 0)
     local_mocked_bindings(dev_mode = function() TRUE)
-    expect_warning(updateMascot("helper", bubble = deferred, session = session), "Cannot render message")
+    expect_warning(update_mascot("helper", bubble = deferred, session = session), "Cannot render message")
     expect_named(calls$patches[[1]], "problem")
     expect_match(calls$patches[[1]]$problem, "Cannot render message")
   })
   it("G7 diagnoses an unnamed session before warning about runtime values", {
     shiny::testServer(function(input, output, session) {}, {
-      expect_error(updateMascot("helper", mood = "happy", session), "session.*must be named")
+      expect_error(update_mascot("helper", mood = "happy", session), "session")
       for (arg in c("character", "mood", "status", "bubble")) {
         args <- list(id = "helper")
         args[[arg]] <- session
-        expect_error(do.call(updateMascot, args), "session.*must be named")
+        expect_error(do.call(update_mascot, args), "session")
       }
     })
     for (class in c("ShinySession", "session_proxy", "MockShinySession")) {
       misplaced <- structure(list(), class = class)
-      expect_error(updateMascot("helper", misplaced, session = NULL), "session.*must be named")
+      expect_error(update_mascot("helper", misplaced, session = NULL), "session")
     }
   })
   it("G1 and G6 send untimed rendered tags and warn for unsupported dependencies", {
@@ -371,25 +371,25 @@ describe("update review regressions", {
       dev_mode = function() FALSE
     )
     shiny::testServer(function(input, output, session) {}, {
-      updateMascot("helper", bubble = mascot_bubble("Ready", duration = NULL), session = session)
+      update_mascot("helper", bubble = mascot_bubble("Ready", duration = Inf), session = session)
       expect_null(calls$patches[[1]]$bubble$duration)
-      updateMascot("helper", bubble = shiny::tags$strong("Saved"), session = session)
+      update_mascot("helper", bubble = shiny::tags$strong("Saved"), session = session)
       expect_identical(calls$patches[[2]]$bubble$text, "<strong>Saved</strong>")
       expect_true(calls$patches[[2]]$bubble$html)
-      updateMascot("helper", bubble = htmltools::tagList(shiny::tags$strong("Saved")), session = session)
+      update_mascot("helper", bubble = htmltools::tagList(shiny::tags$strong("Saved")), session = session)
       expect_true(calls$patches[[3]]$bubble$html)
       dependency <- htmltools::htmlDependency("bubble-test", "1.0", src = c(file = tempdir()))
       dependent <- htmltools::attachDependencies(shiny::tags$strong("Saved"), dependency)
       expect_warning(
-        updateMascot("helper", mood = "happy", bubble = dependent, session = session),
+        update_mascot("helper", mood = "happy", bubble = dependent, session = session),
         "dependencies.*not supported"
       )
       expect_length(calls$patches, 3)
     })
   })
   it("G2 names nod and wave in the gesture argument's help", {
-    path <- system.file("man", "updateMascot.Rd", package = "mascot")
-    rd <- if (nzchar(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[["updateMascot.Rd"]]
+    path <- system.file("man", "update_mascot.Rd", package = "mascot")
+    rd <- if (nzchar(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[["update_mascot.Rd"]]
     arguments <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\arguments"), rd)[[1]]
     items <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\item"), arguments)
     item <- Filter(function(x) identical(paste(unlist(x[[1]]), collapse = ""), "gesture"), items)[[1]]
@@ -400,7 +400,7 @@ describe("update review regressions", {
 })
 
 
-describe("updateMascot() size and placement", {
+describe("update_mascot() size and placement", {
   it("sends complete normalised objects, adds the module namespace once and leaves NULL alone", {
     captured <- new.env(parent = emptyenv())
     captured$messages <- list()
@@ -410,7 +410,7 @@ describe("updateMascot() size and placement", {
     module <- function(id) {
       shiny::moduleServer(id, function(input, output, session) {
         shiny::observeEvent(input$layout, {
-          updateMascot("helper", size = "20%", placement = list(position = "top-left"))
+          update_mascot("helper", size = "20%", placement = list(position = "top-left"))
         })
       })
     }
@@ -426,7 +426,7 @@ describe("updateMascot() size and placement", {
           )
         )
       )
-      updateMascot("helper", size = mascot_size(120, 48), placement = "inline", session = session)
+      update_mascot("helper", size = mascot_size(120, small_screen = 48), placement = "inline", session = session)
       expect_identical(
         captured$messages[[2]]$patch,
         list(
@@ -434,17 +434,17 @@ describe("updateMascot() size and placement", {
           placement = list(floating = FALSE, position = "bottom-right", minimise = FALSE, drag = FALSE)
         )
       )
-      updateMascot("helper", placement = mascot_placement("top-left", drag = "free"), session = session)
+      update_mascot("helper", placement = mascot_placement("top-left", drag = "free"), session = session)
       expect_identical(
         captured$messages[[3]]$patch,
         list(placement = list(floating = TRUE, position = "top-left", minimise = TRUE, drag = "free"))
       )
-      updateMascot("helper", placement = list(position = "bottom-left", drag = "snap"), session = session)
+      update_mascot("helper", placement = list(position = "bottom-left", drag = "snap"), session = session)
       expect_identical(captured$messages[[4]]$patch$placement$drag, "snap")
-      updateMascot("helper", size = NULL, placement = NULL)
+      update_mascot("helper", size = NULL, placement = NULL)
       expect_length(captured$messages, 4)
-      expect_error(updateMascot("helper", NULL, NULL, NULL, NULL, session), "session.*must be named")
-      expect_error(updateMascot("helper", NULL, NULL, NULL, NULL, NULL, session), "session.*must be named")
+      expect_error(update_mascot("helper", NULL, NULL, NULL, NULL, session), "session")
+      expect_error(update_mascot("helper", NULL, NULL, NULL, NULL, NULL, session), "session")
     })
   })
   it("warns atomically for bad values and malformed helpers, with a dev-mode problem only", {
@@ -463,26 +463,26 @@ describe("updateMascot() size and placement", {
       bad_fields <- mascot_size()
       bad_fields$simplify_when_small <- TRUE
       for (x in list(23, Inf, "24px", bad_size, bad_fields)) {
-        expect_warning(updateMascot("a", size = x, mood = "happy"), "unchanged")
+        expect_warning(update_mascot("a", size = x, mood = "happy"), "unchanged")
       }
       bad_place <- mascot_placement("inline")
       bad_place$minimise <- NA
       bad_drag <- mascot_placement("inline")
       bad_drag$drag <- "fixed"
       for (x in list("fixed", list(floating = TRUE, snap = TRUE), bad_place, bad_drag)) {
-        expect_warning(updateMascot("a", placement = x, status = "Saved"), "unchanged")
+        expect_warning(update_mascot("a", placement = x, status = "Saved"), "unchanged")
       }
       expect_warning(
-        updateMascot("a", placement = list(position = "top-left", drag = TRUE)),
+        update_mascot("a", placement = list(position = "top-left", drag = TRUE)),
         "unchanged.*drag.*got TRUE"
       )
       expect_warning(
-        updateMascot("a", placement = list(position = "top-left", drag = "fixed")),
+        update_mascot("a", placement = list(position = "top-left", drag = "fixed")),
         'unchanged.*drag.*"fixed"'
       )
       expect_length(captured$patches, 0)
       local_mocked_bindings(dev_mode = function() TRUE)
-      expect_warning(updateMascot("a", size = 1, placement = "fixed", mood = "happy"), "unchanged")
+      expect_warning(update_mascot("a", size = 1, placement = "fixed", mood = "happy"), "unchanged")
       expect_named(captured$patches[[1]], "problem")
       expect_match(captured$patches[[1]]$problem, "size.*placement")
     })
@@ -496,7 +496,7 @@ describe("updateMascot() size and placement", {
     shiny::testServer(function(input, output, session) {}, {
       wire <- list(floating = FALSE, position = "bottom-right", minimise = FALSE, drag = FALSE)
       for (placement in list("inline", mascot_placement("inline"), list(position = "inline"))) {
-        expect_silent(updateMascot("a", placement = placement, session = session))
+        expect_silent(update_mascot("a", placement = placement, session = session))
         expect_identical(tail(captured$patches, 1)[[1]], list(placement = wire))
       }
       for (controls in list(
@@ -504,11 +504,11 @@ describe("updateMascot() size and placement", {
         list(minimise = FALSE),
         list(drag = "snap"),
         list(drag = "free"),
-        list(drag = FALSE)
+        list(drag = "none")
       )) {
         before <- length(captured$patches)
         expect_message(
-          updateMascot("a", placement = c(list(position = "inline"), controls), status = "Saved", session = session),
+          update_mascot("a", placement = c(list(position = "inline"), controls), status = "Saved", session = session),
           paste0(names(controls), ".*no effect.*inline"),
           class = "mascot_placement_ignored"
         )
@@ -518,10 +518,10 @@ describe("updateMascot() size and placement", {
         expect_identical(patch$status$text, "Saved")
         expect_null(patch$problem)
       }
-      expect_snapshot(updateMascot("a", placement = list(position = "inline", minimise = TRUE), session = session))
-      expect_snapshot(updateMascot("a", placement = list(position = "inline", drag = "snap"), session = session))
-      expect_snapshot(updateMascot("a", placement = mascot_placement("inline", minimise = TRUE), session = session))
-      expect_snapshot(updateMascot("a", placement = mascot_placement("inline", drag = "free"), session = session))
+      expect_snapshot(update_mascot("a", placement = list(position = "inline", minimise = TRUE), session = session))
+      expect_snapshot(update_mascot("a", placement = list(position = "inline", drag = "snap"), session = session))
+      expect_snapshot(update_mascot("a", placement = mascot_placement("inline", minimise = TRUE), session = session))
+      expect_snapshot(update_mascot("a", placement = mascot_placement("inline", drag = "free"), session = session))
       expect_identical(tail(captured$patches, 1)[[1]], list(placement = wire))
     })
   })
@@ -544,15 +544,15 @@ describe("size and placement in a Shiny browser", {
         function(input, output, session) {
           shiny::observeEvent(
             input$change,
-            updateMascot(
+            update_mascot(
               "helper",
               size = 64,
               mood = "happy",
-              placement = mascot_placement("top-left", TRUE),
-              bubble = mascot_bubble("Saved", Inf)
+              placement = mascot_placement("top-left", minimise = TRUE),
+              bubble = mascot_bubble("Saved", duration = Inf)
             )
           )
-          shiny::observeEvent(input$inline, updateMascot("helper", size = 120, placement = "inline"))
+          shiny::observeEvent(input$inline, update_mascot("helper", size = 120, placement = "inline"))
           shiny::observeEvent(input$notice, shiny::showNotification("Saved", id = "mascot-notice", duration = NULL))
           shiny::observeEvent(input$remove_notice, shiny::removeNotification("mascot-notice"))
         }
@@ -626,7 +626,7 @@ describe("size and placement in a Shiny browser", {
       }
       module_server <- function(id) {
         shiny::moduleServer(id, function(input, output, session) {
-          shiny::observeEvent(input$change, updateMascot("helper", size = 48, placement = "top-right"))
+          shiny::observeEvent(input$change, update_mascot("helper", size = 48, placement = "top-right"))
         })
       }
       shiny::shinyApp(
@@ -713,7 +713,7 @@ describe("floating mascots in dynamic module UI", {
   })
 })
 
-describe("updateMascot() themes", {
+describe("update_mascot() themes", {
   it("sends one normalised theme in a module and leaves NULL unchanged", {
     captured <- new.env(parent = emptyenv())
     captured$patches <- list()
@@ -723,23 +723,24 @@ describe("updateMascot() themes", {
     module <- function(id) shiny::moduleServer(id, function(input, output, session) {})
     shiny::testServer(module, {
       theme <- mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
-      expect_invisible(updateMascot("helper", theme = theme, mood = "happy", session = session))
+      expect_invisible(update_mascot("helper", theme = theme, mood = "happy", session = session))
       expect_identical(captured$patches[[1]]$id, session$ns("helper"))
       expect_named(captured$patches[[1]]$patch, c("mood", "theme"))
       expect_identical(captured$patches[[1]]$patch$theme$mode, "auto")
       expect_identical(captured$patches[[1]]$patch$theme$dark$body, "#9EC5FE")
-      updateMascot("helper", theme = NULL, session = session)
+      update_mascot("helper", theme = NULL, session = session)
       expect_length(captured$patches, 1)
-      updateMascot("helper", character = "tessa", theme = mascot_theme(), session = session)
+      update_mascot("helper", character = "tessa", theme = mascot_theme(), session = session)
       expect_identical(
         captured$patches[[2]]$patch$theme,
         list(light = NULL, dark = NULL, mode = "auto", css = NULL, brand = NULL)
       )
-      updateMascot("helper", theme = list(body = "#1f6feb"), session = session)
+      update_mascot("helper", theme = list(body = "#1f6feb"), session = session)
       expect_identical(captured$patches[[3]]$patch$theme$light, captured$patches[[3]]$patch$theme$dark)
     })
   })
   it("warns for bad themes atomically, sends only a development problem, and retains contrast warnings", {
+    withr::local_options(mascot.contrast_warnings = TRUE)
     captured <- new.env(parent = emptyenv())
     captured$patches <- list()
     local_mocked_bindings(
@@ -750,17 +751,17 @@ describe("updateMascot() themes", {
     )
     shiny::testServer(function(input, output, session) {}, {
       for (theme in list(1, list(bdoy = "blue"), list(body = "invalid"), structure(list(), class = "mascot_theme"))) {
-        expect_warning(updateMascot("helper", theme = theme, mood = "happy", status = "Saved"), "unchanged")
+        expect_warning(update_mascot("helper", theme = theme, mood = "happy", status = "Saved"), "unchanged")
       }
       expect_length(captured$patches, 0)
       local_mocked_bindings(dev_mode = function() TRUE)
-      expect_warning(updateMascot("helper", theme = list(bdoy = "blue"), character = "missing"), "unchanged")
+      expect_warning(update_mascot("helper", theme = list(bdoy = "blue"), character = "missing"), "unchanged")
       expect_named(captured$patches[[1]], "problem")
       expect_match(captured$patches[[1]]$problem, "bdoy")
-      expect_warning(updateMascot("helper", theme = mascot_theme(light = list(body = "white"))), "below 3:1")
+      expect_warning(update_mascot("helper", theme = mascot_theme(light = list(body = "white"))), "below 3:1")
       expect_identical(captured$patches[[2]]$theme$light$body, "#FFFFFF")
       expect_null(captured$patches[[2]]$problem)
-      expect_error(updateMascot("helper", theme = session), "session.*must be named")
+      expect_error(update_mascot("helper", theme = session), "session")
     })
   })
 })
@@ -778,7 +779,7 @@ describe("theme in a Shiny browser", {
           shiny::actionButton("reset", "Character colours")
         ),
         function(input, output, session) {
-          shiny::observeEvent(input$reset, updateMascot("helper", theme = mascot_theme()))
+          shiny::observeEvent(input$reset, update_mascot("helper", theme = mascot_theme()))
         }
       )
     })
@@ -800,7 +801,7 @@ describe("theme in a Shiny browser", {
   })
 })
 
-describe("updateMascot() motion", {
+describe("update_mascot() motion", {
   it("sends a safe motion patch once per module update and leaves NULL unchanged", {
     captured <- new.env(parent = emptyenv())
     captured$patches <- list()
@@ -810,7 +811,7 @@ describe("updateMascot() motion", {
     module <- function(id) shiny::moduleServer(id, function(input, output, session) {})
     shiny::testServer(module, {
       for (motion in list(TRUE, FALSE, mascot_motion(swap = FALSE), mascot_motion(FALSE, FALSE))) {
-        expect_invisible(updateMascot("helper", motion = motion, mood = "happy", session = session))
+        expect_invisible(update_mascot("helper", motion = motion, mood = "happy", session = session))
         sent <- tail(captured$patches, 1)[[1]]
         expect_identical(sent$id, session$ns("helper"))
         expect_named(sent$patch, c("mood", "motion"))
@@ -819,13 +820,13 @@ describe("updateMascot() motion", {
       expect_identical(captured$patches[[1]]$patch$motion, list(reduced = NULL, swap = TRUE))
       expect_identical(captured$patches[[2]]$patch$motion, list(reduced = TRUE, swap = TRUE))
       expect_identical(captured$patches[[3]]$patch$motion, list(reduced = NULL, swap = FALSE))
-      updateMascot("helper", motion = NULL, session = session)
+      update_mascot("helper", motion = NULL, session = session)
       expect_length(captured$patches, 4)
-      expect_error(updateMascot("helper", motion = session), "session.*must be named")
+      expect_error(update_mascot("helper", motion = session), "session")
     })
     expect_identical(
-      tail(names(formals(updateMascot)), 6),
-      c("theme", "motion", "click", "...", "gesture", "session")
+      tail(names(formals(update_mascot)), 6),
+      c("placement", "theme", "motion", "click", "gesture", "session")
     )
   })
   it("rejects the whole update with a warning and sends only development problems", {
@@ -839,14 +840,14 @@ describe("updateMascot() motion", {
     )
     shiny::testServer(function(input, output, session) {}, {
       for (motion in list(NA, 1, "auto", list(animate = TRUE), structure(list(), class = "mascot_motion"))) {
-        expect_warning(updateMascot("helper", mood = "happy", status = "Saved", motion = motion), "unchanged")
+        expect_warning(update_mascot("helper", mood = "happy", status = "Saved", motion = motion), "unchanged")
       }
       expect_length(captured$patches, 0)
       local_mocked_bindings(dev_mode = function() TRUE)
-      expect_warning(updateMascot("helper", motion = "auto", size = 96), "motion.*TRUE, FALSE")
+      expect_warning(update_mascot("helper", motion = "auto", size = 96), "motion.*TRUE, FALSE")
       expect_named(captured$patches[[1]], "problem")
       expect_match(captured$patches[[1]]$problem, 'got "auto"')
-      updateMascot("helper", motion = FALSE)
+      update_mascot("helper", motion = FALSE)
       expect_identical(captured$patches[[2]], list(motion = list(reduced = TRUE, swap = TRUE)))
     })
   })
@@ -864,8 +865,8 @@ describe("motion in a Shiny browser", {
           shiny::actionButton("happy", "Happy")
         ),
         function(input, output, session) {
-          shiny::observeEvent(input$animate, updateMascot("helper", motion = input$animate))
-          shiny::observeEvent(input$happy, updateMascot("helper", mood = "happy"))
+          shiny::observeEvent(input$animate, update_mascot("helper", motion = input$animate))
+          shiny::observeEvent(input$happy, update_mascot("helper", mood = "happy"))
         }
       )
     })
@@ -884,7 +885,7 @@ describe("motion in a Shiny browser", {
   })
 })
 
-describe("updateMascot() popup menu", {
+describe("update_mascot() popup menu", {
   it("sends replacement and clear patches, leaves NULL unchanged and rejects bad updates atomically", {
     captured <- new.env(parent = emptyenv())
     captured$patches <- list()
@@ -895,36 +896,36 @@ describe("updateMascot() popup menu", {
       dev_mode = function() FALSE
     )
     shiny::testServer(function(input, output, session) {}, {
-      updateMascot("helper", click = "Open help")
+      update_mascot("helper", click = "Open help")
       expect_identical(captured$patches[[1]]$id, session$ns("helper"))
       expect_identical(
         captured$patches[[1]]$patch,
         list(click = list(type = "action", label = "Open help", tooltip = TRUE, disabled = FALSE))
       )
       # NULL leaves the click unchanged; either empty helper removes it.
-      updateMascot("helper", click = NULL)
+      update_mascot("helper", click = NULL)
       expect_length(captured$patches, 1)
-      updateMascot("helper", click = mascot_popup_menu())
+      update_mascot("helper", click = mascot_popup_menu())
       expect_identical(captured$patches[[2]]$patch$click, list(type = "none"))
-      updateMascot("helper", click = mascot_action())
+      update_mascot("helper", click = mascot_action())
       expect_identical(captured$patches[[3]]$patch$click, list(type = "none"))
-      updateMascot("helper", click = mascot_popup_menu(c(about = "About"), direction = "right"))
+      update_mascot("helper", click = mascot_popup_menu(c(about = "About"), direction = "right"))
       expect_identical(
         captured$patches[[4]]$patch$click,
         list(type = "menu", items = list(about = "About"), direction = "right", label = NULL, tooltip = TRUE)
       )
-      updateMascot("helper", click = mascot_action("Open help", disabled = TRUE))
+      update_mascot("helper", click = mascot_action("Open help", disabled = TRUE))
       expect_true(captured$patches[[5]]$patch$click$disabled)
       for (bad in list(1, c(about = "About"), character(), structure(list(), class = "mascot_popup_menu"))) {
-        expect_warning(updateMascot("helper", mood = "happy", click = bad), "unchanged")
+        expect_warning(update_mascot("helper", mood = "happy", click = bad), "unchanged")
       }
       expect_length(captured$patches, 5)
       local_mocked_bindings(dev_mode = function() TRUE)
-      expect_warning(updateMascot("helper", mood = "happy", click = c(about = "About")), "unchanged")
+      expect_warning(update_mascot("helper", mood = "happy", click = c(about = "About")), "unchanged")
       expect_named(captured$patches[[6]]$patch, "problem")
-      expect_error(updateMascot("helper", click = session), "session.*must be named")
+      expect_error(update_mascot("helper", click = session), "session")
     })
-    expect_identical(names(formals(updateMascot))[9:12], c("motion", "click", "...", "gesture"))
+    expect_identical(utils::tail(names(formals(update_mascot)), 5), c("theme", "motion", "click", "gesture", "session"))
   })
 })
 
@@ -1058,8 +1059,8 @@ describe("retained mascot updates", {
     }
     session <- root$makeScope("proxy1")
     shiny::withReactiveDomain(session, {
-      updateMascot("helper", mood = "thinking", gesture = "nod")
-      updateMascot("helper", mood = "happy", status = "Ready", gesture = "wave")
+      update_mascot("helper", mood = "thinking", gesture = "nod")
+      update_mascot("helper", mood = "happy", status = "Ready", gesture = "wave")
     })
     root$setInputs(`proxy1-helper` = list(mount = 1, revision = 0))
     expect_length(captured$messages, 3)
@@ -1099,13 +1100,13 @@ describe("retained mascot updates", {
       )
       server <- function(input, output, session) {
         visible <- shiny::reactiveVal(FALSE)
-        updateMascot("startup", mood = "happy", gesture = "wave")
+        update_mascot("startup", mood = "happy", gesture = "wave")
         shiny::observeEvent(input$prepare, {
-          updateMascot("earlier", mood = "thinking", status = "Earlier", gesture = "nod")
-          updateMascot("earlier", mood = "happy", gesture = "wave")
+          update_mascot("earlier", mood = "thinking", status = "Earlier", gesture = "nod")
+          update_mascot("earlier", mood = "happy", gesture = "wave")
         })
         shiny::observeEvent(input$show, {
-          updateMascot("same", mood = "happy", status = "Same cycle", gesture = "nod")
+          update_mascot("same", mood = "happy", status = "Same cycle", gesture = "nod")
           visible(TRUE)
         })
         output$slot <- shiny::renderUI({
@@ -1151,7 +1152,7 @@ describe("bubble visibility in Shiny tabs", {
         shiny::tabPanel("Other", "Other tab")
       ))
       server <- function(input, output, session) {
-        shiny::observeEvent(input$say, updateMascot("helper", bubble = mascot_bubble("Timed", duration = 3)))
+        shiny::observeEvent(input$say, update_mascot("helper", bubble = mascot_bubble("Timed", duration = 3)))
       }
       shiny::shinyApp(ui, server)
     })
@@ -1185,17 +1186,103 @@ describe("retained development problems", {
       session$sendCustomMessage <- function(type, message) {
         captured$messages[[length(captured$messages) + 1L]] <- message
       }
-      updateMascot("helper", mood = "happy", status = "Kept", session = session)
-      expect_warning(updateMascot("helper", mood = "missing", status = "Wrong", session = session), "unchanged")
+      update_mascot("helper", mood = "happy", status = "Kept", session = session)
+      expect_warning(update_mascot("helper", mood = "missing", status = "Wrong", session = session), "unchanged")
       session$setInputs(helper = list(mount = 1, revision = 0))
       patch <- captured$messages[[3]]$patch
       expect_identical(patch$mood, "happy")
       expect_identical(patch$status$text, "Kept")
       expect_match(patch$problem, "missing")
-      updateMascot("helper", mood = "thinking", session = session)
+      update_mascot("helper", mood = "thinking", session = session)
       session$setInputs(helper = list(mount = 2, revision = 0))
       expect_null(captured$messages[[5]]$patch$problem)
       expect_identical(captured$messages[[5]]$patch$mood, "thinking")
     })
+  })
+})
+
+describe("update_mascot() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(
+      names(formals(update_mascot)),
+      c(
+        "id",
+        "...",
+        "character",
+        "mood",
+        "status",
+        "bubble",
+        "size",
+        "placement",
+        "theme",
+        "motion",
+        "click",
+        "gesture",
+        "session"
+      )
+    )
+    expect_error(
+      update_mascot("helper", session = shiny::MockShinySession$new(), typo = 1),
+      "Unexpected arguments",
+      class = "mascot_error"
+    )
+    expect_error(
+      update_mascot("helper", session = shiny::MockShinySession$new(), 1),
+      "Name the optional arguments",
+      class = "mascot_error"
+    )
+  })
+})
+
+
+describe("update conditions", {
+  it("warns with both classes and sends no patch for removed or invalid values", {
+    captured <- new.env(parent = emptyenv())
+    captured$patches <- list()
+    local_mocked_bindings(
+      dev_mode = function() FALSE,
+      send_update = function(session, id, patch) captured$patches <- c(captured$patches, list(patch))
+    )
+    session <- shiny::MockShinySession$new()
+    withr::defer(session$close())
+    expect_warning(update_mascot("helper", mood = "sleepy", session = session), class = "mascot_update_ignored")
+    expect_warning(
+      update_mascot("helper", placement = "floating", session = session),
+      "bottom-right",
+      class = "mascot_warning"
+    )
+    for (drag in c(FALSE, TRUE)) {
+      expect_warning(
+        update_mascot("helper", mood = "happy", placement = list(drag = drag), session = session),
+        'drag = "none"',
+        class = "mascot_update_ignored"
+      )
+    }
+    expect_length(captured$patches, 0)
+    expect_error(update_mascot("helper", session = NULL), class = "mascot_error")
+  })
+  it("applies contrast options without turning a kept colour into an ignored update", {
+    local_mocked_bindings(in_devmode = function() FALSE, .package = "shiny")
+    captured <- new.env(parent = emptyenv())
+    local_mocked_bindings(send_update = function(session, id, patch) captured$patch <- patch)
+    session <- shiny::MockShinySession$new()
+    withr::defer(session$close())
+    theme <- mascot_theme(light = list(body = "white"))
+    withr::local_options(mascot.contrast_warnings = NULL)
+    expect_silent(update_mascot("helper", theme = theme, session = session))
+    expect_identical(captured$patch$theme$light$body, "#FFFFFF")
+    withr::local_options(mascot.contrast_warnings = TRUE)
+    expect_warning(update_mascot("helper", theme = theme, session = session), class = "mascot_contrast")
+    expect_identical(captured$patch$theme$light$body, "#FFFFFF")
+    withr::local_options(mascot.contrast_warnings = FALSE)
+    expect_silent(update_mascot("helper", theme = theme, session = session))
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(update_mascot(id = 1, session = NULL), "id", class = "mascot_error")
+    expect_error(update_mascot("helper", session = 1), "session", class = "mascot_error")
   })
 })

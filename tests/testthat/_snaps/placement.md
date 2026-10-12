@@ -13,9 +13,9 @@
       mascot_placement("bottom-right", drag = TRUE)
     Condition
       Error in `mascot_placement()`:
-      ! `drag` must be `FALSE`, "snap" or "free".
+      ! `drag` must be "none", "snap" or "free".
       x `TRUE` is not accepted: choose how the mascot behaves when dropped.
-      i Use "snap" to move to the nearest corner or "free" to stay where dropped.
+      i Use `drag = "none"` for no dragging, "snap" to move to the nearest corner or "free" to stay where dropped.
 
 ---
 
@@ -23,9 +23,9 @@
       mascot_placement("bottom-right", drag = "fixed")
     Condition
       Error in `mascot_placement()`:
-      ! `drag` must be `FALSE`, "snap" or "free".
+      ! `drag` must be "none", "snap" or "free".
       x "fixed" is not a drag mode.
-      i Use "snap" to move to the nearest corner or "free" to stay where dropped.
+      i Use `drag = "none"` for no dragging, "snap" to move to the nearest corner or "free" to stay where dropped.
 
 ---
 
@@ -33,7 +33,7 @@
       mascot(id = "a", placement = list(position = "top-left", drag = TRUE))
     Condition
       Error in `mascot()`:
-      ! `placement$drag` must be FALSE, "snap" or "free"; got TRUE. Use "snap" to move to the nearest corner or "free" to stay where dropped.
+      ! `placement$drag` must be "none", "snap" or "free"; got TRUE. Use drag = "none" for no dragging.
 
 # mascot_placement() / silently disables inline defaults and informs about each explicit control
 
@@ -56,3 +56,4 @@
     Message
       `minimise` has no effect on an inline mascot.
       `drag` has no effect on an inline mascot.
+

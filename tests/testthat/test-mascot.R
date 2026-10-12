@@ -34,7 +34,12 @@ describe("mascot()", {
   it("uses equivalent shortcuts and helpers and escapes custom text", {
     expect_identical(
       as.character(mascot(id = "a", mood = "happy", status = "Saved")),
-      as.character(mascot(mascot_character(), "a", mascot_mood("happy"), mascot_status("Saved")))
+      as.character(mascot(
+        "a",
+        character = mascot_character(),
+        mood = mascot_mood("happy"),
+        status = mascot_status("Saved")
+      ))
     )
     expect_identical(as.character(mascot(id = "a")), as.character(mascot(id = "a", status = mascot_status())))
     html <- as.character(mascot(id = "a", status = htmltools::HTML("<b>Saved</b>")))
@@ -44,13 +49,13 @@ describe("mascot()", {
   })
   it("attributes choice errors to mascot and rejects every invalid argument", {
     expect_snapshot(error = TRUE, mascot(id = "a", mood = "hapy"))
-    expect_snapshot(error = TRUE, mascot("missing", "a"))
-    expect_error(mascot(), "missing")
+    expect_snapshot(error = TRUE, mascot("a", character = "missing"))
+    expect_error(mascot(), "missing", class = "mascot_error")
     for (id in list("", "has space", "a\nb", 1, NA_character_)) {
       expect_error(mascot(id = id), "Assertion on 'id' failed")
     }
     for (x in list(NULL, 1, "", NA_character_, c("a", "b"))) {
-      expect_error(mascot(x, "a"), "character.*non-empty string")
+      expect_error(mascot("a", character = x), "character.*non-empty string")
       expect_error(mascot(id = "a", mood = x), "mood.*non-empty string")
     }
     for (x in list(1, "", NA_character_, c("a", "b"))) {
@@ -86,7 +91,7 @@ describe("mascot() bubbles", {
     plain <- as.character(mascot(id = "a", bubble = "<b>Ready</b>"))
     expect_match(plain, "&lt;b&gt;Ready&lt;/b&gt;", fixed = TRUE)
     expect_identical(plain, as.character(mascot(id = "a", bubble = mascot_bubble("<b>Ready</b>"))))
-    html <- as.character(mascot(id = "a", bubble = mascot_bubble(htmltools::HTML("<b>Ready</b>"), Inf)))
+    html <- as.character(mascot(id = "a", bubble = mascot_bubble(htmltools::HTML("<b>Ready</b>"), duration = Inf)))
     expect_match(html, '<b>Ready</b>', fixed = TRUE)
     expect_match(html, 'aria-label="Close message"', fixed = TRUE)
     expect_match(html, 'type="button"', fixed = TRUE)
@@ -156,7 +161,7 @@ describe("mascot() tag bubbles", {
 
 describe("message guidance", {
   it("R3 explains state, event messages and actionable message duration in each help page", {
-    for (topic in c("mascot", "updateMascot", "mascot_bubble")) {
+    for (topic in c("mascot", "update_mascot", "mascot_bubble")) {
       path <- system.file("man", paste0(topic, ".Rd"), package = "mascot")
       rd <- if (nzchar(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[[paste0(topic, ".Rd")]]
       text <- paste(unlist(rd), collapse = "")
@@ -172,7 +177,11 @@ describe("message guidance", {
 
 describe("mascot() size and placement", {
   it("writes data attributes without inline layout styles and normalises shortcuts", {
-    tag <- mascot(id = "a", size = mascot_size("20%", 48), placement = mascot_placement("top-left", TRUE))
+    tag <- mascot(
+      id = "a",
+      size = mascot_size("20%", small_screen = 48),
+      placement = mascot_placement("top-left", minimise = TRUE)
+    )
     expect_identical(tag$attribs$`data-size`, "20%")
     expect_identical(tag$attribs$`data-small-screen`, 48)
     expect_null(tag$attribs$`data-simplify-when-small`)
@@ -187,10 +196,10 @@ describe("mascot() size and placement", {
     expect_error(mascot(id = "a", size = NULL), "size")
     expect_error(mascot(id = "a", size = "24px"), "size.*24px")
     expect_snapshot(error = TRUE, mascot(id = "a", placement = "fixed"))
-    expect_snapshot(error = TRUE, mascot("helper"))
+    expect_identical(mascot("helper")$attribs$id, "helper")
     expect_snapshot(error = TRUE, mascot())
-    expect_snapshot(error = TRUE, mascot("typo", id = "a"))
-    expect_error(mascot("{oops}"), "{oops}", fixed = TRUE)
+    expect_snapshot(error = TRUE, mascot("a", character = "typo"))
+    expect_identical(mascot("{oops}")$attribs$id, "{oops}")
   })
   it("silently disables inline defaults and informs about explicit list controls", {
     for (placement in list("inline", mascot_placement("inline"), list(position = "inline"))) {
@@ -203,7 +212,7 @@ describe("mascot() size and placement", {
       list(minimise = FALSE),
       list(drag = "snap"),
       list(drag = "free"),
-      list(drag = FALSE)
+      list(drag = "none")
     )) {
       expect_message(
         tag <- mascot(id = "a", placement = c(list(position = "inline"), controls)),
@@ -321,5 +330,95 @@ describe("mascot() clicks in a Shiny browser (#257)", {
     app$click(selector = "#module-picture canvas")
     app$wait_for_idle()
     expect_null(app$get_value(input = "module-picture_click"))
+  })
+})
+
+describe("mascot() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(
+      names(formals(mascot)),
+      c("id", "...", "character", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click")
+    )
+    expect_error(mascot("helper", typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot("helper", 1), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot(id = 1), "id", class = "mascot_error")
+  })
+})
+
+
+describe("with_mascot_asserts()", {
+  it("keeps the original assertion message once and adds mascot_error", {
+    value <- 1
+    original <- tryCatch(checkmate::assert_string(value), error = identity)
+    wrapped <- tryCatch(
+      with_mascot_asserts({
+        checkmate::assert_string(value)
+      }),
+      error = identity
+    )
+
+    expect_s3_class(wrapped, "mascot_error")
+    expect_s3_class(wrapped, "error")
+    expect_identical(
+      trimws(cli::ansi_strip(strsplit(conditionMessage(wrapped), "\n", fixed = TRUE)[[1]])),
+      trimws(strsplit(conditionMessage(original), "\n", fixed = TRUE)[[1]])
+    )
+    expect_null(wrapped$parent)
+    expect_snapshot(conditionMessage(wrapped))
+  })
+  it("also keeps every line of a union assertion message", {
+    value <- 1
+    original <- tryCatch(
+      checkmate::assert(
+        checkmate::check_flag(value),
+        checkmate::check_string(value),
+        .var.name = "value"
+      ),
+      error = identity
+    )
+    wrapped <- tryCatch(
+      with_mascot_asserts({
+        checkmate::assert(checkmate::check_flag(value), checkmate::check_string(value), .var.name = "value")
+      }),
+      error = identity
+    )
+    expect_s3_class(wrapped, "mascot_error")
+    expect_s3_class(wrapped, "error")
+    expect_identical(
+      trimws(cli::ansi_strip(strsplit(conditionMessage(wrapped), "\n", fixed = TRUE)[[1]])),
+      trimws(strsplit(conditionMessage(original), "\n", fixed = TRUE)[[1]])
+    )
+  })
+  it("attributes assertion errors to the public caller", {
+    error <- tryCatch(mascot(id = 1), error = identity)
+    expect_identical(conditionCall(error)[[1L]], quote(mascot))
+  })
+  it("leaves non-assertion errors and errors from argument evaluation untouched", {
+    original <- simpleError("An unrelated failure")
+    error <- tryCatch(with_mascot_asserts(stop(original)), error = identity)
+    expect_identical(error, original)
+    error <- tryCatch(
+      with_mascot_asserts({
+        checkmate::assert_string(stop(original))
+      }),
+      error = identity
+    )
+    expect_identical(error, original)
+  })
+  it("evaluates successful assertions once and validates its call argument", {
+    count <- 0L
+    result <- with_mascot_asserts({
+      count <- count + 1L
+      checkmate::assert_string("ready")
+    })
+    expect_identical(count, 1L)
+    expect_identical(result, checkmate::assert_string("ready"))
+    expect_error(with_mascot_asserts(NULL, call = NULL), "call")
   })
 })

@@ -36,7 +36,7 @@ ui <- page_fluid(
     ),
     card(
       h2("Task status"),
-      mascot(id = "helper", status = "Ready to review", placement = "inline")
+      mascot("helper", status = "Ready to review", placement = "inline")
     )
   )
 )
@@ -45,7 +45,7 @@ server <- function(input, output, session) {
   review <- ExtendedTask$new(slow_review) |> bind_task_button("start")
 
   observeEvent(input$start, {
-    updateMascot("helper", mood = "thinking", status = "Reviewing the sample", bubble = mascot_bubble())
+    update_mascot("helper", mood = "thinking", status = "Reviewing the sample", bubble = mascot_bubble())
     review$invoke(isTRUE(input$fail))
   })
 
@@ -53,10 +53,10 @@ server <- function(input, output, session) {
   observe({
     status <- review$status()
     if (status == "success") {
-      updateMascot("helper", mood = "happy", status = "Review complete")
+      update_mascot("helper", mood = "happy", status = "Review complete")
     }
     if (status == "error") {
-      updateMascot(
+      update_mascot(
         "helper",
         mood = "worried",
         status = "Review needs attention",

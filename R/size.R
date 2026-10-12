@@ -11,19 +11,24 @@
 #' @param small_screen An optional size for small screens (at most 575.98 CSS
 #'   pixels wide), in the same forms as `size`. `NULL` (the default) uses `size`
 #'   at every screen width.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_size` object with `size` and `small_screen` elements.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot()], [updateMascot()]
+#' @seealso [mascot()], [update_mascot()]
 #' @export
 #' @examples
 #' mascot_size()
 #' mascot_size("20%")
 #' mascot_size(120, small_screen = 48)
-mascot_size <- function(size = 160, small_screen = NULL) {
+mascot_size <- function(size = 160, ..., small_screen = NULL) {
   # Sizes are a union of pixels and percentages; share non-throwing checks with updates.
   check_size_value(size, "size", environment())
   if (!is.null(small_screen)) {
     check_size_value(small_screen, "small_screen", environment())
+  }
+  if (...length() > 0L) {
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("small_screen"), environment())
   }
   structure(list(size = size, small_screen = small_screen), class = "mascot_size")
 }
@@ -60,7 +65,7 @@ check_size_value <- function(x, arg, call) {
   # Validation is shared with arg_problem(), including malformed helper objects.
   problem <- size_value_problem(x, arg)
   if (!is.null(problem)) {
-    cli::cli_abort("{problem}", call = call)
+    cli::cli_abort("{problem}", call = call, class = "mascot_error")
   }
   invisible(NULL)
 }
@@ -103,14 +108,18 @@ as_size_arg <- function(x, call) {
 #' @export
 #' @noRd
 format.mascot_size <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_size")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_size")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_size <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_size")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_size")
+  })
   cli::cat_line(format(x))
   invisible(x)
 }

@@ -5,7 +5,7 @@
 #' example `body`), in the character's priority order. With no supplied leader,
 #' they keep their original colours. Call [mascot_colour_roles()] to find the
 #' roles for a character. A plain named list passed to [mascot()] or
-#' [updateMascot()] uses one set of colours in every mode. A [bslib::bs_theme()]
+#' [update_mascot()] uses one set of colours in every mode. A [bslib::bs_theme()]
 #' fills the character's declared brand leaders with its primary and secondary
 #' colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
 #'
@@ -23,19 +23,20 @@
 #' [bslib::bs_theme()] brand colour) has contrast below 3:1 against the page
 #' background (white in light mode, `#212529` in dark mode, or the `bslib`
 #' theme's backgrounds). Contrast is checked when [mascot()] builds the UI,
-#' when [updateMascot()] applies colours with `theme = `, and collected into the
+#' when [update_mascot()] applies colours with `theme = `, and collected into the
 #' contrast table by [mascot_preview()]; the character's own colours never warn;
 #' the colour is always kept.
 #'
-#' The warning appears in the R console or server log, in every mode (not only
-#' Shiny developer mode); app visitors never see it. CSS-variable colours
-#' (`css =`) are checked in the browser and warn in the browser console.
+#' R warnings appear only when [shiny::in_devmode()] is `TRUE`, and always in
+#' [mascot_preview()] and the studio. Set `options(mascot.contrast_warnings = TRUE)`
+#' or `FALSE` to force them on or off everywhere. Visitors never see R warnings.
+#' CSS-variable colours (`css =`) are checked and warn in the browser console.
 #'
 #' These warnings have the class `mascot_contrast`. To silence only these
 #' warnings:
 #' ```r
 #' withCallingHandlers(
-#'   mascot(id = "helper", theme = list(rim = "#f5e6c8")),
+#'   mascot("helper", theme = list(rim = "#f5e6c8")),
 #'   mascot_contrast = function(w) invokeRestart("muffleWarning")
 #' )
 #' ```
@@ -57,9 +58,11 @@
 #'   colour and warn in the browser console; low contrast also warns there and
 #'   keeps the colour. Variables are read from the original source context,
 #'   including when the mascot floats.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_theme` object describing colours, CSS sources and mode.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot_colour_roles()], [mascot()], [updateMascot()],
+#' @seealso [mascot_colour_roles()], [mascot()], [update_mascot()],
 #'   [mascot_motion()] for a complete Shiny settings example
 #' @evalRd paste0(
 #'   "\\section{Experimental CSS source}{\n",
@@ -73,14 +76,19 @@
 #' mascot_theme()
 #' mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
 #' mascot_theme(css = list(body = "--team-blue"))
-#' mascot(id = "helper", theme = list(body = "#1f6feb"))
+#' mascot("helper", theme = list(body = "#1f6feb"))
 #' @examplesIf requireNamespace("bslib", quietly = TRUE)
-#' mascot(id = "brand", theme = bslib::bs_theme(primary = "#1f6feb"))
-mascot_theme <- function(light = NULL, dark = NULL, mode = "auto", css = NULL) {
-  checkmate::assert_list(light, names = "unique", null.ok = TRUE)
-  checkmate::assert_list(dark, names = "unique", null.ok = TRUE)
-  checkmate::assert_choice(mode, c("light", "dark", "auto"))
-  checkmate::assert_list(css, names = "unique", null.ok = TRUE)
+#' mascot("brand", theme = bslib::bs_theme(primary = "#1f6feb"))
+mascot_theme <- function(..., light = NULL, dark = NULL, mode = "auto", css = NULL) {
+  with_mascot_asserts({
+    checkmate::assert_list(light, names = "unique", null.ok = TRUE)
+    checkmate::assert_list(dark, names = "unique", null.ok = TRUE)
+    checkmate::assert_choice(mode, c("light", "dark", "auto"))
+    checkmate::assert_list(css, names = "unique", null.ok = TRUE)
+  })
+  if (...length() > 0L) {
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("light", "dark", "mode", "css"), environment())
+  }
   value <- structure(
     list(light = light, dark = dark, mode = mode, css = css),
     class = "mascot_theme"
@@ -220,7 +228,8 @@ theme_colour <- function(x, role) {
       paste0(
         "Colour for role {.val {role}} is invalid: {.val {paste(deparse(x), collapse = ' ')}}; ",
         "use a colour name, hex, rgb()/rgba() string or three RGB numbers in 0-255."
-      )
+      ),
+      class = "mascot_error"
     )
   }
   if (channels[[4]] == 1 && all(channels[1:3] == floor(channels[1:3]))) {
@@ -263,13 +272,13 @@ as_theme_arg <- function(x, call, character = NULL) {
     backgrounds <- preview_surfaces(x)$background
     for (mode in names(backgrounds)) {
       for (slot in names(brand)) {
-        if (theme_contrast(brand[[slot]], backgrounds[[mode]]) < 3) {
+        if (contrast_warnings() && theme_contrast(brand[[slot]], backgrounds[[mode]]) < 3) {
           cli::cli_warn(
             paste0(
               "Brand colour {.val {slot}} in {mode} mode has contrast below 3:1 against ",
               "{.val {backgrounds[[mode]]}}; the colour is kept."
             ),
-            class = "mascot_contrast",
+            class = c("mascot_contrast", "mascot_warning"),
             call = call
           )
         }
@@ -289,7 +298,7 @@ as_theme_arg <- function(x, call, character = NULL) {
     checkmate::assert_string(field)
     problem <- theme_map_problem(map, paste0("theme$", field), roles, field == "css")
     if (!is.null(problem)) {
-      cli::cli_abort("{problem}", call = call)
+      cli::cli_abort("{problem}", call = call, class = "mascot_error")
     }
     if (!length(map)) {
       return(NULL)
@@ -298,13 +307,13 @@ as_theme_arg <- function(x, call, character = NULL) {
     for (role in names(map)) {
       if (field != "css") {
         value[[role]] <- theme_colour(map[[role]], role)
-        if (theme_contrast(value[[role]], backgrounds[[field]]) < 3) {
+        if (contrast_warnings() && theme_contrast(value[[role]], backgrounds[[field]]) < 3) {
           cli::cli_warn(
             paste0(
               "Colour for role {.val {role}} in {field} mode has contrast below 3:1 against ",
               "{.val {backgrounds[[field]]}}; the colour is kept."
             ),
-            class = "mascot_contrast",
+            class = c("mascot_contrast", "mascot_warning"),
             call = call
           )
         }
@@ -346,14 +355,29 @@ theme_has_bslib <- function() {
 #' @export
 #' @noRd
 format.mascot_theme <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_theme")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_theme")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_theme <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_theme")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_theme")
+  })
   cli::cat_line(format(x))
   invisible(x)
+}
+
+#' Decide whether to emit R contrast warnings in this context
+#' @noRd
+contrast_warnings <- function(always = FALSE) {
+  checkmate::assert_flag(always)
+  override <- getOption("mascot.contrast_warnings")
+  if (isTRUE(override) || identical(override, FALSE)) {
+    return(override)
+  }
+  always || shiny::in_devmode()
 }

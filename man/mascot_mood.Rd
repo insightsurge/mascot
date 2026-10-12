@@ -12,10 +12,11 @@ to \code{"idle"}; \code{NULL} is not accepted.}
 }
 \value{
 A \code{mascot_mood} object with a \code{name} element.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 Set how the mascot feels and looks. You can use this helper or a plain mood
-name in \code{\link[=mascot]{mascot()}} and \code{\link[=updateMascot]{updateMascot()}}.
+name in \code{\link[=mascot]{mascot()}} and \code{\link[=update_mascot]{update_mascot()}}.
 }
 \examples{
 mascot_mood()

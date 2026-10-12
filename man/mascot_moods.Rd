@@ -8,6 +8,8 @@ mascot_moods()
 }
 \value{
 A data frame with character columns \code{name} and \code{description}.
+A base data frame. Columns may be added at the end in later versions; existing columns keep their
+names and types. The first column is the value you pass to the matching function.
 }
 \description{
 Every character uses these moods, in this order.

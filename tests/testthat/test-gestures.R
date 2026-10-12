@@ -42,3 +42,22 @@ describe("gesture help", {
     expect_match(text, '"wave"', fixed = TRUE)
   })
 })
+
+describe("mascot_gesture() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(names(formals(mascot_gesture)), c("name", "..."))
+    expect_error(mascot_gesture("nod", typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot_gesture("nod", 1), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_gesture(name = 1), "name", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_gesture(1), "x", class = "mascot_error")
+    expect_error(print.mascot_gesture(1), "x", class = "mascot_error")
+  })
+})

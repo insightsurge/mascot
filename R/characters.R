@@ -12,6 +12,7 @@ builtin_characters <- function() {
 #' @param name A non-empty string naming a built-in character. Defaults to
 #'   `"tessa"`; `NULL` is not accepted.
 #' @returns A `mascot_character` object with `id` and `name` elements.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
 #' @seealso [mascot()]
 #' @export
@@ -19,7 +20,9 @@ builtin_characters <- function() {
 #' mascot_character()
 #' mascot_character("tessa")
 mascot_character <- function(name = "tessa") {
-  checkmate::assert_string(name, min.chars = 1)
+  with_mascot_asserts({
+    checkmate::assert_string(name, min.chars = 1)
+  })
   registry <- builtin_characters()
   if (!name %in% registry$id) {
     abort_choice(name, registry$id, "name", "character", environment())
@@ -57,21 +60,26 @@ abort_choice <- function(value, valid, arg, what, call) {
       "{.arg {arg}} must be one of {.or {.val {valid}}}.",
       "x" = "{.val {value}} is not a {what}."
     ),
-    call = call
+    call = call,
+    class = "mascot_error"
   )
 }
 
 #' @export
 #' @noRd
 format.mascot_character <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_character")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_character")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_character <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_character")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_character")
+  })
   cli::cat_line(format(x))
   invisible(x)
 }

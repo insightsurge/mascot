@@ -424,3 +424,36 @@ describe("bslib preview dark surface in Chrome", {
     )
   })
 })
+
+describe("mascot_preview() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(
+      names(formals(mascot_preview)),
+      c("character", "...", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click")
+    )
+    expect_error(mascot_preview("tessa", typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot_preview("tessa", 1), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+
+describe("preview contrast warning policy", {
+  it("warns without development mode unless the option disables warnings, keeping findings", {
+    local_mocked_bindings(in_devmode = function() FALSE, .package = "shiny")
+    withr::local_options(mascot.contrast_warnings = NULL)
+    theme <- mascot_theme(light = list(body = "white"))
+    expect_warning(on <- mascot_preview(mood = "idle", theme = theme), class = "mascot_contrast")
+    withr::local_options(mascot.contrast_warnings = FALSE)
+    expect_silent(off <- mascot_preview(mood = "idle", theme = theme))
+    expect_identical(attr(on, "contrast"), attr(off, "contrast"))
+    withr::local_options(mascot.contrast_warnings = TRUE)
+    expect_warning(mascot_preview(mood = "idle", theme = theme), class = "mascot_warning")
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_preview(character = 1), "character", class = "mascot_error")
+  })
+})

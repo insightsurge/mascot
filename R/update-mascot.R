@@ -51,10 +51,19 @@
 #' @param gesture A gesture name or [mascot_gesture()] object. `NULL` (the
 #'   default) sends no gesture. Use `"nod"` to acknowledge an action or `"wave"`
 #'   to greet. Must be named. See [mascot_gestures()] for descriptions.
-#' @param ... Must be empty. Extra arguments are errors.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.
 #' @details
+#' `NULL` means none or the default in [mascot()] and helpers where accepted,
+#' and unchanged in [update_mascot()]. An empty helper (`mascot_bubble()`,
+#' `mascot_status()`, `mascot_theme()`, `mascot_action()` or
+#' `mascot_popup_menu()`) resets that setting.
+#'
+#' Building UI with [mascot()] or helpers errors on invalid values;
+#' [update_mascot()] warns and leaves the mascot unchanged. See
+#' [mascot-package] for condition classes.
+#'
 #' **Status text and bubbles.** Use the always visible status line for a short
 #' description of the current state.
 #' Use a bubble for a message about something that happened; it may time out.
@@ -64,8 +73,8 @@
 #' appears. See [mascot_bubble()]
 #' for timing and closing behaviour.
 #'
-#' **Shiny modules.** In a module, use `mascot(id = ns("helper"))` in the UI and
-#' `updateMascot("helper")` in its server. The session namespace is added once.
+#' **Shiny modules.** In a module, use `mascot(ns("helper"))` in the UI and
+#' `update_mascot("helper")` in its server. The session namespace is added once.
 #' An invalid `id` type, missing session or extra argument is an error. Calling
 #' with all update arguments `NULL` does nothing.
 #'
@@ -88,22 +97,23 @@
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   ui = shiny::fluidPage(
-#'     mascot(id = "helper"),
+#'     mascot("helper"),
 #'     shiny::actionButton("work", "Think"),
 #'     shiny::actionButton("done", "Finish")
 #'   ),
 #'   server = function(input, output, session) {
 #'     shiny::observeEvent(input$work, {
-#'       updateMascot("helper", mood = "thinking", status = "Working")
+#'       update_mascot("helper", mood = "thinking", status = "Working")
 #'     })
 #'     shiny::observeEvent(input$done, {
-#'       updateMascot("helper", mood = "happy", status = mascot_status(),
+#'       update_mascot("helper", mood = "happy", status = mascot_status(),
 #'         bubble = "Finished", gesture = "nod")
 #'     })
 #'   }
 #' )
-updateMascot <- function(
+update_mascot <- function(
   id,
+  ...,
   character = NULL,
   mood = NULL,
   status = NULL,
@@ -113,26 +123,20 @@ updateMascot <- function(
   theme = NULL,
   motion = NULL,
   click = NULL,
-  ...,
   gesture = NULL,
   session = shiny::getDefaultReactiveDomain()
 ) {
-  checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
+  with_mascot_asserts({
+    checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
+    checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"), null.ok = TRUE)
+  })
   if (...length() > 0L) {
-    extras <- names(substitute(list(...)))[-1L]
-    if (is.null(extras)) {
-      extras <- rep("unnamed", ...length())
-    }
-    extras[extras == ""] <- "unnamed"
-    cli::cli_abort(c(
-      "Unexpected arguments: {.val {extras}}.",
-      "i" = paste(
-        "Use {.arg id}, {.arg character}, {.arg mood}, {.arg status},",
-        "{.arg bubble}, {.arg size}, {.arg placement}, {.arg theme}, {.arg motion},",
-        "{.arg click}, {.arg gesture} and {.arg session};",
-        "{.arg gesture} and {.arg session} must be named."
-      )
-    ))
+    abort_dots(
+      names(substitute(list(...)))[-1L],
+      ...length(),
+      c("character", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click", "gesture", "session"),
+      environment()
+    )
   }
   values <- list(
     character = character,
@@ -154,13 +158,16 @@ updateMascot <- function(
   )
   if (any(misplaced)) {
     cli::cli_abort(
-      "{.arg session} must be named; a Shiny session was supplied to {.arg {names(misplaced)[misplaced]}}."
+      "{.arg session} must be named; a Shiny session was supplied to {.arg {names(misplaced)[misplaced]}}.",
+      class = "mascot_error"
     )
   }
   if (is.null(session)) {
-    cli::cli_abort("{.fn updateMascot} must be called inside a Shiny server function or module.")
+    cli::cli_abort(
+      "{.fn update_mascot} must be called inside a Shiny server function or module.",
+      class = "mascot_error"
+    )
   }
-  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
   # Normalise once within the warning boundary; keep the result for sending.
   bubble_result <- if (!is.null(bubble)) {
     tryCatch(
@@ -203,10 +210,13 @@ updateMascot <- function(
     )
   )
   if (length(problems)) {
-    cli::cli_warn(c(
-      "{.fn updateMascot} left mascot {.val {id}} unchanged.",
-      structure(paste0("{problems[[", seq_along(problems), "]]}"), names = rep("x", length(problems)))
-    ))
+    cli::cli_warn(
+      c(
+        "{.fn update_mascot} left mascot {.val {id}} unchanged.",
+        structure(paste0("{problems[[", seq_along(problems), "]]}"), names = rep("x", length(problems)))
+      ),
+      class = c("mascot_update_ignored", "mascot_warning")
+    )
     if (dev_mode()) {
       send_update(session, id, list(problem = paste0("mascot: ", paste(problems, collapse = "; "))))
     }

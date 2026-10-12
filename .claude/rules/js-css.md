@@ -17,7 +17,7 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   theme's colours; no AI-generated images.
 - **house:** wiring: `htmltools::htmlDependency()` (built at runtime, `version` = package version) + a Shiny input
   binding `mascot.mascot` (mount on subscribe, clean up on unsubscribe; Shiny then checks duplicate ids) + custom
-  messages (`mascot:update`) for `updateMascot()`, addressed by (namespaced) id and queued until the element is bound.
+  messages (`mascot:update`) for `update_mascot()`, addressed by (namespaced) id and queued until the element is bound.
   No `mascotOutput()`/`renderMascot()`, no htmlwidgets.
 - **house:** one global namespace (`window.mascot`), guard against loading twice, state kept per element, several
   mascots per page, no listeners left behind.

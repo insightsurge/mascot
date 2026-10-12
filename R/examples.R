@@ -6,6 +6,8 @@
 #' package.
 #' @returns A data frame with character columns `name`, `title` and `description`,
 #'   in teaching order. `name` is accepted by [mascot_example()].
+#'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
+#'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot examples
 #' @seealso [mascot_example()]
 #' @export
@@ -35,6 +37,7 @@ mascot_examples <- function() {
 #' studio is a folder, with its helpers in `R/` and its styles in `www/`.
 #' @param name A required non-empty string from [mascot_examples()]'s `name`
 #'   column. `NULL` is not accepted.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param run A logical flag, defaulting to `TRUE`, to launch the app in an
 #'   interactive R session. `FALSE` returns its `app.R` path without launching it.
 #'   `NULL` is not accepted.
@@ -47,9 +50,14 @@ mascot_examples <- function() {
 #' basename(mascot_example("form-check", run = FALSE))
 #' @examplesIf interactive()
 #' mascot_example("studio")
-mascot_example <- function(name, run = TRUE) {
-  checkmate::assert_string(name, min.chars = 1)
-  checkmate::assert_flag(run)
+mascot_example <- function(name, ..., run = TRUE) {
+  with_mascot_asserts({
+    checkmate::assert_string(name, min.chars = 1)
+    checkmate::assert_flag(run)
+  })
+  if (...length() > 0L) {
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("run"), environment())
+  }
   valid <- mascot_examples()$name
   if (!name %in% valid) {
     abort_choice(name, valid, "name", "bundled example", environment())
@@ -59,10 +67,13 @@ mascot_example <- function(name, run = TRUE) {
     return(path)
   }
   if (!example_interactive()) {
-    cli::cli_abort(c(
-      "Running {.fn mascot_example} needs an interactive R session.",
-      "i" = "Use {.code mascot_example({.val {name}}, run = FALSE)} to get the app's path."
-    ))
+    cli::cli_abort(
+      c(
+        "Running {.fn mascot_example} needs an interactive R session.",
+        "i" = "Use {.code mascot_example({.val {name}}, run = FALSE)} to get the app's path."
+      ),
+      class = "mascot_error"
+    )
   }
   shiny::runApp(dirname(path))
 }

@@ -28,10 +28,10 @@ start$click <- code_menu(default_menu)
 # The mascot() call for a state: only the arguments that differ from the defaults.
 ui_args <- function(state, style) {
   changed <- Filter(function(field) !identical(state[[field]]$short, defaults[[field]]), names(defaults))
-  c(list(id = "helper"), pick_style(state[changed], style))
+  c(list("helper"), pick_style(state[changed], style))
 }
 
-# The updateMascot() call that brings a plain mascot to a state.
+# The update_mascot() call that brings a plain mascot to a state.
 server_args <- function(state, style) {
   c(list("helper"), ui_args(state, style)[-1])
 }
@@ -190,7 +190,7 @@ studio_page <- function(character, fn) {
                   ),
                   nav_panel(
                     "Server",
-                    div(class = "pg-hint", "An updateMascot() server call with the current settings."),
+                    div(class = "pg-hint", "An update_mascot() server call with the current settings."),
                     div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))
                   ),
                   nav_panel(
@@ -375,6 +375,12 @@ studio_server <- function(input, output, session) {
   # Evaluates a call and logs it with any warning or error. Returns TRUE when the mascot changed:
   # a wrong value warns and leaves the mascot unchanged; a low-contrast colour warns and is kept.
   run_logged <- function(call, code) {
+    # Show development feedback here without changing the caller's option.
+    old_contrast <- getOption("mascot.contrast_warnings")
+    on.exit(options(mascot.contrast_warnings = old_contrast), add = TRUE)
+    if (is.null(getOption("mascot.contrast_warnings"))) {
+      options(mascot.contrast_warnings = TRUE)
+    }
     messages <- character()
     warnings <- character()
     unchanged <- FALSE
@@ -426,7 +432,7 @@ studio_server <- function(input, output, session) {
     update_switch("bubble_closable", value = bubble$closable, session = session)
   }
 
-  # Sends the changed settings in one updateMascot() call; TRUE when it ran, FALSE on an error,
+  # Sends the changed settings in one update_mascot() call; TRUE when it ran, FALSE on an error,
   # NA when nothing changed. force sends unchanged ones too (a bubble shown twice, a gesture);
   # with_session names the session, for calls that run outside the reactive context.
   send <- function(pairs, force = FALSE, with_session = FALSE, remember = TRUE) {
@@ -442,9 +448,9 @@ studio_server <- function(input, output, session) {
       return(invisible(NA))
     }
     args <- c(list("helper"), pick_style(pairs, isolate(style())), if (with_session) list(session = quote(session)))
-    code <- format_call("updateMascot", args)
+    code <- format_call("update_mascot", args)
     last_call(code)
-    ok <- run_logged(as.call(c(as.name("updateMascot"), args)), code)
+    ok <- run_logged(as.call(c(as.name("update_mascot"), args)), code)
     if (ok && remember) {
       for (field in intersect(names(pairs), names(defaults))) {
         state[[field]] <- pairs[[field]]
@@ -548,15 +554,15 @@ studio_server <- function(input, output, session) {
   observeEvent(
     list(input$position, input$minimise, input$drag),
     {
-      drag <- if (!is.null(input$drag) && input$drag != "FALSE") input$drag else FALSE
-      send(list(placement = code_placement(input$position, isTRUE(input$minimise), drag)))
+      drag <- if (!is.null(input$drag) && input$drag != "none") input$drag else "none"
+      send(list(placement = code_placement(input$position, minimise = isTRUE(input$minimise), drag = drag)))
     },
     ignoreInit = TRUE
   )
   position_last <- reactiveVal("Nothing yet: drag a floating mascot to receive an event.")
   observeEvent(input$helper_position, {
     if (is.character(input$helper_position) && input$helper_position %in% corners) {
-      state$placement <- code_placement(input$helper_position, isTRUE(input$minimise), "snap")
+      state$placement <- code_placement(input$helper_position, minimise = isTRUE(input$minimise), drag = "snap")
       updateRadioButtons(session, "position", selected = input$helper_position)
     }
     value <- format_expr(input$helper_position)
@@ -847,7 +853,7 @@ studio_server <- function(input, output, session) {
       showModal(modalDialog(
         title = "About this studio",
         p(
-          "Every exported function and argument of mascot, live. Each change runs updateMascot() in this app's server."
+          "Every exported function and argument of mascot, live. Each change runs update_mascot() in this app's server."
         ),
         p("This dialog is the app's answer to the menu choice \"about\": your app decides what each item does."),
         easyClose = TRUE
@@ -958,7 +964,7 @@ studio_server <- function(input, output, session) {
         state$placement <- code_placement("inline")
         updateRadioButtons(session, "position", selected = "inline")
         update_switch("minimise", value = TRUE)
-        updateSelectInput(session, "drag", selected = "FALSE")
+        updateSelectInput(session, "drag", selected = "none")
       } else if (input$mistake == "Low contrast") {
         role <- roles()$role[1]
         light <- stats::setNames("#f8f9fa", role)
@@ -1204,7 +1210,7 @@ studio_server <- function(input, output, session) {
     if (length(args) == 1) {
       paste0("# ", character_name(), " is in the default state: nothing to update.")
     } else {
-      format_call("updateMascot", args)
+      format_call("update_mascot", args)
     }
   })
   output$code_app <- renderText({
@@ -1253,7 +1259,7 @@ studio_server <- function(input, output, session) {
   output$roles_table <- renderUI(roles_table(current_character()))
   output$code_function <- renderText({
     fn <- selected_function()
-    if (fn %in% c("mascot", "updateMascot", "mascot_action", "mascot_popup_menu") && !is.null(settings_problem())) {
+    if (fn %in% c("mascot", "update_mascot", "mascot_action", "mascot_popup_menu") && !is.null(settings_problem())) {
       return(problem_comment(settings_problem()))
     }
     if (fn == "mascot_preview") {
@@ -1275,8 +1281,8 @@ studio_server <- function(input, output, session) {
       mascot_size = size_code(),
       mascot_placement = code_placement(
         input$position,
-        isTRUE(input$minimise),
-        if (isTRUE(input$drag != "FALSE")) input$drag else FALSE
+        minimise = isTRUE(input$minimise),
+        drag = if (isTRUE(input$drag != "none")) input$drag else "none"
       ),
       mascot_theme = theme_code(),
       mascot_action = code_action(
@@ -1299,7 +1305,7 @@ studio_server <- function(input, output, session) {
     switch(
       fn,
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
-      updateMascot = format_call("updateMascot", server_args(reactiveValuesToList(state), style())),
+      update_mascot = format_call("update_mascot", server_args(reactiveValuesToList(state), style())),
       mascot_colour_roles = format_call(fn, list(character = current_character())),
       mascot_example = format_call(fn, list(name = examples$name[1], run = FALSE)),
       mascot_studio = format_call(fn, list(fn = "mascot_theme")),

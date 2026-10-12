@@ -12,6 +12,7 @@ mascot_status(text = NULL)
 }
 \value{
 A \code{mascot_status} object with one \code{text} element, which may be \code{NULL}.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 Sets the text label shown next to the mascot. Text is always shown as plain
@@ -23,7 +24,7 @@ mascot_status("Saving")
 mascot_status()
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},

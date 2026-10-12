@@ -5,3 +5,4 @@
     Condition
       Error:
       ! `motion` must be TRUE, FALSE or a mascot_motion() object; got "sometimes".
+

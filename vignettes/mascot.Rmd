@@ -33,12 +33,12 @@ library(mascot)
 ui <- fluidPage(
   h1("Sample review"),
   actionButton("finish", "Finish review"),
-  mascot(id = "helper", status = "Ready to review")
+  mascot("helper", status = "Ready to review")
 )
 
 server <- function(input, output, session) {
   observeEvent(input$finish, {
-    updateMascot("helper", mood = "happy", status = "Review complete",
+    update_mascot("helper", mood = "happy", status = "Review complete",
       bubble = mascot_bubble("All rows checked.", duration = 5))
   })
 }
@@ -46,8 +46,49 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 ```
 
-`mascot()` belongs in the UI; `updateMascot()` belongs in the server.
-There is no `mascotOutput()` or `renderMascot()`. Give each mascot its own id.
+`mascot("helper", ...)` belongs in the UI; `update_mascot("helper", ...)`
+belongs in the server. Arguments after the id must be named.
+
+Give each mascot its own id.
+
+### Show the mascot later
+
+To add the mascot only when it is needed, build it in the server with
+`renderUI()` and place `uiOutput()` in the UI. Updates sent before it appears
+are kept until it does, so the first `update_mascot()` can run in the same
+observer.
+
+```{r show-later, eval=FALSE}
+library(shiny)
+library(mascot)
+
+ui <- fluidPage(
+  actionButton("start", "Start the review"),
+  actionButton("finish", "Finish"),
+  uiOutput("helper_ui")
+)
+
+server <- function(input, output, session) {
+  shown <- reactiveVal(FALSE)
+  output$helper_ui <- renderUI({
+    req(shown())
+    mascot("helper", status = "Reviewing")
+  })
+  observeEvent(input$start, {
+    shown(TRUE)
+    # Sent before the mascot exists: kept until it appears.
+    update_mascot("helper", mood = "thinking")
+  })
+  observeEvent(input$finish, {
+    update_mascot("helper", mood = "happy", status = "Review complete")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+The `reactiveVal()` makes the mascot appear once: clicking **Start the review**
+again does not rebuild it, so it keeps its mood and position.
 
 ## Open an example
 
@@ -103,9 +144,9 @@ Without custom status, the line follows the mood: **Thinking**, **Happy**,
 and so on. Custom status stays until replaced or reset.
 
 ```{r status-update, eval=FALSE}
-updateMascot("helper", mood = mascot_mood("worried"),
+update_mascot("helper", mood = mascot_mood("worried"),
   status = mascot_status("2 fields need attention"))
-updateMascot("helper", status = mascot_status()) # Follow the mood again.
+update_mascot("helper", status = mascot_status()) # Follow the mood again.
 ```
 
 Try `mascot_example("form-check")` for a plain `observe()` that checks two
@@ -127,7 +168,7 @@ mascot_bubble("Check the source data.", duration = Inf)
 mascot_bubble() # Clear an existing bubble when sent in an update.
 ```
 
-A bubble stays until closed when `duration = Inf` or `NULL`. Timed bubbles
+A bubble stays until closed when `duration = Inf`. Timed bubbles
 pause on hover or keyboard focus, and while the mascot is minimised. The
 close button is present by default. A bubble survives a mood change unless
 you replace or clear it. Pausing while a tab is hidden is still pending.
@@ -147,10 +188,10 @@ mascot_gesture("wave")
 ```
 
 ```{r gesture-update, eval=FALSE}
-updateMascot("helper", gesture = mascot_gesture("nod"))
+update_mascot("helper", gesture = mascot_gesture("nod"))
 ```
 
-Gestures are named-only in `updateMascot()`; they are not a persistent mood.
+Gestures are named-only in `update_mascot()`; they are not a persistent mood.
 The visitor's reduced-motion preference can suppress them. A gesture sent
 before the mascot appears plays once when it does. A character
 swap has its own wave and takes precedence over a gesture in the same update.
@@ -178,13 +219,13 @@ menu hides the action controls until the menu closes.
 
 Inline mascots ignore `minimise` and `drag`. Explicitly setting either in
 `mascot_placement()` or a placement list gives an informational message,
-including in `updateMascot()`; defaults such as `mascot_placement("inline")`
+including in `update_mascot()`; defaults such as `mascot_placement("inline")`
 stay silent. The browser receives both controls as `FALSE` inline.
 
 ```{r layout-update, eval=FALSE}
-updateMascot("helper", size = mascot_size(180, small_screen = 72),
+update_mascot("helper", size = mascot_size(180, small_screen = 72),
   placement = mascot_placement("top-left", minimise = TRUE))
-updateMascot("helper", placement = mascot_placement("inline")) # Return inline.
+update_mascot("helper", placement = mascot_placement("inline")) # Return inline.
 ```
 
 Try the size and placement controls in `mascot_example("studio")`, and the
@@ -192,7 +233,7 @@ parent-owned corner helper in `mascot_example("modules")`.
 
 ### Let visitors move it
 
-A floating mascot can be dragged by its drawing, with a mouse or a finger.
+`drag = "none"` (the default) disables dragging. A floating mascot can be dragged by its drawing, with a mouse or a finger.
 Dragging is off by default. With `drag = "snap"` the mascot moves to the
 nearest corner when it is dropped; with `drag = "free"` it stays where it is
 dropped, kept inside the window. A click without movement still opens its menu.
@@ -201,13 +242,13 @@ without movement restores the mascot; a drag leaves it minimised. After a
 snap, restoring shows the mascot in its new corner.
 
 ```{r drag, eval=FALSE}
-mascot(id = "helper",
+mascot("helper",
   placement = mascot_placement("bottom-right", drag = "snap"))
 ```
 
 Each drop sets `input$helper_position`: the corner, such as `"top-left"`,
 after a snap, or a list with `x` and `y` in pixels after a free drop. A later
-`updateMascot(placement = ...)` replaces where the visitor put it. To remember
+`update_mascot(placement = ...)` replaces where the visitor put it. To remember
 the corner between visits, save it in your app and pass it back as `position`.
 
 ## Theme and light/dark mode
@@ -240,8 +281,8 @@ mascot_theme(
 ```
 
 ```{r theme-update, eval=FALSE}
-mascot(id = "helper", theme = list(body = "#1f6feb", rim = "#966600"))
-updateMascot("helper", theme = mascot_theme()) # Restore original colours.
+mascot("helper", theme = list(body = "#1f6feb", rim = "#966600"))
+update_mascot("helper", theme = mascot_theme()) # Restore original colours.
 ```
 
 With `bslib` installed, primary supplies Tessa's body and secondary supplies
@@ -249,7 +290,7 @@ her rim. Her follow rules also colour sleeves, eyelids, hands, feet and bow.
 
 ```{r bslib-theme, eval=FALSE}
 if (requireNamespace("bslib", quietly = TRUE)) {
-  mascot(id = "helper", theme = bslib::bs_theme(
+  mascot("helper", theme = bslib::bs_theme(
     primary = "#1f6feb", secondary = "#966600"
   ))
 }
@@ -282,9 +323,9 @@ pink_theme <- mascot_theme(
 ```
 
 ```{r pink-theme-use, eval=FALSE}
-mascot(id = "helper", theme = pink_theme)
+mascot("helper", theme = pink_theme)
 # Or change an existing mascot from the server:
-updateMascot("helper", theme = pink_theme)
+update_mascot("helper", theme = pink_theme)
 ```
 
 ![Branding app with Pink and lilac selected: Tessa has a coordinated rose body, sleeves, hands, feet and bow on a light background.](figures/branding-pink-light.png)
@@ -294,14 +335,17 @@ updateMascot("helper", theme = pink_theme)
 CSS variables are an **experimental** source:
 
 ```{r css-theme, eval=FALSE}
-mascot(id = "helper", theme = mascot_theme(
+mascot("helper", theme = mascot_theme(
   css = list(body = "--bs-primary"), mode = "auto"
 ))
 ```
 
 A missing or invalid CSS variable uses the character's original role colour
 and warns in the browser console. R warns when a supplied colour has less
-than 3:1 contrast against the checked background, but retains your choice.
+than 3:1 contrast against the checked background in Shiny development mode,
+but retains your choice. Previews and the studio always warn by default.
+`options(mascot.contrast_warnings = TRUE)` or `FALSE` forces R warnings on
+or off everywhere.
 CSS contrast warnings appear in the browser console. Review your actual app
 background as well; a warning does not adjust a colour for you.
 
@@ -318,7 +362,7 @@ always honoured, even with `animate = TRUE`. Idle movement settles after five
 seconds. Try the motion switches in `mascot_example("studio")`.
 
 ```{r motion-update, eval=FALSE}
-updateMascot("helper", motion = mascot_motion(animate = FALSE))
+update_mascot("helper", motion = mascot_motion(animate = FALSE))
 ```
 
 ## Clicks and menus
@@ -330,7 +374,7 @@ count, so your server can answer it:
 
 ```{r action, eval=FALSE}
 # In the UI: a label says what a click does, for screen readers and in a tooltip.
-mascot(id = "helper", click = "Open help")
+mascot("helper", click = "Open help")
 
 # In the server:
 shiny::observeEvent(input$helper_click, {
@@ -346,19 +390,19 @@ Arrow keys, Home, End and Escape navigate the open menu.
 
 ```{r menu, eval=FALSE}
 # In the UI:
-mascot(id = "helper", click = mascot_popup_menu(
+mascot("helper", click = mascot_popup_menu(
   c(finish = "Finish review", reset = "Reset helper", about = "About this app")
 ))
 
 # In the server:
 shiny::observeEvent(input$helper_menu, {
   if (identical(input$helper_menu, "finish")) {
-    updateMascot("helper", mood = "happy", status = "Review complete",
+    update_mascot("helper", mood = "happy", status = "Review complete",
       bubble = mascot_bubble("All checks finished.", duration = Inf),
       gesture = mascot_gesture("nod"))
   }
   if (identical(input$helper_menu, "reset")) {
-    updateMascot("helper", mood = "idle", status = "Ready to review",
+    update_mascot("helper", mood = "idle", status = "Ready to review",
       bubble = mascot_bubble())
   }
   if (identical(input$helper_menu, "about")) {
@@ -395,7 +439,7 @@ helper_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shiny::actionButton(ns("finish"), "Finish review"),
-    mascot(id = ns("helper"))
+    mascot(ns("helper"))
   )
 }
 helper_server <- function(id) {
@@ -403,7 +447,7 @@ helper_server <- function(id) {
     ready <- shiny::reactiveVal(FALSE)
     shiny::observeEvent(input$finish, {
       ready(TRUE)
-      updateMascot("helper", mood = "happy")
+      update_mascot("helper", mood = "happy")
     })
     ready
   })
@@ -454,10 +498,10 @@ mascot; fine face details are harder to read at 32 and 24 pixels.
 
 ## Leave unchanged or reset
 
-In `updateMascot()`, `NULL` leaves a setting unchanged. Use an empty helper
+In `update_mascot()`, `NULL` leaves a setting unchanged. Use an empty helper
 when the setting has a clear/reset action:
 
-| Setting | Reset sent to `updateMascot()` |
+| Setting | Reset sent to `update_mascot()` |
 |---|---|
 | Custom status | `status = mascot_status()` follows the mood |
 | Bubble | `bubble = mascot_bubble()` removes it |

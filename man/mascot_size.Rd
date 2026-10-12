@@ -4,11 +4,13 @@
 \alias{mascot_size}
 \title{Set the mascot's size}
 \usage{
-mascot_size(size = 160, small_screen = NULL)
+mascot_size(size = 160, ..., small_screen = NULL)
 }
 \arguments{
 \item{size}{A finite number of CSS pixels (at least \code{24}), or a positive
 percentage string such as \code{"20\%"}. Defaults to \code{160}; \code{NULL} is not accepted.}
+
+\item{...}{Must be empty. Forces the arguments after it to be named.}
 
 \item{small_screen}{An optional size for small screens (at most 575.98 CSS
 pixels wide), in the same forms as \code{size}. \code{NULL} (the default) uses \code{size}
@@ -16,6 +18,7 @@ at every screen width.}
 }
 \value{
 A \code{mascot_size} object with \code{size} and \code{small_screen} elements.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 Control the size of the mascot in pixels or as a percentage. Percentage
@@ -31,7 +34,7 @@ mascot_size("20\%")
 mascot_size(120, small_screen = 48)
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},

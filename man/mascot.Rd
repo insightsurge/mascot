@@ -5,8 +5,9 @@
 \title{Add a mascot to a page}
 \usage{
 mascot(
-  character = "tessa",
   id,
+  ...,
+  character = "tessa",
   mood = "idle",
   status = NULL,
   bubble = NULL,
@@ -18,12 +19,14 @@ mascot(
 )
 }
 \arguments{
-\item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object. Defaults
-to \code{"tessa"}. \code{NULL} is not accepted.}
-
 \item{id}{A required non-empty string without whitespace, unique on the
 page. In a Shiny module use \code{ns("helper")} in the UI and \code{"helper"} in
-the server; \code{\link[=updateMascot]{updateMascot()}} adds the module namespace once.}
+the server; \code{\link[=update_mascot]{update_mascot()}} adds the module namespace once.}
+
+\item{...}{Must be empty. Forces the arguments after it to be named.}
+
+\item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object. Defaults
+to \code{"tessa"}. \code{NULL} is not accepted.}
 
 \item{mood}{A mood name or \code{\link[=mascot_mood]{mascot_mood()}} object. Defaults to \code{"idle"}.
 See \code{\link[=mascot_moods]{mascot_moods()}} for available choices. \code{NULL} is not accepted.}
@@ -42,7 +45,7 @@ percentage string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_s
 \code{160}. Percentages follow the parent width when inline and the window width
 when floating, with a 24-pixel floor. \code{NULL} is not accepted.}
 
-\item{placement}{\code{"bottom-right"} (the default), \code{"floating"}, \code{"inline"}, a corner
+\item{placement}{\code{"bottom-right"} (the default), \code{"inline"}, a corner
 such as \code{"top-left"}, a named list such as \code{list(position = "top-left", minimise = TRUE, drag = "snap")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object.
 Floating mascots show a minimise control by default; dragging is off.
 Inline mascots sit in the page flow and ignore \code{minimise} and \code{drag}, with an
@@ -77,6 +80,15 @@ The status shows the capitalised mood word until the app sets its own text.
 It follows the mood again when \code{\link[=mascot_status]{mascot_status()}} is supplied without text.
 }
 \details{
+\code{NULL} means none or the default in \code{\link[=mascot]{mascot()}} and helpers where accepted,
+and unchanged in \code{\link[=update_mascot]{update_mascot()}}. An empty helper (\code{mascot_bubble()},
+\code{mascot_status()}, \code{mascot_theme()}, \code{mascot_action()} or
+\code{mascot_popup_menu()}) resets that setting.
+
+Building UI with \code{\link[=mascot]{mascot()}} or helpers errors on invalid values;
+\code{\link[=update_mascot]{update_mascot()}} warns and leaves the mascot unchanged. See
+\link{mascot-package} for condition classes.
+
 Use the always visible status line for a short description of the current state.
 Use a bubble for a message about something that happened; it may time out.
 Use \code{mascot_bubble(..., duration = Inf)} for a message the user must act on,
@@ -91,14 +103,50 @@ A module can put the mascot in its UI and update it from its server:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{helper_ui <- function(id) \{
   ns <- shiny::NS(id)
-  mascot(id = ns("helper"))
+  mascot(ns("helper"))
 \}
 helper_server <- function(id) \{
   shiny::moduleServer(id, function(input, output, session) \{
-    updateMascot("helper", mood = "happy")
+    update_mascot("helper", mood = "happy")
   \})
 \}
 }\if{html}{\out{</div>}}
+
+\strong{Showing the mascot later.} To add the mascot only when it is needed, build
+it in the server with \code{\link[shiny:renderUI]{shiny::renderUI()}} and place \code{\link[shiny:uiOutput]{shiny::uiOutput()}} in the
+UI. Updates sent before it appears are kept until it does, so the first
+\code{update_mascot()} can run in the same observer:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{library(shiny)
+library(mascot)
+
+ui <- fluidPage(
+  actionButton("start", "Start the review"),
+  actionButton("finish", "Finish"),
+  uiOutput("helper_ui")
+)
+
+server <- function(input, output, session) \{
+  shown <- reactiveVal(FALSE)
+  output$helper_ui <- renderUI(\{
+    req(shown())
+    mascot("helper", status = "Reviewing")
+  \})
+  observeEvent(input$start, \{
+    shown(TRUE)
+    # Sent before the mascot exists: kept until it appears.
+    update_mascot("helper", mood = "thinking")
+  \})
+  observeEvent(input$finish, \{
+    update_mascot("helper", mood = "happy", status = "Review complete")
+  \})
+\}
+
+shinyApp(ui, server)
+}\if{html}{\out{</div>}}
+
+The \code{reactiveVal()} makes the mascot appear once: clicking \strong{Start the
+review} again does not rebuild it, so it keeps its mood and position.
 
 \strong{Clicks.} With \code{click}, the mascot is a button: an action named by its
 label, or a menu. Every activation (a click or tap, Enter or Space while it
@@ -109,22 +157,22 @@ opening and closing it both count. Dragging a floating mascot never counts as
 a click. See \code{\link[=mascot_action]{mascot_action()}} and \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}.
 }
 \examples{
-mascot(id = "helper", mood = "happy")
-mascot(id = "small", size = 96, placement = "bottom-right")
-mascot(id = "responsive", size = mascot_size(120, small_screen = 48))
-mascot(id = "still", motion = FALSE)
-mascot(id = "helpful", click = "Open help")
+mascot("helper", mood = "happy")
+mascot("small", size = 96, placement = "bottom-right")
+mascot("responsive", size = mascot_size(120, small_screen = 48))
+mascot("still", motion = FALSE)
+mascot("helpful", click = "Open help")
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
-  ui = shiny::fluidPage(mascot(id = "helper")),
+  ui = shiny::fluidPage(mascot("helper")),
   server = function(input, output, session) {}
 )
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=update_mascot]{update_mascot()}}
 
 Other mascots in Shiny:
-\code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=update_mascot]{update_mascot()}}
 }
 \concept{mascots in Shiny}

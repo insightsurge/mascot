@@ -19,6 +19,7 @@ exception is fine with a comment saying why). Reasons and sources: `docs/standar
   any.missing = FALSE)`, `assert_class()`, `assert_function()`, `assert_list(names = "unique")`,
   `assert_file_exists()`, `assert_path_for_output()`) and say what `NULL` means with `null.ok = TRUE`. Several
   arguments can share `checkmate::makeAssertCollection()`. Functions without arguments need none.
+- **house:** exported functions wrap their checkmate assertion blocks in `with_mascot_asserts()` so failures also carry `mascot_error`.
 - **house:** every other message, warning and error uses cli (`cli::cli_abort()`, `cli::cli_warn()`,
   `cli::cli_inform()`), with the argument or value named in the message.
 - **CRAN (Cookbook):** no `print()` or `cat()` for messages (lintr flags them; a `print()` method may print with
@@ -40,7 +41,7 @@ exception is fine with a comment saying why). Reasons and sources: `docs/standar
 - **CRAN:** no `:::` into other packages, no `<<-` into the global environment, at most 2 cores, `TRUE`/`FALSE`
   never `T`/`F`, no `set.seed()` inside functions (take a `seed` argument), no `q()`.
 - **CRAN:** R code is ASCII only: write other characters as `"\uXXXX"`.
-- **house:** names: `mascot()` is the main object; `updateMascot()` follows Shiny's convention;
+- **house:** names: `mascot()` is the main object; `update_mascot()` follows bslib's snake case (`update_switch()`); no camelCase aliases;
   `use_*()` is only for project setup. Every top-level argument of `mascot()` takes a plain shortcut or a
   `mascot_*()` helper (bslib style), and every helper and listing function carries the `mascot_` prefix
   (autocomplete, no clashes). Check each new exported name against base R, shiny, bslib and ggplot2 first.

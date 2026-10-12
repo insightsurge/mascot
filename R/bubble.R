@@ -19,35 +19,46 @@
 #'   HTML. Tags with dependencies or head content are not supported and give an
 #'   error. `NULL` (the default) clears the bubble.
 #' @param duration How long the bubble stays visible: a number greater than zero,
-#'   in seconds. Defaults to `5`. Use `Inf` or `NULL` to keep the bubble until it
+#'   in seconds. Defaults to `5`. Use `Inf` to keep the bubble until it
 #'   is closed, replaced or cleared.
 #' @param closable A logical flag, defaulting to `TRUE`, to show a close button.
 #'   `FALSE` hides the button; the Escape key still closes the bubble. `NULL`
 #'   is not accepted.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_bubble` object with `text`, `html`, `duration`, and
 #'   `closable` elements. `text` is a plain string or `NULL`; `html` is a flag.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot()], [updateMascot()]
+#' @seealso [mascot()], [update_mascot()]
 #' @export
 #' @examples
 #' mascot_bubble("3 rows skipped")
 #' mascot_bubble("Ready", duration = Inf)
 #' mascot_bubble(htmltools::HTML("<strong>Ready</strong>"))
 #' mascot_bubble()
-mascot_bubble <- function(text = NULL, duration = 5, closable = TRUE) {
-  # Text is a union: validate tags as tags, and strings with the usual assertion.
-  if (inherits(text, c("shiny.tag", "shiny.tag.list"))) {
-    checkmate::assert_multi_class(text, c("shiny.tag", "shiny.tag.list"))
-  } else {
-    checkmate::assert_string(text, min.chars = 1, null.ok = TRUE)
-  }
-  checkmate::assert_number(duration, lower = 0, null.ok = TRUE)
-  checkmate::assert_flag(closable)
-  if (is.null(duration)) {
-    duration <- Inf
+mascot_bubble <- function(text = NULL, ..., duration = 5, closable = TRUE) {
+  with_mascot_asserts({
+    # Text is a union: validate tags as tags, and strings with the usual assertion.
+    if (inherits(text, c("shiny.tag", "shiny.tag.list"))) {
+      checkmate::assert_multi_class(text, c("shiny.tag", "shiny.tag.list"))
+    } else {
+      checkmate::assert_string(text, min.chars = 1, null.ok = TRUE)
+    }
+    # NULL used to mean "stay"; it gets its own hint instead of checkmate's generic type message.
+    if (is.null(duration)) {
+      cli::cli_abort(
+        "{.arg duration} cannot be NULL; use {.code duration = Inf} to keep the bubble open.",
+        class = "mascot_error"
+      )
+    }
+    checkmate::assert_number(duration, lower = 0)
+    checkmate::assert_flag(closable)
+  })
+  if (...length() > 0L) {
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("duration", "closable"), environment())
   }
   if (duration == 0) {
-    cli::cli_abort("{.arg duration} must be greater than zero; got {.val {duration}}.")
+    cli::cli_abort("{.arg duration} must be greater than zero; got {.val {duration}}.", class = "mascot_error")
   }
   if (inherits(text, c("shiny.tag", "shiny.tag.list"))) {
     text <- render_bubble_text(text)
@@ -112,11 +123,15 @@ render_bubble_text <- function(text) {
   rendered <- htmltools::renderTags(text)
   if (length(rendered$dependencies)) {
     cli::cli_abort(
-      "{.arg text} carries HTML dependencies, which are not supported in a bubble; use self-contained tags."
+      "{.arg text} carries HTML dependencies, which are not supported in a bubble; use self-contained tags.",
+      class = "mascot_error"
     )
   }
   if (nzchar(rendered$head)) {
-    cli::cli_abort("{.arg text} contains head content, which is not supported in a bubble; use body HTML only.")
+    cli::cli_abort(
+      "{.arg text} contains head content, which is not supported in a bubble; use body HTML only.",
+      class = "mascot_error"
+    )
   }
   checkmate::assert_string(rendered$html, min.chars = 1, .var.name = "text")
   htmltools::HTML(rendered$html)
@@ -125,14 +140,18 @@ render_bubble_text <- function(text) {
 #' @export
 #' @noRd
 format.mascot_bubble <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_bubble")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_bubble")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_bubble <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_bubble")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_bubble")
+  })
   cli::cat_line(format(x))
   invisible(x)
 }

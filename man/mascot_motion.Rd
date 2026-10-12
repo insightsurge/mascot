@@ -17,6 +17,7 @@ With \code{animate = FALSE}, this setting has no effect. \code{NULL} is not acce
 }
 \value{
 A \code{mascot_motion} object with \code{animate} and \code{swap} elements.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 Turn off all animations or only the transition when swapping characters.
@@ -28,7 +29,7 @@ stop five seconds after the last action.
 mascot_motion()
 mascot_motion(animate = FALSE)
 mascot_motion(swap = FALSE)
-mascot(id = "still", motion = FALSE)
+mascot("still", motion = FALSE)
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 # The app owns the switch; reset returns to the character's own colours.
 shiny::shinyApp(
@@ -36,27 +37,27 @@ shiny::shinyApp(
     shiny::checkboxInput("animate", "Animate mascot", TRUE),
     shiny::checkboxInput("dark", "Dark mascot colours", FALSE),
     shiny::actionButton("reset", "Use the character's colours"),
-    mascot(id = "helper")
+    mascot("helper")
   ),
   function(input, output, session) {
     shiny::observeEvent(input$animate, {
-      updateMascot("helper", motion = input$animate)
+      update_mascot("helper", motion = input$animate)
     })
     shiny::observeEvent(input$dark, {
-      updateMascot("helper", theme = mascot_theme(
+      update_mascot("helper", theme = mascot_theme(
         light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"),
         mode = if (input$dark) "dark" else "light"
       ))
     }, ignoreInit = TRUE)
     shiny::observeEvent(input$reset, {
-      updateMascot("helper", theme = mascot_theme())
+      update_mascot("helper", theme = mascot_theme())
     })
   }
 )
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},

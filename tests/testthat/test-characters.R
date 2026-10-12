@@ -45,3 +45,14 @@ describe("abort_choice()", {
     expect_error(abort_choice("bad", "idle", "mood", "mood", NULL), "'call'")
   })
 })
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_character(name = 1), "name", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_character(1), "x", class = "mascot_error")
+    expect_error(print.mascot_character(1), "x", class = "mascot_error")
+  })
+})

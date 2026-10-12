@@ -49,7 +49,7 @@ reference:
   - title: Mascots in Shiny
     contents:
       - mascot
-      - updateMascot
+      - update_mascot
   - title: Helpers
     contents:
       - mascot_character

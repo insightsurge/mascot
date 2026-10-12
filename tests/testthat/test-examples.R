@@ -154,7 +154,7 @@ describe("the studio's controls", {
       code$code_gesture("wave"),
       code$code_motion(FALSE, FALSE),
       code$code_size("20%", 72),
-      code$code_placement("top-left", TRUE, "snap"),
+      code$code_placement("top-left", minimise = TRUE, drag = "snap"),
       code$code_menu(character()),
       theme
     )
@@ -200,9 +200,9 @@ describe("the studio's controls", {
   })
   it("prints drag in both placement forms and omits the removed size argument", {
     code <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), envir = code)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
     for (mode in c("snap", "free")) {
-      pair <- code$code_placement("bottom-right", TRUE, mode)
+      pair <- code$code_placement("bottom-right", minimise = TRUE, drag = mode)
       expect_identical(eval(pair$short), list(position = "bottom-right", drag = mode))
       expect_identical(eval(pair$helper), mascot_placement("bottom-right", drag = mode))
       for (style in c("short", "helper")) {
@@ -225,8 +225,8 @@ describe("the studio's controls", {
     inline <- code$code_placement("inline")
     expect_identical(eval(inline$helper), mascot_placement("inline"))
     # Inline ignores minimise and drag, so the printed code leaves them out instead of prompting a message.
-    expect_identical(code$code_placement("inline", FALSE, "snap"), inline)
-    hidden <- code$code_placement("top-left", FALSE)
+    expect_identical(code$code_placement("inline", minimise = FALSE, drag = "snap"), inline)
+    hidden <- code$code_placement("top-left", minimise = FALSE)
     expect_identical(eval(hidden$helper), mascot_placement("top-left", minimise = FALSE))
     expect_identical(eval(hidden$short), list(position = "top-left", minimise = FALSE))
     call <- code$format_call("mascot", list(id = "helper", placement = inline$short))
@@ -235,7 +235,7 @@ describe("the studio's controls", {
   })
   it("preserves every menu direction in shortcut and helper code, including an empty menu", {
     code <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), envir = code)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
     for (items in list(c(about = "About this app"), character())) {
       for (direction in c("auto", "top", "bottom", "left", "right")) {
         pair <- code$code_menu(items, direction)
@@ -269,7 +269,7 @@ describe("the studio's controls", {
   })
   it("writes an action as its label, or as mascot_action() when it hides the tooltip or is disabled", {
     code <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), envir = code)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
     plain <- code$code_action("Open help", TRUE, FALSE)
     expect_identical(plain$short, "Open help")
     expect_identical(eval(plain$helper), mascot_action("Open help"))
@@ -351,7 +351,7 @@ describe("the studio's controls", {
       "mascot_theme",
       "mascot_action",
       "mascot_popup_menu",
-      "updateMascot"
+      "update_mascot"
     )) {
       html <- as.character(ui$selected_guide(fn))
       expect_match(html, paste0("Example: how to call ", fn, "()"), fixed = TRUE)
@@ -458,12 +458,12 @@ describe("mascot_example()", {
   })
   it("checks every argument and names valid examples for unknown names", {
     for (bad in list(NULL, NA_character_, "", 1, c("studio", "modules"))) {
-      expect_error(mascot_example(bad, FALSE), "Assertion on 'name' failed")
+      expect_error(mascot_example(bad, run = FALSE), "Assertion on 'name' failed")
     }
     for (bad in list(NULL, NA, 1, "FALSE", c(TRUE, FALSE))) {
-      expect_error(mascot_example("studio", bad), "Assertion on 'run' failed")
+      expect_error(mascot_example("studio", run = bad), "Assertion on 'run' failed")
     }
-    expect_snapshot(error = TRUE, mascot_example("typo", FALSE))
+    expect_snapshot(error = TRUE, mascot_example("typo", run = FALSE))
   })
   it("explains how to locate an app in a non-interactive session", {
     expect_false(interactive())
@@ -481,7 +481,7 @@ describe("mascot_example()", {
       .package = "shiny"
     )
     expect_identical(mascot_example("modules"), "app stopped")
-    expect_identical(captured, dirname(mascot_example("modules", FALSE)))
+    expect_identical(captured, dirname(mascot_example("modules", run = FALSE)))
   })
 })
 
@@ -557,7 +557,7 @@ describe("bundled example apps", {
     ))
     # No accordion wraps a whole function; the colour pickers keep theirs, folded by group.
     expect_true(app$get_js(
-      "![...document.querySelectorAll('#studio_inspector .accordion-item')].some(item => /^(mascot|updateMascot)/.test(item.dataset.value || ''))"
+      "![...document.querySelectorAll('#studio_inspector .accordion-item')].some(item => /^(mascot|update_mascot)/.test(item.dataset.value || ''))"
     ))
     expect_identical(
       app$get_js("document.querySelectorAll('#studio_inspector [data-event=select_function]').length"),
@@ -887,7 +887,7 @@ describe("bundled example apps", {
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('top-left')")
     app$wait_for_js("document.getElementById('log').textContent.includes('input$helper_position')")
     # Disable dragging for later menu clicks, then return to inline to test disabled controls.
-    app$set_inputs(drag = "FALSE", position = "inline")
+    app$set_inputs(drag = "none", position = "inline")
     app$wait_for_js("document.getElementById('drag').disabled && document.getElementById('minimise').disabled")
     select_function("mascot_theme")
     app$set_inputs(theme_source = "mascot")
@@ -931,7 +931,7 @@ describe("bundled example apps", {
     app$wait_for_js("document.querySelector('#helper .mascot-bubble')?.textContent.includes('Finish review')")
     expect_false(grepl("You chose", app$get_value(output = "code_ui"), fixed = TRUE))
     # A mistake is an error in the log, and the mascot keeps its settings.
-    select_function("updateMascot")
+    select_function("update_mascot")
     app$set_inputs(mistake = "Misspell an argument")
     app$click("mistake_run")
     app$wait_for_js("document.getElementById('log').textContent.includes('Unexpected arguments')")
@@ -1216,7 +1216,7 @@ describe("bundled example apps", {
 describe("studio round 4 regression guards", {
   it("labels the active placement with the character and keeps inspector hints independent of selection", {
     skip_if_not_installed("bslib")
-    app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
     env <- environment(app$serverFuncSource())
     map <- get("placement_map", envir = env)
     hint <- get("arg_hint", envir = env)
@@ -1243,14 +1243,14 @@ describe("studio round 4 regression guards", {
   })
   it("omits empty colour groups and groups unfamiliar parts", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "panels.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "panels.R"), env)
     groups <- env$colour_groups(data.frame(role = c("feature", "beak")))
     expect_named(groups, c("Face", "Other parts"))
     expect_identical(groups$`Other parts`, "beak")
   })
   it("keeps only explicit shared colour overrides across character palettes", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "panels.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "panels.R"), env)
     old <- data.frame(role = c("body", "outline", "limb"), colour = c("#abcdef", "#000000", "#123456"))
     new <- data.frame(role = c("body", "outline", "beak"), colour = c("#fedcba", "#111111", "#654321"))
     values <- env$reconcile_colour_values(
@@ -1265,7 +1265,7 @@ describe("studio round 4 regression guards", {
   })
   it("round-trips menu ids containing reserved words and backticks", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), env)
     items <- c("a`b" = "Action", "if" = "Conditional action", "a\\b" = "Slash")
     code <- env$format_expr(env$code_menu(items)$short)
     expect_identical(eval(parse(text = code))$items, items)
@@ -1276,7 +1276,7 @@ describe("studio round 4 regression guards", {
 describe("studio state and built previews", {
   it("keeps programmatic changes and copied code in step without overlapping tasks", {
     skip_if_not_installed("bslib")
-    app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
     env <- environment(app$serverFuncSource())
     placement_code <- get("code_placement", envir = env)
     shiny::testServer(env$studio_server, {
@@ -1298,7 +1298,7 @@ describe("studio state and built previews", {
         css_accent = "#123456",
         position = "inline",
         minimise = TRUE,
-        drag = "FALSE",
+        drag = "none",
         size_unit = "px",
         size_px = 160,
         small_on = FALSE,
@@ -1312,7 +1312,7 @@ describe("studio state and built previews", {
       for (code in c(output$code_ui, output$code_server, output$code_app)) {
         expect_false(grepl("Hello! Choose a function|About this studio", code))
       }
-      for (fn in c("mascot", "updateMascot")) {
+      for (fn in c("mascot", "update_mascot")) {
         session$setInputs(select_function = fn)
         expect_false(grepl("Hello! Choose a function|About this studio", output$code_function))
       }
@@ -1331,7 +1331,7 @@ describe("studio state and built previews", {
       expect_identical(messages$status_text$value, "All 120 rows checked")
       expect_null(task())
       session$setInputs(helper_position = "top-left")
-      expect_identical(state$placement, placement_code("top-left", TRUE, "snap"))
+      expect_identical(state$placement, placement_code("top-left", minimise = TRUE, drag = "snap"))
       expect_identical(messages$position$value, "top-left")
       task(list(fail = TRUE, ends = Sys.time() - 1))
       session$flushReact()
@@ -1438,9 +1438,9 @@ describe("studio state and built previews", {
           expect_false(grepl("Status line or speech bubble?", html, fixed = TRUE))
         } else if (fn == "mascot") {
           expect_match(html, "Two calls, one id", fixed = TRUE)
-          expect_false(grepl("What each kind of value does in updateMascot()", html, fixed = TRUE))
-        } else if (fn == "updateMascot") {
-          expect_match(html, "What each kind of value does in updateMascot()", fixed = TRUE)
+          expect_false(grepl("What each kind of value does in update_mascot()", html, fixed = TRUE))
+        } else if (fn == "update_mascot") {
+          expect_match(html, "What each kind of value does in update_mascot()", fixed = TRUE)
           expect_false(grepl("Two calls, one id", html, fixed = TRUE))
         }
       }
@@ -1470,7 +1470,7 @@ describe("studio state and built previews", {
   })
   it("shows the call that built the preview and rebuilds it after a pause", {
     skip_if_not_installed("bslib")
-    app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
     env <- environment(app$serverFuncSource())
     shiny::testServer(env$studio_server, {
       session$setInputs(
@@ -1489,7 +1489,7 @@ describe("studio state and built previews", {
         css_accent = "#123456",
         position = "inline",
         minimise = FALSE,
-        drag = "FALSE",
+        drag = "none",
         size_unit = "px",
         size_px = 160,
         small_on = FALSE,
@@ -1576,7 +1576,7 @@ describe("studio state and built previews", {
 describe("studio round 8 help and copied apps", {
   it("keeps a missing help page local while strict lookup still fails", {
     skip_if_not_installed("bslib")
-    app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
     env <- environment(app$serverFuncSource())
     missing <- get("help_rd", env)("mascot_bubble")
     cache <- get("help_cache", env)
@@ -1598,7 +1598,7 @@ describe("studio round 8 help and copied apps", {
   })
   it("parses help examples only once per function", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "help.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), env)
     original <- env$help_rd
     calls <- 0L
     env$help_rd <- function(fn) {
@@ -1612,7 +1612,7 @@ describe("studio round 8 help and copied apps", {
   })
   it("starts copied apps with the user's settings and preserves multiline bubble strings", {
     env <- new.env()
-    dir <- dirname(mascot_example("studio", FALSE))
+    dir <- dirname(mascot_example("studio", run = FALSE))
     sys.source(file.path(dir, "R", "code.R"), env)
     sys.source(file.path(dir, "R", "data.R"), env)
     bubble_calls <- function(expr) {
@@ -1641,14 +1641,14 @@ describe("studio round 8 help and copied apps", {
         expect_identical(as.character(bubble$text), example$text)
         expect_identical(bubble$duration, Inf)
         expect_match(code, 'actionButton("celebrate", "Celebrate")', fixed = TRUE)
-        expect_match(code, 'updateMascot("helper", mood = "celebrating", bubble = "Review complete.")', fixed = TRUE)
+        expect_match(code, 'update_mascot("helper", mood = "celebrating", bubble = "Review complete.")', fixed = TRUE)
         expect_false(grepl("Apply my settings", code, fixed = TRUE))
       }
     }
   })
   it("hides the single-character hint when more character files are shipped", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "data.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
     expect_identical(
       env$studio_character_hint(),
       paste(mascot_character()$name, "is the only built-in character so far.")
@@ -1658,7 +1658,7 @@ describe("studio round 8 help and copied apps", {
     expect_null(env$studio_character_hint(directory))
   })
   it("removes unused initialisation and presentation helpers", {
-    dir <- dirname(mascot_example("studio", FALSE))
+    dir <- dirname(mascot_example("studio", run = FALSE))
     app <- parse(file.path(dir, "app.R"))
     assigned <- vapply(
       as.list(app),
@@ -1678,10 +1678,10 @@ describe("studio round 8 help and copied apps", {
   })
   it("provides helper links and concrete instructions beside controls", {
     skip_if_not_installed("bslib")
-    app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
     env <- environment(app$serverFuncSource())
     page <- as.character(get("studio_page", env)(formals(mascot)$character, "mascot"))
-    for (fn in c("mascot", "updateMascot")) {
+    for (fn in c("mascot", "update_mascot")) {
       for (arg in setdiff(names(get("the_guide", env)(fn)$args), c("id", "...", "session"))) {
         links <- as.character(htmltools::tagList(get("wiring_links", env)(fn)))
         expect_match(links, paste0('data-value="mascot_', arg, '"'), fixed = TRUE)
@@ -1710,7 +1710,7 @@ describe("studio round 8 help and copied apps", {
 # The studio app's own environment (its server, data and code builders) and its page, built without a browser.
 studio_parts <- function() {
   testthat::skip_if_not_installed("bslib")
-  app <- shiny::shinyAppDir(dirname(mascot_example("studio", FALSE)))
+  app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
   page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
   list(env = environment(app$serverFuncSource()), page = as.character(page))
 }
@@ -2053,7 +2053,7 @@ describe("studio safeguards (#248)", {
     # Copied code starts from the defaults except the placement, which the canvas needs.
     expect_identical(env$defaults$placement, formals(mascot)$placement)
     # Every default the studio leaves out of code draws the same mascot as leaving the argument out.
-    expect_setequal(names(env$defaults), setdiff(names(formals(mascot)), "id"))
+    expect_setequal(names(env$defaults), setdiff(names(formals(mascot)), c("id", "...")))
     # mascot_theme() writes the neutral theme (mode "auto", no colours) where NULL writes none; the engine reads
     # both as the same automatic theme, so that one block is checked and then set aside.
     neutral <- '<script type="application/json" data-mascot-theme="">{"light":null,"dark":null,"mode":"auto","css":null,"brand":null}</script>'
@@ -2207,7 +2207,7 @@ describe("studio engine behaviours", {
       expect_match(last_call(), 'gesture = "wave"', fixed = TRUE)
       # The log is newest first: the click event, then the studio's wave in answer.
       expect_identical(log()[[2]]$code, "input$helper_click  # 2")
-      expect_identical(log()[[1]]$code, 'updateMascot("helper", gesture = "wave")')
+      expect_identical(log()[[1]]$code, 'update_mascot("helper", gesture = "wave")')
       # A blank label is a problem in the code, never sent; switching off sends the empty helper.
       session$setInputs(action_label = " ")
       session$elapse(700)
@@ -2218,5 +2218,59 @@ describe("studio engine behaviours", {
       expect_identical(updates()$patch$click, list(type = "none"))
       expect_match(last_call(), "click = mascot_action()", fixed = TRUE)
     })
+  })
+})
+
+describe("mascot_example() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(names(formals(mascot_example)), c("name", "...", "run"))
+    expect_error(mascot_example("studio", run = FALSE, typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot_example("studio", run = FALSE, 1), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+
+describe("studio API review", {
+  it("generates an id-first UI call and shows the delayed UI example from the help", {
+    skip_if_not_installed("bslib")
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
+    env <- environment(app$serverFuncSource())
+    # The studio sources its R/ files into a parent of the server environment, so look them up with get().
+    code <- get("format_call", envir = env)("mascot", get("ui_args", envir = env)(get("start", envir = env), "short"))
+    expect_match(code, '^mascot\\(\\s*"helper"', perl = TRUE)
+    expect_false(grepl("id =", code, fixed = TRUE))
+    guide <- as.character(get("guide_help", envir = env)("mascot"))
+    expect_match(guide, "Showing the mascot later", fixed = TRUE)
+    expect_match(guide, "renderUI", fixed = TRUE)
+  })
+  it("warns in the studio outside development mode, honours overrides and restores the option", {
+    skip_if_not_installed("bslib")
+    local_mocked_bindings(in_devmode = function() FALSE, .package = "shiny")
+    withr::local_options(mascot.contrast_warnings = NULL)
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
+    env <- environment(app$serverFuncSource())
+    shiny::testServer(env$studio_server, {
+      expr <- quote(mascot("contrast", theme = mascot_theme(light = list(body = "white"))))
+      expect_true(run_logged(expr, "contrast check"))
+      expect_identical(log()[[1]]$outcome, "warning")
+      expect_match(log()[[1]]$message, "below 3:1")
+      expect_null(getOption("mascot.contrast_warnings"))
+      withr::local_options(mascot.contrast_warnings = FALSE)
+      expect_true(run_logged(expr, "contrast off"))
+      expect_identical(log()[[1]]$outcome, "ok")
+      expect_identical(getOption("mascot.contrast_warnings"), FALSE)
+      withr::local_options(mascot.contrast_warnings = TRUE)
+      expect_true(run_logged(expr, "contrast on"))
+      expect_identical(log()[[1]]$outcome, "warning")
+      expect_identical(getOption("mascot.contrast_warnings"), TRUE)
+    })
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_example(name = 1, run = FALSE), "name", class = "mascot_error")
+    expect_error(mascot_example("studio", run = 1), "run", class = "mascot_error")
   })
 })

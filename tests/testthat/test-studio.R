@@ -3,8 +3,8 @@ describe("mascot_studio()", {
     for (bad in list(NULL, NA_character_, 42, "unknown", "preview", c("studio", "examples"))) {
       expect_error(mascot_studio(view = bad, run = FALSE), "Assertion on 'view' failed")
     }
-    expect_error(mascot_studio("studio", "mascot_theme", run = FALSE), "Assertion on 'list")
-    for (bad in list(NA_character_, "", 42, c("mascot", "updateMascot"), "unknown")) {
+    expect_error(mascot_studio("studio", "mascot_theme", run = FALSE), "Unexpected arguments", class = "mascot_error")
+    for (bad in list(NA_character_, "", 42, c("mascot", "update_mascot"), "unknown")) {
       expect_error(mascot_studio(fn = bad, run = FALSE), "Assertion on 'fn' failed")
     }
     for (bad in list(NULL, NA_character_, "", 42, "unknown", c("a", "b"))) {
@@ -103,5 +103,25 @@ describe("the studio on older R", {
     expect_true(exists("%||%", envir = data, inherits = FALSE))
     expect_identical(data$`%||%`(NULL, "b"), "b")
     expect_identical(data$`%||%`("a", "b"), "a")
+  })
+})
+
+describe("mascot_studio() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(names(formals(mascot_studio)), c("view", "...", "fn", "character", "run"))
+    expect_error(mascot_studio("studio", run = FALSE, typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot_studio("studio", run = FALSE, 1), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_studio(view = 1, run = FALSE), "view", class = "mascot_error")
+    expect_error(mascot_studio(fn = 1, run = FALSE), "fn", class = "mascot_error")
+    expect_error(mascot_studio(character = 1, run = FALSE), "character", class = "mascot_error")
+    expect_error(mascot_studio(run = 1), "run", class = "mascot_error")
+    expect_error(mascot_studio(fn = "not_a_function", run = FALSE), "fn", class = "mascot_error")
+    expect_error(mascot_studio(character = "not_a_character", run = FALSE), "character", class = "mascot_error")
   })
 })

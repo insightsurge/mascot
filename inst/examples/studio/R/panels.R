@@ -107,6 +107,7 @@ panel_messages <- function() {
       note = try_button("status_clear", "1", "Follow the mood again", "btn-outline-primary")
     ),
     fn_heading("mascot_bubble"),
+    arg_field("mascot_bubble", "...", NULL),
     arg_field(
       "mascot_bubble",
       "text",
@@ -240,6 +241,7 @@ panel_motion <- function(gestures = mascot_gestures()) {
       note = div(class = "pg-hint", "This shows when a second character exists.")
     ),
     fn_heading("mascot_gesture"),
+    arg_field("mascot_gesture", "...", NULL),
     arg_field(
       "mascot_gesture",
       "name",
@@ -262,6 +264,7 @@ panel_layout <- function() {
     playground_categories$layout$title,
     value = "layout",
     fn_heading("mascot_size"),
+    arg_field("mascot_size", "...", NULL),
     arg_field(
       "mascot_size",
       "size",
@@ -286,6 +289,7 @@ panel_layout <- function() {
       )
     ),
     fn_heading("mascot_placement"),
+    arg_field("mascot_placement", "...", NULL),
     div(
       class = "pg-note",
       "A floating mascot sits above the page, so here it can cover the Controls panel; ",
@@ -316,7 +320,7 @@ panel_layout <- function() {
       "mascot_placement",
       "drag",
       tagList(
-        selectInput("drag", "When dropped", c("No dragging (FALSE)" = "FALSE", Snap = "snap", Free = "free")),
+        selectInput("drag", "When dropped", c("No dragging" = "none", Snap = "snap", Free = "free")),
         conditionalPanel(
           "input.position == 'inline'",
           div(class = "pg-note", "An inline mascot ignores drag. Pick a corner position to try it.")
@@ -331,6 +335,7 @@ panel_colours <- function() {
   tagList(
     inspector_function(
       "mascot_theme",
+      arg_field("mascot_theme", "...", NULL),
       radioButtons(
         "theme_source",
         "Where the colours come from",
@@ -396,20 +401,21 @@ panel_wiring <- function() {
     playground_categories$wiring$title,
     value = "wiring",
     fn_heading("mascot"),
+    arg_field("mascot", "...", NULL),
     arg_field(
       "mascot",
       "id",
-      code_block("mascot(id = \"helper\")", "pg-code-small"),
+      code_block("mascot(\"helper\")", "pg-code-small"),
       note = div(class = "pg-note", "The mascot always uses id = \"helper\" in this studio.")
     ),
     wiring_links("mascot"),
-    fn_heading("updateMascot"),
+    fn_heading("update_mascot"),
     arg_field(
-      "updateMascot",
+      "update_mascot",
       "id",
-      code_block("updateMascot(\"helper\", ...)", "pg-code-small")
+      code_block("update_mascot(\"helper\", ...)", "pg-code-small")
     ),
-    wiring_links("updateMascot"),
+    wiring_links("update_mascot"),
     div(
       class = "pg-field",
       div(class = "pg-field-head", tags$strong("Several changes in one call")),
@@ -417,7 +423,7 @@ panel_wiring <- function() {
       actionButton("send_many", "Celebrate a finished review", class = "btn-outline-primary btn-sm")
     ),
     arg_field(
-      "updateMascot",
+      "update_mascot",
       "...",
       tagList(
         selectInput("mistake", "Demonstration: try an invalid call in ...", names(mistakes)),
@@ -427,7 +433,7 @@ panel_wiring <- function() {
       note = div(class = "pg-note", "The result appears in the Log tab of the Code tray.")
     ),
     arg_field(
-      "updateMascot",
+      "update_mascot",
       "session",
       tagList(
         div(
@@ -466,6 +472,7 @@ panel_preview <- function(moods = mascot_moods()) {
   fn <- "mascot_preview"
   inspector_function(
     fn,
+    arg_field(fn, "...", NULL),
     arg_field(
       fn,
       "character",

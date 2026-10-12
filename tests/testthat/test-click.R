@@ -40,9 +40,9 @@ describe("mascot_action()", {
     }
     expect_identical(mascot_action(" Open help ")$label, " Open help ")
   })
-  it("prints the call's fields", {
+  it("prints a recreating call without defaults", {
     expect_snapshot(print(mascot_action("Open help")))
-    expect_identical(format(mascot_action()), "mascot_action(label = NULL, tooltip = TRUE, disabled = FALSE)")
+    expect_identical(format(mascot_action()), "mascot_action()")
   })
 })
 
@@ -63,7 +63,7 @@ describe("the click argument", {
         menu <- mascot_popup_menu(c(help = "Help"))
         menu$label <- label
         for (value in list(label, action, menu)) {
-          expect_warning(updateMascot("helper", mood = "happy", click = value), "unchanged")
+          expect_warning(update_mascot("helper", mood = "happy", click = value), "unchanged")
         }
       }
     })
@@ -129,5 +129,18 @@ describe("the click argument", {
       jsonlite::fromJSON(json),
       list(type = "action", label = text, tooltip = TRUE, disabled = FALSE)
     )
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_action(label = 1), "label", class = "mascot_error")
+    expect_error(mascot_action(tooltip = 1), "tooltip", class = "mascot_error")
+    expect_error(mascot_action(disabled = 1), "disabled", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_action(1), "x", class = "mascot_error")
+    expect_error(print.mascot_action(1), "x", class = "mascot_error")
   })
 })

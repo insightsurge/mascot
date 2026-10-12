@@ -93,6 +93,7 @@ describe("mascot_theme()", {
     expect_null(theme_problem(list()))
   })
   it("warns once per supplied role and mode without altering low-contrast colours", {
+    withr::local_options(mascot.contrast_warnings = TRUE)
     expect_snapshot(
       value <- as_theme_arg(mascot_theme(light = list(body = "white"), dark = list(rim = "#212529")), environment())
     )
@@ -104,6 +105,7 @@ describe("mascot_theme()", {
     expect_no_warning(as_theme_arg(mascot_theme(), environment()))
   })
   it("sends only brand colours and checks distinct light and dark backgrounds", {
+    withr::local_options(mascot.contrast_warnings = TRUE)
     skip_if_not_installed("bslib")
     theme <- bslib::bs_theme(version = 5, primary = "#1f6feb", secondary = "orange", bg = "#102030", fg = "white")
     value <- suppressWarnings(as_theme_arg(theme, environment(), "tessa"))
@@ -157,5 +159,47 @@ describe("theme_channels()", {
     expect_identical(theme_channels("#000"), c(red = 0, green = 0, blue = 0, alpha = 1))
     expect_identical(theme_channels("#f80"), theme_channels("#ff8800"))
     expect_identical(theme_channels("#f80c"), theme_channels("#ff8800cc"))
+  })
+})
+
+describe("mascot_theme() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(names(formals(mascot_theme)), c("...", "light", "dark", "mode", "css"))
+    expect_error(mascot_theme(typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot_theme(1), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+
+describe("R contrast warning policy", {
+  it("is silent outside development mode and warns in development mode", {
+    withr::local_options(mascot.contrast_warnings = NULL)
+    local_mocked_bindings(in_devmode = function() FALSE, .package = "shiny")
+    expect_silent(mascot("helper", theme = mascot_theme(light = list(body = "white"))))
+    local_mocked_bindings(in_devmode = function() TRUE, .package = "shiny")
+    expect_warning(mascot("helper", theme = mascot_theme(light = list(body = "white"))), class = "mascot_contrast")
+  })
+  it("lets the option override development mode in either direction", {
+    local_mocked_bindings(in_devmode = function() FALSE, .package = "shiny")
+    withr::local_options(mascot.contrast_warnings = TRUE)
+    expect_warning(mascot("helper", theme = mascot_theme(light = list(body = "white"))), class = "mascot_warning")
+    local_mocked_bindings(in_devmode = function() TRUE, .package = "shiny")
+    withr::local_options(mascot.contrast_warnings = FALSE)
+    expect_silent(mascot("helper", theme = mascot_theme(light = list(body = "white"))))
+    expect_error(contrast_warnings(always = NA), "always")
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_theme(light = 1), "light", class = "mascot_error")
+    expect_error(mascot_theme(dark = 1), "dark", class = "mascot_error")
+    expect_error(mascot_theme(mode = 1), "mode", class = "mascot_error")
+    expect_error(mascot_theme(css = 1), "css", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_theme(1), "x", class = "mascot_error")
+    expect_error(print.mascot_theme(1), "x", class = "mascot_error")
   })
 })

@@ -30,7 +30,7 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   version)` at the top; `usethis::use_version()` turns it into `# mascot x.y.z`. Never edit a released section except
   to fix a typo, or to add that milestone line.
 - **house:** one change per bullet, written for users, present tense, starting with the function or feature,
-  ending with the issue or PR number: `` `updateMascot()` gains a `message` argument for a speech bubble (#30).``
+  ending with the issue or PR number: `` `update_mascot()` gains a `message` argument for a speech bubble (#30).``
   Where one function has several changes, one bullet per function with indented sub-bullets for its arguments and
   details is allowed; mark experimental items with *Experimental*.
   Credit outside contributors (`(@user, #123)`). With more than a handful of bullets, group under

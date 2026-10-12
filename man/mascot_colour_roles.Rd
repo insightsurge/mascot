@@ -14,6 +14,8 @@ mascot_colour_roles(character = "tessa")
 A data frame with character columns \code{role}, \code{colour}, \code{follows}
 (comma-separated leaders) and \code{shade} (\code{same}, \code{lighter} or \code{darker}).
 Roles without a follow rule have \code{NA} in \code{follows} and \code{shade}.
+A base data frame. Columns may be added at the end in later versions; existing columns keep their
+names and types. The first column is the value you pass to the matching function.
 }
 \description{
 Lists a character's colour roles (its colour parts) with their own colours,

@@ -2,10 +2,10 @@ describe("mascot_placement()", {
   it("normalises every shortcut to one position and floats bottom-right by default", {
     expect_identical(
       mascot_placement(),
-      structure(list(position = "bottom-right", minimise = TRUE, drag = FALSE), class = "mascot_placement")
+      structure(list(position = "bottom-right", minimise = TRUE, drag = "none"), class = "mascot_placement")
     )
     expect_identical(as_placement_arg("inline", environment()), mascot_placement("inline"))
-    expect_identical(as_placement_arg("floating", environment()), mascot_placement())
+    expect_error(as_placement_arg("floating", environment()), "bottom-right", class = "mascot_error")
     for (corner in c("top-left", "top-right", "bottom-left", "bottom-right")) {
       expect_identical(as_placement_arg(corner, environment()), mascot_placement(corner))
     }
@@ -37,7 +37,7 @@ describe("mascot_placement()", {
       list(floating = FALSE, position = "bottom-right", minimise = FALSE, drag = FALSE)
     )
     expect_identical(
-      placement_wire(mascot_placement("top-left", TRUE)),
+      placement_wire(mascot_placement("top-left", minimise = TRUE)),
       list(floating = TRUE, position = "top-left", minimise = TRUE, drag = FALSE)
     )
     expect_identical(
@@ -85,12 +85,12 @@ describe("mascot_placement()", {
       mascot_placement("top-left", drag = "snap")
     )
     expect_identical(
-      as_placement_arg(list(position = "top-right", minimise = TRUE, drag = FALSE), environment()),
+      as_placement_arg(list(position = "top-right", minimise = TRUE, drag = "none"), environment()),
       mascot_placement("top-right", minimise = TRUE)
     )
     expect_identical(
       format(mascot_placement("bottom-right", drag = "snap")),
-      'mascot_placement(position = "bottom-right", minimise = TRUE, drag = "snap")'
+      'mascot_placement(drag = "snap")'
     )
   })
   it("rejects TRUE, unknown and malformed drag values", {
@@ -109,8 +109,8 @@ describe("mascot_placement()", {
       expect_false(is.null(placement_problem(x)))
       expect_error(as_placement_arg(x, environment()), "drag|placement")
     }
-    expect_match(placement_problem(list(position = "top-left", drag = TRUE)), "got TRUE. Use \"snap\"")
-    expect_match(placement_problem(list(position = "top-left", drag = "fixed")), 'got "fixed".$')
+    expect_match(placement_problem(list(position = "top-left", drag = TRUE)), 'got TRUE. Use drag = "none"')
+    expect_match(placement_problem(list(position = "top-left", drag = "fixed")), 'got "fixed".*Use drag')
     old <- mascot_placement("top-left")
     old$drag <- NULL
     expect_match(placement_problem(old), "position, minimise and drag fields")
@@ -123,7 +123,7 @@ describe("mascot_placement()", {
     expect_error(inform_placement_ignored(NA_character_), "args")
     expect_silent(inline <- mascot_placement("inline"))
     expect_identical(inline$minimise, FALSE)
-    expect_identical(inline$drag, FALSE)
+    expect_identical(inline$drag, "none")
     expect_silent(as_placement_arg(list(position = "inline"), environment()))
     for (value in c(TRUE, FALSE)) {
       expect_message(
@@ -133,7 +133,7 @@ describe("mascot_placement()", {
       )
       expect_identical(result, inline)
     }
-    for (value in list("snap", "free", FALSE)) {
+    for (value in list("snap", "free", "none")) {
       expect_message(
         result <- mascot_placement("inline", drag = value),
         "drag.*no effect.*inline",
@@ -180,7 +180,7 @@ describe("dragging in a Shiny browser", {
             output$where <- shiny::renderText(paste("corner", input$helper_position))
             shiny::observeEvent(
               input$reset,
-              updateMascot("helper", placement = mascot_placement("bottom-right", drag = "free"))
+              update_mascot("helper", placement = mascot_placement("bottom-right", drag = "free"))
             )
           })
         }
@@ -230,5 +230,41 @@ describe("dragging in a Shiny browser", {
     app$wait_for_js("document.getElementById('mod-helper').dataset.drag === 'free'")
     expect_identical(app$get_js("document.getElementById('mod-helper').dataset.position"), "bottom-right")
     expect_null(app$get_js("document.getElementById('mod-helper').dataset.placed ?? null"))
+  })
+})
+
+describe("mascot_placement() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(names(formals(mascot_placement)), c("position", "...", "minimise", "drag"))
+    expect_error(mascot_placement("bottom-right", typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot_placement("bottom-right", 1), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+
+describe("placement migration errors", {
+  it("rejects both logical drag modes with the none hint in helpers and shortcuts", {
+    for (drag in c(FALSE, TRUE)) {
+      expect_error(mascot_placement(drag = drag), 'drag = "none"', class = "mascot_error")
+      expect_error(mascot("helper", placement = list(drag = drag)), 'drag = "none"', class = "mascot_error")
+    }
+    expect_error(mascot("helper", placement = "floating"), "bottom-right", class = "mascot_error")
+  })
+  it("retains both placement and general message classes", {
+    expect_message(mascot_placement("inline", drag = "none"), class = "mascot_placement_ignored")
+    expect_message(mascot_placement("inline", minimise = TRUE), class = "mascot_message")
+  })
+})
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_placement(position = 1), "position", class = "mascot_error")
+    expect_error(mascot_placement(minimise = 1), "minimise", class = "mascot_error")
+    expect_error(mascot_placement(drag = 1), "drag", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_placement(1), "x", class = "mascot_error")
+    expect_error(print.mascot_placement(1), "x", class = "mascot_error")
   })
 })

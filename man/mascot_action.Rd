@@ -10,10 +10,10 @@ mascot_action(label = NULL, ..., tooltip = TRUE, disabled = FALSE)
 \item{label}{The action's name: one string containing a non-whitespace
 character that says what a click does, such as \code{"Open help"}. Screen readers
 announce the mascot as a button with this name, and the tooltip shows it.
-\code{NULL} (the default) makes an empty helper: in \code{\link[=updateMascot]{updateMascot()}}, it removes
+\code{NULL} (the default) makes an empty helper: in \code{\link[=update_mascot]{update_mascot()}}, it removes
 the click, so the mascot is a picture again.}
 
-\item{...}{Must be empty. Extra arguments are errors.}
+\item{...}{Must be empty. Forces the arguments after it to be named.}
 
 \item{tooltip}{A flag. \code{TRUE} (the default) shows the label in a tooltip when
 the pointer rests on the mascot or the keyboard focuses it. \code{FALSE} hides the
@@ -27,11 +27,12 @@ a long task, and send \code{mascot_action(..., disabled = FALSE)} afterwards.}
 \value{
 A \code{mascot_action} object with \code{label}, \code{tooltip} and \code{disabled}
 elements.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 Turn the mascot into a button for one action of your Shiny app, such as
 opening a help panel or a chat. Pass it as \code{click} to \code{\link[=mascot]{mascot()}} or
-\code{\link[=updateMascot]{updateMascot()}}, and handle the click in your server with
+\code{\link[=update_mascot]{update_mascot()}}, and handle the click in your server with
 \verb{shiny::observeEvent(input$<id>_click, ...)}. For a choice of several actions,
 use \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} instead.
 }
@@ -59,10 +60,10 @@ or bubble is open. On static pages the mascot stays a picture.
 mascot_action("Open help")
 mascot_action("Open help", tooltip = FALSE)
 mascot_action()
-mascot(id = "helper", click = "Open help")
+mascot("helper", click = "Open help")
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
-  shiny::fluidPage(mascot(id = "helper", click = "Open help")),
+  shiny::fluidPage(mascot("helper", click = "Open help")),
   function(input, output, session) {
     shiny::observeEvent(input$helper_click, {
       shiny::showModal(shiny::modalDialog("Help for this app"))
@@ -72,7 +73,7 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}, \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}, \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}
 
 Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},

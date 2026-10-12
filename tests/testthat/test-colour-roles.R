@@ -29,3 +29,10 @@ describe("mascot_colour_roles()", {
     expect_identical(colour_role_names(character()), character())
   })
 })
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_colour_roles(character = 1), "character", class = "mascot_error")
+  })
+})

@@ -53,6 +53,13 @@ claim about the package's status.
 | Other messages, warnings and errors use cli | house | - |
 | Every top-level `mascot()` argument takes a plain shortcut or a `mascot_*()` helper (bslib style); every helper and listing function uses `mascot_` for autocomplete and to avoid clashes. Check new exports against base R, shiny, bslib and ggplot2 | house | - |
 
+Building UI with `mascot()` or helpers errors on invalid values; `update_mascot()` warns and leaves the
+mascot unchanged. cli conditions have `mascot_error`, `mascot_warning` or `mascot_message` classes;
+ignored updates also have `mascot_update_ignored`, contrast warnings have `mascot_contrast`, and inline
+placement messages have `mascot_placement_ignored`. Checkmate assertion errors retain their own classes.
+R contrast warnings appear in Shiny development mode, previews and the studio by default;
+`options(mascot.contrast_warnings = TRUE)` or `FALSE` forces them on or off everywhere. Colours are kept.
+
 ### 1.3 Files and size
 
 | Rule | Label | Source |
@@ -382,7 +389,7 @@ versions in `lint.yaml` and `gate-self-test.yaml` in step with the local install
   `inst/**/*.css`: two-space indent, width 120, single quotes, the `recommended` lint rules. It is build-ignored. The
   gate skips it only while `inst/` has no JS or CSS; once there is any, it is required and a missing binary fails.
 - **lintr** (`.lintr`). Line length 120. Object names are `snake_case` or symbols, plus the Shiny names
-  `mascotOutput`, `renderMascot` and `updateMascot`. The `:::`, `<<-` and `->>` operators are flagged. The banned
+  `mascotOutput` and `renderMascot` (reserved names). The `:::`, `<<-` and `->>` operators are flagged. The banned
   function list is short and each entry has a reason:
 
   | Banned | Reason | Label |

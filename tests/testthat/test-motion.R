@@ -42,3 +42,15 @@ describe("mascot_motion()", {
     expect_null(arg_problem(FALSE, "motion"))
   })
 })
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_motion(animate = 1), "animate", class = "mascot_error")
+    expect_error(mascot_motion(swap = 1), "swap", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_motion(1), "x", class = "mascot_error")
+    expect_error(print.mascot_motion(1), "x", class = "mascot_error")
+  })
+})

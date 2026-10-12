@@ -346,7 +346,7 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_action = visual_action(),
     mascot_popup_menu = visual_menu(),
     mascot = visual_mascot(),
-    updateMascot = visual_update_mascot(),
+    update_mascot = visual_update_mascot(),
     NULL
   )
 }
@@ -595,7 +595,7 @@ visual_colour_roles <- function(character) {
     tags$p(
       class = "pg-muted",
       "Leaders adopt the colours you supply. Followers copy the first leader you customise, shaded the same, lighter, or
-      darker, unless you customise them directly. Low contrast against the page triggers a warning but is preserved."
+      darker, unless you customise them directly. Low contrast against the page warns in development mode, previews and this studio; the colour is kept. The mascot.contrast_warnings option forces R warnings on or off."
     ),
     uiOutput("roles_table")
   )
@@ -642,7 +642,7 @@ visual_action <- function() {
       arrow,
       step("Your", tags$code("observeEvent()"), div("opens your help")),
       arrow,
-      step(tags$code("updateMascot()"), div("can answer too"))
+      step(tags$code("update_mascot()"), div("can answer too"))
     ),
     div(
       class = "pg-callout",
@@ -666,7 +666,7 @@ visual_menu <- function() {
       arrow,
       step("Your", tags$code("observeEvent()"), div("decides")),
       arrow,
-      step(tags$code("updateMascot()"), div("answers"))
+      step(tags$code("update_mascot()"), div("answers"))
     ),
     div(class = "pg-live", tags$span(class = "pg-muted", "Last choice here: "), textOutput("menu_last", inline = TRUE)),
     tags$h3(class = "pg-section-title", "Your server code for these items"),
@@ -688,13 +688,13 @@ visual_mascot <- function() {
       div(
         class = "pg-wire-box",
         div(class = "pg-muted", "UI"),
-        code_block("mascot(id = \"helper\")")
+        code_block("mascot(\"helper\")")
       ),
       div(class = "pg-flow-arrow", "\u2194"),
       div(
         class = "pg-wire-box",
         div(class = "pg-muted", "server"),
-        code_block("updateMascot(\"helper\", mood = \"happy\")")
+        code_block("update_mascot(\"helper\", mood = \"happy\")")
       )
     ),
     div(
@@ -702,13 +702,13 @@ visual_mascot <- function() {
       div(
         class = "pg-wire-box",
         div(class = "pg-muted", "module UI"),
-        code_block("mascot(id = ns(\"helper\"))")
+        code_block("mascot(ns(\"helper\"))")
       ),
       div(class = "pg-flow-arrow", "\u2194"),
       div(
         class = "pg-wire-box",
         div(class = "pg-muted", "module server"),
-        code_block("updateMascot(\"helper\", mood = \"happy\")")
+        code_block("update_mascot(\"helper\", mood = \"happy\")")
       )
     )
   )
@@ -716,7 +716,7 @@ visual_mascot <- function() {
 
 visual_update_mascot <- function() {
   tagList(
-    tags$h3(class = "pg-section-title", "What each kind of value does in updateMascot()"),
+    tags$h3(class = "pg-section-title", "What each kind of value does in update_mascot()"),
     data_table(data.frame(
       `You pass` = c("nothing (NULL)", "an empty helper", "a value"),
       Example = c("mood = NULL", "bubble = mascot_bubble()", "mood = \"happy\""),
@@ -726,7 +726,7 @@ visual_update_mascot <- function() {
     div(
       class = "pg-callout",
       tags$strong("All or nothing. "),
-      "updateMascot() validates all values first. If any value is invalid, it warns, reports the issue, and sends
+      "update_mascot() validates all values first. If any value is invalid, it warns, reports the issue, and sends
       nothing, preventing partial updates. Calling with an invalid argument name or outside a server session
       produces an error."
     )
@@ -764,6 +764,11 @@ guide_help <- function(fn) {
 guide_mistakes <- function(fn, character) {
   checkmate::assert_string(fn)
   checkmate::assert_string(character)
+  old_contrast <- getOption("mascot.contrast_warnings")
+  on.exit(options(mascot.contrast_warnings = old_contrast), add = TRUE)
+  if (is.null(old_contrast)) {
+    options(mascot.contrast_warnings = TRUE)
+  }
   cases <- guide_mistake_calls(fn, character)
   div(
     class = "pg-guide-piece pg-guide-mistakes",
@@ -810,12 +815,12 @@ guide_mistake_calls <- function(fn, character) {
   role <- mascot_colour_roles(character)$role[1]
   switch(
     fn,
-    updateMascot = vapply(
+    update_mascot = vapply(
       character_mistakes(character),
       function(x) sub(")$", ", session = session)", x$code),
       character(1)
     ),
-    mascot = c('mascot(id = "has spaces")', 'mascot(id = "helper", click = c(help = "Help"))'),
+    mascot = c('mascot("has spaces")', 'mascot("helper", click = c(help = "Help"))'),
     mascot_character = 'mascot_character("unknown-character")',
     mascot_mood = 'mascot_mood("sleepy")',
     mascot_status = 'mascot_status(1)',

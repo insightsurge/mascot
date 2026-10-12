@@ -43,3 +43,14 @@ describe("mood_label()", {
     expect_error(mood_label("bad"), "Assertion on 'name' failed")
   })
 })
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_mood(name = 1), "name", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_mood(1), "x", class = "mascot_error")
+    expect_error(print.mascot_mood(1), "x", class = "mascot_error")
+  })
+})

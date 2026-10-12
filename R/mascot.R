@@ -8,7 +8,7 @@
 #'   to `"tessa"`. `NULL` is not accepted.
 #' @param id A required non-empty string without whitespace, unique on the
 #'   page. In a Shiny module use `ns("helper")` in the UI and `"helper"` in
-#'   the server; [updateMascot()] adds the module namespace once.
+#'   the server; [update_mascot()] adds the module namespace once.
 #' @param mood A mood name or [mascot_mood()] object. Defaults to `"idle"`.
 #'   See [mascot_moods()] for available choices. `NULL` is not accepted.
 #' @param status A non-empty string or [mascot_status()] object. `NULL` (the
@@ -22,7 +22,7 @@
 #'   percentage string such as `"20%"`, or a [mascot_size()] object. Defaults to
 #'   `160`. Percentages follow the parent width when inline and the window width
 #'   when floating, with a 24-pixel floor. `NULL` is not accepted.
-#' @param placement `"bottom-right"` (the default), `"floating"`, `"inline"`, a corner
+#' @param placement `"bottom-right"` (the default), `"inline"`, a corner
 #'   such as `"top-left"`, a named list such as `list(position = "top-left",
 #'   minimise = TRUE, drag = "snap")`, or a [mascot_placement()] object.
 #'   Floating mascots show a minimise control by default; dragging is off.
@@ -45,10 +45,20 @@
 #'   A [mascot_popup_menu()] object makes it open a menu, whose choice sets
 #'   `input$<id>_menu`. With a click, every
 #'   activation sets `input$<id>_click` (see Details).
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns An `htmltools` tag with the mascot's web dependency attached.
 #' @family mascots in Shiny
-#' @seealso [updateMascot()]
+#' @seealso [update_mascot()]
 #' @details
+#' `NULL` means none or the default in [mascot()] and helpers where accepted,
+#' and unchanged in [update_mascot()]. An empty helper (`mascot_bubble()`,
+#' `mascot_status()`, `mascot_theme()`, `mascot_action()` or
+#' `mascot_popup_menu()`) resets that setting.
+#'
+#' Building UI with [mascot()] or helpers errors on invalid values;
+#' [update_mascot()] warns and leaves the mascot unchanged. See
+#' [mascot-package] for condition classes.
+#'
 #' Use the always visible status line for a short description of the current state.
 #' Use a bubble for a message about something that happened; it may time out.
 #' Use `mascot_bubble(..., duration = Inf)` for a message the user must act on,
@@ -63,14 +73,49 @@
 #' ```r
 #' helper_ui <- function(id) {
 #'   ns <- shiny::NS(id)
-#'   mascot(id = ns("helper"))
+#'   mascot(ns("helper"))
 #' }
 #' helper_server <- function(id) {
 #'   shiny::moduleServer(id, function(input, output, session) {
-#'     updateMascot("helper", mood = "happy")
+#'     update_mascot("helper", mood = "happy")
 #'   })
 #' }
 #' ```
+#'
+#' **Showing the mascot later.** To add the mascot only when it is needed, build
+#' it in the server with [shiny::renderUI()] and place [shiny::uiOutput()] in the
+#' UI. Updates sent before it appears are kept until it does, so the first
+#' `update_mascot()` can run in the same observer:
+#' ```r
+#' library(shiny)
+#' library(mascot)
+#'
+#' ui <- fluidPage(
+#'   actionButton("start", "Start the review"),
+#'   actionButton("finish", "Finish"),
+#'   uiOutput("helper_ui")
+#' )
+#'
+#' server <- function(input, output, session) {
+#'   shown <- reactiveVal(FALSE)
+#'   output$helper_ui <- renderUI({
+#'     req(shown())
+#'     mascot("helper", status = "Reviewing")
+#'   })
+#'   observeEvent(input$start, {
+#'     shown(TRUE)
+#'     # Sent before the mascot exists: kept until it appears.
+#'     update_mascot("helper", mood = "thinking")
+#'   })
+#'   observeEvent(input$finish, {
+#'     update_mascot("helper", mood = "happy", status = "Review complete")
+#'   })
+#' }
+#'
+#' shinyApp(ui, server)
+#' ```
+#' The `reactiveVal()` makes the mascot appear once: clicking **Start the
+#' review** again does not rebuild it, so it keeps its mood and position.
 #'
 #' **Clicks.** With `click`, the mascot is a button: an action named by its
 #' label, or a menu. Every activation (a click or tap, Enter or Space while it
@@ -81,19 +126,20 @@
 #' a click. See [mascot_action()] and [mascot_popup_menu()].
 #' @export
 #' @examples
-#' mascot(id = "helper", mood = "happy")
-#' mascot(id = "small", size = 96, placement = "bottom-right")
-#' mascot(id = "responsive", size = mascot_size(120, small_screen = 48))
-#' mascot(id = "still", motion = FALSE)
-#' mascot(id = "helpful", click = "Open help")
+#' mascot("helper", mood = "happy")
+#' mascot("small", size = 96, placement = "bottom-right")
+#' mascot("responsive", size = mascot_size(120, small_screen = 48))
+#' mascot("still", motion = FALSE)
+#' mascot("helpful", click = "Open help")
 #' @examplesIf interactive()
 #' shiny::shinyApp(
-#'   ui = shiny::fluidPage(mascot(id = "helper")),
+#'   ui = shiny::fluidPage(mascot("helper")),
 #'   server = function(input, output, session) {}
 #' )
 mascot <- function(
-  character = "tessa",
   id,
+  ...,
+  character = "tessa",
   mood = "idle",
   status = NULL,
   bubble = NULL,
@@ -104,18 +150,17 @@ mascot <- function(
   click = NULL
 ) {
   if (missing(id)) {
-    # mascot("helper") is the usual slip for Shiny users, who expect the id first.
-    looks_like_id <- isTRUE(checkmate::check_string(character)) && !character %in% builtin_characters()$id
-    cli::cli_abort(c(
-      "{.arg id} is missing; every mascot needs one.",
-      "i" = if (looks_like_id) {
-        "The first argument is the character. To set the id, name it: {.code mascot(id = \"{character}\")}."
-      } else {
-        "Supply it by name, such as {.code mascot(id = \"helper\")}."
-      }
-    ))
+    cli::cli_abort(
+      c(
+        "{.arg id} is missing; every mascot needs one.",
+        "i" = "Supply an id, such as {.code mascot(\"helper\")}."
+      ),
+      class = "mascot_error"
+    )
   }
-  checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
+  with_mascot_asserts({
+    checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
+  })
   character <- as_character_arg(character, environment())
   mood <- as_mood_arg(mood, environment())
   status <- as_status_arg(status, environment())
@@ -125,6 +170,14 @@ mascot <- function(
   theme <- as_theme_arg(theme, environment(), character$id)
   motion <- as_motion_arg(motion, environment())
   click <- as_click_arg(click, environment())
+  if (...length() > 0L) {
+    abort_dots(
+      names(substitute(list(...)))[-1L],
+      ...length(),
+      c("character", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click"),
+      environment()
+    )
+  }
   mode <- if (is.null(status$text)) "mood" else "custom"
   placement_fields <- placement_wire(placement)
   tag <- htmltools::tags$div(
@@ -163,6 +216,34 @@ mascot <- function(
     bubble_tag(bubble)
   )
   htmltools::attachDependencies(tag, mascot_dependency())
+}
+
+#' Add mascot's error class to checkmate assertion failures
+#' @noRd
+with_mascot_asserts <- function(code, call = parent.frame()) {
+  checkmate::assert_environment(call)
+  # code is a promise: evaluating it for validation would run the assertions twice.
+  withCallingHandlers(
+    code,
+    error = function(error) {
+      checkmate::assert_class(error, "error")
+      # Checkmate uses simple errors, without a dedicated assertion class.
+      # Match its assertion prefix so unrelated errors in promises pass through.
+      message <- conditionMessage(error)
+      assertion <- any(startsWith(message, c("Assertion on '", "One of the following assertions failed:")))
+      if (!inherits(error, "simpleError") || !assertion) {
+        return(invisible(NULL))
+      }
+      # No parent: the original message is displayed once. Each line of a multi-line union message
+      # stays its own line; braces are escaped so cli shows them as text. checkmate's simpleError class
+      # is dropped: placed before rlang_error, its conditionMessage() method would hide every line but
+      # the first.
+      lines <- strsplit(message, "\n", fixed = TRUE)[[1]]
+      lines <- gsub("}", "}}", gsub("{", "{{", lines, fixed = TRUE), fixed = TRUE)
+      names(lines) <- c("", rep(" ", length(lines) - 1L))
+      cli::cli_abort(lines, class = "mascot_error", call = call)
+    }
+  )
 }
 
 #' Accept a character shortcut or helper
@@ -209,7 +290,7 @@ check_arg <- function(x, arg, call) {
     valid <- switch(arg, character = builtin_characters()$id, mood = mood_table()$name, gesture = gesture_table()$name)
     abort_choice(x, valid, arg, arg, call)
   }
-  cli::cli_abort("{problem}", call = call)
+  cli::cli_abort("{problem}", call = call, class = "mascot_error")
 }
 
 #' Stop when a helper's `...` caught arguments
@@ -223,7 +304,8 @@ abort_dots <- function(extras, n, valid, call) {
   extras <- if (is.null(extras)) rep("unnamed", n) else replace(extras, !nzchar(extras), "unnamed")
   cli::cli_abort(
     c("Unexpected arguments: {.val {extras}}.", "i" = "Name the optional arguments: {.arg {valid}}."),
-    call = call
+    call = call,
+    class = "mascot_error"
   )
 }
 

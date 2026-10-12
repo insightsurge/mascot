@@ -6,6 +6,7 @@
 \usage{
 mascot_preview(
   character = "tessa",
+  ...,
   mood = NULL,
   status = NULL,
   bubble = NULL,
@@ -19,6 +20,8 @@ mascot_preview(
 \arguments{
 \item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object. Defaults
 to \code{"tessa"}. \code{NULL} is not accepted.}
+
+\item{...}{Must be empty. Forces the arguments after it to be named.}
 
 \item{mood}{A mood name or \code{\link[=mascot_mood]{mascot_mood()}} object, or \code{NULL} (the default)
 to show every mood from \code{\link[=mascot_moods]{mascot_moods()}}.}
@@ -59,7 +62,7 @@ A browsable \code{htmltools} tag list. Its \code{contrast} attribute is a data
 frame with \code{role}, \code{colour}, \code{background}, \code{ratio} and \code{mode} columns, one row
 per supplied colour below 3:1. With no findings it is a zero-row data frame
 with the same columns. Colours are kept unchanged; one combined warning is
-issued in R.
+issued in R unless \code{mascot.contrast_warnings} is \code{FALSE}.
 }
 \description{
 Compare moods and sizes on a single offline page. Creating the page starts no

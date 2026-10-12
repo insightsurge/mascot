@@ -63,16 +63,19 @@ code_size <- function(size, small_screen) {
   code_pair(if (length(helper) == 2) size else helper, helper)
 }
 
-code_placement <- function(position = "bottom-right", minimise = TRUE, drag = FALSE) {
+code_placement <- function(position = "bottom-right", ..., minimise = TRUE, drag = "none") {
   checkmate::assert_choice(position, c("inline", "top-left", "top-right", "bottom-left", "bottom-right"))
   checkmate::assert_flag(minimise)
-  checkmate::assert(checkmate::check_flag(drag), checkmate::check_choice(drag, c("snap", "free")), .var.name = "drag")
+  checkmate::assert_choice(drag, c("none", "snap", "free"))
+  if (...length() > 0L) {
+    cli::cli_abort("Name {.arg minimise} and {.arg drag}.", class = "mascot_error")
+  }
   # An inline mascot ignores minimise and drag (and says so), so the code leaves them out.
   if (position == "inline") {
     minimise <- TRUE
-    drag <- FALSE
+    drag <- "none"
   }
-  extras <- list(minimise = if (!minimise) FALSE, drag = if (!identical(drag, FALSE)) drag)
+  extras <- list(minimise = if (!minimise) FALSE, drag = if (!identical(drag, "none")) drag)
   helper <- helper_call(
     "mascot_placement",
     if (!identical(position, "bottom-right")) position,
@@ -80,7 +83,7 @@ code_placement <- function(position = "bottom-right", minimise = TRUE, drag = FA
     drag = extras$drag
   )
   fields <- c(list(position = position), extras)
-  short <- if (!minimise || !identical(drag, FALSE)) named_call("list", Filter(Negate(is.null), fields)) else position
+  short <- if (!minimise || !identical(drag, "none")) named_call("list", Filter(Negate(is.null), fields)) else position
   code_pair(short, helper)
 }
 
@@ -242,7 +245,7 @@ whole_app_code <- function(ui, click_handler, packages, css_value = NULL) {
     "server <- function(input, output, session) {\n",
     "  # One button demonstrates a single server update.\n",
     "  observeEvent(input$celebrate, {\n",
-    '    updateMascot("helper", mood = "celebrating", bubble = "Review complete.")',
+    '    update_mascot("helper", mood = "celebrating", bubble = "Review complete.")',
     "\n  })\n",
     if (!is.null(click_handler)) paste0(indent_code(click_handler, 2), "\n"),
     "}\n\nshinyApp(ui, server)"

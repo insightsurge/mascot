@@ -123,3 +123,17 @@ describe("mascot_popup_menu()", {
     expect_true(parsed$tooltip)
   })
 })
+
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_popup_menu(items = 1), "items", class = "mascot_error")
+    expect_error(mascot_popup_menu(direction = 1), "direction", class = "mascot_error")
+    expect_error(mascot_popup_menu(label = 1), "label", class = "mascot_error")
+    expect_error(mascot_popup_menu(tooltip = 1), "tooltip", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_popup_menu(1), "x", class = "mascot_error")
+    expect_error(print.mascot_popup_menu(1), "x", class = "mascot_error")
+  })
+})

@@ -4,7 +4,7 @@
 \alias{mascot_bubble}
 \title{Set a mascot's message bubble}
 \usage{
-mascot_bubble(text = NULL, duration = 5, closable = TRUE)
+mascot_bubble(text = NULL, ..., duration = 5, closable = TRUE)
 }
 \arguments{
 \item{text}{A non-empty string, optionally marked with \code{\link[htmltools:HTML]{htmltools::HTML()}},
@@ -12,8 +12,10 @@ or an \code{htmltools} tag or tag list. HTML-marked strings and tags are shown a
 HTML. Tags with dependencies or head content are not supported and give an
 error. \code{NULL} (the default) clears the bubble.}
 
+\item{...}{Must be empty. Forces the arguments after it to be named.}
+
 \item{duration}{How long the bubble stays visible: a number greater than zero,
-in seconds. Defaults to \code{5}. Use \code{Inf} or \code{NULL} to keep the bubble until it
+in seconds. Defaults to \code{5}. Use \code{Inf} to keep the bubble until it
 is closed, replaced or cleared.}
 
 \item{closable}{A logical flag, defaulting to \code{TRUE}, to show a close button.
@@ -23,6 +25,7 @@ is not accepted.}
 \value{
 A \code{mascot_bubble} object with \code{text}, \code{html}, \code{duration}, and
 \code{closable} elements. \code{text} is a plain string or \code{NULL}; \code{html} is a flag.
+The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
 A speech bubble stays visible across mood changes and character swaps.
@@ -48,7 +51,7 @@ mascot_bubble(htmltools::HTML("<strong>Ready</strong>"))
 mascot_bubble()
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},

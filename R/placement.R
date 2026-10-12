@@ -35,7 +35,7 @@
 #' the mascot, like `input$<id>_menu`: the corner name, such as `"top-left"`,
 #' after a snap, or a list with `x` and `y`, the mascot's top-left corner in
 #' CSS pixels from the window's top-left, after a free drop. A later
-#' [updateMascot()] with `placement` replaces the dragged position. Dragging
+#' [update_mascot()] with `placement` replaces the dragged position. Dragging
 #' has no keyboard alternative; the minimise control stays reachable by keyboard.
 #' Remembering a position between visits is the app's job: for example, save
 #' the corner and pass it back as `position` next time.
@@ -46,7 +46,7 @@
 #'   control on a floating mascot. Has no effect inline: an explicitly supplied
 #'   value gives an informational message; the default stays silent.
 #'   `NULL` is not accepted.
-#' @param drag `FALSE` (the default) for no dragging, `"snap"` to let visitors
+#' @param drag `"none"` (the default) for no dragging, `"snap"` to let visitors
 #'   drag the mascot and move it to the nearest corner on release, or `"free"`
 #'   to keep it where it is dropped, including while minimised.
 #'   \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{%
@@ -54,12 +54,14 @@
 #'   \strong{[Experimental]}}
 #'   `"free"` is experimental: the position it reports and how to restore it
 #'   may change (issue #224). Has no effect inline: an
-#'   explicitly supplied value gives an informational message. `TRUE` and
+#'   explicitly supplied value gives an informational message. `TRUE`, `FALSE` and
 #'   `NULL` are not accepted. See the Dragging section.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_placement` object with `position`, `minimise` and `drag`
 #'   elements.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot()], [updateMascot()]
+#' @seealso [mascot()], [update_mascot()]
 #' @evalRd paste0(
 #'   "\\section{Experimental free dragging}{\n",
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
@@ -74,33 +76,38 @@
 #' mascot_placement("top-left")
 #' mascot_placement("bottom-right", minimise = TRUE)
 #' mascot_placement("bottom-right", drag = "snap")
-#' mascot(id = "helper", placement = list(position = "top-left", drag = "free"))
+#' mascot("helper", placement = list(position = "top-left", drag = "free"))
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   shiny::fluidPage(
-#'     mascot(id = "helper", placement = mascot_placement("bottom-right", drag = "snap")),
+#'     mascot("helper", placement = mascot_placement("bottom-right", drag = "snap")),
 #'     shiny::textOutput("where")
 #'   ),
 #'   function(input, output, session) {
 #'     output$where <- shiny::renderText(paste("Dropped in", input$helper_position))
 #'   }
 #' )
-mascot_placement <- function(position = "bottom-right", minimise = TRUE, drag = FALSE) {
-  checkmate::assert_string(position)
-  checkmate::assert_flag(minimise)
-  # drag is a union (FALSE or a mode); the wording for a wrong value comes from abort_drag().
-  checkmate::assert(checkmate::check_flag(drag), checkmate::check_string(drag), .var.name = "drag")
+mascot_placement <- function(position = "bottom-right", ..., minimise = TRUE, drag = "none") {
+  with_mascot_asserts({
+    checkmate::assert_string(position)
+    checkmate::assert_flag(minimise)
+    # Check logical values here so abort_drag() can give the migration hint.
+    checkmate::assert(checkmate::check_flag(drag), checkmate::check_string(drag), .var.name = "drag")
+  })
+  if (...length() > 0L) {
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("minimise", "drag"), environment())
+  }
   if (!position %in% placement_positions()) {
     abort_choice(position, placement_positions(), "position", "position", environment())
   }
-  if (!identical(drag, FALSE) && !isTRUE(drag %in% placement_drags())) {
+  if (!isTRUE(drag %in% placement_drags())) {
     abort_drag(drag, environment())
   }
   if (position == "inline") {
     explicit <- c("minimise", "drag")[c(!missing(minimise), !missing(drag))]
     inform_placement_ignored(explicit)
     minimise <- FALSE
-    drag <- FALSE
+    drag <- "none"
   }
   structure(list(position = position, minimise = minimise, drag = drag), class = "mascot_placement")
 }
@@ -112,7 +119,7 @@ inform_placement_ignored <- function(args) {
   for (arg in args) {
     cli::cli_inform(
       "{.arg {arg}} has no effect on an inline mascot.",
-      class = "mascot_placement_ignored"
+      class = c("mascot_placement_ignored", "mascot_message")
     )
   }
 }
@@ -124,22 +131,26 @@ abort_drag <- function(drag, call) {
   checkmate::assert_environment(call)
   cli::cli_abort(
     c(
-      "{.arg drag} must be {.code FALSE}, {.val snap} or {.val free}.",
+      "{.arg drag} must be {.val none}, {.val snap} or {.val free}.",
       "x" = if (isTRUE(drag)) {
         "{.code TRUE} is not accepted: choose how the mascot behaves when dropped."
       } else {
         "{.val {drag}} is not a drag mode."
       },
-      "i" = "Use {.val snap} to move to the nearest corner or {.val free} to stay where dropped."
+      "i" = paste(
+        "Use {.code drag = \"none\"} for no dragging, {.val snap} to move to the nearest",
+        "corner or {.val free} to stay where dropped."
+      )
     ),
-    call = call
+    call = call,
+    class = "mascot_error"
   )
 }
 
-#' The drag modes besides FALSE
+#' The public drag modes
 #' @noRd
 placement_drags <- function() {
-  c("snap", "free")
+  c("none", "snap", "free")
 }
 
 #' The shared corner vocabulary
@@ -158,7 +169,10 @@ placement_positions <- function() {
 #' @noRd
 placement_problem <- function(x) {
   # Union input deliberately uses check_* for warning-only runtime validation.
-  choices <- c("inline", "floating", placement_corners())
+  choices <- placement_positions()
+  if (identical(x, "floating")) {
+    return('`placement = "floating"` is not accepted; use placement = "bottom-right".')
+  }
   if (isTRUE(checkmate::check_string(x)) && x %in% choices) {
     return(NULL)
   }
@@ -188,11 +202,11 @@ placement_problem <- function(x) {
   if ("minimise" %in% names(x) && !isTRUE(checkmate::check_flag(x$minimise))) {
     return("`placement$minimise` must be TRUE or FALSE.")
   }
-  if ("drag" %in% names(x) && !isFALSE(x$drag) && !isTRUE(checkmate::check_choice(x$drag, placement_drags()))) {
+  if ("drag" %in% names(x) && !isTRUE(checkmate::check_choice(x$drag, placement_drags()))) {
     return(paste0(
-      "`placement$drag` must be FALSE, \"snap\" or \"free\"; got ",
+      "`placement$drag` must be \"none\", \"snap\" or \"free\"; got ",
       paste(deparse(x$drag, width.cutoff = 60L), collapse = " "),
-      if (isTRUE(x$drag)) ". Use \"snap\" to move to the nearest corner or \"free\" to stay where dropped." else "."
+      '. Use drag = "none" for no dragging.'
     ))
   }
   NULL
@@ -213,9 +227,6 @@ as_placement_arg <- function(x, call) {
     }
     return(do.call(mascot_placement, x))
   }
-  if (x == "floating") {
-    return(mascot_placement("bottom-right"))
-  }
   mascot_placement(x)
 }
 
@@ -228,21 +239,25 @@ placement_wire <- function(x) {
     floating = floating,
     position = if (floating) x$position else "bottom-right",
     minimise = if (floating) x$minimise else FALSE,
-    drag = if (floating) x$drag else FALSE
+    drag = if (floating && x$drag != "none") x$drag else FALSE
   )
 }
 
 #' @export
 #' @noRd
 format.mascot_placement <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_placement")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_placement")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_placement <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_placement")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_placement")
+  })
   cli::cat_line(format(x))
   invisible(x)
 }

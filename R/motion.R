@@ -11,14 +11,15 @@
 #'   `FALSE` makes character changes instant while moods can still animate.
 #'   With `animate = FALSE`, this setting has no effect. `NULL` is not accepted.
 #' @returns A `mascot_motion` object with `animate` and `swap` elements.
+#' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot()], [updateMascot()]
+#' @seealso [mascot()], [update_mascot()]
 #' @export
 #' @examples
 #' mascot_motion()
 #' mascot_motion(animate = FALSE)
 #' mascot_motion(swap = FALSE)
-#' mascot(id = "still", motion = FALSE)
+#' mascot("still", motion = FALSE)
 #' @examplesIf interactive()
 #' # The app owns the switch; reset returns to the character's own colours.
 #' shiny::shinyApp(
@@ -26,26 +27,28 @@
 #'     shiny::checkboxInput("animate", "Animate mascot", TRUE),
 #'     shiny::checkboxInput("dark", "Dark mascot colours", FALSE),
 #'     shiny::actionButton("reset", "Use the character's colours"),
-#'     mascot(id = "helper")
+#'     mascot("helper")
 #'   ),
 #'   function(input, output, session) {
 #'     shiny::observeEvent(input$animate, {
-#'       updateMascot("helper", motion = input$animate)
+#'       update_mascot("helper", motion = input$animate)
 #'     })
 #'     shiny::observeEvent(input$dark, {
-#'       updateMascot("helper", theme = mascot_theme(
+#'       update_mascot("helper", theme = mascot_theme(
 #'         light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"),
 #'         mode = if (input$dark) "dark" else "light"
 #'       ))
 #'     }, ignoreInit = TRUE)
 #'     shiny::observeEvent(input$reset, {
-#'       updateMascot("helper", theme = mascot_theme())
+#'       update_mascot("helper", theme = mascot_theme())
 #'     })
 #'   }
 #' )
 mascot_motion <- function(animate = TRUE, swap = TRUE) {
-  checkmate::assert_flag(animate)
-  checkmate::assert_flag(swap)
+  with_mascot_asserts({
+    checkmate::assert_flag(animate)
+    checkmate::assert_flag(swap)
+  })
   structure(list(animate = animate, swap = swap), class = "mascot_motion")
 }
 
@@ -99,14 +102,18 @@ as_motion_arg <- function(x, call) {
 #' @export
 #' @noRd
 format.mascot_motion <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_motion")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_motion")
+  })
   helper_format(x)
 }
 
 #' @export
 #' @noRd
 print.mascot_motion <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_motion")
+  with_mascot_asserts({
+    checkmate::assert_class(x, "mascot_motion")
+  })
   cli::cat_line(format(x))
   invisible(x)
 }

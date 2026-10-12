@@ -10,6 +10,8 @@
 #' @returns A data frame with character columns `role`, `colour`, `follows`
 #'   (comma-separated leaders) and `shade` (`same`, `lighter` or `darker`).
 #'   Roles without a follow rule have `NA` in `follows` and `shade`.
+#'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
+#'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers
 #' @seealso [mascot_theme()], [mascot()]
 #' @export
@@ -17,7 +19,9 @@
 #' mascot_colour_roles()
 #' mascot_colour_roles("tessa")
 mascot_colour_roles <- function(character = "tessa") {
-  checkmate::assert_string(character, min.chars = 1)
+  with_mascot_asserts({
+    checkmate::assert_string(character, min.chars = 1)
+  })
   id <- as_character_arg(character, environment())$id
   description <- character_colour_data(id)
   engine <- names(description$colours)

@@ -23,3 +23,4 @@
       Error in `mascot_popup_menu()`:
       ! `direction` must be one of "auto", "top", "bottom", "left", or "right".
       x "center" is not a direction.
+

@@ -1,4 +1,4 @@
-# mascot_size() / rejects every invalid size with a useful message
+# mascot_size() / rejects every invalid size with a useful message naming valid forms
 
     Code
       mascot_size("24px")
@@ -20,5 +20,5 @@
       mascot_size(120, small_screen = "bad")
     Condition
       Error in `mascot_size()`:
-      ! `small_screen` must be a finite number of pixels at least 24 or a positive percentage such as "20%"; got "bad".
+      ! `small_screen` must be "auto", a finite number of pixels at least 24 or a positive percentage such as "20%"; got "bad".
 

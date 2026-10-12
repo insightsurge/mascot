@@ -129,7 +129,7 @@ playground_controls <- list(
   mascot_size = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     size = input_id("size_unit", "size_px", "size_pct"),
-    small_screen = input_id("small_on", "small_px")
+    small_screen = input_id("small_mode", "small_px")
   ),
   mascot_placement = list(
     position = input_id("position"),

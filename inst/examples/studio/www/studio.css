@@ -1035,6 +1035,10 @@ body.is-resizing {
   }
 }
 @media (max-width: 575.98px) {
+  /* Overlay sidebars must hide the canvas and floating mascot in either theme. */
+  .bslib-sidebar-layout > aside.sidebar.bslib-sidebar-input {
+    background-color: var(--bs-body-bg);
+  }
   .pg-centre {
     height: 52rem;
   }

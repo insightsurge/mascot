@@ -421,7 +421,7 @@ describe("update_mascot() size and placement", {
         list(
           id = "proxy1-helper",
           patch = list(
-            size = list(size = "20%", small_screen = NULL),
+            size = list(size = "20%", small_screen = "auto"),
             placement = list(floating = TRUE, position = "top-left", minimise = TRUE, drag = FALSE)
           )
         )

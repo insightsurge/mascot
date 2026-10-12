@@ -162,6 +162,15 @@ describe("theme_channels()", {
   })
 })
 
+describe("theme_colour()", {
+  it("accepts short hex colours (#000, #fff, #abc) and returns the same result as the six-digit form", {
+    for (short in c("#000", "#fff", "#abc")) {
+      long <- paste0("#", paste(rep(strsplit(substring(short, 2), "")[[1]], each = 2), collapse = ""))
+      expect_identical(theme_colour(short, "body"), theme_colour(long, "body"))
+    }
+  })
+})
+
 describe("mascot_theme() named arguments", {
   it("keeps the agreed signature and rejects both forms of extra argument", {
     expect_identical(names(formals(mascot_theme)), c("...", "light", "dark", "mode", "css"))

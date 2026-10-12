@@ -2029,7 +2029,7 @@ describe("studio safeguards (#248)", {
         after <- updates()
         # The update sent: a new revision that carries this field with a new value.
         expect_false(is.null(after), info = name)
-        expect_gt(after$revision, before$revision %||% 0L)
+        expect_gt(after$revision, if (is.null(before$revision)) 0L else before$revision)
         expect_identical(after$fields[[case$field]], after$revision, info = name)
         expect_false(identical(after$patch[[case$field]], before$patch[[case$field]]), info = name)
         expect_true(case$sent(after$patch), info = name)

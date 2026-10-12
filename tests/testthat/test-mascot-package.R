@@ -52,7 +52,7 @@ describe("mascot exports", {
         "mascot_size",
         "mascot_placement",
         "mascot_theme",
-        "mascot_motion",
+        "mascot_motion_settings",
         "mascot_popup_menu",
         "mascot_action",
         "mascot_colour_roles",

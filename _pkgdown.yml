@@ -58,7 +58,7 @@ reference:
       - mascot_placement
       - mascot_action
       - mascot_popup_menu
-      - mascot_motion
+      - mascot_motion_settings
       - mascot_theme
       - mascot_colour_roles
       - mascot_status

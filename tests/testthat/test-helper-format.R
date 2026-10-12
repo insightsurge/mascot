@@ -9,7 +9,7 @@ describe("helper format and print methods", {
       mascot_size("20%"),
       mascot_placement(),
       mascot_theme(light = list(body = "#c2185b")),
-      mascot_motion(FALSE),
+      mascot_motion_settings(others = FALSE),
       mascot_popup_menu(c(about = "About")),
       mascot_action("Open help")
     )
@@ -54,8 +54,8 @@ describe("helper calls", {
       mascot_action("Open help", disabled = TRUE),
       mascot_popup_menu(),
       mascot_popup_menu(c(help = "Help"), label = "Help menu"),
-      mascot_motion(),
-      mascot_motion(swap = FALSE)
+      mascot_motion_settings(),
+      mascot_motion_settings(swap = FALSE)
     )
     for (helper in helpers) {
       expect_identical(eval(parse(text = format(helper))), helper, info = class(helper)[[1]])

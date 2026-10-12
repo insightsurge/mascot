@@ -59,7 +59,7 @@
     Code
       print(helper)
     Output
-      mascot_motion(FALSE)
+      mascot_motion_settings(others = FALSE)
 
 ---
 

@@ -48,7 +48,7 @@ describe("mascot_preview()", {
       size = mascot_size("20%", small_screen = 96),
       placement = mascot_placement("bottom-right", minimise = TRUE),
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "dark"),
-      motion = mascot_motion(swap = FALSE),
+      motion = mascot_motion_settings(swap = FALSE),
       click = mascot_popup_menu(c(about = "About"))
     )
     expect_length(preview_nodes(page, "canvas"), 8)
@@ -184,7 +184,7 @@ describe("mascot_preview()", {
       list(click = structure(list(items = c(about = "About"), extra = 1), class = "mascot_popup_menu")),
       list(size = structure(list(size = 96), class = "mascot_size")),
       list(theme = structure(list(mode = "night"), class = "mascot_theme")),
-      list(motion = structure(list(animate = TRUE), class = "mascot_motion"))
+      list(motion = structure(list(animate = TRUE), class = "mascot_motion_settings"))
     )
     for (args in cases) {
       expect_error(do.call(mascot_preview, args), names(args)[[1]], fixed = TRUE)

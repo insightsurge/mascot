@@ -474,3 +474,32 @@ body.quarto-dark {
 .mascot-menu [role="menuitem"]:focus {
   text-decoration: underline;
 }
+
+/* Per-panel settings are applied before showing, including on static pages. */
+.mascot-panel[data-motion="false"] {
+  animation: none;
+}
+
+.mascot .mascot-motion-copy,
+.mascot[data-floating] .mascot-motion-copy {
+  position: fixed;
+  inset: auto;
+  pointer-events: none;
+  margin: 0;
+  z-index: 1;
+  animation: none;
+}
+
+/* Copies are pixels or inert panels, never extra controls or status announcements. */
+.mascot-motion-copy::after {
+  display: none;
+}
+
+.mascot[data-restoring="false"] .mascot-restore {
+  transition: none;
+}
+
+.mascot[data-restoring="false"] .mascot-restore:hover,
+.mascot[data-restoring="false"] .mascot-restore:focus-visible {
+  transform: none;
+}

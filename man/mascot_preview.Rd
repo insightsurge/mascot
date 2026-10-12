@@ -48,8 +48,8 @@ their grid). \code{NULL} is not accepted.}
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
 colours. Unset roles keep their original colours in both modes.}
 
-\item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object. Defaults to \code{FALSE}
-for steady faces; \code{TRUE} allows animation subject to the visitor's preference.
+\item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object. Defaults to \code{FALSE}
+for steady faces; \code{TRUE} allows movement subject to the visitor's preference.
 \code{NULL} is not accepted.}
 
 \item{click}{A label, a \code{\link[=mascot_action]{mascot_action()}} object or a \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}
@@ -109,7 +109,7 @@ Other mascot helpers:
 \code{\link[=mascot_gestures]{mascot_gestures()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
-\code{\link[=mascot_motion]{mascot_motion()}},
+\code{\link[=mascot_motion_settings]{mascot_motion_settings()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_size]{mascot_size()}},

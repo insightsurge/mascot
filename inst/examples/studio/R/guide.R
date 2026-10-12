@@ -52,7 +52,11 @@ playground_guide <- list(
   mascot_moods = guide_entry("look", "Moods and status"),
   mascot_status = guide_entry("messages", "Moods and status", "text"),
   mascot_bubble = guide_entry("messages", "Message bubbles", c("text", "...", "duration", "closable")),
-  mascot_motion = guide_entry("motion", "Motion", c("animate", "swap")),
+  mascot_motion_settings = guide_entry(
+    "motion",
+    "Motion",
+    c("...", "idle", "mood_change", "gestures", "swap", "minimising", "restoring", "messages", "others")
+  ),
   mascot_gesture = guide_entry("motion", "One-off gestures", c("name", "...")),
   mascot_gestures = guide_entry("motion", "One-off gestures"),
   mascot_size = guide_entry("layout", "Size and placement", c("size", "...", "small_screen")),

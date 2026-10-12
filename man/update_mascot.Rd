@@ -65,7 +65,7 @@ default) leaves the theme unchanged; \code{mascot_theme()} restores the
 character's own colours. After a character swap, the theme is applied
 again to the new character's parts.}
 
-\item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object, as in \code{\link[=mascot]{mascot()}}.
+\item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object, as in \code{\link[=mascot]{mascot()}}.
 \code{NULL} (the default) leaves motion unchanged. Changes apply to the live mascot
 without restarting it; the visitor's reduced-motion preference still applies.}
 
@@ -79,7 +79,10 @@ continues across changes.}
 
 \item{gesture}{A gesture name or \code{\link[=mascot_gesture]{mascot_gesture()}} object. \code{NULL} (the
 default) sends no gesture. Use \code{"nod"} to acknowledge an action or \code{"wave"}
-to greet. Must be named. See \code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions.}
+to greet. Must be named. See \code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions.
+With \code{gestures = FALSE} in \code{\link[=mascot_motion_settings]{mascot_motion_settings()}}, the gesture is
+skipped; the mood, bubble and status in the same update still apply. Shiny
+development mode reports it through the browser's client-message warning.}
 
 \item{session}{A Shiny session, defaulting to the current reactive domain.
 Must be named when supplied. \code{NULL} outside a server or module is an error.}
@@ -152,8 +155,8 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=mascot_motion]{mascot_motion()}} for a complete Shiny settings example
-with live colours, animation and a colour reset.
+\code{\link[=mascot]{mascot()}}, \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} for a complete Shiny settings example
+with live colours, movement and a colour reset.
 
 Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}}

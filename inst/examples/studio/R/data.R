@@ -124,7 +124,17 @@ playground_controls <- list(
     duration = input_id("bubble_duration", "bubble_forever"),
     closable = input_id("bubble_closable")
   ),
-  mascot_motion = list(animate = input_id("animate"), swap = input_id("swap")),
+  mascot_motion_settings = list(
+    ... = fixed_arg("Must be empty: all settings are named."),
+    idle = input_id("idle"),
+    mood_change = input_id("mood_change"),
+    gestures = input_id("gestures"),
+    swap = input_id("swap"),
+    minimising = input_id("minimising"),
+    restoring = input_id("restoring"),
+    messages = input_id("messages"),
+    others = input_id("others")
+  ),
   mascot_gesture = list(... = fixed_arg("Must be empty: optional arguments are named."), name = input_event("gesture")),
   mascot_size = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
@@ -168,7 +178,7 @@ playground_controls <- list(
     size = input_id("size_px"),
     placement = input_id("position"),
     theme = input_id("theme_source"),
-    motion = input_id("animate"),
+    motion = input_id("idle"),
     click = input_id("action_on", "menu_on")
   ),
   update_mascot = list(
@@ -180,7 +190,7 @@ playground_controls <- list(
     size = input_id("size_px"),
     placement = input_id("position"),
     theme = input_id("theme_source"),
-    motion = input_id("animate"),
+    motion = input_id("idle"),
     click = input_id("action_on", "menu_on"),
     ... = input_id("mistake", "mistake_run"),
     gesture = input_event("gesture"),

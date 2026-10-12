@@ -39,9 +39,10 @@
 #' @param theme A named list of colour roles, a [bslib::bs_theme()] or a
 #'   [mascot_theme()] object. `NULL` (the default) keeps the character's own
 #'   colours. Unset roles keep their original colours in both modes.
-#' @param motion A logical flag or [mascot_motion()] object. `TRUE` (the default)
-#'   allows animation while honouring the visitor's reduced-motion preference.
-#'   `FALSE` stops animation. `NULL` is not accepted.
+#' @param motion A logical flag or [mascot_motion_settings()] object. `TRUE` (the default)
+#'   allows movement while honouring the visitor's reduced-motion preference.
+#'   `FALSE` stops all movement, including panels, drag snapping, minimising and
+#'   restoring. `NULL` is not accepted.
 #' @param click What a click on the mascot does in a Shiny app. `NULL` (the
 #'   default) does nothing: the mascot is a picture, not a keyboard stop. One
 #'   label containing a non-whitespace character, such as `"Open help"`, or a
@@ -198,7 +199,14 @@ mascot <- function(
     `data-minimise` = tolower(as.character(placement_fields$minimise)),
     `data-drag` = tolower(as.character(placement_fields$drag)),
     `data-reduced` = if (is.null(motion$reduced)) "auto" else "true",
+    `data-idle` = tolower(as.character(motion$idle)),
+    `data-mood-change` = tolower(as.character(motion$mood_change)),
+    `data-gestures` = tolower(as.character(motion$gestures)),
     `data-swap` = tolower(as.character(motion$swap)),
+    `data-minimising` = tolower(as.character(motion$minimising)),
+    `data-restoring` = tolower(as.character(motion$restoring)),
+    `data-messages` = paste(unlist(motion$messages), collapse = ","),
+    `data-others` = tolower(as.character(motion$others)),
     htmltools::tags$script(
       type = "application/json",
       `data-mascot-character` = character$id,

@@ -321,15 +321,32 @@ seconds. Try the motion switches in `mascot_example("studio")`.
 updateMascot("helper", motion = mascot_motion(animate = FALSE))
 ```
 
-## Click menu
+## Clicks and menus
 
-The app supplies labels and handles choices; the mascot opens the menu.
-Enter and Space open or close the focused toggle. Arrow keys, Home, End and
-Escape navigate the open menu.
+By default a mascot is a picture: clicking it does nothing, and the keyboard
+skips it. `click` makes it a button, for one action of your app or for a menu.
+Every activation (a click or tap, Enter or Space) sets `input$helper_click`, a
+count, so your server can answer it:
+
+```{r action, eval=FALSE}
+# In the UI: a label says what a click does, for screen readers and in a tooltip.
+mascot(id = "helper", click = "Open help")
+
+# In the server:
+shiny::observeEvent(input$helper_click, {
+  shiny::showModal(shiny::modalDialog("Help for this app", easyClose = TRUE))
+})
+```
+
+`mascot_action("Open help", tooltip = FALSE)` hides the tooltip, and
+`disabled = TRUE` keeps the button but sends nothing, for example during a long
+task. For several actions, the app supplies menu labels and handles the choice;
+the mascot opens the menu. Enter and Space open or close the focused toggle.
+Arrow keys, Home, End and Escape navigate the open menu.
 
 ```{r menu, eval=FALSE}
 # In the UI:
-mascot(id = "helper", popup_menu = mascot_popup_menu(
+mascot(id = "helper", click = mascot_popup_menu(
   c(finish = "Finish review", reset = "Reset helper", about = "About this app")
 ))
 
@@ -361,8 +378,10 @@ Reset above clears the feedback and keeps the selected colours.
 
 Click or touch the drawing, or focus it and press Enter/Space with keyboard
 opening enabled. Escape closes the menu. Repeated choices trigger repeated
-events. `mascot_popup_menu()` removes an existing menu when sent in an update.
-On static pages the mascot remains an image; menu actions need Shiny.
+events; opening and closing the menu also count in `input$helper_click`. An
+empty helper, `mascot_action()` or `mascot_popup_menu()`, removes the click when
+sent in an update. On static pages the mascot remains an image; clicks need
+Shiny.
 Try all three actions in `mascot_example("branding")`.
 
 ## Modules
@@ -443,7 +462,7 @@ when the setting has a clear/reset action:
 | Custom status | `status = mascot_status()` follows the mood |
 | Bubble | `bubble = mascot_bubble()` removes it |
 | Theme | `theme = mascot_theme()` restores character colours |
-| Menu | `popup_menu = mascot_popup_menu()` removes it |
+| Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
 | Placement | `placement = mascot_placement()` resets to default bottom-right; `mascot_placement("inline")` returns inline |
 | Motion | `motion = mascot_motion()` allows animation subject to visitor preference |
 

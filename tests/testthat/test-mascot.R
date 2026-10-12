@@ -71,6 +71,15 @@ describe("argument converters", {
   })
 })
 
+describe("abort_dots()", {
+  it("rejects an invalid value for each argument with its checkmate message", {
+    expect_error(abort_dots(1, 1L, "tooltip", environment()), "Assertion on 'extras' failed")
+    expect_error(abort_dots("extra", 0L, "tooltip", environment()), "Assertion on 'n' failed")
+    expect_error(abort_dots("extra", 1L, character(), environment()), "Assertion on 'valid' failed")
+    expect_error(abort_dots("extra", 1L, "tooltip", NULL), "Assertion on 'call' failed")
+  })
+})
+
 
 describe("mascot() bubbles", {
   it("renders escaped text or explicit HTML with an accessible close button", {
@@ -245,31 +254,40 @@ describe("mascot() motion", {
     }
     expect_error(mascot(id = "a", motion = "auto"), 'motion.*got "auto"')
     expect_error(mascot(id = "a", motion = NULL), 'motion.*got NULL')
-    expect_identical(tail(names(formals(mascot)), 3), c("theme", "motion", "popup_menu"))
+    expect_identical(tail(names(formals(mascot)), 3), c("theme", "motion", "click"))
   })
 })
 
-describe("mascot() popup menu", {
-  it("embeds inert menu configuration and keeps no-menu markup unchanged", {
-    expect_false(grepl("data-mascot-popup-menu", as.character(mascot(id = "a")), fixed = TRUE))
-    html <- as.character(mascot(id = "module-helper", popup_menu = mascot_popup_menu(c(about = "About"))))
-    expect_match(html, 'data-mascot-popup-menu=""', fixed = TRUE)
-    expect_match(html, '"items":{"about":"About"}', fixed = TRUE)
-    expect_error(mascot(id = "a", popup_menu = c("Help")), "items.*names must")
+describe("mascot() click", {
+  it("is a picture without a click: an image that is no keyboard stop", {
+    html <- as.character(mascot(id = "a"))
+    expect_false(grepl("data-mascot-click", html, fixed = TRUE))
+    expect_match(html, '<canvas class="mascot-canvas" role="img" aria-label="Tessa, idle"></canvas>', fixed = TRUE)
+    expect_identical(html, as.character(mascot(id = "a", click = NULL)))
+  })
+  it("embeds an action or a menu as inert configuration", {
+    html <- as.character(mascot(id = "module-helper", click = "Open help"))
+    expect_match(html, 'data-mascot-click=""', fixed = TRUE)
+    expect_match(html, '{"type":"action","label":"Open help","tooltip":true,"disabled":false}', fixed = TRUE)
+    html <- as.character(mascot(id = "module-helper", click = mascot_popup_menu(c(about = "About"))))
+    expect_match(html, '"type":"menu","items":{"about":"About"}', fixed = TRUE)
+    expect_false(grepl("data-mascot-click", as.character(mascot(id = "a", click = mascot_action())), fixed = TRUE))
+    expect_error(mascot(id = "a", click = c(about = "Help")), "named vector.*mascot_popup_menu")
   })
 })
 
-describe("mascot() clicks in a Shiny browser (#237)", {
-  it("sets input$<id>_click in a module for clicks and Enter, and leaves a menu's click to the menu", {
+describe("mascot() clicks in a Shiny browser (#257)", {
+  it("counts every activation in a module, menus included, and sends nothing without a click", {
     local_shiny_browser()
     app <- app_driver(function() {
       library(mascot)
       ui <- function(id) {
         ns <- shiny::NS(id)
         shiny::tagList(
-          mascot(id = ns("helper"), placement = "inline"),
+          mascot(id = ns("picture"), placement = "inline"),
+          mascot(id = ns("helper"), placement = "inline", click = "Open help"),
           shiny::textOutput(ns("clicks")),
-          mascot(id = ns("menu"), placement = "inline", popup_menu = c(about = "About")),
+          mascot(id = ns("menu"), placement = "inline", click = mascot_popup_menu(c(about = "About"))),
           shiny::textOutput(ns("menu_clicks"))
         )
       }
@@ -282,21 +300,26 @@ describe("mascot() clicks in a Shiny browser (#237)", {
     })
     withr::defer(app$stop())
     app$wait_for_js("!!document.querySelector('#module-menu .mascot-menu-toggle')")
-    # Given a mascot without a menu: each click and each Enter on it reaches its module's server.
-    app$click(selector = "#module-helper canvas")
+    # Given an action: each click and each Enter on it reaches its module's server.
+    app$click(selector = "#module-helper .mascot-button")
     app$wait_for_js("document.getElementById('module-clicks').textContent === '1'")
-    app$click(selector = "#module-helper canvas")
+    app$click(selector = "#module-helper .mascot-button")
     app$wait_for_js("document.getElementById('module-clicks').textContent === '2'")
     app$run_js(
-      "const canvas=document.querySelector('#module-helper canvas');canvas.focus();
-      canvas.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));"
+      "const button=document.querySelector('#module-helper .mascot-button');button.focus();
+      button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));"
     )
     app$wait_for_js("document.getElementById('module-clicks').textContent === '3'")
-    # With a menu, the click opens the menu and sets no click input.
+    # With a menu, opening and closing it both count.
     app$click(selector = "#module-menu .mascot-menu-toggle")
     app$wait_for_js("mascot.host.state(document.getElementById('module-menu')).menuOpen")
+    app$wait_for_js("document.getElementById('module-menu_clicks').textContent === '1'")
+    app$click(selector = "#module-menu .mascot-menu-toggle")
+    app$wait_for_js("!mascot.host.state(document.getElementById('module-menu')).menuOpen")
+    app$wait_for_js("document.getElementById('module-menu_clicks').textContent === '2'")
+    # A picture sends nothing.
+    app$click(selector = "#module-picture canvas")
     app$wait_for_idle()
-    expect_identical(app$get_js("document.getElementById('module-menu_clicks').textContent"), "0")
-    expect_null(app$get_value(input = "module-menu_click"))
+    expect_null(app$get_value(input = "module-picture_click"))
   })
 })

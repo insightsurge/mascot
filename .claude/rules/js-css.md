@@ -28,7 +28,8 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   mascot's own `--mascot-*` variables as the fallback; follow the page for dark mode (`[data-bs-theme]`, then Quarto's
   `quarto-dark`/`quarto-light` body classes); with no signal, light (founder, 2026-10-09). bslib stays in Suggests.
 - **house (WCAG 2.2):** status text beside every mascot in a `role="status"` element (the mood never carries meaning
-  alone); the canvas has `role="img"` and an `aria-label` naming the mood; `prefers-reduced-motion` is honoured in
+  alone); when not clickable, the canvas has `role="img"` and an `aria-label` naming the mood (no keyboard stop); with a
+  click, a native button named by its label wraps it (#257); `prefers-reduced-motion` is honoured in
   CSS and JS (swap the wiggle for an instant change or a short fade) and R can switch animation off; no automatic
   animation longer than 5 s; graphics colours keep 3:1 contrast in light and dark.
 - **house:** ES2015+ for evergreen browsers (Chrome, Edge, Firefox, Safari); Biome formats and lints (`biome.json`,

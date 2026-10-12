@@ -10,7 +10,8 @@ describe("helper format and print methods", {
       mascot_placement(),
       mascot_theme(light = list(body = "#c2185b")),
       mascot_motion(FALSE),
-      mascot_popup_menu(c(about = "About"))
+      mascot_popup_menu(c(about = "About")),
+      mascot_action("Open help")
     )
     for (helper in helpers) {
       expect_error(getS3method("format", class(helper)[[1]])(1), "'x'")

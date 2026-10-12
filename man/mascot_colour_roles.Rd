@@ -30,6 +30,7 @@ mascot_colour_roles("tessa")
 \code{\link[=mascot_theme]{mascot_theme()}}, \code{\link[=mascot]{mascot()}}
 
 Other mascot helpers:
+\code{\link[=mascot_action]{mascot_action()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},

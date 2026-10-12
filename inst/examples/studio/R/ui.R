@@ -343,6 +343,7 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_placement = visual_placement(),
     mascot_colour_roles = visual_colour_roles(character),
     mascot_theme = visual_theme(character),
+    mascot_action = visual_action(),
     mascot_popup_menu = visual_menu(),
     mascot = visual_mascot(),
     updateMascot = visual_update_mascot(),
@@ -628,6 +629,30 @@ visual_theme <- function(character = formals(mascot::mascot)$character) {
   )
 }
 
+visual_action <- function() {
+  step <- function(...) div(class = "pg-flow-step", ...)
+  arrow <- div(class = "pg-flow-arrow", "\u2192")
+  tagList(
+    tags$h3(class = "pg-section-title", "From a click to your server"),
+    div(
+      class = "pg-flow",
+      step("The visitor clicks", div(tags$strong("Open help"))),
+      arrow,
+      step(tags$code("input$helper_click"), div("counts up")),
+      arrow,
+      step("Your", tags$code("observeEvent()"), div("opens your help")),
+      arrow,
+      step(tags$code("updateMascot()"), div("can answer too"))
+    ),
+    div(
+      class = "pg-callout",
+      tags$strong("A picture or a button. "),
+      "Without click, the mascot is a picture: no keyboard stop, no events. With one, it is a button named by its ",
+      "label, so screen readers say what a click does."
+    )
+  )
+}
+
 visual_menu <- function() {
   step <- function(...) div(class = "pg-flow-step", ...)
   arrow <- div(class = "pg-flow-arrow", "\u2192")
@@ -650,7 +675,7 @@ visual_menu <- function() {
       class = "pg-callout",
       tags$strong("Keyboard. "),
       "Tab to the mascot's menu button, then Enter or Space opens it; arrow keys move between items; Escape
-      closes it."
+      closes it. Opening and closing it also set input$helper_click."
     )
   )
 }
@@ -790,7 +815,7 @@ guide_mistake_calls <- function(fn, character) {
       function(x) sub(")$", ", session = session)", x$code),
       character(1)
     ),
-    mascot = 'mascot(id = "has spaces")',
+    mascot = c('mascot(id = "has spaces")', 'mascot(id = "helper", click = c(help = "Help"))'),
     mascot_character = 'mascot_character("unknown-character")',
     mascot_mood = 'mascot_mood("sleepy")',
     mascot_status = 'mascot_status(1)',
@@ -801,7 +826,11 @@ guide_mistake_calls <- function(fn, character) {
     mascot_placement = c('mascot_placement("unknown-position")', 'mascot_placement("inline", minimise = TRUE)'),
     mascot_colour_roles = sprintf('mascot_colour_roles(mascot_character(%s))', format_string(character)),
     mascot_theme = format_call("mascot_theme", list(light = named_call("list", stats::setNames("not-a-colour", role)))),
-    mascot_popup_menu = 'mascot_popup_menu(c("has spaces" = "Action"))',
+    mascot_action = 'mascot_action("Open help", FALSE)',
+    mascot_popup_menu = c(
+      'mascot_popup_menu(c("has spaces" = "Action"))',
+      'mascot_popup_menu(c(about = "About"), "top")'
+    ),
     mascot_preview = 'mascot_preview(size = 10)',
     mascot_example = 'mascot_example("unknown-example", run = FALSE)',
     mascot_studio = 'mascot_studio(view = "unknown-view", run = FALSE)',

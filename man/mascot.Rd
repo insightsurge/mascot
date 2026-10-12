@@ -14,7 +14,7 @@ mascot(
   placement = "bottom-right",
   theme = NULL,
   motion = TRUE,
-  popup_menu = NULL
+  click = NULL
 )
 }
 \arguments{
@@ -60,13 +60,13 @@ colours. Unset roles keep their original colours in both modes.}
 allows animation while honouring the visitor's reduced-motion preference.
 \code{FALSE} stops animation. \code{NULL} is not accepted.}
 
-\item{popup_menu}{A named character vector of item labels or a
-\code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object. \code{NULL} (the default) shows no menu.
-A choice sets \verb{input$<id>_menu} to the item id, including repeated choices.
-In a module, use \code{ns("helper")} in the UI and read \code{input$helper_menu} in
-that module's server. Enter and Space toggle the focused menu control;
-see \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} for the module example and guidance. With a menu,
-a click opens the menu and \verb{input$<id>_click} is not set (see Details).}
+\item{click}{What a click on the mascot does in a Shiny app. \code{NULL} (the
+default) does nothing: the mascot is a picture, not a keyboard stop. One
+label containing a non-whitespace character, such as \code{"Open help"}, or a
+\code{\link[=mascot_action]{mascot_action()}} object makes it a button for one action of your app.
+A \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object makes it open a menu, whose choice sets
+\verb{input$<id>_menu}. With a click, every
+activation sets \verb{input$<id>_click} (see Details).}
 }
 \value{
 An \code{htmltools} tag with the mascot's web dependency attached.
@@ -100,20 +100,20 @@ helper_server <- function(id) \{
 \}
 }\if{html}{\out{</div>}}
 
-\strong{Clicks (experimental).} Without a \code{popup_menu}, clicking or tapping the
-mascot, or pressing Enter or Space while it has keyboard focus, sets
-\verb{input$<id>_click} to the number of clicks since the mascot appeared, so the
-app can attach its own action, such as opening a help panel:
-\code{shiny::observeEvent(input$helper_click, ...)}. Dragging a floating mascot
-never counts as a click. With a menu, the menu keeps the click and
-\verb{input$<id>_click} is not set. Screen readers still announce the mascot as an
-image, so offer the same action through a visible control too.
+\strong{Clicks.} With \code{click}, the mascot is a button: an action named by its
+label, or a menu. Every activation (a click or tap, Enter or Space while it
+has keyboard focus, or a screen reader's activate command) sets
+\verb{input$<id>_click} to the number of activations since the mascot appeared, so
+\code{shiny::observeEvent(input$helper_click, ...)} runs each time; with a menu,
+opening and closing it both count. Dragging a floating mascot never counts as
+a click. See \code{\link[=mascot_action]{mascot_action()}} and \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}.
 }
 \examples{
 mascot(id = "helper", mood = "happy")
 mascot(id = "small", size = 96, placement = "bottom-right")
 mascot(id = "responsive", size = mascot_size(120, small_screen = 48))
 mascot(id = "still", motion = FALSE)
+mascot(id = "helpful", click = "Open help")
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   ui = shiny::fluidPage(mascot(id = "helper")),
@@ -128,7 +128,3 @@ Other mascots in Shiny:
 \code{\link[=updateMascot]{updateMascot()}}
 }
 \concept{mascots in Shiny}
-\section{Experimental click input}{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
-The name and value of \code{input$<id>_click} may change before CRAN, when the package's Shiny inputs are reviewed.
-}

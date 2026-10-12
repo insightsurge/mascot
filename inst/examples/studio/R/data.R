@@ -65,7 +65,8 @@ defaults <- list(
   placement = "bottom-right",
   theme = quote(mascot_theme()),
   motion = TRUE,
-  popup_menu = quote(mascot_popup_menu())
+  # The empty helper, so a removal reads as the reset it is (click = NULL in an update changes nothing).
+  click = quote(mascot_action())
 )
 mistakes <- list(
   `Leave out an argument name` = list(
@@ -136,9 +137,18 @@ playground_controls <- list(
     mode = input_id("theme_mode"),
     css = fixed_arg("CSS role checkboxes are built from the selected character; css_accent sets their variable.")
   ),
+  mascot_action = list(
+    label = input_id("action_on", "action_label"),
+    ... = fixed_arg("Must be empty: the controls name every optional argument."),
+    tooltip = input_id("action_tooltip"),
+    disabled = input_id("action_disabled")
+  ),
   mascot_popup_menu = list(
     items = input_id("menu_on", "menu_items"),
-    direction = input_id("menu_direction")
+    ... = fixed_arg("Must be empty: the controls name every optional argument."),
+    direction = input_id("menu_direction"),
+    label = input_id("menu_label"),
+    tooltip = input_id("menu_tooltip")
   ),
   mascot = list(
     character = input_id("character"),
@@ -150,7 +160,7 @@ playground_controls <- list(
     placement = input_id("position"),
     theme = input_id("theme_source"),
     motion = input_id("animate"),
-    popup_menu = input_id("menu_items")
+    click = input_id("action_on", "menu_on")
   ),
   updateMascot = list(
     id = input_id("mistake"),
@@ -162,7 +172,7 @@ playground_controls <- list(
     placement = input_id("position"),
     theme = input_id("theme_source"),
     motion = input_id("animate"),
-    popup_menu = input_id("menu_items"),
+    click = input_id("action_on", "menu_on"),
     ... = input_id("mistake", "mistake_run"),
     gesture = input_event("gesture"),
     session = input_id("task_run")
@@ -176,7 +186,7 @@ playground_controls <- list(
     placement = input_id("preview_placement"),
     theme = input_id("preview_theme_source"),
     motion = input_id("preview_motion"),
-    popup_menu = input_id("preview_menu_items")
+    click = input_id("preview_menu_items")
   ),
   mascot_example = list(name = input_id("example_name"), run = input_id("example_run"))
 )

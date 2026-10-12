@@ -293,7 +293,8 @@ describe("mascot.host bubbles", {
     expect_identical(result$initial$live, "polite")
     expect_identical(result$initial$name, "Close message")
     expect_identical(result$initial$type, "button")
-    expect_equal(unlist(result$initial$tabs), c(0, -1, 0))
+    # A picture is no keyboard stop; only the close button is.
+    expect_equal(unlist(result$initial$tabs), c(-1, -1, 0))
     expect_identical(result$initial$animation, "none")
     expect_equal(result$initial$timers, 1)
     expect_null(result$expired)
@@ -344,7 +345,7 @@ describe("mascot.host bubbles", {
       bubbleClock.advance(2000);
       bubble.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));
       bubbleClock.tick(10000); const hovered=mascot.host.state(el).bubble.remaining;
-      canvas.focus(); bubble.dispatchEvent(new PointerEvent('pointerout',{bubbles:true}));
+      el.focus(); bubble.dispatchEvent(new PointerEvent('pointerout',{bubbles:true}));
       bubbleClock.tick(10000); const focused=mascot.host.state(el).bubble.remaining, paused=bubbleClock.count();
       const outside=document.createElement('button'); document.body.append(outside); outside.focus();
       bubbleClock.tick(2999); const alive=mascot.host.state(el).bubble.remaining;
@@ -534,7 +535,7 @@ describe("mascot.host bubble layout", {
       expect_true(outcome$readable$above)
       expect_true(outcome$readable$buttonVisible)
       expect_lte(outcome$readable$width, outcome$readable$max)
-      expect_equal(outcome$canvasTab, 0)
+      expect_equal(outcome$canvasTab, -1)
     }
   })
   it("wraps long text above the canvas and status in the page's light and dark colours", {
@@ -622,7 +623,7 @@ describe("host review regressions", {
       const el=document.getElementById('a'), container=document.createElement('div'), events=[];
       document.body.append(container); container.append(el);
       container.addEventListener('keydown', event=>{if(event.key === 'Escape') events.push(event.key);});
-      el.querySelector('canvas').focus();
+      el.focus();
       const first=new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true});
       el.querySelector('canvas').dispatchEvent(first); const closed=mascot.host.state(el).bubble, seen=events.length;
       const second=new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true});
@@ -738,9 +739,9 @@ describe("host review regressions", {
       send(bubble); el.querySelector('button').focus(); el.querySelector('button').click();
       const buttonFocus=document.activeElement === el, rootIndex=el.tabIndex;
       send(bubble); outside.focus(); send({clear:true}); const outsideFocus=document.activeElement === outside;
-      send(bubble); el.querySelector('canvas').focus();
-      el.querySelector('canvas').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
-      const canvasFocus=document.activeElement === el.querySelector('canvas');
+      send(bubble); el.focus();
+      el.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+      const canvasFocus=document.activeElement === el;
       send({...bubble,text:'<a href=\"#ready\">Ready</a>',html:true}); el.querySelector('a').focus();
       el.querySelector('a').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
       const linkFocus=document.activeElement === el;
@@ -1015,7 +1016,8 @@ describe("mascot.host floating placement", {
     )
     expect_false(host_layout(js, "return mascot.host.state(el).minimised;"))
     expect_identical(js("getComputedStyle(el).position"), "relative")
-    expect_true(js("document.activeElement===el.querySelector('canvas')"))
+    # A picture has no keyboard stop, so focus stays on the mascot's box.
+    expect_true(js("document.activeElement===el"))
   })
   it("rejects malformed layout patches atomically, including queued ones", {
     skip_without_chrome()
@@ -1225,7 +1227,7 @@ describe("size and placement review regressions", {
         "mascot.host.receive({id:'a',patch:{placement:{floating:%s,position:'bottom-right',minimise:false,drag:false}}})",
         tolower(as.character(floating))
       ))
-      expect_true(host_layout(js, "return document.activeElement===el.querySelector('canvas');"))
+      expect_true(host_layout(js, "return document.activeElement===el;"))
     }
     js(
       "window.other=document.createElement('button');other.textContent='Elsewhere';document.body.append(other);
@@ -1655,7 +1657,7 @@ describe("mascot.host motion", {
     expect_identical(r$off$animation, "none")
     expect_false(identical(r$off$glow, "none"))
     expect_false(identical(r$on$transition, "0s"))
-    expect_identical(r$on$animation, "mascot-bubble-appear")
+    expect_identical(r$on$animation, "mascot-panel-appear")
   })
 })
 
@@ -1672,7 +1674,7 @@ describe("mascot.host popup menu", {
   it("P6 toggles by pointer, sends repeated event choices, holds the pose and clears it without motion", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "<b>About</b>", help = "Help")),
+      click = mascot_popup_menu(c(about = "<b>About</b>", help = "Help")),
       shiny_menu = TRUE,
       motion = FALSE,
       reduced = FALSE,
@@ -1688,7 +1690,8 @@ describe("mascot.host popup menu", {
       button.click();document.body.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
       const outside=menu.hidden;button.click();button.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
       return {initial,edges,pose,label,escaped,cleared,outside,escape:menu.hidden,focus:document.activeElement===button,
-        expanded:button.getAttribute('aria-expanded'),events:menuEvents,queue:queued.size,role:button.tagName};"
+        expanded:button.getAttribute('aria-expanded'),events:menuEvents.filter(e=>e[0]==='a_menu'),
+        clicks:menuEvents.filter(e=>e[0]==='a_click').length,queue:queued.size,role:button.tagName};"
     ))
     expect_true(r$initial)
     expect_true(r$edges)
@@ -1706,12 +1709,14 @@ describe("mascot.host popup menu", {
     for (event in r$events) {
       expect_identical(event, list("a_menu", "about", list(priority = "event")))
     }
+    # Every toggle of the menu is an activation; choices and Escape are not.
+    expect_identical(r$clicks, 4L)
   })
   it("opens eight pixels from the painted character, including inline reserved bubble space", {
     skip_without_chrome()
     for (position in c("inline", "top-left", "top-right", "bottom-left", "bottom-right")) {
       js <- local_host_page(
-        popup_menu = c(about = "About"),
+        click = mascot_popup_menu(c(about = "About")),
         shiny_menu = TRUE,
         motion = FALSE,
         placement = position,
@@ -1747,7 +1752,7 @@ describe("mascot.host popup menu", {
   })
   it("a new bubble closes the menu and returns focus only from its items", {
     skip_without_chrome()
-    js <- local_host_page(popup_menu = c(about = "About"), shiny_menu = TRUE, motion = FALSE)
+    js <- local_host_page(click = mascot_popup_menu(c(about = "About")), shiny_menu = TRUE, motion = FALSE)
     result <- js(
       "(() => {
       const el = document.getElementById('a'), toggle = el.querySelector('.mascot-menu-toggle');
@@ -1779,7 +1784,12 @@ describe("mascot.host popup menu", {
   })
   it("keeps an inline menu inside its scrolling card", {
     skip_without_chrome()
-    js <- local_host_page(popup_menu = c(about = "About", help = "Help"), shiny_menu = TRUE, motion = FALSE, size = 120)
+    js <- local_host_page(
+      click = mascot_popup_menu(c(about = "About", help = "Help")),
+      shiny_menu = TRUE,
+      motion = FALSE,
+      size = 120
+    )
     result <- js(
       "(() => {
       const el = document.getElementById('a'), card = document.createElement('div');
@@ -1798,13 +1808,16 @@ describe("mascot.host popup menu", {
   })
   it("P6 Enter and Space always operate the toggle and navigation stays in its menu", {
     skip_without_chrome()
-    js <- local_host_page(popup_menu = c(about = "About", help = "Help", more = "More"), shiny_menu = TRUE)
+    js <- local_host_page(
+      click = mascot_popup_menu(c(about = "About", help = "Help", more = "More")),
+      shiny_menu = TRUE
+    )
     r <- js(
       "(() => {const el=document.getElementById('a'),send=patch=>mascot.host.receive({id:'a',patch});
       let button=el.querySelector('.mascot-menu-toggle');
       const key=(target,key)=>target.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
       button.focus();key(button,'Enter');const opened=mascot.host.state(el).menuOpen;key(button,'Enter');const closed=!mascot.host.state(el).menuOpen;
-      send({popup_menu:{items:{about:'About',help:'Help',more:'More'}}});
+      send({click:{type:'menu',items:{about:'About',help:'Help',more:'More'},direction:'auto',label:null,tooltip:true}});
       button=el.querySelector('.mascot-menu-toggle');key(document.body,'Enter');const global=!mascot.host.state(el).menuOpen;
       button.focus();key(button,' ');button.focus();key(button,' ');const spaceClosed=!mascot.host.state(el).menuOpen;
       key(button,' ');const first=document.activeElement.dataset.itemId;
@@ -1827,16 +1840,20 @@ describe("mascot.host popup menu", {
   })
   it("P6 clears bubbles on opening, rejects whole bad patches and removes menu controls safely", {
     skip_without_chrome()
-    js <- local_host_page(popup_menu = c(about = "About"), shiny_menu = TRUE, bubble = mascot_bubble("Ready", 5))
+    js <- local_host_page(
+      click = mascot_popup_menu(c(about = "About")),
+      shiny_menu = TRUE,
+      bubble = mascot_bubble("Ready", 5)
+    )
     r <- js(
       "(async()=>{const el=document.getElementById('a'),state=()=>mascot.host.state(el),send=patch=>mascot.host.receive({id:'a',patch});
       el.querySelector('.mascot-menu-toggle').click();const cleared=state().bubble===null&&el.querySelector('.mascot-bubble').hidden;
-      send({mood:'happy',popup_menu:{items:{bad:''}}});const atomic=state().mood==='idle'&&state().menuOpen;
-      el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:{replacement:'Replacement'}}});
+      send({mood:'happy',click:{type:'menu',items:{bad:''},direction:'auto',label:null,tooltip:true}});const atomic=state().mood==='idle'&&state().menuOpen;
+      el.querySelector('[role=menuitem]').focus();send({click:{type:'menu',items:{replacement:'Replacement'},direction:'auto',label:null,tooltip:true}});
       const replacementFocus=document.activeElement===el.querySelector('.mascot-menu-toggle');
-      el.querySelector('.mascot-menu-toggle').click();el.querySelector('[role=menuitem]').focus();send({popup_menu:{items:null}});
+      el.querySelector('.mascot-menu-toggle').click();el.querySelector('[role=menuitem]').focus();send({click:{type:'none'}});
       return {cleared,atomic,replacementFocus,open:state().menuOpen,button:!!el.querySelector('.mascot-menu-toggle'),
-        image:el.querySelector('canvas').getAttribute('role'),focus:document.activeElement===el.querySelector('canvas')};})()"
+        image:el.querySelector('canvas').getAttribute('role'),focus:document.activeElement===el};})()"
     )
     expect_true(r$cleared)
     expect_true(r$atomic)
@@ -1848,7 +1865,7 @@ describe("mascot.host popup menu", {
   })
   it("P6 keeps multiple mascots independent, preserves menus across swaps and cleans up outside listeners", {
     skip_without_chrome()
-    js <- local_host_page(popup_menu = c(about = "About"), shiny_menu = TRUE, motion = FALSE)
+    js <- local_host_page(click = mascot_popup_menu(c(about = "About")), shiny_menu = TRUE, motion = FALSE)
     r <- js(
       "(() => {const a=document.getElementById('a');mascot.host.unmount(a);const b=a.cloneNode(true);b.id='module-helper';
       let added=0,removed=0;
@@ -1862,7 +1879,8 @@ describe("mascot.host popup menu", {
         const retained=mascot.host.state(b).menuOpen&&b.querySelector('.mascot-menu-toggle').getAttribute('aria-label').startsWith('Blob');
         b.querySelector('[role=menuitem]').click();b.querySelector('.mascot-menu-toggle').click();
         mascot.host.unmount(b);mascot.host.unmount(a);
-        return {independent,retained,added,removed,event:menuEvents.at(-1),plain:!b.querySelector('.mascot-menu-toggle')};
+        return {independent,retained,added,removed,event:menuEvents.filter(e=>e[0].endsWith('_menu')).at(-1),
+          plain:!b.querySelector('.mascot-menu-toggle')};
       }finally{document.addEventListener=add;document.removeEventListener=remove;b.remove();}})()"
     )
     expect_true(r$independent)
@@ -1873,10 +1891,10 @@ describe("mascot.host popup menu", {
   })
   it("P6 hides static menus and keeps restore clicks separate from menus in a top floating corner", {
     skip_without_chrome()
-    static <- local_host_page(popup_menu = c(about = "About"))
+    static <- local_host_page(click = mascot_popup_menu(c(about = "About")))
     expect_false(static("!!document.querySelector('.mascot-menu-toggle')"))
     js <- local_host_page(
-      popup_menu = c(about = "About"),
+      click = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
       placement = mascot_placement("top-right", TRUE)
     )
@@ -1885,7 +1903,7 @@ describe("mascot.host popup menu", {
       const menu=el.querySelector('.mascot-menu'),below=menu.getBoundingClientRect().top>=el.querySelector('canvas').getBoundingClientRect().top;
       el.querySelector('.mascot-menu-toggle').click();
       el.querySelector('.mascot-minimise').click();const closed=!mascot.host.state(el).menuOpen;
-      mascot.host.receive({id:'a',patch:{popup_menu:{items:{new:'New'}}}});
+      mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{new:'New'},direction:'auto',label:null,tooltip:true}}});
       const hiddenWhileMinimised=el.querySelector('.mascot-menu-toggle').hidden;
       el.querySelector('.mascot-restore').click();return {below,closed,hiddenWhileMinimised,open:mascot.host.state(el).menuOpen,
         hidden:el.querySelector('.mascot-menu-toggle').hidden};})()"
@@ -1900,7 +1918,7 @@ describe("mascot.host popup menu", {
     skip_without_chrome()
     for (dir in c("top", "bottom", "left", "right")) {
       js <- local_host_page(
-        popup_menu = mascot_popup_menu(c(about = "About"), direction = dir),
+        click = mascot_popup_menu(c(about = "About"), direction = dir),
         shiny_menu = TRUE,
         placement = mascot_placement("top-left", drag = "free"),
         size = 120,
@@ -1964,7 +1982,7 @@ describe("mascot.host popup menu", {
   it("falls back to the opposite side then auto when the requested direction has no room", {
     skip_without_chrome()
     js_top <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "top"),
+      click = mascot_popup_menu(c(about = "About"), direction = "top"),
       shiny_menu = TRUE,
       placement = mascot_placement("top-left", FALSE),
       viewport = c(800, 600)
@@ -1989,7 +2007,7 @@ describe("mascot.host popup menu", {
     expect_equal(res_top$gap, 8, tolerance = 1)
 
     js_bottom <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "bottom"),
+      click = mascot_popup_menu(c(about = "About"), direction = "bottom"),
       shiny_menu = TRUE,
       placement = mascot_placement("bottom-left", FALSE),
       viewport = c(800, 600)
@@ -2014,7 +2032,7 @@ describe("mascot.host popup menu", {
     expect_equal(res_bottom$gap, 8, tolerance = 1)
 
     js_left <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      click = mascot_popup_menu(c(about = "About"), direction = "left"),
       shiny_menu = TRUE,
       placement = mascot_placement("top-left", FALSE),
       viewport = c(800, 600)
@@ -2039,7 +2057,7 @@ describe("mascot.host popup menu", {
     expect_equal(res_left$gap, 8, tolerance = 1)
 
     js_right <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "right"),
+      click = mascot_popup_menu(c(about = "About"), direction = "right"),
       shiny_menu = TRUE,
       placement = mascot_placement("top-right", FALSE),
       viewport = c(800, 600)
@@ -2064,7 +2082,7 @@ describe("mascot.host popup menu", {
     expect_equal(res_right$gap, 8, tolerance = 1)
 
     js_auto <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      click = mascot_popup_menu(c(about = "About"), direction = "left"),
       shiny_menu = TRUE,
       size = 100,
       viewport = c(800, 600)
@@ -2088,7 +2106,7 @@ describe("mascot.host popup menu", {
     skip_without_chrome()
     js <- local_host_page(
       placement = mascot_placement("bottom-right", drag = "free"),
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "top"),
+      click = mascot_popup_menu(c(about = "About"), direction = "top"),
       shiny_menu = TRUE,
       size = 100,
       viewport = c(800, 600)
@@ -2143,7 +2161,7 @@ describe("mascot.host gaze (#241)", {
     skip_without_chrome()
     for (side in names(looks)) {
       js <- local_host_page(
-        popup_menu = mascot_popup_menu(c(about = "About"), direction = side),
+        click = mascot_popup_menu(c(about = "About"), direction = side),
         shiny_menu = TRUE,
         placement = mascot_placement("top-left", drag = "free"),
         size = 120,
@@ -2167,7 +2185,7 @@ describe("mascot.host gaze (#241)", {
   it("follows the side the menu actually opens on after a fallback", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "top"),
+      click = mascot_popup_menu(c(about = "About"), direction = "top"),
       shiny_menu = TRUE,
       placement = mascot_placement("top-left", FALSE),
       viewport = c(800, 600)
@@ -2200,7 +2218,7 @@ describe("mascot.host gaze (#241)", {
     skip_without_chrome()
     js <- local_host_page(
       bubble = mascot_bubble("Read this", Inf),
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "right"),
+      click = mascot_popup_menu(c(about = "About"), direction = "right"),
       shiny_menu = TRUE,
       placement = "inline",
       viewport = c(800, 800)
@@ -2243,7 +2261,7 @@ describe("mascot.host gaze (#241)", {
   it("re-aims the gaze when the character changes while the menu is open", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      click = mascot_popup_menu(c(about = "About"), direction = "left"),
       shiny_menu = TRUE,
       placement = mascot_placement("top-left", drag = "free"),
       size = 120,
@@ -2283,7 +2301,7 @@ describe("mascot.host gaze (#241)", {
   it("mirrors the horizontal look for a mirrored character, so it still faces the menu", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About"), direction = "left"),
+      click = mascot_popup_menu(c(about = "About"), direction = "left"),
       shiny_menu = TRUE,
       placement = mascot_placement("top-left", drag = "free"),
       size = 120,
@@ -2302,16 +2320,98 @@ describe("mascot.host gaze (#241)", {
   })
 })
 
-describe("mascot.host click input (#237)", {
+# A trusted key press in the page, as a keyboard sends it (synthetic events skip the browser's own button activation).
+press_key <- function(js, key, repeat_key = FALSE) {
+  session <- attr(js, "session")
+  code <- switch(key, Enter = "Enter", " " = "Space", Escape = "Escape", Tab = "Tab")
+  number <- switch(key, Enter = 13L, " " = 32L, Escape = 27L, Tab = 9L)
+  text <- switch(key, Enter = "\r", " " = " ", NULL)
+  session$Input$dispatchKeyEvent(
+    type = "keyDown",
+    key = key,
+    code = code,
+    windowsVirtualKeyCode = number,
+    text = text,
+    autoRepeat = repeat_key
+  )
+  if (!repeat_key) {
+    session$Input$dispatchKeyEvent(type = "keyUp", key = key, code = code, windowsVirtualKeyCode = number)
+  }
+  invisible(NULL)
+}
+
+describe("mascot.host click (#257)", {
   clicks <- "menuEvents.filter(e => e[0] === 'a_click')"
-  it("sends a count for each click, Enter or Space on a mascot without a menu", {
+  it("rejects whitespace-only action and menu labels without applying any part of the patch", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help")
+    r <- js(
+      "(() => {const el=document.getElementById('a'),state=()=>mascot.host.state(el),
+        before=JSON.stringify(state()),warnings=[],warn=console.warn;
+      console.warn=message=>warnings.push(message);
+      try {
+        const unchanged=[];
+        for (const label of ['   ',' \\t\\r\\n ']) {
+          for (const click of [
+            {type:'action',label,tooltip:true,disabled:false},
+            {type:'menu',items:{help:'Help'},direction:'auto',label,tooltip:true}
+          ]) {
+            mascot.host.receive({id:'a',patch:{mood:'happy',click}});
+            unchanged.push(JSON.stringify(state())===before);
+          }
+        }
+        return {unchanged,warnings:warnings.length,events:menuEvents.length,
+          name:el.querySelector('.mascot-button').getAttribute('aria-label')};
+      } finally {console.warn=warn;}})()"
+    )
+    expect_identical(unlist(r$unchanged), rep(TRUE, 4))
+    expect_identical(r$warnings, 4L)
+    expect_identical(r$events, 0L)
+    expect_identical(r$name, "Open help")
+  })
+  it("keeps a mascot without a click a picture: an image, no keyboard stop, no events", {
     skip_without_chrome()
     js <- local_host_page(shiny_menu = TRUE, placement = "inline")
     r <- js(paste0(
-      "(() => {const el=document.getElementById('a'),canvas=el.querySelector('canvas');
-      canvas.click();canvas.click();canvas.focus();
+      "(() => {const el=document.getElementById('a'),canvas=el.querySelector('canvas');canvas.click();canvas.focus();
+      return {button:!!el.querySelector('button.mascot-button'),role:canvas.getAttribute('role'),
+        tab:canvas.tabIndex,focused:document.activeElement===canvas,events:",
+      clicks,
+      ".length};})()"
+    ))
+    expect_false(r$button)
+    expect_identical(r$role, "img")
+    expect_identical(r$tab, -1L)
+    expect_false(r$focused)
+    expect_identical(r$events, 0L)
+  })
+  it("names an action's native button by its label and keeps that name through mood and character changes", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help")
+    r <- js(
+      "(() => {const el=document.getElementById('a'),button=el.querySelector('.mascot-button'),
+        canvas=el.querySelector('canvas');
+      const before={tag:button.tagName,type:button.type,name:button.getAttribute('aria-label'),
+        hidden:canvas.getAttribute('aria-hidden'),inside:button.contains(canvas),popup:button.hasAttribute('aria-haspopup')};
+      mascot.host.receive({id:'a',patch:{mood:'happy'}});
+      mascot.host.receive({id:'a',patch:{character:{id:'blob',name:'Blob',json:document.querySelector('script[data-mascot-character=blob]').textContent}}});
+      return {before,after:button.getAttribute('aria-label'),canvas:canvas.getAttribute('aria-label')};})()"
+    )
+    expect_identical(
+      r$before,
+      list(tag = "BUTTON", type = "button", name = "Open help", hidden = "true", inside = TRUE, popup = FALSE)
+    )
+    expect_identical(r$after, "Open help")
+    expect_match(r$canvas, "^Blob, ")
+  })
+  it("counts each click, Enter or Space on an action once, including a held key, and nothing else", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help")
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),button=el.querySelector('.mascot-button');
+      button.click();el.querySelector('canvas').click();button.focus();
       const key=(k,repeat=false)=>{const e=new KeyboardEvent('keydown',{key:k,repeat,bubbles:true,cancelable:true});
-        canvas.dispatchEvent(e);return e.defaultPrevented;};
+        button.dispatchEvent(e);return e.defaultPrevented;};
       const enter=key('Enter'),space=key(' '),held=key('Enter',true),other=key('a');
       el.querySelector('.mascot-status').click();
       return {events:",
@@ -2329,9 +2429,24 @@ describe("mascot.host click input (#237)", {
     expect_false(r$other)
     expect_identical(r$clicks, 4L)
   })
+  it("counts a real key press once, not again through the button's own click", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help")
+    js("document.querySelector('#a .mascot-button').focus()")
+    press_key(js, "Enter")
+    press_key(js, " ")
+    press_key(js, "Enter")
+    press_key(js, "Enter", repeat_key = TRUE)
+    press_key(js, "Enter", repeat_key = TRUE)
+    expect_identical(js(paste0(clicks, ".length")), 3L)
+  })
   it("never counts a drag, and counts a press that does not move", {
     skip_without_chrome()
-    js <- local_host_page(shiny_menu = TRUE, placement = mascot_placement("top-left", drag = "snap"))
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-left", drag = "snap"),
+      click = "Open help"
+    )
     js(drag_js)
     r <- js(paste0(
       "(() => {const canvas=document.querySelector('#a canvas');
@@ -2349,7 +2464,11 @@ describe("mascot.host click input (#237)", {
   })
   it("counts the next click after a drag that a placement update cancelled mid-way", {
     skip_without_chrome()
-    js <- local_host_page(shiny_menu = TRUE, placement = mascot_placement("top-left", drag = "snap"))
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = mascot_placement("top-left", drag = "snap"),
+      click = "Open help"
+    )
     js(drag_js)
     r <- js(paste0(
       "(() => {const canvas=document.querySelector('#a canvas'),box=canvas.getBoundingClientRect(),
@@ -2367,15 +2486,15 @@ describe("mascot.host click input (#237)", {
   })
   it("ignores Enter and Space held with Ctrl, Alt or Meta, like a native button", {
     skip_without_chrome()
-    js <- local_host_page(shiny_menu = TRUE, placement = "inline")
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help")
     r <- js(paste0(
-      "(() => {const canvas=document.querySelector('#a canvas');canvas.focus();
+      "(() => {const button=document.querySelector('#a .mascot-button');button.focus();
       for (const modifier of ['ctrlKey','altKey','metaKey']) for (const key of ['Enter',' '])
-        canvas.dispatchEvent(new KeyboardEvent('keydown',{key,[modifier]:true,bubbles:true,cancelable:true}));
+        button.dispatchEvent(new KeyboardEvent('keydown',{key,[modifier]:true,bubbles:true,cancelable:true}));
       const modified=",
       clicks,
       ".length;
-      canvas.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',shiftKey:true,bubbles:true,cancelable:true}));
+      button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',shiftKey:true,bubbles:true,cancelable:true}));
       return {modified,shift:",
       clicks,
       ".length};})()"
@@ -2383,33 +2502,105 @@ describe("mascot.host click input (#237)", {
     expect_identical(r$modified, 0L)
     expect_identical(r$shift, 1L)
   })
-  it("leaves the click to the menu when there is one, and sends again once it is removed", {
+  it("counts opening and closing a menu but never Escape or a choice, and keeps counting across click changes", {
     skip_without_chrome()
-    js <- local_host_page(shiny_menu = TRUE, popup_menu = c(about = "About"), placement = "inline")
+    js <- local_host_page(shiny_menu = TRUE, click = mascot_popup_menu(c(about = "About")), placement = "inline")
     r <- js(paste0(
       "(() => {const el=document.getElementById('a'),toggle=el.querySelector('.mascot-menu-toggle');
       toggle.click();const open=mascot.host.state(el).menuOpen;toggle.click();
       toggle.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
-      toggle.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+      const focusedItem=document.activeElement===el.querySelector('[role=menuitem]');
+      document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
+      toggle.click();el.querySelector('[role=menuitem]').click();
       const withMenu=",
       clicks,
-      ".length;
-      mascot.host.receive({id:'a',patch:{popup_menu:{items:null}}});
+      ".length,choice=menuEvents.at(-1);
+      mascot.host.receive({id:'a',patch:{click:{type:'action',label:'Open help',tooltip:true,disabled:false}}});
+      el.querySelector('.mascot-button').click();const action=menuEvents.at(-1);
+      mascot.host.receive({id:'a',patch:{click:{type:'none'}}});
       el.querySelector('canvas').click();
-      return {open,withMenu,after:",
+      return {open,focusedItem,withMenu,choice,action,after:",
+      clicks,
+      ".length,picture:!el.querySelector('.mascot-button')};})()"
+    ))
+    expect_true(r$open)
+    expect_true(r$focusedItem)
+    expect_identical(r$withMenu, 4L)
+    expect_identical(r$choice, list("a_menu", "about", list(priority = "event")))
+    expect_identical(r$action, list("a_click", 5L, list(priority = "event")))
+    expect_identical(r$after, 5L)
+    expect_true(r$picture)
+  })
+  it("toggles a menu once while Enter is held, and names it by its label or the character", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, click = mascot_popup_menu(c(about = "About")), placement = "inline")
+    js("document.querySelector('#a .mascot-menu-toggle').focus()")
+    press_key(js, "Enter")
+    press_key(js, "Enter", repeat_key = TRUE)
+    press_key(js, "Enter", repeat_key = TRUE)
+    press_key(js, "Enter", repeat_key = TRUE)
+    expect_true(js("mascot.host.state(document.getElementById('a')).menuOpen"))
+    expect_identical(js(paste0(clicks, ".length")), 1L)
+    expect_identical(js("document.querySelector('#a .mascot-menu-toggle').getAttribute('aria-label')"), "Tessa, menu")
+    js(
+      "mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{a:'A'},direction:'auto',label:'Help and settings',tooltip:true}}})"
+    )
+    expect_identical(
+      js("document.querySelector('#a .mascot-menu-toggle').getAttribute('aria-label')"),
+      "Help and settings"
+    )
+  })
+  it("moves from the toggle of a menu opened by pointer into it with the arrow keys", {
+    skip_without_chrome()
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      click = mascot_popup_menu(c(about = "About", help = "Help")),
+      placement = "inline"
+    )
+    r <- js(
+      "(() => {const el=document.getElementById('a'),toggle=el.querySelector('.mascot-menu-toggle'),
+        items=el.querySelectorAll('[role=menuitem]'),key=k=>document.activeElement.dispatchEvent(
+          new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));
+      toggle.focus();toggle.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,detail:1}));
+      const kept=document.activeElement===toggle;key('ArrowDown');const first=document.activeElement===items[0];
+      toggle.focus();key('ArrowUp');const last=document.activeElement===items[1];
+      return {kept,first,last,open:mascot.host.state(el).menuOpen};})()"
+    )
+    expect_identical(r, list(kept = TRUE, first = TRUE, last = TRUE, open = TRUE))
+  })
+  it("keeps a disabled action a focusable button that sends nothing until enabled", {
+    skip_without_chrome()
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = "inline",
+      click = mascot_action("Open help", disabled = TRUE)
+    )
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),button=el.querySelector('.mascot-button');
+      button.click();button.focus();
+      button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
+      const disabled={aria:button.getAttribute('aria-disabled'),focused:document.activeElement===button,events:",
+      clicks,
+      ".length};
+      mascot.host.receive({id:'a',patch:{click:{type:'action',label:'Open help',tooltip:true,disabled:false}}});
+      const enabled=el.querySelector('.mascot-button');enabled.click();
+      return {disabled,enabledAria:enabled.hasAttribute('aria-disabled'),refocused:document.activeElement===enabled,
+        events:",
       clicks,
       ".length};})()"
     ))
-    expect_true(r$open)
-    expect_identical(r$withMenu, 0L)
-    expect_identical(r$after, 1L)
+    expect_identical(r$disabled, list(aria = "true", focused = TRUE, events = 0L))
+    expect_false(r$enabledAria)
+    expect_true(r$refocused)
+    expect_identical(r$events, 1L)
   })
   it("sends nothing from the restore button, the bubble, a static page or after unmounting", {
     skip_without_chrome()
     js <- local_host_page(
       shiny_menu = TRUE,
       placement = mascot_placement("bottom-right"),
-      bubble = mascot_bubble("Read this", Inf)
+      bubble = mascot_bubble("Read this", Inf),
+      click = "Open help"
     )
     r <- js(paste0(
       "(() => {const el=document.getElementById('a');
@@ -2421,18 +2612,202 @@ describe("mascot.host click input (#237)", {
       const canvas=el.querySelector('canvas');mascot.host.unmount(el);canvas.click();
       return {controls,after:",
       clicks,
-      ".length};})()"
+      ".length,unwrapped:!el.querySelector('.mascot-button')};})()"
     ))
     expect_identical(r$controls, 0L)
     expect_identical(r$after, 0L)
+    expect_true(r$unwrapped)
     # Without Shiny the mascot stays an image: a click changes nothing and raises no error.
-    static <- local_host_page(placement = "inline")
+    static <- local_host_page(placement = "inline", click = "Open help")
     expect_identical(
       static(
-        "(() => {const el=document.getElementById('a');el.querySelector('canvas').click();return mascot.host.state(el).clicks;})()"
+        "(() => {const el=document.getElementById('a');el.querySelector('canvas').click();
+        return [mascot.host.state(el).clicks,!!el.querySelector('.mascot-button'),!!el.querySelector('.mascot-tooltip')];})()"
       ),
-      0L
+      list(0L, FALSE, FALSE)
     )
+  })
+})
+
+describe("mascot.host action tooltip (#257)", {
+  hover <- function(target, related = "null", type = "mouse") {
+    sprintf(
+      "%s.dispatchEvent(new PointerEvent('%s',{bubbles:true,pointerType:'%s',relatedTarget:%s}))",
+      target,
+      "%s",
+      type,
+      related
+    )
+  }
+  it("keeps a long tooltip inside a narrow clipping container with scrollable text", {
+    skip_without_chrome()
+    label <- paste(rep("Open the selected review history", 12), collapse = " ")
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = label, size = 48, viewport = c(800, 600))
+    js(
+      "const el=document.getElementById('a'),card=document.createElement('div');
+      Object.assign(card.style,{width:'160px',height:'300px',overflow:'hidden',margin:'40px',position:'relative'});
+      document.body.append(card);card.append(el);el.style.marginLeft='56px';"
+    )
+    r <- host_layout(
+      js,
+      paste0(
+        "const button=el.querySelector('.mascot-button'),tip=el.querySelector('.mascot-tooltip');",
+        sprintf(hover("button"), "pointerover"),
+        ";const t=tip.getBoundingClientRect(),c=card.getBoundingClientRect();
+        tip.scrollTop=tip.scrollHeight;
+        return {visible:!tip.hidden,text:tip.textContent,
+          left:t.left,right:t.right,top:t.top,bottom:t.bottom,width:t.width,height:t.height,
+          bounds:{left:c.left,right:c.right,top:c.top,bottom:c.bottom},
+          overflow:getComputedStyle(tip).overflowY,scrolled:tip.scrollTop>0};"
+      )
+    )
+    expect_true(r$visible)
+    expect_identical(r$text, label)
+    expect_gt(r$width, 0)
+    expect_gt(r$height, 0)
+    expect_gte(r$left, r$bounds$left)
+    expect_lte(r$right, r$bounds$right)
+    expect_gte(r$top, r$bounds$top)
+    expect_lte(r$bottom, r$bounds$bottom)
+    expect_identical(r$overflow, "auto")
+    expect_true(r$scrolled)
+  })
+  it("shows the label beside the character on hover, stays while hovered and hides after the pointer leaves", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help", size = 120)
+    over <- sprintf(hover("button"), "pointerover")
+    to_tip <- sprintf(hover("button", "tip"), "pointerout")
+    away <- sprintf(hover("tip"), "pointerout")
+    r <- host_layout(
+      js,
+      paste0(
+        "const el=document.getElementById('a'),button=el.querySelector('.mascot-button'),
+          tip=el.querySelector('.mascot-tooltip');",
+        over,
+        ";const shown=!tip.hidden,state=mascot.host.state(el).tooltip,text=tip.textContent,
+          role=tip.getAttribute('role'),hidden=tip.getAttribute('aria-hidden'),side=tip.dataset.side;
+        const t=tip.getBoundingClientRect(),c=el.querySelector('canvas').getBoundingClientRect();",
+        to_tip,
+        ";await new Promise(r=>setTimeout(r,300));const kept=!tip.hidden;",
+        away,
+        ";const grace=!tip.hidden;await new Promise(r=>setTimeout(r,300));
+        return {shown,state,text,role,hidden,side,above:t.bottom<=c.top+c.height/2,kept,grace,gone:tip.hidden};"
+      )
+    )
+    expect_true(r$shown)
+    expect_true(r$state)
+    expect_identical(r$text, "Open help")
+    expect_identical(r$role, "tooltip")
+    # The button's name already says it; the tooltip is not read twice.
+    expect_identical(r$hidden, "true")
+    expect_identical(r$side, "top")
+    expect_true(r$above)
+    expect_true(r$kept)
+    expect_true(r$grace)
+    expect_true(r$gone)
+  })
+  it("shows on keyboard focus and Escape hides it without moving focus", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help")
+    press_key(js, "Tab")
+    expect_true(js("document.activeElement === document.querySelector('#a .mascot-button')"))
+    expect_true(js("mascot.host.state(document.getElementById('a')).tooltip"))
+    press_key(js, "Escape")
+    expect_false(js("mascot.host.state(document.getElementById('a')).tooltip"))
+    expect_true(js("document.activeElement === document.querySelector('#a .mascot-button')"))
+    expect_identical(js("menuEvents.length"), 0L)
+  })
+  it("never shows on touch, with tooltip = FALSE, while a bubble shows or after a click", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help")
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),button=el.querySelector('.mascot-button'),
+        tip=el.querySelector('.mascot-tooltip'),state=()=>mascot.host.state(el).tooltip;",
+      sprintf(hover("button", type = "touch"), "pointerover"),
+      ";const touch=state();",
+      sprintf(hover("button"), "pointerover"),
+      ";const mouse=state();button.click();const clicked=state();",
+      sprintf(hover("button"), "pointerout"),
+      ";mascot.host.receive({id:'a',patch:{bubble:{text:'Hi',html:false,closable:true,duration:null}}});",
+      sprintf(hover("button"), "pointerover"),
+      ";const bubble=state();
+      mascot.host.receive({id:'a',patch:{bubble:{clear:true}}});",
+      sprintf(hover("button"), "pointerout"),
+      ";",
+      sprintf(hover("button"), "pointerover"),
+      ";const afterBubble=state();
+      mascot.host.receive({id:'a',patch:{bubble:{text:'Hi',html:false,closable:true,duration:null}}});
+      const replaced=state();
+      mascot.host.receive({id:'a',patch:{click:{type:'action',label:'Open help',tooltip:false,disabled:false}}});
+      return {touch,mouse,clicked,bubble,afterBubble,replaced,off:!el.querySelector('.mascot-tooltip'),
+        name:el.querySelector('.mascot-button').getAttribute('aria-label')};})()"
+    ))
+    expect_false(r$touch)
+    expect_true(r$mouse)
+    expect_false(r$clicked)
+    expect_false(r$bubble)
+    expect_true(r$afterBubble)
+    expect_false(r$replaced)
+    expect_true(r$off)
+    expect_identical(r$name, "Open help")
+  })
+  it("removes its shared Escape listener when no tooltip shows", {
+    skip_without_chrome()
+    js <- local_host_page(shiny_menu = TRUE, placement = "inline", click = "Open help")
+    r <- js(paste0(
+      "(() => {const added=[],removed=[],add=document.addEventListener,remove=document.removeEventListener;
+      document.addEventListener=function(type,...rest){if(type==='keydown')added.push(type);return add.call(this,type,...rest);};
+      document.removeEventListener=function(type,...rest){if(type==='keydown')removed.push(type);return remove.call(this,type,...rest);};
+      const el=document.getElementById('a'),button=el.querySelector('.mascot-button');",
+      sprintf(hover("button"), "pointerover"),
+      ";mascot.host.unmount(el);
+      document.addEventListener=add;document.removeEventListener=remove;
+      return {added:added.length,removed:removed.length};})()"
+    ))
+    expect_identical(r, list(added = 1L, removed = 1L))
+  })
+  it("shows a menu's tooltip on hover and hides it when the menu opens", {
+    skip_without_chrome()
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = "inline",
+      click = mascot_popup_menu(c(about = "About"), label = "Help menu")
+    )
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),button=el.querySelector('.mascot-button'),
+        tip=el.querySelector('.mascot-tooltip');",
+      sprintf(hover("button"), "pointerover"),
+      ";const shown=!tip.hidden,state=mascot.host.state(el).tooltip,text=tip.textContent;
+      button.click();
+      const onOpen=mascot.host.state(el).tooltip,menuOpen=mascot.host.state(el).menuOpen;
+      return {shown,state,text,onOpen,menuOpen,tipHidden:tip.hidden};})()"
+    ))
+    expect_true(r$shown)
+    expect_true(r$state)
+    expect_identical(r$text, "Help menu")
+    expect_false(r$onOpen)
+    expect_true(r$menuOpen)
+    expect_true(r$tipHidden)
+  })
+  it("creates no tooltip element for a menu without a label or with tooltip = FALSE", {
+    skip_without_chrome()
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = "inline",
+      click = mascot_popup_menu(c(about = "About"))
+    )
+    r <- js(
+      "(() => {const el=document.getElementById('a');
+      const withoutLabel=!el.querySelector('.mascot-tooltip');
+      mascot.host.receive({
+        id:'a',
+        patch:{click:{type:'menu',items:{about:'About'},direction:'auto',label:'Help menu',tooltip:false}}
+      });
+      const tooltipFalse=!el.querySelector('.mascot-tooltip');
+      return {withoutLabel,tooltipFalse};})()"
+    )
+    expect_true(r$withoutLabel)
+    expect_true(r$tooltipFalse)
   })
 })
 
@@ -2441,7 +2816,7 @@ describe("mascot.host review corrections", {
     skip_without_chrome()
     for (position in c("top-left", "top-right", "bottom-left", "bottom-right", "inline")) {
       js <- local_host_page(
-        popup_menu = mascot_popup_menu(
+        click = mascot_popup_menu(
           c(about = "About", help = "Help", contact = "Contact", settings = "Settings")
         ),
         shiny_menu = TRUE,
@@ -2466,7 +2841,7 @@ describe("mascot.host review corrections", {
   it("A2 returns focus to the visible menu after either placement fallback", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About")),
+      click = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
       placement = mascot_placement("bottom-right", minimise = TRUE)
     )
@@ -2495,7 +2870,7 @@ describe("mascot.host review corrections", {
   it("C3 uses neutral action controls and hides them completely while the menu is open", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = mascot_popup_menu(c(about = "About")),
+      click = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
       placement = mascot_placement("bottom-right", minimise = TRUE)
     )
@@ -2545,7 +2920,12 @@ describe("mascot.host review corrections", {
   it("A1 follows notifications and inline scrolling and releases the shared scroll listener", {
     skip_without_chrome()
     js <- local_host_page(
-      popup_menu = c(about = "About this app", help = "Help with a longer label", contact = "Contact", more = "More"),
+      click = mascot_popup_menu(c(
+        about = "About this app",
+        help = "Help with a longer label",
+        contact = "Contact",
+        more = "More"
+      )),
       shiny_menu = TRUE,
       placement = mascot_placement("bottom-right", minimise = TRUE),
       viewport = c(640, 320)
@@ -2555,7 +2935,8 @@ describe("mascot.host review corrections", {
       window.originalAdd=window.addEventListener.bind(window);window.originalRemove=window.removeEventListener.bind(window);
       window.addEventListener=(type,...args)=>{if(type==='scroll')scrollAdds++;return originalAdd(type,...args)};
       window.removeEventListener=(type,...args)=>{if(type==='scroll')scrollRemoves++;return originalRemove(type,...args)};
-      el.querySelector('.mascot-menu-toggle').click();
+      // A pointer click keeps focus on the toggle, so moving the mascot inline keeps the menu open.
+      el.querySelector('.mascot-menu-toggle').dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,detail:1}));
       const panel=document.createElement('div');panel.id='shiny-notification-panel';
       Object.assign(panel.style,{position:'fixed',bottom:'0',right:'0',height:'72px',width:'200px'});
       panel.append(document.createElement('div'));panel.firstChild.textContent='Saved';document.body.append(panel);"
@@ -2673,7 +3054,7 @@ describe("mascot.host dragging", {
     js <- local_host_page(
       placement = mascot_placement("bottom-right", drag = "snap"),
       bubble = mascot_bubble("Hello", Inf),
-      popup_menu = c(about = "About"),
+      click = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
       size = 100,
       viewport = c(800, 600)
@@ -2699,7 +3080,15 @@ describe("mascot.host dragging", {
     expect_true(result$dragging)
     expect_identical(result$placed, "true")
     expect_false(result$afterClick)
-    expect_identical(result$events, list(list("a_position", "top-left", list(priority = "event"))))
+    # The two still presses opened and closed the menu; the drag's ending click counts for nothing.
+    expect_identical(
+      result$events,
+      list(
+        list("a_click", 1L, list(priority = "event")),
+        list("a_click", 2L, list(priority = "event")),
+        list("a_position", "top-left", list(priority = "event"))
+      )
+    )
     result <- host_layout(
       js,
       "mascot.host.receive({id:'a',patch:{bubble:{text:'Hello again',html:false,closable:true,duration:null}}});
@@ -2864,7 +3253,7 @@ describe("mascot.host dragging", {
     skip_without_chrome()
     js <- local_host_page(
       placement = mascot_placement(drag = "snap"),
-      popup_menu = c(about = "About"),
+      click = mascot_popup_menu(c(about = "About")),
       shiny_menu = TRUE,
       size = 100,
       viewport = c(800, 600)

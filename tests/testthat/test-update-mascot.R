@@ -825,7 +825,7 @@ describe("updateMascot() motion", {
     })
     expect_identical(
       tail(names(formals(updateMascot)), 6),
-      c("theme", "motion", "popup_menu", "...", "gesture", "session")
+      c("theme", "motion", "click", "...", "gesture", "session")
     )
   })
   it("rejects the whole update with a warning and sends only development problems", {
@@ -895,31 +895,36 @@ describe("updateMascot() popup menu", {
       dev_mode = function() FALSE
     )
     shiny::testServer(function(input, output, session) {}, {
-      updateMascot("helper", popup_menu = c(about = "About"))
+      updateMascot("helper", click = "Open help")
       expect_identical(captured$patches[[1]]$id, session$ns("helper"))
       expect_identical(
         captured$patches[[1]]$patch,
-        list(popup_menu = list(items = list(about = "About"), direction = "auto"))
+        list(click = list(type = "action", label = "Open help", tooltip = TRUE, disabled = FALSE))
       )
-      updateMascot("helper", popup_menu = NULL)
+      # NULL leaves the click unchanged; either empty helper removes it.
+      updateMascot("helper", click = NULL)
       expect_length(captured$patches, 1)
-      updateMascot("helper", popup_menu = mascot_popup_menu())
-      expect_identical(captured$patches[[2]]$patch$popup_menu, list(items = NULL, direction = "auto"))
-      updateMascot("helper", popup_menu = mascot_popup_menu(c(about = "About"), direction = "right"))
+      updateMascot("helper", click = mascot_popup_menu())
+      expect_identical(captured$patches[[2]]$patch$click, list(type = "none"))
+      updateMascot("helper", click = mascot_action())
+      expect_identical(captured$patches[[3]]$patch$click, list(type = "none"))
+      updateMascot("helper", click = mascot_popup_menu(c(about = "About"), direction = "right"))
       expect_identical(
-        captured$patches[[3]]$patch$popup_menu,
-        list(items = list(about = "About"), direction = "right")
+        captured$patches[[4]]$patch$click,
+        list(type = "menu", items = list(about = "About"), direction = "right", label = NULL, tooltip = TRUE)
       )
-      for (bad in list(1, "Help", character(), structure(list(), class = "mascot_popup_menu"))) {
-        expect_warning(updateMascot("helper", mood = "happy", popup_menu = bad), "unchanged")
+      updateMascot("helper", click = mascot_action("Open help", disabled = TRUE))
+      expect_true(captured$patches[[5]]$patch$click$disabled)
+      for (bad in list(1, c(about = "About"), character(), structure(list(), class = "mascot_popup_menu"))) {
+        expect_warning(updateMascot("helper", mood = "happy", click = bad), "unchanged")
       }
-      expect_length(captured$patches, 3)
+      expect_length(captured$patches, 5)
       local_mocked_bindings(dev_mode = function() TRUE)
-      expect_warning(updateMascot("helper", mood = "happy", popup_menu = "Help"), "unchanged")
-      expect_named(captured$patches[[4]]$patch, "problem")
-      expect_error(updateMascot("helper", popup_menu = session), "session.*must be named")
+      expect_warning(updateMascot("helper", mood = "happy", click = c(about = "About")), "unchanged")
+      expect_named(captured$patches[[6]]$patch, "problem")
+      expect_error(updateMascot("helper", click = session), "session.*must be named")
     })
-    expect_identical(names(formals(updateMascot))[9:12], c("motion", "popup_menu", "...", "gesture"))
+    expect_identical(names(formals(updateMascot))[9:12], c("motion", "click", "...", "gesture"))
   })
 })
 
@@ -931,7 +936,7 @@ describe("popup menu in a Shiny browser", {
       ui <- function(id) {
         ns <- shiny::NS(id)
         shiny::tagList(
-          mascot(id = ns("helper"), popup_menu = mascot_popup_menu(c(about = "About this app"))),
+          mascot(id = ns("helper"), click = mascot_popup_menu(c(about = "About this app"))),
           shiny::textOutput(ns("count"))
         )
       }

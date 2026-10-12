@@ -11,8 +11,8 @@ playground_categories <- list(
     summary = "Who is drawn and how they feel. A mood changes the face, the pose and the default status text."
   ),
   messages = list(
-    title = "Messages and menu",
-    summary = "Words and actions on the mascot: a status line that is always there, a speech bubble for news, and a popup menu."
+    title = "Messages and clicks",
+    summary = "Words and actions on the mascot: a status line that is always there, a speech bubble for news, and what a click does: one action or a menu."
   ),
   motion = list(
     title = "Motion and gestures",
@@ -59,11 +59,12 @@ playground_guide <- list(
   mascot_placement = guide_entry("layout", "Size and placement", c("position", "minimise", "drag")),
   mascot_colour_roles = guide_entry("colours", "Theme and light/dark mode", "character"),
   mascot_theme = guide_entry("colours", "Theme and light/dark mode", c("light", "dark", "mode", "css")),
-  mascot_popup_menu = guide_entry("messages", "Click menu", c("items", "direction")),
+  mascot_action = guide_entry("messages", "Clicks and menus", c("label", "...", "tooltip", "disabled")),
+  mascot_popup_menu = guide_entry("messages", "Clicks and menus", c("items", "...", "direction", "label", "tooltip")),
   mascot = guide_entry(
     "wiring",
     "Your first app",
-    c("character", "id", "mood", "status", "bubble", "size", "placement", "theme", "motion", "popup_menu"),
+    c("character", "id", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click"),
     try = list(
       character = "look",
       mood = "look",
@@ -73,7 +74,7 @@ playground_guide <- list(
       placement = "layout",
       theme = "colours",
       motion = "motion",
-      popup_menu = "messages"
+      click = "messages"
     )
   ),
   updateMascot = guide_entry(
@@ -89,7 +90,7 @@ playground_guide <- list(
       "placement",
       "theme",
       "motion",
-      "popup_menu",
+      "click",
       "...",
       "gesture",
       "session"
@@ -104,7 +105,7 @@ playground_guide <- list(
       placement = "layout",
       theme = "colours",
       motion = "motion",
-      popup_menu = "messages",
+      click = "messages",
       gesture = "motion",
       session = "wiring"
     )
@@ -112,7 +113,7 @@ playground_guide <- list(
   mascot_preview = guide_entry(
     "preview",
     "Check a look before using it",
-    c("character", "mood", "status", "bubble", "size", "placement", "theme", "motion", "popup_menu")
+    c("character", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click")
   ),
   mascot_examples = guide_entry("examples", "Open an example"),
   mascot_example = guide_entry("examples", "Open an example", c("name", "run")),

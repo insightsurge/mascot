@@ -14,7 +14,7 @@ updateMascot(
   placement = NULL,
   theme = NULL,
   motion = NULL,
-  popup_menu = NULL,
+  click = NULL,
   ...,
   gesture = NULL,
   session = shiny::getDefaultReactiveDomain()
@@ -67,9 +67,13 @@ again to the new character's parts.}
 \code{NULL} (the default) leaves motion unchanged. Changes apply to the live mascot
 without restarting it; the visitor's reduced-motion preference still applies.}
 
-\item{popup_menu}{A named character vector or \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object.
-\code{NULL} (the default) leaves the menu unchanged; \code{mascot_popup_menu()} removes
-it. Choices arrive as \verb{input$<id>_menu} in the module that owns the mascot.}
+\item{click}{A label, a \code{\link[=mascot_action]{mascot_action()}} object or a \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}
+object, as in \code{\link[=mascot]{mascot()}}. \code{NULL} (the default) leaves the click unchanged; an
+empty helper, \code{mascot_action()} or \code{mascot_popup_menu()}, removes it, so the
+mascot is a picture again. A new click replaces the old one completely and
+closes an open menu. Clicks and menu choices arrive as \verb{input$<id>_click} and
+\verb{input$<id>_menu} in the module that owns the mascot; the click count
+continues across changes.}
 
 \item{...}{Must be empty. Extra arguments are errors.}
 
@@ -85,7 +89,7 @@ Called for its side effect; returns \code{NULL} invisibly.
 }
 \description{
 Update any combination of character, mood, status, bubble, size, placement,
-theme, motion, menu and gesture from your Shiny server. Arguments left as
+theme, motion, click and gesture from your Shiny server. Arguments left as
 \code{NULL} stay unchanged. Invalid values warn and leave the mascot unchanged.
 In Shiny development mode they also show a worried mascot with the problem as
 its status; the next valid update clears it. Updates sent before a mascot

@@ -34,18 +34,28 @@
  * data-reduced="auto"|"true" and data-swap="true"|"false" carry the same settings on static pages.
  * Motion changes update the live controller; swaps reapply retained settings alongside the theme.
  * CSS suppresses bubble and restore-control movement too. No per-element global listeners are added by this host.
- * Popup menu patches are { items: {id: label}|null }; replacement closes the menu.
- * Menus are Shiny-only. An active menu wraps the canvas in a native button; otherwise it stays an image.
- * Choices set the already namespaced id + '_menu' with priority 'event'. Labels always use textContent.
- * Enter/Space operate the focused toggle; navigation stays within the focused menu. No global keyboard listeners.
+ * Click patches are { type: 'none' } | { type: 'action', label, tooltip, disabled } |
+ * { type: 'menu', items: {id: label}, direction, label: string|null, tooltip: boolean }; a new click replaces the old one whole.
+ * Clicks are Shiny-only. Without one the canvas is an image and no keyboard stop. With one, a native button wraps
+ * the canvas (hidden from assistive technology inside it), named by the action's label or the menu's label (else
+ * "<character>, menu"); mood changes never rename it. Every activation of that button (pointer, Enter, Space or an
+ * assistive technology's click; a held key counts once) sets the namespaced id + '_click' to a count since mounting,
+ * with priority 'event'; the count survives click changes. A disabled action (aria-disabled) sends nothing.
+ * Drags, outside clicks, Escape, minimise/restore and server updates never count.
+ * Menu choices set id + '_menu' with priority 'event'. Labels always use textContent. Opening and closing count as
+ * activations; navigation stays within the focused menu. No global keyboard listeners for menus.
  * A shared outside-pointer listener exists only while a menu is open; teardown removes it when unused.
+ * A tooltip (for an action, or a menu with a label and tooltip: true) shows the label on hover (not touch) and
+ * keyboard focus, stays while the pointer is over the mascot or the tooltip, and Escape dismisses it without
+ * moving focus (a shared document listener exists only while a tooltip shows). It hides while a menu or bubble shows,
+ * while minimised and during a drag.
+ * Panels (#233): the bubble, the menu and the tooltip share one look (.mascot-panel). The menu and the tooltip also
+ * share placement: anchored to the painted character (sampled when shown), a requested side with fallbacks (the
+ * opposite side, then "auto"), inside the window or an inline mascot's clipping container, refitted on resize/scroll.
  * Open menus pause bubble timers. The mascot looks towards what it shows: an open menu's side as finally chosen
  * (after any fallback), otherwise its bubble's side (above inline and bottom-corner mascots, below top-corner ones).
  * The gaze is a held look/lookY pose, so it is instant and never animated; closing clears only those fields,
  * preserving the mood. Only pupils move, so eyes without visible pupils keep their look.
- * Without a menu (Shiny only), a click on the canvas, or Enter or Space while it has focus, sets the namespaced
- * id + '_click' to a count of clicks since mounting, with priority 'event'. A drag's ending click never counts.
- * Menus prefer above the canvas (below top corners), fitting/flipping to actual viewport space on resize/scroll.
  * Action controls use a separate strip: hover/focus reveals it, touch keeps it available, open menus hide it.
  * Restore stays reachable while minimised. Placement focus falls back to the visible menu toggle or image.
  * host.{mount,unmount,receive,state} exposes lifecycle and plain snapshots for integration tests.
@@ -92,7 +102,10 @@
     record.el.dataset.swapping = String(snapshot.swapping);
     const accessibleLabel = `${record.names.get(snapshot.character)}, ${snapshot.mood}`;
     record.canvas.setAttribute('aria-label', accessibleLabel);
-    record.menuButton?.setAttribute('aria-label', `${accessibleLabel}, menu`);
+    if (record.button) {
+      const name = record.click.label || `${record.names.get(snapshot.character)}, menu`;
+      if (record.button.getAttribute('aria-label') !== name) record.button.setAttribute('aria-label', name);
+    }
     if (record.restoreButton) {
       record.restoreButton.setAttribute(
         'aria-label',
@@ -189,6 +202,7 @@
       return;
     }
     if (record.menuOpen) closeMenu(record, record.menuEl.contains(document.activeElement));
+    hideTooltip(record);
     stopTimer(record);
     record.bubble = next;
     const el = record.bubbleEl;
@@ -612,9 +626,10 @@
     if (focused && document.activeElement !== focused && !teardown) focused.focus();
   }
 
+  // A picture is no keyboard stop, so focus that must stay in the mascot lands on its (programmatically focusable) box.
   function focusTarget(record) {
     if (record.minimised) return record.restoreButton;
-    return record.menuButton || record.canvas;
+    return record.button || record.el;
   }
 
   function refreshActions(record) {
@@ -642,7 +657,7 @@
     record.minimiseButton.hidden = !placement.floating || !placement.minimise || record.minimised;
     record.restoreButton.hidden = !record.minimised;
     record.canvas.hidden = record.minimised;
-    if (record.menuButton) record.menuButton.hidden = record.minimised;
+    if (record.button) record.button.hidden = record.minimised;
     record.bubbleEl.parentElement.hidden = record.minimised;
     el.dataset.minimised = String(record.minimised);
     refreshActions(record);
@@ -807,6 +822,7 @@
         if (!gesture.moved) {
           gesture.moved = true;
           el.dataset.dragging = 'true';
+          hideTooltip(record);
         }
         event.preventDefault();
         gesture.point = { x: gesture.left + dx, y: gesture.top + dy };
@@ -833,36 +849,6 @@
     for (const [name, handler] of Object.entries(handlers)) el.addEventListener(name, handler, name === 'click');
   }
 
-  // Without a menu the click is the app's: Shiny receives a count. A drag's click is stopped before it arrives here.
-  function listenClick(record) {
-    const active = (event) =>
-      event.target === record.canvas && !record.menuButton && Boolean(window.Shiny?.setInputValue);
-    const send = () => {
-      record.clicks += 1;
-      window.Shiny.setInputValue(`${record.el.id}_click`, record.clicks, { priority: 'event' });
-    };
-    record.clickHandlers = {
-      click(event) {
-        if (active(event)) send();
-      },
-      keydown(event) {
-        if (!active(event) || !['Enter', ' '].includes(event.key)) return;
-        // Like a native button: shortcuts with Ctrl, Alt or Meta belong to the browser or the app.
-        if (event.ctrlKey || event.altKey || event.metaKey) return;
-        // Space would otherwise scroll the page; a held key sends one click, not a stream.
-        event.preventDefault();
-        if (!event.repeat) send();
-      },
-    };
-    for (const [name, handler] of Object.entries(record.clickHandlers)) record.el.addEventListener(name, handler);
-  }
-
-  function unlistenClick(record) {
-    if (!record.clickHandlers) return;
-    for (const [name, handler] of Object.entries(record.clickHandlers)) record.el.removeEventListener(name, handler);
-    record.clickHandlers = null;
-  }
-
   function unlistenDrag(record) {
     if (!record.dragHandlers) return;
     cancelDrag(record);
@@ -875,7 +861,10 @@
   function minimise(record, value, focus = true) {
     if (value === record.minimised) return;
     if (value && (!record.placement.floating || !record.placement.minimise)) return;
-    if (value) closeMenu(record);
+    if (value) {
+      closeMenu(record);
+      hideTooltip(record);
+    }
     stopTimer(record);
     record.minimised = value;
     layout(record);
@@ -887,9 +876,9 @@
     }
   }
 
-  // Sample once on opening, not on scroll or each animation frame. Canvas artwork
+  // Sample once when a panel shows, not on scroll or each animation frame. Canvas artwork
   // has transparent margins; anchoring to its box leaves a visible gap above the character.
-  function menuInk(record) {
+  function inkBox(record) {
     const canvas = record.canvas;
     const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
     let firstY = canvas.height;
@@ -915,9 +904,10 @@
         };
   }
 
-  function measureMenu(record) {
-    if (!record.menuEl || !record.menuOpen) return;
-    const menu = record.menuEl;
+  // The shared panel placement (#233): put a shown panel on the requested side of the painted character, falling back
+  // to the opposite side and then to "auto", inside the room the page gives. Sets --mascot-<name>-top, -left and
+  // -max-height/-max-width on the mascot, the chosen side as the panel's data-side and its tail offset; returns the side.
+  function placePanel(record, panel, requested, name, capEm = Infinity) {
     const margin = 16;
     const notification =
       record.placement.floating && record.placement.position === 'bottom-right'
@@ -926,23 +916,25 @@
     const bounds = record.placement.floating ? clipBounds(document.body) : clipBounds(record.el);
     const ceiling = bounds.top;
     const floor = Math.min(bounds.bottom, document.documentElement.clientHeight - notification - margin);
+    // Constrain width before measuring, so a tooltip's wrapped height determines the side and available height.
+    setProperty(record.el, `--mascot-${name}-max-width`, `${Math.max(0, bounds.right - bounds.left)}px`);
     const gap = 8;
     const canvas = record.canvas.getBoundingClientRect();
-    const ink = record.menuInk || { top: 0, bottom: 1, left: 0, right: 1 };
+    const ink = record.ink || { top: 0, bottom: 1, left: 0, right: 1 };
     const anchorTop = canvas.top + ink.top * canvas.height;
     const anchorBottom = canvas.top + ink.bottom * canvas.height;
-    const anchorLeft = canvas.left + (ink.left ?? 0) * canvas.width;
-    const anchorRight = canvas.left + (ink.right ?? 1) * canvas.width;
+    const anchorLeft = canvas.left + ink.left * canvas.width;
+    const anchorRight = canvas.left + ink.right * canvas.width;
     const anchorWidth = anchorRight - anchorLeft;
     const anchorCenterX = (anchorLeft + anchorRight) / 2;
     const anchorCenterY = (anchorTop + anchorBottom) / 2;
 
-    const style = getComputedStyle(menu);
+    const style = getComputedStyle(panel);
     const wantedHeight = Math.min(
-      menu.scrollHeight + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
-      18 * parseFloat(style.fontSize),
+      panel.scrollHeight + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth),
+      capEm * parseFloat(style.fontSize),
     );
-    const wantedWidth = menu.scrollWidth + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+    const wantedWidth = panel.scrollWidth + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
 
     const spaceAbove = Math.max(0, anchorTop - gap - ceiling);
     const spaceBelow = Math.max(0, floor - anchorBottom - gap);
@@ -967,7 +959,6 @@
       return spaceAbove >= spaceBelow ? 'top' : 'bottom';
     };
 
-    const requested = record.menu?.direction || 'auto';
     let chosen = requested;
     if (requested === 'top') {
       if (!hasRoomTop) chosen = hasRoomBottom ? 'bottom' : resolveAuto();
@@ -981,12 +972,11 @@
       chosen = resolveAuto();
     }
 
-    record.menuSide = chosen;
     const availableHeight =
       chosen === 'top' ? spaceAbove : chosen === 'bottom' ? spaceBelow : Math.max(24, floor - ceiling);
-    setProperty(record.el, '--mascot-menu-max-height', `${Math.max(24, availableHeight)}px`);
+    setProperty(record.el, `--mascot-${name}-max-height`, `${Math.max(24, availableHeight)}px`);
 
-    const rect = menu.getBoundingClientRect();
+    const rect = panel.getBoundingClientRect();
     let top;
     let left;
 
@@ -1007,9 +997,25 @@
     }
 
     const hostRect = record.el.getBoundingClientRect();
-    setProperty(record.el, '--mascot-menu-top', `${top - hostRect.top}px`);
-    setProperty(record.el, '--mascot-menu-left', `${left - hostRect.left}px`);
+    setProperty(record.el, `--mascot-${name}-top`, `${top - hostRect.top}px`);
+    setProperty(record.el, `--mascot-${name}-left`, `${left - hostRect.left}px`);
+    // The tail points at the character's centre, kept off the panel's rounded corners.
+    const vertical = chosen === 'top' || chosen === 'bottom';
+    const length = vertical ? rect.width : rect.height;
+    const offset = vertical ? anchorCenterX - left : anchorCenterY - top;
+    setProperty(panel, '--mascot-panel-tail', `${Math.max(12, Math.min(offset, length - 12))}px`);
+    panel.dataset.side = chosen;
+    return chosen;
+  }
+
+  function measureMenu(record) {
+    if (!record.menuEl || !record.menuOpen) return;
+    record.menuSide = placePanel(record, record.menuEl, record.click.direction || 'auto', 'menu', 18);
     refreshGaze(record);
+  }
+
+  function measureTooltip(record) {
+    if (record.tooltipShown) placePanel(record, record.tooltipEl, 'auto', 'tooltip');
   }
 
   // Overlay room: the viewport, narrowed by ancestors that clip overflow (such as a bslib card).
@@ -1070,6 +1076,7 @@
       setProperty(record.el, '--mascot-bubble-shift', `${left - natural}px`);
     }
     measureMenu(record);
+    measureTooltip(record);
     record.renderedSize = size;
     if (resized) record.controller.redraw();
   }
@@ -1183,57 +1190,87 @@
   }
 
   const menuDirections = ['auto', 'top', 'bottom', 'left', 'right'];
+  const openTooltips = new Set();
+  // How long a tooltip waits before hiding when the pointer leaves, so it can cross to the tooltip (WCAG 1.4.13).
+  const tooltipGrace = 150;
 
-  function validateMenu(value) {
+  function validateMenuItems(items) {
     if (
-      !value ||
-      typeof value !== 'object' ||
-      Array.isArray(value) ||
-      !has(value, 'items') ||
-      (Object.keys(value).length === 2 && !has(value, 'direction')) ||
-      Object.keys(value).length > 2
+      !items ||
+      typeof items !== 'object' ||
+      Array.isArray(items) ||
+      !Object.keys(items).length ||
+      Object.entries(items).some(
+        ([id, text]) => !id.length || /\s/.test(id) || typeof text !== 'string' || !text.length,
+      )
     )
-      throw new Error('popup_menu needs items and optional direction');
-    const direction = has(value, 'direction') && value.direction !== null ? value.direction : 'auto';
-    if (!menuDirections.includes(direction))
-      throw new Error('popup_menu direction must be auto, top, bottom, left or right');
-    if (
-      value.items !== null &&
-      (!value.items ||
-        typeof value.items !== 'object' ||
-        Array.isArray(value.items) ||
-        !Object.keys(value.items).length ||
-        Object.entries(value.items).some(
-          ([id, text]) => !id.length || /\s/.test(id) || typeof text !== 'string' || !text.length,
-        ))
-    )
-      throw new Error('popup_menu items need non-empty ids without whitespace and plain-text labels');
-    return { items: value.items === null ? null : { ...value.items }, direction };
+      throw new Error('click menu items need non-empty ids without whitespace and plain-text labels');
+    return { ...items };
+  }
+
+  function validateClick(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('click needs an object');
+    const fields = {
+      none: ['type'],
+      action: ['type', 'label', 'tooltip', 'disabled'],
+      menu: ['type', 'items', 'direction', 'label', 'tooltip'],
+    };
+    const keys = fields[value.type];
+    if (!keys) throw new Error('click type must be none, action or menu');
+    if (Object.keys(value).length !== keys.length || Object.keys(value).some((key) => !keys.includes(key)))
+      throw new Error(`a ${value.type} click needs exactly ${keys.join(', ')}`);
+    if (value.type === 'none') return { type: 'none' };
+    const label = (text) => typeof text === 'string' && /\S/.test(text);
+    if (value.type === 'action') {
+      if (!label(value.label) || typeof value.tooltip !== 'boolean' || typeof value.disabled !== 'boolean')
+        throw new Error('a click action needs a non-empty label and tooltip and disabled flags');
+      return { type: 'action', label: value.label, tooltip: value.tooltip, disabled: value.disabled };
+    }
+    if (!menuDirections.includes(value.direction))
+      throw new Error('click menu direction must be auto, top, bottom, left or right');
+    if (value.label !== null && !label(value.label)) throw new Error('click menu label must be non-empty text or null');
+    if (typeof value.tooltip !== 'boolean') throw new Error('click menu tooltip must be a boolean');
+    return {
+      type: 'menu',
+      items: validateMenuItems(value.items),
+      direction: value.direction,
+      label: value.label,
+      tooltip: value.tooltip,
+    };
   }
 
   function measureOpenMenus() {
     for (const record of openMenus) measureMenu(record);
+    for (const record of openTooltips) measureTooltip(record);
   }
 
   function outsideMenu(event) {
     for (const record of [...openMenus])
-      if (!record.menuEl.contains(event.target) && !record.menuButton.contains(event.target)) closeMenu(record);
+      if (!record.menuEl.contains(event.target) && !record.button.contains(event.target)) closeMenu(record);
+  }
+
+  // One shared scroll listener while any menu or tooltip shows.
+  let scrollWatched = false;
+  function watchScroll() {
+    const needed = openMenus.size > 0 || openTooltips.size > 0;
+    if (needed === scrollWatched) return;
+    scrollWatched = needed;
+    if (needed) window.addEventListener('scroll', measureOpenMenus, true);
+    else window.removeEventListener('scroll', measureOpenMenus, true);
   }
 
   function closeMenu(record, focus = false, clearPose = true) {
     if (!record.menuOpen) return;
     record.menuOpen = false;
     record.menuEl.hidden = true;
-    record.menuButton.setAttribute('aria-expanded', 'false');
+    record.button.setAttribute('aria-expanded', 'false');
     openMenus.delete(record);
-    if (!openMenus.size) {
-      document.removeEventListener('pointerdown', outsideMenu, true);
-      window.removeEventListener('scroll', measureOpenMenus, true);
-    }
+    if (!openMenus.size) document.removeEventListener('pointerdown', outsideMenu, true);
+    watchScroll();
     refreshActions(record);
     record.menuSide = null;
     if (clearPose) refreshGaze(record);
-    if (focus) record.menuButton.focus();
+    if (focus) record.button.focus();
     resumeTimer(record);
   }
 
@@ -1241,89 +1278,184 @@
     if (record.minimised || !record.menuEl) return;
     for (const other of [...openMenus]) if (other !== record) closeMenu(other);
     clearBubble(record);
+    hideTooltip(record);
     record.menuOpen = true;
     const actionFocused = record.actions.contains(document.activeElement);
     refreshActions(record);
     record.menuEl.hidden = false;
-    record.menuInk = menuInk(record);
+    record.ink = inkBox(record);
     measureMenu(record);
-    record.menuButton.setAttribute('aria-expanded', 'true');
+    record.button.setAttribute('aria-expanded', 'true');
     stopTimer(record);
-    if (!openMenus.size) {
-      document.addEventListener('pointerdown', outsideMenu, true);
-      window.addEventListener('scroll', measureOpenMenus, true);
-    }
+    if (!openMenus.size) document.addEventListener('pointerdown', outsideMenu, true);
     openMenus.add(record);
+    watchScroll();
     if (keyboard) record.menuEl.querySelector('button').focus();
-    else if (actionFocused) record.menuButton.focus();
+    else if (actionFocused) record.button.focus();
   }
 
-  function removeMenu(record, clearPose = true) {
+  // Escape dismisses every shown tooltip, wherever the focus is; the listener exists only while one shows.
+  function escapeTooltips(event) {
+    if (event.key !== 'Escape') return;
+    for (const record of [...openTooltips]) {
+      record.tooltipDismissed = true;
+      hideTooltip(record);
+    }
+  }
+
+  function showTooltip(record) {
+    window.clearTimeout(record.tooltipTimer);
+    record.tooltipTimer = null;
+    if (
+      !record.tooltipEl ||
+      record.tooltipShown ||
+      record.tooltipDismissed ||
+      record.minimised ||
+      record.menuOpen ||
+      record.bubble ||
+      record.dragState?.moved
+    )
+      return;
+    record.tooltipShown = true;
+    record.tooltipEl.hidden = false;
+    record.ink = inkBox(record);
+    measureTooltip(record);
+    if (!openTooltips.size) document.addEventListener('keydown', escapeTooltips, true);
+    openTooltips.add(record);
+    watchScroll();
+  }
+
+  function hideTooltip(record) {
+    window.clearTimeout(record.tooltipTimer);
+    record.tooltipTimer = null;
+    if (!record.tooltipShown) return;
+    record.tooltipShown = false;
+    record.tooltipEl.hidden = true;
+    openTooltips.delete(record);
+    if (!openTooltips.size) document.removeEventListener('keydown', escapeTooltips, true);
+    watchScroll();
+  }
+
+  // The tooltip stays while the pointer is over the mascot's button or the tooltip, or the button has keyboard focus.
+  function settleTooltip(record) {
+    if (record.tooltipHover || record.button?.matches(':focus-visible')) showTooltip(record);
+    else if (record.tooltipShown && record.tooltipTimer === null)
+      record.tooltipTimer = window.setTimeout(() => hideTooltip(record), tooltipGrace);
+  }
+
+  function activate(record, keyboard) {
+    if (record.click.disabled) return;
+    record.clicks += 1;
+    window.Shiny.setInputValue(`${record.el.id}_click`, record.clicks, { priority: 'event' });
+    if (record.click.type === 'menu') {
+      if (record.menuOpen) closeMenu(record, keyboard);
+      else openMenu(record, keyboard);
+    } else {
+      // The app's answer (a panel, a dialog) takes over; the tooltip returns on the next hover or focus.
+      record.tooltipDismissed = true;
+      hideTooltip(record);
+    }
+  }
+
+  function removeClick(record, clearPose = true) {
     closeMenu(record, false, clearPose);
-    if (!record.menuButton) return;
-    const focused = record.menuButton === document.activeElement || record.menuEl.contains(document.activeElement);
-    if (focused) record.el.focus();
-    for (const [name, handler] of Object.entries(record.menuHandlers)) record.el.removeEventListener(name, handler);
-    record.menuButton.replaceWith(record.canvas);
+    hideTooltip(record);
+    if (!record.button) return;
+    const focused = record.el.contains(document.activeElement) && record.button.contains(document.activeElement);
+    const inMenu = record.menuEl?.contains(document.activeElement);
+    if (focused || inMenu) record.el.focus();
+    for (const [name, handler] of Object.entries(record.buttonHandlers)) record.el.removeEventListener(name, handler);
+    record.button.replaceWith(record.canvas);
     record.canvas.removeAttribute('aria-hidden');
-    record.canvas.setAttribute('tabindex', '0');
-    record.menuEl.remove();
-    record.menuButton = record.menuEl = record.menuHandlers = null;
-    if (focused) focusTarget(record).focus();
+    record.menuEl?.remove();
+    record.tooltipEl?.remove();
+    record.button = record.menuEl = record.tooltipEl = record.buttonHandlers = null;
+    record.tooltipHover = record.tooltipDismissed = false;
   }
 
-  function replaceMenu(record, value, clearPose = true) {
-    const focused = record.menuButton === document.activeElement || record.menuEl?.contains(document.activeElement);
-    removeMenu(record, clearPose);
-    record.menu = value;
-    if (!value.items || !window.Shiny?.setInputValue) return;
+  function replaceClick(record, value, clearPose = true) {
+    const focused =
+      Boolean(record.button) &&
+      (record.button === document.activeElement || Boolean(record.menuEl?.contains(document.activeElement)));
+    removeClick(record, clearPose);
+    record.click = value;
+    if (value.type === 'none' || !window.Shiny?.setInputValue) return;
+    const menuClick = value.type === 'menu';
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'mascot-menu-toggle';
+    button.className = menuClick ? 'mascot-button mascot-menu-toggle' : 'mascot-button';
     button.hidden = record.minimised;
-    button.setAttribute('aria-haspopup', 'menu');
-    button.setAttribute('aria-expanded', 'false');
-    button.setAttribute('aria-controls', `${record.el.id}_popup_menu`);
-    const menu = document.createElement('div');
-    menu.id = `${record.el.id}_popup_menu`;
-    menu.className = 'mascot-menu';
-    menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', 'Mascot choices');
-    menu.hidden = true;
-    for (const [id, text] of Object.entries(value.items)) {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.setAttribute('role', 'menuitem');
-      item.tabIndex = -1;
-      item.dataset.itemId = id;
-      item.textContent = text;
-      menu.append(item);
+    if (value.disabled) button.setAttribute('aria-disabled', 'true');
+    let menu = null;
+    if (menuClick) {
+      button.setAttribute('aria-haspopup', 'menu');
+      button.setAttribute('aria-expanded', 'false');
+      button.setAttribute('aria-controls', `${record.el.id}_popup_menu`);
+      menu = document.createElement('div');
+      menu.id = `${record.el.id}_popup_menu`;
+      menu.className = 'mascot-panel mascot-menu';
+      menu.setAttribute('role', 'menu');
+      menu.setAttribute('aria-label', 'Mascot choices');
+      menu.hidden = true;
+      for (const [id, text] of Object.entries(value.items)) {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.setAttribute('role', 'menuitem');
+        item.tabIndex = -1;
+        item.dataset.itemId = id;
+        item.textContent = text;
+        menu.append(item);
+      }
+    }
+    let tooltip = null;
+    if (
+      (value.type === 'action' && value.tooltip) ||
+      (value.type === 'menu' && value.tooltip && Boolean(value.label))
+    ) {
+      tooltip = document.createElement('div');
+      tooltip.className = 'mascot-panel mascot-tooltip';
+      tooltip.id = `${record.el.id}_tooltip`;
+      tooltip.setAttribute('role', 'tooltip');
+      // The button's name already says this; hidden from assistive technology so it is not read twice.
+      tooltip.setAttribute('aria-hidden', 'true');
+      tooltip.textContent = value.label;
+      tooltip.hidden = true;
     }
     record.canvas.before(button);
     button.append(record.canvas);
     record.canvas.setAttribute('aria-hidden', 'true');
-    record.canvas.setAttribute('tabindex', '-1');
-    record.el.append(menu);
-    record.menuButton = button;
+    if (menu) record.el.append(menu);
+    if (tooltip) record.el.append(tooltip);
+    record.button = button;
     record.menuEl = menu;
-    record.menuHandlers = {
+    record.tooltipEl = tooltip;
+    const onTooltip = (target) => Boolean(target) && (button.contains(target) || Boolean(tooltip?.contains(target)));
+    record.buttonHandlers = {
       click(event) {
         if (button.contains(event.target)) {
-          if (record.menuOpen) closeMenu(record);
-          else openMenu(record, false);
-        } else {
-          const item = event.target.closest('[role="menuitem"]');
-          if (!item || !menu.contains(item)) return;
-          const id = item.dataset.itemId;
-          closeMenu(record, true);
-          window.Shiny.setInputValue(`${record.el.id}_menu`, id, { priority: 'event' });
+          // A keyboard or assistive-technology click has no pointer detail; it moves focus into an opened menu.
+          activate(record, event.detail === 0);
+          return;
         }
+        const item = menu && event.target.closest('[role="menuitem"]');
+        if (!item || !menu.contains(item)) return;
+        const id = item.dataset.itemId;
+        closeMenu(record, true);
+        window.Shiny.setInputValue(`${record.el.id}_menu`, id, { priority: 'event' });
       },
       keydown(event) {
-        if (event.target === button && ['Enter', ' '].includes(event.key)) {
+        const activating = ['Enter', ' '].includes(event.key);
+        // A held key activates once: its repeats reach neither the button nor a menu item that took focus on opening.
+        if (activating && event.repeat && (button.contains(event.target) || Boolean(menu?.contains(event.target)))) {
           event.preventDefault();
-          if (record.menuOpen) closeMenu(record, true);
-          else openMenu(record, true);
+          return;
+        }
+        if (event.target === button && activating) {
+          // Like a native button: shortcuts with Ctrl, Alt or Meta belong to the browser or the app.
+          if (event.ctrlKey || event.altKey || event.metaKey) return;
+          // Handled here, not by the button's own click, so a key press counts once.
+          event.preventDefault();
+          activate(record, true);
           return;
         }
         if (!record.menuOpen) return;
@@ -1331,6 +1463,11 @@
           event.preventDefault();
           event.stopPropagation();
           closeMenu(record, true);
+        } else if (event.target === button && ['ArrowDown', 'ArrowUp'].includes(event.key)) {
+          // A menu opened by pointer keeps focus on the toggle; the arrows move into it.
+          event.preventDefault();
+          const items = menu.querySelectorAll('button');
+          items[event.key === 'ArrowDown' ? 0 : items.length - 1].focus();
         } else if (menu.contains(event.target)) {
           const items = [...menu.querySelectorAll('button')];
           const index = items.indexOf(document.activeElement);
@@ -1345,11 +1482,29 @@
           }
         }
       },
+      focusin(event) {
+        if (event.target === button) settleTooltip(record);
+      },
       focusout(event) {
         if (!record.el.contains(event.relatedTarget)) closeMenu(record);
+        if (event.target === button) {
+          record.tooltipDismissed = false;
+          settleTooltip(record);
+        }
+      },
+      pointerover(event) {
+        if (event.pointerType === 'touch' || !onTooltip(event.target) || onTooltip(event.relatedTarget)) return;
+        record.tooltipHover = true;
+        settleTooltip(record);
+      },
+      pointerout(event) {
+        if (!onTooltip(event.target) || onTooltip(event.relatedTarget)) return;
+        record.tooltipHover = false;
+        if (!button.matches(':focus-visible')) record.tooltipDismissed = false;
+        settleTooltip(record);
       },
     };
-    for (const [name, handler] of Object.entries(record.menuHandlers)) record.el.addEventListener(name, handler);
+    for (const [name, handler] of Object.entries(record.buttonHandlers)) record.el.addEventListener(name, handler);
     show(record, record.controller.current());
     if (focused && !record.minimised) button.focus();
   }
@@ -1413,18 +1568,21 @@
       controller: null,
       size: sizeConfig,
       placement,
-      menu: validateMenu(
-        JSON.parse(el.querySelector('script[data-mascot-popup-menu]')?.textContent || '{"items":null}'),
-      ),
+      click: validateClick(JSON.parse(el.querySelector('script[data-mascot-click]')?.textContent || '{"type":"none"}')),
       menuOpen: false,
       menuSide: null,
+      ink: null,
       gaze: JSON.stringify({ look: null, lookY: null }),
       gazeSide: null,
       clicks: 0,
-      clickHandlers: null,
-      menuButton: null,
+      button: null,
+      buttonHandlers: null,
       menuEl: null,
-      menuHandlers: null,
+      tooltipEl: null,
+      tooltipShown: false,
+      tooltipHover: false,
+      tooltipDismissed: false,
+      tooltipTimer: null,
       motion: validateMotion({
         reduced: !has(el.dataset, 'reduced') || el.dataset.reduced === 'auto' ? null : el.dataset.reduced === 'true',
         swap:
@@ -1492,8 +1650,7 @@
       });
       listenBubble(record);
       listenDrag(record);
-      listenClick(record);
-      replaceMenu(record, record.menu);
+      replaceClick(record, record.click);
       record.handlers.clickPlacement = (event) => {
         if (!record.actions.hidden && event.target.closest('.mascot-minimise') === record.minimiseButton)
           minimise(record, true);
@@ -1506,8 +1663,7 @@
     } catch (error) {
       unwatch(record);
       unlistenDrag(record);
-      unlistenClick(record);
-      removeMenu(record);
+      removeClick(record);
       if (record.handlers) {
         for (const [name, handler] of Object.entries(record.handlers))
           el.removeEventListener(name === 'clickPlacement' ? 'click' : name, handler);
@@ -1586,7 +1742,7 @@
     }
 
     const enginePatch = { ...prepared.enginePatch };
-    if (prepared.menu && record.menuOpen) enginePatch.pose = { look: null, lookY: null };
+    if (prepared.click && record.menuOpen) enginePatch.pose = { look: null, lookY: null };
     try {
       if (!has(patch, 'mood') && record.problem && !prepared.changed) enginePatch.mood = record.problemMood;
       // Synchronous engine notifications must not expose a partially committed host patch.
@@ -1616,7 +1772,7 @@
     if (has(enginePatch, 'mood')) record.mood = enginePatch.mood;
     else if (changed) record.mood = Object.keys(description.moods)[0];
     record.status = status;
-    if (prepared.menu) replaceMenu(record, prepared.menu, false);
+    if (prepared.click) replaceClick(record, prepared.click, false);
     if (prepared.motion) {
       record.motion = prepared.motion;
       el.dataset.reduced = record.motion.reduced === true ? 'true' : 'auto';
@@ -1680,7 +1836,7 @@
           'placement',
           'theme',
           'motion',
-          'popup_menu',
+          'click',
           'problem',
         ].includes(key)
       )
@@ -1721,7 +1877,7 @@
         throw new Error('status needs mode "mood" or mode "custom" with non-empty text');
       status = { mode: next.mode, text: next.mode === 'custom' ? next.text : null };
     }
-    const menu = has(patch, 'popup_menu') ? validateMenu(patch.popup_menu) : undefined;
+    const click = has(patch, 'click') ? validateClick(patch.click) : undefined;
     const bubble = has(patch, 'bubble') ? validateBubble(patch.bubble) : undefined;
     if (has(patch, 'gesture')) validateGesture(candidate, patch.gesture);
     const size = has(patch, 'size') ? validateSize(patch.size) : undefined;
@@ -1740,7 +1896,7 @@
       enginePatch,
       status,
       bubble,
-      menu,
+      click,
       size,
       placement,
       theme: nextTheme,
@@ -1763,7 +1919,7 @@
       'placement',
       'theme',
       'motion',
-      'popup_menu',
+      'click',
       'gesture',
       'problem',
     ]) {
@@ -1872,11 +2028,10 @@
   function unmount(el) {
     const record = records.get(el);
     if (!record) return;
-    removeMenu(record);
+    removeClick(record);
     stopTimer(record);
     unwatch(record);
     unlistenDrag(record);
-    unlistenClick(record);
     for (const [name, handler] of Object.entries(record.handlers))
       el.removeEventListener(name === 'clickPlacement' ? 'click' : name, handler);
     record.actions.remove();
@@ -1897,8 +2052,9 @@
       size: { ...record.size },
       placement: { ...record.placement },
       motion: { ...record.motion },
-      popup_menu: JSON.parse(JSON.stringify(record.menu)),
+      click: JSON.parse(JSON.stringify(record.click)),
       menuOpen: record.menuOpen,
+      tooltip: record.tooltipShown,
       gaze: record.gazeSide,
       clicks: record.clicks,
       theme: JSON.parse(JSON.stringify(record.theme)),

@@ -84,15 +84,27 @@ code_placement <- function(position = "bottom-right", minimise = TRUE, drag = FA
   code_pair(short, helper)
 }
 
-code_menu <- function(items, direction = "auto") {
+# A menu has no shortcut: a named vector is not a click, so both forms use the helper.
+code_menu <- function(items, direction = "auto", label = "", tooltip = TRUE) {
   vector <- if (length(items)) named_call("c", items)
+  has_label <- nzchar(trimws(label))
   helper <- helper_call(
     "mascot_popup_menu",
     vector,
-    direction = if (!identical(direction, "auto")) direction
+    direction = if (!identical(direction, "auto")) direction,
+    label = if (has_label) label,
+    tooltip = if (!tooltip && has_label) FALSE
   )
-  short <- if (length(items) && identical(direction, "auto")) vector else helper
-  code_pair(short, helper)
+  code_pair(helper)
+}
+
+# An action's shortcut is its label; the helper also carries a hidden tooltip or a disabled state.
+code_action <- function(label, tooltip = TRUE, disabled = FALSE) {
+  if (!nzchar(trimws(label))) {
+    return(code_pair(quote(mascot_action())))
+  }
+  helper <- helper_call("mascot_action", label, tooltip = if (!tooltip) FALSE, disabled = if (disabled) TRUE)
+  code_pair(if (tooltip && !disabled) label else helper, helper)
 }
 
 code_theme <- function(source, light, dark, mode, css_roles, primary, secondary) {
@@ -172,6 +184,18 @@ pick_style <- function(pairs, style) {
   lapply(pairs, function(pair) pair[[style]])
 }
 
+# The observeEvent() that answers a click: the action's, or one branch per menu item, for the app to fill in.
+click_handler_code <- function(click) {
+  value <- eval(click)
+  if (inherits(value, "mascot_popup_menu")) {
+    return(menu_handler_code(value$items))
+  }
+  if (is.null(value$label)) {
+    return(NULL)
+  }
+  sprintf("observeEvent(input$helper_click, {\n  # What \"%s\" does in your app.\n})", value$label)
+}
+
 # The observeEvent() that answers the menu: one branch per item, for the app to fill in.
 menu_handler_code <- function(items) {
   if (!length(items)) {
@@ -203,9 +227,9 @@ indent_code <- function(text, by) {
 }
 
 # A whole app to paste into app.R: user settings in the UI, one server update to try.
-whole_app_code <- function(ui, menu_handler, packages, css_value = NULL) {
+whole_app_code <- function(ui, click_handler, packages, css_value = NULL) {
   checkmate::assert_string(ui)
-  checkmate::assert_string(menu_handler, null.ok = TRUE)
+  checkmate::assert_string(click_handler, null.ok = TRUE)
   checkmate::assert_character(packages, min.chars = 1, any.missing = FALSE)
   checkmate::assert_string(css_value, null.ok = TRUE)
   paste0(
@@ -220,7 +244,7 @@ whole_app_code <- function(ui, menu_handler, packages, css_value = NULL) {
     "  observeEvent(input$celebrate, {\n",
     '    updateMascot("helper", mood = "celebrating", bubble = "Review complete.")',
     "\n  })\n",
-    if (!is.null(menu_handler)) paste0(indent_code(menu_handler, 2), "\n"),
+    if (!is.null(click_handler)) paste0(indent_code(click_handler, 2), "\n"),
     "}\n\nshinyApp(ui, server)"
   )
 }

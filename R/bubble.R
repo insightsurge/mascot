@@ -82,7 +82,7 @@ bubble_tag <- function(bubble) {
     `aria-live` = "polite",
     `aria-atomic` = "true",
     htmltools::tags$div(
-      class = "mascot-bubble",
+      class = "mascot-panel mascot-bubble",
       hidden = if (is.null(bubble$text)) NA else NULL,
       `data-text` = bubble$text,
       `data-html` = tolower(as.character(bubble$html)),

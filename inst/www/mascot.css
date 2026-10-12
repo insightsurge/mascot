@@ -51,19 +51,24 @@ body.quarto-dark {
   flex-shrink: 0;
 }
 
-.mascot-bubble {
-  position: relative;
+/* Panels (#233): the bubble, the menu and the tooltip share one look, in the source page's palette (also when
+   floating), and one appear motion. Each kind sets only its own size, spacing and placement. */
+.mascot-panel {
   box-sizing: border-box;
-  max-width: 16em;
-  padding: 0.75em;
-  margin-bottom: 1rem;
   border: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border, #dee2e6)));
-  border-radius: 0.75em;
   background: var(--mascot-source-bg, var(--bs-body-bg, var(--mascot-bubble-bg, #fff)));
   color: var(--mascot-source-text, var(--bs-body-color, var(--mascot-bubble-color, #212529)));
   font: inherit;
+  animation: mascot-panel-appear 150ms ease-out;
+}
+
+.mascot-bubble {
+  position: relative;
+  max-width: 16em;
+  padding: 0.75em;
+  margin-bottom: 1rem;
+  border-radius: 0.75em;
   overflow-wrap: anywhere;
-  animation: mascot-bubble-appear 150ms ease-out;
 }
 
 .mascot-bubble[hidden] {
@@ -75,17 +80,53 @@ body.quarto-dark {
   overflow-y: auto;
 }
 
-.mascot-bubble::after {
+/* A panel's tail: a turned square whose two bordered edges point at the character. */
+.mascot-bubble::after,
+.mascot-panel[data-side]::after {
   content: "";
   position: absolute;
-  bottom: -0.4em;
-  left: calc(50% - 0.35em);
   width: 0.7em;
   height: 0.7em;
-  transform: rotate(45deg);
   background: var(--mascot-source-bg, var(--bs-body-bg, var(--mascot-bubble-bg, #fff)));
   border-right: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border, #dee2e6)));
   border-bottom: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border, #dee2e6)));
+}
+
+.mascot-bubble::after {
+  bottom: -0.4em;
+  left: calc(50% - 0.35em);
+  transform: rotate(45deg);
+}
+
+/* Placed panels point at the character's centre (--mascot-panel-tail, set when placed). */
+.mascot-panel[data-side="top"]::after,
+.mascot-panel[data-side="bottom"]::after {
+  left: calc(var(--mascot-panel-tail, 50%) - 0.35em);
+}
+
+.mascot-panel[data-side="left"]::after,
+.mascot-panel[data-side="right"]::after {
+  top: calc(var(--mascot-panel-tail, 50%) - 0.35em);
+}
+
+.mascot-panel[data-side="top"]::after {
+  bottom: -0.4em;
+  transform: rotate(45deg);
+}
+
+.mascot-panel[data-side="bottom"]::after {
+  top: -0.4em;
+  transform: rotate(225deg);
+}
+
+.mascot-panel[data-side="left"]::after {
+  right: -0.4em;
+  transform: rotate(-45deg);
+}
+
+.mascot-panel[data-side="right"]::after {
+  left: -0.4em;
+  transform: rotate(135deg);
 }
 
 /* The close button sits in the top-right corner; the text keeps clear of it. Tab order is unchanged (text, then button). */
@@ -111,7 +152,7 @@ body.quarto-dark {
   cursor: pointer;
 }
 
-@keyframes mascot-bubble-appear {
+@keyframes mascot-panel-appear {
   from {
     opacity: 0;
   }
@@ -120,13 +161,13 @@ body.quarto-dark {
   }
 }
 
-/* App-level motion controls also apply to the bubble and restore button. */
-.mascot[data-reduced="true"] .mascot-bubble {
+/* App-level motion controls also apply to the panels and restore button. */
+.mascot[data-reduced="true"] .mascot-panel {
   animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mascot-bubble {
+  .mascot-panel {
     animation: none;
   }
 }
@@ -353,8 +394,8 @@ body.quarto-dark {
   cursor: grabbing;
 }
 
-/* Menus share the source page's bubble palette, including when floating. */
-.mascot-menu-toggle {
+/* With a click, a native button wraps the canvas: an action or a menu toggle. */
+.mascot-button {
   display: block;
   flex-shrink: 0;
   width: 100%;
@@ -365,7 +406,11 @@ body.quarto-dark {
   cursor: pointer;
 }
 
-.mascot-menu-toggle:focus-visible,
+.mascot-button[aria-disabled="true"] {
+  cursor: default;
+}
+
+.mascot-button:focus-visible,
 .mascot-menu [role="menuitem"]:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 3px;
@@ -376,7 +421,6 @@ body.quarto-dark {
   top: var(--mascot-menu-top, 0px);
   left: var(--mascot-menu-left, 0px);
   right: auto;
-  box-sizing: border-box;
   z-index: 2;
   width: max-content;
   min-width: min(10em, calc(100vw - 2rem));
@@ -384,11 +428,27 @@ body.quarto-dark {
   max-height: min(18em, var(--mascot-menu-max-height, calc(100vh - 2rem)));
   overflow-y: auto;
   padding: 0.35em;
-  border: 1px solid var(--mascot-source-border, var(--bs-border-color, var(--mascot-bubble-border)));
   border-radius: 0.5em;
-  background: var(--mascot-source-bg, var(--bs-body-bg, var(--mascot-bubble-bg)));
-  color: var(--mascot-source-text, var(--bs-body-color, var(--mascot-bubble-color)));
-  font: inherit;
+}
+
+/* The menu scrolls, which would clip a tail; the side it opens on shows in the mascot's gaze instead. */
+.mascot-menu[data-side]::after {
+  content: none;
+}
+
+/* The tooltip can be hovered, so the pointer can move onto it without it closing (WCAG 1.4.13). */
+.mascot-tooltip {
+  position: absolute;
+  top: var(--mascot-tooltip-top, 0px);
+  left: var(--mascot-tooltip-left, 0px);
+  z-index: 2;
+  width: max-content;
+  max-width: min(16em, calc(100vw - 2rem), var(--mascot-tooltip-max-width, calc(100vw - 2rem)));
+  max-height: var(--mascot-tooltip-max-height, calc(100vh - 2rem));
+  overflow-y: auto;
+  padding: 0.3em 0.6em;
+  border-radius: 0.5em;
+  overflow-wrap: anywhere;
 }
 
 .mascot-menu [role="menuitem"] {

@@ -1,21 +1,33 @@
 #' Choose a mascot's click menu
 #'
-#' Add a click menu to the mascot in a Shiny app. Clicking or tapping the mascot
-#' opens the menu, and clicking outside or pressing Escape closes it. While the
-#' menu is open, the mascot looks towards it, on the side where it actually
-#' opened (see "Where the menu opens" below). You provide the menu choices and
-#' handle the selected item in your Shiny server.
+#' Make a click on the mascot open a menu in a Shiny app. Pass it as `click` to
+#' [mascot()] or [updateMascot()]. Clicking or tapping the mascot opens the
+#' menu, and clicking outside or pressing Escape closes it. While the menu is
+#' open, the mascot looks towards it, on the side where it actually opened (see
+#' "Where the menu opens" below). You provide the menu choices and handle the
+#' selected item in your Shiny server. For a single action, use
+#' [mascot_action()] instead.
 #' @param items A named character vector of plain-text labels. Names are unique,
 #'   non-empty item IDs without whitespace (for example `c(about = "About", help = "Help")`).
-#'   Defaults to `NULL`, which removes the menu; an empty vector is not accepted.
+#'   Defaults to `NULL`, an empty helper: in [updateMascot()], it removes the
+#'   click, so the mascot is a picture again. An empty vector is not accepted.
 #'   Labels are always escaped.
+#' @param ... Must be empty. Extra arguments are errors.
 #' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
 #'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
 #'   (preferring above, then below, then the side towards the page centre). A
 #'   chosen side is a preference: see "Where the menu opens" below.
-#' @returns A `mascot_popup_menu` object with `items` and `direction` elements.
+#' @param label The name screen readers announce for the mascot's menu button,
+#'   such as `"Help and settings"`: one string containing a non-whitespace
+#'   character. `NULL` (the default) uses the character's name, such as "Tessa, menu".
+#' @param tooltip A flag. `TRUE` (the default) shows the label in a tooltip when
+#'   the pointer rests on the mascot or the keyboard focuses it, provided a
+#'   `label` is set. `FALSE` hides the tooltip; screen readers still announce
+#'   the label.
+#' @returns A `mascot_popup_menu` object with `items`, `direction`, `label` and
+#'   `tooltip` elements.
 #' @family mascot helpers
-#' @seealso [mascot()], [updateMascot()]
+#' @seealso [mascot()], [updateMascot()], [mascot_action()]
 #' @details
 #' **Where the menu opens.** The menu must fit in the space where it can show. For
 #' an inline mascot, that space is bounded by the nearest container that scrolls
@@ -26,19 +38,24 @@
 #' the bottom of a card opens above it. Give the mascot room on the chosen side,
 #' or use `"auto"`.
 #'
-#' **Keyboard navigation.** Enter or Space toggles the focused menu control, opening
-#' or closing the menu. Use the arrow keys, Home and End to move between items,
-#' and press Escape to close the menu and return focus to the mascot. Without
-#' menu items, the mascot remains an image with its status text.
+#' **Keyboard navigation.** Enter or Space on the focused mascot opens or closes
+#' the menu and moves the focus to its first item; holding the key down toggles
+#' it once. After opening it with a click, the down and up arrows move from the
+#' mascot to the first or last item. Use the arrow keys, Home and End to move
+#' between items, and press Escape to close the menu and return focus to the
+#' mascot.
 #'
 #' **Reading the selection in Shiny.** Choosing an item sets `input$<id>_menu` to
 #' the item ID (for example, `input$helper_menu` for `mascot(id = "helper")`).
-#' Choosing the same item twice triggers the input twice. In a module, use
-#' `ns("helper")` in the UI and read `input$helper_menu` inside that module's server:
+#' Choosing the same item twice triggers the input twice. Opening and closing the
+#' menu also set `input$<id>_click`, as every activation of the mascot does (see
+#' [mascot_action()]); an app that observes it runs its action in addition to the
+#' menu. In a module, use `ns("helper")` in the UI and read `input$helper_menu`
+#' inside that module's server:
 #' ```r
 #' helper_ui <- function(id) {
 #'   ns <- shiny::NS(id)
-#'   mascot(id = ns("helper"), popup_menu = mascot_popup_menu(
+#'   mascot(id = ns("helper"), click = mascot_popup_menu(
 #'     c(about = "About this app")))
 #' }
 #' helper_server <- function(id) {
@@ -67,11 +84,13 @@
 #' @examples
 #' mascot_popup_menu(c(about = "About this app", help = "Help"))
 #' mascot_popup_menu(c(about = "About this app"), direction = "top")
+#' mascot_popup_menu(c(about = "About this app"), label = "Help and settings")
+#' mascot_popup_menu(c(about = "About this app"), label = "Help and settings", tooltip = FALSE)
 #' mascot_popup_menu()
-#' mascot(id = "helper", popup_menu = c(about = "About this app"))
+#' mascot(id = "helper", click = mascot_popup_menu(c(about = "About this app")))
 #' @examplesIf interactive()
 #' shiny::shinyApp(
-#'   shiny::fluidPage(mascot(id = "helper", popup_menu = mascot_popup_menu(
+#'   shiny::fluidPage(mascot(id = "helper", click = mascot_popup_menu(
 #'     c(about = "About this app")))),
 #'   function(input, output, session) {
 #'     shiny::observeEvent(input$helper_menu, {
@@ -79,15 +98,23 @@
 #'     })
 #'   }
 #' )
-mascot_popup_menu <- function(items = NULL, direction = "auto") {
+mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NULL, tooltip = TRUE) {
   checkmate::assert_character(items, min.chars = 1, any.missing = FALSE, min.len = 1, null.ok = TRUE)
   if (!isTRUE(checkmate::check_string(direction))) {
     checkmate::assert_choice(direction, popup_menu_directions())
   }
+  checkmate::assert_string(label, min.chars = 1, pattern = "\\S", null.ok = TRUE)
+  checkmate::assert_flag(tooltip)
+  if (...length() > 0L) {
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("direction", "label"), environment())
+  }
   if (!direction %in% popup_menu_directions()) {
     abort_choice(direction, popup_menu_directions(), "direction", "direction", environment())
   }
-  value <- structure(list(items = items, direction = direction), class = "mascot_popup_menu")
+  value <- structure(
+    list(items = items, direction = direction, label = label, tooltip = tooltip),
+    class = "mascot_popup_menu"
+  )
   problem <- popup_menu_problem(value)
   if (!is.null(problem)) {
     cli::cli_abort("{problem}")
@@ -108,10 +135,12 @@ popup_menu_problem <- function(x) {
   if (inherits(x, "mascot_popup_menu")) {
     if (
       !isTRUE(checkmate::check_list(x, names = "unique")) ||
-        length(x) != 2L ||
-        !setequal(names(x), c("items", "direction"))
+        length(x) != 4L ||
+        !setequal(names(x), c("items", "direction", "label", "tooltip")) ||
+        !isTRUE(checkmate::check_string(x$label, min.chars = 1, pattern = "\\S", null.ok = TRUE)) ||
+        !isTRUE(checkmate::check_flag(x$tooltip))
     ) {
-      return("`popup_menu` must have items and direction fields; use mascot_popup_menu().")
+      return("`click` must have items, direction, label and tooltip fields; use mascot_popup_menu().")
     }
     if (!isTRUE(checkmate::check_choice(x$direction, popup_menu_directions()))) {
       return(paste0(
@@ -135,33 +164,6 @@ popup_menu_problem <- function(x) {
     return("`items` names must be unique, non-empty ids without whitespace; use c(about = 'About this app').")
   }
   NULL
-}
-
-#' Accept named items or a menu helper
-#' @noRd
-as_popup_menu_arg <- function(x, call) {
-  checkmate::assert_environment(call)
-  check_arg(x, "popup_menu", call)
-  value <- if (inherits(x, "mascot_popup_menu")) x else mascot_popup_menu(x)
-  list(
-    items = if (is.null(value$items)) NULL else as.list(value$items),
-    direction = value$direction
-  )
-}
-
-#' Initial menu configuration, escaped for a data-only script tag
-#' @noRd
-popup_menu_tag <- function(menu) {
-  checkmate::assert_list(menu, names = "unique")
-  if (is.null(menu$items)) {
-    return(NULL)
-  }
-  json <- jsonlite::toJSON(menu, auto_unbox = TRUE, null = "null")
-  htmltools::tags$script(
-    type = "application/json",
-    `data-mascot-popup-menu` = "",
-    htmltools::HTML(gsub("</", "<\\/", json, fixed = TRUE))
-  )
 }
 
 #' @export

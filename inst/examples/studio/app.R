@@ -23,7 +23,7 @@ start <- lapply(defaults, code_pair)
 # The canvas opts into inline placement; a plain mascot() now floats in the bottom-right corner.
 start$placement <- code_placement(position = "inline")
 start$bubble <- code_bubble(welcome, FALSE, 8, TRUE)
-start$popup_menu <- code_menu(default_menu)
+start$click <- code_menu(default_menu)
 
 # The mascot() call for a state: only the arguments that differ from the defaults.
 ui_args <- function(state, style) {
@@ -340,10 +340,10 @@ ui <- function(request) {
 # ---- Server ------------------------------------------------------------------------------
 
 studio_server <- function(input, output, session) {
-  # Welcome content belongs to the live studio; copied code starts with empty user messages and menu.
+  # Welcome content belongs to the live studio; copied code starts with empty user messages and no click.
   settings <- start
   settings$bubble <- code_pair(defaults$bubble)
-  settings$popup_menu <- code_pair(defaults$popup_menu)
+  settings$click <- code_pair(defaults$click)
   state <- do.call(reactiveValues, settings)
   last_call <- reactiveVal("No update yet. Change a setting in Controls.")
   log <- reactiveVal(list())
@@ -743,8 +743,32 @@ studio_server <- function(input, output, session) {
     )
   })
 
-  # Popup menu
-  menu_text <- debounce(reactive(list(input$menu_on, input$menu_items, input$menu_direction)), 600)
+  # Click: one action or a menu. The two switches take turns, because a mascot has one click.
+  click_kind <- reactiveVal("menu")
+  observeEvent(
+    input$action_on,
+    {
+      if (isTRUE(input$action_on)) {
+        click_kind("action")
+        if (isTRUE(input$menu_on)) update_switch("menu_on", value = FALSE, session = session)
+      } else if (click_kind() == "action") {
+        click_kind(if (isTRUE(input$menu_on)) "menu" else "none")
+      }
+    },
+    ignoreInit = TRUE
+  )
+  observeEvent(
+    input$menu_on,
+    {
+      if (isTRUE(input$menu_on)) {
+        click_kind("menu")
+        if (isTRUE(input$action_on)) update_switch("action_on", value = FALSE, session = session)
+      } else if (click_kind() == "menu") {
+        click_kind(if (isTRUE(input$action_on)) "action" else "none")
+      }
+    },
+    ignoreInit = TRUE
+  )
   menu_parsed <- reactive({
     lines <- trimws(strsplit(input$menu_items %||% "", "\n", fixed = TRUE)[[1]])
     lines <- lines[nzchar(lines)]
@@ -763,20 +787,55 @@ studio_server <- function(input, output, session) {
     }
     if (!is.null(problem)) div(class = "pg-note pg-warn", problem)
   })
+  action_problem <- reactive({
+    if (!nzchar(trimws(input$action_label %||% ""))) "Write a label: it names the button for screen readers."
+  })
+  output$action_problem <- renderUI({
+    problem <- action_problem() %||% if (click_kind() == "action") menu_error()
+    if (!is.null(problem)) div(class = "pg-note pg-warn", problem)
+  })
+  # The click as code, from whichever switch is on; with both off, the empty helper removes it.
+  click_code <- reactive({
+    switch(
+      click_kind(),
+      action = code_action(input$action_label %||% "", isTRUE(input$action_tooltip), isTRUE(input$action_disabled)),
+      menu = code_menu(
+        menu_parsed()$items,
+        input$menu_direction %||% "auto",
+        input$menu_label %||% "",
+        isTRUE(input$menu_tooltip)
+      ),
+      code_pair(defaults$click)
+    )
+  })
+  click_problem <- reactive({
+    switch(click_kind(), action = action_problem(), menu = menu_parsed()$problem, NULL)
+  })
+  click_text <- debounce(
+    reactive(list(
+      click_kind(),
+      input$action_label,
+      input$action_tooltip,
+      input$action_disabled,
+      input$menu_items,
+      input$menu_direction,
+      input$menu_label,
+      input$menu_tooltip
+    )),
+    600
+  )
   observeEvent(
-    menu_text(),
+    click_text(),
     {
-      parsed <- menu_parsed()
-      # Switching the menu off works even while the item text has a problem.
-      req(!isTRUE(input$menu_on) || is.null(parsed$problem))
-      items <- if (isTRUE(input$menu_on)) parsed$items else character()
-      ok <- send(list(popup_menu = code_menu(items, input$menu_direction %||% "auto")), force = TRUE)
+      # Switching the click off works even while the text has a problem.
+      req(is.null(click_problem()))
+      ok <- send(list(click = click_code()), force = TRUE)
       menu_error(if (identical(ok, FALSE) && length(log())) log()[[1]]$message)
     },
     ignoreInit = TRUE
   )
   observeEvent(input$helper_menu, {
-    items <- eval(state$popup_menu$helper)$items
+    items <- eval(state$click$helper)$items
     label <- if (input$helper_menu %in% names(items)) items[[input$helper_menu]] else input$helper_menu
     menu_last(sprintf("\"%s\" (%s)", input$helper_menu, label))
     add_log(
@@ -805,16 +864,24 @@ studio_server <- function(input, output, session) {
     }
   })
   output$menu_last <- renderText(menu_last())
-  # Clicks reach the app only without a menu: the button removes the menu, as switching it off does.
-  observeEvent(input$click_try, {
-    update_switch("menu_on", value = FALSE, session = session)
-    send(list(popup_menu = code_menu(character(), input$menu_direction %||% "auto")), force = TRUE)
-  })
-  click_last <- reactiveVal("Nothing yet: remove the menu, then click or tap the mascot.")
+  click_last <- reactiveVal("Nothing yet: turn on a click, then click or tap the mascot.")
   observeEvent(input$helper_click, {
     click_last(paste(input$helper_click, if (input$helper_click == 1) "click" else "clicks"))
-    add_log(sprintf("input$helper_click  # %s", input$helper_click), "event", "The visitor clicked the mascot.")
-    send(list(gesture = code_gesture("wave")), force = TRUE, remember = FALSE)
+    action <- eval(state$click$helper)
+    if (inherits(action, "mascot_action") && !is.null(action$label)) {
+      add_log(
+        sprintf("input$helper_click  # %s", input$helper_click),
+        "event",
+        paste0("The visitor clicked the mascot: ", action$label, ".")
+      )
+      send(list(gesture = code_gesture("wave")), force = TRUE, remember = FALSE)
+    } else {
+      add_log(
+        sprintf("input$helper_click  # %s", input$helper_click),
+        "event",
+        "The visitor opened or closed the menu."
+      )
+    }
   })
   output$click_last <- renderText(click_last())
   output$menu_code <- renderText({
@@ -957,7 +1024,7 @@ studio_server <- function(input, output, session) {
         named_call("list", preview_colours())
       },
       motion = if (isTRUE(input$preview_motion)) TRUE,
-      popup_menu = if (length(items)) named_call("c", items)
+      click = if (length(items)) helper_call("mascot_popup_menu", named_call("c", items))
     )
     Filter(Negate(is.null), args)
   })
@@ -1118,7 +1185,7 @@ studio_server <- function(input, output, session) {
     paste0("# ", gsub("[\r\n]+", " ", cli::ansi_strip(problem)))
   }
   settings_problem <- reactive({
-    if (isTRUE(input$menu_on)) menu_parsed()$problem %||% menu_error()
+    if (click_kind() != "none") click_problem() %||% menu_error()
   })
 
   # Code card
@@ -1149,7 +1216,7 @@ studio_server <- function(input, output, session) {
     theme <- paste(deparse(current$theme$short), collapse = "")
     whole_app_code(
       ui,
-      menu_handler_code(eval(current$popup_menu$helper)$items),
+      click_handler_code(current$click$helper),
       c("shiny", if (grepl("bs_theme", theme, fixed = TRUE)) "bslib", "mascot"),
       if (grepl("--studio-accent", theme, fixed = TRUE)) input$css_accent
     )
@@ -1186,7 +1253,7 @@ studio_server <- function(input, output, session) {
   output$roles_table <- renderUI(roles_table(current_character()))
   output$code_function <- renderText({
     fn <- selected_function()
-    if (fn %in% c("mascot", "updateMascot", "mascot_popup_menu") && !is.null(settings_problem())) {
+    if (fn %in% c("mascot", "updateMascot", "mascot_action", "mascot_popup_menu") && !is.null(settings_problem())) {
       return(problem_comment(settings_problem()))
     }
     if (fn == "mascot_preview") {
@@ -1212,9 +1279,16 @@ studio_server <- function(input, output, session) {
         if (isTRUE(input$drag != "FALSE")) input$drag else FALSE
       ),
       mascot_theme = theme_code(),
+      mascot_action = code_action(
+        input$action_label %||% "",
+        isTRUE(input$action_tooltip),
+        isTRUE(input$action_disabled)
+      ),
       mascot_popup_menu = code_menu(
-        if (isTRUE(input$menu_on)) menu_parsed()$items else character(),
-        input$menu_direction %||% "auto"
+        menu_parsed()$items,
+        input$menu_direction %||% "auto",
+        input$menu_label %||% "",
+        isTRUE(input$menu_tooltip)
       ),
       NULL
     )

@@ -21,10 +21,10 @@
 #'   object, defaulting to `"inline"`. Accepted so the same arguments as
 #'   [mascot()] can be passed, and has no effect in a preview (cells stay in
 #'   their grid). `NULL` is not accepted.
-#' @param popup_menu A named character vector or [mascot_popup_menu()] object,
-#'   or `NULL` (the default) for no menu. Accepted so the same arguments as
-#'   [mascot()] can be passed, and has no effect in a preview (menus are
-#'   inactive on a static page).
+#' @param click A label, a [mascot_action()] object or a [mascot_popup_menu()]
+#'   object, or `NULL` (the default) for no click. Accepted so the same arguments
+#'   as [mascot()] can be passed, and has no effect in a preview (clicks need
+#'   Shiny, so every cell stays a picture).
 #' @param motion A logical flag or [mascot_motion()] object. Defaults to `FALSE`
 #'   for steady faces; `TRUE` allows animation subject to the visitor's preference.
 #'   `NULL` is not accepted.
@@ -48,8 +48,8 @@
 #' in its console, outside the R `contrast` attribute.
 #'
 #' **Placement, menus and bubbles.** Floating `placement` is checked, then shown
-#' inline for comparison, so every cell remains in its grid. Click menus are
-#' checked but remain inactive on this static page. Empty bubble space is omitted
+#' inline for comparison, so every cell remains in its grid. A `click` is
+#' checked but has no effect on this static page. Empty bubble space is omitted
 #' here; a supplied bubble keeps its normal space and timing, and each cell is
 #' wide enough to hold it, so bubbles never cover neighbouring cells.
 #' @family mascot helpers
@@ -69,7 +69,7 @@ mascot_preview <- function(
   placement = "inline",
   theme = NULL,
   motion = FALSE,
-  popup_menu = NULL
+  click = NULL
 ) {
   # These union arguments share mascot()'s converters and checkmate boundaries.
   character <- as_character_arg(character, environment())
@@ -79,7 +79,7 @@ mascot_preview <- function(
   size <- as_size_arg(size, environment())
   placement <- as_placement_arg(placement, environment())
   invisible(as_motion_arg(motion, environment()))
-  menu <- as_popup_menu_arg(popup_menu, environment())
+  click <- as_click_arg(click, environment())
   # Resolve once. Replace only slice 4's per-role contrast warnings with one list.
   resolved <- withCallingHandlers(
     as_theme_arg(theme, environment(), character$id),
@@ -121,7 +121,7 @@ mascot_preview <- function(
   prefix <- basename(tempfile("mascot-preview-"))
   panels <- lapply(c("light", "dark"), function(mode) {
     checkmate::assert_choice(mode, c("light", "dark"))
-    preview_panel(character, moods, status, bubble, sizes, labels, resolved, motion, popup_menu, mode, prefix)
+    preview_panel(character, moods, status, bubble, sizes, labels, resolved, motion, mode, prefix)
   })
   page <- htmltools::tagList(htmltools::tags$main(
     id = prefix,
@@ -145,7 +145,9 @@ mascot_preview <- function(
     htmltools::tags$h1(id = paste0(prefix, "-heading"), paste(character$name, "preview")),
     htmltools::tags$p("Compare each mood and size in both modes. Status text keeps the meaning readable."),
     if (placement$position != "inline") htmltools::tags$p("Floating placement is shown inline in this comparison."),
-    if (length(menu$items)) htmltools::tags$p("Click menus need Shiny and are inactive in this static preview."),
+    if (!is.null(click) && click$type != "none") {
+      htmltools::tags$p("Clicks need Shiny and are inactive in this static preview.")
+    },
     if (length(resolved$css)) {
       htmltools::tags$p("Experimental CSS colours are checked in the browser console, not the R contrast list.")
     },
@@ -251,7 +253,7 @@ preview_contrast_labels <- function(contrast) {
 
 #' One mode's table using mascot() markup and the theme as sent to the browser
 #' @noRd
-preview_panel <- function(character, moods, status, bubble, sizes, labels, theme, motion, popup_menu, mode, prefix) {
+preview_panel <- function(character, moods, status, bubble, sizes, labels, theme, motion, mode, prefix) {
   checkmate::assert_class(character, "mascot_character")
   checkmate::assert_character(moods, any.missing = FALSE, min.len = 1)
   checkmate::assert_class(status, "mascot_status")
@@ -259,7 +261,7 @@ preview_panel <- function(character, moods, status, bubble, sizes, labels, theme
   checkmate::assert_list(sizes, min.len = 1)
   checkmate::assert_character(labels, len = length(sizes), any.missing = FALSE)
   checkmate::assert_list(theme, null.ok = TRUE)
-  # Motion and popup_menu unions have been checked by the public converters.
+  # The motion union has been checked by the public converter. Cells get no click: a static page cannot send one.
   checkmate::assert_choice(mode, c("light", "dark"))
   checkmate::assert_string(prefix)
   theme <- if (is.null(theme)) list(light = NULL, dark = NULL, css = NULL, brand = NULL) else theme
@@ -276,8 +278,7 @@ preview_panel <- function(character, moods, status, bubble, sizes, labels, theme
         bubble = bubble,
         size = sizes[[column]],
         placement = "inline",
-        motion = motion,
-        popup_menu = popup_menu
+        motion = motion
       )
       tag <- htmltools::tagAppendChild(tag, theme_tag(theme))
       htmltools::tags$td(

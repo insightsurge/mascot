@@ -98,6 +98,7 @@ shiny::shinyApp(
 \code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}
 
 Other mascot helpers:
+\code{\link[=mascot_action]{mascot_action()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},

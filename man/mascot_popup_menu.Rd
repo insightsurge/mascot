@@ -4,28 +4,49 @@
 \alias{mascot_popup_menu}
 \title{Choose a mascot's click menu}
 \usage{
-mascot_popup_menu(items = NULL, direction = "auto")
+mascot_popup_menu(
+  items = NULL,
+  ...,
+  direction = "auto",
+  label = NULL,
+  tooltip = TRUE
+)
 }
 \arguments{
 \item{items}{A named character vector of plain-text labels. Names are unique,
 non-empty item IDs without whitespace (for example \code{c(about = "About", help = "Help")}).
-Defaults to \code{NULL}, which removes the menu; an empty vector is not accepted.
+Defaults to \code{NULL}, an empty helper: in \code{\link[=updateMascot]{updateMascot()}}, it removes the
+click, so the mascot is a picture again. An empty vector is not accepted.
 Labels are always escaped.}
+
+\item{...}{Must be empty. Extra arguments are errors.}
 
 \item{direction}{Direction to open the menu from the mascot: \code{"auto"} (the default),
 \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. \code{"auto"} picks the side with room
 (preferring above, then below, then the side towards the page centre). A
 chosen side is a preference: see "Where the menu opens" below.}
+
+\item{label}{The name screen readers announce for the mascot's menu button,
+such as \code{"Help and settings"}: one string containing a non-whitespace
+character. \code{NULL} (the default) uses the character's name, such as "Tessa, menu".}
+
+\item{tooltip}{A flag. \code{TRUE} (the default) shows the label in a tooltip when
+the pointer rests on the mascot or the keyboard focuses it, provided a
+\code{label} is set. \code{FALSE} hides the tooltip; screen readers still announce
+the label.}
 }
 \value{
-A \code{mascot_popup_menu} object with \code{items} and \code{direction} elements.
+A \code{mascot_popup_menu} object with \code{items}, \code{direction}, \code{label} and
+\code{tooltip} elements.
 }
 \description{
-Add a click menu to the mascot in a Shiny app. Clicking or tapping the mascot
-opens the menu, and clicking outside or pressing Escape closes it. While the
-menu is open, the mascot looks towards it, on the side where it actually
-opened (see "Where the menu opens" below). You provide the menu choices and
-handle the selected item in your Shiny server.
+Make a click on the mascot open a menu in a Shiny app. Pass it as \code{click} to
+\code{\link[=mascot]{mascot()}} or \code{\link[=updateMascot]{updateMascot()}}. Clicking or tapping the mascot opens the
+menu, and clicking outside or pressing Escape closes it. While the menu is
+open, the mascot looks towards it, on the side where it actually opened (see
+"Where the menu opens" below). You provide the menu choices and handle the
+selected item in your Shiny server. For a single action, use
+\code{\link[=mascot_action]{mascot_action()}} instead.
 }
 \details{
 \strong{Where the menu opens.} The menu must fit in the space where it can show. For
@@ -37,19 +58,24 @@ opens wherever \code{"auto"} finds space. So \code{direction = "bottom"} on a ma
 the bottom of a card opens above it. Give the mascot room on the chosen side,
 or use \code{"auto"}.
 
-\strong{Keyboard navigation.} Enter or Space toggles the focused menu control, opening
-or closing the menu. Use the arrow keys, Home and End to move between items,
-and press Escape to close the menu and return focus to the mascot. Without
-menu items, the mascot remains an image with its status text.
+\strong{Keyboard navigation.} Enter or Space on the focused mascot opens or closes
+the menu and moves the focus to its first item; holding the key down toggles
+it once. After opening it with a click, the down and up arrows move from the
+mascot to the first or last item. Use the arrow keys, Home and End to move
+between items, and press Escape to close the menu and return focus to the
+mascot.
 
 \strong{Reading the selection in Shiny.} Choosing an item sets \verb{input$<id>_menu} to
 the item ID (for example, \code{input$helper_menu} for \code{mascot(id = "helper")}).
-Choosing the same item twice triggers the input twice. In a module, use
-\code{ns("helper")} in the UI and read \code{input$helper_menu} inside that module's server:
+Choosing the same item twice triggers the input twice. Opening and closing the
+menu also set \verb{input$<id>_click}, as every activation of the mascot does (see
+\code{\link[=mascot_action]{mascot_action()}}); an app that observes it runs its action in addition to the
+menu. In a module, use \code{ns("helper")} in the UI and read \code{input$helper_menu}
+inside that module's server:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{helper_ui <- function(id) \{
   ns <- shiny::NS(id)
-  mascot(id = ns("helper"), popup_menu = mascot_popup_menu(
+  mascot(id = ns("helper"), click = mascot_popup_menu(
     c(about = "About this app")))
 \}
 helper_server <- function(id) \{
@@ -78,11 +104,13 @@ the menu.
 \examples{
 mascot_popup_menu(c(about = "About this app", help = "Help"))
 mascot_popup_menu(c(about = "About this app"), direction = "top")
+mascot_popup_menu(c(about = "About this app"), label = "Help and settings")
+mascot_popup_menu(c(about = "About this app"), label = "Help and settings", tooltip = FALSE)
 mascot_popup_menu()
-mascot(id = "helper", popup_menu = c(about = "About this app"))
+mascot(id = "helper", click = mascot_popup_menu(c(about = "About this app")))
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
-  shiny::fluidPage(mascot(id = "helper", popup_menu = mascot_popup_menu(
+  shiny::fluidPage(mascot(id = "helper", click = mascot_popup_menu(
     c(about = "About this app")))),
   function(input, output, session) {
     shiny::observeEvent(input$helper_menu, {
@@ -93,9 +121,10 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=updateMascot]{updateMascot()}}, \code{\link[=mascot_action]{mascot_action()}}
 
 Other mascot helpers:
+\code{\link[=mascot_action]{mascot_action()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},

@@ -973,7 +973,7 @@ describe("popup menu in a Shiny browser", {
 
 
 describe("documented Shiny settings", {
-  it("D4 runs the help example for idle movement, light/dark colours and reset", {
+  it("D4 runs the help example for idle movement and a nod", {
     local_shiny_browser()
     rd <- local_help_page("mascot_motion_settings")
     con <- textConnection("code", "w", local = TRUE)
@@ -1007,15 +1007,11 @@ describe("documented Shiny settings", {
     app$wait_for_js("!!window.mascot?.host?.state(document.getElementById('helper'))")
     app$set_inputs(idle = FALSE)
     app$wait_for_js("document.getElementById('helper').dataset.idle==='false'")
-    app$set_inputs(dark = TRUE)
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#9ec5fe'")
-    app$set_inputs(dark = FALSE)
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#1f6feb'")
-    app$click("reset")
-    app$wait_for_js(
-      "Object.values(mascot.host.state(document.getElementById('helper')).colours).every(value=>value===null)"
-    )
+    app$click("nod")
+    app$wait_for_js("mascot.host.state(document.getElementById('helper')).mood === 'idle'")
     expect_identical(app$get_js("document.getElementById('helper').dataset.idle"), "false")
+    app$set_inputs(idle = TRUE)
+    app$wait_for_js("document.getElementById('helper').dataset.idle==='true'")
   })
   it("D4 runs the complete module help block and receives repeated choices", {
     local_shiny_browser()

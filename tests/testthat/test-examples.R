@@ -908,6 +908,13 @@ describe("bundled example apps", {
     app$wait_for_js(highlight_swatch_matches)
     expect_true(app$get_js(highlight_swatch_matches))
     select_function("mascot_popup_menu")
+    # The controls start with the mascot's own menu, so changing only the direction keeps every item (#256).
+    app$set_inputs(menu_direction = "top")
+    app$wait_for_js(paste0(state, ".click.direction === 'top'"))
+    expect_identical(
+      app$get_js(paste0("Object.keys(", state, ".click.items).join()")),
+      "finish,reset,about"
+    )
     app$set_inputs(menu_on = TRUE, menu_items = "finish = Finish review", menu_direction = "right")
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('direction = \"right\"')")
     app$wait_for_js(paste0(state, ".click.direction === 'right'"))

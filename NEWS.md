@@ -44,7 +44,7 @@
 * `mascot_popup_menu()` makes a click open a menu of app-defined items: pass it as `click`. A chosen item sets `input$<id>_menu` to its ID, so choosing the same item twice triggers the input twice (#143, #213, #257).
   * `direction` is `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`. The menu opens from the mascot's on-screen position, and falls back to the opposite side when the chosen side has no room (#225).
   * Opening the menu closes a speech bubble, and a new bubble closes an open menu (#225).
-  * Opening and closing the menu also set `input$<id>_click`. `label` names the menu button for screen readers; without it, the button is named after the character, such as "Tessa, menu" (#257).
+  * Opening and closing the menu also set `input$<id>_click`. `label` names the menu button for screen readers and shows in a tooltip, which `tooltip = FALSE` turns off; without it, the button is named after the character, such as "Tessa, menu" (#257).
   * Enter and Space toggle the focused menu control, once while the key is held down; the arrow keys, Home and End move between items, and Escape closes the menu (#213, #257).
   * While the menu is open, the mascot looks towards it: up, down, left or right, on the side where the menu actually opened, after any fallback. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208, #241).
 

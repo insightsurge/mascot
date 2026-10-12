@@ -126,7 +126,13 @@ click_wire <- function(value) {
     if (is.null(value$items)) {
       return(list(type = "none"))
     }
-    return(list(type = "menu", items = as.list(value$items), direction = value$direction, label = value$label))
+    return(list(
+      type = "menu",
+      items = as.list(value$items),
+      direction = value$direction,
+      label = value$label,
+      tooltip = value$tooltip
+    ))
   }
   if (is.null(value$label)) {
     return(list(type = "none"))

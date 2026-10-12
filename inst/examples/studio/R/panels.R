@@ -217,6 +217,12 @@ panel_messages <- function() {
         class = "pg-hint",
         "Screen readers announce the mascot as a button with this name. Empty: the character's name and \"menu\"."
       )
+    ),
+    arg_field(
+      "mascot_popup_menu",
+      "tooltip",
+      input_switch("menu_tooltip", "Show the label in a tooltip", TRUE),
+      note = div(class = "pg-hint", "Rest the pointer on the mascot, or Tab to it. Escape hides the tooltip.")
     )
   )
 }

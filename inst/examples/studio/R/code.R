@@ -85,13 +85,15 @@ code_placement <- function(position = "bottom-right", minimise = TRUE, drag = FA
 }
 
 # A menu has no shortcut: a named vector is not a click, so both forms use the helper.
-code_menu <- function(items, direction = "auto", label = "") {
+code_menu <- function(items, direction = "auto", label = "", tooltip = TRUE) {
   vector <- if (length(items)) named_call("c", items)
+  has_label <- nzchar(trimws(label))
   helper <- helper_call(
     "mascot_popup_menu",
     vector,
     direction = if (!identical(direction, "auto")) direction,
-    label = if (nzchar(trimws(label))) label
+    label = if (has_label) label,
+    tooltip = if (!tooltip && has_label) FALSE
   )
   code_pair(helper)
 }

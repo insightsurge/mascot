@@ -1817,7 +1817,7 @@ describe("mascot.host popup menu", {
       let button=el.querySelector('.mascot-menu-toggle');
       const key=(target,key)=>target.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
       button.focus();key(button,'Enter');const opened=mascot.host.state(el).menuOpen;key(button,'Enter');const closed=!mascot.host.state(el).menuOpen;
-      send({click:{type:'menu',items:{about:'About',help:'Help',more:'More'},direction:'auto',label:null}});
+      send({click:{type:'menu',items:{about:'About',help:'Help',more:'More'},direction:'auto',label:null,tooltip:true}});
       button=el.querySelector('.mascot-menu-toggle');key(document.body,'Enter');const global=!mascot.host.state(el).menuOpen;
       button.focus();key(button,' ');button.focus();key(button,' ');const spaceClosed=!mascot.host.state(el).menuOpen;
       key(button,' ');const first=document.activeElement.dataset.itemId;
@@ -1848,8 +1848,8 @@ describe("mascot.host popup menu", {
     r <- js(
       "(async()=>{const el=document.getElementById('a'),state=()=>mascot.host.state(el),send=patch=>mascot.host.receive({id:'a',patch});
       el.querySelector('.mascot-menu-toggle').click();const cleared=state().bubble===null&&el.querySelector('.mascot-bubble').hidden;
-      send({mood:'happy',click:{type:'menu',items:{bad:''},direction:'auto',label:null}});const atomic=state().mood==='idle'&&state().menuOpen;
-      el.querySelector('[role=menuitem]').focus();send({click:{type:'menu',items:{replacement:'Replacement'},direction:'auto',label:null}});
+      send({mood:'happy',click:{type:'menu',items:{bad:''},direction:'auto',label:null,tooltip:true}});const atomic=state().mood==='idle'&&state().menuOpen;
+      el.querySelector('[role=menuitem]').focus();send({click:{type:'menu',items:{replacement:'Replacement'},direction:'auto',label:null,tooltip:true}});
       const replacementFocus=document.activeElement===el.querySelector('.mascot-menu-toggle');
       el.querySelector('.mascot-menu-toggle').click();el.querySelector('[role=menuitem]').focus();send({click:{type:'none'}});
       return {cleared,atomic,replacementFocus,open:state().menuOpen,button:!!el.querySelector('.mascot-menu-toggle'),
@@ -1903,7 +1903,7 @@ describe("mascot.host popup menu", {
       const menu=el.querySelector('.mascot-menu'),below=menu.getBoundingClientRect().top>=el.querySelector('canvas').getBoundingClientRect().top;
       el.querySelector('.mascot-menu-toggle').click();
       el.querySelector('.mascot-minimise').click();const closed=!mascot.host.state(el).menuOpen;
-      mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{new:'New'},direction:'auto',label:null}}});
+      mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{new:'New'},direction:'auto',label:null,tooltip:true}}});
       const hiddenWhileMinimised=el.querySelector('.mascot-menu-toggle').hidden;
       el.querySelector('.mascot-restore').click();return {below,closed,hiddenWhileMinimised,open:mascot.host.state(el).menuOpen,
         hidden:el.querySelector('.mascot-menu-toggle').hidden};})()"
@@ -2354,7 +2354,7 @@ describe("mascot.host click (#257)", {
         for (const label of ['   ',' \\t\\r\\n ']) {
           for (const click of [
             {type:'action',label,tooltip:true,disabled:false},
-            {type:'menu',items:{help:'Help'},direction:'auto',label}
+            {type:'menu',items:{help:'Help'},direction:'auto',label,tooltip:true}
           ]) {
             mascot.host.receive({id:'a',patch:{mood:'happy',click}});
             unchanged.push(JSON.stringify(state())===before);
@@ -2543,7 +2543,7 @@ describe("mascot.host click (#257)", {
     expect_identical(js(paste0(clicks, ".length")), 1L)
     expect_identical(js("document.querySelector('#a .mascot-menu-toggle').getAttribute('aria-label')"), "Tessa, menu")
     js(
-      "mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{a:'A'},direction:'auto',label:'Help and settings'}}})"
+      "mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{a:'A'},direction:'auto',label:'Help and settings',tooltip:true}}})"
     )
     expect_identical(
       js("document.querySelector('#a .mascot-menu-toggle').getAttribute('aria-label')"),
@@ -2765,6 +2765,49 @@ describe("mascot.host action tooltip (#257)", {
       return {added:added.length,removed:removed.length};})()"
     ))
     expect_identical(r, list(added = 1L, removed = 1L))
+  })
+  it("shows a menu's tooltip on hover and hides it when the menu opens", {
+    skip_without_chrome()
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = "inline",
+      click = mascot_popup_menu(c(about = "About"), label = "Help menu")
+    )
+    r <- js(paste0(
+      "(() => {const el=document.getElementById('a'),button=el.querySelector('.mascot-button'),
+        tip=el.querySelector('.mascot-tooltip');",
+      sprintf(hover("button"), "pointerover"),
+      ";const shown=!tip.hidden,state=mascot.host.state(el).tooltip,text=tip.textContent;
+      button.click();
+      const onOpen=mascot.host.state(el).tooltip,menuOpen=mascot.host.state(el).menuOpen;
+      return {shown,state,text,onOpen,menuOpen,tipHidden:tip.hidden};})()"
+    ))
+    expect_true(r$shown)
+    expect_true(r$state)
+    expect_identical(r$text, "Help menu")
+    expect_false(r$onOpen)
+    expect_true(r$menuOpen)
+    expect_true(r$tipHidden)
+  })
+  it("creates no tooltip element for a menu without a label or with tooltip = FALSE", {
+    skip_without_chrome()
+    js <- local_host_page(
+      shiny_menu = TRUE,
+      placement = "inline",
+      click = mascot_popup_menu(c(about = "About"))
+    )
+    r <- js(
+      "(() => {const el=document.getElementById('a');
+      const withoutLabel=!el.querySelector('.mascot-tooltip');
+      mascot.host.receive({
+        id:'a',
+        patch:{click:{type:'menu',items:{about:'About'},direction:'auto',label:'Help menu',tooltip:false}}
+      });
+      const tooltipFalse=!el.querySelector('.mascot-tooltip');
+      return {withoutLabel,tooltipFalse};})()"
+    )
+    expect_true(r$withoutLabel)
+    expect_true(r$tooltipFalse)
   })
 })
 

@@ -66,7 +66,7 @@
     Code
       print(helper)
     Output
-      mascot_popup_menu(items = c(about = "About"), direction = "auto", label = NULL)
+      mascot_popup_menu(items = c(about = "About"), direction = "auto", label = NULL, tooltip = TRUE)
 
 ---
 

@@ -147,7 +147,8 @@ playground_controls <- list(
     items = input_id("menu_on", "menu_items"),
     ... = fixed_arg("Must be empty: the controls name every optional argument."),
     direction = input_id("menu_direction"),
-    label = input_id("menu_label")
+    label = input_id("menu_label"),
+    tooltip = input_id("menu_tooltip")
   ),
   mascot = list(
     character = input_id("character"),

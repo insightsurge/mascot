@@ -20,8 +20,12 @@
 #' @param label The name screen readers announce for the mascot's menu button,
 #'   such as `"Help and settings"`: one string containing a non-whitespace
 #'   character. `NULL` (the default) uses the character's name, such as "Tessa, menu".
-#' @returns A `mascot_popup_menu` object with `items`, `direction` and `label`
-#'   elements.
+#' @param tooltip A flag. `TRUE` (the default) shows the label in a tooltip when
+#'   the pointer rests on the mascot or the keyboard focuses it, provided a
+#'   `label` is set. `FALSE` hides the tooltip; screen readers still announce
+#'   the label.
+#' @returns A `mascot_popup_menu` object with `items`, `direction`, `label` and
+#'   `tooltip` elements.
 #' @family mascot helpers
 #' @seealso [mascot()], [updateMascot()], [mascot_action()]
 #' @details
@@ -81,6 +85,7 @@
 #' mascot_popup_menu(c(about = "About this app", help = "Help"))
 #' mascot_popup_menu(c(about = "About this app"), direction = "top")
 #' mascot_popup_menu(c(about = "About this app"), label = "Help and settings")
+#' mascot_popup_menu(c(about = "About this app"), label = "Help and settings", tooltip = FALSE)
 #' mascot_popup_menu()
 #' mascot(id = "helper", click = mascot_popup_menu(c(about = "About this app")))
 #' @examplesIf interactive()
@@ -93,19 +98,23 @@
 #'     })
 #'   }
 #' )
-mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NULL) {
+mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NULL, tooltip = TRUE) {
   checkmate::assert_character(items, min.chars = 1, any.missing = FALSE, min.len = 1, null.ok = TRUE)
   if (!isTRUE(checkmate::check_string(direction))) {
     checkmate::assert_choice(direction, popup_menu_directions())
   }
   checkmate::assert_string(label, min.chars = 1, pattern = "\\S", null.ok = TRUE)
+  checkmate::assert_flag(tooltip)
   if (...length() > 0L) {
     abort_dots(names(substitute(list(...)))[-1L], ...length(), c("direction", "label"), environment())
   }
   if (!direction %in% popup_menu_directions()) {
     abort_choice(direction, popup_menu_directions(), "direction", "direction", environment())
   }
-  value <- structure(list(items = items, direction = direction, label = label), class = "mascot_popup_menu")
+  value <- structure(
+    list(items = items, direction = direction, label = label, tooltip = tooltip),
+    class = "mascot_popup_menu"
+  )
   problem <- popup_menu_problem(value)
   if (!is.null(problem)) {
     cli::cli_abort("{problem}")
@@ -126,11 +135,12 @@ popup_menu_problem <- function(x) {
   if (inherits(x, "mascot_popup_menu")) {
     if (
       !isTRUE(checkmate::check_list(x, names = "unique")) ||
-        length(x) != 3L ||
-        !setequal(names(x), c("items", "direction", "label")) ||
-        !isTRUE(checkmate::check_string(x$label, min.chars = 1, pattern = "\\S", null.ok = TRUE))
+        length(x) != 4L ||
+        !setequal(names(x), c("items", "direction", "label", "tooltip")) ||
+        !isTRUE(checkmate::check_string(x$label, min.chars = 1, pattern = "\\S", null.ok = TRUE)) ||
+        !isTRUE(checkmate::check_flag(x$tooltip))
     ) {
-      return("`click` must have items, direction and label fields; use mascot_popup_menu().")
+      return("`click` must have items, direction, label and tooltip fields; use mascot_popup_menu().")
     }
     if (!isTRUE(checkmate::check_choice(x$direction, popup_menu_directions()))) {
       return(paste0(

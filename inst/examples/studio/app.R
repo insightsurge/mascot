@@ -799,7 +799,12 @@ studio_server <- function(input, output, session) {
     switch(
       click_kind(),
       action = code_action(input$action_label %||% "", isTRUE(input$action_tooltip), isTRUE(input$action_disabled)),
-      menu = code_menu(menu_parsed()$items, input$menu_direction %||% "auto", input$menu_label %||% ""),
+      menu = code_menu(
+        menu_parsed()$items,
+        input$menu_direction %||% "auto",
+        input$menu_label %||% "",
+        isTRUE(input$menu_tooltip)
+      ),
       code_pair(defaults$click)
     )
   })
@@ -814,7 +819,8 @@ studio_server <- function(input, output, session) {
       input$action_disabled,
       input$menu_items,
       input$menu_direction,
-      input$menu_label
+      input$menu_label,
+      input$menu_tooltip
     )),
     600
   )
@@ -1278,7 +1284,12 @@ studio_server <- function(input, output, session) {
         isTRUE(input$action_tooltip),
         isTRUE(input$action_disabled)
       ),
-      mascot_popup_menu = code_menu(menu_parsed()$items, input$menu_direction %||% "auto", input$menu_label %||% ""),
+      mascot_popup_menu = code_menu(
+        menu_parsed()$items,
+        input$menu_direction %||% "auto",
+        input$menu_label %||% "",
+        isTRUE(input$menu_tooltip)
+      ),
       NULL
     )
     if (!is.null(pair)) {

@@ -35,7 +35,7 @@
  * Motion changes update the live controller; swaps reapply retained settings alongside the theme.
  * CSS suppresses bubble and restore-control movement too. No per-element global listeners are added by this host.
  * Click patches are { type: 'none' } | { type: 'action', label, tooltip, disabled } |
- * { type: 'menu', items: {id: label}, direction, label: string|null }; a new click replaces the old one whole.
+ * { type: 'menu', items: {id: label}, direction, label: string|null, tooltip: boolean }; a new click replaces the old one whole.
  * Clicks are Shiny-only. Without one the canvas is an image and no keyboard stop. With one, a native button wraps
  * the canvas (hidden from assistive technology inside it), named by the action's label or the menu's label (else
  * "<character>, menu"); mood changes never rename it. Every activation of that button (pointer, Enter, Space or an
@@ -45,9 +45,10 @@
  * Menu choices set id + '_menu' with priority 'event'. Labels always use textContent. Opening and closing count as
  * activations; navigation stays within the focused menu. No global keyboard listeners for menus.
  * A shared outside-pointer listener exists only while a menu is open; teardown removes it when unused.
- * An action's tooltip shows its label on hover (not touch) and keyboard focus, stays while the pointer is over the
- * mascot or the tooltip, and Escape dismisses it without moving focus (a shared document listener exists only while
- * a tooltip shows). It hides while a menu or bubble shows, while minimised and during a drag.
+ * A tooltip (for an action, or a menu with a label and tooltip: true) shows the label on hover (not touch) and
+ * keyboard focus, stays while the pointer is over the mascot or the tooltip, and Escape dismisses it without
+ * moving focus (a shared document listener exists only while a tooltip shows). It hides while a menu or bubble shows,
+ * while minimised and during a drag.
  * Panels (#233): the bubble, the menu and the tooltip share one look (.mascot-panel). The menu and the tooltip also
  * share placement: anchored to the painted character (sampled when shown), a requested side with fallbacks (the
  * opposite side, then "auto"), inside the window or an inline mascot's clipping container, refitted on resize/scroll.
@@ -1212,7 +1213,7 @@
     const fields = {
       none: ['type'],
       action: ['type', 'label', 'tooltip', 'disabled'],
-      menu: ['type', 'items', 'direction', 'label'],
+      menu: ['type', 'items', 'direction', 'label', 'tooltip'],
     };
     const keys = fields[value.type];
     if (!keys) throw new Error('click type must be none, action or menu');
@@ -1228,7 +1229,14 @@
     if (!menuDirections.includes(value.direction))
       throw new Error('click menu direction must be auto, top, bottom, left or right');
     if (value.label !== null && !label(value.label)) throw new Error('click menu label must be non-empty text or null');
-    return { type: 'menu', items: validateMenuItems(value.items), direction: value.direction, label: value.label };
+    if (typeof value.tooltip !== 'boolean') throw new Error('click menu tooltip must be a boolean');
+    return {
+      type: 'menu',
+      items: validateMenuItems(value.items),
+      direction: value.direction,
+      label: value.label,
+      tooltip: value.tooltip,
+    };
   }
 
   function measureOpenMenus() {
@@ -1400,7 +1408,10 @@
       }
     }
     let tooltip = null;
-    if (value.type === 'action' && value.tooltip) {
+    if (
+      (value.type === 'action' && value.tooltip) ||
+      (value.type === 'menu' && value.tooltip && Boolean(value.label))
+    ) {
       tooltip = document.createElement('div');
       tooltip.className = 'mascot-panel mascot-tooltip';
       tooltip.id = `${record.el.id}_tooltip`;

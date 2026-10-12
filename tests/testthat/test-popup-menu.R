@@ -1,18 +1,23 @@
 describe("mascot_popup_menu()", {
-  it("accepts named plain text and defaults to no menu, auto direction and no label", {
+  it("accepts named plain text and defaults to no menu, auto direction, no label and tooltip", {
     value <- mascot_popup_menu(c(about = "About", help = "<b>Help</b>"))
     expect_s3_class(value, "mascot_popup_menu")
     expect_identical(value$items, c(about = "About", help = "<b>Help</b>"))
     expect_identical(value$direction, "auto")
     expect_null(value$label)
-    expect_identical(unclass(mascot_popup_menu()), list(items = NULL, direction = "auto", label = NULL))
+    expect_true(value$tooltip)
+    expect_identical(
+      unclass(mascot_popup_menu()),
+      list(items = NULL, direction = "auto", label = NULL, tooltip = TRUE)
+    )
     expect_identical(mascot_popup_menu(c(about = "About"), label = "Help and settings")$label, "Help and settings")
+    expect_false(mascot_popup_menu(c(about = "About"), tooltip = FALSE)$tooltip)
     for (dir in c("auto", "top", "bottom", "left", "right")) {
       val <- mascot_popup_menu(c(about = "About"), direction = dir)
       expect_identical(val$direction, dir)
       expect_identical(
         as_click_arg(val, environment()),
-        list(type = "menu", items = list(about = "About"), direction = dir, label = NULL)
+        list(type = "menu", items = list(about = "About"), direction = dir, label = NULL, tooltip = TRUE)
       )
     }
     expect_null(popup_menu_problem(value))
@@ -22,7 +27,7 @@ describe("mascot_popup_menu()", {
     expect_identical(as_click_arg(mascot_popup_menu(direction = "top"), environment()), list(type = "none"))
     expect_null(click_tag(as_click_arg(mascot_popup_menu(), environment())))
   })
-  it("rejects every invalid item, id and label with the argument named", {
+  it("rejects every invalid item, id, label and tooltip value with the argument named", {
     for (x in list(character(), 1, NA_character_, "", c(a = NA_character_))) {
       expect_error(mascot_popup_menu(x), "Assertion on 'items' failed")
     }
@@ -39,6 +44,9 @@ describe("mascot_popup_menu()", {
     for (bad in list("", NA_character_, c("a", "b"), 1, TRUE)) {
       expect_error(mascot_popup_menu(c(a = "A"), label = bad), "Assertion on 'label' failed")
     }
+    for (bad in list(NA, NULL, "yes", c(TRUE, FALSE), 1)) {
+      expect_error(mascot_popup_menu(c(a = "A"), tooltip = bad), "Assertion on 'tooltip' failed")
+    }
     expect_snapshot(error = TRUE, mascot_popup_menu(c("bad id" = "Help")))
   })
   it("rejects values caught by `...`, including a direction given by position", {
@@ -51,8 +59,8 @@ describe("mascot_popup_menu()", {
       expect_error(mascot_popup_menu(c(help = "Help"), label = label), "Assertion on 'label' failed")
       value <- mascot_popup_menu(c(help = "Help"))
       value$label <- label
-      expect_match(popup_menu_problem(value), "click.*items, direction and label")
-      expect_error(as_click_arg(value, environment()), "click.*items, direction and label")
+      expect_match(popup_menu_problem(value), "click.*items, direction, label and tooltip")
+      expect_error(as_click_arg(value, environment()), "click.*items, direction, label and tooltip")
     }
     expect_identical(mascot_popup_menu(c(help = "Help"), label = " Help menu ")$label, " Help menu ")
   })
@@ -70,25 +78,30 @@ describe("mascot_popup_menu()", {
       list(wrong = NULL),
       list(items = NULL, extra = 1),
       list(items = NULL, direction = "auto"),
-      list(items = NULL, direction = "auto", label = NULL, extra = 1),
-      list(items = NULL, direction = "auto", label = ""),
-      setNames(list(NULL, "auto", NULL), c("items", "items", "label"))
+      list(items = NULL, direction = "auto", label = NULL),
+      list(items = NULL, direction = "auto", label = NULL, tooltip = TRUE, extra = 1),
+      list(items = NULL, direction = "auto", label = "", tooltip = TRUE),
+      list(items = NULL, direction = "auto", label = NULL, tooltip = NA),
+      setNames(list(NULL, "auto", NULL, TRUE), c("items", "items", "label", "tooltip"))
     )) {
       expect_error(
         as_click_arg(structure(x, class = "mascot_popup_menu"), environment()),
-        "click.*items, direction and label"
+        "click.*items, direction, label and tooltip"
       )
     }
     expect_error(
       as_click_arg(
-        structure(list(items = NULL, direction = "center", label = NULL), class = "mascot_popup_menu"),
+        structure(list(items = NULL, direction = "center", label = NULL, tooltip = TRUE), class = "mascot_popup_menu"),
         environment()
       ),
       "direction.*must be one of"
     )
     expect_error(
       as_click_arg(
-        structure(list(items = c(a = NA_character_), direction = "auto", label = NULL), class = "mascot_popup_menu"),
+        structure(
+          list(items = c(a = NA_character_), direction = "auto", label = NULL, tooltip = TRUE),
+          class = "mascot_popup_menu"
+        ),
         environment()
       ),
       "items.*non-empty named character"
@@ -102,9 +115,11 @@ describe("mascot_popup_menu()", {
     expect_identical(jsonlite::fromJSON(json)$items$help, text)
     expect_identical(jsonlite::fromJSON(json)$label, text)
     expect_identical(jsonlite::fromJSON(json)$direction, "auto")
+    expect_true(jsonlite::fromJSON(json)$tooltip)
     tag_dir <- click_tag(as_click_arg(mascot_popup_menu(c(about = "About"), direction = "left"), environment()))
     parsed <- jsonlite::fromJSON(as.character(tag_dir$children[[1]]))
     expect_identical(parsed$direction, "left")
     expect_null(parsed$label)
+    expect_true(parsed$tooltip)
   })
 })

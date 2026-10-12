@@ -1,4 +1,4 @@
-# mascot_popup_menu() / rejects every invalid item, id and label with the argument named
+# mascot_popup_menu() / rejects every invalid item, id, label and tooltip value with the argument named
 
     Code
       mascot_popup_menu(c(`bad id` = "Help"))

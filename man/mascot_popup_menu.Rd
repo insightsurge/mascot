@@ -4,7 +4,13 @@
 \alias{mascot_popup_menu}
 \title{Choose a mascot's click menu}
 \usage{
-mascot_popup_menu(items = NULL, ..., direction = "auto", label = NULL)
+mascot_popup_menu(
+  items = NULL,
+  ...,
+  direction = "auto",
+  label = NULL,
+  tooltip = TRUE
+)
 }
 \arguments{
 \item{items}{A named character vector of plain-text labels. Names are unique,
@@ -23,10 +29,15 @@ chosen side is a preference: see "Where the menu opens" below.}
 \item{label}{The name screen readers announce for the mascot's menu button,
 such as \code{"Help and settings"}: one string containing a non-whitespace
 character. \code{NULL} (the default) uses the character's name, such as "Tessa, menu".}
+
+\item{tooltip}{A flag. \code{TRUE} (the default) shows the label in a tooltip when
+the pointer rests on the mascot or the keyboard focuses it, provided a
+\code{label} is set. \code{FALSE} hides the tooltip; screen readers still announce
+the label.}
 }
 \value{
-A \code{mascot_popup_menu} object with \code{items}, \code{direction} and \code{label}
-elements.
+A \code{mascot_popup_menu} object with \code{items}, \code{direction}, \code{label} and
+\code{tooltip} elements.
 }
 \description{
 Make a click on the mascot open a menu in a Shiny app. Pass it as \code{click} to
@@ -94,6 +105,7 @@ the menu.
 mascot_popup_menu(c(about = "About this app", help = "Help"))
 mascot_popup_menu(c(about = "About this app"), direction = "top")
 mascot_popup_menu(c(about = "About this app"), label = "Help and settings")
+mascot_popup_menu(c(about = "About this app"), label = "Help and settings", tooltip = FALSE)
 mascot_popup_menu()
 mascot(id = "helper", click = mascot_popup_menu(c(about = "About this app")))
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

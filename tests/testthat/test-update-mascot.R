@@ -911,7 +911,7 @@ describe("updateMascot() popup menu", {
       updateMascot("helper", click = mascot_popup_menu(c(about = "About"), direction = "right"))
       expect_identical(
         captured$patches[[4]]$patch$click,
-        list(type = "menu", items = list(about = "About"), direction = "right", label = NULL)
+        list(type = "menu", items = list(about = "About"), direction = "right", label = NULL, tooltip = TRUE)
       )
       updateMascot("helper", click = mascot_action("Open help", disabled = TRUE))
       expect_true(captured$patches[[5]]$patch$click$disabled)

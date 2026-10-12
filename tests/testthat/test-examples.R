@@ -258,6 +258,14 @@ describe("the studio's controls", {
     expect_identical(labelled$short, labelled$helper)
     expect_identical(eval(labelled$helper), mascot_popup_menu(c(about = "About"), label = "Help and settings"))
     expect_null(eval(code$code_menu(c(about = "About"), "auto", "  ")$helper)$label)
+    tooltip_off <- code$code_menu(c(about = "About"), "auto", "Help and settings", tooltip = FALSE)
+    expect_identical(
+      eval(tooltip_off$helper),
+      mascot_popup_menu(c(about = "About"), label = "Help and settings", tooltip = FALSE)
+    )
+    expect_match(code$format_expr(tooltip_off$helper), "tooltip = FALSE", fixed = TRUE)
+    tooltip_no_label <- code$code_menu(c(about = "About"), "auto", "", tooltip = FALSE)
+    expect_false(grepl("tooltip", code$format_expr(tooltip_no_label$helper), fixed = TRUE))
   })
   it("writes an action as its label, or as mascot_action() when it hides the tooltip or is disabled", {
     code <- new.env()
@@ -1896,6 +1904,13 @@ describe("studio safeguards (#248)", {
         wait = 700,
         sent = function(p) identical(p$click$label, "Help menu")
       ),
+      menu_tooltip = row(
+        list(list(menu_on = TRUE, menu_items = "about = About", menu_label = "Help menu", menu_tooltip = FALSE)),
+        "click",
+        "tooltip = FALSE",
+        wait = 700,
+        sent = function(p) isFALSE(p$click$tooltip)
+      ),
       action_on = row(
         list(list(action_on = TRUE)),
         "click",
@@ -2099,6 +2114,7 @@ describe("studio safeguards (#248)", {
       menu_items = paste(names(start_menu), "=", start_menu, collapse = "\n"),
       menu_direction = defaults_of("mascot_popup_menu")$direction,
       menu_label = "", # label = NULL names the menu after the character
+      menu_tooltip = TRUE,
       action_on = FALSE, # one click at a time: the menu above
       action_tooltip = action$tooltip,
       action_disabled = action$disabled,

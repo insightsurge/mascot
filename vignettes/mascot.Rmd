@@ -352,18 +352,32 @@ background as well; a warning does not adjust a colour for you.
 ## Motion
 
 ```{r motion, results="hide"}
-mascot_motion(animate = FALSE)
-mascot_motion(swap = FALSE)
+mascot_motion_settings(idle = FALSE)
+mascot_motion_settings(messages = "menu", others = FALSE)
+mascot("still", motion = FALSE)
 ```
 
-`motion = FALSE` stops animation. `mascot_motion(swap = FALSE)` stops just
-the character hand-over animation. A visitor's reduced-motion preference is
-always honoured, even with `animate = TRUE`. Idle movement settles after five
-seconds. Try the motion switches in `mascot_example("studio")`.
+Each part moves independently: `idle` controls breathing and blinking,
+`mood_change` the wiggle or hop, `gestures` nods and waves, `swap` the
+character transition, and `minimising` and `restoring` the short movement
+to the round restore button and back. `messages` takes `TRUE`, `FALSE`,
+or panel names from `c("bubble", "tooltip", "menu")`; still panels keep working.
+Unnamed switches, including future switches, follow `others`; named switches
+always win. `NULL` follows `others`.
+
+`motion = FALSE` stops all movement, including panel appearance, the drag snap,
+minimising and restoring. The visitor's
+[reduced-motion setting](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)
+always wins over any `TRUE`. Idle movement settles within five seconds.
+Settings play nothing; use `mascot_gesture()` to play a movement. A gesture
+sent with `gestures = FALSE` is skipped, while the mood, bubble and status in
+the same update still apply. Shiny development mode reports the skipped gesture.
 
 ```{r motion-update, eval=FALSE}
-update_mascot("helper", motion = mascot_motion(animate = FALSE))
+update_mascot("helper", motion = mascot_motion_settings(gestures = FALSE))
 ```
+
+Try each switch and the panel multi-select in `mascot_studio(fn = "mascot_motion_settings")`.
 
 ## Clicks and menus
 
@@ -508,7 +522,7 @@ when the setting has a clear/reset action:
 | Theme | `theme = mascot_theme()` restores character colours |
 | Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
 | Placement | `placement = mascot_placement()` resets to default bottom-right; `mascot_placement("inline")` returns inline |
-| Motion | `motion = mascot_motion()` allows animation subject to visitor preference |
+| Motion | `motion = mascot_motion_settings()` allows movement subject to visitor preference |
 
 An invalid update warns and leaves the complete update unchanged. During app
 construction, invalid arguments stop with an error. This helps catch a typo

@@ -232,14 +232,38 @@ panel_motion <- function(gestures = mascot_gestures()) {
   inspector_category(
     playground_categories$motion$title,
     value = "motion",
-    fn_heading("mascot_motion"),
-    arg_field("mascot_motion", "animate", input_switch("animate", "Animate changes", TRUE)),
+    fn_heading("mascot_motion_settings"),
+    arg_field("mascot_motion_settings", "...", NULL),
+    lapply(c("idle", "mood_change", "gestures", "swap", "minimising", "restoring"), function(name) {
+      arg_field(
+        "mascot_motion_settings",
+        name,
+        selectInput(
+          name,
+          tools::toTitleCase(gsub("_", " ", name)),
+          choices = c("Follow others" = "follow", "On" = "true", "Off" = "false"),
+          selected = "follow"
+        )
+      )
+    }),
     arg_field(
-      "mascot_motion",
-      "swap",
-      input_switch("swap", "Animate character swaps", TRUE),
-      note = div(class = "pg-hint", "This shows when a second character exists.")
+      "mascot_motion_settings",
+      "messages",
+      selectInput(
+        "messages",
+        "Moving panels",
+        choices = c(
+          "Follow others" = "follow",
+          "All" = "all",
+          "Bubble" = "bubble",
+          "Tooltip" = "tooltip",
+          "Menu" = "menu"
+        ),
+        selected = "follow",
+        multiple = TRUE
+      )
     ),
+    arg_field("mascot_motion_settings", "others", input_switch("others", "Other movement", TRUE)),
     fn_heading("mascot_gesture"),
     arg_field("mascot_gesture", "...", NULL),
     arg_field(

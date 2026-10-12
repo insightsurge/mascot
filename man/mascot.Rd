@@ -59,9 +59,10 @@ each drop sets \verb{input$<id>_position} to the corner (\code{"snap"}) or a lis
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
 colours. Unset roles keep their original colours in both modes.}
 
-\item{motion}{A logical flag or \code{\link[=mascot_motion]{mascot_motion()}} object. \code{TRUE} (the default)
-allows animation while honouring the visitor's reduced-motion preference.
-\code{FALSE} stops animation. \code{NULL} is not accepted.}
+\item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object. \code{TRUE} (the default)
+allows movement while honouring the visitor's reduced-motion preference.
+\code{FALSE} stops all movement, including panels, drag snapping, minimising and
+restoring. \code{NULL} is not accepted.}
 
 \item{click}{What a click on the mascot does in a Shiny app. \code{NULL} (the
 default) does nothing: the mascot is a picture, not a keyboard stop. One

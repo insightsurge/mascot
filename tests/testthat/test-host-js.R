@@ -1588,7 +1588,11 @@ describe("mascot.host motion", {
   })
   it("M5 swaps instantly with swap off, retains the theme and still animates moods", {
     skip_without_chrome()
-    js <- local_host_page(reduced = FALSE, motion = mascot_motion(swap = FALSE), theme = list(body = "#1f6feb"))
+    js <- local_host_page(
+      reduced = FALSE,
+      motion = mascot_motion_settings(swap = FALSE),
+      theme = list(body = "#1f6feb")
+    )
     r <- js(host_motion_js(
       "const blob=mascot.readCharacter('blob');
 
@@ -1614,7 +1618,7 @@ describe("mascot.host motion", {
     r <- js(host_motion_js(
       "const blob=mascot.readCharacter('blob');send({character:{id:blob.id,name:blob.name,json:JSON.stringify(blob)}});
 
-      const running=state().current.swapping;send({motion:{reduced:true,swap:true}});const stopped=state(),queue=queued.size;
+      const running=state().current.swapping;send({motion:{reduced:true,idle:false,mood_change:false,gestures:false,swap:true,minimising:false,restoring:false,messages:[],others:false}});const stopped=state(),queue=queued.size;
 
       const snapshot=()=>JSON.stringify({state:state(),html:el.outerHTML,draws:calls.length}),before=snapshot(),warnings=[],old=console.warn;
 
@@ -1624,9 +1628,9 @@ describe("mascot.host motion", {
 
       const unchanged=invalid.map(motion=>{send({motion,mood:'happy',bubble:{text:'Wrong',html:false,closable:true,duration:5}});return snapshot()===before;});
 
-      console.warn=old;send({motion:{reduced:null,swap:false}});
+      console.warn=old;send({motion:{reduced:null,idle:true,mood_change:true,gestures:true,swap:false,minimising:true,restoring:true,messages:['bubble','tooltip','menu'],others:true}});
 
-      mascot.host.receive({id:'late-motion',patch:{motion:{reduced:true,swap:false}}});
+      mascot.host.receive({id:'late-motion',patch:{motion:{reduced:true,idle:false,mood_change:false,gestures:false,swap:false,minimising:false,restoring:false,messages:[],others:false}}});
 
       const late=el.cloneNode(true);late.id='late-motion';late.dataset.character='tessa';late.dataset.mood='idle';document.body.append(late);mascot.host.mount(late);
 
@@ -1642,8 +1646,8 @@ describe("mascot.host motion", {
     expect_length(r$warnings, 6)
     # One original controller and one separately mounted late mascot.
     expect_equal(r$players, 2)
-    expect_identical(r$queuedMotion, list(reduced = TRUE, swap = FALSE))
-    expect_identical(r$motion, list(reduced = NULL, swap = FALSE))
+    expect_identical(r$queuedMotion, as_motion_arg(FALSE, environment()))
+    expect_identical(r$motion, as_motion_arg(mascot_motion_settings(swap = FALSE), environment()))
   })
   it("M5 removes restore growth and bubble animation while retaining the focus glow", {
     skip_without_chrome()
@@ -1662,7 +1666,7 @@ describe("mascot.host motion", {
 
         glow:getComputedStyle(button).boxShadow,animation:getComputedStyle(el.querySelector('.mascot-bubble')).animationName});
 
-      const off=read();mascot.host.receive({id:'a',patch:{motion:{reduced:null,swap:true}}});
+      const off=read();mascot.host.receive({id:'a',patch:{motion:{reduced:null,idle:true,mood_change:true,gestures:true,swap:true,minimising:true,restoring:true,messages:['bubble','tooltip','menu'],others:true}}});
 
       return {off,on:read()};})()"
     )
@@ -3373,5 +3377,168 @@ describe("mascot.host dragging", {
     expect_identical(result$position, "top-right")
     expect_true(result$placed)
     expect_identical(result$events, 2L)
+  })
+})
+
+describe("motion settings in the interface", {
+  it("skips a disabled gesture while applying mood, bubble and status, and reports it only in development", {
+    skip_without_chrome()
+    for (dev in c(FALSE, TRUE)) {
+      js <- local_host_page(reduced = FALSE, motion = mascot_motion_settings(gestures = FALSE, mood_change = FALSE))
+      r <- js(sprintf(
+        "(() => {
+          const el=document.getElementById('a'),events=[],original=window.Shiny;
+          const listener=e=>events.push(e.detail);
+          window.addEventListener('shiny:client-message',listener);
+          window.Shiny={inDevMode:()=>%s};
+          mascot.host.receive({id:'a',patch:{gesture:'wave',mood:'happy',
+            status:{mode:'custom',text:'Saved'},bubble:{text:'Ready',html:false,closable:true,duration:null}}});
+          window.Shiny=original;window.removeEventListener('shiny:client-message',listener);
+          return {events,mood:el.dataset.shownMood,status:el.querySelector('.mascot-status').textContent,
+            bubble:mascot.host.state(el).bubble.text,problem:mascot.host.state(el).problem};
+        })()",
+        if (dev) "true" else "false"
+      ))
+      expect_identical(r$mood, "happy")
+      expect_identical(r$status, "Saved")
+      expect_identical(r$bubble, "Ready")
+      expect_null(r$problem)
+      expect_length(r$events, if (dev) 1 else 0)
+      if (dev) {
+        expect_identical(
+          r$events[[1]]$message,
+          "Gesture 'wave' skipped: gestures are switched off in mascot_motion_settings()"
+        )
+      }
+    }
+  })
+
+  it("moves between the mascot and button using only transform and opacity, with independent instant paths", {
+    skip_without_chrome()
+    cases <- list(
+      list(motion = TRUE, reduced = FALSE, out = TRUE, back = TRUE),
+      list(motion = FALSE, reduced = FALSE, out = FALSE, back = FALSE),
+      list(motion = TRUE, reduced = TRUE, out = FALSE, back = FALSE),
+      list(motion = mascot_motion_settings(minimising = FALSE), reduced = FALSE, out = FALSE, back = TRUE),
+      list(motion = mascot_motion_settings(restoring = FALSE), reduced = FALSE, out = TRUE, back = FALSE)
+    )
+    for (case in cases) {
+      js <- local_host_page(reduced = case$reduced, motion = case$motion, placement = mascot_placement(), size = 100)
+      r <- js(
+        "(async () => {
+          const el=document.getElementById('a');
+          const inspect=animations=>animations.map(a=>({
+            duration:a.effect.getTiming().duration,
+            fields:Object.keys(a.effect.getKeyframes()[0]).filter(k=>!['offset','computedOffset','easing','composite'].includes(k))
+          }));
+          const before=document.body.scrollHeight;
+          el.querySelector('.mascot-minimise').click();
+          const copy=el.querySelector('.mascot-motion-copy'),out=copy ? copy.getAnimations() : [];
+          const exit=inspect(out),focusedOut=document.activeElement===el.querySelector('.mascot-restore');
+          await Promise.all(out.map(a=>a.finished));
+          el.querySelector('.mascot-restore').click();
+          const back=el.querySelector('canvas').getAnimations(),entry=inspect(back);
+          await Promise.all(back.map(a=>a.finished));
+          return {exit,entry,focusedOut,focusedBack:document.activeElement===el.querySelector('.mascot-minimise'),
+            noShift:before===document.body.scrollHeight,copies:el.querySelectorAll('.mascot-motion-copy').length};
+        })()"
+      )
+      expect_length(r$exit, if (case$out) 1 else 0)
+      expect_length(r$entry, if (case$back) 1 else 0)
+      for (movement in c(r$exit, r$entry)) {
+        expect_lte(movement$duration, 300)
+        expect_setequal(unlist(movement$fields), c("transform", "opacity"))
+      }
+      expect_true(r$focusedOut)
+      expect_true(r$focusedBack)
+      expect_true(r$noShift)
+      expect_equal(r$copies, 0)
+    }
+  })
+
+  it("finishes interface motion on a still update and removes an interrupted exit on unmount", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE, placement = mascot_placement())
+    r <- js(
+      "(() => {
+        const el=document.getElementById('a');el.querySelector('.mascot-minimise').click();
+        const exit=el.querySelector('.mascot-motion-copy').getAnimations()[0];
+        mascot.host.receive({id:'a',patch:{motion:{reduced:true,idle:false,mood_change:false,gestures:false,
+          swap:false,minimising:false,restoring:false,messages:[],others:false}}});
+        const finished=exit.playState==='finished';
+        el.querySelector('.mascot-restore').click();
+        mascot.host.receive({id:'a',patch:{motion:{reduced:null,idle:true,mood_change:true,gestures:true,
+          swap:true,minimising:true,restoring:true,messages:['bubble','tooltip','menu'],others:true}}});
+        el.querySelector('.mascot-minimise').click();mascot.host.unmount(el);
+        return {finished,copies:document.querySelectorAll('.mascot-motion-copy').length};
+      })()"
+    )
+    expect_true(r$finished)
+    expect_equal(r$copies, 0)
+  })
+
+  it("animates only selected panels and keeps the other panels usable", {
+    skip_without_chrome()
+    for (panels in list(character(), "bubble", "tooltip", "menu", c("bubble", "tooltip", "menu"))) {
+      js <- local_host_page(
+        reduced = FALSE,
+        motion = mascot_motion_settings(messages = panels, others = FALSE),
+        click = mascot_popup_menu(c(about = "About"), label = "Choose", tooltip = TRUE),
+        shiny_menu = TRUE
+      )
+      r <- js(
+        "(async () => {
+          const el=document.getElementById('a'),read=name=>getComputedStyle(el.querySelector('.mascot-'+name)).animationName;
+          const settle=()=>Promise.all(el.getAnimations({subtree:true}).map(a=>a.finished));
+          const send=patch=>mascot.host.receive({id:'a',patch});
+          send({bubble:{text:'Ready',html:false,closable:true,duration:null}});
+          const bubble=read('bubble');await settle();send({bubble:{clear:true}});
+          const exits=el.querySelectorAll('.mascot-motion-copy').length;await settle();
+          el.querySelector('.mascot-button').focus();
+          const tooltip=read('tooltip');await settle();
+          el.querySelector('.mascot-button').click();
+          const menu=read('menu'),open=mascot.host.state(el).menuOpen;await settle();
+          el.querySelector('.mascot-button').click();await settle();
+          return {bubble,tooltip,menu,exits,open,closed:!mascot.host.state(el).menuOpen};
+        })()"
+      )
+      for (name in c("bubble", "tooltip", "menu")) {
+        expect_identical(r[[name]], if (name %in% panels) "mascot-panel-appear" else "none", info = name)
+      }
+      expect_equal(r$exits, if ("bubble" %in% panels) 1 else 0)
+      expect_true(r$open)
+      expect_true(r$closed)
+    }
+  })
+})
+
+describe("visitor preference during interface motion", {
+  it("finishes an ongoing minimise transition when the visitor enables reduced motion", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE, placement = mascot_placement())
+    js(
+      "(() => {
+        const el=document.getElementById('a'),media=matchMedia('(prefers-reduced-motion: reduce)');
+        window.preferenceApplied=new Promise(resolve=>media.addEventListener('change',resolve,{once:true}));
+        el.querySelector('.mascot-minimise').click();
+        window.exitMovement=el.querySelector('.mascot-motion-copy').getAnimations()[0];
+        return true;
+      })()"
+    )
+    attr(js, "session")$Emulation$setEmulatedMedia(
+      features = list(list(name = "prefers-reduced-motion", value = "reduce"))
+    )
+    r <- js(
+      "(async () => {
+        await window.preferenceApplied;
+        const finished=window.exitMovement.playState==='finished';
+        const el=document.getElementById('a');el.querySelector('.mascot-restore').click();
+        return {finished,
+          restoreMoves:el.querySelector('canvas').getAnimations().length,minimised:mascot.host.state(el).minimised};
+      })()"
+    )
+    expect_true(r$finished)
+    expect_equal(r$restoreMoves, 0)
+    expect_false(r$minimised)
   })
 })

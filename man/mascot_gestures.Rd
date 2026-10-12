@@ -29,7 +29,7 @@ Other mascot helpers:
 \code{\link[=mascot_gesture]{mascot_gesture()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
-\code{\link[=mascot_motion]{mascot_motion()}},
+\code{\link[=mascot_motion_settings]{mascot_motion_settings()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},

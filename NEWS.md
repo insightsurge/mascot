@@ -2,6 +2,8 @@
 
 ## Breaking changes
 
+* `mascot_motion_settings()` replaces `mascot_motion()` without an alias; all settings must be named and `animate` is removed. Use `motion = FALSE` to stop everything (#239).
+
 * The pre-CRAN API puts `id` first in `mascot()`, names the server function `update_mascot()` without an alias, and requires arguments after `...` to be named. Dragging uses `"none"`, `"snap"` or `"free"`; untimed bubbles use `duration = Inf`, and floating placement uses a corner such as `"bottom-right"`. These choices settle the small API now: adding later is cheap, removing is costly (#259).
 
 ## New features
@@ -35,7 +37,9 @@
 
 * `mascot_moods()` lists the built-in moods and what each means. Every character uses the same moods (#190).
 
-* `mascot_motion()` turns off all animation with `animate = FALSE`, or only the character-swap transition with `swap = FALSE`. A visitor's reduced-motion preference is always honoured (#203).
+* `mascot_motion_settings()` independently controls `idle`, `mood_change`, `gestures`, `swap`, `minimising`, `restoring` and `messages`. Unnamed switches, including future ones, follow `others`; named switches win. Messages can move for selected panels, and minimise/restore gain short transitions. The visitor's reduced-motion preference always wins (#239).
+
+* `update_mascot()` skips gestures when `gestures = FALSE` while applying the mood, bubble and status in the same update; Shiny development mode reports the skipped gesture (#239).
 
 * `mascot_placement(position = "bottom-right", ..., minimise = TRUE, drag = "none")` names its options and rejects logical dragging values. It sets where a mascot sits: a floating corner (`"bottom-right"` by default, `"top-left"`, `"top-right"` or `"bottom-left"`) or `"inline"` (#201, #223).
   * A floating mascot sits 1rem from the window edges, above fixed navigation bars and below modals. A bottom-right mascot moves above Shiny notifications while they show (#201).

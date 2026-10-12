@@ -522,7 +522,7 @@ describe("animated character swaps", {
     }
   })
 
-  it("keeps separate canvases independent and follows preference only when unforced", {
+  it("keeps separate canvases independent and always follows the visitor preference", {
     skip_without_chrome()
     js <- local_engine_page()
     for (character in c("tessa", "blob")) {
@@ -536,8 +536,8 @@ describe("animated character swaps", {
           " simultaneousInstant: one.p.current().character, simultaneousFinished: one.p.current().swapping };"
         )
       ))
-      expect_true(r$animated, info = character)
-      expect_equal(r$opacity, 0.5, tolerance = 1e-6, info = character)
+      expect_false(r$animated, info = character)
+      expect_equal(r$opacity, 1, tolerance = 1e-6, info = character)
       expect_true(r$otherOriginal, info = character)
       expect_true(r$otherReduced, info = character)
       expect_identical(r$simultaneousInstant, "third", info = character)

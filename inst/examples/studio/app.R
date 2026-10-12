@@ -537,9 +537,21 @@ studio_server <- function(input, output, session) {
   observeEvent(input$bubble_clear, send(list(bubble = code_bubble("", FALSE, 5, TRUE)), force = TRUE))
 
   # Motion and gestures
+  motion_code <- reactive({
+    code_motion(
+      input$idle,
+      input$mood_change,
+      input$gestures,
+      input$swap,
+      input$minimising,
+      input$restoring,
+      input$messages,
+      input$others
+    )
+  })
   observeEvent(
-    list(input$animate, input$swap),
-    send(list(motion = code_motion(input$animate, input$swap))),
+    motion_code(),
+    send(list(motion = motion_code())),
     ignoreInit = TRUE
   )
   observeEvent(input$gesture, send(list(gesture = code_gesture(input$gesture)), force = TRUE))
@@ -1276,7 +1288,7 @@ studio_server <- function(input, output, session) {
         if (input$bubble_forever) Inf else as.numeric(input$bubble_duration),
         input$bubble_closable
       ),
-      mascot_motion = code_motion(input$animate, input$swap),
+      mascot_motion_settings = motion_code(),
       mascot_gesture = code_gesture(if (is.null(input$gesture)) "nod" else input$gesture),
       mascot_size = size_code(),
       mascot_placement = code_placement(

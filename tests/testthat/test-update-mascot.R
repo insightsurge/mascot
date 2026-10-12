@@ -608,6 +608,8 @@ describe("size and placement in a Shiny browser", {
     }
     app$click("inline")
     app$wait_for_js("document.querySelector('#helper').dataset.floating === 'false'")
+    # Restore scales the canvas briefly; measure its layout after that movement ends.
+    app$wait_for_js("document.querySelector('#helper canvas').getAnimations().length === 0")
     expect_equal(app$get_js("document.querySelector('#helper canvas').getBoundingClientRect().width"), 120)
     expect_equal(app$get_js("mounts"), 0)
     expect_true(app$get_js("document.querySelector('#helper .mascot-minimise').hidden"))
@@ -810,16 +812,19 @@ describe("update_mascot() motion", {
     })
     module <- function(id) shiny::moduleServer(id, function(input, output, session) {})
     shiny::testServer(module, {
-      for (motion in list(TRUE, FALSE, mascot_motion(swap = FALSE), mascot_motion(FALSE, FALSE))) {
+      for (motion in list(TRUE, FALSE, mascot_motion_settings(swap = FALSE), mascot_motion_settings(others = FALSE))) {
         expect_invisible(update_mascot("helper", motion = motion, mood = "happy", session = session))
         sent <- tail(captured$patches, 1)[[1]]
         expect_identical(sent$id, session$ns("helper"))
         expect_named(sent$patch, c("mood", "motion"))
         expect_false(identical(sent$patch$motion$reduced, FALSE))
       }
-      expect_identical(captured$patches[[1]]$patch$motion, list(reduced = NULL, swap = TRUE))
-      expect_identical(captured$patches[[2]]$patch$motion, list(reduced = TRUE, swap = TRUE))
-      expect_identical(captured$patches[[3]]$patch$motion, list(reduced = NULL, swap = FALSE))
+      expect_identical(captured$patches[[1]]$patch$motion, as_motion_arg(TRUE, environment()))
+      expect_identical(captured$patches[[2]]$patch$motion, as_motion_arg(FALSE, environment()))
+      expect_identical(
+        captured$patches[[3]]$patch$motion,
+        as_motion_arg(mascot_motion_settings(swap = FALSE), environment())
+      )
       update_mascot("helper", motion = NULL, session = session)
       expect_length(captured$patches, 4)
       expect_error(update_mascot("helper", motion = session), "session")
@@ -839,7 +844,7 @@ describe("update_mascot() motion", {
       dev_mode = function() FALSE
     )
     shiny::testServer(function(input, output, session) {}, {
-      for (motion in list(NA, 1, "auto", list(animate = TRUE), structure(list(), class = "mascot_motion"))) {
+      for (motion in list(NA, 1, "auto", list(animate = TRUE), structure(list(), class = "mascot_motion_settings"))) {
         expect_warning(update_mascot("helper", mood = "happy", status = "Saved", motion = motion), "unchanged")
       }
       expect_length(captured$patches, 0)
@@ -848,7 +853,7 @@ describe("update_mascot() motion", {
       expect_named(captured$patches[[1]], "problem")
       expect_match(captured$patches[[1]]$problem, 'got "auto"')
       update_mascot("helper", motion = FALSE)
-      expect_identical(captured$patches[[2]], list(motion = list(reduced = TRUE, swap = TRUE)))
+      expect_identical(captured$patches[[2]], list(motion = as_motion_arg(FALSE, environment())))
     })
   })
 })
@@ -968,9 +973,9 @@ describe("popup menu in a Shiny browser", {
 
 
 describe("documented Shiny settings", {
-  it("D4 runs the help example for motion, light/dark colours and reset", {
+  it("D4 runs the help example for idle movement, light/dark colours and reset", {
     local_shiny_browser()
-    rd <- local_help_page("mascot_motion")
+    rd <- local_help_page("mascot_motion_settings")
     con <- textConnection("code", "w", local = TRUE)
     tools::Rd2ex(rd, out = con)
     close(con)
@@ -1000,8 +1005,8 @@ describe("documented Shiny settings", {
     app <- app_driver(app_function)
     withr::defer(app$stop())
     app$wait_for_js("!!window.mascot?.host?.state(document.getElementById('helper'))")
-    app$set_inputs(animate = FALSE)
-    app$wait_for_js("document.getElementById('helper').dataset.reduced==='true'")
+    app$set_inputs(idle = FALSE)
+    app$wait_for_js("document.getElementById('helper').dataset.idle==='false'")
     app$set_inputs(dark = TRUE)
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#9ec5fe'")
     app$set_inputs(dark = FALSE)
@@ -1010,7 +1015,7 @@ describe("documented Shiny settings", {
     app$wait_for_js(
       "Object.values(mascot.host.state(document.getElementById('helper')).colours).every(value=>value===null)"
     )
-    expect_identical(app$get_js("document.getElementById('helper').dataset.reduced"), "true")
+    expect_identical(app$get_js("document.getElementById('helper').dataset.idle"), "false")
   })
   it("D4 runs the complete module help block and receives repeated choices", {
     local_shiny_browser()
@@ -1284,5 +1289,35 @@ describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {
     expect_error(update_mascot(id = 1, session = NULL), "id", class = "mascot_error")
     expect_error(update_mascot("helper", session = 1), "session", class = "mascot_error")
+  })
+})
+
+describe("motion settings payloads", {
+  it("sends named overrides and a skipped gesture together with the rest of the update", {
+    captured <- new.env(parent = emptyenv())
+    local_mocked_bindings(send_update = function(session, id, patch) {
+      captured$patch <- patch
+    })
+    shiny::testServer(function(input, output, session) {}, {
+      update_mascot(
+        "a",
+        motion = mascot_motion_settings(gestures = FALSE, messages = "menu", others = TRUE),
+        gesture = "wave",
+        mood = "happy",
+        status = "Saved",
+        bubble = "Ready",
+        session = session
+      )
+    })
+    expect_false(captured$patch$motion$gestures)
+    expect_true(captured$patch$motion$idle)
+    expect_true(captured$patch$motion$mood_change)
+    expect_true(captured$patch$motion$minimising)
+    expect_true(captured$patch$motion$restoring)
+    expect_identical(captured$patch$motion$messages, list("menu"))
+    expect_identical(captured$patch$gesture, "wave")
+    expect_identical(captured$patch$mood, "happy")
+    expect_identical(captured$patch$status$text, "Saved")
+    expect_identical(captured$patch$bubble$text, "Ready")
   })
 })

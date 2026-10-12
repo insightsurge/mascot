@@ -18,7 +18,14 @@ describe("mascot()", {
         `data-minimise` = "true",
         `data-drag` = "false",
         `data-reduced` = "auto",
-        `data-swap` = "true"
+        `data-idle` = "true",
+        `data-mood-change` = "true",
+        `data-gestures` = "true",
+        `data-swap` = "true",
+        `data-minimising` = "true",
+        `data-restoring` = "true",
+        `data-messages` = "bubble,tooltip,menu",
+        `data-others` = "true"
       )
     )
     html <- sub('(?s)(<script[^>]*>).*?(</script>)', '\\1[character JSON]\\2', as.character(tag), perl = TRUE)
@@ -254,13 +261,14 @@ describe("mascot() motion", {
   it("serialises motion for static pages and keeps shortcuts equivalent to helpers", {
     expect_identical(mascot(id = "a")$attribs$`data-reduced`, "auto")
     expect_identical(mascot(id = "a", motion = FALSE)$attribs$`data-reduced`, "true")
-    expect_identical(mascot(id = "a", motion = mascot_motion(swap = FALSE))$attribs$`data-swap`, "false")
-    for (value in c(TRUE, FALSE)) {
-      expect_identical(
-        as.character(mascot(id = "a", motion = value)),
-        as.character(mascot(id = "a", motion = mascot_motion(value)))
-      )
-    }
+    expect_identical(mascot(id = "a", motion = mascot_motion_settings(swap = FALSE))$attribs$`data-swap`, "false")
+    expect_identical(
+      as.character(mascot(id = "a", motion = TRUE)),
+      as.character(mascot(id = "a", motion = mascot_motion_settings()))
+    )
+    off <- mascot(id = "a", motion = FALSE)$attribs
+    still <- mascot(id = "a", motion = mascot_motion_settings(others = FALSE))$attribs
+    expect_identical(off[names(off) != "data-reduced"], still[names(still) != "data-reduced"])
     expect_error(mascot(id = "a", motion = "auto"), 'motion.*got "auto"')
     expect_error(mascot(id = "a", motion = NULL), 'motion.*got NULL')
     expect_identical(tail(names(formals(mascot)), 3), c("theme", "motion", "click"))
@@ -420,5 +428,23 @@ describe("with_mascot_asserts()", {
     expect_identical(count, 1L)
     expect_identical(result, checkmate::assert_string("ready"))
     expect_error(with_mascot_asserts(NULL, call = NULL), "call")
+  })
+})
+
+describe("static motion switches", {
+  it("serialises every switch and selected message panels", {
+    attrs <- mascot("a", motion = mascot_motion_settings(messages = "menu", idle = TRUE, others = FALSE))$attribs
+    expect_identical(attrs[["data-reduced"]], "auto")
+    expect_identical(attrs[["data-idle"]], "true")
+    for (name in c("mood-change", "gestures", "swap", "minimising", "restoring", "others")) {
+      expect_identical(attrs[[paste0("data-", name)]], "false", info = name)
+    }
+    expect_identical(attrs[["data-messages"]], "menu")
+    off <- mascot("a", motion = FALSE)$attribs
+    expect_identical(off[["data-reduced"]], "true")
+    for (name in c("idle", "mood-change", "gestures", "swap", "minimising", "restoring", "others")) {
+      expect_identical(off[[paste0("data-", name)]], "false", info = name)
+    }
+    expect_identical(off[["data-messages"]], "")
   })
 })

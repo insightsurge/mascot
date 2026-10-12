@@ -49,9 +49,47 @@ code_gesture <- function(name) {
   code_pair(name, helper_call("mascot_gesture", name))
 }
 
-code_motion <- function(animate, swap) {
-  helper <- helper_call("mascot_motion", animate = if (!animate) FALSE, swap = if (!swap) FALSE)
-  code_pair(if (swap) animate else helper, helper)
+code_motion <- function(
+  idle = "follow",
+  mood_change = "follow",
+  gestures = "follow",
+  swap = "follow",
+  minimising = "follow",
+  restoring = "follow",
+  messages = "follow",
+  others = TRUE
+) {
+  flags <- list(
+    idle = idle,
+    mood_change = mood_change,
+    gestures = gestures,
+    swap = swap,
+    minimising = minimising,
+    restoring = restoring
+  )
+  args <- lapply(flags, function(value) {
+    checkmate::assert_choice(value, c("follow", "true", "false"))
+    if (value != "follow") identical(value, "true")
+  })
+  checkmate::assert_character(messages, any.missing = FALSE, null.ok = TRUE)
+  checkmate::assert_flag(others)
+  if (length(messages) > 1L && any(messages %in% c("follow", "all"))) {
+    cli::cli_abort("Choose Follow others, All, or only panel names.")
+  }
+  args$messages <- if (!identical(messages, "follow")) {
+    if (!length(messages)) {
+      FALSE
+    } else if (identical(messages, "all")) {
+      TRUE
+    } else {
+      as.call(c(list(quote(c)), as.list(messages)))
+    }
+  }
+  if (!others) {
+    args$others <- FALSE
+  }
+  helper <- do.call(helper_call, c(list("mascot_motion_settings"), args))
+  code_pair(helper, helper)
 }
 
 code_size <- function(size, small_screen) {

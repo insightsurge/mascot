@@ -38,7 +38,7 @@
 #'   default) leaves the theme unchanged; `mascot_theme()` restores the
 #'   character's own colours. After a character swap, the theme is applied
 #'   again to the new character's parts.
-#' @param motion A logical flag or [mascot_motion()] object, as in [mascot()].
+#' @param motion A logical flag or [mascot_motion_settings()] object, as in [mascot()].
 #'   `NULL` (the default) leaves motion unchanged. Changes apply to the live mascot
 #'   without restarting it; the visitor's reduced-motion preference still applies.
 #' @param click A label, a [mascot_action()] object or a [mascot_popup_menu()]
@@ -51,6 +51,9 @@
 #' @param gesture A gesture name or [mascot_gesture()] object. `NULL` (the
 #'   default) sends no gesture. Use `"nod"` to acknowledge an action or `"wave"`
 #'   to greet. Must be named. See [mascot_gestures()] for descriptions.
+#'   With `gestures = FALSE` in [mascot_motion_settings()], the gesture is
+#'   skipped; the mood, bubble and status in the same update still apply. Shiny
+#'   development mode reports it through the browser's client-message warning.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.
@@ -91,8 +94,8 @@
 #' gestures play once.
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
-#' @seealso [mascot()], [mascot_motion()] for a complete Shiny settings example
-#'   with live colours, animation and a colour reset.
+#' @seealso [mascot()], [mascot_motion_settings()] for a complete Shiny settings example
+#'   with live colours, movement and a colour reset.
 #' @export
 #' @examplesIf interactive()
 #' shiny::shinyApp(

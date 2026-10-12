@@ -25,8 +25,8 @@
 #'   object, or `NULL` (the default) for no click. Accepted so the same arguments
 #'   as [mascot()] can be passed, and has no effect in a preview (clicks need
 #'   Shiny, so every cell stays a picture).
-#' @param motion A logical flag or [mascot_motion()] object. Defaults to `FALSE`
-#'   for steady faces; `TRUE` allows animation subject to the visitor's preference.
+#' @param motion A logical flag or [mascot_motion_settings()] object. Defaults to `FALSE`
+#'   for steady faces; `TRUE` allows movement subject to the visitor's preference.
 #'   `NULL` is not accepted.
 #' @returns A browsable `htmltools` tag list. Its `contrast` attribute is a data
 #'   frame with `role`, `colour`, `background`, `ratio` and `mode` columns, one row

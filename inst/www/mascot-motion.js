@@ -26,6 +26,8 @@
  *   wave lasts 30 frames, rocks to -0.025 and alternates armR between -0.9 and -0.3.
  *
  * pose(character, state, frame) returns existing pose fields for draw(), without modifying inputs.
+ * Independent settings idle, mood_change and gestures default to true; false skips that layer.
+ * The host owns minimising, restoring and messages; others supplies defaults for future switches.
  * state: mood = first described mood, previous = mood, changedAt = absent (no change),
  *   gesture = absent, gestureAt = absent, activeAt = 0, seed = 0, reduced = false, pose = {}.
  * Gestures override the mood, then idle motion is applied; explicit fields supplied to draw() last
@@ -280,10 +282,12 @@
     const mood = named(state.mood === undefined ? Object.keys(ch.moods)[0] : state.mood, ch.moods, 'mood');
     const previous = state.previous === undefined ? mood : named(state.previous, ch.moods, 'mood');
     const replaced =
+      state.gestures !== false &&
       state.gesture &&
       frame >= state.gestureAt &&
       (state.changedAt === undefined || state.gestureAt >= state.changedAt);
     return !state.reduced &&
+      state.mood_change !== false &&
       !replaced &&
       state.changedAt !== undefined &&
       frame < state.changedAt + change.frames * change.swapAt
@@ -359,12 +363,14 @@
     const elapsed = frame - state.gestureAt;
     const gesture = gestures[state.gesture];
     const newerChange = state.changedAt !== undefined && frame >= state.changedAt && state.changedAt > state.gestureAt;
-    if (gesture && !newerChange && elapsed >= 0 && elapsed < gesture.frames) {
+    if (state.gestures !== false && gesture && !newerChange && elapsed >= 0 && elapsed < gesture.frames) {
       p = gesturePose(ch, p, gesture, elapsed / gesture.frames);
     } else {
       const elapsed = frame - state.changedAt;
-      const replaced = state.gesture && frame >= state.gestureAt && state.gestureAt >= state.changedAt;
+      const replaced =
+        state.gestures !== false && state.gesture && frame >= state.gestureAt && state.gestureAt >= state.changedAt;
       if (
+        state.mood_change !== false &&
         !replaced &&
         state.previous !== undefined &&
         state.previous !== state.mood &&
@@ -376,6 +382,7 @@
         else p.rot += change.angle * Math.sin(progress * 4 * Math.PI) * (1 - progress) ** 2;
       }
     }
+    if (state.idle === false) return heldPose(ch, p, state.pose);
     const fadeAt = (idle.frames * 2) / 3;
     const fraction = Math.max(0, (elapsedIdle - fadeAt) / (idle.frames - fadeAt));
     const fade = 1 - fraction * fraction * (3 - 2 * fraction);
@@ -455,7 +462,9 @@
     };
   }
 
-  const patchFields = ['mood', 'pose', 'colours', 'reduced', 'character', 'swap'];
+  const motionFlags = ['idle', 'mood_change', 'gestures', 'swap', 'minimising', 'restoring', 'others'];
+  const panelNames = ['bubble', 'tooltip', 'menu'];
+  const patchFields = ['mood', 'pose', 'colours', 'reduced', 'character', 'messages', ...motionFlags];
   const poseFields = () => Object.keys(ns.drawing.defaultPose).filter((key) => key !== 't');
 
   function object(value, field) {
@@ -523,10 +532,16 @@
         throw new Error(`mascot: update.reduced: invalid value '${String(value)}'; valid values: true, false, null`);
       next.reduced = value;
     }
-    if (Object.hasOwn(patch, 'swap')) {
-      if (typeof patch.swap !== 'boolean')
-        throw new Error(`mascot: update.swap: invalid value '${String(patch.swap)}'; valid values: true, false`);
-      next.swap = patch.swap;
+    for (const key of motionFlags) {
+      if (!Object.hasOwn(patch, key)) continue;
+      if (typeof patch[key] !== 'boolean')
+        throw new Error(`mascot: update.${key}: invalid value '${String(patch[key])}'; valid values: true, false`);
+      next[key] = patch[key];
+    }
+    if (Object.hasOwn(patch, 'messages')) {
+      if (!Array.isArray(patch.messages) || patch.messages.some((name) => !panelNames.includes(name)))
+        throw new Error('mascot: update.messages: valid panel names: bubble, tooltip, menu');
+      next.messages = [...patch.messages];
     }
     return next;
   }
@@ -620,9 +635,17 @@
     if (options.onChange !== undefined && typeof options.onChange !== 'function')
       throw new Error('mascot: onChange: expected a function');
     const onChange = options.onChange;
-    const initial = { character: ch, mood: Object.keys(ch.moods)[0], pose: {}, colours: {}, reduced: null, swap: true };
+    const initial = {
+      character: ch,
+      mood: Object.keys(ch.moods)[0],
+      pose: {},
+      colours: {},
+      reduced: null,
+      ...Object.fromEntries(motionFlags.map((key) => [key, options.others ?? true])),
+      messages: options.others === false ? [] : [...panelNames],
+    };
     const initialPatch = Object.fromEntries(
-      ['mood', 'colours', 'reduced', 'swap']
+      ['mood', 'colours', 'reduced', 'messages', ...motionFlags]
         .filter((key) => options[key] !== undefined)
         .map((key) => [key, options[key]]),
     );
@@ -630,13 +653,16 @@
     const ctx = canvas.getContext('2d');
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
     const state = {
+      idle: values.idle,
+      mood_change: values.mood_change,
+      gestures: values.gestures,
       mood: values.mood,
       pose: values.pose,
       colours: values.colours,
       activeAt: 0,
       activeUntil: Math.floor(settings.idle.frames),
       seed: options.seed === undefined ? 0 : options.seed,
-      reduced: values.reduced === null ? media.matches : values.reduced,
+      reduced: media.matches || values.reduced === true,
     };
     if (state.reduced) state.activeAt = null;
     let frame = 0;
@@ -665,7 +691,16 @@
     }
 
     function moving() {
-      return !state.reduced && state.activeAt !== null && frame >= state.activeAt && frame < state.activeUntil;
+      return (
+        !state.reduced &&
+        (state.idle ||
+          (state.swap && frame < state.swap.until) ||
+          (state.mood_change && state.changedAt !== undefined && frame < state.changedAt + settings.change.frames) ||
+          (state.gestures && state.gesture && frame < state.gestureAt + settings.gestures[state.gesture].frames)) &&
+        state.activeAt !== null &&
+        frame >= state.activeAt &&
+        frame < state.activeUntil
+      );
     }
     function drawFrame() {
       if (destroyed) return;
@@ -753,8 +788,8 @@
       state.activeUntil = null;
     }
     function preference(event) {
-      if (destroyed || values.reduced !== null || state.reduced === event.matches) return;
-      state.reduced = event.matches;
+      if (destroyed || state.reduced === (event.matches || values.reduced === true)) return;
+      state.reduced = event.matches || values.reduced === true;
       if (state.reduced) settle();
       drawFrame();
       schedule();
@@ -792,14 +827,15 @@
         const wasSwapping = sceneFrame(ch, state, frame).swapping;
         const moodChanged = next.mood !== values.mood;
         const poseChanged = !same(next.pose, values.pose);
-        const reduced = next.reduced === null ? media.matches : next.reduced;
+        const reduced = media.matches || next.reduced === true;
         const changed =
           characterChanged ||
           moodChanged ||
           poseChanged ||
           !same(next.colours, values.colours) ||
           next.reduced !== values.reduced ||
-          next.swap !== values.swap ||
+          motionFlags.some((key) => next[key] !== values[key]) ||
+          !same(next.messages, values.messages) ||
           reduced !== state.reduced;
         if (!changed) return;
         if (characterChanged) {
@@ -879,6 +915,17 @@
         state.pose = next.pose;
         state.colours = next.colours;
         state.reduced = reduced;
+        state.idle = next.idle;
+        state.mood_change = next.mood_change;
+        state.gestures = next.gestures;
+        if (!next.mood_change) {
+          state.previous = state.mood;
+          delete state.changedAt;
+        }
+        if (!next.gestures) {
+          delete state.gesture;
+          delete state.gestureAt;
+        }
         if (characterChanged || (!wasSwapping && (moodChanged || poseChanged))) activate();
         if (!next.swap) delete state.swap;
         if (state.reduced) settle();
@@ -902,6 +949,7 @@
       gesture(name) {
         if (destroyed) return;
         named(name, settings.gestures, 'gesture');
+        if (!values.gestures) return;
         if (sceneFrame(ch, state, frame).swapping) return;
         delete state.changedAt;
         state.previous = state.mood;
@@ -963,6 +1011,12 @@
     return controller;
   }
 
-  ns.motion = { pose, frame: sceneFrame, validate };
+  ns.motion = {
+    pose,
+    frame: sceneFrame,
+    validate,
+    settings: Object.freeze(motionFlags),
+    panels: Object.freeze(panelNames),
+  };
   ns.mount = mount;
 })();

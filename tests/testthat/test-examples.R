@@ -152,7 +152,7 @@ describe("the studio's controls", {
       code$code_status("Checking rows"),
       code$code_bubble("<strong>Saved</strong>", TRUE, Inf, FALSE),
       code$code_gesture("wave"),
-      code$code_motion(FALSE, FALSE),
+      code$code_motion(idle = "false", swap = "false"),
       code$code_size("20%", 72),
       code$code_placement("top-left", minimise = TRUE, drag = "snap"),
       code$code_menu(character()),
@@ -346,7 +346,7 @@ describe("the studio's controls", {
     for (fn in c(
       "mascot_mood",
       "mascot_bubble",
-      "mascot_motion",
+      "mascot_motion_settings",
       "mascot_placement",
       "mascot_theme",
       "mascot_action",
@@ -852,9 +852,9 @@ describe("bundled example apps", {
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('r\"(')")
     expect_type(parse(text = app$get_value(output = "code_ui")), "expression")
     expect_false(grepl('\\"', app$get_value(output = "code_ui"), fixed = TRUE))
-    select_function("mascot_motion")
-    app$set_inputs(animate = FALSE)
-    app$wait_for_js(paste0(state, ".motion.reduced === true"))
+    select_function("mascot_motion_settings")
+    app$set_inputs(idle = "false")
+    app$wait_for_js(paste0(state, ".motion.idle === false"))
     select_function("mascot_size")
     app$set_inputs(size_px = 120)
     app$wait_for_js(paste0(state, ".size.size === 120"))
@@ -927,7 +927,7 @@ describe("bundled example apps", {
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('direction = \"right\"')")
     app$wait_for_js(paste0(state, ".click.direction === 'right'"))
     app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper [role=menuitem][data-item-id=finish]")
+    app$click(selector = "#helper .mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=finish]")
     app$wait_for_js("document.querySelector('#helper .mascot-bubble')?.textContent.includes('Finish review')")
     expect_false(grepl("You chose", app$get_value(output = "code_ui"), fixed = TRUE))
     # A mistake is an error in the log, and the mascot keeps its settings.
@@ -1090,6 +1090,8 @@ describe("bundled example apps", {
     # Another function brings the live mascot back, in the state it was left in.
     app$click(selector = '.pg-index-link[data-value="mascot_mood"]')
     app$wait_for_js("document.querySelector('[data-canvas=preview]').hidden")
+    # The server hides the Preview tab after the client switches the stage.
+    app$wait_for_js("document.querySelector('#code_tabs a[data-value=preview]').getClientRects().length === 0")
     expect_false(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 1L)
     expect_identical(
@@ -1202,12 +1204,12 @@ describe("bundled example apps", {
     expect_match(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Review complete")
     expect_match(app$get_js("document.querySelector('#helper .mascot-bubble').textContent"), "All checks finished")
     app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper [role=menuitem][data-item-id=reset]")
+    app$click(selector = "#helper .mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=reset]")
     wait_example_mood(app, "helper", "idle")
     expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).bubble"))
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.body"), "#B53D78")
     app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper [role=menuitem][data-item-id=about]")
+    app$click(selector = "#helper .mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=about]")
     app$wait_for_js("!!document.querySelector('.modal.show, .modal.in')")
     expect_match(app$get_js("document.querySelector('.modal-title').textContent"), "About this example")
   })
@@ -1302,8 +1304,14 @@ describe("studio state and built previews", {
         size_unit = "px",
         size_px = 160,
         small_on = FALSE,
-        animate = TRUE,
-        swap = TRUE,
+        idle = "follow",
+        mood_change = "follow",
+        gestures = "follow",
+        swap = "follow",
+        minimising = "follow",
+        restoring = "follow",
+        messages = "follow",
+        others = TRUE,
         menu_on = TRUE,
         menu_items = "finish = Finish review",
         menu_direction = "auto",
@@ -1493,8 +1501,14 @@ describe("studio state and built previews", {
         size_unit = "px",
         size_px = 160,
         small_on = FALSE,
-        animate = TRUE,
-        swap = TRUE,
+        idle = "follow",
+        mood_change = "follow",
+        gestures = "follow",
+        swap = "follow",
+        minimising = "follow",
+        restoring = "follow",
+        messages = "follow",
+        others = TRUE,
         menu_on = FALSE,
         menu_items = "",
         menu_direction = "auto",
@@ -1684,11 +1698,13 @@ describe("studio round 8 help and copied apps", {
     for (fn in c("mascot", "update_mascot")) {
       for (arg in setdiff(names(get("the_guide", env)(fn)$args), c("id", "...", "session"))) {
         links <- as.character(htmltools::tagList(get("wiring_links", env)(fn)))
-        expect_match(links, paste0('data-value="mascot_', arg, '"'), fixed = TRUE)
+        helper <- if (arg == "motion") "mascot_motion_settings" else paste0("mascot_", arg)
+        expect_match(links, paste0('data-value="', helper, '"'), fixed = TRUE)
+        expect_match(links, paste0(helper, "()"), fixed = TRUE)
         expect_match(links, 'data-event="select_function"', fixed = TRUE)
       }
     }
-    for (text in c("cover the Controls panel", "second character", "Demonstration:", "One-off gestures")) {
+    for (text in c("cover the Controls panel", "Follow others", "Demonstration:", "One-off gestures")) {
       expect_match(page, text, fixed = TRUE)
     }
     expect_false(grepl("inspector", get("html_text", env)(page), ignore.case = TRUE))
@@ -1809,10 +1825,28 @@ describe("studio safeguards (#248)", {
         "closable = FALSE",
         sent = function(p) isFALSE(p$bubble$closable)
       ),
-      animate = row(list(list(animate = FALSE)), "motion", "motion = FALSE", sent = function(p) {
-        isTRUE(p$motion$reduced)
+      idle = row(list(list(idle = "false")), "motion", "idle = FALSE", sent = function(p) {
+        isFALSE(p$motion$idle)
       }),
-      swap = row(list(list(swap = FALSE)), "motion", "swap = FALSE", sent = function(p) isFALSE(p$motion$swap)),
+      swap = row(list(list(swap = "false")), "motion", "swap = FALSE", sent = function(p) isFALSE(p$motion$swap)),
+      mood_change = row(list(list(mood_change = "false")), "motion", "mood_change = FALSE", sent = function(p) {
+        isFALSE(p$motion$mood_change)
+      }),
+      gestures = row(list(list(gestures = "false")), "motion", "gestures = FALSE", sent = function(p) {
+        isFALSE(p$motion$gestures)
+      }),
+      minimising = row(list(list(minimising = "false")), "motion", "minimising = FALSE", sent = function(p) {
+        isFALSE(p$motion$minimising)
+      }),
+      restoring = row(list(list(restoring = "false")), "motion", "restoring = FALSE", sent = function(p) {
+        isFALSE(p$motion$restoring)
+      }),
+      messages = row(list(list(messages = "menu")), "motion", 'messages = "menu"', sent = function(p) {
+        identical(p$motion$messages, list("menu"))
+      }),
+      others = row(list(list(others = FALSE)), "motion", "others = FALSE", sent = function(p) {
+        isFALSE(p$motion$idle) && isFALSE(p$motion$others)
+      }),
       gesture = row(list(list(gesture = "wave")), "gesture", 'gesture = "wave"', ui = FALSE, sent = function(p) {
         identical(p$gesture, "wave")
       }),
@@ -2075,8 +2109,8 @@ describe("studio safeguards (#248)", {
       'mascot_bubble("Hi")'
     )
     expect_identical(eval(env$code_bubble("Hi", FALSE, bubble$duration, bubble$closable)$helper), mascot_bubble("Hi"))
-    motion <- defaults_of("mascot_motion")
-    expect_identical(env$code_motion(motion$animate, motion$swap)$helper, quote(mascot_motion()))
+    motion <- defaults_of("mascot_motion_settings")
+    expect_identical(env$code_motion()$helper, quote(mascot_motion_settings()))
     size <- defaults_of("mascot_size")
     expect_identical(eval(env$code_size(formals(mascot)$size, size$small_screen)$short), formals(mascot)$size)
     expect_identical(formals(env$code_placement), defaults_of("mascot_placement"))
@@ -2100,8 +2134,14 @@ describe("studio safeguards (#248)", {
       bubble_forever = is.infinite(bubble$duration),
       bubble_closable = bubble$closable,
       bubble_html = FALSE, # plain text unless wrapped in HTML()
-      animate = motion$animate,
-      swap = motion$swap,
+      idle = "follow",
+      mood_change = "follow",
+      gestures = "follow",
+      swap = "follow",
+      minimising = "follow",
+      restoring = "follow",
+      messages = "follow",
+      others = motion$others,
       size_unit = "px",
       size_px = formals(mascot)$size,
       small_on = !is.null(size$small_screen),
@@ -2272,5 +2312,28 @@ describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {
     expect_error(mascot_example(name = 1, run = FALSE), "name", class = "mascot_error")
     expect_error(mascot_example("studio", run = 1), "run", class = "mascot_error")
+  })
+})
+
+describe("studio motion settings builders", {
+  it("writes only named overrides and lets others determine untouched controls", {
+    env <- new.env(parent = baseenv())
+    sys.source(system.file("examples", "studio", "R", "code.R", package = "mascot"), env)
+    expect_identical(env$code_motion()$helper, quote(mascot_motion_settings()))
+    expect_identical(env$code_motion(idle = "false")$helper, quote(mascot_motion_settings(idle = FALSE)))
+    expect_identical(
+      eval(env$code_motion(messages = "menu", others = FALSE)$helper),
+      mascot_motion_settings(messages = "menu", others = FALSE)
+    )
+    expect_identical(
+      eval(env$code_motion(idle = "true", others = FALSE)$helper),
+      mascot_motion_settings(idle = TRUE, others = FALSE)
+    )
+    expect_identical(eval(env$code_motion(messages = character())$helper), mascot_motion_settings(messages = FALSE))
+    expect_identical(
+      eval(env$code_motion(messages = c("bubble", "tooltip"))$helper),
+      mascot_motion_settings(messages = c("bubble", "tooltip"))
+    )
+    expect_error(env$code_motion(messages = c("follow", "menu")), "Choose Follow others")
   })
 })

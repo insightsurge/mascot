@@ -3,7 +3,7 @@
     Code
       cat(html)
     Output
-      <div class="mascot" id="helper" tabindex="-1" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-floating="true" data-position="bottom-right" data-minimise="true" data-drag="false" data-reduced="auto" data-swap="true">
+      <div class="mascot" id="helper" tabindex="-1" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-floating="true" data-position="bottom-right" data-minimise="true" data-drag="false" data-reduced="auto" data-idle="true" data-mood-change="true" data-gestures="true" data-swap="true" data-minimising="true" data-restoring="true" data-messages="bubble,tooltip,menu" data-others="true">
         <script type="application/json" data-mascot-character="tessa">[character JSON]</script>
         <canvas class="mascot-canvas" role="img" aria-label="Tessa, idle"></canvas>
         <div class="mascot-status" role="status">Idle</div>

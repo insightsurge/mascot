@@ -528,12 +528,15 @@ describe("the canvas motion controller", {
       ))
       expect_identical(
         r,
-        "mascot: update.typo: unknown field 'typo' (value '42'); valid names: mood, pose, colours, reduced, character, swap"
+        paste0(
+          "mascot: update.typo: unknown field 'typo' (value '42'); valid names: ",
+          "mood, pose, colours, reduced, character, messages, idle, mood_change, gestures, swap, minimising, restoring, others"
+        )
       )
     }
   })
 
-  it("follows the media preference again after clearing a forced reduction", {
+  it("always honours the media preference and resumes only on a new action", {
     skip_without_chrome()
     js <- local_engine_page()
     for (character in c("tessa", "blob")) {
@@ -546,7 +549,7 @@ describe("the canvas motion controller", {
           "return { forced, following, resumed, newAction: last().pose.sy, held: last().pose.lookY, listeners: listeners.size };"
         )
       ))
-      expect_equal(r$forced, 1.012, tolerance = 1e-12)
+      expect_null(r$forced)
       expect_identical(r$following, list(mood = "idle"))
       expect_identical(r$resumed, list(mood = "idle"))
       expect_equal(r$newAction, 1.012, tolerance = 1e-12)
@@ -630,5 +633,84 @@ describe("the canvas motion controller", {
       expect_equal(r$listeners, 0)
       expect_equal(r$queue, 0)
     }
+  })
+})
+
+describe("independent motion settings", {
+  it("turns off idle without dropping a mood change or gesture", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    for (character in c("tessa", "blob")) {
+      r <- js(motion_js(
+        character,
+        paste(
+          "const base = mascot.drawing.resolvePose(ch, {mood:'idle'});",
+          "const still = pose({idle:false}, 22.5);",
+          "const changing = pose({idle:false,mood:'happy',previous:'idle',changedAt:0}, 2);",
+          "const nodding = pose({idle:false,gesture:'nod',gestureAt:0}, 4.5);",
+          "return {still:still.sy===base.sy && still.sx===base.sx && still.blink===base.blink,",
+          "changing:changing.rot!==base.rot,nodding:nodding.sy!==base.sy};"
+        )
+      ))
+      expect_true(r$still, info = character)
+      expect_true(r$changing, info = character)
+      expect_true(r$nodding, info = character)
+    }
+  })
+  it("makes mood changes instant while idle and gestures remain independent", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    r <- js(player_js(
+      "tessa",
+      paste(
+        "const {p} = mount({idle:false,mood_change:false}); p.setMood('happy');",
+        "const mood=p.current().mood; p.seek(2); const change=last().pose.rot;",
+        "p.gesture('nod');p.seek(6.5);const nod=last().pose.sy;",
+        "p.update({gestures:false});p.gesture('wave');p.seek(8);",
+        "return {mood,change,nod,skipped:last().pose.rot};"
+      )
+    ))
+    expect_identical(r$mood, "happy")
+    expect_equal(r$change, 0)
+    expect_equal(r$nod, 0.96)
+    expect_equal(r$skipped, 0)
+  })
+  it("cancels disabled layers without replaying them when re-enabled", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    r <- js(player_js(
+      "tessa",
+      paste(
+        "const {p}=mount({idle:false});p.setMood('happy');p.seek(2);",
+        "p.update({mood_change:false});const shown=p.current().mood;",
+        "p.update({mood_change:true});const noChange=last().pose.rot;",
+        "p.gesture('wave');p.seek(5);p.update({gestures:false});",
+        "p.update({gestures:true});const noGesture=last().pose.rot;",
+        "return {shown,noChange,noGesture,queued:queued.size};"
+      )
+    ))
+    expect_identical(r$shown, "happy")
+    expect_equal(r$noChange, 0)
+    expect_equal(r$noGesture, 0)
+    expect_equal(r$queued, 0)
+  })
+  it("validates each switch and refuses to override the visitor preference", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    r <- js(player_js(
+      "tessa",
+      paste(
+        "const {p}=mount();const errors=[];",
+        "for(const name of ['idle','mood_change','gestures','swap','minimising','restoring','others'])",
+        "try{p.update({[name]:'yes'});}catch(e){errors.push(e.message.includes(name));}",
+        "try{p.update({messages:['dialog']});}catch(e){errors.push(e.message.includes('bubble, tooltip, menu'));}",
+        "preference(true);p.update({reduced:false,idle:true,mood_change:true,gestures:true});",
+        "p.setMood('happy');p.gesture('wave');p.seek(4);",
+        "return {errors,pose:last().pose,queued:queued.size};"
+      )
+    ))
+    expect_identical(unlist(r$errors), rep(TRUE, 8))
+    expect_identical(r$pose, list(mood = "happy"))
+    expect_equal(r$queued, 0)
   })
 })

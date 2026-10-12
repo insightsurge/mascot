@@ -63,7 +63,7 @@
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
 #' @seealso [mascot_colour_roles()], [mascot()], [update_mascot()],
-#'   [mascot_motion()] for a complete Shiny settings example
+#'   [mascot_motion_settings()] for a complete Shiny settings example
 #' @evalRd paste0(
 #'   "\\section{Experimental CSS source}{\n",
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",

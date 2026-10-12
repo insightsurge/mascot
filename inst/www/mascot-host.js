@@ -30,8 +30,9 @@
  * Floating elements move to body; a source marker preserves tab visibility, inherited text/theme and Shiny teardown.
  * Inline bubbles are clamped to viewport edges without changing their reserved height.
  * Floating bubbles point towards the page centre. Native buttons minimise/restore; messages pause while minimised.
- * Motion patches are { reduced: null|true, swap: boolean }; null follows the visitor, true stops motion.
- * data-reduced="auto"|"true" and data-swap="true"|"false" carry the same settings on static pages.
+ * Motion patches carry reduced (null|true), independent boolean switches and messages (panel names).
+ * data-* attributes carry the same settings on static pages; reduced motion always wins.
+ * Minimise/restore use transform and opacity for 240 ms, with no page layout movement.
  * Motion changes update the live controller; swaps reapply retained settings alongside the theme.
  * CSS suppresses bubble and restore-control movement too. No per-element global listeners are added by this host.
  * Click patches are { type: 'none' } | { type: 'action', label, tooltip, disabled } |
@@ -81,6 +82,29 @@
   const sources = new WeakMap();
   const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
   const drags = [false, 'snap', 'free'];
+  const motionFlags = ns.motion.settings;
+  const panelNames = ns.motion.panels;
+  const defaultMotion = () => ({
+    reduced: null,
+    ...Object.fromEntries(motionFlags.map((key) => [key, true])),
+    messages: [...panelNames],
+  });
+  let motionMedia = null;
+  function finishInterfaceMotion() {
+    if (!motionMedia?.matches) return;
+    for (const record of live) {
+      record.snapAnimation?.finish();
+      record.placementAnimation?.finish();
+      record.panelExits.forEach((movement) => {
+        movement.finish();
+      });
+      for (const panel of [record.bubbleEl, record.menuEl, record.tooltipEl]) {
+        panel?.getAnimations().forEach((movement) => {
+          movement.finish();
+        });
+      }
+    }
+  }
   // CSS pixels a press must move before it becomes a drag, so a click still opens the menu.
   const dragThreshold = 4;
   let densityMedia = null;
@@ -168,7 +192,7 @@
     stopTimer(record);
     record.bubble = null;
     const focused = record.bubbleEl.contains(document.activeElement);
-    record.bubbleEl.hidden = true;
+    hidePanel(record, record.bubbleEl, 'bubble');
     delete record.bubbleEl.dataset.text;
     if (focused) record.el.focus();
     record.bubbleText.textContent = '';
@@ -224,6 +248,7 @@
       button.textContent = '\u00d7';
       el.append(button);
     }
+    syncMotion(record);
     el.hidden = false;
     refreshGaze(record);
     resumeTimer(record);
@@ -494,6 +519,13 @@
   }
 
   function watchModes() {
+    if (live.size && !motionMedia) {
+      motionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
+      motionMedia.addEventListener('change', finishInterfaceMotion);
+    } else if (!live.size && motionMedia) {
+      motionMedia.removeEventListener('change', finishInterfaceMotion);
+      motionMedia = null;
+    }
     const auto = [...live].some((record) => themeMode(record.theme) === 'auto');
     if (auto && !modeMutation) {
       modeMutation = new MutationObserver(refreshPage);
@@ -774,7 +806,7 @@
     watchNotifications();
     measure(record);
     refreshGaze(record);
-    if (!free && !reducedMotion(record)) {
+    if (!free && record.motion.others && !reducedMotion(record)) {
       const last = record.el.getBoundingClientRect();
       record.snapAnimation = record.el.animate(
         [{ transform: `translate(${first.left - last.left}px, ${first.top - last.top}px)` }, { transform: 'none' }],
@@ -865,9 +897,58 @@
       closeMenu(record);
       hideTooltip(record);
     }
+    record.placementAnimation?.cancel();
+    record.placementCopy?.remove();
+    record.placementCopy = null;
+    const source = (value ? record.canvas : record.restoreButton).getBoundingClientRect();
+    const moving = source.width > 0 && !reducedMotion(record) && record.motion[value ? 'minimising' : 'restoring'];
+    let copy = null;
+    if (moving && value) {
+      copy = document.createElement('canvas');
+      copy.width = record.canvas.width;
+      copy.height = record.canvas.height;
+      copy.getContext('2d').drawImage(record.canvas, 0, 0);
+      copy.className = 'mascot-motion-copy';
+      copy.setAttribute('aria-hidden', 'true');
+      for (const [key, n] of Object.entries({
+        left: source.left,
+        top: source.top,
+        width: source.width,
+        height: source.height,
+      }))
+        copy.style[key] = `${n}px`;
+      record.el.append(copy);
+      record.placementCopy = copy;
+    }
     stopTimer(record);
     record.minimised = value;
     layout(record);
+    if (moving) {
+      const target = (value ? record.restoreButton : record.canvas).getBoundingClientRect();
+      const dx =
+        (value ? target.left - source.left : source.left - target.left) +
+        (value ? target.width - source.width : source.width - target.width) / 2;
+      const dy =
+        (value ? target.top - source.top : source.top - target.top) +
+        (value ? target.height - source.height : source.height - target.height) / 2;
+      const scale = value ? target.width / source.width : source.width / target.width;
+      const small = { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0 };
+      const full = { transform: 'none', opacity: 1 };
+      const movement = (copy || record.canvas).animate(value ? [full, small] : [small, full], {
+        duration: 240,
+        easing: 'ease-out',
+      });
+      record.placementAnimation = movement;
+      const cleanup = () => {
+        copy?.remove();
+        if (record.placementAnimation === movement) {
+          record.placementAnimation = null;
+          record.placementCopy = null;
+        }
+      };
+      movement.onfinish = cleanup;
+      movement.oncancel = cleanup;
+    }
     if (focus) (value ? record.restoreButton : record.minimiseButton).focus();
     record.focus = record.el.contains(document.activeElement);
     if (!value) {
@@ -1262,7 +1343,7 @@
   function closeMenu(record, focus = false, clearPose = true) {
     if (!record.menuOpen) return;
     record.menuOpen = false;
-    record.menuEl.hidden = true;
+    hidePanel(record, record.menuEl, 'menu');
     record.button.setAttribute('aria-expanded', 'false');
     openMenus.delete(record);
     if (!openMenus.size) document.removeEventListener('pointerdown', outsideMenu, true);
@@ -1282,6 +1363,7 @@
     record.menuOpen = true;
     const actionFocused = record.actions.contains(document.activeElement);
     refreshActions(record);
+    syncMotion(record);
     record.menuEl.hidden = false;
     record.ink = inkBox(record);
     measureMenu(record);
@@ -1317,6 +1399,7 @@
     )
       return;
     record.tooltipShown = true;
+    syncMotion(record);
     record.tooltipEl.hidden = false;
     record.ink = inkBox(record);
     measureTooltip(record);
@@ -1330,7 +1413,7 @@
     record.tooltipTimer = null;
     if (!record.tooltipShown) return;
     record.tooltipShown = false;
-    record.tooltipEl.hidden = true;
+    hidePanel(record, record.tooltipEl, 'tooltip');
     openTooltips.delete(record);
     if (!openTooltips.size) document.removeEventListener('keydown', escapeTooltips, true);
     watchScroll();
@@ -1510,18 +1593,80 @@
   }
 
   function validateMotion(value) {
+    const keys = ['reduced', ...motionFlags, 'messages'];
     if (
       !value ||
       typeof value !== 'object' ||
       Array.isArray(value) ||
-      Object.keys(value).length !== 2 ||
-      !has(value, 'reduced') ||
-      !has(value, 'swap') ||
+      Object.keys(value).length !== keys.length ||
+      keys.some((key) => !has(value, key)) ||
       (value.reduced !== null && value.reduced !== true) ||
-      typeof value.swap !== 'boolean'
+      motionFlags.some((key) => typeof value[key] !== 'boolean') ||
+      !Array.isArray(value.messages) ||
+      value.messages.some((name) => !panelNames.includes(name))
     )
-      throw new Error('motion needs reduced null or true and swap true or false');
-    return { reduced: value.reduced, swap: value.swap };
+      throw new Error(
+        'motion needs reduced null or true, boolean switches and messages naming bubble, tooltip or menu',
+      );
+    return { ...value, messages: [...value.messages] };
+  }
+
+  function syncMotion(record) {
+    record.el.dataset.reduced = record.motion.reduced === true ? 'true' : 'auto';
+    for (const key of motionFlags) {
+      record.el.dataset[key === 'mood_change' ? 'moodChange' : key] = String(record.motion[key]);
+    }
+    record.el.dataset.messages = record.motion.messages.join(',');
+    for (const [name, panel] of [
+      ['bubble', record.bubbleEl],
+      ['menu', record.menuEl],
+      ['tooltip', record.tooltipEl],
+    ]) {
+      if (!panel) continue;
+      panel.dataset.motion = String(record.motion.messages.includes(name));
+      if (reducedMotion(record) || !record.motion.messages.includes(name))
+        panel.getAnimations().forEach((movement) => {
+          movement.finish();
+        });
+    }
+    if (reducedMotion(record) || !record.motion.others) record.snapAnimation?.finish();
+    for (const movement of record.panelExits) {
+      if (reducedMotion(record) || !record.motion.messages.includes(movement.effect.target.dataset.panel))
+        movement.finish();
+    }
+    if (reducedMotion(record) || !record.motion[record.minimised ? 'minimising' : 'restoring'])
+      record.placementAnimation?.finish();
+  }
+
+  // Hiding is logical immediately; a non-interactive copy supplies only the short exit fade.
+  function hidePanel(record, panel, name) {
+    if (!panel.hidden && !reducedMotion(record) && record.motion.messages.includes(name)) {
+      const copy = panel.cloneNode(true);
+      copy.removeAttribute('id');
+      for (const node of copy.querySelectorAll('[id]')) node.removeAttribute('id');
+      copy.inert = true;
+      copy.setAttribute('aria-hidden', 'true');
+      copy.dataset.panel = name;
+      copy.classList.add('mascot-motion-copy');
+      const rect = panel.getBoundingClientRect();
+      for (const [key, value] of Object.entries({
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      }))
+        copy.style[key] = `${value}px`;
+      record.el.append(copy);
+      const movement = copy.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: 'ease-out' });
+      const remove = () => {
+        copy.remove();
+        record.panelExits.delete(movement);
+      };
+      movement.onfinish = remove;
+      movement.oncancel = remove;
+      record.panelExits.add(movement);
+    }
+    panel.hidden = true;
   }
 
   function mount(el) {
@@ -1585,8 +1730,26 @@
       tooltipTimer: null,
       motion: validateMotion({
         reduced: !has(el.dataset, 'reduced') || el.dataset.reduced === 'auto' ? null : el.dataset.reduced === 'true',
-        swap:
-          !has(el.dataset, 'swap') || el.dataset.swap === 'true' ? true : el.dataset.swap === 'false' ? false : null,
+        ...Object.fromEntries(
+          motionFlags.map((key) => {
+            const name = key === 'mood_change' ? 'moodChange' : key;
+            return [
+              key,
+              !has(el.dataset, name)
+                ? el.dataset.others !== 'false'
+                : el.dataset[name] === 'true'
+                  ? true
+                  : el.dataset[name] === 'false'
+                    ? false
+                    : null,
+            ];
+          }),
+        ),
+        messages: has(el.dataset, 'messages')
+          ? el.dataset.messages.split(',').filter(Boolean)
+          : el.dataset.others === 'false'
+            ? []
+            : [...panelNames],
       }),
       theme: validateTheme(
         JSON.parse(el.querySelector('script[data-mascot-theme]')?.textContent || JSON.stringify(emptyTheme())),
@@ -1634,6 +1797,9 @@
       dropped: null,
       suppressClick: false,
       snapAnimation: null,
+      placementAnimation: null,
+      placementCopy: null,
+      panelExits: new Set(),
     };
     records.set(el, record);
     try {
@@ -1651,6 +1817,7 @@
       listenBubble(record);
       listenDrag(record);
       replaceClick(record, record.click);
+      syncMotion(record);
       record.handlers.clickPlacement = (event) => {
         if (!record.actions.hidden && event.target.closest('.mascot-minimise') === record.minimiseButton)
           minimise(record, true);
@@ -1775,8 +1942,7 @@
     if (prepared.click) replaceClick(record, prepared.click, false);
     if (prepared.motion) {
       record.motion = prepared.motion;
-      el.dataset.reduced = record.motion.reduced === true ? 'true' : 'auto';
-      el.dataset.swap = String(record.motion.swap);
+      syncMotion(record);
     }
     if (prepared.theme) {
       record.theme = prepared.theme;
@@ -1809,7 +1975,19 @@
     }
     if (has(patch, 'bubble')) replaceBubble(record, prepared.bubble);
     refreshGaze(record);
-    if (has(patch, 'gesture')) record.controller.gesture(patch.gesture);
+    syncMotion(record);
+    if (has(patch, 'gesture')) {
+      if (!record.motion.gestures) {
+        if (window.Shiny?.inDevMode?.()) {
+          const message = `Gesture '${patch.gesture}' skipped: gestures are switched off in mascot_motion_settings()`;
+          window.dispatchEvent(
+            new CustomEvent('shiny:client-message', {
+              detail: { headline: 'mascot', message, status: 'warning' },
+            }),
+          );
+        }
+      } else record.controller.gesture(patch.gesture);
+    }
     return true;
   }
 
@@ -1821,7 +1999,7 @@
     theme = emptyTheme(),
     source = null,
     strictTheme = true,
-    motion = { reduced: null, swap: true },
+    motion = defaultMotion(),
   ) {
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('update needs an object');
     for (const key of Object.keys(patch)) {
@@ -2036,6 +2214,12 @@
       el.removeEventListener(name === 'clickPlacement' ? 'click' : name, handler);
     record.actions.remove();
     record.restoreButton.remove();
+    record.placementAnimation?.cancel();
+    record.placementCopy?.remove();
+    record.panelExits.forEach((movement) => {
+      movement.effect.target.remove();
+      movement.cancel();
+    });
     record.controller.destroy();
     portal(record, false, true);
     records.delete(el);

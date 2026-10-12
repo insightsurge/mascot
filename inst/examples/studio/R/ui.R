@@ -169,7 +169,7 @@ function_index <- function() {
 wiring_links <- function(fn) {
   shared <- setdiff(names(the_guide(fn)$args), c("id", "...", "session"))
   lapply(shared, function(arg) {
-    helper <- paste0("mascot_", arg)
+    helper <- if (arg == "motion") "mascot_motion_settings" else paste0("mascot_", arg)
     arg_field(
       fn,
       arg,
@@ -336,7 +336,7 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_moods = visual_moods(),
     mascot_status = visual_status(),
     mascot_bubble = visual_bubble(),
-    mascot_motion = visual_motion(),
+    mascot_motion_settings = visual_motion(),
     mascot_gesture = visual_gesture(),
     mascot_gestures = visual_gestures(),
     mascot_size = visual_size(),
@@ -451,29 +451,8 @@ visual_bubble <- function() {
 }
 
 visual_motion <- function() {
-  cell <- function(title, body) div(class = "pg-grid-cell", tags$strong(title), div(class = "pg-muted", body))
-  tagList(
-    tags$h3(class = "pg-section-title", "What animate and swap do together"),
-    div(
-      class = "pg-grid2",
-      div(class = "pg-grid-head"),
-      div(class = "pg-grid-head", tags$code("swap = TRUE")),
-      div(class = "pg-grid-head", tags$code("swap = FALSE")),
-      div(class = "pg-grid-head", tags$code("animate = TRUE")),
-      cell("Everything animates", "Moods wiggle, gestures play, character swaps animate."),
-      cell("Swaps are instant", "Moods and gestures still animate."),
-      div(class = "pg-grid-head", tags$code("animate = FALSE")),
-      cell("Everything is instant", "swap has no effect."),
-      cell("Everything is instant", "swap has no effect.")
-    ),
-    div(
-      class = "pg-callout",
-      tags$strong("The visitor decides first. "),
-      "When a visitor enables reduced motion in system settings, all animations become instant regardless of your
-      settings here. To test this without altering system preferences, use browser developer tools (in Chrome:
-      Rendering > \"Emulate CSS media feature prefers-reduced-motion\")."
-    )
-  )
+  # selected_guide() reads the explanation from the helper's help page.
+  NULL
 }
 
 visual_gesture <- function() {
@@ -825,7 +804,7 @@ guide_mistake_calls <- function(fn, character) {
     mascot_mood = 'mascot_mood("sleepy")',
     mascot_status = 'mascot_status(1)',
     mascot_bubble = 'mascot_bubble("Hi", duration = 0)',
-    mascot_motion = 'mascot_motion(animate = "yes")',
+    mascot_motion_settings = 'mascot_motion_settings(idle = "yes")',
     mascot_gesture = 'mascot_gesture("unknown-gesture")',
     mascot_size = 'mascot_size(10)',
     mascot_placement = c('mascot_placement("unknown-position")', 'mascot_placement("inline", minimise = TRUE)'),

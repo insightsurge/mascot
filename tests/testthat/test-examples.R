@@ -1301,7 +1301,7 @@ describe("studio state and built previews", {
         drag = "none",
         size_unit = "px",
         size_px = 160,
-        small_on = FALSE,
+        small_mode = "auto",
         animate = TRUE,
         swap = TRUE,
         menu_on = TRUE,
@@ -1492,7 +1492,7 @@ describe("studio state and built previews", {
         drag = "none",
         size_unit = "px",
         size_px = 160,
-        small_on = FALSE,
+        small_mode = "auto",
         animate = TRUE,
         swap = TRUE,
         menu_on = FALSE,
@@ -1823,10 +1823,10 @@ describe("studio safeguards (#248)", {
       size_pct = row(list(list(size_unit = "pct"), list(size_pct = 50)), "size", 'size = "50%"', sent = function(p) {
         identical(p$size$size, "50%")
       }),
-      small_on = row(list(list(small_on = TRUE)), "size", "small_screen = 72", sent = function(p) {
-        identical(p$size$small_screen, 72)
+      small_mode = row(list(list(small_mode = "same")), "size", "small_screen = NULL", sent = function(p) {
+        is.null(p$size$small_screen)
       }),
-      small_px = row(list(list(small_on = TRUE, small_px = 48)), "size", "small_screen = 48", sent = function(p) {
+      small_px = row(list(list(small_mode = "number", small_px = 48)), "size", "small_screen = 48", sent = function(p) {
         identical(p$size$small_screen, 48)
       }),
       position = row(list(list(position = "top-left")), "placement", 'placement = "top-left"', sent = function(p) {
@@ -2104,7 +2104,7 @@ describe("studio safeguards (#248)", {
       swap = motion$swap,
       size_unit = "px",
       size_px = formals(mascot)$size,
-      small_on = !is.null(size$small_screen),
+      small_mode = size$small_screen,
       minimise = defaults_of("mascot_placement")$minimise,
       drag = as.character(defaults_of("mascot_placement")$drag),
       theme_source = "own", # theme = NULL keeps the character's own colours
@@ -2135,6 +2135,25 @@ describe("studio safeguards (#248)", {
     # The listed override, as a control: the position starts inline.
     expect_identical(start$position, "inline")
     expect_false(identical(start$position, formals(mascot)$placement))
+  })
+})
+
+describe("studio phone sidebars (#265)", {
+  it("uses the opaque page background for overlay sidebars only at phone widths", {
+    css <- paste(
+      readLines(file.path(dirname(mascot_example("studio", run = FALSE)), "www", "studio.css")),
+      collapse = "\n"
+    )
+    expect_match(
+      css,
+      paste0(
+        "@media \\(max-width: 575[.]98px\\) \\{\\s*",
+        "(?:/\\*.*?\\*/\\s*)?",
+        "[.]bslib-sidebar-layout > aside[.]sidebar[.]bslib-sidebar-input \\{\\s*",
+        "background-color: var\\(--bs-body-bg\\);\\s*\\}"
+      ),
+      perl = TRUE
+    )
   })
 })
 

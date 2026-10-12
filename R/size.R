@@ -3,14 +3,17 @@
 #' Control the size of the mascot in pixels or as a percentage. Percentage
 #' sizes follow the parent's content width when inline, and the window width when
 #' floating. The rendered canvas is never smaller than 24 CSS pixels.
-#' Screens at most 575.98 CSS pixels wide use `small_screen`, if supplied.
-#' The full character is drawn at every size; fine face details are harder to
-#' read at 32 and 24 pixels, so the status text carries the meaning.
+#' Screens at most 575.98 CSS pixels wide use `small_screen` (floating mascots
+#' scale down to a phone size by default). The full character is drawn at every
+#' size; fine face details are harder to read at 32 and 24 pixels, so the status
+#' text carries the meaning.
 #' @param size A finite number of CSS pixels (at least `24`), or a positive
 #'   percentage string such as `"20%"`. Defaults to `160`; `NULL` is not accepted.
 #' @param small_screen An optional size for small screens (at most 575.98 CSS
-#'   pixels wide), in the same forms as `size`. `NULL` (the default) uses `size`
-#'   at every screen width.
+#'   pixels wide). `"auto"` (the default) scales floating mascots down on phones
+#'   to at most 96 pixels while leaving inline mascots unchanged. `NULL` keeps
+#'   the same size on every screen. A number of pixels or a percentage string
+#'   sets the phone size explicitly for both floating and inline mascots.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_size` object with `size` and `small_screen` elements.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
@@ -21,11 +24,12 @@
 #' mascot_size()
 #' mascot_size("20%")
 #' mascot_size(120, small_screen = 48)
-mascot_size <- function(size = 160, ..., small_screen = NULL) {
+#' mascot_size(120, small_screen = NULL)
+mascot_size <- function(size = 160, ..., small_screen = "auto") {
   # Sizes are a union of pixels and percentages; share non-throwing checks with updates.
   check_size_value(size, "size", environment())
   if (!is.null(small_screen)) {
-    check_size_value(small_screen, "small_screen", environment())
+    check_size_value(small_screen, "small_screen", environment(), allow_auto = TRUE)
   }
   if (...length() > 0L) {
     abort_dots(names(substitute(list(...)))[-1L], ...length(), c("small_screen"), environment())
@@ -35,9 +39,13 @@ mascot_size <- function(size = 160, ..., small_screen = NULL) {
 
 #' A size-value problem shared by helpers and runtime updates
 #' @noRd
-size_value_problem <- function(x, arg) {
+size_value_problem <- function(x, arg, allow_auto = FALSE) {
   checkmate::assert_string(arg)
+  checkmate::assert_flag(allow_auto)
   # x deliberately uses check_*: bad runtime data must warn rather than throw.
+  if (allow_auto && identical(x, "auto")) {
+    return(NULL)
+  }
   if (isTRUE(checkmate::check_number(x, lower = 24, finite = TRUE))) {
     return(NULL)
   }
@@ -48,10 +56,17 @@ size_value_problem <- function(x, arg) {
     number <- suppressWarnings(as.numeric(sub("%$", "", x)))
     if (is.finite(number) && number > 0) return(NULL)
   }
+  valid <- if (allow_auto) {
+    "\"auto\", a finite number of pixels at least 24 or a positive percentage such as \"20%\""
+  } else {
+    "a finite number of pixels at least 24 or a positive percentage such as \"20%\""
+  }
   paste0(
     "`",
     arg,
-    "` must be a finite number of pixels at least 24 or a positive percentage such as \"20%\"; got ",
+    "` must be ",
+    valid,
+    "; got ",
     paste(deparse(x, width.cutoff = 60L), collapse = " "),
     "."
   )
@@ -59,11 +74,12 @@ size_value_problem <- function(x, arg) {
 
 #' Check the union accepted by each size argument
 #' @noRd
-check_size_value <- function(x, arg, call) {
+check_size_value <- function(x, arg, call, allow_auto = FALSE) {
   checkmate::assert_string(arg)
   checkmate::assert_environment(call)
+  checkmate::assert_flag(allow_auto)
   # Validation is shared with arg_problem(), including malformed helper objects.
-  problem <- size_value_problem(x, arg)
+  problem <- size_value_problem(x, arg, allow_auto = allow_auto)
   if (!is.null(problem)) {
     cli::cli_abort("{problem}", call = call, class = "mascot_error")
   }
@@ -90,7 +106,7 @@ size_problem <- function(x) {
     return(problem)
   }
   if (!is.null(x$small_screen)) {
-    problem <- size_value_problem(x$small_screen, "small_screen")
+    problem <- size_value_problem(x$small_screen, "small_screen", allow_auto = TRUE)
     if (!is.null(problem)) return(problem)
   }
   NULL

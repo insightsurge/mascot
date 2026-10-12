@@ -59,7 +59,7 @@ describe("mascot_preview()", {
     tags <- preview_nodes(page, ".mascot")
     expect_identical(tags[[1]]$attribs[["data-size"]], "20%")
     expect_identical(tags[[1]]$attribs[["data-small-screen"]], 96)
-    expect_null(tags[[2]]$attribs[["data-small-screen"]])
+    expect_identical(tags[[2]]$attribs[["data-small-screen"]], "auto")
     expect_true(all(vapply(tags, function(x) is.null(x$attribs[["data-simplify-when-small"]]), logical(1))))
     expect_true(all(vapply(tags, function(x) x$attribs[["data-reduced"]] == "auto", logical(1))))
     expect_true(all(vapply(tags, function(x) x$attribs[["data-swap"]] == "false", logical(1))))

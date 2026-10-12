@@ -5,10 +5,10 @@
     Output
       <div class="mascot" id="helper" tabindex="-1" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-floating="true" data-position="bottom-right" data-minimise="true" data-drag="false" data-reduced="auto" data-swap="true">
         <script type="application/json" data-mascot-character="tessa">[character JSON]</script>
-        <canvas class="mascot-canvas" role="img" tabindex="0" aria-label="Tessa, idle"></canvas>
+        <canvas class="mascot-canvas" role="img" aria-label="Tessa, idle"></canvas>
         <div class="mascot-status" role="status">Idle</div>
         <div class="mascot-bubble-region" role="status" aria-live="polite" aria-atomic="true">
-          <div class="mascot-bubble" hidden data-html="false" data-closable="true" data-duration="5">
+          <div class="mascot-panel mascot-bubble" hidden data-html="false" data-closable="true" data-duration="5">
             <div class="mascot-bubble-text"></div>
           </div>
         </div>

@@ -4,8 +4,10 @@
 
 * `mascot()` adds a character with a mood, a status line and an optional message bubble to a Shiny app or Quarto page. It floats in the bottom-right corner by default (#190, #223).
   * `placement = "inline"` places it in the page flow; a corner name or `mascot_placement()` gives the other options (#223).
-  * `bubble` shows a message (#196), `size` takes pixels, a percentage or `mascot_size()` (#201), `theme` takes colours, a `bslib::bs_theme()` or `mascot_theme()` (#202), `motion = FALSE` stops animation (#203), and `popup_menu` adds a click menu (#143, #225).
-  * *Experimental:* without a menu, clicking the mascot, or pressing Enter or Space on it, sets `input$<id>_click` to the number of clicks, so an app can attach its own action. A drag never counts as a click. The input's name and value may change before CRAN (#237).
+  * `bubble` shows a message (#196), `size` takes pixels, a percentage or `mascot_size()` (#201), `theme` takes colours, a `bslib::bs_theme()` or `mascot_theme()` (#202), `motion = FALSE` stops animation (#203), and `click` says what a click does: one action with a label, or a menu (#257).
+  * Without `click`, the mascot is a picture: no keyboard stop and no events. With one, it is a button named for screen readers, and every activation (a click or tap, Enter or Space, a screen reader's activate command) sets `input$<id>_click` to a count. Holding a key down counts once, and a drag never counts (#237, #257).
+
+* `mascot_action()` makes the mascot a button for one action of the app, such as opening a help panel; `click = "Open help"` is the short form. Its label names the button for screen readers and shows in a tooltip on hover and keyboard focus, which Escape hides; `tooltip = FALSE` turns the tooltip off. `disabled = TRUE` keeps the button but sends nothing: it stays reachable with the keyboard, and screen readers announce it as unavailable (#257).
 
 * `mascot_bubble()` sets a speech bubble with escaped text, or HTML only through `htmltools::HTML()` or tags (#196).
   * `duration` is in seconds (default `5`); `duration = Inf` or `NULL` keeps the bubble until it is closed, replaced or cleared. `closable = FALSE` hides the close button; Escape still closes the bubble (#196).
@@ -39,11 +41,11 @@
   * In Shiny, each drop sets `input$<id>_position`: a corner name after a snap, or a list with `x` and `y` after a free drop (#220).
   * Inline mascots ignore `minimise` and `drag`; an explicitly supplied value gives an informational message, not an error (#229).
 
-* `mascot_popup_menu()` adds a click menu of app-defined items. A chosen item sets `input$<id>_menu` to its ID, so choosing the same item twice triggers the input twice (#143, #213).
+* `mascot_popup_menu()` makes a click open a menu of app-defined items: pass it as `click`. A chosen item sets `input$<id>_menu` to its ID, so choosing the same item twice triggers the input twice (#143, #213, #257).
   * `direction` is `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`. The menu opens from the mascot's on-screen position, and falls back to the opposite side when the chosen side has no room (#225).
   * Opening the menu closes a speech bubble, and a new bubble closes an open menu (#225).
-  * With a menu, a click opens the menu and does not set `input$<id>_click` (#237).
-  * Enter and Space toggle the focused menu control; the arrow keys, Home and End move between items, and Escape closes the menu (#213).
+  * Opening and closing the menu also set `input$<id>_click`. `label` names the menu button for screen readers; without it, the button is named after the character, such as "Tessa, menu" (#257).
+  * Enter and Space toggle the focused menu control, once while the key is held down; the arrow keys, Home and End move between items, and Escape closes the menu (#213, #257).
   * While the menu is open, the mascot looks towards it: up, down, left or right, on the side where the menu actually opened, after any fallback. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208, #241).
 
 * `mascot_preview()` (*experimental*) shows an offline page that compares moods, sizes and light and dark colours, with contrast findings on the page and in R (#175, #213). It starts no Shiny app and writes no files; printing the page opens the Viewer or a browser.
@@ -68,12 +70,14 @@
   * A `bslib::bs_theme()` fills a character's brand colours with its primary and secondary colours (#202).
   * *Experimental:* `css` maps colour roles to CSS variables, such as `list(body = "--team-blue")`. The browser reads them, so R cannot check their values (#202).
 
-* `updateMascot()` changes a mascot from the Shiny server: its character, mood, status, bubble, size, placement, theme, motion, click menu and gesture. Arguments left as `NULL` stay unchanged (#190, #196, #201, #202, #203, #143).
+* `updateMascot()` changes a mascot from the Shiny server: its character, mood, status, bubble, size, placement, theme, motion, click and gesture. Arguments left as `NULL` stay unchanged (#190, #196, #201, #202, #203, #143).
   * An update sent before the mascot appears is kept until it does. The latest state is kept for a later first mascot with the same ID (#193), and only the latest early gesture plays, once (#200).
   * A new `placement` replaces any position the visitor dragged the mascot to (#220).
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* The speech bubble, the menu and the action tooltip share one look and appear motion, in the page's light or dark colours; the menu and the tooltip also share one placement next to the character. The bubble keeps its own placement, which works before the page's scripts run (#233).
 
 * `mascot_theme()` reads short hex colours such as `"#000"`, which `bslib::bs_theme()` can return, on every supported R version, and the studio runs on R 4.1 to 4.3 (#255).
 * The mascot helper objects (`mascot_bubble()`, `mascot_theme()` and the others) print and format readably (#213).

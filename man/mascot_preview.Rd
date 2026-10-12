@@ -13,7 +13,7 @@ mascot_preview(
   placement = "inline",
   theme = NULL,
   motion = FALSE,
-  popup_menu = NULL
+  click = NULL
 )
 }
 \arguments{
@@ -49,10 +49,10 @@ colours. Unset roles keep their original colours in both modes.}
 for steady faces; \code{TRUE} allows animation subject to the visitor's preference.
 \code{NULL} is not accepted.}
 
-\item{popup_menu}{A named character vector or \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object,
-or \code{NULL} (the default) for no menu. Accepted so the same arguments as
-\code{\link[=mascot]{mascot()}} can be passed, and has no effect in a preview (menus are
-inactive on a static page).}
+\item{click}{A label, a \code{\link[=mascot_action]{mascot_action()}} object or a \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}
+object, or \code{NULL} (the default) for no click. Accepted so the same arguments
+as \code{\link[=mascot]{mascot()}} can be passed, and has no effect in a preview (clicks need
+Shiny, so every cell stays a picture).}
 }
 \value{
 A browsable \code{htmltools} tag list. Its \code{contrast} attribute is a data
@@ -82,8 +82,8 @@ Experimental CSS variables are worked out in the browser: their warnings appear
 in its console, outside the R \code{contrast} attribute.
 
 \strong{Placement, menus and bubbles.} Floating \code{placement} is checked, then shown
-inline for comparison, so every cell remains in its grid. Click menus are
-checked but remain inactive on this static page. Empty bubble space is omitted
+inline for comparison, so every cell remains in its grid. A \code{click} is
+checked but has no effect on this static page. Empty bubble space is omitted
 here; a supplied bubble keeps its normal space and timing, and each cell is
 wide enough to hold it, so bubbles never cover neighbouring cells.
 }
@@ -98,6 +98,7 @@ mascot_preview()
 \code{\link[=mascot]{mascot()}}, \code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot_theme]{mascot_theme()}}
 
 Other mascot helpers:
+\code{\link[=mascot_action]{mascot_action()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},

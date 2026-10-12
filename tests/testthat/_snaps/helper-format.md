@@ -66,4 +66,11 @@
     Code
       print(helper)
     Output
-      mascot_popup_menu(items = c(about = "About"), direction = "auto")
+      mascot_popup_menu(items = c(about = "About"), direction = "auto", label = NULL)
+
+---
+
+    Code
+      print(helper)
+    Output
+      mascot_action(label = "Open help", tooltip = TRUE, disabled = FALSE)

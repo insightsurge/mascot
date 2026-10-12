@@ -138,9 +138,9 @@ describe("the studio's controls", {
     items <- c(`finish-review` = "Finish the review of every row in this table", about = "About this app")
     menu <- code$code_menu(items)
     theme <- code$code_theme("mascot", c(body = "#1f6feb"), c(body = "#9ec5fe"), "dark", "rim", "", "")
-    call <- code$format_call("mascot", list(id = "helper", popup_menu = menu$helper, theme = theme$helper))
+    call <- code$format_call("mascot", list(id = "helper", click = menu$helper, theme = theme$helper))
     expect_match(call, "`finish-review` = ", fixed = TRUE)
-    expect_identical(eval(parse(text = call)[[1]][["popup_menu"]]), mascot_popup_menu(items))
+    expect_identical(eval(parse(text = call)[[1]][["click"]]), mascot_popup_menu(items))
     handler <- code$menu_handler_code(items)
     expect_type(parse(text = handler), "expression")
     app <- code$whole_app_code(call, handler, c("shiny", "mascot"), "#7b4fd6")
@@ -253,6 +253,31 @@ describe("the studio's controls", {
         }
       }
     }
+    # A menu has no shortcut since click replaced popup_menu; its label is kept only when written.
+    labelled <- code$code_menu(c(about = "About"), "auto", "Help and settings")
+    expect_identical(labelled$short, labelled$helper)
+    expect_identical(eval(labelled$helper), mascot_popup_menu(c(about = "About"), label = "Help and settings"))
+    expect_null(eval(code$code_menu(c(about = "About"), "auto", "  ")$helper)$label)
+  })
+  it("writes an action as its label, or as mascot_action() when it hides the tooltip or is disabled", {
+    code <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), envir = code)
+    plain <- code$code_action("Open help", TRUE, FALSE)
+    expect_identical(plain$short, "Open help")
+    expect_identical(eval(plain$helper), mascot_action("Open help"))
+    for (flags in list(c(FALSE, FALSE), c(TRUE, TRUE), c(FALSE, TRUE))) {
+      pair <- code$code_action("Open help", flags[[1]], flags[[2]])
+      expected <- mascot_action("Open help", tooltip = flags[[1]], disabled = flags[[2]])
+      expect_identical(pair$short, pair$helper)
+      expect_identical(eval(parse(text = code$format_expr(pair$helper))[[1]]), expected)
+    }
+    # A blank label is no action: the empty helper, which removes the click.
+    expect_identical(code$code_action("  ")$helper, quote(mascot_action()))
+    expect_null(code$click_handler_code(quote(mascot_action())))
+    handler <- code$click_handler_code(plain$helper)
+    expect_match(handler, "observeEvent(input$helper_click", fixed = TRUE)
+    expect_type(parse(text = handler), "expression")
+    expect_match(code$click_handler_code(code$code_menu(c(about = "About"))$helper), "input$helper_menu", fixed = TRUE)
   })
   it("reads every displayed default from the installed function's formals", {
     skip_if_not_installed("bslib")
@@ -316,6 +341,7 @@ describe("the studio's controls", {
       "mascot_motion",
       "mascot_placement",
       "mascot_theme",
+      "mascot_action",
       "mascot_popup_menu",
       "updateMascot"
     )) {
@@ -884,7 +910,7 @@ describe("bundled example apps", {
     select_function("mascot_popup_menu")
     app$set_inputs(menu_on = TRUE, menu_items = "finish = Finish review", menu_direction = "right")
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('direction = \"right\"')")
-    app$wait_for_js(paste0(state, ".popup_menu.direction === 'right'"))
+    app$wait_for_js(paste0(state, ".click.direction === 'right'"))
     app$click(selector = "#helper .mascot-menu-toggle")
     app$click(selector = "#helper [role=menuitem][data-item-id=finish]")
     app$wait_for_js("document.querySelector('#helper .mascot-bubble')?.textContent.includes('Finish review')")
@@ -908,7 +934,7 @@ describe("bundled example apps", {
     select_function("mascot_popup_menu")
     app$set_inputs(menu_items = "no equals sign")
     app$set_inputs(menu_on = FALSE)
-    app$wait_for_js(paste0(state, ".popup_menu.items === null"))
+    app$wait_for_js(paste0(state, ".click.type === 'none'"))
     app$wait_for_js("!document.getElementById('code_app').textContent.includes('observeEvent(input$helper_menu')")
     # Switching functions reuses the same mounted inputs and their values.
     select_function("mascot_status")
@@ -1025,7 +1051,7 @@ describe("bundled example apps", {
     app$wait_for_js("document.querySelector('iframe.pg-preview').classList.contains('is-phone')")
     expect_match(
       app$get_js("document.getElementById('code_preview').textContent"),
-      'popup_menu = c(about = "About the preview")',
+      'click = mascot_popup_menu(c(about = "About the preview"))',
       fixed = TRUE
     )
     # A visible "Building" badge shows between a change and the rebuilt page.
@@ -1227,7 +1253,7 @@ describe("studio round 4 regression guards", {
     sys.source(file.path(dirname(mascot_example("studio", FALSE)), "R", "code.R"), env)
     items <- c("a`b" = "Action", "if" = "Conditional action", "a\\b" = "Slash")
     code <- env$format_expr(env$code_menu(items)$short)
-    expect_identical(eval(parse(text = code)), items)
+    expect_identical(eval(parse(text = code))$items, items)
     expect_type(parse(text = env$menu_handler_code(items)), "expression")
   })
 })
@@ -1837,24 +1863,59 @@ describe("studio safeguards (#248)", {
       ),
       menu_on = row(
         list(list(menu_on = TRUE, menu_items = "about = About")),
-        "popup_menu",
-        'popup_menu = c(about = "About")',
+        "click",
+        'click = mascot_popup_menu(c(about = "About"))',
         wait = 700,
-        sent = function(p) identical(p$popup_menu$items$about, "About")
+        sent = function(p) identical(p$click$items$about, "About")
       ),
       menu_items = row(
         list(list(menu_on = TRUE, menu_items = "help = Help")),
-        "popup_menu",
+        "click",
         'c(help = "Help")',
         wait = 700,
-        sent = function(p) identical(p$popup_menu$items$help, "Help")
+        sent = function(p) identical(p$click$items$help, "Help")
       ),
       menu_direction = row(
         list(list(menu_on = TRUE, menu_items = "about = About", menu_direction = "top")),
-        "popup_menu",
+        "click",
         'direction = "top"',
         wait = 700,
-        sent = function(p) identical(p$popup_menu$direction, "top")
+        sent = function(p) identical(p$click$direction, "top")
+      ),
+      menu_label = row(
+        list(list(menu_on = TRUE, menu_items = "about = About", menu_label = "Help menu")),
+        "click",
+        'label = "Help menu"',
+        wait = 700,
+        sent = function(p) identical(p$click$label, "Help menu")
+      ),
+      action_on = row(
+        list(list(action_on = TRUE)),
+        "click",
+        'click = "Open help"',
+        wait = 700,
+        sent = function(p) identical(p$click$type, "action")
+      ),
+      action_label = row(
+        list(list(action_on = TRUE, action_label = "Get help")),
+        "click",
+        'click = "Get help"',
+        wait = 700,
+        sent = function(p) identical(p$click$label, "Get help")
+      ),
+      action_tooltip = row(
+        list(list(action_on = TRUE, action_tooltip = FALSE)),
+        "click",
+        "tooltip = FALSE",
+        wait = 700,
+        sent = function(p) isFALSE(p$click$tooltip)
+      ),
+      action_disabled = row(
+        list(list(action_on = TRUE, action_disabled = TRUE)),
+        "click",
+        "disabled = TRUE",
+        wait = 700,
+        sent = function(p) isTRUE(p$click$disabled)
       )
     )
     # mascot_preview() controls change the call that builds the preview, not an update.
@@ -1869,7 +1930,10 @@ describe("studio safeguards (#248)", {
         'theme = list(body = "#1f6feb")'
       ),
       preview_motion = list(list(preview_motion = TRUE), "motion = TRUE"),
-      preview_menu_items = list(list(preview_menu_items = "about = About"), 'popup_menu = c(about = "About")')
+      preview_menu_items = list(
+        list(preview_menu_items = "about = About"),
+        'click = mascot_popup_menu(c(about = "About"))'
+      )
     )
     # Controls without a row, and why. Anything else in the control map needs a row above.
     exempt <- c(
@@ -1947,6 +2011,7 @@ describe("studio safeguards (#248)", {
         "code_size",
         "code_placement",
         "code_menu",
+        "code_action",
         "code_theme"
       ),
       envir = parts$env,
@@ -1957,7 +2022,7 @@ describe("studio safeguards (#248)", {
     overrides <- c(
       placement = "the live mascot sits inline in the studio canvas, not in a window corner",
       bubble = "the live mascot greets the visitor with a welcome bubble",
-      popup_menu = "the live mascot starts with a demonstration menu"
+      click = "the live mascot starts with a demonstration menu"
     )
     # The live mascot starts from the defaults plus the overrides, and nothing else.
     initial <- lapply(env$defaults, env$code_pair)
@@ -1993,7 +2058,12 @@ describe("studio safeguards (#248)", {
     size <- defaults_of("mascot_size")
     expect_identical(eval(env$code_size(formals(mascot)$size, size$small_screen)$short), formals(mascot)$size)
     expect_identical(formals(env$code_placement), defaults_of("mascot_placement"))
-    expect_identical(env$code_menu(c(a = "A"), defaults_of("mascot_popup_menu")$direction)$short, quote(c(a = "A")))
+    expect_identical(
+      env$code_menu(c(a = "A"), defaults_of("mascot_popup_menu")$direction)$short,
+      quote(mascot_popup_menu(c(a = "A")))
+    )
+    action <- defaults_of("mascot_action")
+    expect_identical(env$code_action("Open help", action$tooltip, action$disabled)$short, "Open help")
     expect_false(grepl(
       "mode",
       deparse1(
@@ -2001,6 +2071,7 @@ describe("studio safeguards (#248)", {
       )
     ))
     # Each control starts at the value its argument has by default (the overrides above aside).
+    start_menu <- eval(env$start$click$helper)$items
     expected <- list(
       status_text = "", # status = NULL follows the mood
       bubble_duration = bubble$duration,
@@ -2016,9 +2087,14 @@ describe("studio safeguards (#248)", {
       drag = as.character(defaults_of("mascot_placement")$drag),
       theme_source = "own", # theme = NULL keeps the character's own colours
       theme_mode = defaults_of("mascot_theme")$mode,
-      menu_on = FALSE, # popup_menu = NULL shows no menu
-      menu_items = "",
+      # The menu controls follow the demonstration menu the live mascot starts with (the override above, #256).
+      menu_on = TRUE,
+      menu_items = paste(names(start_menu), "=", start_menu, collapse = "\n"),
       menu_direction = defaults_of("mascot_popup_menu")$direction,
+      menu_label = "", # label = NULL names the menu after the character
+      action_on = FALSE, # one click at a time: the menu above
+      action_tooltip = action$tooltip,
+      action_disabled = action$disabled,
       mood = formals(mascot)$mood,
       character = formals(mascot)$character,
       preview_mood = "", # mood = NULL shows every mood
@@ -2084,27 +2160,40 @@ describe("studio engine behaviours", {
     expect_gt(note, regexpr('id="menu_direction"', page, fixed = TRUE)[[1]])
     expect_match(page, "It also looks towards a bubble.", fixed = TRUE)
   })
-  it("shows input$helper_click live, answers it with a wave and can remove the menu to try it (#237)", {
+  it("shows input$helper_click live, answers an action with a wave and only logs menu toggles (#257)", {
     parts <- studio_parts()
     start <- studio_start_values(parts$page)
     expect_match(parts$page, 'id="click_last"', fixed = TRUE)
-    expect_match(parts$page, "Experimental", fixed = TRUE)
     shiny::testServer(get("studio_server", parts$env), {
       do.call(session$setInputs, start)
       expect_match(output$click_last, "Nothing yet", fixed = TRUE)
       updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
-      # The button removes the menu, so the next click reaches the app.
-      session$setInputs(click_try = 1)
-      expect_null(updates()$patch$popup_menu$items)
-      expect_identical(updates()$fields$popup_menu, updates()$revision)
+      # With the menu, a toggle is logged and gets no wave.
       session$setInputs(helper_click = 1)
       expect_identical(output$click_last, "1 click")
-      expect_match(last_call(), 'gesture = "wave"', fixed = TRUE)
-      # The log is newest first: the click event, then the studio's wave in answer.
-      expect_identical(log()[[2]]$code, "input$helper_click  # 1")
-      expect_identical(log()[[1]]$code, 'updateMascot("helper", gesture = "wave")')
+      expect_identical(log()[[1]]$code, "input$helper_click  # 1")
+      expect_match(log()[[1]]$message, "opened or closed the menu", fixed = TRUE)
+      # Turning the action on sends it, and the switches take turns.
+      session$setInputs(action_on = TRUE)
+      session$elapse(700)
+      expect_identical(updates()$patch$click$type, "action")
+      expect_identical(updates()$patch$click$label, "Open help")
+      expect_match(output$code_app, "observeEvent(input$helper_click", fixed = TRUE)
       session$setInputs(helper_click = 2)
       expect_identical(output$click_last, "2 clicks")
+      expect_match(last_call(), 'gesture = "wave"', fixed = TRUE)
+      # The log is newest first: the click event, then the studio's wave in answer.
+      expect_identical(log()[[2]]$code, "input$helper_click  # 2")
+      expect_identical(log()[[1]]$code, 'updateMascot("helper", gesture = "wave")')
+      # A blank label is a problem in the code, never sent; switching off sends the empty helper.
+      session$setInputs(action_label = " ")
+      session$elapse(700)
+      expect_match(output$code_ui, "^# Write a label")
+      expect_identical(updates()$patch$click$label, "Open help")
+      session$setInputs(action_on = FALSE, menu_on = FALSE)
+      session$elapse(700)
+      expect_identical(updates()$patch$click, list(type = "none"))
+      expect_match(last_call(), "click = mascot_action()", fixed = TRUE)
     })
   })
 })

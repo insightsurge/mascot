@@ -34,7 +34,7 @@ ui <- page_fluid(
         theme = brand,
         status = "Ready for your team's review",
         placement = "inline",
-        popup_menu = c(finish = "Finish review", reset = "Reset helper", about = "About this example")
+        click = mascot_popup_menu(c(finish = "Finish review", reset = "Reset helper", about = "About this example"))
       ),
       p("The page switch controls the mascot's mode. Enter or Space opens its menu.")
     )

@@ -49,11 +49,11 @@ describe("mascot_preview()", {
       placement = mascot_placement("bottom-right", minimise = TRUE),
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "dark"),
       motion = mascot_motion(swap = FALSE),
-      popup_menu = mascot_popup_menu(c(about = "About"))
+      click = mascot_popup_menu(c(about = "About"))
     )
     expect_length(preview_nodes(page, "canvas"), 8)
     expect_match(as.character(page), "Floating placement is shown inline", fixed = TRUE)
-    expect_match(as.character(page), "Click menus need Shiny", fixed = TRUE)
+    expect_match(as.character(page), "Clicks need Shiny", fixed = TRUE)
     expect_match(as.character(page), "Ready &lt;now&gt;", fixed = TRUE)
     expect_match(as.character(page), "happy, 20% of cell width, light", fixed = TRUE)
     tags <- preview_nodes(page, ".mascot")
@@ -64,7 +64,8 @@ describe("mascot_preview()", {
     expect_true(all(vapply(tags, function(x) x$attribs[["data-reduced"]] == "auto", logical(1))))
     expect_true(all(vapply(tags, function(x) x$attribs[["data-swap"]] == "false", logical(1))))
     expect_length(preview_nodes(page, ".mascot-preview-no-bubble"), 0)
-    expect_length(Filter(function(x) !is.null(x$attribs[["data-mascot-popup-menu"]]), preview_nodes(page, "script")), 8)
+    # Cells stay pictures: a static page cannot send a click.
+    expect_length(Filter(function(x) !is.null(x$attribs[["data-mascot-click"]]), preview_nodes(page, "script")), 0)
     expect_identical(preview_theme(tags[[1]])$light$body, "#1F6FEB")
     expect_identical(preview_theme(tags[[5]])$dark$body, "#9EC5FE")
     expect_identical(preview_theme(tags[[1]])$mode, "light")
@@ -180,7 +181,7 @@ describe("mascot_preview()", {
       list(theme = list(light = "red")),
       list(motion = NULL),
       list(motion = "yes"),
-      list(popup_menu = structure(list(items = c(about = "About"), extra = 1), class = "mascot_popup_menu")),
+      list(click = structure(list(items = c(about = "About"), extra = 1), class = "mascot_popup_menu")),
       list(size = structure(list(size = 96), class = "mascot_size")),
       list(theme = structure(list(mode = "night"), class = "mascot_theme")),
       list(motion = structure(list(animate = TRUE), class = "mascot_motion"))
@@ -188,7 +189,8 @@ describe("mascot_preview()", {
     for (args in cases) {
       expect_error(do.call(mascot_preview, args), names(args)[[1]], fixed = TRUE)
     }
-    expect_error(mascot_preview(popup_menu = c("About")), "items", fixed = TRUE)
+    expect_error(mascot_preview(click = c(about = "About")), "mascot_popup_menu()", fixed = TRUE)
+    expect_false(grepl("Clicks need Shiny", as.character(mascot_preview(click = mascot_action())), fixed = TRUE))
     expect_error(mascot_preview(theme = list(body = "not-a-colour")), "Colour for role", fixed = TRUE)
     expect_snapshot(error = TRUE, mascot_preview(character = "typo"))
     expect_snapshot(error = TRUE, mascot_preview(mood = "typo"))
@@ -209,7 +211,6 @@ describe("mascot_preview()", {
       labels = "160 px",
       theme = NULL,
       motion = FALSE,
-      popup_menu = NULL,
       mode = "light",
       prefix = "comparison"
     )
@@ -311,7 +312,7 @@ describe("mascot_preview() in Chrome", {
         dark = list(body = "#F2A6CF"),
         mode = "light"
       ),
-      popup_menu = mascot_popup_menu(c(about = "About"))
+      click = mascot_popup_menu(c(about = "About"))
     ))
     js <- local_preview_page(page)
     expect_identical(
@@ -321,7 +322,8 @@ describe("mascot_preview() in Chrome", {
       ),
       rep(c("#FFFFFF", "#F2A6CF"), each = 4)
     )
-    expect_identical(js("document.querySelectorAll('.mascot-menu-button').length"), 0L)
+    expect_identical(js("document.querySelectorAll('.mascot-button').length"), 0L)
+    expect_identical(js("document.querySelectorAll('[data-mascot-click]').length"), 0L)
     expect_true(js(
       "Array.from(document.querySelectorAll('.mascot')).every(el=>!mascot.host.state(el).placement.floating)"
     ))

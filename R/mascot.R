@@ -38,13 +38,13 @@
 #' @param motion A logical flag or [mascot_motion()] object. `TRUE` (the default)
 #'   allows animation while honouring the visitor's reduced-motion preference.
 #'   `FALSE` stops animation. `NULL` is not accepted.
-#' @param popup_menu A named character vector of item labels or a
-#'   [mascot_popup_menu()] object. `NULL` (the default) shows no menu.
-#'   A choice sets `input$<id>_menu` to the item id, including repeated choices.
-#'   In a module, use `ns("helper")` in the UI and read `input$helper_menu` in
-#'   that module's server. Enter and Space toggle the focused menu control;
-#'   see [mascot_popup_menu()] for the module example and guidance. With a menu,
-#'   a click opens the menu and `input$<id>_click` is not set (see Details).
+#' @param click What a click on the mascot does in a Shiny app. `NULL` (the
+#'   default) does nothing: the mascot is a picture, not a keyboard stop. One
+#'   label containing a non-whitespace character, such as `"Open help"`, or a
+#'   [mascot_action()] object makes it a button for one action of your app.
+#'   A [mascot_popup_menu()] object makes it open a menu, whose choice sets
+#'   `input$<id>_menu`. With a click, every
+#'   activation sets `input$<id>_click` (see Details).
 #' @returns An `htmltools` tag with the mascot's web dependency attached.
 #' @family mascots in Shiny
 #' @seealso [updateMascot()]
@@ -72,28 +72,20 @@
 #' }
 #' ```
 #'
-#' **Clicks (experimental).** Without a `popup_menu`, clicking or tapping the
-#' mascot, or pressing Enter or Space while it has keyboard focus, sets
-#' `input$<id>_click` to the number of clicks since the mascot appeared, so the
-#' app can attach its own action, such as opening a help panel:
-#' `shiny::observeEvent(input$helper_click, ...)`. Dragging a floating mascot
-#' never counts as a click. With a menu, the menu keeps the click and
-#' `input$<id>_click` is not set. Screen readers still announce the mascot as an
-#' image, so offer the same action through a visible control too.
-#' @evalRd paste0(
-#'   "\\section{Experimental click input}{\n",
-#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
-#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
-#'       lifecycle::badge("experimental"), fixed = TRUE),
-#'   "\nThe name and value of \\code{input$<id>_click} may change before CRAN,",
-#'   " when the package's Shiny inputs are reviewed.\n}"
-#' )
+#' **Clicks.** With `click`, the mascot is a button: an action named by its
+#' label, or a menu. Every activation (a click or tap, Enter or Space while it
+#' has keyboard focus, or a screen reader's activate command) sets
+#' `input$<id>_click` to the number of activations since the mascot appeared, so
+#' `shiny::observeEvent(input$helper_click, ...)` runs each time; with a menu,
+#' opening and closing it both count. Dragging a floating mascot never counts as
+#' a click. See [mascot_action()] and [mascot_popup_menu()].
 #' @export
 #' @examples
 #' mascot(id = "helper", mood = "happy")
 #' mascot(id = "small", size = 96, placement = "bottom-right")
 #' mascot(id = "responsive", size = mascot_size(120, small_screen = 48))
 #' mascot(id = "still", motion = FALSE)
+#' mascot(id = "helpful", click = "Open help")
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   ui = shiny::fluidPage(mascot(id = "helper")),
@@ -109,7 +101,7 @@ mascot <- function(
   placement = "bottom-right",
   theme = NULL,
   motion = TRUE,
-  popup_menu = NULL
+  click = NULL
 ) {
   if (missing(id)) {
     # mascot("helper") is the usual slip for Shiny users, who expect the id first.
@@ -132,7 +124,7 @@ mascot <- function(
   placement <- as_placement_arg(placement, environment())
   theme <- as_theme_arg(theme, environment(), character$id)
   motion <- as_motion_arg(motion, environment())
-  popup_menu <- as_popup_menu_arg(popup_menu, environment())
+  click <- as_click_arg(click, environment())
   mode <- if (is.null(status$text)) "mood" else "custom"
   placement_fields <- placement_wire(placement)
   tag <- htmltools::tags$div(
@@ -156,11 +148,11 @@ mascot <- function(
       htmltools::HTML(character_json(character$id))
     ),
     theme_tag(theme),
-    popup_menu_tag(popup_menu),
+    click_tag(click),
+    # A picture until a click makes it a button; the browser then wraps it in one.
     htmltools::tags$canvas(
       class = "mascot-canvas",
       role = "img",
-      tabindex = "0",
       `aria-label` = paste0(character$name, ", ", mood$name)
     ),
     htmltools::tags$div(
@@ -205,7 +197,7 @@ as_status_arg <- function(x, call) {
 check_arg <- function(x, arg, call) {
   checkmate::assert_choice(
     arg,
-    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "popup_menu")
+    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "click")
   )
   checkmate::assert_environment(call)
   # x is checked by arg_problem(), shared with warning-only runtime validation.
@@ -220,16 +212,31 @@ check_arg <- function(x, arg, call) {
   cli::cli_abort("{problem}", call = call)
 }
 
+#' Stop when a helper's `...` caught arguments
+#' @noRd
+abort_dots <- function(extras, n, valid, call) {
+  checkmate::assert_character(extras, null.ok = TRUE)
+  checkmate::assert_count(n, positive = TRUE)
+  checkmate::assert_character(valid, min.chars = 1, any.missing = FALSE, min.len = 1)
+  checkmate::assert_environment(call)
+  # Unnamed values have no name; positional values after `...` are the usual slip.
+  extras <- if (is.null(extras)) rep("unnamed", n) else replace(extras, !nzchar(extras), "unnamed")
+  cli::cli_abort(
+    c("Unexpected arguments: {.val {extras}}.", "i" = "Name the optional arguments: {.arg {valid}}."),
+    call = call
+  )
+}
+
 #' A plain-text problem, or NULL for a valid shortcut or helper
 #' @noRd
 arg_problem <- function(x, arg) {
   checkmate::assert_choice(
     arg,
-    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "popup_menu")
+    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "click")
   )
   # check_* deliberately replaces assert_* for x: runtime values must only warn.
-  if (arg == "popup_menu") {
-    return(popup_menu_problem(x))
+  if (arg == "click") {
+    return(click_problem(x))
   }
   if (arg == "motion") {
     return(motion_problem(x))

@@ -135,17 +135,59 @@ panel_messages <- function() {
       )
     ),
     arg_field("mascot_bubble", "closable", input_switch("bubble_closable", "Show a close button", TRUE)),
+    fn_heading("mascot_action"),
+    arg_field(
+      "mascot_action",
+      "label",
+      tagList(
+        input_switch("action_on", "Make the mascot a button", FALSE),
+        textInput("action_label", "Label: what a click does", "Open help"),
+        uiOutput("action_problem")
+      ),
+      note = div(
+        class = "pg-note",
+        "Click or tap the mascot, or Tab to it and press Enter: each one sets input$helper_click. ",
+        "This studio answers with a wave; your app decides what happens."
+      )
+    ),
+    arg_field("mascot_action", "...", NULL),
+    arg_field(
+      "mascot_action",
+      "tooltip",
+      input_switch("action_tooltip", "Show the label in a tooltip", TRUE),
+      note = div(class = "pg-hint", "Rest the pointer on the mascot, or Tab to it. Escape hides the tooltip.")
+    ),
+    arg_field("mascot_action", "disabled", input_switch("action_disabled", "Disabled: clicks send nothing", FALSE)),
+    div(
+      class = "pg-field",
+      id = "click_field",
+      div(class = "pg-field-head", tags$strong("Every click reaches your server")),
+      div(
+        class = "pg-hint",
+        "With a click, each activation sets input$helper_click: a click or tap, Enter or Space, ",
+        "and opening or closing a menu. Without one, the mascot is a picture and sends nothing."
+      ),
+      div(class = "pg-live", tags$code("input$helper_click"), textOutput("click_last"))
+    ),
     fn_heading("mascot_popup_menu"),
     arg_field(
       "mascot_popup_menu",
       "items",
       tagList(
-        input_switch("menu_on", "Show the menu", FALSE),
-        textAreaInput("menu_items", "One item per line: id = Label", "", rows = 4, resize = "vertical"),
+        # The controls start with the menu the mascot starts with (start$click in app.R).
+        input_switch("menu_on", "Show the menu", TRUE),
+        textAreaInput(
+          "menu_items",
+          "One item per line: id = Label",
+          paste(names(default_menu), "=", default_menu, collapse = "\n"),
+          rows = 4,
+          resize = "vertical"
+        ),
         uiOutput("menu_problem")
       ),
       note = div(class = "pg-note", "Click or tap the mascot to open its menu, then choose an item.")
     ),
+    arg_field("mascot_popup_menu", "...", NULL),
     arg_field(
       "mascot_popup_menu",
       "direction",
@@ -167,21 +209,14 @@ panel_messages <- function() {
         "which can differ from the one chosen when that side has no room. It also looks towards a bubble."
       )
     ),
-    div(
-      class = "pg-field",
-      id = "click_field",
-      div(
-        class = "pg-field-head",
-        tags$strong("Clicks without a menu"),
-        tags$span(class = "badge text-bg-warning", "Experimental")
-      ),
-      div(
+    arg_field(
+      "mascot_popup_menu",
+      "label",
+      textInput("menu_label", "Name for screen readers", "", placeholder = "Help and settings"),
+      note = div(
         class = "pg-hint",
-        "Without a menu, clicking the mascot, or pressing Enter or Space on it, sets input$helper_click. ",
-        "With a menu, the click opens the menu instead. This studio answers a click with a wave."
-      ),
-      actionButton("click_try", "Remove the menu to try clicks", class = "btn-outline-primary btn-sm"),
-      div(class = "pg-live", tags$code("input$helper_click"), textOutput("click_last"))
+        "Screen readers announce the mascot as a button with this name. Empty: the character's name and \"menu\"."
+      )
     )
   )
 }
@@ -474,8 +509,8 @@ panel_preview <- function(moods = mascot_moods()) {
     arg_field(fn, "motion", input_switch("preview_motion", "Animate", FALSE)),
     arg_field(
       fn,
-      "popup_menu",
-      textAreaInput("preview_menu_items", "One item per line: id = Label", "", rows = 3),
+      "click",
+      textAreaInput("preview_menu_items", "Menu items, one per line: id = Label", "", rows = 3),
       note = uiOutput("preview_problem")
     ),
     actionButton("preview_build", "Rebuild now", class = "btn-outline-primary btn-sm")

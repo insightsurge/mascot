@@ -188,7 +188,9 @@ The engine is most of what a user sees, so it has its own rules. All of these ar
 
 - Status text sits beside every mascot in an element with `role="status"`. The mood never carries meaning alone
   (WCAG 1.4.1, 4.1.3). Validator errors may use `role="alert"`.
-- The canvas has `role="img"` and an `aria-label` naming the mood, or is marked decorative when the text says it all.
+- When not clickable, the canvas has `role="img"` and an `aria-label` naming the mood, or is marked decorative when
+  the text says it all, and it is no keyboard stop. With a click, a native button named by the action's label (or
+  the menu's) wraps it, so screen readers say what a click does (#257).
 - `prefers-reduced-motion` is honoured in CSS and JS: the wiggle becomes an instant change or a short fade. An R
   argument also switches animation off (WCAG 2.3.3).
 - No automatic animation lasts longer than five seconds without a way to pause it (WCAG 2.2.2). The wiggle is short

@@ -882,6 +882,13 @@ describe("bundled example apps", {
     app$wait_for_js(highlight_swatch_matches)
     expect_true(app$get_js(highlight_swatch_matches))
     select_function("mascot_popup_menu")
+    # The controls start with the mascot's own menu, so changing only the direction keeps every item (#256).
+    app$set_inputs(menu_direction = "top")
+    app$wait_for_js(paste0(state, ".popup_menu.direction === 'top'"))
+    expect_identical(
+      app$get_js(paste0("Object.keys(", state, ".popup_menu.items).join()")),
+      "finish,reset,about"
+    )
     app$set_inputs(menu_on = TRUE, menu_items = "finish = Finish review", menu_direction = "right")
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('direction = \"right\"')")
     app$wait_for_js(paste0(state, ".popup_menu.direction === 'right'"))
@@ -2001,6 +2008,7 @@ describe("studio safeguards (#248)", {
       )
     ))
     # Each control starts at the value its argument has by default (the overrides above aside).
+    start_menu <- eval(env$start$popup_menu$helper)$items
     expected <- list(
       status_text = "", # status = NULL follows the mood
       bubble_duration = bubble$duration,
@@ -2016,8 +2024,9 @@ describe("studio safeguards (#248)", {
       drag = as.character(defaults_of("mascot_placement")$drag),
       theme_source = "own", # theme = NULL keeps the character's own colours
       theme_mode = defaults_of("mascot_theme")$mode,
-      menu_on = FALSE, # popup_menu = NULL shows no menu
-      menu_items = "",
+      # The menu controls follow the demonstration menu the live mascot starts with (the override above, #256).
+      menu_on = TRUE,
+      menu_items = paste(names(start_menu), "=", start_menu, collapse = "\n"),
       menu_direction = defaults_of("mascot_popup_menu")$direction,
       mood = formals(mascot)$mood,
       character = formals(mascot)$character,

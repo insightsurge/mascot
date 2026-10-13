@@ -943,6 +943,11 @@
     record.minimised = value;
     window.Shiny?.setInputValue?.(`${record.el.id}_minimised`, value, { priority: 'event' });
     layout(record);
+    if (!value) {
+      measure(record);
+      record.controller.redraw();
+      resumeTimer(record);
+    }
     if (moving) {
       const target = (value ? record.restoreButton : record.canvas).getBoundingClientRect();
       const dx =
@@ -965,16 +970,16 @@
           record.placementAnimation = null;
           record.placementCopy = null;
         }
+        if (!value) {
+          measure(record);
+          record.controller.redraw();
+        }
       };
       movement.onfinish = cleanup;
       movement.oncancel = cleanup;
     }
     if (focus) (value ? record.restoreButton : record.minimiseButton).focus();
     record.focus = record.el.contains(document.activeElement);
-    if (!value) {
-      measure(record);
-      resumeTimer(record);
-    }
   }
 
   // Sample once when a panel shows, not on scroll or each animation frame. Canvas artwork
@@ -1145,7 +1150,9 @@
   function measure(record) {
     // A free drop stays inside the window when the window or the mascot changes size.
     if (record.dropped && record.placement.floating && !record.dragState) placeAt(record, record.dropped);
-    const size = record.canvas.getBoundingClientRect().width;
+    const size = record.placementAnimation
+      ? parseFloat(getComputedStyle(record.canvas).width) || record.canvas.clientWidth
+      : record.canvas.getBoundingClientRect().width;
     const visibility = getComputedStyle(record.canvas).visibility;
     const hidden =
       !(size > 0) || visibility === 'hidden' || visibility === 'collapse' || record.el.dataset.sourceHidden === 'true';

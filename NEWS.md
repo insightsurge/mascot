@@ -89,6 +89,8 @@
 
 ## Minor improvements and fixes
 
+* Minimised mascots restore sharp without interaction: the canvas backing size matches its displayed size times the device pixel ratio, and the character is redrawn on restore, including when animated, with `restoring = FALSE` and under reduced motion (#275).
+
 * `update_mascot()` accepts `session$ns()` ids without adding the module namespace twice, including when replaying updates after a mascot reappears (#133).
 
 * The help of `update_mascot()` shows how to make the mascot react to an app's state with an observer: a long computation run as a `shiny::ExtendedTask`, and form validation (#272).

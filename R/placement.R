@@ -39,6 +39,9 @@
 #' has no keyboard alternative; the minimise control stays reachable by keyboard.
 #' Remembering a position between visits is the app's job: for example, save
 #' the corner and pass it back as `position` next time.
+#' In Shiny, minimising or restoring sets `input$<id>_minimised` to a logical
+#' flag in the module that owns the mascot.
+#'
 #' @param position A corner to float the mascot (`"bottom-right"`, the default;
 #'   `"top-left"`, `"top-right"` or `"bottom-left"`), or `"inline"` to sit
 #'   where the mascot is placed in the UI. `NULL` is not accepted.

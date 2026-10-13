@@ -4,6 +4,6 @@
       mascot_example("typo", run = FALSE)
     Condition
       Error in `mascot_example()`:
-      ! `name` must be one of "studio", "form-check", "long-task", "modules", or "branding".
+      ! `name` must be one of "studio", "form-check", "long-task", "modules", "branding", "golem", or "rhino".
       x "typo" is not a bundled example.
 

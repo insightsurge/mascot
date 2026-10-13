@@ -22,6 +22,7 @@ Suggests:
     bslib,
     chromote,
     covr,
+    golem,
     knitr,
     lifecycle,
     rmarkdown,

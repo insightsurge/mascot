@@ -8,6 +8,10 @@
 
 ## New features
 
+* Mascots work in nested Shiny modules, function-built user interfaces in `golem` and rhino-shaped view modules. Bundled `golem` and `rhino` examples each show two independent nested modules (#133).
+
+* Minimising and restoring a mascot sets `input$<id>_minimised` in its owning module (#133).
+
 * `mascot(id, ..., character = "tessa")` requires an id first; arguments after it are named. `mascot()` adds a character with a mood, a status line and an optional message bubble to a Shiny app or Quarto page. It floats in the bottom-right corner by default (#190, #223).
   * `placement = "inline"` places it in the page flow; a corner name or `mascot_placement()` gives the other options (#223).
   * `bubble` shows a message (#196), `size` takes pixels, a percentage or `mascot_size()` (#201), `theme` takes colours, a `bslib::bs_theme()` or `mascot_theme()` (#202), `motion = FALSE` stops animation (#203), and `click` says what a click does: one action with a label, or a menu (#257).
@@ -27,7 +31,7 @@
 
 * `mascot_example(name, ..., run = TRUE)` requires `run` to be named. It runs one bundled example app, or with `run = FALSE` returns the path to its `app.R` without copying any file (#178).
 
-* `mascot_examples()` lists the five bundled Shiny apps in teaching order. The studio comes first; each other app is a copyable `app.R` for one scenario, built with `bslib` cards (#177, #213).
+* `mascot_examples()` lists the bundled Shiny apps in teaching order. The studio comes first; each other app is a copyable `app.R` for one scenario, built with `bslib` cards (#177, #213).
 
 * `mascot_gesture(name, ...)` rejects extra arguments. It plays one movement once, without changing the mood: `"nod"` acknowledges an action and `"wave"` greets. Use it on its own or pass a plain name to `update_mascot()` (#196).
 
@@ -84,6 +88,8 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* `update_mascot()` accepts `session$ns()` ids without adding the module namespace twice, including when replaying updates after a mascot reappears (#133).
 
 * The help of `update_mascot()` shows how to make the mascot react to an app's state with an observer: a long computation run as a `shiny::ExtendedTask`, and form validation (#272).
 

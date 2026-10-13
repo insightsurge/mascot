@@ -23,9 +23,10 @@ With \code{run = TRUE}, the value returned by \code{\link[shiny:runApp]{shiny::r
 \description{
 Opens only the requested example, like \code{\link[shiny:runExample]{shiny::runExample()}}. No files are
 copied or written by this function. Use \code{run = FALSE} to read the app's code
-or pass its directory to \code{\link[shiny:runApp]{shiny::runApp()}}. Each scenario's \code{app.R} can be
-copied alone into a project with Shiny, \code{bslib} and mascot installed; the
-studio is a folder, with its helpers in \verb{R/} and its styles in \verb{www/}.
+or pass its directory to \code{\link[shiny:runApp]{shiny::runApp()}}. The single-file scenarios can be
+copied into a project with Shiny, \code{bslib} and mascot installed. Copy the whole
+folder for the studio, \code{golem} and rhino-shaped examples; \code{golem} also needs the
+\code{golem} package.
 }
 \examples{
 basename(mascot_example("form-check", run = FALSE))

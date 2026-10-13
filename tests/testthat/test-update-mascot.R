@@ -1317,3 +1317,111 @@ describe("motion settings payloads", {
     expect_identical(captured$patch$bubble$text, "Ready")
   })
 })
+
+
+describe("nested module ids", {
+  it("accepts local and session-namespaced ids and replays the same state on remount", {
+    root <- shiny::MockShinySession$new()
+    withr::defer(root$close())
+    messages <- list()
+    unlockBinding("sendCustomMessage", root)
+    root$sendCustomMessage <- function(type, message) messages[[length(messages) + 1L]] <<- message
+    nested <- root$makeScope("first")$makeScope("review")
+    other <- root$makeScope("second")$makeScope("review")
+    shiny::withReactiveDomain(nested, {
+      update_mascot(nested$ns("helper"), mood = "happy")
+      update_mascot("helper", status = "Complete")
+    })
+    update_mascot("helper", mood = "thinking", session = other)
+    expect_identical(
+      vapply(messages, `[[`, character(1), "id"),
+      c("first-review-helper", "first-review-helper", "second-review-helper")
+    )
+    expect_setequal(ls(root$userData$mascot_updates), c("first-review-helper", "second-review-helper"))
+    expect_identical(
+      root$userData$mascot_updates[["first-review-helper"]]$patch,
+      list(mood = "happy", status = list(mode = "custom", text = "Complete"))
+    )
+    root$setInputs(`first-review-helper` = list(mount = 1, revision = 0))
+    root$flushReact()
+    expect_identical(tail(messages, 1)[[1]]$id, "first-review-helper")
+    expect_true(tail(messages, 1)[[1]]$replay)
+    expect_identical(tail(messages, 1)[[1]]$patch$status$text, "Complete")
+  })
+})
+
+
+describe("nested modules across tabs", {
+  it("keeps updates, menu inputs, dragging, minimising and motion local, including hidden dynamic UI", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    # Match the other browser tests: load the development package in the child R process.
+    app_function <- function() NULL
+    body(app_function) <- substitute(
+      {
+        library(mascot)
+        shiny::shinyAppDir(DIR)
+      },
+      list(DIR = normalizePath(test_path("apps", "modules-tabs")))
+    )
+    app <- app_driver(app_function, width = 900, height = 700)
+    withr::defer(app$stop())
+    app$run_js("window.helperState=id=>mascot.host.state(document.getElementById(id+'-review-helper'));")
+    app$wait_for_js("!!helperState('first') && !!helperState('second')")
+    app$wait_for_js("document.getElementById('second-review-helper').dataset.sourceHidden === 'true'")
+    # Updating a session$ns() id reaches only that nested module.
+    app$click("first-review-go")
+    app$wait_for_js("helperState('first').status.text === 'Complete'")
+    expect_identical(app$get_js("helperState('first').mood"), "happy")
+    expect_identical(app$get_js("helperState('second').mood"), "idle")
+    app$click(selector = "#first-review-helper .mascot-menu-toggle")
+    app$click(selector = "#first-review-helper [role=menuitem]")
+    app$wait_for_js("JSON.parse(document.getElementById('first-review-events').textContent).menu === 'about'")
+    events <- jsonlite::fromJSON(app$get_value(output = "first-review-events"))
+    expect_identical(events$menu, "about")
+    expect_equal(events$click, 1)
+    expect_null(jsonlite::fromJSON(app$get_value(output = "second-review-events"))$menu)
+    # A real pointer drop is received by the nested module's local input.
+    app$run_js(
+      "(() => {const c=document.querySelector('#first-review-helper canvas'),r=c.getBoundingClientRect();
+      const x=r.left+r.width/2,y=r.top+r.height/2,send=(type,px,py)=>c.dispatchEvent(new PointerEvent(type,
+      {bubbles:true,cancelable:true,pointerId:1,button:0,isPrimary:true,clientX:px,clientY:py}));
+      send('pointerdown',x,y);send('pointermove',x-300,y-200);send('pointermove',x-700,y-500);
+      send('pointerup',x-700,y-500);})()"
+    )
+    app$wait_for_js("JSON.parse(document.getElementById('first-review-events').textContent).position === 'top-left'")
+    expect_identical(app$get_js("helperState('second').placement.position"), "bottom-left")
+    app$click(selector = "#first-review-helper .mascot-minimise")
+    app$wait_for_js("JSON.parse(document.getElementById('first-review-events').textContent).minimised === true")
+    expect_false(app$get_js("helperState('second').minimised"))
+    app$click(selector = "#first-review-helper .mascot-restore")
+    app$wait_for_js("JSON.parse(document.getElementById('first-review-events').textContent).minimised === false")
+    app$click("first-review-move")
+    app$wait_for_js("helperState('first').placement.position === 'top-right' && !helperState('first').motion.others")
+    expect_true(app$get_js("helperState('second').motion.mood_change"))
+    expect_false(app$get_js("helperState('second').motion.idle"))
+    # The second mascot accepts an update while hidden and keeps it when shown.
+    app$click("hidden_update")
+    app$wait_for_js("helperState('second').mood === 'thinking'")
+    app$click(selector = "a[data-value=Second]")
+    app$wait_for_js("document.getElementById('second-review-helper').dataset.sourceHidden === 'false'")
+    expect_identical(app$get_js("helperState('second').mood"), "thinking")
+    app$click("second-review-go")
+    app$wait_for_js("helperState('second').status.text === 'Complete'")
+    app$click(selector = "#second-review-helper .mascot-menu-toggle")
+    app$click(selector = "#second-review-helper [role=menuitem]")
+    app$wait_for_js("JSON.parse(document.getElementById('second-review-events').textContent).menu === 'about'")
+    expect_false(app$get_js("helperState('first').menuOpen"))
+    app$click("second-review-rebuild")
+    app$wait_for_js(
+      "document.getElementById('second-review-helper').dataset.generation === '2' && helperState('second')?.mood === 'happy'"
+    )
+    expect_identical(app$get_js("helperState('first').placement.position"), "top-right")
+    expect_false(app$get_js("helperState('first').motion.others"))
+    # Static and renderUI mascots share every engine resource, even after remount.
+    for (file in c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js")) {
+      expect_equal(app$get_js(sprintf("document.querySelectorAll('script[src$=\"/%s\"]').length", file)), 1)
+    }
+    expect_equal(app$get_js("document.querySelectorAll('link[href$=\"/mascot.css\"]').length"), 1)
+  })
+})

@@ -3574,3 +3574,75 @@ describe("visitor preference during interface motion", {
     expect_false(r$minimised)
   })
 })
+
+describe("restoring from minimised", {
+  it("redraws the canvas sharp with the right backing size and a fresh draw", {
+    skip_on_cran()
+    skip_if_not_installed("shinytest2")
+    skip_if_not_installed("chromote")
+    skip_if(is.null(chromote::find_chrome()), "Chrome is unavailable")
+    local_shiny_browser()
+
+    cases <- list(
+      list(name = "animated", motion = mascot_motion_settings(restoring = TRUE)),
+      list(name = "restoring_false", motion = mascot_motion_settings(restoring = FALSE)),
+      list(name = "motion_off", motion = FALSE)
+    )
+
+    for (case in cases) {
+      motion_val <- case$motion
+      app_fn <- bquote(
+        function() {
+          suppressPackageStartupMessages(library(mascot))
+          shiny::shinyApp(
+            shiny::fluidPage(
+              mascot(
+                id = "tessa",
+                size = 160,
+                placement = mascot_placement("bottom-right", minimise = TRUE),
+                motion = .(motion_val)
+              )
+            ),
+            function(input, output, session) {}
+          )
+        }
+      )
+      app <- app_driver(
+        eval(app_fn),
+        width = 800,
+        height = 600
+      )
+      withr::defer(try(app$stop(), silent = TRUE))
+      app$wait_for_js("mascot.host.state(document.getElementById('tessa')) !== null")
+      app$run_js(
+        "window.drawCount = 0;
+        const origDraw = mascot.draw;
+        mascot.draw = (...args) => { window.drawCount++; return origDraw(...args); };"
+      )
+      app$click(selector = "#tessa .mascot-minimise")
+      app$wait_for_js("document.getElementById('tessa').dataset.minimised === 'true'")
+      app$wait_for_js("document.querySelectorAll('.mascot-motion-copy').length === 0")
+      draws_before <- app$get_js("window.drawCount")
+      app$click(selector = "#tessa .mascot-restore")
+      app$wait_for_js("document.getElementById('tessa').dataset.minimised === 'false'")
+      app$wait_for_js("document.querySelector('#tessa canvas').getAnimations().length === 0")
+      result <- app$get_js(
+        "(() => {
+          const c = document.querySelector('#tessa canvas');
+          return {
+            width: c.width,
+            height: c.height,
+            clientWidth: c.clientWidth,
+            clientHeight: c.clientHeight,
+            dpr: window.devicePixelRatio,
+            draws: window.drawCount
+          };
+        })()"
+      )
+      expect_equal(result$width, round(result$clientWidth * result$dpr), info = case$name)
+      expect_equal(result$height, round(result$clientHeight * result$dpr), info = case$name)
+      expect_gt(result$draws, draws_before, label = paste("draws after restore in", case$name))
+      app$stop()
+    }
+  })
+})

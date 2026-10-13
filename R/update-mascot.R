@@ -87,6 +87,38 @@
 #' mascot appears plays once on appearance, after its queued character and mood
 #' are applied.
 #'
+#' **React to your app's state.** Call `update_mascot()` from an observer. Shiny
+#' sends updates when the observer finishes, so for a mood to show while a long
+#' computation runs, run it as a [shiny::ExtendedTask] and follow its status:
+#'
+#' ```r
+#' task <- ExtendedTask$new(function(x) promises::future_promise(fit_model(x)))
+#' observeEvent(input$run, {
+#'   update_mascot("helper", mood = "thinking", status = "Fitting the model")
+#'   task$invoke(data())
+#' })
+#' observe({
+#'   switch(task$status(),
+#'     success = update_mascot("helper", mood = "happy", status = "Model ready"),
+#'     error = update_mascot("helper", mood = "worried", status = "The model failed")
+#'   )
+#' })
+#' ```
+#'
+#' For form validation, observe whether the inputs are valid (yourself, or with a
+#' validation package such as `shinyvalidate`) and set the mood from it:
+#'
+#' ```r
+#' observe({
+#'   valid <- grepl("@", input$email, fixed = TRUE)
+#'   update_mascot(
+#'     "helper",
+#'     mood = if (valid) "happy" else "worried",
+#'     status = if (valid) "Ready to submit" else "Check the email address"
+#'   )
+#' })
+#' ```
+#'
 #' **Queued updates.** Updates sent before a mascot appears are kept per session,
 #' including when the first mascot is created by [shiny::renderUI()] or
 #' [shiny::insertUI()]. Only the latest value of each argument and the latest early
@@ -94,8 +126,8 @@
 #' gestures play once.
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
-#' @seealso [mascot()], [mascot_motion_settings()] for a complete Shiny settings example
-#'   with live colours, movement and a colour reset.
+#' @seealso [mascot()], [mascot_motion_settings()] for a Shiny example that switches
+#'   idle movement and plays a nod.
 #' @export
 #' @examplesIf interactive()
 #' shiny::shinyApp(

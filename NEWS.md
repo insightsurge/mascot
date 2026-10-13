@@ -85,6 +85,8 @@
 
 ## Minor improvements and fixes
 
+* The help of `update_mascot()` shows how to make the mascot react to an app's state with an observer: a long computation run as a `shiny::ExtendedTask`, and form validation (#272).
+
 * Styling has five public classes, shared panel colours (`--mascot-panel-bg`, `--mascot-panel-color`, `--mascot-panel-border`), restore-button colours (`--mascot-restore-bg`, `--mascot-restore-fg`, `--mascot-restore-glow`) and `--mascot-z-index` (default 1031), documented in `?mascot_styling`. User colours win over page and Bootstrap colours; other custom properties use the private `--_mascot-*` prefix (#260).
 
 * The studio's sidebars use an opaque page background on phones, hiding the floating mascot beneath them in light and dark mode (#265).

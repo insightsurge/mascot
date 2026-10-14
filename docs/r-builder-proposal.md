@@ -12,7 +12,7 @@ Every character has one family. Starting from a family selects reusable defaults
 
 ## 2. Constructor signatures and format mapping
 
-Required arguments precede `...`; all optional arguments after it must be named. A meaningful single-argument shortcut stays positional. An id comes first when a function addresses a specific character/part/anchor. A shape's optional item id is metadata, not a Shiny instance id. All names have the mascot_ prefix. Functions below return typed source components, without touching a registry, opening a viewer or writing files.
+Required arguments precede `...`; all optional arguments after it must be named. A meaningful single-argument shortcut stays positional. An id comes first when a function addresses a specific character/part/anchor. Component id always means the permanent key, not its display description; runtime mood/gesture selector helpers retain their decided name argument. A shape's optional item id is metadata, not a Shiny instance id. All names have the mascot_ prefix. Functions below return typed source components, without touching a registry, opening a viewer or writing files.
 
 | Proposed signature | Result and format field |
 |---|---|
@@ -21,17 +21,19 @@ Required arguments precede `...`; all optional arguments after it must be named.
 | mascot_part(id, items, ..., parent = "root", at = c(0, 0), rotate = 0, scale = 1, layer = 0, variants = list(), switch = NULL, visible = TRUE, opacity = 1, glow = NULL, keep_upright = FALSE, no_flip = FALSE, lod = NULL) | parts entry; items is a list of shape components; variants are complete item lists. |
 | mascot_anchor(id, part, ..., at = c(0, 0), rotate = 0, scale = 1, side = NULL, description = id, variants = list()) | Named anchors entry; arbitrary snake_case id, real owning part checked at final resolution; local position may lie outside silhouette. |
 | mascot_face(kit, part, ..., at = c(0, 0), scale = 1, clip = NULL, eyes = list(), mouth = list(), blush = NULL, colours = list(), tune = list(), styles = list(), caps = list(), layer = NULL) | face block; kit is known id or checked embedded kit definition. |
-| mascot_mood_definition(name, description, status, ..., fallback = NULL, pose = NULL, face = list(), channels = list(), recolour = list(), items = list(), effects = list(), reduced = NULL) | One moods entry; separate from runtime mascot_mood(name), which selects a mood. |
-| mascot_track(channel, keys, ..., mode = "add") | One named typed channel track; keys is a list of key rows; set endpoints use NULL as format null. |
-| mascot_gesture_definition(name, description, frames, tracks, ..., needs = character(), fallback = NULL, effects = list()) | One gestures entry; separate from runtime mascot_gesture(name). |
+| mascot_mood_definition(id, description, status, ..., fallback = NULL, pose = NULL, face = list(), channels = list(), recolour = list(), items = list(), effects = list(), reduced = NULL) | One moods entry; separate from runtime mascot_mood(name), which selects a mood. |
+| mascot_track(channel, keys, ..., mode = NULL) | One named typed channel track; keys is a list of list rows; NULL mode derives add for numeric channels and set for discrete channels; explicit incompatible modes error. Set endpoints use list(0, NULL)/list(1, NULL), preserving format null. |
+| mascot_gesture_definition(id, description, frames, tracks, ..., needs = character(), fallback = NULL, effects = list()) | One gestures entry; separate from runtime mascot_gesture(name). |
 | mascot_palette(id, description, light, ..., dark = NULL) | Named palettes entry; light/dark role-colour maps; dark NULL uses light. |
 | mascot_accessory(id, description, anchor, parts, ..., slot = id, colours = list(), lod = NULL) | Named accessory template; local part ids expand under stable prefix on wear. |
 | mascot_ground(centre_height, ..., shadow = NULL) | ground block; shadow geometry/role validated. |
-| mascot_build_character(id, family, name, description, colours, ground, parts, moods, ..., anchors = list(), face = NULL, gestures = list(), poses = list(), palettes = list(), follows = list(), brand = list(), contrast = list(), modes = list(), outline = NULL, motion = list(), effects = list(), accessories = list(), wear = character(), lod = list(), paints = list(), shapes = list(), pronouns = NULL) | Source mascot_character_spec; combines components and computes requires after resolution, not by guesswork from unmerged fields. |
+| mascot_build_character(id, family, name, description, colours, ground, parts, moods, ..., anchors = list(), face = NULL, gestures = list(), poses = list(), palettes = list(), follows = list(), brand = list(), contrast = list(), modes = list(), outline = NULL, motion = list(), effects = list(), accessories = list(), wear = character(), lod = list(), paints = list(), shapes = list(), pronouns = NULL, colour_descriptions = list(), omit_family_palettes = character()) | Source mascot_character_spec; combines components and computes requires after resolution, not by guesswork from unmerged fields. colour_descriptions maps existing roles; omit_family_palettes maps inherited ids to source-only palette nulls, rejecting unknown ids or simultaneously defined/omitted palettes. |
 
 Geometry uses ordinary named R lists with typed constructors, rather than one helper for every radius/x/y field. This keeps the R surface small while preserving exact format keys. Optional low-level additions must come after dots; dots itself rejects unknown arguments, not an uncontrolled escape hatch. A separate future shape-specific convenience layer may be added only when repeated use justifies it.
 
 Build's family accepts a known family id or checked family definition. parts/moods/anchors/gestures/palettes/accessories accept lists of their constructor results; keyed maps may be used internally but public examples do not rely on class fields. Constructor ids become map keys, with duplicate detection. ground accepts mascot_ground(); outline/motion/poses/paints/shapes use documented typed named-list schemas from the format. Every top-level builder argument has a documented plain-data route; convenience helpers do not alter engine semantics. Existing runtime motion settings is a host-switch helper, not authored animation timing data, and cannot be substituted for build's motion.
+
+Serialization follows the schema, never a blanket auto_unbox rule. Named maps become JSON objects; fields typed arrays remain arrays even with one entry (hide, needs, wear, requires), and empty arrays remain[]. Scalar ids/numbers/booleans remain scalars. Track rows are R lists: list(list(0, NULL), list(0.5, "open", "step"), list(1, NULL)) preserves nulls and mixed types; c() drops NULL or coerces numbers to strings and is rejected for a row. Source-null opt-outs, nullable scalar fields and null track endpoints have distinct meanings and must survive intermediate conversion. R1b/B1 round-trip cases cover singleton/empty arrays, mixed easing rows, null endpoints and duplicate constructor ids.
 
 ## 3. Validation and editing boundary
 
@@ -45,15 +47,15 @@ Proposed operations:
 |---|---|
 | mascot_read_character(x, ..., from = "id") | from id or file, explicit to avoid filename/id ambiguity; id reads registry, file reads a supplied local path. Returns checked resolved data through the common pipeline. |
 | mascot_check_character(x) | Source specification, raw list, checked data or JSON path; bounded parse/resolve/check; returns checked character visibly. Never fixes/recolours silently. |
-| mascot_register_character(x) | Requires checked data; explicit session-only id binding, identical-content idempotence, built-in/conflicting-id errors; returns id invisibly. Object route needs no registration. |
-| mascot_save_character(x, path, ..., overwrite = FALSE) | Requires checked data and user path; writes complete resolved JSON with embedded family metadata/custom kit definition, validates intended output before replacing; existing file errors unless explicit overwrite. Returns path invisibly. |
-| mascot_add_anchor(id, character, anchor, ..., replace = FALSE) | id is the character's identity, must match character; anchor is mascot_anchor(). Copies source/checked data into a new source spec; duplicate name errors unless replaceTRUE. Same-id edits cannot be used against an already registered/mounted id until the caller gives the edited character a new id. |
+| mascot_register_character(x) | Requires checked data; explicit R-process id binding for app start-up/development, rejected inside an active Shiny reactive domain, identical-content idempotence, built-in/conflicting-id errors; returns id invisibly. Object route needs no registration. |
+| mascot_save_character(x, path, ..., overwrite = FALSE) | Requires checked data and user path; writes complete resolved JSON with embedded family metadata and complete kit_definition including built-in kits, validates intended output before replacing; existing file errors unless explicit overwrite. Returns path invisibly. |
+| mascot_add_anchor(character, anchor, ..., replace = FALSE) | Addresses the supplied character object, without repeating its id or borrowing a Shiny instance id; anchor is mascot_anchor(). Copies source/checked data into a new source spec; duplicate name errors unless replaceTRUE. Same-id edits cannot be used against an already registered/mounted id until the caller gives the edited character a new id. |
 
 The last editing convenience is a recommendation to evaluate during internal use, not an essential public0.1.0 export. Initial authoring can supply anchors directly in build. For broader edits, prefer constructors/remix over teaching users private list mutation. save is distinct from later PNG/SVG/video export; it saves character data only. Atomic overwrite uses a temporary file beside the user-supplied destination and rename; failure leaves the original untouched and cleans only its own temporary file. A denied filesystem write is reported with the exact path, never worked around elsewhere. Save/read round-trips preserve values, identity, family metadata and the checked palette_sources origin map without live donor/family-default links. This map is produced by resolution, not by mutating constructor fields.
 
 ## 4. Complete small character built in R
 
-This is a proposed end-to-end example for the future authoring API. In0.1.0 these constructors are internal and the example is an internal acceptance scenario, not promised copy-and-run public code. The five mood definitions are explicit; family defaults supply safe nod/wave-to-rock fallbacks without adding arms. The screen kit and family are shipped data defined by engine sections4.2 and4.5; the latter supplies the exact source gestures and palette defaults, not the empty-default resolved metadata. Test the completed example only after those implementations exist.
+This is a proposed end-to-end example for the future authoring API. In0.1.0 these constructors are internal and the example is an internal acceptance scenario, not promised copy-and-run public code. The five mood definitions are explicit; family defaults supply whole-root gestures; explicit character-local nod/wave candidates exercise safe fallback to rock without adding arms. The screen kit and family are shipped data defined by engine sections4.2 and4.5; the latter supplies the exact source gestures and palette defaults, not the empty-default resolved metadata. Test the completed example only after those implementations exist.
 
 ```r
 shell <- mascot_shape(
@@ -88,7 +90,19 @@ moods <- list(
 )
 greet <- mascot_gesture_definition(
   "greet", "A brief greeting tilt.", 18,
-  list(mascot_track("head.rotate", list(c(0, 0), c(0.3, 0.08), c(1, 0))))
+  list(mascot_track("head.rotate", list(list(0, 0), list(0.3, 0.08), list(1, 0))))
+)
+nod <- mascot_gesture_definition(
+  "nod", "A head-joint acknowledgement, or safe tilt.", 18,
+  list(mascot_track("nod_joint.rotate",
+    list(list(0, 0), list(0.3, 0.08), list(1, 0)))),
+  needs = "nod_joint", fallback = "rock"
+)
+wave <- mascot_gesture_definition(
+  "wave", "A hand greeting, or safe tilt.", 30,
+  list(mascot_track("hand_r.rotate",
+    list(list(0, 0), list(0.3, 0.25), list(0.6, -0.25), list(1, 0)))),
+  needs = "hand_r", fallback = "rock"
 )
 draft <- mascot_build_character(
   "study_bot", "visorfolk", "Study Bot", "A small screen-faced study helper.",
@@ -98,7 +112,7 @@ draft <- mascot_build_character(
   anchors = list(badge_pin),
   face = mascot_face("screen", "head", at = c(0, -7), clip = "head.visor",
     eyes = list(y = -4, spacing = 13), mouth = list(y = 8)),
-  gestures = list(greet),
+  gestures = list(nod, wave, greet),
   palettes = list(mascot_palette("sea_glass", "My darker screen.",
     list(screen = "#051b20"))),
   outline = list(width = 2.5, colour = "outline"),

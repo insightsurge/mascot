@@ -19,6 +19,23 @@ The following conventions govern all exported functions and are the intended pub
 - **No output/render pair:** mascot renders as standard HTML/tagList; no `mascotOutput()` or `renderMascot()` is exported in 0.1.0 (`shiny::renderUI(mascot(...))` is documented).
 - **Atomic updates across assets:** Every implementation PR changing an exported interface must simultaneously update Mascot Studio, documentation, and `NEWS.md`.
 
+### Catchable condition classes (proposed implementation)
+
+Every specific error below also inherits mascot_error; every warning inherits mascot_warning. Preserve already decided mascot_update_ignored and mascot_contrast. R/host diagnostics share stable codes where applicable; browser diagnostics cannot signal an R condition.
+
+| Class | When / useful payload |
+|---|---|
+| mascot_error_argument | Structural/checkmate argument failure; argument, code, value. |
+| mascot_error_choice | Valid type but unsupported enum/name for a known target; argument, choices, value. |
+| mascot_error_dots | Unknown dot arguments; names. |
+| mascot_error_character | File/component/semantic validation; code, path, value, fix (bounded problem list). |
+| mascot_update_ignored | An invalid atomic update to a known target; reason/code; no fields committed. |
+| mascot_contrast | User colour promise below required contrast; roles, measured/bounded ratio, minimum. |
+| mascot_preset_dropped | Approved retained-preset fallback; preset and incoming character, development mode only. |
+| mascot_name_unverified | Development-only unknown-target update name absent from all known catalogue characters; informational, not rejection. |
+
+Test class inheritance and payloads during implementation; these classes are not claimed to exist today. Validators accept custom mood ids on syntax alone when there is no known target. A later known-target failure is not retroactively an R helper failure.
+
 ## 2. Shiny Input Bindings & Event Contracts
 
 ### Today
@@ -54,13 +71,13 @@ Shiny developers reliably observe clicks and state transitions via standard `shi
 
 ### Options
 1. **Option A:** Retain `placement` and `click` as inert parameters to allow direct `do.call(mascot_preview, args)`.
-2. **Option B (Recommended):** Remove `placement` and `click` from `mascot_preview()` before 0.1.0. Display the requested `size` alongside canonical inspection sizes 96 px and 24 px (deduplicated).
+2. **Option B (Recommended):** Remove `placement` and `click` from `mascot_preview()` before 0.1.0. Display the requested size plus representatives of every size band it does not cover.
 
 ### Recommendation
 Approved by the founder on 2026-10-14: focus on visual inspection and remove the inert placement/click arguments. The detailed signature and inspection grid below remain the implementation design for independent review:
 `mascot_preview(character = "tessa", ..., mood = NULL, status = NULL, bubble = NULL, size = 160, theme = NULL, motion = FALSE)`
 - **Purpose:** Offline visual character and mood inspection across light and dark modes, not static image export or Shiny simulation.
-- **Grid layout:** Rows represent moods (defaulting to all moods for the selected character). Columns show the requested size, followed by deduplicated 96 px (small inspection size) and 24 px (minimum canvas limit). If the requested size is 96 or 24, duplicate columns are omitted. The acceptance harness checks 160 px.
+- **Grid layout:** Rows represent moods (defaulting to all moods for the selected character). Columns show requested size first, then representatives for missing full/small/micro bands: 160/96/24 px. For requested 120, show 120,160,24; for requested 160, show 160,96,24. Numeric size covers its measured band, not just an equal value. Percentage/responsive sizes retain their requested responsive column and all three fixed columns because the band can change on resize; deduplicate only fixed numeric columns. The acceptance harness always checks 160/96/24 separately.
 - **Behaviour:** Constructing the object writes no files and launches no Viewer/browser. Printing the returned `htmltools::browsable` tag list displays the page. The `contrast` attribute (data frame of findings < 3:1) is preserved.
 
 ### Reason
@@ -218,10 +235,10 @@ Retain the current narrower contract, or adopt the explicit extension recommende
 Formalise and document the complete module contract:
 1. **Namespace Isolation:** Both local ID (`"helper"`) and prefixed ID (`session$ns("helper")`) are accepted in server code; the namespace is resolved once. Nested modules isolate cleanly.
 2. **Local Input Bindings:** Shiny inputs (`_click`, `_menu`, `_position`, `_minimised`) are published under the full namespaced ID, ensuring `input$helper_click` is accessible locally inside `moduleServer`.
-3. **Atomic Queued Updates:** Updates sent before DOM mounting are coalesced per session: latest argument values overwrite earlier ones, and the latest one-shot gesture plays once upon mount.
-4. **Remount State Retention:** When dynamic UI (e.g. `renderUI`, tab switches) unmounts and remounts a mascot with the same ID, the latest server state replays automatically.
+3. **Atomic Queued Updates:** Retain ordered whole patches per session until the mounted target is known. Each patch validates atomically against its then-current character; only accepted patches fold into retained state. The latest accepted early gesture plays once. Never merge unvalidated fields newest-wins. Engine section3.16/U1 defines the private acknowledgement, bounded intent journal and accepted checkpoint.
+4. **Remount State Retention:** When dynamic UI (e.g. `renderUI`, tab switches) unmounts and remounts a mascot with the same ID, the accepted checkpoint replays, then pending whole patches in order. Rejected patches are removed entirely and cannot poison future replays; acknowledged gestures never replay. A new mount with a different character revalidates the documented character/mood, theme and independent-field groups, preserving valid independent state.
 5. **Mount Counter Reset:** `input$<id>_click` counts activations for the current DOM mount. Upon remount, the click counter resets to initial state.
-6. **No Session Leaks:** Queued state lives in `session$userData` and is destroyed on session disconnect; state is never persisted across user sessions.
+6. **No Session Leaks:** Shiny update queues/checkpoints live in `session$userData` and are destroyed on session disconnect; state is never persisted across user sessions.
 
 ### Reason
 Aligns with standard Shiny module encapsulation practices and prevents memory leaks or cross-session state pollution.
@@ -242,12 +259,12 @@ Retain the current narrower contract, or adopt the explicit extension recommende
 2. **String Shortcut:** Passing a plain string to `theme = "ocean"` in `mascot()` or `update_mascot()` is strictly an alias for `mascot_theme(preset = "ocean")`. No invented `"inherit"` or `"page"` strings (the default `theme = NULL` already tracks page mode).
 3. **Resolution Precedence:**
    - **Priority 1 (Highest):** CSS variables (`css = list(...)`). Invalid/missing CSS variables fall back to baseline colours and log a browser console warning.
-   - **Priority 2:** Explicit per-role colour maps (`light = list(...)`, `dark = list(...)`).
+   - **Priority 2:** Explicit per-role colour maps (`light = list(...)`, `dark = list(...)`), or brand leaders extracted from a whole `bslib::bs_theme()` supplied as the theme alternative. A bs_theme is not a light/dark map and these alternative forms are not merged.
    - **Priority 3:** Named preset roles (`preset = "..."`).
    - **Priority 4 (Baseline):** Character native default colours.
    Supplied colours are never altered or auto-adjusted; contrast warnings are issued if contrast falls below 3:1.
 4. **Resolution Timing:** Presets are resolved at render/update time against the active character registry, not during `mascot_theme()` construction.
-5. **Character Swaps & Missing Presets (approved 2026-10-14):** Palette presets are tied to character/family capabilities. If `update_mascot()` swaps a character while retaining a preset that does not exist on the incoming character, the retained preset is dropped while valid explicit role overrides are kept over the incoming baseline. Server-known retained-preset fallback emits an R `mascot_warning` in development mode; deferred browser resolution emits a development diagnostic, not an R condition. If an update explicitly supplies an invalid preset for the target character, the atomic patch is rejected with a `mascot_warning`.
+5. **Character Swaps & Missing Presets (approved 2026-10-14):** Palette presets are tied to character/family capabilities. If `update_mascot()` swaps a character while retaining a preset that does not exist on the incoming character, the retained preset is dropped while valid explicit role overrides are kept over the incoming baseline. Server-known retained-preset fallback emits an R `mascot_preset_dropped` (inheriting `mascot_warning`) in development mode; deferred browser resolution emits a development diagnostic, not an R condition. If an update explicitly supplies an invalid preset for the target character, the atomic patch is rejected with `mascot_update_ignored` (inheriting `mascot_warning`).
 
 ### Reason
 Maintains strict separation between theme specification and character assets, ensuring runtime character swaps never crash an active dashboard.
@@ -268,7 +285,7 @@ Retain the current narrower contract, or adopt the explicit extension recommende
 2. **Selector Only (0.1.0):** In 0.1.0, `mascot_character()` functions purely as a reference/selector object. It does not accept mutation arguments (`name`, `accessories`, `colours`, `voice`).
 3. **Per-Instance Styling:** Colours are customised via `theme = mascot_theme(...)`, not by mutating the character object.
 4. **Authoring Distinction:** Asset creation/editing will use a dedicated constructor (`mascot_build_character()` unexported in 0.1.0) and later `mascot_remix()`.
-5. **Uniform Acceptance:** `mascot()`, `update_mascot()`, and character-taking listing functions accept a character ID string (`"tessa"`), a `mascot_character` helper object, or a checked character data structure identically.
+5. **Uniform Acceptance:** `mascot()`, `update_mascot()`, and character-taking listing functions accept a character ID string (`"tessa"`), a `mascot_character` helper object, or checked character data through the same validation path. The checked-object route is the agreed internal creator/extension route in0.1.0; constructors, object fields and registration are not promised stable public authoring APIs. Id/helper use remains the documented ordinary user route.
 6. **No Runtime Inheritance:** Character inheritance chains are not resolved at runtime (the `extends` field in the format remains reserved).
 
 ### Reason
@@ -293,13 +310,17 @@ Retain the current narrower contract, or adopt the explicit extension recommende
 |---|---|---|---|
 | mascot_characters | (..., family = NULL) | id,name,description,family (chr), is_default,built_in (lgl) | Tessa first if present; otherwise stable shipped-member order. is_default is true only for Tessa. built_in has real backing data from internal registry R2. |
 | mascot_families | () | id,name,description (chr) | Hexonians first, then stable family order; members via character filter. |
-| mascot_anchors | (character = "tessa") | name,description,part,side (chr) | Authored anchor order; side l/r or NA. No invented universal bubble anchor/default. |
+| mascot_anchors | (..., character = "tessa") | name,description,part,side (chr) | Authored anchor order; side l/r or NA. No invented universal bubble anchor/default. |
 | mascot_moods | (..., character = NULL) | name,description,status (chr), shared (lgl), fallback (chr) | Core five first, idle first; core fallback NA. Extras follow authored order. NULL selects shared metadata. |
 | mascot_gestures | (..., character = NULL) | name,description,fallback (chr), frames (int) | nod then wave, then extras; NULL reports shared nominal nod18/wave30; character-aware frames report the effective playable target duration (for example wave -> rock reports18). fallback retains the declared next candidate or NA, never a self-cycle; it is not inferred from the duration. |
-| mascot_colour_roles | (character = "tessa") | role,colour,follows,shade (existing chr), then description,brand (chr) | Preserve current columns/types/order. Description from authored metadata or humanised role name; brand comma-separated slot ids or NA. |
-| mascot_palettes | (character = "tessa") | name,description,source (chr) | Proposed synthetic original row first, meaning native mode colours/no preset overrides; reserve original against user preset ids. source character/family comes from the checked, saved palette_sources map; native applies only to synthetic original. Origin survives standalone save/read and never consults today's family defaults. |
+| mascot_colour_roles | (..., character = "tessa") | role,colour,follows,shade (existing chr), then description,brand (chr) | Preserve current columns/types/order. Description from authored metadata or humanised role name; brand comma-separated slot ids or NA. |
+| mascot_palettes | (..., character = "tessa") | name,description,source (chr) | Proposed synthetic original row first, meaning native mode colours/no preset overrides; reserve original against user preset ids. source character/family comes from the checked, saved palette_sources map; native applies only to synthetic original. Origin survives standalone save/read and never consults today's family defaults. |
 
 ### Listing Rules
+- `name` in mood/gesture/palette/anchor rows is the callable permanent component id; `description` is human text. Character/family `name` is their display name and `id` is the callable key.
+- All optional character filters are named after dots. NULL remains meaningful for shared mood/gesture metadata; concrete anchors/roles/palettes default to Tessa. These intentional defaults need not be identical.
+- `built_in` is real process-registry provenance, not an empty placeholder: shipped rows TRUE, internally registered custom rows FALSE. It is retained under the agreed object/registry route and tested with both kinds.
+- The synthetic `original` palette row represents the native state selected by preset=NULL, rather than pretending NULL is a string palette id.
 - Output is always a base data frame.
 - First column matches the valid argument for corresponding functions.
 - First row represents a matching argument default where one exists; anchors/colour-role rows preserve authored order because there is no selected-anchor/role default. Filtered listings do not invent a new global default.
@@ -326,7 +347,7 @@ Retain the current narrower contract, or adopt the explicit extension recommende
 
 #### Acceptance Checklist for Implementation Issues (#247)
 1. **API Renames:** Update `mascot_character(name =)` to `mascot_character(id =)`. `update_mascot()` is already implemented; retain it and do not repeat that rename.
-2. **Preview Cleanup:** Strip `placement` and `click` from `mascot_preview()`; implement 96 px and 24 px grid columns.
+2. **Preview Cleanup:** Strip `placement` and `click` from `mascot_preview()`; implement requested-size plus missing-band 160/96/24 grid columns.
 3. **Listing Enhancements:** Implement `mascot_characters()`, `mascot_families()`, `mascot_anchors()`, `mascot_palettes()`, and update `mascot_colour_roles()` columns.
 4. **Theme Presets:** Add `preset = NULL` to `mascot_theme()` and implement string preset resolution.
 5. **Documentation & Studio:** Polish all roxygen help pages, update Mascot Studio controls and code generators, and record changes in `NEWS.md`.

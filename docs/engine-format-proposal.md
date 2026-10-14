@@ -1,8 +1,10 @@
 # Proposal: character engine and format v1
 
-Status: revised design for review, 2026-10-14. No proposed renderer, validator or authoring function has been implemented by this document. Current-code baseline: main ace06f5; previous proposal: 6b8cc22. This revision replaces that proposal's contracts, examples and build plan. R construction is specified in [r-builder-proposal.md](r-builder-proposal.md); public API decisions are in [r-api-decisions-0.1.0.md](r-api-decisions-0.1.0.md).
+Status: revised design for review, 2026-10-14. No proposed renderer, validator or authoring function has been implemented by this document. Current-code comparison baseline (not the design branch parent): main ace06f5; previous proposal: 6b8cc22. This revision replaces that proposal's contracts, examples and build plan. R construction is specified in [r-builder-proposal.md](r-builder-proposal.md); public API decisions are in [r-api-decisions-0.1.0.md](r-api-decisions-0.1.0.md).
 
 ## Changes in this revision
+
+Follow-up to the independent review of 95afd34: corrected brow directions and face migration details; explicit saved kit snapshots, palette opt-out, accepted-update replay, condition classes, process registry, serialization, frame bounds and build milestones. The finding-by-finding record is [2026-10-14-design-fix-log.md](reviews/2026-10-14-design-fix-log.md). These are revised design contracts, not implemented fixes.
 
 | Fix | Sections | Correction |
 |---|---|---|
@@ -74,7 +76,7 @@ These are proposed limits/targets, not measurements. One shipped internal policy
 | Blur radius in design units | 16 | 10 | 0 |
 | Sum of inflated glow rectangles / canvas area | 1.0 | 0.5 | 0 |
 
-Deterministic work expansion is part of the versioned operation contract. Each ordinary shape instance counts as one painted item, even when its path has multiple subpaths. A fill, a detail stroke and each enabled outline stroke are separate passes; a glow emitter adds one pass. Eye ellipses expand into separate sclera, optional iris, pupil, each glint, active lid cover and each lash items; lid cover counts whenever its resolved extent is nonzero. Each eye_path/eye_arc is one item, eye_dots is one item per dot, each brow_path is one item, and mouth_path/effect items count individually. Each blush ellipse and ground shadow counts as one item. One pupil inset clip counts per ellipse eye using pupils/iris/glints; an outer face clip counts once per face invocation, with nested pupil clips additionally counted. Per-item clips count per invocation. Clip-only target geometry is counted in path work and clip work, but is not a painted item/pass unless separately painted. Gradient uses count per actual fill/stroke invocation, not per distinct paint id. Path numbers count all expanded explicit numeric geometry operands, including repeated clip targets; the operation manifest fixes each generated primitive's numeric operand count identically for R and JS. Limits take the worst legal reachable combination of held face controls, mood, variants, effects and active accessories, not just the five default screenshots. R1a/R1c must record exact per-band totals from this shared expansion for every canonical fixture before declaring it valid; the JSON syntax/reference checks in this design task are not that evidence.
+Deterministic work expansion is part of the versioned operation contract. Each ordinary shape instance counts as one painted item, even when its path has multiple subpaths. A fill, a detail stroke and each enabled outline stroke are separate passes; a glow emitter adds one pass. Eye ellipses expand into separate sclera, optional iris, pupil, each glint, active lid cover and each lash items; lid cover counts whenever its resolved extent is nonzero. Each eye_path/eye_arc is one item, eye_dots is one item per dot, each brow_path is one item, and mouth_path/effect items count individually. Each blush ellipse and ground shadow counts as one item. One shared inset clip counts per ellipse eye using pupils/iris/glints/lid fill/lid edge; those operations reuse it rather than nesting duplicate clips; an outer face clip counts once per face invocation, with nested pupil clips additionally counted. Per-item clips count per invocation. Clip-only target geometry is counted in path work and clip work, but is not a painted item/pass unless separately painted. Gradient uses count per actual fill/stroke invocation, not per distinct paint id. Path numbers count all expanded explicit numeric geometry operands, including repeated clip targets; the operation manifest fixes each generated primitive's numeric operand count identically for R and JS. Limits take the worst legal reachable combination of held face controls, mood, variants, effects and active accessories, not just the five default screenshots. R1a/R1c must record exact per-band totals from this shared expansion for every canonical fixture before declaring it valid; the JSON syntax/reference checks in this design task are not that evidence.
 
 Input bounds: 256 KiB UTF-8 file, depth 32, 10,000 structural nodes, 256 declared parts, 64 moods, 128 gestures, 64 keys per track, 256 tracks per gesture. Bound lexical nesting before JSON parsing; walk R lists iteratively before recursive semantic work. Missing values, duplicate JSON object keys, non-finite values and over-limit inputs error with a path. Any integer frame duration is 1..150. Endpoints are checked after all defaults and fallbacks resolve.
 
@@ -83,6 +85,8 @@ Part opacity multiplies ancestor opacity and item alpha on each paint operation;
 The file's blur is in design units. The renderer converts explicitly to backing pixels: blur * CSS_width / 300 * DPR. Native shadowBlur is not scaled by the canvas transform ([Canvas shadows](https://html.spec.whatwg.org/multipage/canvas.html#shadows)). Inflate each emitter's transformed bounds by three converted blur radii for the conservative budget estimate; use a bounded scratch rectangle/canvas, not an unbounded full-page surface. The estimate is a cost bound, not an assertion about an exact browser blur kernel.
 
 E5c must exit non-zero on a missing workload, failed precondition or exceeded target. Proposed desktop target: p95 synchronous pose+draw duration <=4 ms for one 160 px mascot at DPR2, fourfold CPU throttling, canonical Chrome. Warm caches with 150 frames, then measure 600 deterministic frames containing mood changes, every gesture and worst-case glow/variants; repeat three times and report the worst p95. Measure the whole page with six mascots too: p95 total <=24 ms. Exclude navigation/cold parsing from frame timings and report their bounded load costs separately.
+
+Synchronous JS timing is only one gate: canvas paint/raster/compositing may occur separately ([Chrome Performance reference](https://developer.chrome.com/docs/devtools/performance/reference), [Chromium compositing design](https://www.chromium.org/developers/design-documents/gpu-accelerated-compositing-in-chrome/)). E5c must also capture browser frame/presentation traces for the same one/six-instance worst-glow workloads, both unthrottled hardware rendering and the throttled canonical profile. Report refresh rate, presented/dropped/partial frames and raster/composite costs; RAF intervals are supporting diagnostics, not proof pixels were presented. Proposed 30Hz presentation gate, to lock in T1 before measurements: after warm-up, p95 interval between changed presented frames <=50ms and missed scheduled 30Hz presentation ticks <=1% over active changed-frame windows in the 600-frame workload (exclude deliberate settled stills; action schedule is fixed before timing). Report idle/control measurements separately; no activity beyond the deadline. A missing usable trace is not run, never pass. Pixel readback, if used to force completion for a diagnostic stress case, is a separate workload, not interchangeable with ordinary presentation timing. CPU throttling alone does not establish GPU/raster cost.
 
 Physical-phone acceptance uses the founder's nominated phone, recording model/OS/browser/DPR before testing, at real DPR>=2, both modes and all bands with one/six instances. Proposed target: p95 total pose+draw <=24 ms for six instances and no activity callback beyond the action deadline; report dropped frames and thermal conditions too. If an available phone has DPR<2, high-DPR acceptance remains not run. Device selection and actual timing are outstanding release evidence; desktop throttling is not a substitute. Improve generic operations, budgets or character data after a failure; do not add character-specific renderer branches.
 
@@ -94,7 +98,7 @@ Geometry x/y/rotate default0 where omitted; radii/width/height required by a sha
 - **File:** UTF-8 JSON, one character per file, file name `<id>.json`. Built-ins live in `inst/characters/`;
   face kits in `inst/faces/`; families in `inst/families/`.
 - **Keys:** snake_case, `^[a-z][a-z0-9_]*$`. Ids of characters: `^[a-z][a-z0-9_]{1,31}$`.
-- **Units:** canvas units. The character's design box is about 200 units wide; the host scales to the CSS size.
+- **Units:** a 300 by 300 design frame, area 90,000 square design units, maps to the CSS canvas size. Ground origin is frame [150,270]; local visible bounds are x[-150,150], y[-270,30].
   The origin is the centre of the ground line; **y grows downwards** (as canvas does); angles in radians,
   positive clockwise.
 - **Colours** in files: `#rgb`, `#rrggbb` or `rgba(r, g, b, a)`; anywhere a colour is used, the file names a
@@ -119,6 +123,7 @@ Geometry x/y/rotate default0 where omitted; radii/width/height required by a sha
 | `pronouns` | string | none | Free text ("she/her"); used in docs and the studio only. |
 | `requires` | array of strings | required | Engine capabilities the file uses (section 3.18). Unknown: error "needs a newer mascot". |
 | `colours` | object | required | Colour roles (3.2). |
+| `colour_descriptions` | map of strings | `{}` | Declared-role descriptions; missing descriptions humanise the role id. |
 | `follows` | object | `{}` | Derived roles (3.2). |
 | `brand` | object | `{}` | `primary`, `secondary` → leader roles. |
 | `contrast` | array | `[]` | Contrast pairs (3.2). |
@@ -145,7 +150,7 @@ Geometry x/y/rotate default0 where omitted; radii/width/height required by a sha
 
 **`colours`**: `{ role: colour }`. Required roles depend on what the file uses: every role named anywhere must be
 here. The face kit declares the roles it needs (for `classic`: `feature`, `eye_white`, `shine`, `eyelid`,
-`teeth`, `tongue`) and maps them through `face.colours` if the character names them differently.
+`teeth`, `tongue`, `sweat`, `sparkle`, `sparkle_outline`, `outline`, `blush`, `blush_strong`) and maps them through `face.colours` if the character names them differently.
 
 **`follows`** (today's rules, snake_case):
 
@@ -163,6 +168,7 @@ here. The face kit declares the roles it needs (for `classic`: `feature`, `eye_w
 |---|---|---|---|
 | `fg` | role | required | Foreground role. |
 | `bg` | role, `"page"`, `"page_light"` or `"page_dark"` | required | `"page"` means both page backgrounds (white and `#212529`, or the bslib theme's); the other two mean one of them. |
+| `bg_paint` | paint id | none | Optional declared background gradient over bg; check conservative colour bounds, not guessed overlapping items (section6). |
 | `min` | number | `3` | 3 minimum for meaningful graphics/face details; 4.5 is an aim for new characters, not compulsory migration. |
 | `where` | string | none | Plain words for the message ("eyes on the visor"). |
 
@@ -343,34 +349,36 @@ Clips use the active target item's filled geometry in its world matrix, even if 
 
 ### 3.12 Face kits: closed grammar and coherent tuning
 
-A face is optional (`null` for faceless characters). Otherwise fields are: part (required real part), at [0,0], scale 1, layer (owning layer+0.5), kit (family default or required classic/screen), kit_definition (optional complete matching custom kit), clip (optional filled item), eyes {y:-12,spacing:30,lashes:true,iris:null}, mouth {y:24}, blush (optional ellipse placement), colours (kit-role mapping), tune (style numeric overrides), styles (complete replacement style objects), caps {left:"round",right:"round",join:"round"}. Numbers are finite; scale>0; spacing>=0. eyes.iris is a colour-role name or null; it enables an iris layer in ellipse eyes. Each colour actually used must map to a declared role. Unused kit roles need no dummy colour.
+A face is optional (`null` for faceless characters). Otherwise fields are: part (required real part), at [0,0], scale 1, layer (owning layer+0.5), kit (family default or required classic/screen), kit_definition (required complete matching kit in resolved/saved data, including built-ins; optional in source), clip (optional filled item), eyes {y:-12,spacing:30,lashes:true,iris:null}, mouth {y:24}, blush (optional ellipse placement), colours (kit-role mapping), tune (style numeric overrides), styles (complete replacement style objects), caps {left:"round",right:"round",join:"round"}. Numbers are finite; scale>0; spacing>=0. eyes.iris is a colour-role name or null; it enables an iris layer in ellipse eyes. Each colour actually used must map to a declared role. Unused kit roles need no dummy colour.
 
-The kit fields are id, description, roles (array), defaults {eyes,mouth,brows}, eye_styles, brow_styles, mouth_styles, effects and glow (optional {blur,alpha}). All maps use named styles; unknown fields error. There are no parameter expressions, arbitrary callbacks or style-name switches in engine code. A kit selects bounded generic operations described below; an operation may serve any character/family.
+The kit fields are id, description, roles (array), defaults {eyes,mouth,brows,blush:0}, eye_styles, brow_styles, mouth_styles, effects and glow (optional {blur,alpha}). All maps use named styles; unknown fields error. A valid closed eye style is required. Every default style must exist; defaults.blush is 0..1 or strong. Eye styles may set hide_brows (boolean, default false); when true they suppress the selected brow on that eye. There are no parameter expressions, arbitrary callbacks or style-name switches in engine code. A kit selects bounded generic operations described below; an operation may serve any character/family.
 
 | Operation | Required data | Optional defaults and algorithm |
 |---|---|---|
-| eye_ellipse | rx>0, ry>0, pupil {r>=0} | pupil look_range [7,7]; lid 0; slant 0; fill eye_white. Draw sclera ellipse, then iris/pupil/glints clipped to an inset ellipse max(rx-1,0), max(ry-1,0). Pupil centre shifts by face.look_x/y times look_range. Iris radius is pupil.r when enabled, black pupil radius is 0.65*pupil.r; otherwise pupil radius is pupil.r. |
+| eye_ellipse | rx>0, ry>0, pupil {r>=0} | pupil look_range [7,7]; lid 0; slant 0; fill eye_white. Draw sclera ellipse with optional outline {colour,width}, then share one inset ellipse clip max(rx-1,0), max(ry-1,0) for iris/pupil/glints/lid fill/lid edge. Pupil at [0,0] plus face.look_x/y times look_range determines its centre; optional lid_edge {colour,width} draws the clipped boundary. Widths are nonnegative face units; omitted outline/lid_edge means no stroke. Both use face caps/join. Iris radius is pupil.r when enabled, black pupil radius is 0.65*pupil.r; otherwise pupil radius is pupil.r. |
 | eye_arc | r>0,start,end | y0,width5,fill none,stroke feature; draw an arc with standard Canvas radians. Gaze has no effect. |
 | eye_path | d | fill feature, stroke none,width2; M/L/Q/C/Z grammar, local eye coordinates; gaze has no effect. |
-| eye_dots | centres array of [x,y], r>0 | fill feature; finite dots; no scan/clock loop. A scan is an ordinary bounded gaze/part track. |
+| eye_dots | centres array of [x,y], r>0 | fill feature; finite dots; no scan/clock loop. Gaze has no effect. A scan style is static; any visible scan movement must use explicit bounded part tracks. |
 | brow_path | d | width3.5,stroke feature, y:-25; width0 suppresses the operation; path local to each eye; mirror left. |
-| mouth_path | items array of ordinary path/ellipse/arc/polyline shapes | box [20,12]; all item coordinates are normalised by this positive box. face.open scales only the vertical coordinates around the mouth origin; stroke width is unchanged. No functions/bindings inside paths. |
+| mouth_path | items array of path/ellipse/polyline shapes only | box [20,12] is positive half-width/half-height, not full dimensions. For normalised item coordinates (u,v), map x=box[0]*u and y=box[1]*face.open*v before painting. Radii/control points use the same map; widths stay in face units and are unaffected by box/open. At open0 filled geometry collapses, strokes remain bounded paths. No arc, nested ref, item transform or nested clip in this operation. No functions/bindings inside paths. |
 
-An ellipse pupil has glints [{at:[-0.35,-0.4],r:0.22}] by default, all in pupil-radius units, with shine fill; the array may be empty. Additional glints have finite offsets and radius0..1. Pupil r is at most min(rx,ry); gaze and glints remain clipped. Lashes are optional {angles:[radians],length:7,width:3}; each begins at (rx*cos(angle),ry*sin(angle)) and extends length along the unit normal of that ellipse. For arc eyes use its r for both radii. Tuning radii thus moves lashes and clips coherently; tuning pupil r scales glint positions/radii. Lashes do not inherit a pupil translation. These formulas are generic operations, not authored arithmetic.
+An ellipse pupil has glints [{at:[-0.35,-0.4],r:0.22}] by default, in pupil-radius units with shine fill; the array may be empty. Additional offsets are finite and radii0..1. pupil.at defaults[0,0] in face units and is added after eye mirroring, like gaze. pupil.mirror_glints defaults false: both eyes retain the same face-space highlight direction; true reflects glint x on the left eye. Pupil r is at most min(rx,ry); pupil/glints remain clipped.
 
-The ellipse lid covers the top of the sclera down to y=-ry+2*ry*max(style.lid,face.lid,face.blink), clipped to the sclera; slant adds a signed x/rx offset to that boundary. Lid and blink in0..1; slant finite within +/-ry. Eye whites/pupil/iris/glints draw before the lid; outlines/lashes after it. With blink>=0.96 select the kit's closed style for both eyes, overriding asymmetric styles; below that threshold each selected style remains. Left eye mirrors local x, including glints/lashes/brow geometry; gaze is applied in face coordinates after that mirroring, so both pupils look towards the same side. The owning part's reflection applies afterwards; host gaze compensates root reflection to point to the requested page side.
+Lashes are optional {angles:[radians],length:7,width:3,radii:[rx,ry],at:[0,0]}; ellipse radii default to the current eye radii, arc radii default[r,r]. Explicit radii are positive and at is a finite two-vector relative to the eye origin, independently of arc.y. On the right, a lash starts at at+[rx*cos(a),ry*sin(a)] and extends length*[cos(a),sin(a)]; mirror x for the left. This is a radial ray, not the ellipse normal. Stroke feature, round cap/join; never translate lashes by pupil gaze. Tuning unspecified radii follows the eye, while explicitly authored radii remain explicit.
 
-Controls: face.look_x/y in[-1,1], face.blink/lid/open in[0,1], face.scale>0, face.eyes string or two-element [left,right], face.mouth/brows style names, face.blush number0..1 or "strong". face.open defaults1; it means mouth openness, not an undefined eye operation. `brows:"none"` is a defined empty style. Blink wins eye style; explicit style selection wins kit defaults; character styles replace a whole kit style before tune; tune may override only numeric leaves already present (including fixed-length numeric arrays) and is revalidated. No tune creates keys/changes an operation. General geometry changes use a replacement style. Layer order: blush, eyes, brows, mouth; surrounding face clip applies to all. Character-level face scale scales eyes/mouth/line widths together; per-band flags disable iris/lashes/brows explicitly.
+The ellipse lid uses u=max(style.lid,face.lid,face.blink), all0..1. Fill a rectangle from [-1.2*rx,-1.2*ry] to [1.2*rx,ly], where ly=-1.2*ry+2.4*ry*u; the shared inset clip trims it. Its edge runs from [-1.2*rx,ly+slant] to [1.2*rx,ly-slant], mirrored for the left. Slant is bounded by +/-ry. Paint sclera/outline, clipped iris/pupil/glints, clipped lid fill/edge, then unclipped lashes. With blink>=0.96 select the required closed style on both eyes; this intentional threshold rule overrides happy as well. Brow/arc strokes default round caps/join; ellipse outline/lid edge use face caps/join. Left eye mirrors local geometry except the documented pupil/gaze/glint offsets. Root reflection then applies; host gaze compensates it to point to the requested page side.
+
+Controls: face.look_x/y in[-1,1], face.blink/lid/open in[0,1], face.scale>0, face.eyes string or two-element [left,right], face.mouth/brows style names, face.blush number0..1 or "strong", default kit.defaults.blush. A supplied face.blush placement uses colour roles blush/blush_strong, alpha0.45/strong_alpha0.55 by default; numeric control multiplies alpha. No placement means no blush operation/role requirement. face.open defaults1; it means mouth openness, not an undefined eye operation. `brows:"none"` is a defined empty style. Blink wins eye style; explicit style selection wins kit defaults; character styles replace a whole kit style before tune; tune may override only numeric leaves already present (including fixed-length numeric arrays) and is revalidated. No tune creates keys/changes an operation. General geometry changes use a replacement style. Layer order: blush, eyes, brows, mouth; surrounding face clip applies to all. Character-level face scale scales eyes/mouth/line widths together; per-band flags disable iris/lashes/brows explicitly.
 
 Kit glow is per emitted glyph (left eye/right eye/mouth, brows only when visible); ordinary geometry and budget limits apply. Emissive styles use feature colour and no sclera, implemented through eye_path/eye_dots/eye_arc styles. No additive blend is implied. Classic uses no glow by default. All stills remain readable with glow off at micro.
 
-Effects use generic sweat_drop and sparkle_star operations available to any kit. Each declares items (ordinary shapes), at [0,0], mode progress/pulse/track; pulse/track additionally permit reduced_items (static shapes, default empty). Character effects map names to {anchor,layer}; missing anchor is an error. Sweat progress u=effects.sweat in0..1 places geometry at [sway*sin(u*sway_rate),u*travel] with defaults sway2,sway_rate12,travel26; opacity is1 up to fade_at0.9 then (1-u)/(1-fade_at), and u0 suppresses it. It is a static pose control, not a moving particle. Sparkle pulse multiplies scale by 1+amplitude*sin(rate*t), defaults amplitude0.18 (range0..0.5), rate9 (positive<=30), t=min(frame,activity_deadline)/30; after the deadline its phase is held. Reduction retains progress geometry at the same authored u, placement and opacity: it is already a static pose, with no frame dependency. For progress mode reduced_items must be absent; its presence is a validation error. Pulse/track modes instead use reduced_items without pulsing or track motion, at their declared effect origin; empty means hidden. Reduction must not remove Tessa's static worried sweat mark. These reproduce the ordinary effects' semantics with generic data operations, distinct from deferred particles/rings.
+Effects use generic sweat_drop and sparkle_star operations available to any kit. Valid operation/mode pairs are sweat_drop: progress or track, sparkle_star: pulse or track. Any other pair errors. Each declares items (ordinary shapes), at [0,0], and one valid mode; pulse/track additionally permit reduced_items (static shapes, default empty). Character effects map names to {anchor,layer}; missing anchor is an error. Sweat progress u=effects.sweat in0..1 places geometry at [sway*sin(u*sway_rate),u*travel] with defaults sway2,sway_rate12,travel26; opacity is1 up to fade_at0.9 then (1-u)/(1-fade_at), and u0 suppresses it. It is a static pose control, not a moving particle. Sparkle pulse multiplies scale by 1+amplitude*sin(rate*t), defaults amplitude0.18 (range0..0.5), rate9 (positive<=30), t=min(frame,activity_deadline)/30; after the deadline its phase is held. Reduction retains progress geometry at the same authored u, placement and opacity: it is already a static pose, with no frame dependency. For progress mode reduced_items must be absent; its presence is a validation error. Pulse/track modes instead use reduced_items without pulsing or track motion, at their declared effect origin; empty means hidden. Reduction must not remove Tessa's static worried sweat mark. These reproduce the ordinary effects' semantics with generic data operations, distinct from deferred particles/rings.
 
-Additional mode track effects have frames1..150 and local x/y/scale_x/scale_y/opacity absolute tracks; they share3.15's key/type/easing rules but not the gesture return-to-mood endpoint rule. Their terminal rest is hidden (opacity0), so an effect can move down/fade without leaving a held part pose. Clip their schedule to the action deadline, discard pending effects under reduction, and draw reduced_items instead. No timers, unbounded loops, executable formulas or ring expansion are authored. All effects are expanded into budgets before approval. Complete examples follow in4; near-looking acceptance must be demonstrated, not inferred from this grammar.
+Only track-mode effects permit frames and tracks; frames on progress/pulse error. Additional mode track effects have frames1..150 and local x/y/scale_x/scale_y/opacity absolute tracks; they share3.15's key/type/easing rules but not the gesture return-to-mood endpoint rule. Their terminal rest is hidden (opacity0), so an effect can move down/fade without leaving a held part pose. Clip their schedule to the action deadline, discard pending effects under reduction, and draw reduced_items instead. No timers, unbounded loops, executable formulas or ring expansion are authored. All effects are expanded into budgets before approval. Complete examples follow in4; near-looking acceptance must be demonstrated, not inferred from this grammar.
 
 ### 3.13 Poses, merge and saved resolution
 
-poses is a map from pose id to typed channel values. Part defaults -> named pose -> mood channels, with later present keys replacing earlier ones. Missing means inherit at this authored merge stage. Scalars replace; objects recursively merge by key; arrays replace whole, never concatenate. A present null is permitted only in fields explicitly typed nullable and suppresses the inherited optional value. Non-nullable null is an error, not deletion. A named gesture/style/palette/shape definition is an atomic replacement, not a recursive merge of an incomplete definition. Moods merge by field; channels/item overrides merge by their named keys. Family/character merge uses the same rules (5).
+poses is a map from pose id to typed channel values. Part defaults -> named pose -> mood channels, with later present keys replacing earlier ones. Missing means inherit at this authored merge stage. Scalars replace; objects recursively merge by key; arrays replace whole, never concatenate. A present null is permitted only in fields explicitly typed nullable (including source-only inherited palette opt-outs in5) and suppresses the inherited optional value. Non-nullable null is an error, not deletion. A named gesture/style/palette/shape definition is an atomic replacement, not a recursive merge of an incomplete definition. Moods merge by field; channels/item overrides merge by their named keys. Family/character merge uses the same rules (5).
 
 Track null has a separate meaning: return to the currently displayed mood's base value. Runtime update NULL has a third, documented R meaning: leave unchanged. These contexts must not be conflated.
 
@@ -402,11 +410,15 @@ Mount, a changed mood, gesture, changed held pose or play-after-pause begins one
 
 All change, idle extra, effect and delayed tracks share the window's absolute deadline. Schedule a late effect/extra by proportionally fitting its finite duration into the remaining frames; if no frame remains, discard it. New distinct user/server actions can begin a new window, but queued effects/children cannot extend one themselves. Idle fades in the final third; crossing blink windows are skipped. At the deadline settle all channels/effects to the target rest, emit one final frame, cancel RAF. Pause freezes frame time; destroy cancels everything; hidden elements pause scheduling without replaying discarded actions when shown.
 
-Enabling reduced motion settles immediately and clears pending movement. Disabling it does not replay old change/gesture/extra/swap/effects. Colour changes, resize/DPR changes, detail-band changes and redraw do not start activity. Held host gaze is instantaneous, not animation; it clears only look channels. No gaze channels are sent for faceless/no-gaze kits. Shiny status/ARIA use shown state, never a pending invisible target.
+Enabling reduced motion settles immediately and clears pending movement. Disabling it does not replay old change/gesture/extra/swap/effects. Colour changes, resize/DPR changes, detail-band changes and redraw do not start activity. Held host gaze is instantaneous, not animation; it clears only look channels. No gaze channels are sent for faceless/no-gaze kits. Shiny status/ARIA use shown state, never a pending invisible target. Build the canvas accessible label from character display name plus shown status, never raw character/mood ids.
 
 Character swap retains today's private-canvas fade, bounded out/in duration, captured outgoing state, retarget/reversal speed and no-visible-pending-target behaviour. Fit total phases to incoming activity budget. Mid-swap mood changes commit without wiggle and do not extend it. Reduction or swap:false finishes immediately; re-enabling never replays it. Same id/content is ordinary update; same id/different content is rejected before state change.
 
-Queued updates remain per-session, namespaced once and atomic. Preserve ordered whole patches until the selected character is known; validate each against its then-current target and only then merge latest field values. A character change discards stale explicit outgoing mood while applying the swap fallback above. Keep latest one-shot early gesture, play once after queued state establishes without a startup swap, and track gesture revision across remounts. The browser queue cap remains20 per id; overflow requests the server's retained state. If that retained snapshot cannot determine a previous custom mood, use idle rather than guess. Invalid patches warn and change no fields (apart from existing development-mode problem display).
+Queued updates remain per-Shiny-session, namespaced once and atomic. Keep ordered whole pending patches until the target is known. Validate each against its then-current character and commit all or none; do not coalesce unvalidated fields newest-wins. Character-only swaps use the documented outgoing fallback. The latest accepted one-shot early gesture plays once after state establishes, without a startup swap; revision tracking prevents remount replay.
+
+Separate the server's ordered intent journal from its accepted checkpoint. A private acknowledgement on the existing input-binding channel reports server revision, target id/content identity, accepted/rejected outcome, effective mood id when a character-only swap derives it, and consumed gesture revision. The message has only these bounded scalar fields: positive issued revision, valid character/mood ids, content digest, outcome enum and optional issued gesture revision; unknown fields error. It is not a new public Shiny input. R accepts only acknowledgements for issued pending revisions, validates bounded types/identity/order and never treats client-supplied executable data or character files as authority. Fold accepted original server patches into the checkpoint in revision order, clearing stale mood on character change and recording the acknowledged derived mood after bounded structural checks; revalidate membership at replay if R lacks that target data; remove an entire rejected patch from replay, including any otherwise valid bubble/theme it contained. An acknowledgement cannot invent fields or revisions. A known rejected mood therefore cannot poison every later remount. Timeout is unresolved, never implicit acceptance.
+
+The browser pending queue remains capped at20 per id; bound the server journal at20 outstanding revisions too. If 20 unresolved patches already exist, reject a further patch as a whole with a development diagnostic (R mascot_update_ignored when server-known), request reconciliation, and preserve the existing journal. Reconcile the last acknowledged checkpoint plus bounded pending whole patches through the handshake before accepting further updates; never flatten unchecked intent into a valid-looking snapshot. On remount, replay the accepted checkpoint, then pending patches in order. If the new mount declares a different character, revalidate checkpoint dependency groups: character/mood uses the outgoing fallback or idle when outgoing data is unavailable; theme/preset re-resolves under section7; independent bubble/status/placement groups retain valid values. Rejected original patches cannot reappear through this regrouping. Clear incompatible groups with development diagnostics, preserve valid independent groups, and never replay acknowledged gestures. U1 owns server/browser handshake, lost/duplicate/out-of-order acknowledgements, queue pressure and multi-session tests before I1. This private protocol is proposed work, not a claim about today's server cache.
 
 ### 3.17 Addressable accessories and later composition
 
@@ -422,6 +434,24 @@ Supported capabilities in0.1.0: parts, paints, clip, outline, glow, face_kit, tr
 
 Reserved unsupported fields/capabilities: extends, connector, ring_pulse, follow, particles, morph, blend, inputs, fit, wardrobe, vividness. Report "not supported by this version of mascot" and a stable capability code; name a minimum package version only if an actual support table provides it. Do not invent 0.1.1 or promise format2. Paper contracts: connector links two existing world anchors, clamps inset to half nonzero length and draws nothing at coincident endpoints; typed numeric inputs require finite type/range/default and explicit channel mapping. Their namespaces/composition rules still need later review; reservation alone is not proof of future compatibility. Neither is an accepted v1 runtime example.
 
+
+### 3.19 Tessa face migration acceptance
+
+Compare with main ace06f5, not an imagined pixel-identical rewrite. These are intended data/grammar outcomes, pending rendering:
+
+| Feature | Intended result / remaining difference |
+|---|---|
+| Slanted brows | Preserve right-eye worried/sad inner end higher; determined/angry/frown lower, mirrored left. Width5 except neutral3.5; default none and happy hides brows. Numeric slope assertions required. |
+| Eye white/lid edge | Preserve feature2.5 outline, outline-role2.2 lid edge, face caps, shared inset clip and 1.2-radius lid construction. |
+| Pupils/glints | Preserve worried pupil y=-2 and face-aligned two highlights on both eyes; gaze remains aligned after reflection. |
+| Lashes | Preserve radial-ray placement, three ellipse lashes and two happy/closed lashes with independent15x6/15x3 radii. |
+| Blush | Preserve resting blush, named normal/strong roles and0.45/0.55 alpha. |
+| Mouths | Preserve face-unit stroke3.5, positions, proud detail2.5, flat/grit/o/teeth geometry; smile and grin circular arcs become explicit cubic approximations, an intentional near-look difference requiring approval. Box is half-size20x20. |
+| Sweat/sparkle | Preserve outlined/shine sweat and four-tip, eight-vertex radius10/3.2 sparkle (the old source is not an eight-tip star). |
+| Blink | Intentional: the closed style wins at blink>=0.96 even for happy; today's happy branch bypasses blink. |
+| Wide-eye brow height | Current proposal uses the common brow origin; any difference from today's wide-only offset requires explicit near-look approval. No silent claim of full style equivalence. |
+
+T1 captures these details at160/96/24 in both modes. Structural checks cannot approve facial expression or claim all expanded budgets pass.
 
 ## 4. Complete design examples
 
@@ -442,12 +472,16 @@ These JSON examples contain no comments and can be copied intact. They are compl
     "tongue",
     "sweat",
     "sparkle",
-    "sparkle_outline"
+    "sparkle_outline",
+    "outline",
+    "blush",
+    "blush_strong"
   ],
   "defaults": {
     "eyes": "open",
     "mouth": "smile",
-    "brows": "neutral"
+    "brows": "none",
+    "blush": 1
   },
   "eye_styles": {
     "open": {
@@ -475,18 +509,31 @@ These JSON examples contain no comments and can be copied intact. They are compl
             ],
             "r": 0.22
           }
-        ]
+        ],
+        "at": [
+          0,
+          0
+        ],
+        "mirror_glints": false
       },
       "lid": 0,
       "slant": 0,
       "lashes": {
         "angles": [
-          -0.35,
-          -0.8,
-          -1.2
+          -0.3490658503988659,
+          -0.7853981633974483,
+          -1.2217304763960306
         ],
         "length": 7,
         "width": 3
+      },
+      "outline": {
+        "colour": "feature",
+        "width": 2.5
+      },
+      "lid_edge": {
+        "colour": "outline",
+        "width": 2.2
       }
     },
     "wide": {
@@ -514,18 +561,31 @@ These JSON examples contain no comments and can be copied intact. They are compl
             ],
             "r": 0.22
           }
-        ]
+        ],
+        "at": [
+          0,
+          0
+        ],
+        "mirror_glints": false
       },
       "lid": 0,
       "slant": 0,
       "lashes": {
         "angles": [
-          -0.35,
-          -0.8,
-          -1.2
+          -0.3490658503988659,
+          -0.7853981633974483,
+          -1.2217304763960306
         ],
         "length": 7,
         "width": 3
+      },
+      "outline": {
+        "colour": "feature",
+        "width": 2.5
+      },
+      "lid_edge": {
+        "colour": "outline",
+        "width": 2.2
       }
     },
     "worried": {
@@ -553,18 +613,31 @@ These JSON examples contain no comments and can be copied intact. They are compl
             ],
             "r": 0.22
           }
-        ]
+        ],
+        "at": [
+          0,
+          -2
+        ],
+        "mirror_glints": false
       },
       "lid": 0,
       "slant": 0,
       "lashes": {
         "angles": [
-          -0.35,
-          -0.8,
-          -1.2
+          -0.3490658503988659,
+          -0.7853981633974483,
+          -1.2217304763960306
         ],
         "length": 7,
         "width": 3
+      },
+      "outline": {
+        "colour": "feature",
+        "width": 2.5
+      },
+      "lid_edge": {
+        "colour": "outline",
+        "width": 2.2
       }
     },
     "focused": {
@@ -592,18 +665,31 @@ These JSON examples contain no comments and can be copied intact. They are compl
             ],
             "r": 0.22
           }
-        ]
+        ],
+        "at": [
+          0,
+          0
+        ],
+        "mirror_glints": false
       },
       "lid": 0.42,
       "slant": 3,
       "lashes": {
         "angles": [
-          -0.35,
-          -0.8,
-          -1.2
+          -0.3490658503988659,
+          -0.7853981633974483,
+          -1.2217304763960306
         ],
         "length": 7,
         "width": 3
+      },
+      "outline": {
+        "colour": "feature",
+        "width": 2.5
+      },
+      "lid_edge": {
+        "colour": "outline",
+        "width": 2.2
       }
     },
     "happy": {
@@ -612,7 +698,24 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "start": 3.6128315516282616,
       "end": 5.811946409141117,
       "y": 2,
-      "width": 5.5
+      "width": 5.5,
+      "lashes": {
+        "angles": [
+          -0.5585053606381855,
+          -1.0821041362364843
+        ],
+        "radii": [
+          15,
+          6
+        ],
+        "at": [
+          0,
+          9
+        ],
+        "length": 7,
+        "width": 3
+      },
+      "hide_brows": true
     },
     "closed": {
       "op": "eye_arc",
@@ -620,7 +723,23 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "start": 0.5654866776461628,
       "end": 2.57610597594363,
       "y": -6,
-      "width": 5
+      "width": 5,
+      "lashes": {
+        "angles": [
+          -0.5585053606381855,
+          -1.0821041362364843
+        ],
+        "radii": [
+          15,
+          3
+        ],
+        "at": [
+          0,
+          2
+        ],
+        "length": 7,
+        "width": 3
+      }
     }
   },
   "brow_styles": {
@@ -641,42 +760,42 @@ These JSON examples contain no comments and can be copied intact. They are compl
     "raised": {
       "op": "brow_path",
       "d": "M-15 5 Q0 -6 15 5",
-      "width": 3.5,
+      "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "determined": {
       "op": "brow_path",
-      "d": "M-18 0 L16 8",
-      "width": 3.5,
+      "d": "M-16 10 L18 2",
+      "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "angry": {
       "op": "brow_path",
-      "d": "M-18 0 L16 10",
-      "width": 3.5,
+      "d": "M-16 10 L18 2",
+      "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "frown": {
       "op": "brow_path",
-      "d": "M-18 8 Q0 -5 16 0",
-      "width": 3.5,
+      "d": "M-16 10 L18 2",
+      "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "worried": {
       "op": "brow_path",
-      "d": "M-18 8 Q0 -5 16 0",
-      "width": 3.5,
+      "d": "M-16 2 L18 10",
+      "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "sad": {
       "op": "brow_path",
-      "d": "M-18 10 Q0 -4 16 0",
-      "width": 3.5,
+      "d": "M-16 2 L18 10",
+      "width": 5,
       "stroke": "feature",
       "y": -25
     }
@@ -686,14 +805,16 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "op": "mouth_path",
       "box": [
         20,
-        12
+        20
       ],
       "items": [
         {
           "shape": "path",
-          "d": "M-1 0 Q0 1 1 0",
+          "d": "M0.5791542407 0.2950938248 C0.4681874861 0.5128783433 0.2444252792 0.65 3.980102097e-17 0.65 C-0.2444252792 0.65 -0.4681874861 0.5128783433 -0.5791542407 0.2950938248",
           "stroke": "feature",
-          "width": 2.5
+          "width": 3.5,
+          "cap": "round",
+          "join": "round"
         }
       ]
     },
@@ -701,14 +822,16 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "op": "mouth_path",
       "box": [
         20,
-        12
+        20
       ],
       "items": [
         {
           "shape": "path",
-          "d": "M-1 0 Q0.2 0.8 1 -0.3",
+          "d": "M-0.4 0.1 Q0 0.45 0.45 0",
           "stroke": "feature",
-          "width": 2.5
+          "width": 3.5,
+          "cap": "round",
+          "join": "round"
         }
       ]
     },
@@ -716,14 +839,24 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "op": "mouth_path",
       "box": [
         20,
-        12
+        20
       ],
       "items": [
         {
           "shape": "path",
-          "d": "M-1 -0.1 Q0 0.8 1 -0.1",
+          "d": "M-0.7 0.15 Q0 0.75 0.75 -0.05",
           "stroke": "feature",
-          "width": 2.5
+          "width": 3.5,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "path",
+          "d": "M0.8 -0.3 L0.9 -0.05",
+          "stroke": "feature",
+          "width": 2.5,
+          "cap": "round",
+          "join": "round"
         }
       ]
     },
@@ -731,29 +864,16 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "op": "mouth_path",
       "box": [
         20,
-        12
+        20
       ],
       "items": [
         {
           "shape": "path",
-          "d": "M-1 0 L1 0",
+          "d": "M-0.55 0.4 L0.55 0.4",
           "stroke": "feature",
-          "width": 2.5
-        }
-      ]
-    },
-    "determined": {
-      "op": "mouth_path",
-      "box": [
-        20,
-        12
-      ],
-      "items": [
-        {
-          "shape": "path",
-          "d": "M-1 0 L1 0",
-          "stroke": "feature",
-          "width": 3
+          "width": 3.5,
+          "cap": "round",
+          "join": "round"
         }
       ]
     },
@@ -761,15 +881,16 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "op": "mouth_path",
       "box": [
         20,
-        12
+        20
       ],
       "items": [
         {
           "shape": "path",
-          "d": "M-1 -0.3 L1 -0.3 L1 0.4 L-1 0.4 Z",
-          "fill": "teeth",
+          "d": "M-0.7 0.15 L-0.25 0 L0.25 0.2 L0.7 0.05",
           "stroke": "feature",
-          "width": 2.5
+          "width": 3.5,
+          "cap": "round",
+          "join": "round"
         }
       ]
     },
@@ -777,16 +898,24 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "op": "mouth_path",
       "box": [
         20,
-        12
+        20
       ],
       "items": [
         {
           "shape": "ellipse",
           "x": 0,
-          "y": 0,
-          "rx": 0.4,
-          "ry": 0.8,
+          "y": 0.25,
+          "rx": 0.5,
+          "ry": 0.75,
           "fill": "feature"
+        },
+        {
+          "shape": "ellipse",
+          "x": 0,
+          "y": 0.65,
+          "rx": 0.35,
+          "ry": 0.25,
+          "fill": "tongue"
         }
       ]
     },
@@ -794,25 +923,39 @@ These JSON examples contain no comments and can be copied intact. They are compl
       "op": "mouth_path",
       "box": [
         20,
-        12
+        20
       ],
       "items": [
         {
           "shape": "path",
-          "d": "M-1 -0.2 Q0 1.5 1 -0.2 Z",
-          "fill": "feature",
+          "d": "M0.8 0 C0.8 0.4418277999 0.4418277999 0.8 4.898587197e-17 0.8 C-0.4418277999 0.8 -0.8 0.4418277999 -0.8 9.797174393e-17 Z",
           "stroke": "feature",
-          "width": 2.5
+          "width": 3.5,
+          "cap": "round",
+          "join": "round",
+          "fill": "feature"
         },
         {
           "shape": "path",
-          "d": "M-0.8 -0.15 L0.8 -0.15 Q0 0.35 -0.8 -0.15 Z",
+          "d": "M-0.65 0 L0.65 0 L0.65 0.3 L-0.65 0.3 Z",
           "fill": "teeth"
-        },
+        }
+      ]
+    },
+    "determined": {
+      "op": "mouth_path",
+      "box": [
+        20,
+        20
+      ],
+      "items": [
         {
           "shape": "path",
-          "d": "M-0.4 0.5 Q0 0.2 0.4 0.5 Z",
-          "fill": "tongue"
+          "d": "M-0.7 0.15 L-0.25 0 L0.25 0.2 L0.7 0.05",
+          "stroke": "feature",
+          "width": 3.5,
+          "cap": "round",
+          "join": "round"
         }
       ]
     }
@@ -824,12 +967,20 @@ These JSON examples contain no comments and can be copied intact. They are compl
         0,
         0
       ],
-      "frames": 30,
       "items": [
         {
           "shape": "path",
-          "d": "M0 -8 Q9 2 0 10 Q-9 2 0 -8 Z",
-          "fill": "sweat"
+          "d": "M0 -11 C8 -4 9 6 0 10 C-9 6 -8 -4 0 -11 Z",
+          "fill": "sweat",
+          "stroke": "feature",
+          "width": 1.5
+        },
+        {
+          "shape": "circle",
+          "x": 2.5,
+          "y": 2.5,
+          "r": 2.2,
+          "fill": "shine"
         }
       ],
       "mode": "progress",
@@ -844,23 +995,22 @@ These JSON examples contain no comments and can be copied intact. They are compl
         0,
         0
       ],
-      "frames": 30,
       "items": [
         {
           "shape": "path",
-          "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+          "d": "M6.123234e-16 -10 L2.2627417 -2.2627417 L10 0 L2.2627417 2.2627417 L6.123234e-16 10 L-2.2627417 2.2627417 L-10 1.2246468e-15 L-2.2627417 -2.2627417 Z",
           "fill": "sparkle",
           "stroke": "sparkle_outline",
-          "width": 1
+          "width": 1.6
         }
       ],
       "reduced_items": [
         {
           "shape": "path",
-          "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+          "d": "M6.123234e-16 -10 L2.2627417 -2.2627417 L10 0 L2.2627417 2.2627417 L6.123234e-16 10 L-2.2627417 2.2627417 L-10 1.2246468e-15 L-2.2627417 -2.2627417 Z",
           "fill": "sparkle",
           "stroke": "sparkle_outline",
-          "width": 1
+          "width": 1.6
         }
       ],
       "mode": "pulse",
@@ -1034,7 +1184,6 @@ These JSON examples contain no comments and can be copied intact. They are compl
         0,
         0
       ],
-      "frames": 30,
       "items": [
         {
           "shape": "path",
@@ -1054,7 +1203,6 @@ These JSON examples contain no comments and can be copied intact. They are compl
         0,
         0
       ],
-      "frames": 30,
       "items": [
         {
           "shape": "path",
@@ -1613,6 +1761,565 @@ This migration keeps original colours, the default wiggle, bow/clip, arm presets
       "ry": 7,
       "alpha": 0.45,
       "strong_alpha": 0.55
+    },
+    "kit_definition": {
+      "id": "classic",
+      "description": "Painted expressive eyes, brows and mouths.",
+      "roles": [
+        "feature",
+        "eye_white",
+        "shine",
+        "eyelid",
+        "teeth",
+        "tongue",
+        "sweat",
+        "sparkle",
+        "sparkle_outline",
+        "outline",
+        "blush",
+        "blush_strong"
+      ],
+      "defaults": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "none",
+        "blush": 1
+      },
+      "eye_styles": {
+        "open": {
+          "op": "eye_ellipse",
+          "rx": 16.5,
+          "ry": 19.5,
+          "pupil": {
+            "r": 10,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  0.35,
+                  -0.35
+                ],
+                "r": 0.4
+              },
+              {
+                "at": [
+                  -0.35,
+                  0.35
+                ],
+                "r": 0.22
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.3490658503988659,
+              -0.7853981633974483,
+              -1.2217304763960306
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 2.5
+          },
+          "lid_edge": {
+            "colour": "outline",
+            "width": 2.2
+          }
+        },
+        "wide": {
+          "op": "eye_ellipse",
+          "rx": 19,
+          "ry": 24,
+          "pupil": {
+            "r": 7.5,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  0.35,
+                  -0.35
+                ],
+                "r": 0.4
+              },
+              {
+                "at": [
+                  -0.35,
+                  0.35
+                ],
+                "r": 0.22
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.3490658503988659,
+              -0.7853981633974483,
+              -1.2217304763960306
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 2.5
+          },
+          "lid_edge": {
+            "colour": "outline",
+            "width": 2.2
+          }
+        },
+        "worried": {
+          "op": "eye_ellipse",
+          "rx": 16.5,
+          "ry": 21,
+          "pupil": {
+            "r": 8.5,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  0.35,
+                  -0.35
+                ],
+                "r": 0.4
+              },
+              {
+                "at": [
+                  -0.35,
+                  0.35
+                ],
+                "r": 0.22
+              }
+            ],
+            "at": [
+              0,
+              -2
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.3490658503988659,
+              -0.7853981633974483,
+              -1.2217304763960306
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 2.5
+          },
+          "lid_edge": {
+            "colour": "outline",
+            "width": 2.2
+          }
+        },
+        "focused": {
+          "op": "eye_ellipse",
+          "rx": 16.5,
+          "ry": 19.5,
+          "pupil": {
+            "r": 10,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  0.35,
+                  -0.35
+                ],
+                "r": 0.4
+              },
+              {
+                "at": [
+                  -0.35,
+                  0.35
+                ],
+                "r": 0.22
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0.42,
+          "slant": 3,
+          "lashes": {
+            "angles": [
+              -0.3490658503988659,
+              -0.7853981633974483,
+              -1.2217304763960306
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 2.5
+          },
+          "lid_edge": {
+            "colour": "outline",
+            "width": 2.2
+          }
+        },
+        "happy": {
+          "op": "eye_arc",
+          "r": 15,
+          "start": 3.6128315516282616,
+          "end": 5.811946409141117,
+          "y": 2,
+          "width": 5.5,
+          "lashes": {
+            "angles": [
+              -0.5585053606381855,
+              -1.0821041362364843
+            ],
+            "radii": [
+              15,
+              6
+            ],
+            "at": [
+              0,
+              9
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "hide_brows": true
+        },
+        "closed": {
+          "op": "eye_arc",
+          "r": 14,
+          "start": 0.5654866776461628,
+          "end": 2.57610597594363,
+          "y": -6,
+          "width": 5,
+          "lashes": {
+            "angles": [
+              -0.5585053606381855,
+              -1.0821041362364843
+            ],
+            "radii": [
+              15,
+              3
+            ],
+            "at": [
+              0,
+              2
+            ],
+            "length": 7,
+            "width": 3
+          }
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M0 0",
+          "width": 0,
+          "stroke": "feature",
+          "y": -25
+        },
+        "neutral": {
+          "op": "brow_path",
+          "d": "M-14 6 Q0 1 14 6",
+          "width": 3.5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "raised": {
+          "op": "brow_path",
+          "d": "M-15 5 Q0 -6 15 5",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "determined": {
+          "op": "brow_path",
+          "d": "M-16 10 L18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "angry": {
+          "op": "brow_path",
+          "d": "M-16 10 L18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "frown": {
+          "op": "brow_path",
+          "d": "M-16 10 L18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "worried": {
+          "op": "brow_path",
+          "d": "M-16 2 L18 10",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "sad": {
+          "op": "brow_path",
+          "d": "M-16 2 L18 10",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0.5791542407 0.2950938248 C0.4681874861 0.5128783433 0.2444252792 0.65 3.980102097e-17 0.65 C-0.2444252792 0.65 -0.4681874861 0.5128783433 -0.5791542407 0.2950938248",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "smirk": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.4 0.1 Q0 0.45 0.45 0",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "proud": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.7 0.15 Q0 0.75 0.75 -0.05",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            },
+            {
+              "shape": "path",
+              "d": "M0.8 -0.3 L0.9 -0.05",
+              "stroke": "feature",
+              "width": 2.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.55 0.4 L0.55 0.4",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "grit": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.7 0.15 L-0.25 0 L0.25 0.2 L0.7 0.05",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "o": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "ellipse",
+              "x": 0,
+              "y": 0.25,
+              "rx": 0.5,
+              "ry": 0.75,
+              "fill": "feature"
+            },
+            {
+              "shape": "ellipse",
+              "x": 0,
+              "y": 0.65,
+              "rx": 0.35,
+              "ry": 0.25,
+              "fill": "tongue"
+            }
+          ]
+        },
+        "grin": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0.8 0 C0.8 0.4418277999 0.4418277999 0.8 4.898587197e-17 0.8 C-0.4418277999 0.8 -0.8 0.4418277999 -0.8 9.797174393e-17 Z",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round",
+              "fill": "feature"
+            },
+            {
+              "shape": "path",
+              "d": "M-0.65 0 L0.65 0 L0.65 0.3 L-0.65 0.3 Z",
+              "fill": "teeth"
+            }
+          ]
+        },
+        "determined": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.7 0.15 L-0.25 0 L0.25 0.2 L0.7 0.05",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        }
+      },
+      "effects": {
+        "sweat": {
+          "op": "sweat_drop",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 -11 C8 -4 9 6 0 10 C-9 6 -8 -4 0 -11 Z",
+              "fill": "sweat",
+              "stroke": "feature",
+              "width": 1.5
+            },
+            {
+              "shape": "circle",
+              "x": 2.5,
+              "y": 2.5,
+              "r": 2.2,
+              "fill": "shine"
+            }
+          ],
+          "mode": "progress",
+          "travel": 26,
+          "sway": 2,
+          "sway_rate": 12,
+          "fade_at": 0.9
+        },
+        "sparkle": {
+          "op": "sparkle_star",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M6.123234e-16 -10 L2.2627417 -2.2627417 L10 0 L2.2627417 2.2627417 L6.123234e-16 10 L-2.2627417 2.2627417 L-10 1.2246468e-15 L-2.2627417 -2.2627417 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1.6
+            }
+          ],
+          "reduced_items": [
+            {
+              "shape": "path",
+              "d": "M6.123234e-16 -10 L2.2627417 -2.2627417 L10 0 L2.2627417 2.2627417 L6.123234e-16 10 L-2.2627417 2.2627417 L-10 1.2246468e-15 L-2.2627417 -2.2627417 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1.6
+            }
+          ],
+          "mode": "pulse",
+          "amplitude": 0.18,
+          "rate": 9
+        }
+      }
     }
   },
   "poses": {
@@ -1657,7 +2364,7 @@ This migration keeps original colours, the default wiggle, bow/clip, arm presets
       "face": {
         "eyes": "open",
         "mouth": "smile",
-        "brows": "neutral"
+        "brows": "none"
       }
     },
     "thinking": {
@@ -1679,7 +2386,7 @@ This migration keeps original colours, the default wiggle, bow/clip, arm presets
       "face": {
         "eyes": "happy",
         "mouth": "grin",
-        "brows": "neutral"
+        "brows": "none"
       }
     },
     "worried": {
@@ -1702,7 +2409,7 @@ This migration keeps original colours, the default wiggle, bow/clip, arm presets
       "face": {
         "eyes": "happy",
         "mouth": "grin",
-        "brows": "neutral",
+        "brows": "none",
         "blush": "strong"
       },
       "channels": {
@@ -2744,6 +3451,209 @@ The screen kit supplies all named eye/mouth styles. Beep scales the lamp once wi
     },
     "colours": {
       "feature": "glow"
+    },
+    "kit_definition": {
+      "id": "screen",
+      "description": "Static screen glyphs with budgeted emission.",
+      "roles": [
+        "feature",
+        "sweat",
+        "sparkle",
+        "sparkle_outline"
+      ],
+      "defaults": {
+        "eyes": "dot",
+        "mouth": "smile",
+        "brows": "none"
+      },
+      "glow": {
+        "blur": 3,
+        "alpha": 0.4
+      },
+      "eye_styles": {
+        "dot": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              0,
+              0
+            ]
+          ],
+          "r": 6
+        },
+        "scan": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              -3,
+              0
+            ],
+            [
+              3,
+              0
+            ]
+          ],
+          "r": 3
+        },
+        "arc": {
+          "op": "eye_arc",
+          "r": 8,
+          "start": 3.3,
+          "end": 6.1,
+          "width": 3
+        },
+        "slant": {
+          "op": "eye_path",
+          "d": "M-7 1 L5 -3",
+          "stroke": "feature",
+          "width": 3
+        },
+        "star": {
+          "op": "eye_path",
+          "d": "M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z",
+          "fill": "feature"
+        },
+        "dots": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              -5,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "r": 3
+        },
+        "closed": {
+          "op": "eye_path",
+          "d": "M-7 0 L7 0",
+          "stroke": "feature",
+          "width": 3
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M0 0",
+          "width": 0,
+          "stroke": "feature"
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 Q0 1 1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 L1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "wide": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 -0.2 Q0 1.5 1 -0.2 Z",
+              "fill": "feature",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "wavy": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 Q-0.5 -0.8 0 0 Q0.5 0.8 1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        }
+      },
+      "effects": {
+        "sweat": {
+          "op": "sweat_drop",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 -8 Q9 2 0 10 Q-9 2 0 -8 Z",
+              "fill": "sweat"
+            }
+          ],
+          "mode": "progress",
+          "travel": 26,
+          "sway": 2,
+          "sway_rate": 12,
+          "fade_at": 0.9
+        },
+        "sparkle": {
+          "op": "sparkle_star",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1
+            }
+          ],
+          "reduced_items": [
+            {
+              "shape": "path",
+              "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1
+            }
+          ],
+          "mode": "pulse",
+          "amplitude": 0.18,
+          "rate": 9
+        }
+      }
     }
   },
   "poses": {
@@ -3164,7 +4074,24 @@ The screen kit supplies all named eye/mouth styles. Beep scales the lamp once wi
       "layer": 45
     }
   },
-  "palette_sources": {}
+  "palette_sources": {
+    "sea_glass": "family",
+    "night_screen": "family"
+  },
+  "palettes": {
+    "sea_glass": {
+      "description": "A cool screen.",
+      "light": {
+        "screen": "#06232a"
+      }
+    },
+    "night_screen": {
+      "description": "A deeper screen.",
+      "light": {
+        "screen": "#03151a"
+      }
+    }
+  }
 }
 ```
 
@@ -3203,14 +4130,10 @@ This is the exact built-in visorfolk source-default fixture for the builder walk
         }
       },
       "nod": {
-        "description": "A brief acknowledgement.",
+        "description": "A brief whole-character acknowledgement tilt.",
         "frames": 18,
-        "needs": [
-          "nod_joint"
-        ],
-        "fallback": "rock",
         "tracks": {
-          "nod_joint.rotate": {
+          "root.rotate": {
             "mode": "add",
             "keys": [
               [
@@ -3230,14 +4153,10 @@ This is the exact built-in visorfolk source-default fixture for the builder walk
         }
       },
       "wave": {
-        "description": "A brief greeting.",
+        "description": "A brief whole-character greeting tilt.",
         "frames": 30,
-        "needs": [
-          "hand_r"
-        ],
-        "fallback": "rock",
         "tracks": {
-          "hand_r.rotate": {
+          "root.rotate": {
             "mode": "add",
             "keys": [
               [
@@ -3246,11 +4165,7 @@ This is the exact built-in visorfolk source-default fixture for the builder walk
               ],
               [
                 0.3,
-                0.25
-              ],
-              [
-                0.6,
-                -0.25
+                0.08
               ],
               [
                 1,
@@ -3279,7 +4194,9 @@ This is the exact built-in visorfolk source-default fixture for the builder walk
 }
 ```
 
-Study Bot supplies greet and overrides sea_glass with a complete palette. Expected resolved gesture keys, in authored merge order, are rock, nod, wave, greet. nod and wave retain their declared 18/30-frame candidates but resolve to playable rock (18 frames) because Study Bot has neither nod_joint nor hand_r. greet remains playable at18 frames. No arm/effect/colour is invented. Expected requires is parts, outline, clip, face_kit, glow, tracks, lod (order canonicalised by policy, all supported); expected palette_sources is {"sea_glass":"character","night_screen":"family"}. Its saved family_definition has the same id/name/description with defaults:{}; gestures/palettes/provenance are materialised independently and rereading never applies the source defaults again. R1c must compare these outcomes and final resource totals; this is an expected result, not a report of an executed checker.
+Study Bot supplies character-local nod/wave candidates plus greet and overrides sea_glass with a complete palette. Expected resolved gesture keys, in authored merge order, are rock, nod, wave, greet. Its local nod and wave retain their declared 18/30-frame candidates but resolve to playable rock (18 frames) because Study Bot has neither nod_joint nor hand_r. greet remains playable at18 frames. No arm/effect/colour is invented. Expected requires is parts, outline, clip, face_kit, glow, tracks, lod (order canonicalised by policy, all supported); expected palette_sources is {"sea_glass":"character","night_screen":"family"}. Its saved family_definition has the same id/name/description with defaults:{}; gestures/palettes/provenance are materialised independently and rereading never applies the source defaults again. R1c must compare these outcomes and final resource totals; this is an expected result, not a report of an executed checker.
+
+Family nod/wave defaults above are safe whole-root tilts. Study Bot explicitly overrides them with anatomy-dependent candidates to exercise the fallback contract; there is no anatomy inferred from family membership.
 
 ### 4.6 Small conformance fragments (not whole passing characters)
 
@@ -3288,19 +4205,25 @@ Knurl's clamp variant set track: {"mode":"set","keys":[[0,null],[0.4,"open"],[0.
 
 ## 5. Families, identity and resolution
 
-Family fields: id, name, description (required); defaults (object, default{}). Defaults may include outline, face, moods, gestures, motion, colours/follows/brand/contrast and palettes. They may not add parts, anchors, ground, accessories or wear. A suggested starting character is a builder/UI choice, never implicit anatomy. Family kit/gesture defaults are checked against each actual character after merge; missing declared needed parts invoke checked fallbacks. Built-in families: hexonians, elementals, visorfolk. New families are checked objects, not hard-coded engine branches.
+Family fields: id, name, description (required); defaults (object, default{}). Defaults may include outline, face, moods, gestures, motion, colours/colour_descriptions/follows/brand/contrast and palettes. Family gesture defaults use root channels only (root.rotate, x, y, lift, scale_x and scale_y); character-local overrides explicitly name their own anatomy. A conventional part name never opts a member into an anatomical family motion. They may not add parts, anchors, ground, accessories or wear. A suggested starting character is a builder/UI choice, never implicit anatomy. Family kit defaults are checked against each actual character after merge; missing declared needed parts in character-local gesture overrides invoke checked fallbacks. Built-in families: hexonians, elementals, visorfolk. New families are checked objects, not hard-coded engine branches.
 
-A source character references a known family or supplies family_definition {id,name,description,defaults}. That id must equal family; duplicate/conflicting source definitions for a registered family error. A resolved family_definition is a local metadata snapshot, not a source default definition: it never registers/replaces family defaults and is never compared against the live default map. Snapshot labels are preserved on that character even if today's registry labels differ; the global family listing uses registry labels. A snapshot cannot be used as a known-family source of defaults for a new character. The checker first validates family structure, applies the deterministic merge in3.13, then validates semantic geometry/references/limits. It marks output resolved:true and materialises all family-provided behaviour defaults. Stable versioned operation defaults may remain implicit. A saved resolved file embeds family_definition {id,name,description,defaults:{}} and complete resolved values; its resolved:true prevents reapplying package family defaults on read. A claimed resolved file still receives every semantic check and complete-required-field check. This preserves the category/identity without a live inheritance link. Resolution also computes palette_sources with exactly the keys of palettes and values character or family. A whole character-level palette replacement has character origin, including an identical-value replacement; an inherited palette has family origin. Source specifications omit palette_sources; raw resolved input must supply and validate it ({} when no palettes). Save/read preserve this checked origin map without consulting current family defaults. Synthetic original is native listing metadata, not a stored palette/source-map entry. Built-in kit ids are versioned package operations; custom complete kit data is embedded as face.kit_definition with its matching id, validated exactly as built-ins. No external asset lookup or script is permitted.
+A source character references a known family or supplies family_definition {id,name,description,defaults}. That id must equal family; duplicate/conflicting source definitions for a registered family error. A resolved family_definition is a local metadata snapshot, not a source default definition: it never registers/replaces family defaults and is never compared against the live default map. Snapshot labels are preserved on that character even if today's registry labels differ; the global family listing uses registry labels. A snapshot cannot be used as a known-family source of defaults for a new character. The checker first validates family structure, applies the deterministic merge in3.13, then validates semantic geometry/references/limits. It marks output resolved:true and materialises all family-provided behaviour defaults. Stable version1 operation defaults may remain implicit, but complete kit definitions must be embedded. A saved resolved file embeds family_definition {id,name,description,defaults:{}} and complete resolved values; its resolved:true prevents reapplying package family defaults on read. A claimed resolved file still receives every semantic check and complete-required-field check. This preserves the category/identity without a live inheritance link. Resolution also computes palette_sources with exactly the keys of palettes and values character or family. A whole character-level palette replacement has character origin, including an identical-value replacement; an inherited palette has family origin. Source specifications omit palette_sources; raw resolved input must supply and validate it ({} when no palettes). Save/read preserve this checked origin map without consulting current family defaults. Synthetic original is native listing metadata, not a stored palette/source-map entry. Every resolved/saved face embeds its complete face.kit_definition with matching id, including classic/screen. Source kit ids select authoring defaults only; resolution copies the complete kit. Read/render uses the embedded definition, never substitutes today's package kit by id. Version1 operation semantics remain frozen; changed operation semantics require a format version change. Custom and built-in snapshots receive the same checks. No external asset lookup or script is permitted.
 
-R distinguishes draft authoring components, source character specification, fully checked mascot_character_data, and the public mascot_character selector/helper. Never accept an unchecked draft as UI character data. Input/output class fields are internal. A supplied checked object is verified for integrity/content before use, since R lists can be mutated. Id lookup, direct object and built-in paths converge on the same checker. Registration is session-only, explicit, writes no files, and cannot replace built-in ids. Re-registering identical content is idempotent; conflicting content with the same id errors. Remix requires a new explicit permanent id; final family is required even for a hybrid. Only runtime instance id belongs to Shiny; it is distinct from character id and part/anchor ids.
+Source-only palette opt-out: palettes may contain an inherited family palette id with null to omit that entire palette. The id must exist in family defaults; a null for an unknown id errors. Resolution removes the entry and its provenance; resolved/saved palettes contain no nulls. Inherited palettes naming a missing character role error unless explicitly omitted; never guess a role mapping or silently skip the palette. Complete character palette replacements remain atomic. The R builder exposes omit_family_palettes for this source operation.
+
+R distinguishes draft authoring components, source character specification, fully checked mascot_character_data, and the public mascot_character selector/helper. Never accept an unchecked draft as UI character data. Input/output class fields are internal. A supplied checked object is verified for integrity/content before use, since R lists can be mutated. Id lookup, direct object and built-in paths converge on the same checker. Registration has R-process lifetime, is explicit and intended only for app start-up/development (reject an active Shiny reactive domain), writes no files, and cannot replace built-in ids. Per-visitor characters pass checked objects directly and never enter the shared process registry. Listings by id describe the process catalogue, not another visitor's objects. Re-registering identical content is idempotent; conflicting content with the same id errors. Remix requires a new explicit permanent id; final family is required even for a hybrid. Only runtime instance id belongs to Shiny; it is distinct from character id and part/anchor ids.
 
 ## 6. Validation contract
 
 Pure R jsonlite/checkmate/cli, no mandatory schema/V8 framework. One ordered process: bounded input/JSON syntax and duplicate keys -> version/capabilities -> key/type/local ranges -> family/kit structure -> deterministic resolution -> unique ids/acyclic parents -> paints/roles/paths/shape refs -> variant/clip/anchor integrity -> mood and gesture fallback/needs resolution -> reachable composed channels -> expanded per-band work/budgets -> built-in contrast promises and required core states. Stop a dependent stage when its prerequisite fails; collect at most ten independent problems at a stage with exact JSON path, code, value and fix suggestion.
 
-Shared R error base mascot_error, specific mascot_error_character; warnings mascot_warning with mascot_contrast where applicable. JSON paths use $.parts[0].items[1].fill (zero-based arrays) consistently in R/JS diagnostics, irrespective of R list indexing. Stable common codes: input_type, version, capability, unknown_key, non_finite, missing_reference, invalid_channel, invalid_colour, budget. R-only family/global semantic checks have their own codes. JS guards only its documented common subset, plus runtime state membership; compare code/path for common bad fixtures, not every first English message from every R-only check.
+R conditions use the classes in the companion API document section1: specific argument/choice/dots/character classes inherit mascot_error; update/contrast/preset/unknown-name warning classes inherit mascot_warning. Character failures retain stable code/path/value/fix fields. Browser diagnostics carry matching codes where applicable but are not R conditions. JSON paths use $.parts[0].items[1].fill (zero-based arrays) consistently in R/JS diagnostics, irrespective of R list indexing. Stable common codes: input_type, version, capability, unknown_key, non_finite, missing_reference, invalid_channel, invalid_colour, budget. R-only family/global semantic checks have their own codes. JS guards only its documented common subset, plus runtime state membership; compare code/path for common bad fixtures, not every first English message from every R-only check.
 
-Built-in authored contrast promises error below3:1 for required graphic details in both resolved modes, including face background/gradient extremes behind meaningful features. New characters target4.5:1 but missing that aim alone does not reject a valid3:1 character. Decorative accents need not become false hard promises. User colours remain exact and warn in development mode, always in preview/studio unless explicitly silenced; CSS-resolved warnings belong to browser diagnostics. Status text retains its independent accessibility requirements. Save/check never silently recolours.
+Built-in authored contrast promises error below3:1 for required graphic details in both resolved modes, using the explicit declared foreground/background pairs below; no geometric overlap guessing. New characters target4.5:1 but missing that aim alone does not reject a valid3:1 character. Decorative accents need not become false hard promises. User colours remain exact and warn in development mode, always in preview/studio unless explicitly silenced; CSS-resolved warnings belong to browser diagnostics. Status text retains its independent accessibility requirements. Save/check never silently recolours.
+
+Contrast backgrounds are authored promises: bg identifies a solid role/page baseline; optional bg_paint identifies the specific background paint composited over that base. Check every resolved mode/preset under test. For gradients, derive conservative per-channel min/max bounds across stops and alpha composition over bg; convert these to a luminance interval and use the nearest possible background luminance to foreground luminance for the worst contrast. A translucent foreground is composited over the same background bounds before comparison; an unprovable bound is unverified, never pass. This may conservatively reject a good-looking gradient; it cannot call an uncertain backdrop a pass. Authors can use a solid declared face backdrop instead. Arbitrary overlapping/translucent artwork not represented by a declared pair is unverified, reported for visual review, never silently inferred as a contrast pass.
+
+At default host root x/y/rotation/scale, every reachable authored mood, gesture, effect and accessory, including automatic blink/gaze ranges, must fit the 300x300 frame, including strokes and conservative three-blur-radius bounds. R1c computes conservative transformed bounds; E5b tests boundary cases and captures all bands. If bounds cannot be proven, require an explicit bounded fixture check before acceptance. Arbitrary externally supplied root/held-pose transforms or face scaling can deliberately clip and are not covered by this authored-fit promise; safety ranges are not a promise that every external transform fits; preview reports that limitation. There is no automatic fitter. A local hat y of about -248 alone does not prove overflow: the ground is at270 and full transformed extents must be calculated.
 
 R examples of useful diagnostics: "$.anchors.tool_grip.part names elbow, which is not a declared part"; "$.gestures.wave.fallback -> rock -> wave is cyclic"; "$.requires omits glow used by the screen kit". None is claimed to be an implemented message yet.
 
@@ -3318,7 +4241,7 @@ Family presets are not automatically portable across unrelated role systems. On 
 
 R builder signatures/complete example: r-builder-proposal.md. API recommendations and Today/Options/Reason/User-effect records: r-api-decisions-0.1.0.md. No signatures in these documents are implemented here.
 
-mascot_mood()/mascot_gesture() helpers validate syntax alone; selected-character membership occurs in mascot()/preview/character-aware listings and update use. UI creation errors before emitting invalid data. Updates validate structural types in R; selected target content comes from explicit same-call character or known retained state. If R cannot know the mounted target, membership is deferred to the known-target host's atomic prepare stage, which warns/no-change on invalid vocabulary. Do not falsely claim server R validated an unknown browser target. Full R validation remains authoritative for character files.
+mascot_mood()/mascot_gesture() helpers validate syntax alone; selected-character membership occurs in mascot()/preview/character-aware listings and update use. UI creation errors before emitting invalid data. Updates validate structural types in R; selected target content comes from explicit same-call character or known retained state. If R cannot know the mounted target, membership is deferred to the known-target host's atomic prepare stage, which warns/no-change on invalid vocabulary. In development mode R additionally emits mascot_name_unverified for a syntactically valid mood/gesture absent from every currently known process-catalogue character; it is informational and never rejects a possibly valid custom browser target. Emit once per name/kind per session with bounded diagnostic storage. Final target membership remains authoritative. Do not falsely claim server R validated an unknown browser target. Full R validation remains authoritative for character files.
 
 Host migration must translate held look/lookY to face.look_x/y, support no-gaze/faceless kits, derive shown status from the selected file, preserve explicit custom status, theme reapplication and module namespace-once delivery. Preserve _click/_menu/_position/_minimised semantics, dynamic UI retention, one-shot gesture revisions, panel timers/focus, hidden layout, DPI resize and unsubscribe cleanup. No CSS/internal protocol changes are necessary merely because data moves to parts. Public approved styling hooks stay documented; internal messages/JS/data attributes remain internal. No output/render pair, no htmlwidgets, no runtime network.
 
@@ -3329,12 +4252,12 @@ Each later implementation unit needs an issue in the repository epic tree and a 
 | Unit | Prerequisites | Deliverable and decisive done-when | Track |
 |---|---|---|---|
 | R1a | none | Complete grammar, kit/family/examples/limit data and good/bad case expectations; independent design review resolved. | Contract |
-| T1 | R1a, can develop alongside it | Locked canonical visual harness and old baselines; planted missing-eye/wrong-mood/displaced-anchor defects fail non-zero. | Tests |
+| T1 | R1a, can develop alongside it | Locked canonical visual harness and old baselines pinned to main ace06f5 before E1; planted missing-eye/wrong-mood/displaced-anchor defects fail non-zero. | Tests |
 | R1b | R1a | Bounded parser, types, keys, versions, structural diagnostics; malformed/deep/duplicate input cases. | R |
 | R1c | R1b | Family/kit merge, semantics, fallbacks, contrasts and expanded budgets; canonical good/bad fixtures give expected codes/paths. | R |
 | E1 | R1a; T1 for appearance acceptance | Part matrices, layers, anchors and provisional adapter; numeric transforms and same-profile comparisons accepted. | Engine parallel R |
 | E2 | E1 | Shapes/refs/paints/clips/outlines; fixtures cover local/world coordinates and hidden active clip geometry. | Engine |
-| R2 | R1c | Internal checked-data and session registry, reserved ids/content identity; unit acceptance only, mount waits for I1. | R parallel E2 |
+| R2 | R1c | Internal checked-data and process registry, reserved ids/content identity; unit acceptance only, mount waits for I1. | R parallel E2 |
 | E3 | E2, complete kit contract | Generic classic/screen faces, coherent tuning and effects; near-look evidence and faceless case. | Engine |
 | E4a | E3 | Tracks, needs/fallback, interruption/reduction/deadlines; numeric frame/terminal assertions. | Engine |
 | E4b | E4a | Mood channels, variants/anchors/recolour, ordinary sweat/sparkle and switches; no deferred runtimes. | Engine |
@@ -3342,18 +4265,35 @@ Each later implementation unit needs an issue in the repository epic tree and a 
 | E5b | E3,E4b,E5a | LOD and policy enforcement; band resize without replay; all effective variants counted. | Engine |
 | R3a | R2,R1a | Helpers/listings/status metadata and unit acceptance, with own studio/docs changes. | R parallel engine |
 | B1 | R2,R1a | Internal authoring constructors, custom anchors and check/save round-trip; builder example checks. | R parallel engine |
-| I1 | R3a,B1,E3,E4b,E5b | Custom data mounts end-to-end; host gaze/status/theme, namespaces/queues/swap/remount; preview works. | Join |
+| U1 | R2,R3a | Accepted checkpoint/intent journal and private acknowledgements; atomic rejection, remount/overflow/lost-ack/multi-session tests. | R/host |
+| I1 | R2,R3a,U1,E3,E4b,E5b | Custom data mounts end-to-end; host gaze/status/theme, namespaces/queues/swap/remount; preview works. | Join |
 | M1 | I1,T1 | Complete Tessa migration, approved near-look and preserved wiggle/anchors/accessories; only then remove adapter. | Character/integration |
 | R4 | I1 | Character/family/anchor API and same-PR studio; family merge already finished. | R |
-| M3/M5a-c/M6/M7 | R1c,E3,E4b,E5b,T1 | Separate complete alpha_visor/Sela/Brim/Iso/Knurl/Cinder fixtures; no dependency on M2 polish. | Independent character tasks |
+| M3 | R1c,E3,E4b,E5b,T1 | Complete alpha_visor fixture and section10 acceptance; independent of M2 polish. | Character fixture |
+| M5a | R1c,E3,E4b,E5b,T1 | Complete Sela fixture and section10 acceptance; independent of M2 polish. | Character fixture |
+| M5b | R1c,E3,E4b,E5b,T1 | Complete Brim fixture and section10 acceptance; independent of M2 polish. | Character fixture |
+| M5c | R1c,E3,E4b,E5b,T1 | Complete Iso fixture and section10 acceptance; independent of M2 polish. | Character fixture |
+| M6 | R1c,E3,E4b,E5b,T1 | Complete Knurl fixture and section10 acceptance; independent of M2 polish. | Character fixture |
+| M7 | R1c,E3,E4b,E5b,T1 | Complete Cinder fixture and section10 acceptance; independent of M2 polish. | Character fixture |
 | M4 | I1,R4 | Neer with simplified sheen, dark palette, moods/sizes and studio review. | Character |
-| MR | I1,R4,chosen M3 or M6 | Founder selects robot; promote only chosen fixture with studio/docs/full acceptance. | Character |
-| S1/R5 | M1,R4,colour contract | Palette APIs and live picker; verify Neer/robot once available. | R/studio |
-| E5c | E5b,T1,M1,M4,MR,S1/R5,all fixtures | Complete desktop/physical-phone workloads, limits fail non-zero; release acceptance records all three characters. | Final join |
+| CHOICE | M3,M6,S1/R5,M4 | Founder compares both robots with the actual palette picker and records one release choice. | Review |
+| MR | I1,R4,CHOICE | Promote only chosen fixture with studio/docs/full acceptance. | Character |
+| S1/R5 | M1,R4,colour contract | Palette APIs and live picker; inspect both robot fixture objects before promotion (no MR dependency), then verify Neer via M4 before CHOICE. | R/studio |
+| C1 | R1c,E3,E4b,E5b,T1 | Complete Rustle fixture: ear/tail finite follow-through and micro silhouette. | Conformance |
+| C2 | R1c,E3,E4b,E5b,T1 | Complete Mote fixture: finite satellite orbit and24px readability. | Conformance |
+| C3 | R1c,E3,E4b,E5b,T1 | Complete Strata/Gather fixture: face:null and mood arrangements. | Conformance |
+| C4 | R1c,E3,E4b,E5b,T1 | Complete Foldlings fixture: custom moods/fallbacks/status and rigid variants. | Conformance |
+| C5 | R1c,E3,E4b,E5b,T1 | Lab/molecule paper good/bad contract cases; reject unsupported capabilities, no passing runtime claim. | Conformance |
+| E5c | E5b,T1,M1,M4,MR,S1/R5,M3,M5a,M5b,M5c,M6,M7,C1,C2,C3,C4,C5 | Complete desktop/physical-phone workloads, limits fail non-zero; release acceptance records all three characters. | Final join |
+| FREEZE | B1,E5c,C1,C2,C3,C4,C5,M3,M5a,M5b,M5c,M6,M7 | All eight picks plus representative cases, saved round-trips, kit/grammar/work totals and measured limits accepted; freeze format1 before public authoring exports. | Review |
 
-T1 canonical profile: Ubuntu24.04 x86_64, headless Chrome for Testing with software rasterisation, viewport1280x960, DPR1 and2, sRGB, fixed locale/timezone, no external fonts/assets, explicit screenshot CSS sizes160/96/24. Before creating any approved baseline, commit a profile lock containing container digest, exact browser build/SHA, flags, bundled-font package checksums and capture settings. Missing/different lock is an error, not automatic regeneration. This chooses the environment now; the exact installed build/digest is recorded by T1 before any acceptance claim. Chrome's headless mode has a documented browser implementation ([Chrome Headless](https://developer.chrome.com/docs/automation-and-testing/headless)); it does not guarantee equality across operating systems.
+T1 canonical profile: Ubuntu24.04 container pinned by digest on the ubuntu-26.04 CI host, x86_64, headless Chrome for Testing with software rasterisation, viewport1280x960, DPR1 and2, sRGB, fixed locale/timezone, no external fonts/assets, explicit screenshot CSS sizes160/96/24. Before creating any approved baseline, commit a profile lock containing container digest, exact browser build/SHA, flags, bundled-font package checksums and capture settings. Missing/different lock is an error, not automatic regeneration. This chooses the environment now; the exact installed build/digest is recorded by T1 before any acceptance claim. Chrome's headless mode has a documented browser implementation ([Chrome Headless](https://developer.chrome.com/docs/automation-and-testing/headless)); it does not guarantee equality across operating systems.
 
-Store heavy PNG baselines under build-excluded dev/visual-baselines, tooling under excluded tools, not implicitly in shipped tests. Compact semantic/JSON/numeric tests remain in tests and run offline without browser dependencies; expensive visual tests skip clearly when the locked environment/baselines are absent. Canonical CI must fail if prerequisites are absent. Compare decoded RGBA pixels exactly within the locked profile, not PNG bytes. Migration captures old/new frames side by side in that same profile for founder near-look approval; after approval, strict regression comparison uses the new baseline. Environment/art changes require reviewed rebaselining; no blanket tolerance hides defects. macOS/other browsers run smoke, semantic and same-environment repeatability checks, not Ubuntu pixel hashes.
+Keep a small reviewed PNG set and manifest in git; store heavy baseline PNG sets as immutable content-addressed archives with pinned digests in retained artifact storage, cached locally under build-excluded dev/visual-baselines. Record retention/backup policy; expiring CI job artifacts cannot be the only copy. A hash without available decoded images is insufficient: strict comparison fails if the pinned archive cannot be supplied. Review visual diffs before changing the manifest; never regenerate automatically. Tooling lives under excluded tools. Compact semantic/JSON/numeric tests remain in tests and run offline from the installed package without browser dependencies; optional local visual checks clearly skip missing prerequisites.
+
+T1 supplies a separate repository-root runner with --strict and a future .github/workflows/engine-visual.yml workflow; strict mode fails on absent/different profile, missing baselines or planted defects. It is mascot-specific and stays outside the generic CRAN gate. The implementation PR must explicitly update the CI rules to permit this named workflow, use workflow_dispatch and selected engine/character paths for PR triggers under #113's private-repository minute budget, and restore the full required policy under #115 before public release. Do not weaken existing required checks. The installed-package test suite cannot assume dev/tools exists.
+
+Compare decoded RGBA pixels exactly within the locked profile, not PNG bytes. Capture old ace06f5/new frames in that same profile for founder near-look approval; strict regression then uses the approved new baseline. Environment/art changes require reviewed rebaselining; no blanket tolerance hides defects. macOS/other browsers use smoke, semantic and same-environment repeatability checks, not Ubuntu pixel hashes.
 
 Coverage includes five moods, selected moving frames, every gesture, worn/alternate accessories, three sizes, light/dark, reduced-motion changes, flip/non-uniform squash, moving/hidden/variant anchors, palette/user colours, queued messages, retargeted swaps and multiple elements. Test numeric matrices/anchor coordinates, deadline boundaries and callbacks in addition to pictures. Baselines do not prove speed; E5c separately measures it. Release check inspects source tarball contents/size to prove exclusions, not merely CRAN skip execution ([Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Building-package-tarballs)).
 

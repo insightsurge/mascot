@@ -8,7 +8,7 @@ This document proposes the remaining public R API contracts for `mascot` 0.1.0. 
 
 The following conventions govern all exported functions and are the intended public API contract; this static document does not verify implementation:
 - **Identity first:** Every function addressing a specific mascot takes `id` as its first parameter (e.g. `mascot(id, ...)`, `update_mascot(id, ...)`).
-- **Argument ordering:** Required parameters appear first, followed by `...`, followed by optional named arguments. One-argument helper functions retain their single argument positionally (e.g. `mascot_mood("happy")`, `mascot_status("Ready")`).
+- **Argument ordering:** Required parameters appear first, followed by `...`, followed by optional named arguments. Meaningful one-argument helpers and character listings retain their single argument positionally (e.g. `mascot_mood("happy")`, `mascot_status("Ready")`).
 - **Strict dots checking:** Every function with `...` executes a shared `abort_dots()` check; unrecognised arguments trigger a `mascot_error` condition naming the offending parameters.
 - **Error boundaries and diagnostics:** All functions validate arguments with `checkmate` assertions wrapped in `with_mascot_asserts()`, signalling `mascot_error` or `mascot_warning` via `cli` diagnostic messages.
 - **Build-time errors vs runtime resilience:** Construction via UI functions (`mascot()`, helpers) throws immediate errors on invalid arguments. Server updates (`update_mascot()`) warn atomically via `mascot_warning` and leave the mascot unchanged, preventing running apps from crashing on malformed updates.
@@ -21,7 +21,7 @@ The following conventions govern all exported functions and are the intended pub
 
 ### Catchable condition classes (proposed implementation)
 
-Every specific error below also inherits mascot_error; every warning inherits mascot_warning. Preserve already decided mascot_update_ignored and mascot_contrast. R/host diagnostics share stable codes where applicable; browser diagnostics cannot signal an R condition.
+Every specific error below also inherits mascot_error; every warning inherits mascot_warning. Informational messages inherit mascot_message, separately from errors/warnings. Preserve already decided mascot_update_ignored and mascot_contrast. R/host diagnostics share stable codes where applicable; browser diagnostics cannot signal an R condition.
 
 | Class | When / useful payload |
 |---|---|
@@ -29,12 +29,14 @@ Every specific error below also inherits mascot_error; every warning inherits ma
 | mascot_error_choice | Valid type but unsupported enum/name for a known target; argument, choices, value. |
 | mascot_error_dots | Unknown dot arguments; names. |
 | mascot_error_character | File/component/semantic validation; code, path, value, fix (bounded problem list). |
+| mascot_error_file | Read/save filesystem or I/O failure; supplied path, operation read/save and stable code (including overwrite refusal). Argument type errors remain mascot_error_argument; malformed character data remains mascot_error_character. |
+| mascot_placement_ignored / mascot_message | Preserved informational class chain for explicit controls ignored by inline placement (R/placement.R:125); not a warning. |
 | mascot_update_ignored | An invalid atomic update to a known target; reason/code; no fields committed. |
 | mascot_contrast | User colour promise below required contrast; roles, measured/bounded ratio, minimum. |
 | mascot_preset_dropped | Approved retained-preset fallback; preset and incoming character, development mode only. |
-| mascot_name_unverified | Development-only unknown-target update name absent from all known catalogue characters; informational, not rejection. |
+| mascot_name_unverified | Development-only advisory warning inheriting mascot_warning: unknown-target update name absent from all known catalogue characters; not rejection. |
 
-Test class inheritance and payloads during implementation; these classes are not claimed to exist today. Validators accept custom mood ids on syntax alone when there is no known target. A later known-target failure is not retroactively an R helper failure.
+Test class inheritance and payloads during implementation; the preserved placement/message chain exists today, while new classes are proposed. Validators accept custom mood ids on syntax alone when there is no known target. A later known-target failure is not retroactively an R helper failure.
 
 ## 2. Shiny Input Bindings & Event Contracts
 
@@ -235,8 +237,8 @@ Retain the current narrower contract, or adopt the explicit extension recommende
 Formalise and document the complete module contract:
 1. **Namespace Isolation:** Both local ID (`"helper"`) and prefixed ID (`session$ns("helper")`) are accepted in server code; the namespace is resolved once. Nested modules isolate cleanly.
 2. **Local Input Bindings:** Shiny inputs (`_click`, `_menu`, `_position`, `_minimised`) are published under the full namespaced ID, ensuring `input$helper_click` is accessible locally inside `moduleServer`.
-3. **Atomic Queued Updates:** Retain ordered whole patches per session until the mounted target is known. Each patch validates atomically against its then-current character; only accepted patches fold into retained state. The latest accepted early gesture plays once. Never merge unvalidated fields newest-wins. Engine section3.16/U1 defines the private acknowledgement, bounded intent journal and accepted checkpoint.
-4. **Remount State Retention:** When dynamic UI (e.g. `renderUI`, tab switches) unmounts and remounts a mascot with the same ID, the accepted checkpoint replays, then pending whole patches in order. Rejected patches are removed entirely and cannot poison future replays; acknowledged gestures never replay. A new mount with a different character revalidates the documented character/mood, theme and independent-field groups, preserving valid independent state.
+3. **Atomic Queued Updates:** Before the first ready mount, compact prospective state by dependency group: preserve character-change segments (at most 20), newest per-segment character-dependent fields, newest global bubble/size/placement/motion/status configuration and only the latest early gesture. Ordinary early calls are not rejected after 20; only a new character segment beyond the bound is rejected. Do not dispatch early calls individually. Once a target is known, each materialised/live transaction validates atomically; only accepted patches enter the checkpoint. Engine3.16/U1 defines the bounded buffer,20-revision delivery windows and cumulative private snapshot {mount,window_start,resolved_through,rejected,gesture_revision,derived_mood,content_token}. R issues content tokens, the browser echoes them; no client hash.
+4. **Remount State Retention:** When dynamic UI (e.g. `renderUI`, tab switches) unmounts and remounts a mascot with the same ID, the accepted checkpoint replays, then unresolved issued transactions in order. Cumulative acknowledgements include all rejected revisions in the current window and the final derived mood; merged or duplicate delivery loses no outcome, and older snapshots cannot roll back state. Browser outcomes remain until R repeats confirm_through; lost snapshots/receipts are recoverable, never implicit acceptance. The binding subscription publishes the latest cumulative value, not separate per-patch events. Rejected patches are removed entirely and cannot poison future replays; acknowledged gestures never replay. A new mount with a different character revalidates the documented character/mood, theme and independent-field groups, preserving valid independent state.
 5. **Mount Counter Reset:** `input$<id>_click` counts activations for the current DOM mount. Upon remount, the click counter resets to initial state.
 6. **No Session Leaks:** Shiny update queues/checkpoints live in `session$userData` and are destroyed on session disconnect; state is never persisted across user sessions.
 
@@ -310,15 +312,15 @@ Retain the current narrower contract, or adopt the explicit extension recommende
 |---|---|---|---|
 | mascot_characters | (..., family = NULL) | id,name,description,family (chr), is_default,built_in (lgl) | Tessa first if present; otherwise stable shipped-member order. is_default is true only for Tessa. built_in has real backing data from internal registry R2. |
 | mascot_families | () | id,name,description (chr) | Hexonians first, then stable family order; members via character filter. |
-| mascot_anchors | (..., character = "tessa") | name,description,part,side (chr) | Authored anchor order; side l/r or NA. No invented universal bubble anchor/default. |
-| mascot_moods | (..., character = NULL) | name,description,status (chr), shared (lgl), fallback (chr) | Core five first, idle first; core fallback NA. Extras follow authored order. NULL selects shared metadata. |
-| mascot_gestures | (..., character = NULL) | name,description,fallback (chr), frames (int) | nod then wave, then extras; NULL reports shared nominal nod18/wave30; character-aware frames report the effective playable target duration (for example wave -> rock reports18). fallback retains the declared next candidate or NA, never a self-cycle; it is not inferred from the duration. |
-| mascot_colour_roles | (..., character = "tessa") | role,colour,follows,shade (existing chr), then description,brand (chr) | Preserve current columns/types/order. Description from authored metadata or humanised role name; brand comma-separated slot ids or NA. |
-| mascot_palettes | (..., character = "tessa") | name,description,source (chr) | Proposed synthetic original row first, meaning native mode colours/no preset overrides; reserve original against user preset ids. source character/family comes from the checked, saved palette_sources map; native applies only to synthetic original. Origin survives standalone save/read and never consults today's family defaults. |
+| mascot_anchors | (character = "tessa") | name,description,part,side (chr) | Authored anchor order; side l/r or NA. No invented universal bubble anchor/default. |
+| mascot_moods | (character = NULL) | name,description,status (chr), shared (lgl), fallback (chr) | Core five first, idle first; core fallback NA. Extras follow authored order. NULL selects shared metadata. |
+| mascot_gestures | (character = NULL) | name,description,fallback (chr), frames (int) | nod then wave, then extras; NULL reports shared nominal nod18/wave30; character-aware frames report the effective playable target duration (for example wave -> rock reports18). fallback retains the declared next candidate or NA, never a self-cycle; it is not inferred from the duration. |
+| mascot_colour_roles | (character = "tessa") | role,colour,follows,shade (existing chr), then description,brand (chr) | Preserve current columns/types/order. Description from authored metadata or humanised role name; brand comma-separated slot ids or NA. |
+| mascot_palettes | (character = "tessa") | name,description,source (chr) | Proposed synthetic original row first, meaning native mode colours/no preset overrides; reserve original against user preset ids. source character/family comes from the checked, saved palette_sources map; native applies only to synthetic original. Origin survives standalone save/read and never consults today's family defaults. |
 
 ### Listing Rules
 - `name` in mood/gesture/palette/anchor rows is the callable permanent component id; `description` is human text. Character/family `name` is their display name and `id` is the callable key.
-- All optional character filters are named after dots. NULL remains meaningful for shared mood/gesture metadata; concrete anchors/roles/palettes default to Tessa. These intentional defaults need not be identical.
+- These meaningful one-argument listings keep character positional, with no leading dots, including existing mascot_colour_roles("tessa") calls. NULL remains meaningful for shared mood/gesture metadata; concrete anchors/roles/palettes default to Tessa. These intentional defaults need not be identical.
 - `built_in` is real process-registry provenance, not an empty placeholder: shipped rows TRUE, internally registered custom rows FALSE. It is retained under the agreed object/registry route and tested with both kinds.
 - The synthetic `original` palette row represents the native state selected by preset=NULL, rather than pretending NULL is a string palette id.
 - Output is always a base data frame.

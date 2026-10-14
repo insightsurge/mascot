@@ -1,0 +1,626 @@
+{
+  "manifest_version": 1,
+  "format_version": 1,
+  "issue": 278,
+  "status": "reference_expectations_not_validator_acceptance",
+  "source": {
+    "proposal": "../../engine-format-proposal.md",
+    "reviewed_commit": "9194ac0cb4ee9e601f21c8a34638d7c7b79c29c1",
+    "working_copy_changes": [
+      {
+        "file": "characters/tessa.json",
+        "path": "$.lod.micro.hide",
+        "before": [
+          "wear_bow_ornament"
+        ],
+        "after": [
+          "wear_bow_ornament",
+          "wear_clip_ornament"
+        ],
+        "reason": "The alternative clip exceeded the micro painted-item limit under the reference counting policy: 33 > 30. Both ornaments now hide at micro; the bound is 29. Full/small data and limits unchanged."
+      },
+      {
+        "file": "characters/tessa.json",
+        "path": "$.requires",
+        "before": [
+          "parts",
+          "outline",
+          "face_kit",
+          "tracks",
+          "lod"
+        ],
+        "after": [
+          "parts",
+          "outline",
+          "clip",
+          "face_kit",
+          "tracks",
+          "lod"
+        ],
+        "reason": "The independent R checker found that the shared ellipse-eye clips were omitted from the capability declaration. Add clip; drawing work and geometry are unchanged."
+      }
+    ]
+  },
+  "path_convention": "JSON paths use zero-based arrays; dotted channel names are literal map keys following the proposal convention.",
+  "fixtures": [
+    {
+      "id": "classic",
+      "file": "kits/classic.json",
+      "kind": "kit",
+      "expected": "valid_after_full_check",
+      "origin": "4.1",
+      "expanded_work_totals": null,
+      "evidence": "structural_and_selected_reference_checks_only"
+    },
+    {
+      "id": "screen",
+      "file": "kits/screen.json",
+      "kind": "kit",
+      "expected": "valid_after_full_check",
+      "origin": "4.2",
+      "expanded_work_totals": null,
+      "evidence": "structural_and_selected_reference_checks_only"
+    },
+    {
+      "id": "tessa",
+      "file": "characters/tessa.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "4.3",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "tessa",
+        "evidence": "exact_discrete_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "structural_and_selected_reference_checks_only"
+    },
+    {
+      "id": "alpha_visor",
+      "file": "characters/alpha_visor.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "4.4",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "alpha_visor",
+        "evidence": "exact_discrete_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "structural_and_selected_reference_checks_only"
+    },
+    {
+      "id": "visorfolk",
+      "file": "families/visorfolk.json",
+      "kind": "family",
+      "expected": "valid_after_full_check",
+      "origin": "4.5",
+      "expanded_work_totals": null,
+      "evidence": "structural_and_selected_reference_checks_only"
+    },
+    {
+      "id": "study_bot_source",
+      "file": "source/study_bot.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "R builder section 4",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "study_bot",
+        "evidence": "exact_discrete_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime",
+        "resolved_reference": "expected/study_bot.json"
+      },
+      "evidence": "structural_and_selected_reference_checks_only"
+    },
+    {
+      "id": "study_bot_expected",
+      "file": "expected/study_bot.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "4.5 resolution expectations",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "study_bot",
+        "evidence": "exact_discrete_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "structural_and_selected_reference_checks_only"
+    },
+    {
+      "id": "anchor_probe",
+      "file": "characters/anchor_probe.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "new minimal conformance case",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "anchor_probe",
+        "evidence": "exact_discrete_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "structural_and_selected_reference_checks_only"
+    },
+    {
+      "id": "missing_family",
+      "file": "invalid/missing_family.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "structure",
+      "code": "input_type",
+      "path": "$.family",
+      "fix": "Supply one family id."
+    },
+    {
+      "id": "null_family",
+      "file": "invalid/null_family.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "structure",
+      "code": "input_type",
+      "path": "$.family",
+      "fix": "Supply a string, not null."
+    },
+    {
+      "id": "unknown_version",
+      "file": "invalid/unknown_version.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "version",
+      "path": "$.format_version",
+      "fix": "Use supported format version 1."
+    },
+    {
+      "id": "unsupported_particles",
+      "file": "invalid/unsupported_particles.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.requires[4]",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unknown_key",
+      "file": "invalid/unknown_key.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "structure",
+      "code": "unknown_key",
+      "path": "$.automatic_fit",
+      "fix": "Remove the unrecognised key."
+    },
+    {
+      "id": "missing_anchor_owner",
+      "file": "invalid/missing_anchor_owner.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "references",
+      "code": "missing_reference",
+      "path": "$.anchors.badge.part",
+      "fix": "Name an existing part."
+    },
+    {
+      "id": "missing_face_owner",
+      "file": "invalid/missing_face_owner.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "references",
+      "code": "missing_reference",
+      "path": "$.face.part",
+      "fix": "Name an existing part."
+    },
+    {
+      "id": "missing_fill_role",
+      "file": "invalid/missing_fill_role.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "references",
+      "code": "missing_reference",
+      "path": "$.parts[0].items[0].fill",
+      "fix": "Declare or replace the colour role."
+    },
+    {
+      "id": "missing_core_mood",
+      "file": "invalid/missing_core_mood.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "references",
+      "code": "missing_reference",
+      "path": "$.moods.happy",
+      "fix": "Declare the required happy mood."
+    },
+    {
+      "id": "unknown_track_target",
+      "file": "invalid/unknown_track_target.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "references",
+      "code": "invalid_channel",
+      "path": "$.gestures.rock.tracks.ghost.rotate",
+      "fix": "Use a declared target, or explicitly declare a needed part and playable fallback."
+    },
+    {
+      "id": "too_many_frames",
+      "file": "invalid/too_many_frames.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "structure",
+      "code": "budget",
+      "path": "$.gestures.rock.frames",
+      "fix": "Use at most 150 frames."
+    },
+    {
+      "id": "wrong_coordinate_type",
+      "file": "invalid/wrong_coordinate_type.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "structure",
+      "code": "input_type",
+      "path": "$.parts[0].at[0]",
+      "fix": "Use a finite number."
+    },
+    {
+      "id": "duplicate_key",
+      "file": "invalid/duplicate_key.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "syntax",
+      "code": "input_type",
+      "path": "$.format_version",
+      "fix": "Keep each JSON object key only once."
+    },
+    {
+      "id": "non_finite",
+      "file": "invalid/non_finite.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "structure",
+      "code": "non_finite",
+      "path": "$.ground.centre_height",
+      "fix": "Use a finite number within the geometry range."
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "family_copy_not_inheritance",
+      "source": "source/study_bot.json",
+      "expected_file": "expected/study_bot.json",
+      "expect": {
+        "family_defaults": {},
+        "palette_sources": {
+          "sea_glass": "character",
+          "night_screen": "family"
+        },
+        "gesture_order": [
+          "rock",
+          "nod",
+          "wave",
+          "greet"
+        ],
+        "playable_gestures": {
+          "rock": "rock",
+          "nod": "rock",
+          "wave": "rock",
+          "greet": "greet"
+        },
+        "no_invented_parts": [
+          "nod_joint",
+          "hand_r"
+        ],
+        "embedded_kit": "screen"
+      },
+      "pending": "R1c resolution and save/read execution"
+    },
+    {
+      "id": "kit_snapshot_independence",
+      "file": "expected/study_bot.json",
+      "expect": "Changing current screen-kit or family defaults does not change this saved resolved file.",
+      "pending": "R1c and B1 save/read execution"
+    },
+    {
+      "id": "anchor_default",
+      "file": "characters/anchor_probe.json",
+      "state": {
+        "mood": "idle",
+        "part_variant": "default",
+        "band": "full"
+      },
+      "expect": {
+        "ground_relative_anchor": [
+          18,
+          -72
+        ],
+        "available": true,
+        "expanded_part": "wear_badge_disc"
+      },
+      "pending": "E1 numeric transforms and renderer"
+    },
+    {
+      "id": "anchor_variant",
+      "file": "characters/anchor_probe.json",
+      "state": {
+        "mood": "idle",
+        "part_variant": "raised",
+        "band": "full"
+      },
+      "expect": {
+        "ground_relative_anchor": [
+          20,
+          -70
+        ],
+        "available": true
+      },
+      "pending": "E1 variant transforms and renderer"
+    },
+    {
+      "id": "anchor_hidden_owner",
+      "file": "characters/anchor_probe.json",
+      "state": {
+        "mood": "idle",
+        "panel_visible": false,
+        "band": "full"
+      },
+      "expect": {
+        "ground_relative_anchor": [
+          18,
+          -72
+        ],
+        "available": false,
+        "attachment_painted": false
+      },
+      "pending": "E1/E2 availability and painting"
+    },
+    {
+      "id": "anchor_micro_owner",
+      "file": "characters/anchor_probe.json",
+      "state": {
+        "mood": "idle",
+        "band": "micro"
+      },
+      "expect": {
+        "available": false,
+        "attachment_painted": false
+      },
+      "pending": "E1/E2 detail bands"
+    },
+    {
+      "id": "faceless_moods",
+      "file": "characters/anchor_probe.json",
+      "expect": {
+        "face": null,
+        "statuses": {
+          "idle": "Ready",
+          "thinking": "Working",
+          "happy": "Done",
+          "worried": "Check the result",
+          "celebrating": "Finished"
+        },
+        "gaze_channels_sent": false
+      },
+      "pending": "E3 and host integration; no screenshot evidence"
+    },
+    {
+      "id": "family_palette_opt_out",
+      "source": "source/study_bot.json",
+      "source_patch": {
+        "palettes": {
+          "night_screen": null
+        }
+      },
+      "expect": {
+        "palette_keys": [
+          "sea_glass"
+        ],
+        "palette_sources": {
+          "sea_glass": "character"
+        }
+      },
+      "pending": "R1c source merge; null forbidden in resolved palettes"
+    },
+    {
+      "id": "family_palette_unknown_opt_out",
+      "source": "source/study_bot.json",
+      "source_patch": {
+        "palettes": {
+          "unknown_palette": null
+        }
+      },
+      "expected": "reject",
+      "code": "missing_reference",
+      "path": "$.palettes.unknown_palette",
+      "pending": "R1c source merge"
+    },
+    {
+      "id": "affine_upright_rotation",
+      "parent_linear": [
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "child_at": [
+        10,
+        0
+      ],
+      "keep_upright": true,
+      "expect": {
+        "pivot": [
+          0,
+          10
+        ],
+        "linear": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "pending": "E1 full affine implementation"
+    },
+    {
+      "id": "affine_no_flip",
+      "parent_linear": [
+        [
+          -1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "child_at": [
+        10,
+        0
+      ],
+      "no_flip": true,
+      "expect": {
+        "pivot": [
+          -10,
+          0
+        ],
+        "linear": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "pending": "E1 full affine implementation"
+    },
+    {
+      "id": "affine_upright_stretch",
+      "parent_linear": [
+        [
+          0,
+          -3
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "child_at": [
+        10,
+        0
+      ],
+      "keep_upright": true,
+      "expect": {
+        "pivot": [
+          0,
+          20
+        ],
+        "linear": [
+          [
+            2,
+            0
+          ],
+          [
+            0,
+            3
+          ]
+        ]
+      },
+      "pending": "E1 full affine implementation"
+    },
+    {
+      "id": "affine_singular_owner",
+      "parent_linear": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "expect": {
+        "subtree_painted": false,
+        "anchor_available": false
+      },
+      "pending": "E1 singular and nested shear/reflection cases"
+    }
+  ],
+  "generated_cases": [
+    {
+      "id": "oversize_utf8",
+      "construction": {
+        "base": "characters/anchor_probe.json",
+        "field": "note",
+        "repeat": "x",
+        "count": 262145
+      },
+      "expected": "reject",
+      "stage": "input_bound",
+      "code": "budget",
+      "path": "$",
+      "reason": "The note alone exceeds the 262144-byte UTF-8 file limit."
+    },
+    {
+      "id": "singleton_and_empty_arrays",
+      "construction": {
+        "base": "characters/anchor_probe.json"
+      },
+      "expected": "preserve_json_types",
+      "arrays": [
+        "$.parts",
+        "$.wear",
+        "$.requires",
+        "$.gestures.rock.tracks.root.rotate.keys"
+      ],
+      "empty_array_case": {
+        "field": "$.wear",
+        "value": []
+      },
+      "empty_object": "$.palette_sources"
+    },
+    {
+      "id": "null_discrete_track_endpoints",
+      "construction": {
+        "base": "characters/anchor_probe.json",
+        "field": "$.gestures.rock.tracks",
+        "value": {
+          "panel.variant": {
+            "mode": "set",
+            "keys": [
+              [
+                0,
+                null
+              ],
+              [
+                0.4,
+                "raised",
+                "step"
+              ],
+              [
+                1,
+                null
+              ]
+            ]
+          }
+        }
+      },
+      "expected": "preserve_json_types_and_return_to_mood_base",
+      "check_stage": "R1b_serialisation_and_R1c_semantics"
+    }
+  ],
+  "outstanding": [
+    "Review the R1a operation/area accounting contract and independently reproduce the twelve reference rows in R1c; authored bounds do not approve arbitrary live scale.",
+    "Complete closed-field/type schema enforcement in R1b, including bounded lexical parsing.",
+    "Complete R1c family/kit resolution, semantics, contrast, reachable transformed fit and all per-band work totals.",
+    "T1 named retained baseline store/owner, then locked environment and approved visual baselines.",
+    "Renderer, Shiny transport, performance, CRAN and source-tarball checks are not run.",
+    "Other picked character fixtures and both robot options are required before format freeze.",
+    "Q1 approval is independent; this set does not unblock U1/I1."
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "id": "visorfolk",
+  "name": "Visorfolk",
+  "description": "Characters with screen faces.",
+  "defaults": {
+    "gestures": {
+      "rock": {
+        "description": "A brief whole-character tilt.",
+        "frames": 18,
+        "tracks": {
+          "root.rotate": {
+            "mode": "add",
+            "keys": [
+              [
+                0,
+                0
+              ],
+              [
+                0.3,
+                0.08
+              ],
+              [
+                1,
+                0
+              ]
+            ]
+          }
+        }
+      },
+      "nod": {
+        "description": "A brief whole-character acknowledgement tilt.",
+        "frames": 18,
+        "tracks": {
+          "root.rotate": {
+            "mode": "add",
+            "keys": [
+              [
+                0,
+                0
+              ],
+              [
+                0.3,
+                0.08
+              ],
+              [
+                1,
+                0
+              ]
+            ]
+          }
+        }
+      },
+      "wave": {
+        "description": "A brief whole-character greeting tilt.",
+        "frames": 30,
+        "tracks": {
+          "root.rotate": {
+            "mode": "add",
+            "keys": [
+              [
+                0,
+                0
+              ],
+              [
+                0.3,
+                0.08
+              ],
+              [
+                1,
+                0
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "palettes": {
+      "sea_glass": {
+        "description": "A cool screen.",
+        "light": {
+          "screen": "#06232a"
+        }
+      },
+      "night_screen": {
+        "description": "A deeper screen.",
+        "light": {
+          "screen": "#03151a"
+        }
+      }
+    }
+  }
+}

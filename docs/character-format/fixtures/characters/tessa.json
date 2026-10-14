@@ -1,0 +1,1477 @@
+{
+  "format_version": 1,
+  "id": "tessa",
+  "name": "Tessa",
+  "family": "hexonians",
+  "description": "A calm green-and-gold hexagonal maker.",
+  "resolved": true,
+  "family_definition": {
+    "id": "hexonians",
+    "name": "Hexonians",
+    "description": "Hex-shaped characters.",
+    "defaults": {}
+  },
+  "requires": [
+    "parts",
+    "outline",
+    "clip",
+    "face_kit",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "outline": "#26312b",
+    "feature": "#16201b",
+    "eye_white": "#f5f6f4",
+    "shine": "#f5f6f4",
+    "teeth": "#f5f6f4",
+    "eyelid": "#3f8a66",
+    "tongue": "#a33a30",
+    "body": "#3f8a66",
+    "body_highlight": "#7fcba4",
+    "rim": "#d9b35c",
+    "limb": "#d9b35c",
+    "sleeve": "#3f8a66",
+    "blush": "#7fcba4",
+    "blush_strong": "#d9b35c",
+    "accessory": "#d9b35c",
+    "accessory_detail": "#7a5a12",
+    "sparkle": "#f5f6f4",
+    "sparkle_outline": "#d9b35c",
+    "sweat": "#9dc3e6",
+    "shadow": "#a2aea7"
+  },
+  "follows": {
+    "sleeve": {
+      "from": [
+        "body"
+      ]
+    },
+    "eyelid": {
+      "from": [
+        "body"
+      ]
+    },
+    "body_highlight": {
+      "from": [
+        "body"
+      ],
+      "shade": "lighter",
+      "amount": 0.2529,
+      "saturation": 0.0491
+    },
+    "blush": {
+      "from": [
+        "body"
+      ],
+      "shade": "lighter",
+      "amount": 0.2529,
+      "saturation": 0.0491
+    },
+    "limb": {
+      "from": [
+        "rim",
+        "body"
+      ]
+    },
+    "blush_strong": {
+      "from": [
+        "rim",
+        "body"
+      ]
+    },
+    "sparkle_outline": {
+      "from": [
+        "rim",
+        "body"
+      ]
+    },
+    "accessory": {
+      "from": [
+        "rim"
+      ]
+    },
+    "accessory_detail": {
+      "from": [
+        "accessory"
+      ],
+      "shade": "darker",
+      "amount": -0.3314,
+      "saturation": 0.121
+    }
+  },
+  "brand": {
+    "primary": "body",
+    "secondary": "rim"
+  },
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "body",
+      "min": 3,
+      "where": "small face details"
+    }
+  ],
+  "ground": {
+    "centre_height": 104,
+    "shadow": {
+      "rx": 62,
+      "ry": 9,
+      "alpha": 0.32,
+      "colour": "shadow"
+    }
+  },
+  "outline": {
+    "width": 3,
+    "colour": "outline",
+    "join": "miter",
+    "cap": "butt"
+  },
+  "parts": [
+    {
+      "id": "body",
+      "at": [
+        0,
+        -104
+      ],
+      "layer": 20,
+      "items": [
+        {
+          "shape": "hexagon",
+          "r": 92,
+          "corner": 12,
+          "fill": "rim",
+          "stroke": "outline",
+          "width": 3
+        },
+        {
+          "shape": "hexagon",
+          "r": 81,
+          "corner": 8,
+          "fill": "body"
+        },
+        {
+          "shape": "path",
+          "d": "M0 -81 L26 -65 L-26 -65 Z",
+          "fill": "body_highlight",
+          "alpha": 0.35
+        }
+      ]
+    },
+    {
+      "id": "foot_l",
+      "parent": "body",
+      "at": [
+        -23,
+        0
+      ],
+      "layer": 10,
+      "switch": {
+        "channel": "root.lift",
+        "above": 6,
+        "variant": "tuck"
+      },
+      "items": [
+        {
+          "x": -15,
+          "y": 88,
+          "w": 30,
+          "h": 16,
+          "r": [
+            6,
+            6,
+            8,
+            8
+          ],
+          "shape": "round_rect",
+          "fill": "limb",
+          "stroke": "outline",
+          "width": 2.5,
+          "cap": "butt",
+          "join": "miter"
+        }
+      ],
+      "variants": {
+        "tuck": [
+          {
+            "x": -12,
+            "y": -6,
+            "w": 24,
+            "h": 14,
+            "r": 7,
+            "shape": "round_rect",
+            "fill": "limb",
+            "stroke": "outline",
+            "width": 2.5,
+            "cap": "butt",
+            "join": "miter",
+            "transform": [
+              -1,
+              78,
+              0.25
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "arm_l",
+      "parent": "body",
+      "at": [
+        -69.67433714816835,
+        8
+      ],
+      "rotate": 1.85,
+      "layer": 60,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": 0,
+          "y": -7.5,
+          "w": 42,
+          "h": 15,
+          "r": 7.5,
+          "fill": "sleeve",
+          "stroke": "outline",
+          "width": 2.5
+        },
+        {
+          "shape": "circle",
+          "x": 39,
+          "y": 0,
+          "r": 6.75,
+          "fill": "limb",
+          "stroke": "outline",
+          "width": 2.5
+        }
+      ]
+    },
+    {
+      "id": "foot_r",
+      "parent": "body",
+      "at": [
+        23,
+        0
+      ],
+      "layer": 10,
+      "switch": {
+        "channel": "root.lift",
+        "above": 6,
+        "variant": "tuck"
+      },
+      "items": [
+        {
+          "x": -15,
+          "y": 88,
+          "w": 30,
+          "h": 16,
+          "r": [
+            6,
+            6,
+            8,
+            8
+          ],
+          "shape": "round_rect",
+          "fill": "limb",
+          "stroke": "outline",
+          "width": 2.5,
+          "cap": "butt",
+          "join": "miter"
+        }
+      ],
+      "variants": {
+        "tuck": [
+          {
+            "x": -12,
+            "y": -6,
+            "w": 24,
+            "h": 14,
+            "r": 7,
+            "shape": "round_rect",
+            "fill": "limb",
+            "stroke": "outline",
+            "width": 2.5,
+            "cap": "butt",
+            "join": "miter",
+            "transform": [
+              1,
+              78,
+              -0.25
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "arm_r",
+      "parent": "body",
+      "at": [
+        69.67433714816835,
+        8
+      ],
+      "rotate": 1.25,
+      "layer": 60,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": 0,
+          "y": -7.5,
+          "w": 42,
+          "h": 15,
+          "r": 7.5,
+          "fill": "sleeve",
+          "stroke": "outline",
+          "width": 2.5
+        },
+        {
+          "shape": "circle",
+          "x": 39,
+          "y": 0,
+          "r": 6.75,
+          "fill": "limb",
+          "stroke": "outline",
+          "width": 2.5
+        }
+      ]
+    }
+  ],
+  "anchors": {
+    "foot_l": {
+      "part": "foot_l",
+      "at": [
+        0,
+        104
+      ],
+      "description": "Sole attachment point.",
+      "side": "l",
+      "variants": {
+        "tuck": {
+          "at": [
+            -2.9792316740361837,
+            85.75129937368516
+          ],
+          "rotate": 0.25
+        }
+      }
+    },
+    "hand_l": {
+      "part": "arm_l",
+      "at": [
+        39,
+        0
+      ],
+      "side": "l",
+      "description": "Moving hand attachment."
+    },
+    "foot_r": {
+      "part": "foot_r",
+      "at": [
+        0,
+        104
+      ],
+      "description": "Sole attachment point.",
+      "side": "r",
+      "variants": {
+        "tuck": {
+          "at": [
+            2.9792316740361837,
+            85.75129937368516
+          ],
+          "rotate": -0.25
+        }
+      }
+    },
+    "hand_r": {
+      "part": "arm_r",
+      "at": [
+        39,
+        0
+      ],
+      "side": "r",
+      "description": "Moving hand attachment."
+    },
+    "face": {
+      "part": "body",
+      "at": [
+        0,
+        0
+      ],
+      "description": "face attachment.",
+      "scale": 1
+    },
+    "sparkle": {
+      "part": "body",
+      "at": [
+        56,
+        -33
+      ],
+      "description": "sparkle attachment."
+    },
+    "sweat": {
+      "part": "body",
+      "at": [
+        58,
+        -46
+      ],
+      "description": "sweat attachment."
+    },
+    "hair": {
+      "part": "body",
+      "at": [
+        -47,
+        -54
+      ],
+      "description": "hair attachment.",
+      "rotate": -0.5,
+      "scale": 1.2
+    },
+    "waist": {
+      "part": "body",
+      "at": [
+        0,
+        60
+      ],
+      "description": "waist attachment."
+    },
+    "crown": {
+      "part": "body",
+      "at": [
+        0,
+        -92
+      ],
+      "description": "crown attachment."
+    },
+    "forehead": {
+      "part": "body",
+      "at": [
+        0,
+        -40
+      ],
+      "description": "forehead attachment."
+    },
+    "eyes": {
+      "part": "body",
+      "at": [
+        0,
+        -12
+      ],
+      "description": "eyes attachment."
+    },
+    "upper_lip": {
+      "part": "body",
+      "at": [
+        0,
+        24
+      ],
+      "description": "upper_lip attachment."
+    },
+    "chin": {
+      "part": "body",
+      "at": [
+        0,
+        65
+      ],
+      "description": "chin attachment."
+    },
+    "neck": {
+      "part": "body",
+      "at": [
+        0,
+        75
+      ],
+      "description": "neck attachment."
+    },
+    "chest": {
+      "part": "body",
+      "at": [
+        0,
+        30
+      ],
+      "description": "chest attachment."
+    },
+    "back": {
+      "part": "body",
+      "at": [
+        0,
+        0
+      ],
+      "description": "back attachment."
+    }
+  },
+  "face": {
+    "part": "body",
+    "kit": "classic",
+    "at": [
+      0,
+      0
+    ],
+    "eyes": {
+      "y": -12,
+      "spacing": 30,
+      "lashes": true,
+      "iris": null
+    },
+    "mouth": {
+      "y": 24
+    },
+    "caps": {
+      "left": "butt",
+      "right": "round",
+      "join": "miter"
+    },
+    "blush": {
+      "x": 36,
+      "y": 18,
+      "rx": 13,
+      "ry": 7,
+      "alpha": 0.45,
+      "strong_alpha": 0.55
+    },
+    "kit_definition": {
+      "id": "classic",
+      "description": "Painted expressive eyes, brows and mouths.",
+      "roles": [
+        "feature",
+        "eye_white",
+        "shine",
+        "eyelid",
+        "teeth",
+        "tongue",
+        "sweat",
+        "sparkle",
+        "sparkle_outline",
+        "outline",
+        "blush",
+        "blush_strong"
+      ],
+      "defaults": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "none",
+        "blush": 1
+      },
+      "eye_styles": {
+        "open": {
+          "op": "eye_ellipse",
+          "rx": 16.5,
+          "ry": 19.5,
+          "pupil": {
+            "r": 10,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  0.35,
+                  -0.35
+                ],
+                "r": 0.4
+              },
+              {
+                "at": [
+                  -0.35,
+                  0.35
+                ],
+                "r": 0.22
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.3490658503988659,
+              -0.7853981633974483,
+              -1.2217304763960306
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 2.5
+          },
+          "lid_edge": {
+            "colour": "outline",
+            "width": 2.2
+          }
+        },
+        "wide": {
+          "op": "eye_ellipse",
+          "rx": 19,
+          "ry": 24,
+          "pupil": {
+            "r": 7.5,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  0.35,
+                  -0.35
+                ],
+                "r": 0.4
+              },
+              {
+                "at": [
+                  -0.35,
+                  0.35
+                ],
+                "r": 0.22
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.3490658503988659,
+              -0.7853981633974483,
+              -1.2217304763960306
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 2.5
+          },
+          "lid_edge": {
+            "colour": "outline",
+            "width": 2.2
+          }
+        },
+        "worried": {
+          "op": "eye_ellipse",
+          "rx": 16.5,
+          "ry": 21,
+          "pupil": {
+            "r": 8.5,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  0.35,
+                  -0.35
+                ],
+                "r": 0.4
+              },
+              {
+                "at": [
+                  -0.35,
+                  0.35
+                ],
+                "r": 0.22
+              }
+            ],
+            "at": [
+              0,
+              -2
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.3490658503988659,
+              -0.7853981633974483,
+              -1.2217304763960306
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 2.5
+          },
+          "lid_edge": {
+            "colour": "outline",
+            "width": 2.2
+          }
+        },
+        "focused": {
+          "op": "eye_ellipse",
+          "rx": 16.5,
+          "ry": 19.5,
+          "pupil": {
+            "r": 10,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  0.35,
+                  -0.35
+                ],
+                "r": 0.4
+              },
+              {
+                "at": [
+                  -0.35,
+                  0.35
+                ],
+                "r": 0.22
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0.42,
+          "slant": 3,
+          "lashes": {
+            "angles": [
+              -0.3490658503988659,
+              -0.7853981633974483,
+              -1.2217304763960306
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 2.5
+          },
+          "lid_edge": {
+            "colour": "outline",
+            "width": 2.2
+          }
+        },
+        "happy": {
+          "op": "eye_arc",
+          "r": 15,
+          "start": 3.6128315516282616,
+          "end": 5.811946409141117,
+          "y": 2,
+          "width": 5.5,
+          "lashes": {
+            "angles": [
+              -0.5585053606381855,
+              -1.0821041362364843
+            ],
+            "radii": [
+              15,
+              6
+            ],
+            "at": [
+              0,
+              9
+            ],
+            "length": 7,
+            "width": 3
+          },
+          "hide_brows": true
+        },
+        "closed": {
+          "op": "eye_arc",
+          "r": 14,
+          "start": 0.5654866776461628,
+          "end": 2.57610597594363,
+          "y": -6,
+          "width": 5,
+          "lashes": {
+            "angles": [
+              -0.5585053606381855,
+              -1.0821041362364843
+            ],
+            "radii": [
+              15,
+              3
+            ],
+            "at": [
+              0,
+              2
+            ],
+            "length": 7,
+            "width": 3
+          }
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M0 0",
+          "width": 0,
+          "stroke": "feature",
+          "y": -25
+        },
+        "neutral": {
+          "op": "brow_path",
+          "d": "M-14 6 Q0 1 14 6",
+          "width": 3.5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "raised": {
+          "op": "brow_path",
+          "d": "M-15 5 Q0 -6 15 5",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "determined": {
+          "op": "brow_path",
+          "d": "M-16 10 L18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "angry": {
+          "op": "brow_path",
+          "d": "M-16 10 L18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "frown": {
+          "op": "brow_path",
+          "d": "M-16 10 L18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "worried": {
+          "op": "brow_path",
+          "d": "M-16 2 L18 10",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        },
+        "sad": {
+          "op": "brow_path",
+          "d": "M-16 2 L18 10",
+          "width": 5,
+          "stroke": "feature",
+          "y": -25
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0.5791542407 0.2950938248 C0.4681874861 0.5128783433 0.2444252792 0.65 3.980102097e-17 0.65 C-0.2444252792 0.65 -0.4681874861 0.5128783433 -0.5791542407 0.2950938248",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "smirk": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.4 0.1 Q0 0.45 0.45 0",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "proud": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.7 0.15 Q0 0.75 0.75 -0.05",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            },
+            {
+              "shape": "path",
+              "d": "M0.8 -0.3 L0.9 -0.05",
+              "stroke": "feature",
+              "width": 2.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.55 0.4 L0.55 0.4",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        },
+        "grit": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.7 0.15 L-0.25 0 L0.25 0.2 L0.7 0.05",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "miter"
+            }
+          ]
+        },
+        "o": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "ellipse",
+              "x": 0,
+              "y": 0.25,
+              "rx": 0.5,
+              "ry": 0.75,
+              "fill": "feature"
+            },
+            {
+              "shape": "ellipse",
+              "x": 0,
+              "y": 0.65,
+              "rx": 0.35,
+              "ry": 0.25,
+              "fill": "tongue"
+            }
+          ]
+        },
+        "grin": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0.8 0 C0.8 0.4418277999 0.4418277999 0.8 4.898587197e-17 0.8 C-0.4418277999 0.8 -0.8 0.4418277999 -0.8 9.797174393e-17 Z",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "round",
+              "fill": "feature"
+            },
+            {
+              "shape": "path",
+              "d": "M-0.65 0 L0.65 0 L0.65 0.3 L-0.65 0.3 Z",
+              "fill": "teeth"
+            }
+          ]
+        },
+        "determined": {
+          "op": "mouth_path",
+          "box": [
+            20,
+            20
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-0.7 0.15 L-0.25 0 L0.25 0.2 L0.7 0.05",
+              "stroke": "feature",
+              "width": 3.5,
+              "cap": "round",
+              "join": "miter"
+            }
+          ]
+        }
+      },
+      "effects": {
+        "sweat": {
+          "op": "sweat_drop",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 -11 C8 -4 9 6 0 10 C-9 6 -8 -4 0 -11 Z",
+              "fill": "sweat",
+              "stroke": "feature",
+              "width": 1.5
+            },
+            {
+              "shape": "circle",
+              "x": 2.5,
+              "y": 2.5,
+              "r": 2.2,
+              "fill": "shine"
+            }
+          ],
+          "mode": "progress",
+          "travel": 26,
+          "sway": 2,
+          "sway_rate": 12,
+          "fade_at": 0.9
+        },
+        "sparkle": {
+          "op": "sparkle_star",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M6.123234e-16 -10 L2.2627417 -2.2627417 L10 0 L2.2627417 2.2627417 L6.123234e-16 10 L-2.2627417 2.2627417 L-10 1.2246468e-15 L-2.2627417 -2.2627417 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1.6
+            }
+          ],
+          "reduced_items": [
+            {
+              "shape": "path",
+              "d": "M6.123234e-16 -10 L2.2627417 -2.2627417 L10 0 L2.2627417 2.2627417 L6.123234e-16 10 L-2.2627417 2.2627417 L-10 1.2246468e-15 L-2.2627417 -2.2627417 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1.6
+            }
+          ],
+          "mode": "pulse",
+          "amplitude": 0.18,
+          "rate": 9
+        }
+      }
+    }
+  },
+  "poses": {
+    "idle": {
+      "arm_l.rotate": 1.85,
+      "arm_r.rotate": 1.25
+    },
+    "up": {
+      "arm_l.rotate": -2.25,
+      "arm_r.rotate": -0.85
+    },
+    "shock": {
+      "arm_l.rotate": -2.45,
+      "arm_r.rotate": -0.65
+    },
+    "type": {
+      "arm_l.rotate": 2.55,
+      "arm_r.rotate": 2.35
+    },
+    "hold": {
+      "arm_l.rotate": -2.79,
+      "arm_r.rotate": -0.35
+    },
+    "wave": {
+      "arm_l.rotate": 1.85,
+      "arm_r.rotate": -1.0
+    },
+    "point": {
+      "arm_l.rotate": 1.85,
+      "arm_r.rotate": -0.15
+    },
+    "hips": {
+      "arm_l.rotate": 2.35,
+      "arm_r.rotate": 0.8
+    }
+  },
+  "moods": {
+    "idle": {
+      "description": "Idle state.",
+      "status": "Idle",
+      "pose": "idle",
+      "face": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "none"
+      }
+    },
+    "thinking": {
+      "description": "Thinking state.",
+      "status": "Thinking",
+      "pose": "hips",
+      "face": {
+        "eyes": "focused",
+        "mouth": "flat",
+        "brows": "raised",
+        "look_x": 0.6,
+        "look_y": -0.6
+      }
+    },
+    "happy": {
+      "description": "Happy state.",
+      "status": "Happy",
+      "pose": "wave",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "none"
+      }
+    },
+    "worried": {
+      "description": "Worried state.",
+      "status": "Worried",
+      "pose": "idle",
+      "face": {
+        "eyes": "worried",
+        "mouth": "flat",
+        "brows": "worried"
+      },
+      "effects": {
+        "sweat": 0.35
+      }
+    },
+    "celebrating": {
+      "description": "Celebrating state.",
+      "status": "Celebrating",
+      "pose": "up",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "none",
+        "blush": "strong"
+      },
+      "channels": {
+        "root.lift": 10
+      },
+      "effects": {
+        "sparkle": true
+      }
+    }
+  },
+  "gestures": {
+    "rock": {
+      "description": "Rock gently.",
+      "frames": 18,
+      "tracks": {
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            0.06
+          ],
+          [
+            0.75,
+            -0.03
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "nod": {
+      "description": "Nod once.",
+      "frames": 18,
+      "tracks": {
+        "root.scale_y": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            -0.04
+          ],
+          [
+            0.45,
+            0
+          ],
+          [
+            0.65,
+            -0.04
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "root.lift": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            -3
+          ],
+          [
+            0.45,
+            0
+          ],
+          [
+            0.65,
+            -3
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "wave": {
+      "description": "Wave once.",
+      "frames": 30,
+      "needs": [
+        "arm_r"
+      ],
+      "fallback": "rock",
+      "tracks": {
+        "arm_r.rotate": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.2,
+              -0.9
+            ],
+            [
+              0.4,
+              -0.3
+            ],
+            [
+              0.6,
+              -0.9
+            ],
+            [
+              0.8,
+              -0.3
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.2,
+            -0.025
+          ],
+          [
+            0.8,
+            -0.025
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "motion": {
+    "change": {
+      "style": "wiggle",
+      "frames": 18,
+      "angle": 0.06,
+      "height": 8,
+      "swap_at": 0.5
+    },
+    "idle": {
+      "frames": 150,
+      "blink_every": 120,
+      "blink_jitter": 30,
+      "blink_frames": 6,
+      "breathe": 0.012,
+      "breathe_period": 90
+    }
+  },
+  "effects": {
+    "sparkle": {
+      "anchor": "sparkle",
+      "layer": 50
+    },
+    "sweat": {
+      "anchor": "sweat",
+      "layer": 50
+    }
+  },
+  "accessories": {
+    "bow": {
+      "description": "Bow.",
+      "slot": "hair",
+      "anchor": "hair",
+      "parts": [
+        {
+          "id": "ornament",
+          "layer": 40,
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 0 Q-10 -13 -21 -8 Q-25 0 -21 8 Q-10 13 0 0 Z",
+              "fill": "accessory",
+              "stroke": "outline",
+              "width": 2.2,
+              "cap": "round",
+              "join": "round"
+            },
+            {
+              "shape": "path",
+              "d": "M-7 -1 L-17 -3 M-7 2 L-17 3",
+              "stroke": "accessory_detail",
+              "width": 1.6,
+              "cap": "round",
+              "join": "round"
+            },
+            {
+              "shape": "path",
+              "d": "M0 0 Q10 -13 21 -8 Q25 0 21 8 Q10 13 0 0 Z",
+              "fill": "accessory",
+              "stroke": "outline",
+              "width": 2.2,
+              "cap": "round",
+              "join": "round"
+            },
+            {
+              "shape": "path",
+              "d": "M7 -1 L17 -3 M7 2 L17 3",
+              "stroke": "accessory_detail",
+              "width": 1.6,
+              "cap": "round",
+              "join": "round"
+            },
+            {
+              "shape": "circle",
+              "x": 0,
+              "y": 0,
+              "r": 5.5,
+              "fill": "accessory",
+              "stroke": "outline",
+              "width": 2.2,
+              "cap": "round",
+              "join": "round"
+            }
+          ]
+        }
+      ]
+    },
+    "clip": {
+      "description": "Clip.",
+      "slot": "hair",
+      "anchor": "hair",
+      "parts": [
+        {
+          "id": "ornament",
+          "layer": 40,
+          "items": [
+            {
+              "shape": "round_rect",
+              "x": -15,
+              "y": -5,
+              "w": 30,
+              "h": 10,
+              "r": 5,
+              "fill": "accessory",
+              "stroke": "outline",
+              "width": 2.2,
+              "cap": "round",
+              "join": "round"
+            },
+            {
+              "shape": "rect",
+              "x": -5,
+              "y": -4,
+              "w": 3,
+              "h": 8,
+              "fill": "accessory_detail"
+            },
+            {
+              "shape": "rect",
+              "x": 3,
+              "y": -4,
+              "w": 3,
+              "h": 8,
+              "fill": "accessory_detail"
+            },
+            {
+              "shape": "rect",
+              "x": -12,
+              "y": -3,
+              "w": 5,
+              "h": 2,
+              "fill": "shine",
+              "alpha": 0.7
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "wear": [
+    "bow"
+  ],
+  "lod": {
+    "micro": {
+      "hide": [
+        "wear_bow_ornament",
+        "wear_clip_ornament"
+      ],
+      "face": {
+        "lashes": false,
+        "brows": false,
+        "iris": false
+      },
+      "glow": false
+    }
+  },
+  "palette_sources": {}
+}

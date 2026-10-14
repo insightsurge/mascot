@@ -22,6 +22,12 @@ Follow-up to the independent review of 95afd34: corrected brow directions and fa
 | F8 | 9, 11 | Explicit source-package exclusion of heavy visual baselines/tooling; compact offline tests remain. |
 | F9 | 9 T1, 11 | One locked Ubuntu screenshot profile; local smoke/repeatability checks; reviewed near-look migration followed by strict approved-baseline regression checks. |
 
+## R1a reference contract and recipe files
+
+The [core contract](character-format/contract.md), [candidate shared limits](character-format/limits.json) and [fixture manifest](character-format/fixtures/manifest.json) make the reviewed format available as separate files. Tessa, alpha_visor, both kits and visorfolk source defaults are data-identical extractions of section 4. Study Bot has a complete source recipe and expected resolved snapshot; a small faceless Anchor Probe exercises custom/variant/hidden anchors and an attached badge. Broken files specify selected expected diagnostic codes and paths. [Operation rules](character-format/operations.json), [count certificates](character-format/budgets.json) and [accounting notes](character-format/work-counts.md) record the subsequent R1a work. Issue [#278](https://github.com/insightsurge/mascot/issues/278) tracks this work.
+
+These are reference expectations, not passing package-validator/renderer results. Run `python3 -I docs/character-format/check.py` for limited structural/reference checks; its scope and exclusions are in the core contract. The operation manifest and twelve reference rows are recorded, including a conservative glow-area certificate. Review of this accounting contract and independent R1c reproduction remain before R1a acceptance; R1c, T1 and engine units still owe their semantic, visual and runtime evidence. Tessa now hides both bow and clip at micro: the previous clip state exceeded the 30-item limit (33); this reference policy yields 29 without raising the limit. The named retained baseline store/owner must be chosen before T1. Q1/U1/I1 gates are unchanged.
+
 ## 1. Agreed scope and ownership
 
 The file describes the character; the engine provides reusable drawing and movement rules. The host handles DOM, panels, focus, sizing and Shiny delivery. R constructs and validates descriptions. Built-ins use the same internal path as user-created data.
@@ -80,7 +86,9 @@ These are proposed limits/targets, not measurements. One shipped internal policy
 | Blur radius in design units | 16 | 10 | 0 |
 | Sum of inflated glow rectangles / canvas area | 1.0 | 0.5 | 0 |
 
-Deterministic work expansion is part of the versioned operation contract. Each ordinary shape instance counts as one painted item, even when its path has multiple subpaths. A fill, a detail stroke and each enabled outline stroke are separate passes; a glow emitter adds one pass. Eye ellipses expand into separate sclera, optional iris, pupil, each glint, active lid cover and each lash items; lid cover counts whenever its resolved extent is nonzero. Each eye_path/eye_arc is one item, eye_dots is one item per dot, each brow_path is one item, and mouth_path/effect items count individually. Each blush ellipse and ground shadow counts as one item. One shared inset clip counts per ellipse eye using pupils/iris/glints/lid fill/lid edge; those operations reuse it rather than nesting duplicate clips; an outer face clip counts once per face invocation, with nested pupil clips additionally counted. Per-item clips count per invocation. Clip-only target geometry is counted in path work and clip work, but is not a painted item/pass unless separately painted. Gradient uses count per actual fill/stroke invocation, not per distinct paint id. Path numbers count all expanded explicit numeric geometry operands, including repeated clip targets; the operation manifest fixes each generated primitive's numeric operand count identically for R and JS. Limits take the worst legal reachable combination of held face controls, mood, variants, effects and active accessories, not just the five default screenshots. R1a/R1c must record exact per-band totals from this shared expansion for every canonical fixture before declaring it valid; the JSON syntax/reference checks in this design task are not that evidence.
+Deterministic work expansion is part of the versioned operation contract. Each ordinary shape instance counts as one painted item, even when its path has multiple subpaths. A fill, a detail stroke and each enabled outline stroke are separate passes; a glow emitter adds one pass. Eye ellipses expand into separate sclera, optional iris, pupil, each glint, active lid cover, active lid edge and each lash items; lid cover counts whenever its resolved extent is nonzero. Each eye_path/eye_arc is one item, eye_dots is one item per dot, each brow_path is one item, and mouth_path/effect items count individually. Each blush ellipse and ground shadow counts as one item. One shared inset clip counts per ellipse eye using pupils/iris/glints/lid fill/lid edge; those operations reuse it rather than nesting duplicate clips; an outer face clip counts once per face invocation, with nested pupil clips additionally counted. Per-item clips count per invocation. Clip-only target geometry is counted in path work and clip work, but is not a painted item/pass unless separately painted. Gradient uses count per actual fill/stroke invocation, not per distinct paint id. Path numbers count all expanded explicit numeric geometry operands, including repeated clip targets; the operation manifest fixes each generated primitive's numeric operand count identically for R and JS. Limits take the worst legal reachable combination of held face controls, mood, variants, effects and active accessories, not just the five default screenshots. R1a/R1c must record exact per-band totals from this shared expansion for every canonical fixture before declaring it valid; the JSON syntax/reference checks in this design task are not that evidence.
+
+The candidate version1 logical operand/expansion policy is now recorded in docs/character-format/operations.json, with docs/character-format/budgets.json and docs/character-format/work-counts.md. Integers are exact componentwise maxima for the supported reference profile; glow area is a conservative authored-transform bound, not an exact raster maximum. Per-metric witnesses need not be the same frame. The reference counter must fail on a new unsupported counting construct, not claim generic state-space coverage. These accounting details need implementation review; package R/JS must independently reproduce them. The authored-fit exception for external transforms does not waive resource limits: applying held external scale/face-scale needs a live budget guard or tighter proof before acceptance. No runtime guard has been implemented here.
 
 Input bounds: 256 KiB UTF-8 file, depth 32, 10,000 structural nodes, 256 declared parts, 64 moods, 128 gestures, 64 keys per track, 256 tracks per gesture. Bound lexical nesting before JSON parsing; walk R lists iteratively before recursive semantic work. Missing values, duplicate JSON object keys, non-finite values and over-limit inputs error with a path. Any integer frame duration is 1..150. Endpoints are checked after all defaults and fallbacks resolve.
 
@@ -1291,6 +1299,7 @@ This migration keeps original colours, the default wiggle, bow/clip, arm presets
   "requires": [
     "parts",
     "outline",
+    "clip",
     "face_kit",
     "tracks",
     "lod"
@@ -2738,7 +2747,8 @@ This migration keeps original colours, the default wiggle, bow/clip, arm presets
   "lod": {
     "micro": {
       "hide": [
-        "wear_bow_ornament"
+        "wear_bow_ornament",
+        "wear_clip_ornament"
       ],
       "face": {
         "lashes": false,

@@ -1,0 +1,499 @@
+{
+  "format_version": 1,
+  "id": "study_bot",
+  "name": "Study Bot",
+  "family": "visorfolk",
+  "description": "A small screen-faced study helper.",
+  "family_definition": {
+    "id": "visorfolk",
+    "name": "Visorfolk",
+    "description": "Characters with screen faces.",
+    "defaults": {}
+  },
+  "requires": [
+    "parts",
+    "outline",
+    "clip",
+    "face_kit",
+    "glow",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "body": "#3f82ff",
+    "outline": "#1b1230",
+    "screen": "#06232a",
+    "feature": "#7cffe0",
+    "accent": "#ffc400"
+  },
+  "ground": {
+    "centre_height": 60
+  },
+  "outline": {
+    "width": 2.5,
+    "colour": "outline"
+  },
+  "parts": [
+    {
+      "id": "head",
+      "at": [
+        0,
+        -60
+      ],
+      "layer": 10,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": -45,
+          "y": -40,
+          "w": 90,
+          "h": 80,
+          "r": 12,
+          "id": "shell",
+          "fill": "body",
+          "outline": true
+        },
+        {
+          "shape": "round_rect",
+          "x": -32,
+          "y": -25,
+          "w": 64,
+          "h": 36,
+          "r": 8,
+          "id": "visor",
+          "fill": "screen"
+        }
+      ]
+    },
+    {
+      "id": "badge_disc",
+      "parent": "head",
+      "at": [
+        25,
+        24
+      ],
+      "layer": 11,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 5,
+          "fill": "accent"
+        }
+      ]
+    }
+  ],
+  "anchors": {
+    "badge": {
+      "part": "head",
+      "at": [
+        25,
+        24
+      ],
+      "description": "Attachment point for a small badge."
+    }
+  },
+  "face": {
+    "kit": "screen",
+    "part": "head",
+    "at": [
+      0,
+      -7
+    ],
+    "clip": "head.visor",
+    "eyes": {
+      "y": -4,
+      "spacing": 13
+    },
+    "mouth": {
+      "y": 8
+    },
+    "kit_definition": {
+      "id": "screen",
+      "description": "Static screen glyphs with budgeted emission.",
+      "roles": [
+        "feature",
+        "sweat",
+        "sparkle",
+        "sparkle_outline"
+      ],
+      "defaults": {
+        "eyes": "dot",
+        "mouth": "smile",
+        "brows": "none"
+      },
+      "glow": {
+        "blur": 3,
+        "alpha": 0.4
+      },
+      "eye_styles": {
+        "dot": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              0,
+              0
+            ]
+          ],
+          "r": 6
+        },
+        "scan": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              -3,
+              0
+            ],
+            [
+              3,
+              0
+            ]
+          ],
+          "r": 3
+        },
+        "arc": {
+          "op": "eye_arc",
+          "r": 8,
+          "start": 3.3,
+          "end": 6.1,
+          "width": 3
+        },
+        "slant": {
+          "op": "eye_path",
+          "d": "M-7 1 L5 -3",
+          "stroke": "feature",
+          "width": 3
+        },
+        "star": {
+          "op": "eye_path",
+          "d": "M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z",
+          "fill": "feature"
+        },
+        "dots": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              -5,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "r": 3
+        },
+        "closed": {
+          "op": "eye_path",
+          "d": "M-7 0 L7 0",
+          "stroke": "feature",
+          "width": 3
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M0 0",
+          "width": 0,
+          "stroke": "feature"
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 Q0 1 1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 L1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "wide": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 -0.2 Q0 1.5 1 -0.2 Z",
+              "fill": "feature",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "wavy": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 Q-0.5 -0.8 0 0 Q0.5 0.8 1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        }
+      },
+      "effects": {
+        "sweat": {
+          "op": "sweat_drop",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 -8 Q9 2 0 10 Q-9 2 0 -8 Z",
+              "fill": "sweat"
+            }
+          ],
+          "mode": "progress",
+          "travel": 26,
+          "sway": 2,
+          "sway_rate": 12,
+          "fade_at": 0.9
+        },
+        "sparkle": {
+          "op": "sparkle_star",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1
+            }
+          ],
+          "reduced_items": [
+            {
+              "shape": "path",
+              "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1
+            }
+          ],
+          "mode": "pulse",
+          "amplitude": 0.18,
+          "rate": 9
+        }
+      }
+    }
+  },
+  "moods": {
+    "idle": {
+      "description": "At rest.",
+      "status": "Ready",
+      "face": {
+        "eyes": "dot",
+        "mouth": "smile"
+      }
+    },
+    "thinking": {
+      "description": "Working on a task.",
+      "status": "Working",
+      "face": {
+        "eyes": "scan",
+        "mouth": "flat"
+      }
+    },
+    "happy": {
+      "description": "A task went well.",
+      "status": "Done",
+      "face": {
+        "eyes": "arc",
+        "mouth": "wide"
+      }
+    },
+    "worried": {
+      "description": "Something needs attention.",
+      "status": "Check the result",
+      "face": {
+        "eyes": "slant",
+        "mouth": "wavy"
+      }
+    },
+    "celebrating": {
+      "description": "A large task finished.",
+      "status": "Finished",
+      "face": {
+        "eyes": "star",
+        "mouth": "wide"
+      }
+    }
+  },
+  "gestures": {
+    "rock": {
+      "description": "A brief whole-character tilt.",
+      "frames": 18,
+      "tracks": {
+        "root.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.08
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "nod": {
+      "description": "A head-joint acknowledgement, or safe tilt.",
+      "frames": 18,
+      "needs": [
+        "nod_joint"
+      ],
+      "fallback": "rock",
+      "tracks": {
+        "nod_joint.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.08
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "wave": {
+      "description": "A hand greeting, or safe tilt.",
+      "frames": 30,
+      "needs": [
+        "hand_r"
+      ],
+      "fallback": "rock",
+      "tracks": {
+        "hand_r.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.25
+            ],
+            [
+              0.6,
+              -0.25
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "greet": {
+      "description": "A brief greeting tilt.",
+      "frames": 18,
+      "tracks": {
+        "head.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.08
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "palettes": {
+    "sea_glass": {
+      "description": "My darker screen.",
+      "light": {
+        "screen": "#051b20"
+      }
+    },
+    "night_screen": {
+      "description": "A deeper screen.",
+      "light": {
+        "screen": "#03151a"
+      }
+    }
+  },
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "screen",
+      "min": 3,
+      "where": "screen face"
+    }
+  ],
+  "lod": {
+    "micro": {
+      "hide": [
+        "badge_disc"
+      ],
+      "glow": false
+    }
+  },
+  "resolved": true,
+  "palette_sources": {
+    "sea_glass": "character",
+    "night_screen": "family"
+  }
+}

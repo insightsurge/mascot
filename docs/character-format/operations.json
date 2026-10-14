@@ -1,0 +1,83 @@
+{
+  "operation_manifest_version": 1,
+  "format_version": 1,
+  "status": "reference_accounting_contract_pending_implementation_review",
+  "metrics": [
+    "active_parts",
+    "painted_items",
+    "paint_passes",
+    "path_numbers",
+    "clip_applications",
+    "gradient_uses",
+    "glow_emitters",
+    "blur_design_units"
+  ],
+  "primitive_numbers": {
+    "circle": 5,
+    "ellipse": 7,
+    "rect": 4,
+    "round_rect": 8,
+    "arc": 5,
+    "polyline_per_point": 2,
+    "polygon_per_vertex": 2,
+    "rounded_polygon_per_vertex": 6,
+    "path_commands": {
+      "M": 2,
+      "L": 2,
+      "Q": 4,
+      "C": 6,
+      "Z": 0
+    }
+  },
+  "primitive_rules": {
+    "circle": "One canonical arc(x,y,r,0,2*pi): five numeric geometry operands.",
+    "ellipse": "One canonical ellipse(x,y,rx,ry,rotate,0,2*pi): seven numeric geometry operands.",
+    "rect": "Four resolved x/y/w/h operands.",
+    "round_rect": "Four x/y/w/h operands plus four normalised circular corner radii. A scalar radius expands to four, without approximating native rounded geometry.",
+    "arc": "Five x/y/r/start/end operands; close adds no number.",
+    "polygon": "A sharp n-sided polygon has n coordinate pairs. A rounded polygon uses one M or L pair and one Q quadruple per vertex: 6*n operands, matching the existing rounded hexagon algorithm.",
+    "path": "Count numeric M/L/Q/C operands, including implicit repeats and scientific notation; Z has zero. Transform/style/colour/easing operands are not path numbers.",
+    "ref": "Expand one non-ref definition then apply permitted overrides. Count each use, never only the shared definition."
+  },
+  "expansion": {
+    "ordinary_item": "One painted item if it has any enabled fill/stroke/outline or emission. Reuse its geometry across normal and glow paint passes; count geometry once per draw-list item.",
+    "paint": "One pass for fill, detail stroke, primary outline and secondary outline when enabled. One additional glow pass per named part emitter or emitted face glyph group. No occlusion culling or identical-colour pass merging.",
+    "ellipse_eye": [
+      "sclera ellipse",
+      "optional iris circle",
+      "nonzero pupil circle",
+      "each positive-radius glint circle",
+      "positive-extent lid rectangle",
+      "active nonzero-width lid edge polyline",
+      "each enabled lash polyline"
+    ],
+    "ellipse_clip": "One shared inset ellipse clip per eye using iris/pupil/glints/lid/edge. Add seven path numbers for that clip. Sclera/lashes are outside it.",
+    "lid_edge": "Separate geometry and painted item from the lid rectangle; its line has four numeric operands. A stroke on the sclera instead reuses the sclera geometry.",
+    "face_outer_clip": "One application and one target-geometry expansion per face invocation, not per glyph or item.",
+    "item_clip": "One application and one target-geometry expansion per item invocation. Hidden targets contribute geometry and transform work, without an extra painted item/pass.",
+    "eye_dots": "One circle item per dot. All dots of one eye are one glyph group for its single emission pass.",
+    "eye_arc_or_path": "One item plus independent enabled lashes. eye_path defaults fill to feature; an explicit stroke adds a pass even on degenerate filled line geometry.",
+    "brow": "One item per visible eye when width>0 and not hidden by the eye style or detail band.",
+    "mouth": "Each mouth item counts separately, but all items belong to one mouth emission group.",
+    "blush_shadow": "Two blush ellipses when a placement and positive control are active; one ground-shadow ellipse when configured.",
+    "effects": "Expand each active mapped kit effect; reduction selects reduced_items for pulse/track, preserves progress geometry. Count all concurrently selectable controls, not only one mood screenshot.",
+    "parts": "Count active authored/expanded parts plus ancestors needed by painted or clip-only geometry. Do not count root, face/effect pseudo-groups or parts in completely suppressed unused subtrees.",
+    "gradient": "Count each actual gradient paint invocation, including a gradient emitter emission pass. A shared paint id does not deduplicate uses.",
+    "opacity": "Suppress a provably zero-alpha item. Do not subtract geometry merely covered by another opaque item; style/shape computations still occur.",
+    "bands": "Resolve each band from the full recipe, never from the preceding band. Apply hidden ancestors, item bands, explicit band variants and per-band outline/face/glow policy before counting."
+  },
+  "maximisation": {
+    "result": "Componentwise maxima; each metric has its own witness. The displayed maxima need not occur together in one frame.",
+    "controls": "All declared left/right eye styles, brow/mouth styles, positive blush/lid controls, declared effects, variants and legal accessory-slot choices. Iris follows the authored role and band flag, rather than inventing a new role.",
+    "exclusive_choices": "Choose one variant per part and at most one accessory per slot. Never sum alternatives; inactive fallback candidates are input work only.",
+    "canonical_profile": "The reference counter supports the current four resolved recipes; unsupported new counting constructs fail explicitly. It does not enumerate a general future format state machine.",
+    "motion_counts": "For the current recipes, numeric tracks alter transforms only, with no authored alpha crossing zero or changing item counts. Discrete held style/variant choices cover the finite structural states; count upper states include hidden-parent suppression."
+  },
+  "glow_area": {
+    "status": "conservative_bound_not_pixel_measurement",
+    "formula": "For each emitting glyph/item, bound its local control-point/primitive box including strokes; its diagonal times the product of ancestor maximum scale norms bounds the transformed box side under any rotation. Add 6*blur design units to that side; square, sum and divide by 90000. Move the computed total one floating-point step outwards and round up to 12 decimal places; zero emission stays exactly zero.",
+    "scale_scope": "Authored rest/pose/mood/gesture extrema plus bounded idle breathing. Numeric add/set key interpolation uses only monotone supported easing; inspect every base plus key extrema. Rotations cannot exceed the enclosing-circle bound. Translation does not change area. Arbitrary external held scale/face-scale is excluded from this authored certificate and must be budget-guarded at runtime.",
+    "runtime": "Reference stress cases set an external uniform root scale of 16 and report the bound against the same limits. They demonstrate that the authored certificate is not permission to accept arbitrary live scaling.",
+    "not_proved": "This circle/scale bound is intentionally conservative, not the exact maximum raster rectangle or a rendering/performance/fit proof. Full R1c must independently reproduce or tighten it; an excessive bound is not a pass."
+  }
+}

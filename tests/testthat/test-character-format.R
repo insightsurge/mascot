@@ -176,9 +176,104 @@ describe("character_format_parse()", {
     expect_error(character_format_bounds(list(), max_nodes = 0))
     expect_error(character_format_json("{}", list()))
     expect_error(character_format_json(raw(), 1))
-    expect_error(character_format_node(1, 1, "$", list()))
-    expect_error(character_format_node(1, list(), 1, list()))
-    expect_error(character_format_node(1, list(), "$", 1))
-    expect_error(character_format_node(1, list(), "$", list(), json_source = NA))
+  })
+
+  it("strips caller attributes from scalar fields and numeric_tree fields", {
+    data <- format_recipe("tessa")
+    attr(data$name, "custom") <- "custom_attribute"
+    data$face$tune <- matrix(c(1, 2, 3, 4), nrow = 2L, dimnames = list(c("r1", "r2"), c("c1", "c2")))
+    parsed <- character_format_parse(data)
+    expect_null(attributes(parsed$name))
+    expect_identical(parsed$name, "Tessa")
+    expect_null(attributes(parsed$face$tune))
+    expect_identical(parsed$face$tune, c(1, 2, 3, 4))
+  })
+
+  it("enforces utf8_bytes limit at boundary and one byte above", {
+    data <- format_recipe()
+    json <- as.character(jsonlite::toJSON(data, auto_unbox = TRUE, null = "null"))
+    pad_ok <- paste0(json, strrep(" ", 262144L - nchar(json)))
+    parsed <- character_format_parse(pad_ok, "text")
+    expect_identical(parsed$id, data$id)
+    pad_over <- paste0(json, strrep(" ", 262145L - nchar(json)))
+    format_problem("budget", "$", character_format_parse(pad_over, "text"))
+  })
+
+  it("enforces declared_parts limit on parts array at boundary and one above", {
+    data <- format_recipe()
+    part_tmpl <- data$parts[[1]]
+    data$parts <- lapply(seq_len(256L), function(i) {
+      p <- part_tmpl
+      p$id <- paste0("part_", i)
+      p
+    })
+    parsed <- character_format_parse(data)
+    expect_length(parsed$parts, 256L)
+    data$parts[[257L]] <- part_tmpl
+    data$parts[[257L]]$id <- "part_257"
+    format_problem("budget", "$.parts", character_format_parse(data))
+  })
+
+  it("enforces moods limit at boundary and one above", {
+    data <- format_recipe()
+    mood_tmpl <- data$moods[[1]]
+    moods_64 <- list()
+    for (i in seq_len(64L)) {
+      moods_64[[paste0("mood_", i)]] <- mood_tmpl
+    }
+    data$moods <- moods_64
+    parsed <- character_format_parse(data)
+    expect_length(parsed$moods, 64L)
+    data$moods[["mood_65"]] <- mood_tmpl
+    format_problem("budget", "$.moods", character_format_parse(data))
+  })
+
+  it("enforces gestures limit at boundary and one above", {
+    data <- format_recipe()
+    gesture_tmpl <- data$gestures[[1]]
+    gestures_128 <- list()
+    for (i in seq_len(128L)) {
+      gestures_128[[paste0("gesture_", i)]] <- gesture_tmpl
+    }
+    data$gestures <- gestures_128
+    parsed <- character_format_parse(data)
+    expect_length(parsed$gestures, 128L)
+    data$gestures[["gesture_129"]] <- gesture_tmpl
+    format_problem("budget", "$.gestures", character_format_parse(data))
+  })
+
+  it("enforces keys_per_track limit at boundary and one above", {
+    data <- format_recipe()
+    keys_64 <- lapply(seq(0, 1, length.out = 64L), function(t) list(t, 0))
+    data$gestures$rock$tracks <- list("panel.rotate" = keys_64)
+    parsed <- character_format_parse(data)
+    expect_length(parsed$gestures$rock$tracks$panel.rotate, 64L)
+    keys_65 <- lapply(seq(0, 1, length.out = 65L), function(t) list(t, 0))
+    data$gestures$rock$tracks <- list("panel.rotate" = keys_65)
+    format_problem("budget", "$.gestures.rock.tracks.panel.rotate", character_format_parse(data))
+  })
+
+  it("enforces tracks_per_gesture limit at boundary and one above", {
+    data <- format_recipe()
+    tracks_256 <- list()
+    for (i in seq_len(256L)) {
+      tracks_256[[paste0("panel.rotate_", i)]] <- list(list(0, 0), list(1, 0))
+    }
+    data$gestures$rock$tracks <- tracks_256
+    parsed <- character_format_parse(data)
+    expect_length(parsed$gestures$rock$tracks, 256L)
+    tracks_256[["panel.rotate_257"]] <- list(list(0, 0), list(1, 0))
+    data$gestures$rock$tracks <- tracks_256
+    format_problem("budget", "$.gestures.rock.tracks", character_format_parse(data))
+  })
+
+  it("reports the specific problem inside the matching union alternative", {
+    data <- format_recipe()
+    data$parts[[1]]$items[[1]]$fill <- list(paint = "glaze", bogus = 1)
+    format_problem("unknown_key", "$.parts[0].items[0].fill.bogus", character_format_parse(data))
+    data$parts[[1]]$items[[1]]$fill <- list(colour = "body")
+    format_problem("input_type", "$.parts[0].items[0].fill.paint", character_format_parse(data))
+    data$parts[[1]]$items[[1]]$fill <- TRUE
+    format_problem("input_type", "$.parts[0].items[0].fill", character_format_parse(data))
   })
 })

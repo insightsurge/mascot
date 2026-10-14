@@ -1,9 +1,7 @@
 #' Interval addition/multiplication for conservative authored geometry
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_interval <- function(a, b, operation = "add") {
-  checkmate::assert_numeric(a, len = 2L, finite = TRUE, any.missing = FALSE)
-  checkmate::assert_numeric(b, len = 2L, finite = TRUE, any.missing = FALSE)
-  checkmate::assert_choice(operation, c("add", "multiply"))
   result <- if (operation == "add") a + b else range(outer(a, b, "*"))
   if (any(!is.finite(result))) {
     character_format_abort("budget", "$.geometry", NULL, "Reduce composed transform magnitudes.")
@@ -13,9 +11,8 @@ character_interval <- function(a, b, operation = "add") {
 
 #' Trigonometric interval including interior extrema
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_interval_trig <- function(angle, cosine = FALSE) {
-  checkmate::assert_numeric(angle, len = 2L, finite = TRUE, any.missing = FALSE)
-  checkmate::assert_flag(cosine)
   if (diff(angle) >= 2 * pi || any(abs(angle) > 1e12)) {
     return(c(-1, 1))
   }
@@ -31,9 +28,8 @@ character_interval_trig <- function(angle, cosine = FALSE) {
 
 #' Interval affine multiplication, using six Canvas-ordered components
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_interval_matrix <- function(a, b) {
-  checkmate::assert_list(a, len = 6L)
-  checkmate::assert_list(b, len = 6L)
   mul <- function(i, j) character_interval(a[[i]], b[[j]], "multiply")
   add <- function(i, j, k, l) character_interval(mul(i, j), mul(k, l))
   result <- list(
@@ -64,12 +60,8 @@ character_interval_matrix <- function(a, b) {
 
 #' Interval local translation, rotation and scale
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_interval_local <- function(x, y, rotate, sx, sy) {
-  checkmate::assert_numeric(x, len = 2L, finite = TRUE, any.missing = FALSE)
-  checkmate::assert_numeric(y, len = 2L, finite = TRUE, any.missing = FALSE)
-  checkmate::assert_numeric(rotate, len = 2L, finite = TRUE, any.missing = FALSE)
-  checkmate::assert_numeric(sx, len = 2L, finite = TRUE, any.missing = FALSE)
-  checkmate::assert_numeric(sy, len = 2L, finite = TRUE, any.missing = FALSE)
   cosine <- character_interval_trig(rotate, TRUE)
   sine <- character_interval_trig(rotate)
   result <- list(
@@ -86,9 +78,8 @@ character_interval_local <- function(x, y, rotate, sx, sy) {
 
 #' Transform a conservative box with an interval affine matrix
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_interval_box <- function(box, matrix) {
-  checkmate::assert_numeric(box, len = 4L, finite = TRUE, any.missing = FALSE)
-  checkmate::assert_list(matrix, len = 6L)
   x <- character_interval(
     character_interval(matrix[[1L]], box[c(1L, 3L)], "multiply"),
     character_interval(matrix[[3L]], box[c(2L, 4L)], "multiply")
@@ -179,7 +170,6 @@ character_format_fit <- function(x, graph, behaviour, band = "full") {
     matrices$root <- Reduce(character_interval_matrix, list(translation, squash, pivot, rotation, back))
   }
   anchor_matrix <- function(id) {
-    checkmate::assert_string(id)
     definition <- x$anchors[[id]]
     choices <- c(
       list(definition),
@@ -221,7 +211,6 @@ character_format_fit <- function(x, graph, behaviour, band = "full") {
   shapes <- if (is.null(x$shapes)) character_object() else x$shapes
   boxes <- list()
   variants <- function(id) {
-    checkmate::assert_string(id)
     part <- graph$parts[[id]]
     choices <- c(list(default = if (is.null(part$items)) list() else part$items), part$variants)
     selected <- x$lod[[band]]$variants[[id]]

@@ -10,4 +10,24 @@ Schema-driven normalisation preserves JSON {} versus [], nullable members and si
 
 Malformed descriptions raise mascot_error_character inheriting mascot_error, with code/path/value/fix fields. File failures raise mascot_error_file, retaining the supplied path, read operation and original cause. Internal argument assertion failures follow the existing checkmate convention.
 
-The format design is documented in [the engine proposal](https://github.com/insightsurge/mascot/blob/design/engine-format/docs/engine-format-proposal.md). New engine, registry, public builder and Shiny queue work follow their own units; this reader does not approve Q1 or replace the current character path.
+The format design is documented in [the engine proposal](https://github.com/insightsurge/mascot/blob/918893f2e900867d93154e9d50c2ecdf820a5a69/docs/engine-format-proposal.md) and [the core contract](https://github.com/insightsurge/mascot/blob/918893f2e900867d93154e9d50c2ecdf820a5a69/docs/character-format/contract.md). New engine, registry, public builder and Shiny queue work follow their own units; this reader does not approve Q1 or replace the current character path.
+
+## Where the copied data comes from
+
+Several package files are copies of the reference files in `docs/character-format/` on the design branch
+([pinned](https://github.com/insightsurge/mascot/blob/918893f2e900867d93154e9d50c2ecdf820a5a69/docs/character-format)). That folder is the source; change it first, then copy:
+
+| Package file | Source on the design branch | Copy |
+|---|---|---|
+| `inst/format/policy-v1.json` | `character-format/limits.json` | same data, without `evidence` and with its own `status` |
+| `inst/format/kits/classic.json`, `screen.json` | `character-format/fixtures/kits/` | same data |
+| `tests/testthat/fixtures/format/tessa.json`, `alpha_visor.json`, `anchor_probe.json` | `character-format/fixtures/characters/` | identical |
+| `tests/testthat/fixtures/format/study_bot.json` | `character-format/fixtures/source/study_bot.json` | same data |
+| `tests/testthat/fixtures/format/study_bot-resolved.json` | `character-format/fixtures/expected/study_bot.json` | same data |
+| `tests/testthat/fixtures/format/invalid/*.json` | `character-format/fixtures/invalid/` | identical |
+| `tests/testthat/fixtures/format/diagnostic-expected.json` | the invalid-file entries of `character-format/fixtures/manifest.json` | extracted |
+| `tests/testthat/fixtures/format/work-expected.json` | `character-format/budgets.json`, written by `python3 -I character-format/budget.py` | identical |
+
+`work-expected.json` is computed by the Python reference, independently of the R code, so the work tests do not
+mirror the implementation. After changing a source file, rerun `python3 -I docs/character-format/check.py` and
+`budget.py` on the design branch, copy the result, and run the `character-` tests.

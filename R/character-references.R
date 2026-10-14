@@ -108,10 +108,8 @@ character_format_parts <- function(x) {
 
 #' Apply numeric tuning only to existing leaves and fixed-size arrays
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_format_tune <- function(base, tune, path = "$.face.tune") {
-  checkmate::assert(checkmate::check_list(base), checkmate::check_numeric(base))
-  checkmate::assert(checkmate::check_list(tune), checkmate::check_numeric(tune))
-  checkmate::assert_string(path)
   if (is.numeric(base)) {
     values <- unlist(tune, use.names = FALSE)
     if (!is.numeric(values) || length(values) != length(base) || any(!is.finite(values))) {
@@ -157,16 +155,12 @@ character_format_references <- function(x) {
   parts <- graph$parts
   roles <- names(x$colours)
   role <- function(id, path) {
-    checkmate::assert_string(id)
-    checkmate::assert_string(path)
     if (!id %in% roles) {
       character_format_abort("missing_reference", path, id, "Name a declared colour role.")
     }
     invisible(NULL)
   }
   target <- function(id, path) {
-    checkmate::assert_string(id)
-    checkmate::assert_string(path)
     names <- strsplit(id, ".", fixed = TRUE)[[1L]]
     part <- parts[[names[[1L]]]]
     if (length(names) != 2L || is.null(part)) {

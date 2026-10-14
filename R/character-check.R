@@ -56,12 +56,11 @@ character_format_check <- function(x, from = "list", families = character_object
   checkmate::assert_list(families, names = "unique")
   checkmate::assert_list(kits, names = "unique")
   parsed <- character_format_parse(x, from)
-  resolved <- character_format_resolve(parsed, families, kits)
+  resolved <- character_format_resolve(parsed, families, kits, parsed = TRUE)
   graph <- character_format_references(resolved)
   behaviour <- character_format_behaviour(resolved, graph)
   work <- stats::setNames(
     lapply(c("full", "small", "micro"), function(band) {
-      checkmate::assert_string(band)
       character_format_work(resolved, graph, behaviour, band)
     }),
     c("full", "small", "micro")
@@ -70,7 +69,6 @@ character_format_check <- function(x, from = "list", families = character_object
   contrast <- character_format_contrast(resolved)
   fit <- stats::setNames(
     lapply(names(work), function(band) {
-      checkmate::assert_string(band)
       proof <- character_format_fit(resolved, graph, behaviour, band)
       if (!isTRUE(proof$verified)) {
         character_format_abort(

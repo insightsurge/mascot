@@ -49,11 +49,14 @@ character_format_bounds <- function(x, max_depth = 32L, max_nodes = 10000L) {
   checkmate::assert(checkmate::check_list(x, null.ok = TRUE), checkmate::check_atomic(x))
   checkmate::assert_count(max_depth, positive = TRUE)
   checkmate::assert_count(max_nodes, positive = TRUE)
-  pending <- list(list(value = x, path = "$", depth = 0L))
+  stack <- vector("list", max_nodes + 1L)
+  stack[[1L]] <- list(value = x, path = "$", depth = 0L)
+  top <- 1L
   nodes <- 0L
-  while (length(pending)) {
-    current <- pending[[length(pending)]]
-    pending <- pending[-length(pending)]
+  while (top > 0L) {
+    current <- stack[[top]]
+    stack[top] <- list(NULL)
+    top <- top - 1L
     value <- current$value
     if (!is.list(value) && !is.atomic(value) && !is.null(value)) {
       character_format_abort("input_type", current$path, NULL, "Use plain data rather than executable objects.")
@@ -90,7 +93,7 @@ character_format_bounds <- function(x, max_depth = 32L, max_nodes = 10000L) {
         "Keep each object key once."
       )
     }
-    if (length(value) + length(pending) > max_nodes - nodes) {
+    if (length(value) + top > max_nodes - nodes) {
       character_format_abort("budget", "$", nodes, "Reduce the number of input nodes.")
     }
     for (index in rev(seq_along(value))) {
@@ -99,7 +102,8 @@ character_format_bounds <- function(x, max_depth = 32L, max_nodes = 10000L) {
       } else {
         paste0(current$path, ".", keys[[index]])
       }
-      pending[[length(pending) + 1L]] <- list(value = value[[index]], path = path, depth = depth)
+      top <- top + 1L
+      stack[[top]] <- list(value = value[[index]], path = path, depth = depth)
     }
   }
   invisible(nodes)
@@ -146,78 +150,9 @@ character_format_json <- function(bytes, limits) {
   if (!isTRUE(jsonlite::validate(text))) {
     character_format_abort("input_type", "$", NULL, "Supply syntactically valid JSON.")
   }
-  # Syntax and lexical depth are now bounded. The cursor creates no value tree.
-  cursor <- new.env(parent = emptyenv())
-  cursor$position <- 1L
-  cursor$nodes <- 0L
-  integers <- as.integer(bytes)
-  skip_space <- function() {
-    while (cursor$position <= length(integers) && integers[[cursor$position]] %in% c(9L, 10L, 13L, 32L)) {
-      cursor$position <- cursor$position + 1L
-    }
-  }
-  string_token <- function() {
-    start <- cursor$position
-    cursor$position <- start + 1L
-    while (integers[[cursor$position]] != 34L) {
-      if (integers[[cursor$position]] == 92L) {
-        cursor$position <- cursor$position + 1L
-      }
-      cursor$position <- cursor$position + 1L
-    }
-    end <- cursor$position
-    cursor$position <- end + 1L
-    jsonlite::fromJSON(rawToChar(bytes[start:end]))
-  }
-  scan_value <- function(path) {
-    checkmate::assert_string(path)
-    skip_space()
-    cursor$nodes <- cursor$nodes + 1L
-    if (cursor$nodes > limits$structural_nodes) {
-      character_format_abort("budget", "$", cursor$nodes, "Reduce the number of input nodes.")
-    }
-    token <- integers[[cursor$position]]
-    if (token == 34L) {
-      string_token()
-    } else if (token %in% c(91L, 123L)) {
-      object <- token == 123L
-      terminal <- if (object) 125L else 93L
-      cursor$position <- cursor$position + 1L
-      skip_space()
-      keys <- new.env(hash = TRUE, parent = emptyenv())
-      index <- 0L
-      while (integers[[cursor$position]] != terminal) {
-        if (object) {
-          key <- string_token()
-          child <- paste0(path, ".", key)
-          if (exists(paste0("k", key), envir = keys, inherits = FALSE)) {
-            character_format_abort("input_type", child, NULL, "Keep each decoded object key once.")
-          }
-          assign(paste0("k", key), TRUE, envir = keys)
-          skip_space()
-          cursor$position <- cursor$position + 1L
-        } else {
-          child <- paste0(path, "[", index, "]")
-        }
-        scan_value(child)
-        index <- index + 1L
-        skip_space()
-        if (integers[[cursor$position]] == 44L) {
-          cursor$position <- cursor$position + 1L
-          skip_space()
-        }
-      }
-      cursor$position <- cursor$position + 1L
-    } else {
-      while (
-        cursor$position <= length(integers) && !integers[[cursor$position]] %in% c(9L, 10L, 13L, 32L, 44L, 93L, 125L)
-      ) {
-        cursor$position <- cursor$position + 1L
-      }
-    }
-    invisible(NULL)
-  }
-  scan_value("$")
+  # jsonlite preserves repeated decoded keys as duplicate names on list elements;
+  # character_format_bounds() walks the parsed tree to enforce node budgets and
+  # duplicate-key rejection with the exact JSON path.
   data <- jsonlite::fromJSON(text, simplifyVector = FALSE)
   character_format_bounds(data, limits$nesting_depth, limits$structural_nodes)
   data
@@ -225,12 +160,8 @@ character_format_json <- function(bytes, limits) {
 
 #' Validate and normalise one node against a closed structural definition
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_format_node <- function(value, rule, path, definitions, json_source = FALSE) {
-  checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
-  checkmate::assert_list(rule, names = "unique")
-  checkmate::assert_string(path)
-  checkmate::assert_list(definitions, names = "unique")
-  checkmate::assert_flag(json_source)
   if (!is.null(rule$ref)) {
     rule <- utils::modifyList(definitions[[rule$ref]], rule[setdiff(names(rule), "ref")], keep.null = TRUE)
   }
@@ -243,24 +174,34 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
   maximum_length <- if (is.null(rule$input_limit)) rule$max_length else attr(definitions, "input")[[rule$input_limit]]
   kind <- rule$type
   fail <- function(code = "input_type", fix = "Supply a value of the declared type.") {
-    checkmate::assert_string(code)
-    checkmate::assert_string(fix)
     character_format_abort(code, path, NULL, fix)
   }
   if (kind == "union") {
-    for (alternative in rule$alternatives) {
+    # Only alternatives of the value's kind can match, so a string never meets an
+    # object rule. One candidate reports its own specific problem; when several
+    # remain, the first candidate's problem is reported.
+    shape <- character_format_value_kind(value)
+    candidates <- Filter(
+      function(alternative) any(shape %in% character_format_rule_kinds(alternative, definitions)),
+      rule$alternatives
+    )
+    if (!length(candidates)) {
+      fail()
+    }
+    first <- NULL
+    for (alternative in candidates) {
       attempt <- tryCatch(
         list(ok = TRUE, value = character_format_node(value, alternative, path, definitions, json_source)),
-        mascot_error_character = function(error) {
-          checkmate::assert_class(error, "mascot_error_character")
-          list(ok = FALSE)
-        }
+        mascot_error_character = function(error) list(ok = FALSE, error = error)
       )
       if (attempt$ok) {
         return(attempt$value)
       }
+      if (is.null(first)) {
+        first <- attempt$error
+      }
     }
-    fail()
+    stop(first)
   }
   if (kind == "discriminator") {
     key <- rule$field
@@ -275,6 +216,7 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
   }
   if (kind == "numeric_tree") {
     if (is.numeric(value) && all(is.finite(value))) {
+      attributes(value) <- NULL
       return(value)
     }
     if (!is.list(value)) {
@@ -389,7 +331,41 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
       fail(if (is.null(rule$range_code)) "input_type" else rule$range_code, "Use a value in the documented range.")
     }
   }
-  unname(value)
+  attributes(value) <- NULL
+  value
+}
+
+#' Kinds of JSON value a plain R value can stand for: scalar, object or array
+#' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
+character_format_value_kind <- function(value) {
+  if (is.atomic(value)) {
+    return(if (length(value) == 1L) "scalar" else "array")
+  }
+  if (!is.null(names(value))) {
+    return("object")
+  }
+  if (length(value)) "array" else c("object", "array")
+}
+
+#' Kinds of JSON value a grammar rule accepts, following refs and unions
+#' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
+character_format_rule_kinds <- function(rule, definitions) {
+  if (!is.null(rule$ref)) {
+    rule <- utils::modifyList(definitions[[rule$ref]], rule[setdiff(names(rule), "ref")], keep.null = TRUE)
+  }
+  switch(
+    rule$type,
+    union = unique(unlist(lapply(rule$alternatives, character_format_rule_kinds, definitions = definitions))),
+    object = ,
+    map = ,
+    discriminator = "object",
+    array = ,
+    tuple = "array",
+    numeric_tree = c("scalar", "array", "object"),
+    "scalar"
+  )
 }
 
 #' Read structural character input without resolving or registering it

@@ -86,7 +86,7 @@
     let style = item;
     let transform = ns.parts.identity();
     if (item.shape === 'ref') {
-      const definition = shapes[item.use];
+      const definition = ns.parts.own(shapes, item.use);
       if (!definition) fail('missing_reference', `${path}.use`, 'Name a declared shape.');
       if (definition.shape === 'ref') fail('missing_reference', `${path}.use`, 'A shape cannot reference another ref.');
       const allowed = [
@@ -248,7 +248,7 @@
   };
   const paint = (ctx, fill, character, colours, path) => {
     if (typeof fill === 'string') return role(colours, fill, path);
-    const definition = character.paints?.[fill?.paint];
+    const definition = ns.parts.own(character.paints, fill?.paint);
     if (!definition) fail('missing_reference', path, 'Name a declared paint.');
     let gradient;
     if (definition.type === 'linear') gradient = ctx.createLinearGradient(...definition.from, ...definition.to);

@@ -1,7 +1,106 @@
 {
   "schema_version": 1,
   "format_version": 1,
+  "policy_file": "policy-v1.json",
   "definitions": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "role_ref": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+    },
+    "line_cap": {
+      "type": "string",
+      "choices": [
+        "butt",
+        "round",
+        "square"
+      ]
+    },
+    "line_join": {
+      "type": "string",
+      "choices": [
+        "miter",
+        "round",
+        "bevel"
+      ]
+    },
+    "vec2": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "min_length": 2,
+      "max_length": 2
+    },
+    "vec3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "min_length": 3,
+      "max_length": 3
+    },
+    "lod_choice": {
+      "type": "string",
+      "choices": [
+        "full",
+        "small",
+        "micro"
+      ]
+    },
+    "item_lods": {
+      "type": "array",
+      "items": {
+        "ref": "lod_choice"
+      },
+      "unique": true
+    },
+    "paint_ref": {
+      "type": "object",
+      "fields": {
+        "paint": {
+          "ref": "id"
+        }
+      },
+      "required": [
+        "paint"
+      ]
+    },
+    "fill_style": {
+      "type": "union",
+      "alternatives": [
+        {
+          "ref": "id"
+        },
+        {
+          "ref": "paint_ref"
+        }
+      ]
+    },
+    "id_map": {
+      "type": "map",
+      "key_pattern": "^[a-z][a-z0-9_]*$",
+      "values": {
+        "ref": "id"
+      }
+    },
+    "id_list": {
+      "type": "array",
+      "items": {
+        "ref": "id"
+      },
+      "unique": true
+    },
+    "vec2_list": {
+      "type": "array",
+      "items": {
+        "ref": "vec2"
+      },
+      "min_length": 2
+    },
     "colour_map": {
       "type": "map",
       "values": {
@@ -35,8 +134,7 @@
           "min": 0
         },
         "colour": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "note": {
           "type": "string"
@@ -55,24 +153,13 @@
           "min": 0
         },
         "colour": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "second": {
           "ref": "outline_second",
@@ -95,33 +182,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -136,44 +203,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -217,33 +259,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -258,44 +280,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -339,33 +336,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -380,44 +357,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -448,33 +400,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -489,44 +421,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -565,33 +472,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -606,44 +493,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -679,33 +541,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -720,44 +562,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -812,33 +629,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -853,44 +650,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -915,33 +687,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -956,44 +708,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -1002,16 +729,7 @@
           ]
         },
         "points": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-            "min_length": 2,
-            "max_length": 2
-          },
-          "min_length": 2
+          "ref": "vec2_list"
         },
         "note": {
           "type": "string"
@@ -1026,33 +744,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1067,44 +765,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -1146,33 +819,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1187,44 +840,19 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -1233,8 +861,7 @@
           ]
         },
         "use": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "x": {
           "type": "number"
@@ -1252,12 +879,7 @@
               "type": "number"
             },
             {
-              "type": "array",
-              "items": {
-                "type": "number"
-              },
-              "min_length": 2,
-              "max_length": 2
+              "ref": "vec2"
             }
           ]
         },
@@ -1305,29 +927,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1342,28 +945,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -1407,29 +995,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1444,28 +1013,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -1509,29 +1063,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1546,28 +1081,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -1598,29 +1118,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1635,28 +1136,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -1695,29 +1181,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1732,28 +1199,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -1789,29 +1241,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1826,28 +1259,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -1902,29 +1320,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -1939,28 +1338,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -1985,29 +1369,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -2022,28 +1387,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -2052,16 +1402,7 @@
           ]
         },
         "points": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-            "min_length": 2,
-            "max_length": 2
-          },
-          "min_length": 2
+          "ref": "vec2_list"
         },
         "note": {
           "type": "string"
@@ -2076,29 +1417,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -2113,28 +1435,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "transform": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 3,
-          "max_length": 3
+          "ref": "vec3"
         },
         "shape": {
           "type": "string",
@@ -2181,8 +1488,7 @@
           "max": 1
         },
         {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         {
           "type": "number",
@@ -2203,20 +1509,10 @@
           ]
         },
         "from": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "to": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "stops": {
           "type": "array",
@@ -2247,12 +1543,7 @@
           ]
         },
         "centre": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "r0": {
           "type": "number",
@@ -2263,12 +1554,7 @@
           "min": 0
         },
         "focus": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "stops": {
           "type": "array",
@@ -2301,12 +1587,10 @@
       "type": "object",
       "fields": {
         "item": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "colour": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "blur": {
           "type": "number",
@@ -2332,20 +1616,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "parent": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "at": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "rotate": {
           "type": "number"
@@ -2357,12 +1634,7 @@
               "type": "number"
             },
             {
-              "type": "array",
-              "items": {
-                "type": "number"
-              },
-              "min_length": 2,
-              "max_length": 2
+              "ref": "vec2"
             }
           ]
         },
@@ -2396,8 +1668,7 @@
               "type": "number"
             },
             "variant": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             }
           },
           "required": [
@@ -2425,16 +1696,7 @@
           "type": "boolean"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "note": {
           "type": "string"
@@ -2448,12 +1710,7 @@
       "type": "object",
       "fields": {
         "at": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "rotate": {
           "type": "number"
@@ -2472,16 +1729,10 @@
       "type": "object",
       "fields": {
         "part": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "at": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "rotate": {
           "type": "number"
@@ -2523,8 +1774,7 @@
         "from": {
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
+            "ref": "id"
           },
           "min_length": 1
         },
@@ -2558,16 +1808,14 @@
       "type": "object",
       "fields": {
         "fg": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "bg": {
           "type": "string",
           "min_chars": 1
         },
         "bg_paint": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "min": {
           "type": "number",
@@ -2636,14 +1884,12 @@
           "type": "union",
           "alternatives": [
             {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             },
             {
               "type": "array",
               "items": {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9_]*$"
+                "ref": "id"
               },
               "min_length": 2,
               "max_length": 2
@@ -2651,12 +1897,10 @@
           ]
         },
         "mouth": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "brows": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "open": {
           "type": "number",
@@ -2694,29 +1938,10 @@
       "type": "object",
       "fields": {
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "alpha": {
           "type": "number",
@@ -2739,12 +1964,7 @@
           "ref": "face_controls"
         },
         "recolour": {
-          "type": "map",
-          "values": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id_map"
         },
         "items": {
           "type": "map",
@@ -2788,12 +2008,10 @@
           "min_chars": 1
         },
         "fallback": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "pose": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "channels": {
           "ref": "channels"
@@ -2802,12 +2020,7 @@
           "ref": "face_controls"
         },
         "recolour": {
-          "type": "map",
-          "values": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id_map"
         },
         "items": {
           "type": "map",
@@ -2874,7 +2087,8 @@
         "ref": "track_key"
       },
       "min_length": 2,
-      "input_limit": "keys_per_track"
+      "input_limit": "keys_per_track",
+      "length_code": "budget"
     },
     "track": {
       "type": "union",
@@ -2924,16 +2138,10 @@
           "range_code": "budget"
         },
         "needs": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "unique": true
+          "ref": "id_list"
         },
         "fallback": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$",
+          "ref": "id",
           "nullable": true
         },
         "tracks": {
@@ -2950,12 +2158,10 @@
                 "max": 1
               },
               "effect": {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9_]*$"
+                "ref": "id"
               },
               "anchor": {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9_]*$"
+                "ref": "id"
               }
             },
             "required": [
@@ -2987,33 +2193,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -3028,32 +2214,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -3078,33 +2245,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -3119,32 +2266,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -3183,33 +2311,13 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "fill": {
-          "type": "union",
-          "alternatives": [
-            {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            {
-              "type": "object",
-              "fields": {
-                "paint": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
-                }
-              },
-              "required": [
-                "paint"
-              ]
-            }
-          ]
+          "ref": "fill_style"
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "width": {
           "type": "number",
@@ -3224,32 +2332,13 @@
           "type": "boolean"
         },
         "cap": {
-          "type": "string",
-          "choices": [
-            "butt",
-            "round",
-            "square"
-          ]
+          "ref": "line_cap"
         },
         "join": {
-          "type": "string",
-          "choices": [
-            "miter",
-            "round",
-            "bevel"
-          ]
+          "ref": "line_join"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "shape": {
           "type": "string",
@@ -3258,16 +2347,7 @@
           ]
         },
         "points": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-            "min_length": 2,
-            "max_length": 2
-          },
-          "min_length": 2
+          "ref": "vec2_list"
         },
         "note": {
           "type": "string"
@@ -3282,12 +2362,7 @@
       "type": "object",
       "fields": {
         "at": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "r": {
           "type": "number",
@@ -3311,12 +2386,7 @@
           "min": 0
         },
         "look_range": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "glints": {
           "type": "array",
@@ -3325,12 +2395,7 @@
           }
         },
         "at": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "mirror_glints": {
           "type": "boolean"
@@ -3370,12 +2435,7 @@
           "max_length": 2
         },
         "at": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "note": {
           "type": "string"
@@ -3412,15 +2472,13 @@
           "type": "number"
         },
         "fill": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "outline": {
           "type": "object",
           "fields": {
             "colour": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             },
             "width": {
               "type": "number",
@@ -3436,8 +2494,7 @@
           "type": "object",
           "fields": {
             "colour": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             },
             "width": {
               "type": "number",
@@ -3493,13 +2550,11 @@
           "min": 0
         },
         "fill": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$",
+          "ref": "id",
           "nullable": true
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$",
+          "ref": "id",
           "nullable": true
         },
         "lashes": {
@@ -3533,13 +2588,11 @@
           "min_chars": 1
         },
         "fill": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$",
+          "ref": "id",
           "nullable": true
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$",
+          "ref": "id",
           "nullable": true
         },
         "width": {
@@ -3570,12 +2623,7 @@
         "centres": {
           "type": "array",
           "items": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-            "min_length": 2,
-            "max_length": 2
+            "ref": "vec2"
           },
           "min_length": 1
         },
@@ -3584,8 +2632,7 @@
           "exclusive_min": 0
         },
         "fill": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "hide_brows": {
           "type": "boolean"
@@ -3628,8 +2675,7 @@
           "min": 0
         },
         "stroke": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "y": {
           "type": "number"
@@ -3695,12 +2741,7 @@
           ]
         },
         "at": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "items": {
           "type": "array",
@@ -3766,35 +2807,26 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "description": {
           "type": "string",
           "min_chars": 1
         },
         "roles": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "unique": true
+          "ref": "id_list"
         },
         "defaults": {
           "type": "object",
           "fields": {
             "eyes": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             },
             "mouth": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             },
             "brows": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             },
             "blush": {
               "type": "union",
@@ -3887,16 +2919,10 @@
       "type": "object",
       "fields": {
         "part": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "at": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "min_length": 2,
-          "max_length": 2
+          "ref": "vec2"
         },
         "scale": {
           "type": "number",
@@ -3906,15 +2932,13 @@
           "type": "number"
         },
         "kit": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "kit_definition": {
           "ref": "kit"
         },
         "clip": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "ref": "role_ref"
         },
         "eyes": {
           "type": "object",
@@ -3930,8 +2954,7 @@
               "type": "boolean"
             },
             "iris": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$",
+              "ref": "id",
               "nullable": true
             }
           },
@@ -3982,12 +3005,7 @@
           ]
         },
         "colours": {
-          "type": "map",
-          "values": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id_map"
         },
         "tune": {
           "ref": "numeric_tree"
@@ -4023,28 +3041,13 @@
           "type": "object",
           "fields": {
             "left": {
-              "type": "string",
-              "choices": [
-                "butt",
-                "round",
-                "square"
-              ]
+              "ref": "line_cap"
             },
             "right": {
-              "type": "string",
-              "choices": [
-                "butt",
-                "round",
-                "square"
-              ]
+              "ref": "line_cap"
             },
             "join": {
-              "type": "string",
-              "choices": [
-                "miter",
-                "round",
-                "bevel"
-              ]
+              "ref": "line_join"
             }
           },
           "required": []
@@ -4089,8 +3092,7 @@
               "max": 1
             },
             "gesture": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             }
           },
           "required": []
@@ -4126,12 +3128,10 @@
               "exclusive_min": 0
             },
             "breathe_part": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             },
             "extra": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$",
+              "ref": "id",
               "nullable": true
             }
           },
@@ -4180,12 +3180,7 @@
           "type": "boolean"
         },
         "variants": {
-          "type": "map",
-          "values": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id_map"
         },
         "note": {
           "type": "string"
@@ -4201,12 +3196,10 @@
           "min_chars": 1
         },
         "slot": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "anchor": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "parts": {
           "type": "array",
@@ -4218,16 +3211,7 @@
           "ref": "colour_map"
         },
         "lod": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "choices": [
-              "full",
-              "small",
-              "micro"
-            ]
-          },
-          "unique": true
+          "ref": "item_lods"
         },
         "note": {
           "type": "string"
@@ -4264,8 +3248,7 @@
               "max": 1
             },
             "colour": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             }
           },
           "required": [
@@ -4458,8 +3441,7 @@
       "type": "object",
       "fields": {
         "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "name": {
           "type": "string",
@@ -4518,12 +3500,10 @@
               "type": "object",
               "fields": {
                 "primary": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
+                  "ref": "id"
                 },
                 "secondary": {
-                  "type": "string",
-                  "pattern": "^[a-z][a-z0-9_]*$"
+                  "ref": "id"
                 }
               },
               "required": []
@@ -4569,8 +3549,7 @@
           "min_chars": 1
         },
         "family": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "ref": "id"
         },
         "description": {
           "type": "string",
@@ -4625,12 +3604,10 @@
           "type": "object",
           "fields": {
             "primary": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             },
             "secondary": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
+              "ref": "id"
             }
           },
           "required": []
@@ -4737,8 +3714,7 @@
             "type": "object",
             "fields": {
               "anchor": {
-                "type": "string",
-                "pattern": "^[a-z][a-z0-9_]*$"
+                "ref": "id"
               },
               "layer": {
                 "type": "number"
@@ -4770,12 +3746,7 @@
           "key_pattern": "^[a-z][a-z0-9_]*$"
         },
         "wear": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "unique": true
+          "ref": "id_list"
         },
         "note": {
           "type": "string"
@@ -4794,6 +3765,5 @@
         "moods"
       ]
     }
-  },
-  "policy_file": "policy-v1.json"
+  }
 }

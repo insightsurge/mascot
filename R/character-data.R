@@ -2,6 +2,15 @@ character_data_store <- new.env(parent = emptyenv())
 character_data_store$items <- list()
 character_data_store$order <- character()
 
+#' Character ids reserved for built-in characters, shipped or planned
+#'
+#' Includes the 0.1.0 candidates so a custom character registered now cannot
+#' collide with a built-in added later.
+#' @noRd
+character_data_reserved <- function() {
+  unique(c(builtin_characters()$id, "tessa", "neer", "alpha_visor", "knurl"))
+}
+
 #' Verify internal checked character data
 #'
 #' Re-runs semantic character format verification and reconstructs the derived
@@ -18,7 +27,8 @@ character_data_verify <- function(x) {
 #' Registers a verified character recipe for the lifetime of the R process.
 #' Registration inside an active reactive domain is rejected. Re-registering
 #' identical content is idempotent; conflicting content with an existing custom
-#' or built-in identifier raises an error.
+#' or reserved built-in identifier raises an error. This is the only place the
+#' store is written, so entries are verified exactly once.
 #' @noRd
 character_data_register <- function(x) {
   checkmate::assert_class(x, "mascot_character_data")
@@ -32,7 +42,7 @@ character_data_register <- function(x) {
   }
   verified <- character_data_verify(x)
   id <- verified$id
-  if (id %in% builtin_characters()$id) {
+  if (id %in% character_data_reserved()) {
     character_format_abort(
       code = "identity",
       path = "$.id",
@@ -61,8 +71,9 @@ character_data_register <- function(x) {
 
 #' Retrieve verified checked character data from the internal store
 #'
-#' Retrieves custom registered character data, returning a verified defensive
-#' copy so caller mutations cannot corrupt the store.
+#' Returns the entry verified at registration. R copies a list when it is
+#' modified, so a caller changing the returned value cannot change the store;
+#' re-running the full check here would only add latency to every session.
 #' @noRd
 character_data_get <- function(id) {
   checkmate::assert_string(id, min.chars = 1, pattern = "^[a-z][a-z0-9_]{1,31}$")
@@ -74,8 +85,7 @@ character_data_get <- function(id) {
       fix = "Supply a registered custom character id."
     )
   }
-  item <- character_data_store$items[[id]]
-  character_data_verify(item)
+  character_data_store$items[[id]]
 }
 
 #' List registered custom character ids in deterministic registration order

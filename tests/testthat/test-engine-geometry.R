@@ -38,6 +38,18 @@ describe("character-format geometry and painting", {
       ),
       "input_type"
     )
+    # Inherited names such as toString are not declared shapes or paints.
+    expect_identical(
+      js("(() => {try {mascot.geometry.compile({shape:'ref',use:'toString'},{});}catch(e){return e.code;}})()"),
+      "missing_reference"
+    )
+    expect_identical(
+      js(paste0(
+        "(() => {const ctx=document.createElement('canvas').getContext('2d');",
+        "try {mascot.geometry.paint(ctx,{paint:'constructor'},{paints:{}},{},'$.fill');}catch(e){return e.code;}})()"
+      )),
+      "missing_reference"
+    )
   })
 
   it("clips against hidden active geometry in its own world coordinates", {

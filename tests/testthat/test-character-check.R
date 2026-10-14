@@ -24,6 +24,87 @@ describe("character_format_check()", {
     }
   })
 
+  it("verifies that invalid format fixtures isolate defects without accidental drift", {
+    extract_leaves <- function(x, path = "$") {
+      if (is.list(x) && length(x) > 0) {
+        nms <- names(x)
+        is_named <- !is.null(nms)
+        unlist(
+          lapply(seq_along(x), function(i) {
+            child_path <- if (is_named) paste0(path, ".", nms[[i]]) else paste0(path, "[", i - 1L, "]")
+            extract_leaves(x[[i]], child_path)
+          }),
+          recursive = FALSE
+        )
+      } else {
+        res <- list(x)
+        names(res) <- path
+        res
+      }
+    }
+
+    cases <- jsonlite::fromJSON(test_path("fixtures", "format", "diagnostic-expected.json"), simplifyVector = FALSE)
+    ref_names <- c("anchor_probe.json", "alpha_visor.json", "study_bot.json", "study_bot-resolved.json", "tessa.json")
+    ref_leaves <- lapply(ref_names, function(nm) {
+      extract_leaves(jsonlite::fromJSON(test_path("fixtures", "format", nm), simplifyVector = FALSE))
+    })
+    names(ref_leaves) <- ref_names
+
+    for (case in cases) {
+      # duplicate_key.json is one line of raw text, not a copy of a reference recipe.
+      if (case$id == "duplicate_key") {
+        next
+      }
+
+      inv_data <- jsonlite::fromJSON(test_path("fixtures", "format", case$file), simplifyVector = FALSE)
+
+      inv_leaves <- extract_leaves(inv_data)
+
+      # Find the base fixture with the fewest differing leaf nodes
+      scores <- vapply(
+        ref_leaves,
+        function(rleaves) {
+          all_keys <- union(names(inv_leaves), names(rleaves))
+          sum(vapply(all_keys, function(k) !identical(inv_leaves[[k]], rleaves[[k]]), logical(1)))
+        },
+        integer(1)
+      )
+
+      best_ref <- names(which.min(scores))
+      best_leaves <- ref_leaves[[best_ref]]
+      all_keys <- union(names(inv_leaves), names(best_leaves))
+      diff_keys <- all_keys[vapply(all_keys, function(k) !identical(inv_leaves[[k]], best_leaves[[k]]), logical(1))]
+
+      exp_path <- case$path
+      # Assert each differing leaf lies under the expected diagnostic path.
+      # Exception: unknown_track_target replaces the root.rotate track with ghost.rotate,
+      # so the removed root.rotate leaves are an expected defect-introduction removal.
+      is_under <- vapply(
+        diff_keys,
+        function(d) {
+          d == exp_path || startsWith(d, paste0(exp_path, ".")) || startsWith(d, paste0(exp_path, "["))
+        },
+        logical(1)
+      )
+
+      if (case$id == "unknown_track_target") {
+        is_removal_exception <- vapply(
+          diff_keys,
+          function(d) {
+            startsWith(d, "$.gestures.rock.tracks.root.rotate")
+          },
+          logical(1)
+        )
+        is_under <- is_under | is_removal_exception
+      }
+
+      expect_true(
+        all(is_under),
+        info = paste("File:", case$file, "Unexpected diff paths:", paste(diff_keys[!is_under], collapse = ", "))
+      )
+    }
+  })
+
   it("rejects a mutated checked list and a forged class instead of trusting metadata", {
     checked <- character_format_check(format_recipe())
     checked$anchors$badge$part <- "missing_owner"

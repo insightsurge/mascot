@@ -47,10 +47,24 @@ describe("character_format_references()", {
       "$.face.tune.eyes.open.op",
       character_format_tune(base, list(eyes = list(open = list(op = 1))))
     )
-    expect_error(character_format_tune(1, "a"))
-    expect_error(character_format_tune("a", 1))
-    expect_error(character_format_tune(1, 1, path = 1))
     expect_error(character_format_parts(1))
     expect_error(character_format_references(1))
+  })
+
+  it("enforces declared parts limit counting accessory templates", {
+    recipe <- format_recipe()
+    part_tmpl <- recipe$parts[[1]]
+    recipe$parts <- c(
+      list(part_tmpl),
+      lapply(2:255, function(i) {
+        p <- part_tmpl
+        p$id <- paste0("part_", i)
+        p
+      })
+    )
+    expect_length(character_format_parts(recipe)$parts, 256L)
+    recipe$parts[[256L]] <- part_tmpl
+    recipe$parts[[256L]]$id <- "part_256"
+    format_problem("budget", "$.parts", character_format_parts(recipe))
   })
 })

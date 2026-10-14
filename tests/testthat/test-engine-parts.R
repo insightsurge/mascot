@@ -80,6 +80,28 @@ describe("character-format part transforms", {
     expect_false(state$parts$wear_badge_disc$available)
   })
 
+  it("reads data-named keys as own properties, so a part may be called constructor", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    # A valid id that is also an Object.prototype name, with an LOD variant map in the band.
+    text <- gsub(
+      '"panel',
+      '"constructor',
+      readLines(test_path("fixtures", "format", "anchor_probe.json")),
+      fixed = TRUE
+    )
+    recipe <- jsonlite::fromJSON(paste(text, collapse = "\n"), simplifyVector = FALSE)
+    recipe$lod$small <- list(variants = character_object())
+    checked <- character_format_check(recipe)
+    payload <- as.character(jsonlite::toJSON(unclass(checked), auto_unbox = TRUE, null = "null", digits = NA))
+    js(paste0("window.proto=mascot.parts.compile(", payload, ")"))
+    for (band in c("full", "small", "micro")) {
+      state <- js(paste0("mascot.parts.frame(proto, {}, '", band, "')"))
+      expect_identical(state$parts$constructor$variant, "default", info = band)
+    }
+    expect_identical(js("mascot.parts.own({}, 'toString')"), NULL)
+  })
+
   it("keeps parenting separate from stable paint order and freezes a private copy", {
     skip_without_chrome()
     js <- local_character_engine()

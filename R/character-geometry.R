@@ -196,11 +196,8 @@ character_geometry <- function(item, shapes = character_object(), path = "$.item
 
 #' Transform all corners of a conservative local box
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_geometry_transform <- function(box, at, angle, scale) {
-  checkmate::assert_numeric(box, len = 4L, any.missing = FALSE, finite = TRUE)
-  checkmate::assert_numeric(at, len = 2L, any.missing = FALSE, finite = TRUE)
-  checkmate::assert_number(angle, finite = TRUE)
-  checkmate::assert_numeric(scale, len = 2L, any.missing = FALSE, finite = TRUE)
   x <- box[c(1L, 3L, 1L, 3L)] * scale[[1L]]
   y <- box[c(2L, 2L, 4L, 4L)] * scale[[2L]]
   tx <- at[[1L]] + cos(angle) * x - sin(angle) * y

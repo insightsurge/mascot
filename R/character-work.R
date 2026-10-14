@@ -19,8 +19,8 @@ character_work_zero <- function() {
 
 #' Sum independent work, taking the maximum blur radius
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_work_sum <- function(costs) {
-  checkmate::assert_list(costs)
   result <- character_work_zero()
   for (cost in costs) {
     radius <- max(result[["blur_design_units"]], cost[["blur_design_units"]])
@@ -32,8 +32,8 @@ character_work_sum <- function(costs) {
 
 #' Componentwise upper bound across mutually exclusive choices
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_work_max <- function(costs) {
-  checkmate::assert_list(costs)
   result <- character_work_zero()
   for (cost in costs) {
     result <- pmax(result, cost)
@@ -59,10 +59,8 @@ character_work_outline <- function(x, band) {
 
 #' Count ordinary geometry once, and its actual paint invocations separately
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_work_item <- function(item, shapes, outline) {
-  checkmate::assert_list(item)
-  checkmate::assert_list(shapes)
-  checkmate::assert_list(outline)
   geometry <- character_geometry(item, shapes)
   style <- geometry$item
   result <- character_work_zero()
@@ -85,11 +83,8 @@ character_work_item <- function(item, shapes, outline) {
 
 #' Bound every authored scale, including additive tracks and idle breathing
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_work_scale <- function(owner, x, graph, behaviour) {
-  checkmate::assert_string(owner)
-  checkmate::assert_list(x)
-  checkmate::assert_list(graph)
-  checkmate::assert_list(behaviour)
   result <- 1
   repeat {
     ranges <- character_format_ranges(x, behaviour)
@@ -112,10 +107,8 @@ character_work_scale <- function(owner, x, graph, behaviour) {
 
 #' Conservative local box including stroke tips
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_work_box <- function(item, shapes, outline) {
-  checkmate::assert_list(item)
-  checkmate::assert_list(shapes)
-  checkmate::assert_list(outline)
   geometry <- character_geometry(item, shapes)
   item <- geometry$item
   widths <- if (is.null(item$stroke)) {
@@ -141,15 +134,8 @@ character_work_box <- function(item, shapes, outline) {
 
 #' One bounded emission group, independent of translations/rotations
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_work_glow <- function(items, definition, owner, x, graph, behaviour, band, scale = 1) {
-  checkmate::assert_list(items)
-  checkmate::assert_list(definition, null.ok = TRUE)
-  checkmate::assert_string(owner)
-  checkmate::assert_list(x)
-  checkmate::assert_list(graph)
-  checkmate::assert_list(behaviour)
-  checkmate::assert_choice(band, c("full", "small", "micro"))
-  checkmate::assert_number(scale, lower = 0, finite = TRUE)
   result <- character_work_zero()
   enabled <- if (is.null(x$lod[[band]]$glow)) band != "micro" else x$lod[[band]]$glow
   if (!enabled || is.null(definition) || !length(items) || (!is.null(definition$alpha) && definition$alpha <= 0)) {
@@ -319,7 +305,6 @@ character_format_work <- function(x, graph, behaviour, band = "full") {
   hidden <- unlist(x$lod[[band]]$hide)
   needed <- character()
   require_part <- function(id) {
-    checkmate::assert_string(id)
     result <- character()
     while (id != "root") {
       result <- c(result, id)
@@ -328,16 +313,12 @@ character_format_work <- function(x, graph, behaviour, band = "full") {
     result
   }
   variants <- function(id) {
-    checkmate::assert_string(id)
     part <- graph$parts[[id]]
     all <- c(list(default = if (is.null(part$items)) list() else part$items), part$variants)
     selected <- x$lod[[band]]$variants[[id]]
     if (is.null(selected)) all else all[selected]
   }
   clip_cost <- function(reference, source_id = "", source_variant = "") {
-    checkmate::assert_string(reference)
-    checkmate::assert_string(source_id)
-    checkmate::assert_string(source_variant)
     pair <- strsplit(reference, ".", fixed = TRUE)[[1L]]
     choices <- variants(pair[[1L]])
     if (pair[[1L]] == source_id) {

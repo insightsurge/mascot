@@ -38,7 +38,7 @@ inst/preview/preview.css
     Copyright (c) Harsh Verma. Licence: MIT.
 
 inst/format/character-v1.json
-    Source: version 1 character format structural grammar and input limits, written for this package.
+    Source: version 1 character format structural grammar, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
 tests/testthat/fixtures/format/*.json

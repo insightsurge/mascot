@@ -63,7 +63,86 @@ describe("character-format authored colour and contrast", {
     expect_error(character_format_colours(list(), mode = "auto"))
     expect_error(character_format_colours(list(), preset = 1))
     expect_error(character_format_colours(list(), recolour = 1))
-    expect_error(character_luminance(1))
     expect_error(character_format_contrast(1))
+  })
+
+  it("matches independent WCAG 2 worst-case contrast over a two-stop linear background", {
+    # Hand calculation (wcag_contrast.py):
+    # 1. Base background: #0a1118 (alpha 1.0) -> RGB (10/255, 17/255, 24/255)
+    # 2. Gradient stops composited over base background:
+    #    Stop 1: rgba(20, 34, 48, 0.8)
+    #      stop1_comp = [20/255 * 0.8 + 10/255 * 0.2, 34/255 * 0.8 + 17/255 * 0.2, 48/255 * 0.8 + 24/255 * 0.2]
+    #                 = [18/255, 30.6/255, 43.2/255] ~ [0.070588235294, 0.120000000000, 0.169411764706]
+    #    Stop 2: #20364c (alpha 1.0)
+    #      stop2_comp = [32/255, 54/255, 76/255] ~ [0.125490196078, 0.211764705882, 0.298039215686]
+    # 3. Per-channel background extrema:
+    #    lower = min(stop1_comp, stop2_comp) = [0.070588235294, 0.120000000000, 0.169411764706]
+    #    upper = max(stop1_comp, stop2_comp) = [0.125490196078, 0.211764705882, 0.298039215686]
+    # 4. Translucent foreground: rgba(255, 255, 255, 0.6) (alpha 0.6) composited over lower and upper:
+    #    fg_over_lower = 1.0 * 0.6 + lower * 0.4 = [0.628235294118, 0.648000000000, 0.667764705882]
+    #    fg_over_upper = 1.0 * 0.6 + upper * 0.4 = [0.650196078431, 0.684705882353, 0.719215686275]
+    # 5. Relative luminance (WCAG standard formula: c <= 0.04045 ? c/12.92 : ((c+0.055)/1.055)^2.4; 0.2126R + 0.7152G + 0.0722B):
+    #    L_lower_bg = 0.012636963237
+    #    L_upper_bg = 0.034672123695
+    #    L_fg_lower = 0.374040326609
+    #    L_fg_upper = 0.420254342090
+    # 6. Closest pair contrast ratio:
+    #    Foreground is brighter than background; closest pair is L_fg_lower and L_upper_bg:
+    #      ratio = (0.374040326609 + 0.05) / (0.034672123695 + 0.05)
+    #            = 0.424040326609 / 0.084672123695
+    #            = 5.008027531447
+    recipe <- format_recipe("anchor_probe")
+    recipe$colours$bg_role <- "#0a1118"
+    recipe$colours$stop1_role <- "rgba(20, 34, 48, 0.8)"
+    recipe$colours$stop2_role <- "#20364c"
+    recipe$colours$fg_role <- "rgba(255, 255, 255, 0.6)"
+    recipe$paints <- list(
+      linear_bg = list(
+        type = "linear",
+        from = list(0, 0),
+        to = list(0, 100),
+        stops = list(
+          list(0, "stop1_role"),
+          list(1, "stop2_role")
+        )
+      )
+    )
+    recipe$contrast <- list(
+      list(
+        fg = "fg_role",
+        bg = "bg_role",
+        bg_paint = "linear_bg",
+        min = 3
+      )
+    )
+
+    data <- character_format_resolve(recipe)
+    res <- character_format_contrast(data)
+    expected_ratio <- 5.008027531447
+    expect_equal(res[[1L]]$ratio_lower_bound, expected_ratio, tolerance = 1e-9)
+
+    recipe$contrast[[1L]]$min <- 5.01
+    format_problem(
+      "invalid_colour",
+      "$.contrast[0]",
+      character_format_contrast(character_format_resolve(recipe))
+    )
+  })
+})
+
+describe("contrast promises for built-in faces", {
+  it("requires a built-in face to declare its feature contrast", {
+    data <- format_recipe("tessa")
+    data$contrast <- list()
+    format_problem("invalid_colour", "$.contrast", character_format_check(data))
+  })
+
+  it("follows a mapped feature role and leaves custom characters to their own promises", {
+    data <- format_recipe("alpha_visor")
+    data$contrast <- data$contrast[2]
+    format_problem("invalid_colour", "$.contrast", character_format_check(data))
+    custom <- format_recipe("study_bot")
+    custom$contrast <- list()
+    expect_s3_class(character_format_check(custom), "mascot_character_data")
   })
 })

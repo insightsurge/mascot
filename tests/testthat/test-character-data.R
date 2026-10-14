@@ -95,6 +95,30 @@ describe("character_data_register() and character_data_get()", {
   })
 })
 
+describe("character store reserved ids and retrieval cost", {
+  it("reserves the planned built-in ids before they ship", {
+    before <- character_data_snapshot()
+    withr::defer(character_data_reset(before))
+    character_data_reset()
+    for (id in c("neer", "alpha_visor", "knurl")) {
+      recipe <- format_recipe()
+      recipe$id <- id
+      format_problem("identity", "$.id", character_data_register(character_format_check(recipe)))
+    }
+    expect_identical(character_data_ids(), character())
+  })
+
+  it("returns the entry verified at registration without checking it again", {
+    before <- character_data_snapshot()
+    withr::defer(character_data_reset(before))
+    character_data_reset()
+    checked <- character_format_check(format_recipe())
+    character_data_register(checked)
+    local_mocked_bindings(character_format_check = function(...) stop("checked again"))
+    expect_identical(unclass(character_data_get("anchor_probe")), unclass(checked))
+  })
+})
+
 describe("character store validation and isolation", {
   it("prevents unchecked lists, forged classes, and mutated anchors from poisoning the store", {
     before <- character_data_snapshot()

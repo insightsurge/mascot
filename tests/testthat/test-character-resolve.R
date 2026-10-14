@@ -89,9 +89,6 @@ describe("character_format_resolve()", {
     expect_error(character_format_resolve(1))
     expect_error(character_format_resolve(list(), families = 1))
     expect_error(character_format_resolve(list(), kits = 1))
-    expect_error(character_format_merge(function() NULL, list()))
-    expect_error(character_format_merge(list(), function() NULL))
-    expect_error(character_format_merge(list(), list(), path = 1))
     expect_error(character_format_identity(1))
     expect_identical(character_format_identity(list(a = 1, b = 2)), character_format_identity(list(b = 2, a = 1)))
     expect_false(identical(

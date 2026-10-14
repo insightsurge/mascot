@@ -42,6 +42,9 @@
   const determinant = (transform) => transform[0] * transform[3] - transform[1] * transform[2];
   const collapsed = (transform) => Math.abs(determinant(transform)) < 1e-12;
   const value = (channels, key, fallback) => (Object.hasOwn(channels, key) ? channels[key] : fallback);
+  // Data-named keys (part, anchor, accessory, variant ids) may equal Object.prototype names such as
+  // `constructor`; read only the object's own properties.
+  const own = (object, key) => (object != null && Object.hasOwn(object, key) ? object[key] : undefined);
   const vector = (entries, fallback, path) => {
     const result = entries ?? fallback;
     if (!Array.isArray(result) || result.length !== 2) problem('input_type', path, 'Supply a two-vector.');
@@ -134,11 +137,11 @@
     for (const [index, id] of (source.wear ?? []).entries()) {
       if (worn.has(id)) problem('input_type', `$.wear[${index}]`, 'Wear each accessory once.');
       worn.add(id);
-      const accessory = source.accessories?.[id];
+      const accessory = own(source.accessories, id);
       if (!accessory) problem('missing_reference', `$.wear[${index}]`, 'Name a declared accessory.');
       if (slots.has(accessory.slot)) problem('input_type', `$.wear[${index}]`, 'Wear only one accessory in each slot.');
       slots.add(accessory.slot);
-      const anchor = source.anchors?.[accessory.anchor];
+      const anchor = own(source.anchors, accessory.anchor);
       if (!anchor) problem('missing_reference', `$.accessories.${id}.anchor`, 'Name a declared anchor.');
       const prefix = `wear_${id}_`;
       const local = new Set(accessory.parts.map((part) => part.id));
@@ -168,7 +171,7 @@
         problem('missing_reference', `${part.path}.parent`, 'Remove the part/anchor dependency cycle.');
       if (marks.get(part.id) === 2) return;
       marks.set(part.id, 1);
-      const parent = part.attachment ? source.anchors[part.attachment.id].part : part.parent;
+      const parent = part.attachment ? own(source.anchors, part.attachment.id).part : part.parent;
       if (parent !== 'root') {
         if (!byId.has(parent)) problem('missing_reference', `${part.path}.parent`, 'Name a declared parent part.');
         visit(byId.get(parent));
@@ -191,11 +194,11 @@
     const hidden = new Set(lod.hide ?? []);
     const anchorState = (id) => {
       if (anchors[id]) return anchors[id];
-      const definition = source.anchors[id];
+      const definition = own(source.anchors, id);
       if (!definition) problem('missing_reference', `$.anchors.${id}`, 'Name a declared anchor.');
       const owner = states[definition.part];
       if (!owner) problem('missing_reference', `$.anchors.${id}.part`, 'Resolve the owning part first.');
-      const local = { ...definition, ...definition.variants?.[owner.variant] };
+      const local = { ...definition, ...own(definition.variants, owner.variant) };
       const at = vector(local.at, [0, 0], `$.anchors.${id}.at`);
       const angle = number(local.rotate ?? 0, `$.anchors.${id}.rotate`);
       const size = number(local.scale ?? 1, `$.anchors.${id}.scale`, Number.MIN_VALUE, 16);
@@ -218,7 +221,7 @@
           : states[part.parent];
       if (part.attachment) {
         const anchor = anchorState(part.attachment.id);
-        parent = { ...anchor, opacity: states[source.anchors[part.attachment.id].part].opacity };
+        parent = { ...anchor, opacity: states[own(source.anchors, part.attachment.id).part].opacity };
         if (part.attachment.lod && !part.attachment.lod.includes(band)) parent.available = false;
       }
       const transform = child(parent.matrix, part, channels);
@@ -228,7 +231,7 @@
       if (typeof visible !== 'boolean') problem('invalid_channel', `${part.path}.visible`, 'Supply a boolean.');
       let variant = value(channels, `${id}.variant`, 'default');
       if (part.switch && value(channels, part.switch.channel, 0) > part.switch.above) variant = part.switch.variant;
-      variant = lod.variants?.[id] ?? variant;
+      variant = own(lod.variants, id) ?? variant;
       if (variant !== 'default' && !Object.hasOwn(part.variants ?? {}, variant)) {
         problem('missing_reference', `${part.path}.variants.${variant}`, 'Select a declared variant.');
       }
@@ -256,5 +259,5 @@
     return { root: rootMatrix, parts: states, anchors, layers, band, hidden: [...hidden] };
   };
 
-  ns.parts = Object.freeze({ identity, multiply, point, root, child, compile, frame });
+  ns.parts = Object.freeze({ identity, own, multiply, point, root, child, compile, frame });
 })();

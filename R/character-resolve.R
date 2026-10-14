@@ -6,10 +6,8 @@ character_object <- function() {
 
 #' Recursively merge objects, replacing arrays and named definitions atomically
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_format_merge <- function(base, override, path = "$") {
-  checkmate::assert(checkmate::check_list(base, null.ok = TRUE), checkmate::check_atomic(base))
-  checkmate::assert(checkmate::check_list(override, null.ok = TRUE), checkmate::check_atomic(override))
-  checkmate::assert_string(path)
   if (!is.list(base) || !is.list(override) || is.null(names(base)) || is.null(names(override))) {
     return(override)
   }
@@ -54,7 +52,6 @@ character_format_kits <- function() {
   ids <- c("classic", "screen")
   stats::setNames(
     lapply(ids, function(id) {
-      checkmate::assert_string(id)
       jsonlite::fromJSON(
         system.file("format", "kits", paste0(id, ".json"), package = "mascot", mustWork = TRUE),
         simplifyVector = FALSE
@@ -65,13 +62,17 @@ character_format_kits <- function() {
 }
 
 #' Resolve a parsed source to a self-contained recipe, without certifying it
+#'
+#' `parsed = TRUE` skips the structural parse when the caller has just parsed
+#' `x` (the checker does); the resolved result is always parsed again.
 #' @noRd
-character_format_resolve <- function(x, families = character_object(), kits = character_format_kits()) {
+character_format_resolve <- function(x, families = character_object(), kits = character_format_kits(), parsed = FALSE) {
   checkmate::assert_list(x, names = "unique")
   checkmate::assert_list(families, names = "unique")
   checkmate::assert_list(kits, names = "unique")
+  checkmate::assert_flag(parsed)
   schema <- character_format_schema()
-  parsed <- character_format_parse(x)
+  parsed <- if (parsed) x else character_format_parse(x)
   core <- c("idle", "thinking", "happy", "worried", "celebrating")
   for (id in core) {
     if (!id %in% names(parsed$moods)) {

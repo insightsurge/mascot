@@ -80,10 +80,8 @@ character_format_channels <- function(x, graph) {
 
 #' Check one channel value against its typed membership/range rule
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_channel_value <- function(value, rule, path) {
-  checkmate::assert(checkmate::check_atomic(value), checkmate::check_list(value, null.ok = TRUE))
-  checkmate::assert_list(rule)
-  checkmate::assert_string(path)
   valid <- switch(
     rule$type,
     number = is.numeric(value) && length(value) == 1L && is.finite(value) && value >= rule$lower && value <= rule$upper,

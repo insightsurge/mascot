@@ -95,7 +95,6 @@ character_format_colours <- function(x, mode = "light", preset = "original", rec
     ready <- pending[vapply(
       pending,
       function(id) {
-        checkmate::assert_string(id)
         all(unlist(x$follows[[id]]$from) %in% c(setdiff(names(colours), names(x$follows)), order))
       },
       logical(1)
@@ -148,8 +147,8 @@ character_format_colours <- function(x, mode = "light", preset = "original", rec
 
 #' Luminance of three normalised linear-bounded RGB channels
 #' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
 character_luminance <- function(rgb) {
-  checkmate::assert_numeric(rgb, len = 3L, lower = 0, upper = 1, any.missing = FALSE, finite = TRUE)
   sum(ifelse(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055)^2.4) * c(0.2126, 0.7152, 0.0722))
 }
 
@@ -157,6 +156,18 @@ character_luminance <- function(rgb) {
 #' @noRd
 character_format_contrast <- function(x) {
   checkmate::assert_list(x)
+  if (!is.null(x$face) && isTRUE(x$id %in% character_data_reserved())) {
+    feature <- x$face$colours[["feature"]]
+    feature <- if (is.null(feature)) "feature" else feature
+    if (!any(vapply(x$contrast, function(pair) identical(pair$fg, feature), logical(1)))) {
+      character_format_abort(
+        "invalid_colour",
+        "$.contrast",
+        feature,
+        "Declare a contrast pair for the face feature role of a built-in character."
+      )
+    }
+  }
   rows <- list()
   for (mode in c("light", "dark")) {
     for (preset in c("original", names(x$palettes))) {

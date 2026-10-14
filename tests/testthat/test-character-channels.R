@@ -84,9 +84,6 @@ describe("character_format_behaviour()", {
     expect_error(character_format_channels(list(), 1))
     expect_error(character_format_behaviour(1, list()))
     expect_error(character_format_behaviour(list(), 1))
-    expect_error(character_channel_value(function() NULL, list(), "$"))
-    expect_error(character_channel_value(1, 1, "$"))
-    expect_error(character_channel_value(1, list(), 1))
     expect_error(
       character_channel_value(TRUE, list(type = "number", lower = 0, upper = 1), "$"),
       class = "mascot_error_character"

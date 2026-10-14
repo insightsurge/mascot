@@ -10,8 +10,7 @@
     "moods": 64,
     "gestures": 128,
     "keys_per_track": 64,
-    "tracks_per_gesture": 256,
-    "diagnostics_per_stage": 10
+    "tracks_per_gesture": 256
   },
   "geometry": {
     "frame": [

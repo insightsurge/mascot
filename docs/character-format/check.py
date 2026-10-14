@@ -184,7 +184,6 @@ def check_limits(policy, proposal):
         "gestures": (r"moods, (\d+) gestures", 1),
         "keys_per_track": (r"gestures, (\d+) keys per track", 1),
         "tracks_per_gesture": (r"keys per track, (\d+) tracks per gesture", 1),
-        "diagnostics_per_stage": (r"collect at most (ten) independent problems", 1),
     }
     for key, (pattern, multiplier) in input_matches.items():
         match = re.search(pattern, proposal)

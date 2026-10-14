@@ -1,0 +1,108 @@
+describe("character-format part transforms", {
+  it("filters inherited orientation without moving the world pivot", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    expect_equal(
+      unlist(js("mascot.parts.child([0,1,-1,0,0,0], {id:'tool',at:[10,0],keep_upright:true})")),
+      c(1, 0, 0, 1, 0, 10)
+    )
+    expect_equal(
+      unlist(js("mascot.parts.child([-1,0,0,1,0,0], {id:'tool',at:[10,0],no_flip:true})")),
+      c(1, 0, 0, 1, -10, 0)
+    )
+    expect_equal(
+      unlist(js("mascot.parts.child([0,2,-3,0,0,0], {id:'tool',at:[10,0],keep_upright:true})")),
+      c(2, 0, 0, 3, 0, 20)
+    )
+    # Reflection plus shear: QR removes rotation/shear, keeps positive stretches.
+    expect_equal(
+      unlist(js("mascot.parts.child([-2,0,4,3,7,9], {id:'tool',at:[10,2],keep_upright:true})")),
+      c(-2, 0, 0, 3, -5, 15)
+    )
+    expect_equal(
+      unlist(js("mascot.parts.child([-2,0,4,3,7,9], {id:'tool',at:[10,2],keep_upright:true,no_flip:true})")),
+      c(2, 0, 0, 3, -5, 15)
+    )
+  })
+
+  it("uses absolute resting channels and preserves authored local rotation", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    expect_equal(
+      unlist(js("mascot.parts.child([0,1,-1,0,0,0], {id:'tool',keep_upright:true,rotate:Math.PI/2,scale:[2,3]})")),
+      c(0, 2, -3, 0, 0, 0),
+      tolerance = 1e-12
+    )
+    expect_equal(
+      unlist(js("mascot.parts.child([1,0,0,1,0,0], {id:'tool',rotate:1,scale:2}, {'tool.rotate':0,'tool.scale_x':3})")),
+      c(3, 0, 0, 2, 0, 0)
+    )
+    # Ground squash happens before the centre-height pivot rotation.
+    expect_equal(
+      unlist(js(
+        "mascot.parts.point(mascot.parts.root(60, {'root.rotate':Math.PI/2,'root.scale_x':2,'root.lift':5}),[0,-60])"
+      )),
+      c(150, 205)
+    )
+    expect_equal(unlist(js("mascot.parts.point(mascot.parts.root(60, {'root.rotate':Math.PI/2}),[0,0])")), c(90, 210))
+  })
+
+  it("does not resurrect descendants of singular ancestors", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    expect_equal(
+      unlist(js("mascot.parts.child([0,0,0,1,5,7],{id:'tool',at:[10,20],keep_upright:true,no_flip:true})")),
+      c(0, 0, 0, 0, 5, 27)
+    )
+    expect_equal(unlist(js("mascot.parts.child([1e-13,0,0,1,0,0],{id:'tool',keep_upright:true})"))[1:4], rep(0, 4))
+  })
+
+  it("moves variant anchors and suppresses attachments of hidden or excluded owners", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    recipe <- jsonlite::fromJSON(test_path("fixtures", "format", "anchor_probe.json"), simplifyVector = FALSE)
+    payload <- as.character(jsonlite::toJSON(recipe, auto_unbox = TRUE, null = "null"))
+    js(paste0("window.probe=mascot.parts.compile(", payload, ")"))
+    state <- js("mascot.parts.frame(probe)")
+    expect_equal(unlist(state$anchors$badge$matrix)[5:6], c(168, 198))
+    expect_equal(unlist(state$parts$wear_badge_disc$matrix)[5:6], c(168, 198))
+    expect_true(state$parts$wear_badge_disc$available)
+    state <- js("mascot.parts.frame(probe, {'panel.variant':'raised'})")
+    expect_equal(unlist(state$anchors$badge$matrix)[5:6], c(170, 200))
+    state <- js("mascot.parts.frame(probe, {'panel.visible':false})")
+    expect_false(state$anchors$badge$available)
+    expect_false(state$parts$wear_badge_disc$available)
+    expect_equal(unlist(state$anchors$badge$matrix)[5:6], c(168, 198))
+    state <- js("mascot.parts.frame(probe, {}, 'micro')")
+    expect_false(state$parts$wear_badge_disc$available)
+    state <- js("mascot.parts.frame(probe, {'root.scale_x':0})")
+    expect_false(state$anchors$badge$available)
+    expect_false(state$parts$wear_badge_disc$available)
+  })
+
+  it("keeps parenting separate from stable paint order and freezes a private copy", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(
+      "(() => {const ch={format_version:1,ground:{centre_height:0},parts:[{id:'child',parent:'parent',layer:1},{id:'parent',layer:2},{id:'peer',layer:1}]}; const p=mascot.parts.compile(ch);ch.parts[0].layer=99; return {order:p.order,layers:mascot.parts.frame(p).layers,frozen:Object.isFrozen(p.parts[0])};})()"
+    )
+    expect_identical(unlist(result$order), c("parent", "child", "peer"))
+    expect_identical(unlist(result$layers), c("child", "peer", "parent"))
+    expect_true(result$frozen)
+  })
+
+  it("rejects bad references and unsafe values with diagnostic codes", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    evaluate_error <- function(code) {
+      js(paste0("(() => {try {", code, "; return null;} catch(e) {return {code:e.code,path:e.path};}})()"))
+    }
+    result <- evaluate_error("mascot.parts.compile({format_version:1,parts:[{id:'a',parent:'b'},{id:'b',parent:'a'}]})")
+    expect_identical(result$code, "missing_reference")
+    expect_identical(result$path, "$.parts[0].parent")
+    expect_identical(evaluate_error("mascot.parts.root(0,{'root.scale_x':17})")$code, "input_type")
+    expect_identical(evaluate_error("mascot.parts.root(0,{'root.flip':0})")$code, "invalid_channel")
+    expect_identical(evaluate_error("mascot.parts.child([NaN,0,0,1,0,0],{id:'a'})")$code, "non_finite")
+    expect_identical(evaluate_error("mascot.parts.compile({format_version:2,parts:[]})")$code, "version")
+  })
+})

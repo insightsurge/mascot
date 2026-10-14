@@ -1,0 +1,219 @@
+{
+  "format_version": 1,
+  "id": "anchor_probe",
+  "name": "Anchor Probe",
+  "family": "test_helpers",
+  "description": "A faceless reference for attachment and visibility checks.",
+  "resolved": true,
+  "family_definition": {
+    "id": "test_helpers",
+    "name": "Test Helpers",
+    "description": "Small contract examples.",
+    "defaults": {}
+  },
+  "requires": [
+    "parts",
+    "outline",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "body": "#78c8a0",
+    "outline": "#16201b",
+    "accent": "#ffc400"
+  },
+  "palette_sources": {},
+  "ground": {
+    "centre_height": 60
+  },
+  "outline": {
+    "width": 2.5,
+    "colour": "outline"
+  },
+  "parts": [
+    {
+      "id": "panel",
+      "at": [
+        0,
+        -60
+      ],
+      "layer": 10,
+      "items": [
+        {
+          "id": "surface",
+          "shape": "rect",
+          "x": -35,
+          "y": -30,
+          "w": 70,
+          "h": 60,
+          "fill": "body",
+          "outline": true
+        }
+      ],
+      "variants": {
+        "raised": [
+          {
+            "id": "surface",
+            "shape": "rect",
+            "x": -35,
+            "y": -30,
+            "w": 70,
+            "h": 60,
+            "fill": "body",
+            "outline": true
+          }
+        ]
+      }
+    }
+  ],
+  "anchors": {
+    "badge": {
+      "part": "panel",
+      "at": [
+        18,
+        -12
+      ],
+      "description": "Badge pin on the panel.",
+      "variants": {
+        "raised": {
+          "at": [
+            20,
+            -10
+          ]
+        }
+      }
+    }
+  },
+  "face": null,
+  "moods": {
+    "idle": {
+      "description": "Ready.",
+      "status": "Ready",
+      "channels": {}
+    },
+    "thinking": {
+      "description": "Working.",
+      "status": "Working",
+      "channels": {
+        "panel.rotate": 0.02
+      }
+    },
+    "worried": {
+      "description": "Check the result.",
+      "status": "Check the result",
+      "channels": {
+        "panel.rotate": -0.08
+      }
+    },
+    "celebrating": {
+      "description": "Finished.",
+      "status": "Finished",
+      "channels": {
+        "root.lift": 5
+      }
+    }
+  },
+  "gestures": {
+    "rock": {
+      "description": "A brief tilt.",
+      "frames": 18,
+      "tracks": {
+        "root.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.08
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "nod": {
+      "description": "A brief acknowledgement.",
+      "frames": 18,
+      "tracks": {
+        "root.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.08
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "wave": {
+      "description": "A brief greeting.",
+      "frames": 18,
+      "tracks": {
+        "root.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.08
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "accessories": {
+    "badge": {
+      "description": "A small round badge.",
+      "slot": "badge",
+      "anchor": "badge",
+      "parts": [
+        {
+          "id": "disc",
+          "layer": 11,
+          "items": [
+            {
+              "shape": "circle",
+              "x": 0,
+              "y": 0,
+              "r": 5,
+              "fill": "accent"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "wear": [
+    "badge"
+  ],
+  "lod": {
+    "micro": {
+      "hide": [
+        "panel"
+      ]
+    }
+  }
+}

@@ -1,0 +1,1378 @@
+{
+  "format_version": 1,
+  "id": "alpha_visor",
+  "name": "alpha_visor",
+  "family": "visorfolk",
+  "description": "A calm helper robot with a screen face and a hard hat; suits build pipelines and job logs.",
+  "requires": [
+    "parts",
+    "paints",
+    "clip",
+    "outline",
+    "glow",
+    "face_kit",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "outline": "#1b1230",
+    "outline_light": "#fffdf4",
+    "shell": "#8a6bff",
+    "shell_shade": "#6750bf",
+    "shell_shine": "#c9bbff",
+    "trim": "#3a3550",
+    "hat": "#ffc400",
+    "hat_shade": "#c79400",
+    "screen": "#0a1038",
+    "glow": "#4df3ff",
+    "light": "#4df3ff",
+    "light_thinking": "#ffb020",
+    "light_happy": "#3ddc84",
+    "light_worried": "#ff5a6e",
+    "light_celebrating": "#ff5ce1",
+    "boot": "#fffdf4",
+    "sparkle": "#fffdf4",
+    "sparkle_outline": "#ffc400",
+    "sweat": "#9dc3e6",
+    "shadow": "#a2aea7"
+  },
+  "follows": {
+    "shell_shade": {
+      "from": [
+        "shell"
+      ],
+      "shade": "darker",
+      "amount": -0.12
+    },
+    "shell_shine": {
+      "from": [
+        "shell"
+      ],
+      "shade": "lighter",
+      "amount": 0.2
+    },
+    "hat_shade": {
+      "from": [
+        "hat"
+      ],
+      "shade": "darker",
+      "amount": -0.12
+    },
+    "light": {
+      "from": [
+        "glow"
+      ]
+    }
+  },
+  "brand": {
+    "primary": "shell",
+    "secondary": "hat"
+  },
+  "contrast": [
+    {
+      "fg": "glow",
+      "bg": "screen",
+      "min": 4.5,
+      "where": "eyes and mouth on the visor",
+      "bg_paint": "visor_glass"
+    },
+    {
+      "fg": "shell",
+      "bg": "page",
+      "min": 3
+    }
+  ],
+  "paints": {
+    "shell_round": {
+      "type": "radial",
+      "centre": [
+        -14,
+        -18
+      ],
+      "r0": 4,
+      "r1": 58,
+      "stops": [
+        [
+          0,
+          "shell_shine"
+        ],
+        [
+          0.55,
+          "shell"
+        ],
+        [
+          1,
+          "shell_shade"
+        ]
+      ]
+    },
+    "visor_glass": {
+      "type": "linear",
+      "from": [
+        0,
+        -18
+      ],
+      "to": [
+        0,
+        18
+      ],
+      "stops": [
+        [
+          0,
+          "glow",
+          0.18
+        ],
+        [
+          0.4,
+          "screen",
+          0
+        ],
+        [
+          1,
+          "screen",
+          0
+        ]
+      ]
+    }
+  },
+  "ground": {
+    "centre_height": 78,
+    "shadow": {
+      "rx": 48,
+      "ry": 7,
+      "alpha": 0.3
+    }
+  },
+  "outline": {
+    "width": 2.5,
+    "colour": "outline",
+    "second": {
+      "width": 5,
+      "colour": "outline_light"
+    },
+    "lod": {
+      "micro": {
+        "width": 4,
+        "second": null
+      }
+    }
+  },
+  "parts": [
+    {
+      "id": "leg_l",
+      "parent": "root",
+      "at": [
+        -16,
+        -34
+      ],
+      "layer": 1,
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -5,
+              5
+            ],
+            [
+              5,
+              10
+            ],
+            [
+              -5,
+              15
+            ],
+            [
+              0,
+              20
+            ]
+          ],
+          "stroke": "trim",
+          "width": 4
+        }
+      ]
+    },
+    {
+      "id": "leg_r",
+      "parent": "root",
+      "at": [
+        16,
+        -34
+      ],
+      "layer": 1,
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              5,
+              5
+            ],
+            [
+              -5,
+              10
+            ],
+            [
+              5,
+              15
+            ],
+            [
+              0,
+              20
+            ]
+          ],
+          "stroke": "trim",
+          "width": 4
+        }
+      ]
+    },
+    {
+      "id": "boot_l",
+      "parent": "leg_l",
+      "at": [
+        0,
+        20
+      ],
+      "layer": 2,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": -13,
+          "y": 0,
+          "w": 24,
+          "h": 13,
+          "r": [
+            7,
+            7,
+            4,
+            4
+          ],
+          "fill": "boot",
+          "outline": true
+        },
+        {
+          "shape": "rect",
+          "x": -13,
+          "y": 10,
+          "w": 24,
+          "h": 3,
+          "fill": "trim"
+        }
+      ]
+    },
+    {
+      "id": "boot_r",
+      "parent": "leg_r",
+      "at": [
+        0,
+        20
+      ],
+      "layer": 2,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": -11,
+          "y": 0,
+          "w": 24,
+          "h": 13,
+          "r": [
+            7,
+            7,
+            4,
+            4
+          ],
+          "fill": "boot",
+          "outline": true
+        },
+        {
+          "shape": "rect",
+          "x": -11,
+          "y": 10,
+          "w": 24,
+          "h": 3,
+          "fill": "trim"
+        }
+      ]
+    },
+    {
+      "id": "torso",
+      "parent": "root",
+      "at": [
+        0,
+        -78
+      ],
+      "layer": 10,
+      "items": [
+        {
+          "id": "shell",
+          "shape": "path",
+          "d": "M0 -44 C28 -44 42 -18 42 8 C42 32 24 44 0 44 C-24 44 -42 32 -42 8 C-42 -18 -28 -44 0 -44 Z",
+          "fill": {
+            "paint": "shell_round"
+          },
+          "outline": true
+        },
+        {
+          "id": "gloss",
+          "shape": "ellipse",
+          "x": -16,
+          "y": -22,
+          "rx": 12,
+          "ry": 6,
+          "rotate": -0.5,
+          "fill": "shell_shine",
+          "alpha": 0.6,
+          "clip": "torso.shell"
+        }
+      ]
+    },
+    {
+      "id": "belly_light",
+      "parent": "torso",
+      "at": [
+        0,
+        12
+      ],
+      "layer": 11,
+      "glow": {
+        "colour": "light",
+        "blur": 10,
+        "alpha": 0.7,
+        "item": "lamp"
+      },
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 13,
+          "fill": "trim",
+          "outline": true
+        },
+        {
+          "id": "lamp",
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 8,
+          "fill": "light"
+        }
+      ]
+    },
+    {
+      "id": "arm_l",
+      "parent": "torso",
+      "at": [
+        -46,
+        -10
+      ],
+      "rotate": 1.9,
+      "layer": 20,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 6,
+          "fill": "trim"
+        },
+        {
+          "shape": "round_rect",
+          "x": 4,
+          "y": -6,
+          "w": 20,
+          "h": 12,
+          "r": 6,
+          "fill": "shell",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "fore_l",
+      "parent": "arm_l",
+      "at": [
+        28,
+        0
+      ],
+      "layer": 21,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 5,
+          "fill": "trim"
+        },
+        {
+          "shape": "round_rect",
+          "x": 3,
+          "y": -5,
+          "w": 16,
+          "h": 10,
+          "r": 5,
+          "fill": "shell",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "hand_l",
+      "parent": "fore_l",
+      "at": [
+        22,
+        0
+      ],
+      "layer": 22,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 7,
+          "fill": "boot",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "arm_r",
+      "parent": "torso",
+      "at": [
+        46,
+        -10
+      ],
+      "rotate": 1.24,
+      "layer": 20,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 6,
+          "fill": "trim"
+        },
+        {
+          "shape": "round_rect",
+          "x": 4,
+          "y": -6,
+          "w": 20,
+          "h": 12,
+          "r": 6,
+          "fill": "shell",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "fore_r",
+      "parent": "arm_r",
+      "at": [
+        28,
+        0
+      ],
+      "layer": 21,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 5,
+          "fill": "trim"
+        },
+        {
+          "shape": "round_rect",
+          "x": 3,
+          "y": -5,
+          "w": 16,
+          "h": 10,
+          "r": 5,
+          "fill": "shell",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "hand_r",
+      "parent": "fore_r",
+      "at": [
+        22,
+        0
+      ],
+      "layer": 22,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 7,
+          "fill": "boot",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "neck",
+      "parent": "torso",
+      "at": [
+        0,
+        -44
+      ],
+      "layer": 5,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": -8,
+          "y": -10,
+          "w": 16,
+          "h": 12,
+          "r": 4,
+          "fill": "trim"
+        }
+      ]
+    },
+    {
+      "id": "head",
+      "parent": "neck",
+      "at": [
+        0,
+        -8
+      ],
+      "layer": 30,
+      "items": [
+        {
+          "id": "helmet",
+          "shape": "ellipse",
+          "x": 0,
+          "y": -34,
+          "rx": 40,
+          "ry": 36,
+          "fill": {
+            "paint": "shell_round"
+          },
+          "outline": true
+        },
+        {
+          "id": "visor",
+          "shape": "round_rect",
+          "x": -30,
+          "y": -50,
+          "w": 60,
+          "h": 34,
+          "r": 14,
+          "fill": "screen",
+          "outline": true
+        },
+        {
+          "id": "glass",
+          "shape": "round_rect",
+          "x": -30,
+          "y": -50,
+          "w": 60,
+          "h": 34,
+          "r": 14,
+          "fill": {
+            "paint": "visor_glass"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ear_l",
+      "parent": "head",
+      "at": [
+        -41,
+        -34
+      ],
+      "layer": 29,
+      "items": [
+        {
+          "shape": "ellipse",
+          "x": 0,
+          "y": 0,
+          "rx": 7,
+          "ry": 11,
+          "fill": "trim",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "ear_r",
+      "parent": "head",
+      "at": [
+        41,
+        -34
+      ],
+      "layer": 29,
+      "items": [
+        {
+          "shape": "ellipse",
+          "x": 0,
+          "y": 0,
+          "rx": 7,
+          "ry": 11,
+          "fill": "trim",
+          "outline": true
+        }
+      ]
+    },
+    {
+      "id": "hard_hat",
+      "parent": "head",
+      "at": [
+        0,
+        -66
+      ],
+      "layer": 40,
+      "items": [
+        {
+          "shape": "path",
+          "d": "M-34 4 C-34 -18 -18 -30 0 -30 C18 -30 34 -18 34 4 Z",
+          "fill": "hat",
+          "outline": true
+        },
+        {
+          "shape": "round_rect",
+          "x": -44,
+          "y": 2,
+          "w": 88,
+          "h": 8,
+          "r": 4,
+          "fill": "hat_shade",
+          "outline": true
+        },
+        {
+          "shape": "rect",
+          "x": -3,
+          "y": -28,
+          "w": 6,
+          "h": 30,
+          "fill": "hat_shade",
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ]
+    }
+  ],
+  "anchors": {
+    "crown": {
+      "part": "hard_hat",
+      "at": [
+        0,
+        -30
+      ],
+      "description": "Top of the hard hat"
+    },
+    "chest": {
+      "part": "belly_light",
+      "at": [
+        0,
+        0
+      ],
+      "description": "Centre of the belly light"
+    },
+    "hand_l": {
+      "part": "hand_l",
+      "side": "l",
+      "description": "hand l attachment."
+    },
+    "hand_r": {
+      "part": "hand_r",
+      "side": "r",
+      "description": "hand r attachment."
+    },
+    "neck": {
+      "part": "neck",
+      "at": [
+        0,
+        -4
+      ],
+      "description": "neck attachment."
+    },
+    "sparkle": {
+      "part": "head",
+      "at": [
+        46,
+        -62
+      ],
+      "description": "sparkle attachment."
+    },
+    "sweat": {
+      "part": "head",
+      "at": [
+        44,
+        -48
+      ],
+      "description": "sweat attachment."
+    }
+  },
+  "face": {
+    "part": "head",
+    "at": [
+      0,
+      -33
+    ],
+    "kit": "screen",
+    "clip": "head.visor",
+    "eyes": {
+      "y": -4,
+      "spacing": 14
+    },
+    "mouth": {
+      "y": 8
+    },
+    "colours": {
+      "feature": "glow"
+    },
+    "kit_definition": {
+      "id": "screen",
+      "description": "Static screen glyphs with budgeted emission.",
+      "roles": [
+        "feature",
+        "sweat",
+        "sparkle",
+        "sparkle_outline"
+      ],
+      "defaults": {
+        "eyes": "dot",
+        "mouth": "smile",
+        "brows": "none"
+      },
+      "glow": {
+        "blur": 3,
+        "alpha": 0.4
+      },
+      "eye_styles": {
+        "dot": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              0,
+              0
+            ]
+          ],
+          "r": 6
+        },
+        "scan": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              -3,
+              0
+            ],
+            [
+              3,
+              0
+            ]
+          ],
+          "r": 3
+        },
+        "arc": {
+          "op": "eye_arc",
+          "r": 8,
+          "start": 3.3,
+          "end": 6.1,
+          "width": 3
+        },
+        "slant": {
+          "op": "eye_path",
+          "d": "M-7 1 L5 -3",
+          "stroke": "feature",
+          "width": 3
+        },
+        "star": {
+          "op": "eye_path",
+          "d": "M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z",
+          "fill": "feature"
+        },
+        "dots": {
+          "op": "eye_dots",
+          "centres": [
+            [
+              -5,
+              0
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "r": 3
+        },
+        "closed": {
+          "op": "eye_path",
+          "d": "M-7 0 L7 0",
+          "stroke": "feature",
+          "width": 3
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M0 0",
+          "width": 0,
+          "stroke": "feature"
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 Q0 1 1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 L1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "wide": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 -0.2 Q0 1.5 1 -0.2 Z",
+              "fill": "feature",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        },
+        "wavy": {
+          "op": "mouth_path",
+          "box": [
+            10,
+            6
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 Q-0.5 -0.8 0 0 Q0.5 0.8 1 0",
+              "stroke": "feature",
+              "width": 2.5
+            }
+          ]
+        }
+      },
+      "effects": {
+        "sweat": {
+          "op": "sweat_drop",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 -8 Q9 2 0 10 Q-9 2 0 -8 Z",
+              "fill": "sweat"
+            }
+          ],
+          "mode": "progress",
+          "travel": 26,
+          "sway": 2,
+          "sway_rate": 12,
+          "fade_at": 0.9
+        },
+        "sparkle": {
+          "op": "sparkle_star",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1
+            }
+          ],
+          "reduced_items": [
+            {
+              "shape": "path",
+              "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1
+            }
+          ],
+          "mode": "pulse",
+          "amplitude": 0.18,
+          "rate": 9
+        }
+      }
+    }
+  },
+  "poses": {
+    "rest": {
+      "arm_l.rotate": 1.9,
+      "arm_r.rotate": 1.24
+    },
+    "chin": {
+      "arm_l.rotate": 1.9,
+      "arm_r.rotate": -2.4,
+      "fore_r.rotate": -1.6,
+      "head.rotate": 0.06
+    },
+    "wave": {
+      "arm_l.rotate": 1.9,
+      "arm_r.rotate": -1.0,
+      "fore_r.rotate": -0.8
+    },
+    "inward": {
+      "arm_l.rotate": 1.4,
+      "fore_l.rotate": 0.9,
+      "arm_r.rotate": 1.7,
+      "fore_r.rotate": -0.9
+    },
+    "up": {
+      "arm_l.rotate": -2.3,
+      "arm_r.rotate": -0.85,
+      "fore_l.rotate": -0.3,
+      "fore_r.rotate": 0.3
+    }
+  },
+  "moods": {
+    "idle": {
+      "status": "Idle",
+      "pose": "rest",
+      "face": {
+        "eyes": "dot",
+        "mouth": "smile"
+      },
+      "description": "Idle state."
+    },
+    "thinking": {
+      "status": "Thinking",
+      "pose": "chin",
+      "face": {
+        "eyes": "scan",
+        "mouth": "flat",
+        "look_x": 0.6
+      },
+      "recolour": {
+        "light": "light_thinking"
+      },
+      "description": "Thinking state."
+    },
+    "happy": {
+      "status": "Happy",
+      "pose": "wave",
+      "face": {
+        "eyes": "arc",
+        "mouth": "wide"
+      },
+      "recolour": {
+        "light": "light_happy"
+      },
+      "description": "Happy state."
+    },
+    "worried": {
+      "status": "Worried",
+      "pose": "inward",
+      "face": {
+        "eyes": "slant",
+        "mouth": "wavy"
+      },
+      "recolour": {
+        "light": "light_worried"
+      },
+      "effects": {
+        "sweat": 0.35
+      },
+      "description": "Worried state."
+    },
+    "celebrating": {
+      "status": "Celebrating",
+      "pose": "up",
+      "face": {
+        "eyes": "star",
+        "mouth": "wide"
+      },
+      "recolour": {
+        "light": "light_celebrating"
+      },
+      "channels": {
+        "root.lift": 8
+      },
+      "effects": {
+        "sparkle": true
+      },
+      "description": "Celebrating state."
+    },
+    "processing": {
+      "description": "Working through a queue.",
+      "status": "Processing",
+      "fallback": "thinking",
+      "pose": "rest",
+      "face": {
+        "eyes": "dots",
+        "mouth": "flat"
+      },
+      "recolour": {
+        "light": "light_thinking"
+      }
+    }
+  },
+  "gestures": {
+    "nod": {
+      "frames": 18,
+      "needs": [
+        "head"
+      ],
+      "tracks": {
+        "head.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            0.12,
+            "ease_out"
+          ],
+          [
+            0.45,
+            0
+          ],
+          [
+            0.65,
+            0.12,
+            "ease_out"
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      },
+      "description": "Nod."
+    },
+    "wave": {
+      "frames": 30,
+      "needs": [
+        "arm_r",
+        "fore_r"
+      ],
+      "fallback": "rock",
+      "tracks": {
+        "arm_r.rotate": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.2,
+              -1.1
+            ],
+            [
+              0.8,
+              -1.1
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "fore_r.rotate": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.2,
+              -0.4
+            ],
+            [
+              0.4,
+              -1.1
+            ],
+            [
+              0.6,
+              -0.4
+            ],
+            [
+              0.8,
+              -1.1
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.2,
+            -0.025
+          ],
+          [
+            0.8,
+            -0.025
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      },
+      "description": "Wave."
+    },
+    "beep": {
+      "description": "A short beep: the belly light pulses once.",
+      "frames": 20,
+      "tracks": {
+        "belly_light.scale_x": [
+          [
+            0,
+            0
+          ],
+          [
+            0.3,
+            0.18,
+            "ease_out"
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "belly_light.scale_y": [
+          [
+            0,
+            0
+          ],
+          [
+            0.3,
+            0.18,
+            "ease_out"
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "hat_hop": {
+      "description": "The hard hat hops and lands with a small squash.",
+      "frames": 24,
+      "tracks": {
+        "hard_hat.y": [
+          [
+            0,
+            0
+          ],
+          [
+            0.4,
+            -14,
+            "ease_out"
+          ],
+          [
+            0.75,
+            0,
+            "ease_in"
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "hard_hat.scale_y": [
+          [
+            0,
+            0
+          ],
+          [
+            0.75,
+            0
+          ],
+          [
+            0.85,
+            -0.12
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "leg_l.scale_y": [
+          [
+            0,
+            0
+          ],
+          [
+            0.1,
+            -0.15
+          ],
+          [
+            0.3,
+            0.05
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "leg_r.scale_y": [
+          [
+            0,
+            0
+          ],
+          [
+            0.1,
+            -0.15
+          ],
+          [
+            0.3,
+            0.05
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "rock": {
+      "description": "Rock gently.",
+      "frames": 18,
+      "tracks": {
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            0.06
+          ],
+          [
+            0.75,
+            -0.03
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "motion": {
+    "change": {
+      "style": "gesture",
+      "gesture": "hat_hop",
+      "frames": 24,
+      "swap_at": 0.5
+    }
+  },
+  "lod": {
+    "small": {
+      "hide": [
+        "torso.gloss",
+        "head.glass"
+      ]
+    },
+    "micro": {
+      "hide": [
+        "leg_l",
+        "leg_r",
+        "ear_l",
+        "ear_r",
+        "arm_l",
+        "fore_l",
+        "hand_l",
+        "arm_r",
+        "fore_r",
+        "hand_r",
+        "torso.gloss",
+        "head.glass"
+      ],
+      "face": {
+        "scale": 1.4
+      },
+      "glow": false
+    }
+  },
+  "resolved": true,
+  "family_definition": {
+    "id": "visorfolk",
+    "name": "Visorfolk",
+    "description": "Characters with screen faces.",
+    "defaults": {}
+  },
+  "effects": {
+    "sweat": {
+      "anchor": "sweat",
+      "layer": 45
+    },
+    "sparkle": {
+      "anchor": "sparkle",
+      "layer": 45
+    }
+  },
+  "palette_sources": {
+    "sea_glass": "family",
+    "night_screen": "family"
+  },
+  "palettes": {
+    "sea_glass": {
+      "description": "A cool screen.",
+      "light": {
+        "screen": "#06232a"
+      }
+    },
+    "night_screen": {
+      "description": "A deeper screen.",
+      "light": {
+        "screen": "#03151a"
+      }
+    }
+  }
+}

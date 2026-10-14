@@ -1,0 +1,86 @@
+[
+  {
+    "id": "missing_family",
+    "file": "invalid/missing_family.json",
+    "code": "input_type",
+    "path": "$.family"
+  },
+  {
+    "id": "null_family",
+    "file": "invalid/null_family.json",
+    "code": "input_type",
+    "path": "$.family"
+  },
+  {
+    "id": "unknown_version",
+    "file": "invalid/unknown_version.json",
+    "code": "version",
+    "path": "$.format_version"
+  },
+  {
+    "id": "unsupported_particles",
+    "file": "invalid/unsupported_particles.json",
+    "code": "capability",
+    "path": "$.requires[4]"
+  },
+  {
+    "id": "unknown_key",
+    "file": "invalid/unknown_key.json",
+    "code": "unknown_key",
+    "path": "$.automatic_fit"
+  },
+  {
+    "id": "missing_anchor_owner",
+    "file": "invalid/missing_anchor_owner.json",
+    "code": "missing_reference",
+    "path": "$.anchors.badge.part"
+  },
+  {
+    "id": "missing_face_owner",
+    "file": "invalid/missing_face_owner.json",
+    "code": "missing_reference",
+    "path": "$.face.part"
+  },
+  {
+    "id": "missing_fill_role",
+    "file": "invalid/missing_fill_role.json",
+    "code": "missing_reference",
+    "path": "$.parts[0].items[0].fill"
+  },
+  {
+    "id": "missing_core_mood",
+    "file": "invalid/missing_core_mood.json",
+    "code": "missing_reference",
+    "path": "$.moods.happy"
+  },
+  {
+    "id": "unknown_track_target",
+    "file": "invalid/unknown_track_target.json",
+    "code": "invalid_channel",
+    "path": "$.gestures.rock.tracks.ghost.rotate"
+  },
+  {
+    "id": "too_many_frames",
+    "file": "invalid/too_many_frames.json",
+    "code": "budget",
+    "path": "$.gestures.rock.frames"
+  },
+  {
+    "id": "wrong_coordinate_type",
+    "file": "invalid/wrong_coordinate_type.json",
+    "code": "input_type",
+    "path": "$.parts[0].at[0]"
+  },
+  {
+    "id": "duplicate_key",
+    "file": "invalid/duplicate_key.json",
+    "code": "input_type",
+    "path": "$.format_version"
+  },
+  {
+    "id": "non_finite",
+    "file": "invalid/non_finite.json",
+    "code": "non_finite",
+    "path": "$.ground.centre_height"
+  }
+]

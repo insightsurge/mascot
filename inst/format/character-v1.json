@@ -1,0 +1,4799 @@
+{
+  "schema_version": 1,
+  "format_version": 1,
+  "definitions": {
+    "colour_map": {
+      "type": "map",
+      "values": {
+        "type": "string",
+        "pattern": "^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|rgba\\(\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*\\))$"
+      },
+      "key_pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "outline_band": {
+      "type": "object",
+      "fields": {
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "second": {
+          "ref": "outline_second",
+          "nullable": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "outline_second": {
+      "type": "object",
+      "fields": {
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "colour": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "width",
+        "colour"
+      ]
+    },
+    "outline": {
+      "type": "object",
+      "fields": {
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "colour": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "second": {
+          "ref": "outline_second",
+          "nullable": true
+        },
+        "lod": {
+          "type": "map",
+          "values": {
+            "ref": "outline_band"
+          },
+          "key_pattern": "^(full|small|micro)$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "item_polygon": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polygon"
+          ]
+        },
+        "sides": {
+          "type": "integer",
+          "min": 3,
+          "max": 12
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "corner": {
+          "type": "number",
+          "min": 0
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "sides",
+        "r"
+      ]
+    },
+    "item_hexagon": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "hexagon"
+          ]
+        },
+        "sides": {
+          "type": "integer",
+          "choices": [
+            6
+          ]
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "corner": {
+          "type": "number",
+          "min": 0
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r"
+      ]
+    },
+    "item_circle": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "circle"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r"
+      ]
+    },
+    "item_ellipse": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "ellipse"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rx": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "ry": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "rx",
+        "ry"
+      ]
+    },
+    "item_rect": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "rect"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "w",
+        "h"
+      ]
+    },
+    "item_round_rect": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "round_rect"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "r": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number",
+              "min": 0
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "min": 0
+              },
+              "min_length": 4,
+              "max_length": 4
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "w",
+        "h",
+        "r"
+      ]
+    },
+    "item_path": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "d"
+      ]
+    },
+    "item_polyline": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polyline"
+          ]
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "min_length": 2,
+            "max_length": 2
+          },
+          "min_length": 2
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "points"
+      ]
+    },
+    "item_arc": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "arc"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "start": {
+          "type": "number"
+        },
+        "end": {
+          "type": "number"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r",
+        "start",
+        "end"
+      ]
+    },
+    "item_ref": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "ref"
+          ]
+        },
+        "use": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "min_length": 2,
+              "max_length": 2
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "use"
+      ]
+    },
+    "item": {
+      "type": "discriminator",
+      "field": "shape",
+      "variants": {
+        "polygon": "item_polygon",
+        "hexagon": "item_hexagon",
+        "circle": "item_circle",
+        "ellipse": "item_ellipse",
+        "rect": "item_rect",
+        "round_rect": "item_round_rect",
+        "path": "item_path",
+        "polyline": "item_polyline",
+        "arc": "item_arc",
+        "ref": "item_ref"
+      }
+    },
+    "shape_definition": {
+      "type": "discriminator",
+      "field": "shape",
+      "variants": {
+        "polygon": "named_polygon",
+        "hexagon": "named_hexagon",
+        "circle": "named_circle",
+        "ellipse": "named_ellipse",
+        "rect": "named_rect",
+        "round_rect": "named_round_rect",
+        "path": "named_path",
+        "polyline": "named_polyline",
+        "arc": "named_arc"
+      }
+    },
+    "named_polygon": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polygon"
+          ]
+        },
+        "sides": {
+          "type": "integer",
+          "min": 3,
+          "max": 12
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "corner": {
+          "type": "number",
+          "min": 0
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "sides",
+        "r"
+      ]
+    },
+    "named_hexagon": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "hexagon"
+          ]
+        },
+        "sides": {
+          "type": "integer",
+          "choices": [
+            6
+          ]
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "corner": {
+          "type": "number",
+          "min": 0
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r"
+      ]
+    },
+    "named_circle": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "circle"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r"
+      ]
+    },
+    "named_ellipse": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "ellipse"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rx": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "ry": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "rx",
+        "ry"
+      ]
+    },
+    "named_rect": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "rect"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "w",
+        "h"
+      ]
+    },
+    "named_round_rect": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "round_rect"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "r": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number",
+              "min": 0
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "min": 0
+              },
+              "min_length": 4,
+              "max_length": 4
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "w",
+        "h",
+        "r"
+      ]
+    },
+    "named_path": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "d"
+      ]
+    },
+    "named_polyline": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polyline"
+          ]
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "min_length": 2,
+            "max_length": 2
+          },
+          "min_length": 2
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "points"
+      ]
+    },
+    "named_arc": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "transform": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 3,
+          "max_length": 3
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "arc"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "start": {
+          "type": "number"
+        },
+        "end": {
+          "type": "number"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r",
+        "start",
+        "end"
+      ]
+    },
+    "paint_stop": {
+      "type": "tuple",
+      "elements": [
+        {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "min_length": 2,
+      "max_length": 3
+    },
+    "paint_linear": {
+      "type": "object",
+      "fields": {
+        "type": {
+          "type": "string",
+          "choices": [
+            "linear"
+          ]
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "stops": {
+          "type": "array",
+          "items": {
+            "ref": "paint_stop"
+          },
+          "min_length": 2,
+          "max_length": 6
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "from",
+        "to",
+        "stops"
+      ]
+    },
+    "paint_radial": {
+      "type": "object",
+      "fields": {
+        "type": {
+          "type": "string",
+          "choices": [
+            "radial"
+          ]
+        },
+        "centre": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "r0": {
+          "type": "number",
+          "min": 0
+        },
+        "r1": {
+          "type": "number",
+          "min": 0
+        },
+        "focus": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "stops": {
+          "type": "array",
+          "items": {
+            "ref": "paint_stop"
+          },
+          "min_length": 2,
+          "max_length": 6
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "centre",
+        "r1",
+        "stops"
+      ]
+    },
+    "paint": {
+      "type": "discriminator",
+      "field": "type",
+      "variants": {
+        "linear": "paint_linear",
+        "radial": "paint_radial"
+      }
+    },
+    "glow": {
+      "type": "object",
+      "fields": {
+        "item": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "colour": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "blur": {
+          "type": "number",
+          "min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "item",
+        "colour",
+        "blur",
+        "alpha"
+      ]
+    },
+    "part": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "parent": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "min_length": 2,
+              "max_length": 2
+            }
+          ]
+        },
+        "layer": {
+          "type": "number"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "ref": "item"
+          }
+        },
+        "variants": {
+          "type": "map",
+          "values": {
+            "type": "array",
+            "items": {
+              "ref": "item"
+            }
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "switch": {
+          "type": "object",
+          "fields": {
+            "channel": {
+              "type": "string",
+              "min_chars": 1
+            },
+            "above": {
+              "type": "number"
+            },
+            "variant": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "channel",
+            "above",
+            "variant"
+          ]
+        },
+        "opacity": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "glow": {
+          "ref": "glow",
+          "nullable": true
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "keep_upright": {
+          "type": "boolean"
+        },
+        "no_flip": {
+          "type": "boolean"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "anchor_variant": {
+      "type": "object",
+      "fields": {
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "anchor": {
+      "type": "object",
+      "fields": {
+        "part": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "side": {
+          "type": "string",
+          "choices": [
+            "l",
+            "r"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "variants": {
+          "type": "map",
+          "values": {
+            "ref": "anchor_variant"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "part",
+        "description"
+      ]
+    },
+    "follow": {
+      "type": "object",
+      "fields": {
+        "from": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "min_length": 1
+        },
+        "shade": {
+          "type": "string",
+          "choices": [
+            "same",
+            "lighter",
+            "darker"
+          ]
+        },
+        "amount": {
+          "type": "number",
+          "min": -1,
+          "max": 1
+        },
+        "saturation": {
+          "type": "number",
+          "min": -1,
+          "max": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from"
+      ]
+    },
+    "contrast": {
+      "type": "object",
+      "fields": {
+        "fg": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "bg": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "bg_paint": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "min": {
+          "type": "number",
+          "min": 3
+        },
+        "where": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "fg",
+        "bg"
+      ]
+    },
+    "palette": {
+      "type": "object",
+      "fields": {
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "light": {
+          "ref": "colour_map"
+        },
+        "dark": {
+          "ref": "colour_map"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "light"
+      ]
+    },
+    "channels": {
+      "type": "map",
+      "values": {
+        "type": "scalar"
+      },
+      "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+    },
+    "face_controls": {
+      "type": "object",
+      "fields": {
+        "look_x": {
+          "type": "number",
+          "min": -1,
+          "max": 1
+        },
+        "look_y": {
+          "type": "number",
+          "min": -1,
+          "max": 1
+        },
+        "blink": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "eyes": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "min_length": 2,
+              "max_length": 2
+            }
+          ]
+        },
+        "mouth": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "brows": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "open": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "lid": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "blush": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "type": "string",
+              "choices": [
+                "strong"
+              ]
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "item_change": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "mood_reduced": {
+      "type": "object",
+      "fields": {
+        "channels": {
+          "ref": "channels"
+        },
+        "face": {
+          "ref": "face_controls"
+        },
+        "recolour": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "items": {
+          "type": "map",
+          "values": {
+            "ref": "item_change"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "effects": {
+          "type": "map",
+          "values": {
+            "type": "union",
+            "alternatives": [
+              {
+                "type": "number",
+                "min": 0,
+                "max": 1
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "mood": {
+      "type": "object",
+      "fields": {
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "status": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "fallback": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "pose": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "channels": {
+          "ref": "channels"
+        },
+        "face": {
+          "ref": "face_controls"
+        },
+        "recolour": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "items": {
+          "type": "map",
+          "values": {
+            "ref": "item_change"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "effects": {
+          "type": "map",
+          "values": {
+            "type": "union",
+            "alternatives": [
+              {
+                "type": "number",
+                "min": 0,
+                "max": 1
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "reduced": {
+          "ref": "mood_reduced"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "track_key": {
+      "type": "tuple",
+      "elements": [
+        {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "type": "scalar",
+          "nullable": true
+        },
+        {
+          "type": "string",
+          "choices": [
+            "linear",
+            "ease_in",
+            "ease_out",
+            "ease_in_out",
+            "step"
+          ]
+        }
+      ],
+      "min_length": 2,
+      "max_length": 3
+    },
+    "track_keys": {
+      "type": "array",
+      "items": {
+        "ref": "track_key"
+      },
+      "min_length": 2,
+      "input_limit": "keys_per_track"
+    },
+    "track": {
+      "type": "union",
+      "alternatives": [
+        {
+          "ref": "track_keys"
+        },
+        {
+          "type": "object",
+          "fields": {
+            "mode": {
+              "type": "string",
+              "choices": [
+                "add",
+                "set"
+              ]
+            },
+            "keys": {
+              "ref": "track_keys"
+            }
+          },
+          "required": [
+            "keys"
+          ]
+        }
+      ]
+    },
+    "tracks": {
+      "type": "map",
+      "values": {
+        "ref": "track"
+      },
+      "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$",
+      "input_limit": "tracks_per_gesture"
+    },
+    "gesture": {
+      "type": "object",
+      "fields": {
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "frames": {
+          "type": "integer",
+          "min": 1,
+          "max": 150,
+          "range_code": "budget"
+        },
+        "needs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "unique": true
+        },
+        "fallback": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "nullable": true
+        },
+        "tracks": {
+          "ref": "tracks"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "at": {
+                "type": "number",
+                "min": 0,
+                "max": 1
+              },
+              "effect": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "anchor": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              }
+            },
+            "required": [
+              "at",
+              "effect",
+              "anchor"
+            ]
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "frames",
+        "tracks"
+      ]
+    },
+    "mouth_item": {
+      "type": "discriminator",
+      "field": "shape",
+      "variants": {
+        "path": "mouth_path",
+        "ellipse": "mouth_ellipse",
+        "polyline": "mouth_polyline"
+      }
+    },
+    "mouth_path": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "d"
+      ]
+    },
+    "mouth_ellipse": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "ellipse"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rx": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "ry": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "rx",
+        "ry"
+      ]
+    },
+    "mouth_polyline": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "fill": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            {
+              "type": "object",
+              "fields": {
+                "paint": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "paint"
+              ]
+            }
+          ]
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "type": "string",
+          "choices": [
+            "butt",
+            "round",
+            "square"
+          ]
+        },
+        "join": {
+          "type": "string",
+          "choices": [
+            "miter",
+            "round",
+            "bevel"
+          ]
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polyline"
+          ]
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "min_length": 2,
+            "max_length": 2
+          },
+          "min_length": 2
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "points"
+      ]
+    },
+    "glint": {
+      "type": "object",
+      "fields": {
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "r": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "at",
+        "r"
+      ]
+    },
+    "pupil": {
+      "type": "object",
+      "fields": {
+        "r": {
+          "type": "number",
+          "min": 0
+        },
+        "look_range": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "glints": {
+          "type": "array",
+          "items": {
+            "ref": "glint"
+          }
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "mirror_glints": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "r"
+      ]
+    },
+    "lashes": {
+      "type": "object",
+      "fields": {
+        "angles": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "length": {
+          "type": "number",
+          "min": 0
+        },
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "radii": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusive_min": 0
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "eye_ellipse": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "eye_ellipse"
+          ]
+        },
+        "rx": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "ry": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "pupil": {
+          "ref": "pupil"
+        },
+        "lid": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "slant": {
+          "type": "number"
+        },
+        "fill": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "outline": {
+          "type": "object",
+          "fields": {
+            "colour": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "width": {
+              "type": "number",
+              "min": 0
+            }
+          },
+          "required": [
+            "colour",
+            "width"
+          ]
+        },
+        "lid_edge": {
+          "type": "object",
+          "fields": {
+            "colour": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "width": {
+              "type": "number",
+              "min": 0
+            }
+          },
+          "required": [
+            "colour",
+            "width"
+          ]
+        },
+        "lashes": {
+          "ref": "lashes"
+        },
+        "hide_brows": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "rx",
+        "ry",
+        "pupil"
+      ]
+    },
+    "eye_arc": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "eye_arc"
+          ]
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "start": {
+          "type": "number"
+        },
+        "end": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "fill": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "nullable": true
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "nullable": true
+        },
+        "lashes": {
+          "ref": "lashes"
+        },
+        "hide_brows": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "r",
+        "start",
+        "end"
+      ]
+    },
+    "eye_path": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "eye_path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "fill": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "nullable": true
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "nullable": true
+        },
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "hide_brows": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "d"
+      ]
+    },
+    "eye_dots": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "eye_dots"
+          ]
+        },
+        "centres": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "min_length": 2,
+            "max_length": 2
+          },
+          "min_length": 1
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "fill": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "hide_brows": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "centres",
+        "r"
+      ]
+    },
+    "eye_style": {
+      "type": "discriminator",
+      "field": "op",
+      "variants": {
+        "eye_ellipse": "eye_ellipse",
+        "eye_arc": "eye_arc",
+        "eye_path": "eye_path",
+        "eye_dots": "eye_dots"
+      }
+    },
+    "brow_style": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "brow_path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "stroke": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "y": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "d"
+      ]
+    },
+    "mouth_style": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "mouth_path"
+          ]
+        },
+        "box": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusive_min": 0
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "ref": "mouth_item"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "items"
+      ]
+    },
+    "kit_effect": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "sweat_drop",
+            "sparkle_star"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "choices": [
+            "progress",
+            "pulse",
+            "track"
+          ]
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "ref": "item"
+          }
+        },
+        "reduced_items": {
+          "type": "array",
+          "items": {
+            "ref": "item"
+          }
+        },
+        "travel": {
+          "type": "number"
+        },
+        "sway": {
+          "type": "number"
+        },
+        "sway_rate": {
+          "type": "number"
+        },
+        "fade_at": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "amplitude": {
+          "type": "number",
+          "min": 0,
+          "max": 0.5
+        },
+        "rate": {
+          "type": "number",
+          "exclusive_min": 0,
+          "max": 30
+        },
+        "frames": {
+          "type": "integer",
+          "min": 1,
+          "max": 150,
+          "range_code": "budget"
+        },
+        "tracks": {
+          "type": "map",
+          "values": {
+            "ref": "track"
+          },
+          "key_pattern": "^(x|y|scale_x|scale_y|opacity)$",
+          "max_length": 256
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "mode",
+        "items"
+      ]
+    },
+    "kit": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "unique": true
+        },
+        "defaults": {
+          "type": "object",
+          "fields": {
+            "eyes": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "mouth": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "brows": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "blush": {
+              "type": "union",
+              "alternatives": [
+                {
+                  "type": "number",
+                  "min": 0,
+                  "max": 1
+                },
+                {
+                  "type": "string",
+                  "choices": [
+                    "strong"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "eyes",
+            "mouth",
+            "brows"
+          ]
+        },
+        "eye_styles": {
+          "type": "map",
+          "values": {
+            "ref": "eye_style"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "brow_styles": {
+          "type": "map",
+          "values": {
+            "ref": "brow_style"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "mouth_styles": {
+          "type": "map",
+          "values": {
+            "ref": "mouth_style"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "effects": {
+          "type": "map",
+          "values": {
+            "ref": "kit_effect"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "glow": {
+          "type": "object",
+          "fields": {
+            "blur": {
+              "type": "number",
+              "min": 0
+            },
+            "alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            }
+          },
+          "required": [
+            "blur",
+            "alpha"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "roles",
+        "defaults",
+        "eye_styles",
+        "brow_styles",
+        "mouth_styles",
+        "effects"
+      ]
+    },
+    "numeric_tree": {
+      "type": "numeric_tree"
+    },
+    "face": {
+      "type": "object",
+      "fields": {
+        "part": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "scale": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "layer": {
+          "type": "number"
+        },
+        "kit": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "kit_definition": {
+          "ref": "kit"
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "eyes": {
+          "type": "object",
+          "fields": {
+            "y": {
+              "type": "number"
+            },
+            "spacing": {
+              "type": "number",
+              "min": 0
+            },
+            "lashes": {
+              "type": "boolean"
+            },
+            "iris": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "nullable": true
+            }
+          },
+          "required": []
+        },
+        "mouth": {
+          "type": "object",
+          "fields": {
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": []
+        },
+        "blush": {
+          "type": "object",
+          "fields": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "rx": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "ry": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            "strong_alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "rx",
+            "ry"
+          ]
+        },
+        "colours": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "tune": {
+          "ref": "numeric_tree"
+        },
+        "styles": {
+          "type": "object",
+          "fields": {
+            "eyes": {
+              "type": "map",
+              "values": {
+                "ref": "eye_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "brows": {
+              "type": "map",
+              "values": {
+                "ref": "brow_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "mouth": {
+              "type": "map",
+              "values": {
+                "ref": "mouth_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": []
+        },
+        "caps": {
+          "type": "object",
+          "fields": {
+            "left": {
+              "type": "string",
+              "choices": [
+                "butt",
+                "round",
+                "square"
+              ]
+            },
+            "right": {
+              "type": "string",
+              "choices": [
+                "butt",
+                "round",
+                "square"
+              ]
+            },
+            "join": {
+              "type": "string",
+              "choices": [
+                "miter",
+                "round",
+                "bevel"
+              ]
+            }
+          },
+          "required": []
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "part"
+      ]
+    },
+    "motion": {
+      "type": "object",
+      "fields": {
+        "change": {
+          "type": "object",
+          "fields": {
+            "style": {
+              "type": "string",
+              "choices": [
+                "wiggle",
+                "hop",
+                "gesture"
+              ]
+            },
+            "frames": {
+              "type": "integer",
+              "min": 1,
+              "max": 150,
+              "range_code": "budget"
+            },
+            "angle": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            },
+            "swap_at": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            "gesture": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": []
+        },
+        "idle": {
+          "type": "object",
+          "fields": {
+            "frames": {
+              "type": "integer",
+              "min": 1,
+              "max": 150,
+              "range_code": "budget"
+            },
+            "blink_every": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "blink_jitter": {
+              "type": "number",
+              "min": 0
+            },
+            "blink_frames": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "breathe": {
+              "type": "number",
+              "min": 0,
+              "max": 0.1
+            },
+            "breathe_period": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "breathe_part": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "extra": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "nullable": true
+            }
+          },
+          "required": []
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "lod_band": {
+      "type": "object",
+      "fields": {
+        "hide": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "min_chars": 1
+          },
+          "unique": true
+        },
+        "outline": {
+          "ref": "outline"
+        },
+        "face": {
+          "type": "object",
+          "fields": {
+            "scale": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "lashes": {
+              "type": "boolean"
+            },
+            "brows": {
+              "type": "boolean"
+            },
+            "iris": {
+              "type": "boolean"
+            }
+          },
+          "required": []
+        },
+        "glow": {
+          "type": "boolean"
+        },
+        "variants": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "accessory": {
+      "type": "object",
+      "fields": {
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "slot": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "anchor": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "ref": "part"
+          }
+        },
+        "colours": {
+          "ref": "colour_map"
+        },
+        "lod": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "choices": [
+              "full",
+              "small",
+              "micro"
+            ]
+          },
+          "unique": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "slot",
+        "anchor",
+        "parts"
+      ]
+    },
+    "ground": {
+      "type": "object",
+      "fields": {
+        "centre_height": {
+          "type": "number",
+          "min": 0
+        },
+        "shadow": {
+          "type": "object",
+          "fields": {
+            "rx": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "ry": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            "colour": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "rx",
+            "ry"
+          ],
+          "nullable": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "centre_height"
+      ]
+    },
+    "face_defaults": {
+      "type": "object",
+      "fields": {
+        "part": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "scale": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "layer": {
+          "type": "number"
+        },
+        "kit": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "kit_definition": {
+          "ref": "kit"
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "eyes": {
+          "type": "object",
+          "fields": {
+            "y": {
+              "type": "number"
+            },
+            "spacing": {
+              "type": "number",
+              "min": 0
+            },
+            "lashes": {
+              "type": "boolean"
+            },
+            "iris": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "nullable": true
+            }
+          },
+          "required": []
+        },
+        "mouth": {
+          "type": "object",
+          "fields": {
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": []
+        },
+        "blush": {
+          "type": "object",
+          "fields": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "rx": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "ry": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            "strong_alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "rx",
+            "ry"
+          ]
+        },
+        "colours": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "tune": {
+          "ref": "numeric_tree"
+        },
+        "styles": {
+          "type": "object",
+          "fields": {
+            "eyes": {
+              "type": "map",
+              "values": {
+                "ref": "eye_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "brows": {
+              "type": "map",
+              "values": {
+                "ref": "brow_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "mouth": {
+              "type": "map",
+              "values": {
+                "ref": "mouth_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": []
+        },
+        "caps": {
+          "type": "object",
+          "fields": {
+            "left": {
+              "type": "string",
+              "choices": [
+                "butt",
+                "round",
+                "square"
+              ]
+            },
+            "right": {
+              "type": "string",
+              "choices": [
+                "butt",
+                "round",
+                "square"
+              ]
+            },
+            "join": {
+              "type": "string",
+              "choices": [
+                "miter",
+                "round",
+                "bevel"
+              ]
+            }
+          },
+          "required": []
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "family": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "name": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "defaults": {
+          "type": "object",
+          "fields": {
+            "outline": {
+              "ref": "outline"
+            },
+            "face": {
+              "ref": "face_defaults",
+              "nullable": true
+            },
+            "moods": {
+              "type": "map",
+              "values": {
+                "ref": "mood"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "gestures": {
+              "type": "map",
+              "values": {
+                "ref": "gesture"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "motion": {
+              "ref": "motion"
+            },
+            "colours": {
+              "ref": "colour_map"
+            },
+            "colour_descriptions": {
+              "type": "map",
+              "values": {
+                "type": "string",
+                "min_chars": 1
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "follows": {
+              "type": "map",
+              "values": {
+                "ref": "follow"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "brand": {
+              "type": "object",
+              "fields": {
+                "primary": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "secondary": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": []
+            },
+            "contrast": {
+              "type": "array",
+              "items": {
+                "ref": "contrast"
+              }
+            },
+            "palettes": {
+              "type": "map",
+              "values": {
+                "ref": "palette"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": []
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "character": {
+      "type": "object",
+      "fields": {
+        "format_version": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,31}$"
+        },
+        "name": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "family": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "resolved": {
+          "type": "boolean"
+        },
+        "family_definition": {
+          "ref": "family"
+        },
+        "palette_sources": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "choices": [
+              "character",
+              "family"
+            ]
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "pronouns": {
+          "type": "string"
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "unique": true
+        },
+        "colours": {
+          "ref": "colour_map"
+        },
+        "colour_descriptions": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "min_chars": 1
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "follows": {
+          "type": "map",
+          "values": {
+            "ref": "follow"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "brand": {
+          "type": "object",
+          "fields": {
+            "primary": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "secondary": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": []
+        },
+        "contrast": {
+          "type": "array",
+          "items": {
+            "ref": "contrast"
+          }
+        },
+        "modes": {
+          "type": "object",
+          "fields": {
+            "dark": {
+              "type": "object",
+              "fields": {
+                "colours": {
+                  "ref": "colour_map"
+                }
+              },
+              "required": [
+                "colours"
+              ]
+            }
+          },
+          "required": []
+        },
+        "palettes": {
+          "type": "map",
+          "values": {
+            "ref": "palette",
+            "nullable": true
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "paints": {
+          "type": "map",
+          "values": {
+            "ref": "paint"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "shapes": {
+          "type": "map",
+          "values": {
+            "ref": "shape_definition"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "ground": {
+          "ref": "ground"
+        },
+        "outline": {
+          "ref": "outline"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "ref": "part"
+          },
+          "length_code": "budget",
+          "input_limit": "declared_parts"
+        },
+        "anchors": {
+          "type": "map",
+          "values": {
+            "ref": "anchor"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "face": {
+          "ref": "face",
+          "nullable": true
+        },
+        "poses": {
+          "type": "map",
+          "values": {
+            "ref": "channels"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "moods": {
+          "type": "map",
+          "values": {
+            "ref": "mood"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$",
+          "input_limit": "moods"
+        },
+        "gestures": {
+          "type": "map",
+          "values": {
+            "ref": "gesture"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$",
+          "input_limit": "gestures"
+        },
+        "motion": {
+          "ref": "motion"
+        },
+        "effects": {
+          "type": "map",
+          "values": {
+            "type": "object",
+            "fields": {
+              "anchor": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "layer": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "anchor"
+            ]
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "object",
+          "fields": {
+            "small": {
+              "ref": "lod_band"
+            },
+            "micro": {
+              "ref": "lod_band"
+            }
+          },
+          "required": []
+        },
+        "accessories": {
+          "type": "map",
+          "values": {
+            "ref": "accessory"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "wear": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "unique": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "format_version",
+        "id",
+        "name",
+        "family",
+        "description",
+        "requires",
+        "colours",
+        "ground",
+        "parts",
+        "moods"
+      ]
+    }
+  },
+  "policy_file": "policy-v1.json"
+}

@@ -203,7 +203,7 @@ def verify_archive(path, digest, directory):
                 raise ValueError('Archive member differs from supplied decoded baseline')
 
 
-def compare(baseline, candidate, strict=False, lock=None, archive_file=None, archive_sha256=None):
+def compare(baseline, candidate, strict=False, lock=None, archive_file=None, archive_sha256=None, report=None):
     baseline, candidate = Path(baseline), Path(candidate)
     old, new = read_json(baseline / 'manifest.json'), read_json(candidate / 'manifest.json')
     if strict:
@@ -228,6 +228,10 @@ def compare(baseline, candidate, strict=False, lock=None, archive_file=None, arc
                 raise ValueError(f'Archive member checksum differs: {directory / name}')
         if rgba(baseline / name) != rgba(candidate / name):
             differences.append(name)
+    if report:
+        from visual_report import write_report
+        write_report(report, baseline, candidate, old, new, rgba)
+        print(f'REPORT: {Path(report).resolve() / "index.html"}')
     if differences:
         raise ValueError(f'{len(differences)}/{len(expected)} frames differ: {differences[0]}')
     print(f'COMPARE PASS: {len(expected)} frames, exact decoded RGBA ({old["status"]})')
@@ -270,6 +274,7 @@ def main():
     parser.add_argument('--strict', action='store_true')
     parser.add_argument('--baseline')
     parser.add_argument('--candidate')
+    parser.add_argument('--report', help='New directory for all comparison pictures and per-frame metrics')
     parser.add_argument('--archive-file')
     parser.add_argument('--archive-sha256')
     args = parser.parse_args()
@@ -282,7 +287,7 @@ def main():
     elif args.action == 'compare':
         if not args.baseline or not args.candidate:
             parser.error('compare needs --baseline and --candidate')
-        compare(args.baseline, args.candidate, args.strict, args.profile, args.archive_file, args.archive_sha256)
+        compare(args.baseline, args.candidate, args.strict, args.profile, args.archive_file, args.archive_sha256, args.report)
     elif args.action == 'archive':
         if not args.baseline:
             parser.error('archive needs --baseline')

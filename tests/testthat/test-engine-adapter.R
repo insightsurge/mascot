@@ -5,7 +5,7 @@ describe("provisional Tessa adapter", {
     result <- js(paste0(
       "(() => {const ch=mascot.readCharacter('tessa'),c=document.createElement('canvas');",
       "c.width=300;c.height=300;const g=c.getContext('2d'),draw=mascot.geometry.draw;",
-      "let calls=0,count;mascot.geometry={...mascot.geometry,draw:(...args)=>{calls++;count=draw(...args);return count;}};",
+      "let calls=0,count={painted_items:0,paint_passes:0};mascot.geometry={...mascot.geometry,draw:(...args)=>{calls++;const c=draw(...args);count.painted_items+=c.painted_items;count.paint_passes+=c.paint_passes;return c;}};",
       "try{mascot.draw(g,ch,{x:150,baseY:270,pose:{mood:'idle'},frame:0});const before=calls;",
       "g.clearRect(0,0,300,300);mascot.internal={useCharacterAdapter:true};",
       "mascot.draw(g,ch,{x:150,baseY:270,pose:{mood:'idle'},frame:0});",
@@ -13,11 +13,10 @@ describe("provisional Tessa adapter", {
       "finally{delete mascot.internal;mascot.geometry={...mascot.geometry,draw};}})()"
     ))
     expect_equal(result$before, 0)
-    expect_equal(result$calls, 1)
-    # Two standing feet plus three authored body shapes, five fills plus two foot
-    # strokes and one rim stroke = eight passes. No face is counted by this bridge.
-    expect_equal(result$count$painted_items, 5)
-    expect_equal(result$count$paint_passes, 8)
+    expect_equal(result$calls, 4)
+    # Shadow, feet/body, bow and two arms/hands. Face/effects use shared painters.
+    expect_equal(result$count$painted_items, 15)
+    expect_equal(result$count$paint_passes, 25)
     expect_equal(result$pixel[[4]], 255)
     expect_equal(result$transform, 0)
   })
@@ -28,7 +27,7 @@ describe("provisional Tessa adapter", {
     expect_match(
       js(paste0(
         "(() => {const ch=mascot.readCharacter('blob'),g=document.createElement('canvas').getContext('2d');",
-        "try{mascot.tessaAdapter.drawBase(g,ch,{},{});}catch(e){return e.message;}})()"
+        "try{mascot.tessaAdapter.scene(ch,{},{});}catch(e){return e.message;}})()"
       )),
       "supports only Tessa"
     )
@@ -42,5 +41,152 @@ describe("provisional Tessa adapter", {
       )),
       "load the provisional Tessa adapter"
     )
+  })
+})
+
+
+describe("E1 Tessa matrices and attachment order", {
+  it("matches legacy anchor coordinates under rotation, reflection, squash and tucked feet", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(
+      r"(
+      (() => {
+        const ch=mascot.readCharacter('tessa'),cases=[
+          {mood:'idle'}, {mood:'thinking'}, {mood:'happy'}, {mood:'worried'}, {mood:'celebrating'},
+          {mood:'celebrating',rot:0.37,flip:-1,sx:1.3,sy:0.7,scale:0.85,armJitter:0.12},
+          {mood:'idle',rot:-0.28,feet:'tuck',armL:-0.7,armR:2.1}
+        ];
+        let maximum=0;
+        for(const pose of cases){
+          const p=mascot.drawing.resolvePose(ch,pose,12),scene=mascot.tessaAdapter.scene(ch,p,ch.colours,123,281);
+          const old=mascot.drawing.anchors(ch,{x:123,baseY:281,pose,frame:12});
+          for(const [id,point] of Object.entries(old)){
+            const pairs=['hands','feet','shoulders'].includes(id)?[['left',point.L],['right',point.R]]:[['',point]];
+            for(const [side,at] of pairs){
+              const m=scene.state.anchors[side?id+'_'+side:id].matrix;
+              for(const [a,b] of [[m[4],at.x],[m[5],at.y],[m[0],at.matrix.a],[m[1],at.matrix.b],[m[2],at.matrix.c],[m[3],at.matrix.d]]) maximum=Math.max(maximum,Math.abs(a-b));
+            }
+          }
+        }
+        return maximum;
+      })()
+      )"
+    )
+    expect_lt(result, 1e-9)
+  })
+
+  it("places attachments before arms, preserves caller state and collapses zero-scale owners", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(
+      r"(
+      (() => {
+        const ch=mascot.readCharacter('tessa'),p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);
+        const c=document.createElement('canvas');c.width=400;c.height=400;const g=c.getContext('2d');
+        g.translate(7,9);g.scale(0.8,1.1);g.globalAlpha=0.65;g.lineWidth=7;g.lineCap='square';
+        const before=[...['a','b','c','d','e','f'].map(k=>g.getTransform()[k]),g.globalAlpha,g.lineWidth,g.lineCap];
+        let face=0,effects=0;
+        const result=mascot.tessaAdapter.draw(g,ch,p,ch.colours,150,270,{face:()=>face++,effects:()=>effects++});
+        const after=[...['a','b','c','d','e','f'].map(k=>g.getTransform()[k]),g.globalAlpha,g.lineWidth,g.lineCap];
+        const layers=result.state.layers.map(id=>result.state.parts[id].layer);
+        const zero=mascot.tessaAdapter.draw(g,ch,{...p,scale:0,shadow:true},ch.colours,150,270,{face:()=>face++,effects:()=>effects++});
+        return {before,after,layers,face,effects,zero:zero.counts.painted_items};
+      })()
+      )"
+    )
+    expect_identical(result$before, result$after)
+    expect_identical(unlist(result$layers), c(0L, 0L, 1L, 3L, 4L, 4L))
+    expect_equal(result$face, 1)
+    expect_equal(result$effects, 1)
+    expect_equal(result$zero, 0)
+  })
+
+  it("leaves pixels and state untouched when required modules are absent", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(
+      r"(
+      (() => {
+        const ch=mascot.readCharacter('tessa'),g=document.createElement('canvas').getContext('2d');
+        g.translate(3,4);g.fillStyle='#ff0000';g.fillRect(0,0,1,1);
+        const before=g.canvas.toDataURL(),module=mascot.geometry;let error;
+        mascot.internal={useCharacterAdapter:true};delete mascot.geometry;
+        try{mascot.draw(g,ch,{pose:{mood:'idle'}});}catch(e){error=e.message;}
+        finally{mascot.geometry=module;delete mascot.internal;}
+        return {error,same:before===g.canvas.toDataURL(),x:g.getTransform().e,y:g.getTransform().f};
+      })()
+      )"
+    )
+    expect_match(result$error, "needs parts and geometry")
+    expect_true(result$same)
+    expect_equal(result$x, 3)
+    expect_equal(result$y, 4)
+  })
+})
+
+
+describe("adapter accessory placement and alpha", {
+  it("attaches to the moving left hand or tucked foot and keeps translucent fill separate from stroke", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(
+      r"(
+      (() => {
+        const ch=mascot.readCharacter('tessa');let maximum=0;
+        for(const name of ['hands','feet','shoulders']) {
+          const copy=JSON.parse(JSON.stringify(ch));copy.accessories.bow.anchor=name;copy.accessories.bow.side='L';
+          const p=mascot.drawing.resolvePose(copy,{mood:'celebrating',rot:0.3,flip:-1,sy:0.7},9);
+          const scene=mascot.tessaAdapter.scene(copy,p,copy.colours,150,270);
+          const attachment=scene.state.parts.wear_attachment_0_drawing.matrix;
+          const target=scene.state.anchors[name+'_left'].matrix;
+          attachment.forEach((v,i)=>{maximum=Math.max(maximum,Math.abs(v-target[i]));});
+        }
+        const copy=JSON.parse(JSON.stringify(ch));copy.body=[{shape:'roundRect',x:-50,y:-50,w:100,h:100,r:0,fill:'body',stroke:'outline',alpha:0.25,lineWidth:8}];
+        const c=document.createElement('canvas');c.width=300;c.height=300;const g=c.getContext('2d');
+        const pixels=[];
+        for(const enabled of [false,true]) {
+          g.clearRect(0,0,300,300);mascot.internal={useCharacterAdapter:enabled};
+          mascot.draw(g,copy,{x:150,baseY:270,pose:{mood:'idle',accessory:'none',shadow:false,blush:false},colours:{body:'#00ff00',outline:'#000000'}});
+          pixels.push({fill:[...g.getImageData(130,200,1,1).data],stroke:[...g.getImageData(100,200,1,1).data]});
+        }
+        delete mascot.internal;
+        return {maximum,pixels};
+      })()
+      )"
+    )
+    expect_lt(result$maximum, 1e-9)
+    expect_identical(result$pixels[[1]], result$pixels[[2]])
+    expect_equal(unlist(result$pixels[[2]]$fill), c(0, 255, 0, 64))
+    expect_equal(unlist(result$pixels[[2]]$stroke), c(0, 0, 0, 255))
+  })
+})
+
+describe("adapter face mounting", {
+  it("applies an authored face anchor once while preserving the shared face painter", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(
+      r"(
+      (() => {
+        const ch=JSON.parse(JSON.stringify(mascot.readCharacter('tessa')));
+        ch.anchors.face={x:20,y:10,scale:0.5};
+        const p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);
+        const frame=mascot.tessaAdapter.scene(ch,p,ch.colours,150,270);
+        const point=mascot.parts.point(frame.state.anchors.face.matrix,[-ch.face.eyes.spacing,ch.face.eyes.y]);
+        const c=document.createElement('canvas');c.width=300;c.height=300;const g=c.getContext('2d');
+        const pixels=[];
+        for(const enabled of [false,true]) {
+          g.clearRect(0,0,300,300);mascot.internal={useCharacterAdapter:enabled};
+          mascot.draw(g,ch,{x:150,baseY:270,pose:{mood:'idle'},colours:{feature:'#ff00ff',eyeWhite:'#ffffff',shine:'#00ffff',body:'#00ff00'}});
+          pixels.push([...g.getImageData(Math.round(point[0]),Math.round(point[1]),1,1).data]);
+        }
+        delete mascot.internal;
+        return pixels;
+      })()
+      )"
+    )
+    expect_equal(unlist(result[[1]]), c(255, 0, 255, 255))
+    expect_identical(result[[1]], result[[2]])
   })
 })

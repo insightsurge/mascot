@@ -12,8 +12,7 @@ later acceptance work. Pictures alone do not prove timing or host behaviour.
 settings, image hashes and archive checksums. These are **non-canonical** and cannot pass `--strict`.
 The small PNG set in `reviewed/` comes from old main `ace06f5`. The full archives are cached locally under
 `dev/visual-baselines/`, ignored by git and excluded from the source package. Canonical Ubuntu captures and
-retained archive publication remain pending. The E1 bridge currently replaces feet/body only; the legacy
-face, arms and effects remain. The live host never enables its internal switch.
+retained archive publication remain pending. The E1 bridge now routes root placement, feet/body, ground shadow, arms/hands and accessories through parts/geometry. Face and effect painters are reused at their computed part matrices until E3/E4; this is not the complete M1 migration. The live host never loads the adapter or enables its internal switch.
 
 ## Reproduce provisional captures
 
@@ -24,7 +23,7 @@ export RENV_CONFIG_AUTOLOADER_ENABLED=FALSE
 export R_LIBS=/path/to/the/existing/development/library
 python3 tools/visual/visual-baselines.py capture --provisional --source ace06f5 --output dev/visual-baselines/old
 python3 tools/visual/visual-baselines.py capture --provisional --source working-tree --adapter --output dev/visual-baselines/adapter
-python3 tools/visual/visual-baselines.py compare --baseline dev/visual-baselines/old --candidate dev/visual-baselines/adapter
+python3 -B tools/visual/visual-baselines.py compare --baseline dev/visual-baselines/old --candidate dev/visual-baselines/adapter --report dev/visual-baselines/comparison-report
 python3 tools/visual/visual-baselines.py probe --provisional --source ace06f5 --baseline dev/visual-baselines/old
 python3 tools/visual/visual-baselines.py archive --baseline dev/visual-baselines/old
 python3 -B tools/visual/test-harness.py
@@ -78,3 +77,9 @@ Today only `feat/character-foundation` may be pushed. Provisional archives remai
 push or canonical promotion is implied. After the manual run, Harsh reviews the images/diffs, retains the
 archive on design-assets, verifies retrieval/checksum and records the assets commit before T1 acceptance.
 New baselines and near-look changes always need review; no blanket tolerance or automatic regeneration.
+
+## E1 picture reports
+
+`compare --report <new-directory>` writes results.json and index.html, with one old/adapter/magenta-mask picture per frame and an enlarged crop for every differing case. Counts, maximum channel difference and zero-based changed-pixel bounds are measured on exact decoded RGBA. All manifest/image/environment/completeness checks run before report output. Existing report directories are never overwritten; corrupt or incompatible inputs produce no report.
+
+A report does not turn a mismatch into a pass: any differing frame still exits1, with no tolerance or baseline promotion. All pictures are comparison evidence, separate from the original immutable baseline PNGs. See e1-provisional.json for the E1 checkpoint, archive checksums and remaining visual differences. Canonical Ubuntu T1 and independent near-look approval remain pending.

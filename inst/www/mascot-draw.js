@@ -670,6 +670,23 @@
     return result;
   }
 
+  function drawFace(g, ch, p, face, placed = false) {
+    const c = face.c;
+    const at = Object.hasOwn(ch.anchors || {}, 'face') ? ch.anchors.face : {};
+    const faceScale = at.scale === undefined ? 1 : at.scale;
+    const framed = !placed && ((at.x || 0) !== 0 || (at.y || 0) !== 0 || (at.rotate || 0) !== 0 || faceScale !== 1);
+    g.save();
+    if (framed) {
+      g.translate(at.x || 0, at.y || 0);
+      if (at.rotate) g.rotate(at.rotate);
+      g.scale(faceScale, faceScale);
+    }
+    if (p.blush && ch.face.blush) drawBlush(g, c, ch.face.blush, p.blush);
+    drawEyes(g, face, p);
+    drawMouth(g, face, p);
+    g.restore();
+  }
+
   /**
    * character(ctx, ch, x, baseY, p): draws the character described by `ch` with its feet on baseY, in pose `p`
    * (already merged with the defaults, the character's pose and its mood).
@@ -692,6 +709,19 @@
       style: styles.get(ch).style,
     };
 
+    // Internal opt-in only; no public argument or live host enables this path.
+    if (ns.internal?.useCharacterAdapter === true) {
+      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
+      ns.tessaAdapter.draw(g, ch, p, c, x, baseY, {
+        face: (context) => drawFace(context, ch, p, face, true),
+        effects: (context) => {
+          if (p.sparkle && Object.hasOwn(ch.anchors || {}, 'sparkle')) drawSparkle(context, c, ch.anchors.sparkle, p);
+          if (Object.hasOwn(ch.anchors || {}, 'sweat')) drawSweat(context, c, ch.anchors.sweat, p);
+        },
+      });
+      return;
+    }
+
     // ground shadow (not affected by squash, shrinks and fades with height)
     if (p.shadow && ch.shadow) {
       const shade = ch.shadow;
@@ -710,59 +740,40 @@
     g.translate(0, -ch.centreHeight);
     g.rotate(p.rot);
 
-    // Internal opt-in only; the live host stays on the legacy drawing path.
-    if (ns.internal?.useCharacterAdapter === true) {
-      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
-      ns.tessaAdapter.drawBase(g, ch, p, c);
-    } else {
-      // A. feet
-      const feet = ch.feet;
-      if (feet) {
-        const tuck = p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6);
-        g.fillStyle = c.limb;
-        g.strokeStyle = c.outline;
-        g.lineWidth = feet.lineWidth;
-        if (tuck) {
-          const ft = feet.tuck;
-          for (const s of [-1, 1]) {
-            g.save();
-            g.translate(s * ft.x, ft.y);
-            g.rotate(-s * ft.rotate);
-            g.beginPath();
-            g.roundRect(ft.rect.x, ft.rect.y, ft.rect.w, ft.rect.h, ft.rect.r);
-            g.fill();
-            stroke(g, 'butt');
-            g.restore();
-          }
-        } else if (!tuck) {
-          for (const f of feet.stand) {
-            g.beginPath();
-            g.roundRect(f.x, f.y, f.w, f.h, f.r);
-            g.fill();
-            stroke(g, 'butt');
-          }
+    // A. feet
+    const feet = ch.feet;
+    if (feet) {
+      const tuck = p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6);
+      g.fillStyle = c.limb;
+      g.strokeStyle = c.outline;
+      g.lineWidth = feet.lineWidth;
+      if (tuck) {
+        const ft = feet.tuck;
+        for (const s of [-1, 1]) {
+          g.save();
+          g.translate(s * ft.x, ft.y);
+          g.rotate(-s * ft.rotate);
+          g.beginPath();
+          g.roundRect(ft.rect.x, ft.rect.y, ft.rect.w, ft.rect.h, ft.rect.r);
+          g.fill();
+          stroke(g, 'butt');
+          g.restore();
+        }
+      } else if (!tuck) {
+        for (const f of feet.stand) {
+          g.beginPath();
+          g.roundRect(f.x, f.y, f.w, f.h, f.r);
+          g.fill();
+          stroke(g, 'butt');
         }
       }
-
-      // B. body
-      for (const part of ch.body) drawPart(g, c, part);
     }
+
+    // B. body
+    for (const part of ch.body) drawPart(g, c, part);
 
     // C. face
-    const at = Object.hasOwn(ch.anchors || {}, 'face') ? ch.anchors.face : {};
-    const faceScale = at.scale === undefined ? 1 : at.scale;
-    const framed = (at.x || 0) !== 0 || (at.y || 0) !== 0 || (at.rotate || 0) !== 0 || faceScale !== 1;
-    g.save();
-    if (framed) {
-      g.translate(at.x || 0, at.y || 0);
-      if (at.rotate) g.rotate(at.rotate);
-      g.scale(faceScale, faceScale);
-    }
-    if (p.blush && ch.face.blush) drawBlush(g, c, ch.face.blush, p.blush);
-    drawEyes(g, face, p);
-    drawMouth(g, face, p);
-    g.restore();
-
+    drawFace(g, ch, p, face);
     // D. accessory, sparkle, sweat
     for (const item of accessories(ch, p)) {
       const anchor = item.anchor || 'hair';
@@ -826,6 +837,8 @@
     faceStyle: FACE_STYLE,
     resolvePose,
     anchors,
+    armAngles,
+    accessories,
     hexPath,
     svgPath,
   };

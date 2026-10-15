@@ -4,7 +4,8 @@ Run from the repository root:
     python3 -I docs/reviews/2026-10-14-design-contract-check.py
 
 Uses only the Python standard library; writes nothing. A failed explicit check or
-parse returns non-zero, including under python3 -O. Includes a limited queue reference model, not Shiny transport tests. Does not check expanded work budgets or appearance.
+parse returns non-zero, including under python3 -O. Includes a limited historical queue reference model, not tests of the
+2026-10-15 desired-state replacement or Shiny transport. Does not check expanded work budgets or appearance.
 """
 from pathlib import Path
 import json
@@ -28,7 +29,8 @@ def unique(pairs):
     return result
 
 
-# Reference model for selected design cases. This is not package code or a Shiny
+# Historical reference model for the superseded segmented queue. This is not
+# coverage of the 2026-10-15 desired-state contract, package code or a Shiny
 # transport simulator; validators here cover only mood/preset membership.
 class PendingCalls:
     independent = {"bubble", "status", "size", "placement", "motion"}

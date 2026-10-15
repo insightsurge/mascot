@@ -217,7 +217,7 @@ def check():
     contract = (root / "contract.md").read_text(encoding="utf-8")
     blocks = {
         "resource": proposal[proposal.index("### 2.4 Resource and performance contract"):proposal.index("E5c must exit non-zero")],
-        "format": proposal[proposal.index("## 3. The format (v1)"):proposal.index("#### Queues, atomic buffering and cumulative acknowledgements")],
+        "format": proposal[proposal.index("## 3. The format (v1)"):proposal.index("#### R-settled desired state and delivery")],
         "accessory and capability": proposal[proposal.index("### 3.17 Addressable accessories"):proposal.index("### 3.19 Tessa face migration acceptance")],
         "resolution and validation": proposal[proposal.index("## 5. Families, identity and resolution"):proposal.index("## 8. R and host integration")],
     }

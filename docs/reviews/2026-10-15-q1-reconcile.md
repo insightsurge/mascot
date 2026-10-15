@@ -1,8 +1,8 @@
 # Q1 reconciliation and proposed replacement (2026-10-15)
 
-Status: **draft for founder approval; not Q1 acceptance**. Tracker: [#285](https://github.com/insightsurge/mascot/issues/285), under #247 → #16 → #1. No package code changes.
+Status: **founder approved on 2026-10-15 for independent Q1 review; independent acceptance pending**. Approval includes first-explicit-character startup settlement and preserving bubble dismissal. The replacement is adopted in the proposal by #286; the original draft and reconciliation below remain a historical record. Tracker: [#285](https://github.com/insightsurge/mascot/issues/285), under #247 → #16 → #1. No package code changes.
 
-Compared the review on `review/q1-queue`, `docs/reviews/2026-10-15-q1-queue.md`, with `design/engine-format` at `918893f`, especially `docs/engine-format-proposal.md:417–470` and `:4322–4324`. The reviewed source and this branch agree. Locations below refer to that unchanged checkpoint. The current proposal remains intact; the replacement below has no authority until approved.
+Compared the review on `review/q1-queue`, `docs/reviews/2026-10-15-q1-queue.md`, with `design/engine-format` at `918893f`, especially `docs/engine-format-proposal.md:417–470` and `:4322–4324`. The reviewed source and this branch agree. Locations below refer to that unchanged checkpoint. At the f449877 draft checkpoint the proposal was retained unchanged. The founder subsequently approved the replacement, now adopted under #286. Historical source locations and the original draft below remain unchanged for traceability.
 
 ## Findings checked
 
@@ -49,7 +49,7 @@ What we lose or choose explicitly:
 
 **Recommendation:** approve this simpler state protocol, including the explicit startup and bubble rules, before U1. Keep whole-call atomicity, server ownership, lifecycle ordering, one-shot watermarks, static-UI support and real R/JS/app acceptance. Q1 remains blocked until founder approval and independent review of the replacement; runtime evidence remains U1/I1's job.
 
-**Founder decision (yes/no): approve the replacement below, including first-explicit-character startup settlement and preserving bubble dismissal across remounts, as the Q1 design to review before U1?** Recommended: yes.
+**Original founder decision (answered yes on 2026-10-15): approve the replacement below, including first-explicit-character startup settlement and preserving bubble dismissal across remounts, as the Q1 design to review before U1?** Recommended: yes.
 
 ## Draft replacement for section 3.16
 

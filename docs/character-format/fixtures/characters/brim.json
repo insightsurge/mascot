@@ -1,0 +1,1573 @@
+{
+  "format_version": 1,
+  "id": "brim",
+  "name": "Brim",
+  "family": "hexonians",
+  "description": "A genial saffron Hexonian archivist with a flat cap, waistcoat and card.",
+  "resolved": true,
+  "family_definition": {
+    "id": "hexonians",
+    "name": "Hexonians",
+    "description": "Hex-shaped characters.",
+    "defaults": {}
+  },
+  "palette_sources": {},
+  "palettes": {},
+  "requires": [
+    "parts",
+    "paints",
+    "clip",
+    "outline",
+    "glow",
+    "face_kit",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "outline": "#1B1230",
+    "ivory": "#FFF6E0",
+    "feature": "#1B1230",
+    "eye_white": "#FFFDF4",
+    "shine": "#FFFFFF",
+    "eyelid": "#C77700",
+    "iris": "#0B6E8A",
+    "iris_light": "#7DE3FF",
+    "blush": "#FFC27A",
+    "blush_strong": "#FFC27A",
+    "body": "#C77700",
+    "body_shade": "#8F5500",
+    "body_hi": "#FFB84A",
+    "rim_gold": "#FFC93C",
+    "rim_gold_light": "#FFF0A0",
+    "rim_gold_dark": "#D58A12",
+    "rim_light": "rgba(120,235,255,0.75)",
+    "cap_dark": "#0B4F66",
+    "cap_light": "#1FB6D6",
+    "cap_bill": "#2BCBEA",
+    "cap_sheen": "rgba(255,255,255,0.38)",
+    "vest_dark": "#075A5E",
+    "vest_light": "#0F8F8A",
+    "vest_stitch": "rgba(255,255,255,0.28)",
+    "stache": "#3A1D0F",
+    "stache_light": "#7A4A28",
+    "stache_deep": "#220F06",
+    "nose_light": "#FFD08A",
+    "nose_dark": "#E08A2C",
+    "arm": "#9E5C00",
+    "arm_hi": "#FFB84A",
+    "hand": "#FFC93C",
+    "mouth_in": "#3A0B2E",
+    "tongue": "#FF6F8E",
+    "teeth": "#FFFDF4",
+    "card": "#FFF8D6",
+    "card_shade": "#F2D58A",
+    "card_line": "rgba(27,18,48,0.7)",
+    "card_glow": "#FFE27A",
+    "card_ghost": "rgba(255,246,224,0.3)",
+    "sweat": "#27B8F0",
+    "sparkle": "#FFFFFF",
+    "sparkle_outline": "#FFE27A",
+    "shadow": "#A2AEA7"
+  },
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "body",
+      "min": 3,
+      "where": "face features on saffron body"
+    },
+    {
+      "fg": "body",
+      "bg": "page",
+      "min": 3,
+      "where": "body on light and dark pages"
+    }
+  ],
+  "ground": {
+    "centre_height": 86.4,
+    "shadow": {
+      "rx": 72,
+      "ry": 12.96,
+      "alpha": 0.3,
+      "colour": "shadow"
+    }
+  },
+  "outline": {
+    "width": 3,
+    "colour": "outline",
+    "join": "round",
+    "cap": "round",
+    "second": {
+      "width": 5,
+      "colour": "ivory"
+    }
+  },
+  "paints": {
+    "body_gradient": {
+      "type": "linear",
+      "from": [
+        106.8,
+        128
+      ],
+      "to": [
+        283.6,
+        336
+      ],
+      "stops": [
+        [
+          0,
+          "body_hi"
+        ],
+        [
+          0.32,
+          "body"
+        ],
+        [
+          0.7,
+          "body"
+        ],
+        [
+          1,
+          "body_shade"
+        ]
+      ]
+    },
+    "gold_rim": {
+      "type": "linear",
+      "from": [
+        86,
+        128
+      ],
+      "to": [
+        294,
+        336
+      ],
+      "stops": [
+        [
+          0,
+          "rim_gold_light"
+        ],
+        [
+          0.4,
+          "rim_gold"
+        ],
+        [
+          1,
+          "rim_gold_dark"
+        ]
+      ]
+    },
+    "foot": {
+      "type": "linear",
+      "from": [
+        0,
+        -10
+      ],
+      "to": [
+        0,
+        10
+      ],
+      "stops": [
+        [
+          0,
+          "rim_gold_light"
+        ],
+        [
+          0.6,
+          "rim_gold"
+        ],
+        [
+          1,
+          "rim_gold_dark"
+        ]
+      ]
+    },
+    "vest": {
+      "type": "linear",
+      "from": [
+        90,
+        292
+      ],
+      "to": [
+        290,
+        342
+      ],
+      "stops": [
+        [
+          0,
+          "vest_light"
+        ],
+        [
+          1,
+          "vest_dark"
+        ]
+      ]
+    },
+    "cap_dome": {
+      "type": "linear",
+      "from": [
+        -160,
+        -60
+      ],
+      "to": [
+        20,
+        20
+      ],
+      "stops": [
+        [
+          0,
+          "cap_light"
+        ],
+        [
+          1,
+          "cap_dark"
+        ]
+      ]
+    },
+    "cap_bill": {
+      "type": "linear",
+      "from": [
+        -70,
+        0
+      ],
+      "to": [
+        -70,
+        26
+      ],
+      "stops": [
+        [
+          0,
+          "cap_bill"
+        ],
+        [
+          1,
+          "cap_dark"
+        ]
+      ]
+    },
+    "nose": {
+      "type": "linear",
+      "from": [
+        -8,
+        -10
+      ],
+      "to": [
+        8,
+        10
+      ],
+      "stops": [
+        [
+          0,
+          "nose_light"
+        ],
+        [
+          1,
+          "nose_dark"
+        ]
+      ]
+    },
+    "card": {
+      "type": "linear",
+      "from": [
+        0,
+        -28
+      ],
+      "to": [
+        0,
+        28
+      ],
+      "stops": [
+        [
+          0,
+          "card"
+        ],
+        [
+          1,
+          "card_shade"
+        ]
+      ]
+    },
+    "stache_r": {
+      "type": "linear",
+      "from": [
+        0,
+        -11
+      ],
+      "to": [
+        60,
+        25
+      ],
+      "stops": [
+        [
+          0,
+          "stache_light"
+        ],
+        [
+          0.5,
+          "stache"
+        ],
+        [
+          1,
+          "stache_deep"
+        ]
+      ]
+    },
+    "stache_l": {
+      "type": "linear",
+      "from": [
+        0,
+        -11
+      ],
+      "to": [
+        -60,
+        25
+      ],
+      "stops": [
+        [
+          0,
+          "stache_light"
+        ],
+        [
+          0.5,
+          "stache"
+        ],
+        [
+          1,
+          "stache_deep"
+        ]
+      ]
+    }
+  },
+  "parts": [
+    {
+      "id": "figure",
+      "at": [
+        -144,
+        -253.44
+      ],
+      "scale": 0.72,
+      "items": []
+    },
+    {
+      "id": "feet",
+      "parent": "figure",
+      "layer": 10,
+      "items": [
+        {
+          "shape": "ellipse",
+          "x": 154,
+          "y": 323,
+          "rx": 19,
+          "ry": 10,
+          "fill": {
+            "paint": "foot"
+          },
+          "outline": true,
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "ellipse",
+          "x": 154,
+          "y": 323,
+          "rx": 19,
+          "ry": 10,
+          "fill": "rim_gold",
+          "outline": true,
+          "lod": [
+            "small"
+          ]
+        },
+        {
+          "shape": "ellipse",
+          "x": 226,
+          "y": 323,
+          "rx": 19,
+          "ry": 10,
+          "fill": {
+            "paint": "foot"
+          },
+          "outline": true,
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "ellipse",
+          "x": 226,
+          "y": 323,
+          "rx": 19,
+          "ry": 10,
+          "fill": "rim_gold",
+          "outline": true,
+          "lod": [
+            "small"
+          ]
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "body",
+      "parent": "figure",
+      "layer": 20,
+      "items": [
+        {
+          "id": "silhouette",
+          "shape": "path",
+          "d": "M 174.63 145.66 Q 190.00 138.40 205.37 145.66 L 273.70 177.94 Q 289.07 185.20 289.07 202.20 L 289.07 261.80 Q 289.07 278.80 273.70 286.06 L 205.37 318.34 Q 190.00 325.60 174.63 318.34 L 106.30 286.06 Q 90.93 278.80 90.93 261.80 L 90.93 202.20 Q 90.93 185.20 106.30 177.94 Z",
+          "fill": {
+            "paint": "body_gradient"
+          },
+          "outline": true
+        },
+        {
+          "id": "rim_light",
+          "shape": "path",
+          "d": "M 174.63 145.66 Q 190.00 138.40 205.37 145.66 L 273.70 177.94 Q 289.07 185.20 289.07 202.20 L 289.07 261.80 Q 289.07 278.80 273.70 286.06 L 205.37 318.34 Q 190.00 325.60 174.63 318.34 L 106.30 286.06 Q 90.93 278.80 90.93 261.80 L 90.93 202.20 Q 90.93 185.20 106.30 177.94 Z",
+          "stroke": "rim_light",
+          "width": 7,
+          "clip": "body.silhouette",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "gold_rim",
+          "shape": "path",
+          "d": "M 174.63 145.66 Q 190.00 138.40 205.37 145.66 L 273.70 177.94 Q 289.07 185.20 289.07 202.20 L 289.07 261.80 Q 289.07 278.80 273.70 286.06 L 205.37 318.34 Q 190.00 325.60 174.63 318.34 L 106.30 286.06 Q 90.93 278.80 90.93 261.80 L 90.93 202.20 Q 90.93 185.20 106.30 177.94 Z",
+          "stroke": "rim_gold",
+          "width": 17,
+          "clip": "body.silhouette",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "inner_bevel",
+          "shape": "path",
+          "d": "M 179.15 153.43 Q 190.00 148.30 200.85 153.43 L 267.74 185.02 Q 278.59 190.15 278.59 202.15 L 278.59 261.85 Q 278.59 273.85 267.74 278.98 L 200.85 310.57 Q 190.00 315.70 179.15 310.57 L 112.26 278.98 Q 101.41 273.85 101.41 261.85 L 101.41 202.15 Q 101.41 190.15 112.26 185.02 Z",
+          "stroke": "outline",
+          "width": 1.8,
+          "alpha": 0.38,
+          "clip": "body.silhouette",
+          "lod": [
+            "full"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M 172.87 109.01 Q 200.00 96.20 227.13 109.01 L 298.62 142.79 Q 325.75 155.60 325.75 185.60 L 325.75 244.40 Q 325.75 274.40 298.62 287.21 L 227.13 320.99 Q 200.00 333.80 172.87 320.99 L 101.38 287.21 Q 74.25 274.40 74.25 244.40 L 74.25 185.60 Q 74.25 155.60 101.38 142.79 Z",
+            "fill": "body",
+            "outline": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "vest",
+      "parent": "figure",
+      "layer": 25,
+      "items": [
+        {
+          "shape": "path",
+          "d": "M 60 292 L 160 292 L 190 330 L 220 292 L 320 292 L 320 362 L 60 362 Z",
+          "fill": {
+            "paint": "vest"
+          },
+          "stroke": "outline",
+          "width": 3.5,
+          "clip": "body.silhouette",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "path",
+          "d": "M 60 292 L 160 292 L 190 330 L 220 292 L 320 292 L 320 362 L 60 362 Z",
+          "fill": "vest_light",
+          "stroke": "outline",
+          "width": 3.5,
+          "clip": "body.silhouette",
+          "lod": [
+            "small"
+          ]
+        },
+        {
+          "id": "vest_stitch",
+          "shape": "polyline",
+          "points": [
+            [
+              70,
+              298
+            ],
+            [
+              160,
+              298
+            ]
+          ],
+          "stroke": "vest_stitch",
+          "width": 2,
+          "clip": "body.silhouette",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "button_l",
+          "shape": "circle",
+          "x": 132,
+          "y": 312,
+          "r": 5,
+          "fill": "rim_gold"
+        },
+        {
+          "id": "button_r",
+          "shape": "circle",
+          "x": 248,
+          "y": 312,
+          "r": 5,
+          "fill": "rim_gold"
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "face_owner",
+      "parent": "figure",
+      "layer": 30,
+      "items": []
+    },
+    {
+      "id": "nose",
+      "parent": "figure",
+      "layer": 35,
+      "at": [
+        190,
+        246
+      ],
+      "items": [
+        {
+          "shape": "ellipse",
+          "x": 0,
+          "y": 0,
+          "rx": 11,
+          "ry": 9.5,
+          "fill": {
+            "paint": "nose"
+          },
+          "stroke": "outline",
+          "width": 3,
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "ellipse",
+          "x": 0,
+          "y": 0,
+          "rx": 11,
+          "ry": 9.5,
+          "fill": "nose_light",
+          "stroke": "outline",
+          "width": 3,
+          "lod": [
+            "small"
+          ]
+        },
+        {
+          "shape": "ellipse",
+          "x": -3.5,
+          "y": -3.5,
+          "rx": 3,
+          "ry": 2,
+          "fill": "shine"
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "stache",
+      "parent": "figure",
+      "layer": 40,
+      "items": [
+        {
+          "id": "stache_r",
+          "shape": "path",
+          "d": "M 190 257 C 210 249 234 254 240 270 C 244 262 256 256 260 246 C 268 262 252 284 224 280 C 206 278 193 272 190 268 Z",
+          "fill": {
+            "paint": "stache_r"
+          },
+          "stroke": "outline",
+          "width": 2.5
+        },
+        {
+          "id": "stache_l",
+          "shape": "path",
+          "d": "M 190 257 C 170 249 146 254 140 270 C 136 262 124 256 120 246 C 112 262 128 284 156 280 C 174 278 187 272 190 268 Z",
+          "fill": {
+            "paint": "stache_l"
+          },
+          "stroke": "outline",
+          "width": 2.5
+        }
+      ],
+      "variants": {
+        "happy": [
+          {
+            "id": "stache_r",
+            "shape": "path",
+            "d": "M 190 257 C 210 249 234 254 240 270 C 244 255.6 256 241.9 260 230.6 C 268 255.6 252 284 224 280 C 206 278 193 272 190 268 Z",
+            "fill": {
+              "paint": "stache_r"
+            },
+            "stroke": "outline",
+            "width": 2.5
+          },
+          {
+            "id": "stache_l",
+            "shape": "path",
+            "d": "M 190 257 C 170 249 146 254 140 270 C 136 255.6 124 241.9 120 230.6 C 112 255.6 128 284 156 280 C 174 278 187 272 190 268 Z",
+            "fill": {
+              "paint": "stache_l"
+            },
+            "stroke": "outline",
+            "width": 2.5
+          }
+        ],
+        "micro": [
+          {
+            "shape": "round_rect",
+            "x": 160,
+            "y": 236,
+            "w": 80,
+            "h": 16,
+            "r": 8,
+            "fill": "stache"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cap",
+      "parent": "figure",
+      "layer": 45,
+      "at": [
+        260,
+        163
+      ],
+      "items": [
+        {
+          "id": "cap_dome",
+          "shape": "path",
+          "d": "M -162 8 C -170 -52 -90 -74 -34 -64 C 18 -50 28 -12 22 8 C -20 18 -120 18 -162 8 Z",
+          "fill": {
+            "paint": "cap_dome"
+          },
+          "outline": true
+        },
+        {
+          "id": "cap_sheen",
+          "shape": "path",
+          "d": "M -130 -30 Q -90 -54 -50 -52",
+          "stroke": "cap_sheen",
+          "width": 7,
+          "cap": "round",
+          "clip": "cap.cap_dome",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "cap_bill",
+          "shape": "path",
+          "d": "M -156 6 Q -80 30 18 6 Q -40 -2 -156 6 Z",
+          "fill": {
+            "paint": "cap_bill"
+          },
+          "stroke": "outline",
+          "width": 3
+        },
+        {
+          "id": "cap_button",
+          "shape": "circle",
+          "x": -74,
+          "y": -64,
+          "r": 6,
+          "fill": "rim_gold",
+          "stroke": "outline",
+          "width": 2.5
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "shape": "round_rect",
+            "x": -135,
+            "y": -53,
+            "w": 150,
+            "h": 34,
+            "r": 16,
+            "fill": "cap_light",
+            "stroke": "outline",
+            "width": 3
+          }
+        ]
+      }
+    },
+    {
+      "id": "arm_l",
+      "parent": "figure",
+      "layer": 50,
+      "at": [
+        96,
+        244
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -8.29,
+              28.83
+            ],
+            [
+              -12.75,
+              56.47
+            ]
+          ],
+          "stroke": "outline",
+          "width": 17,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -8.29,
+              28.83
+            ],
+            [
+              -12.75,
+              56.47
+            ]
+          ],
+          "stroke": "arm",
+          "width": 13,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "circle",
+          "x": -12.75,
+          "y": 56.47,
+          "r": 9,
+          "fill": "hand",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "arm_r",
+      "parent": "figure",
+      "layer": 50,
+      "at": [
+        284,
+        244
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              8.29,
+              28.83
+            ],
+            [
+              12.75,
+              56.47
+            ]
+          ],
+          "stroke": "outline",
+          "width": 17,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              8.29,
+              28.83
+            ],
+            [
+              12.75,
+              56.47
+            ]
+          ],
+          "stroke": "arm",
+          "width": 13,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "circle",
+          "x": 12.75,
+          "y": 56.47,
+          "r": 9,
+          "fill": "hand",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "card",
+      "parent": "figure",
+      "layer": 55,
+      "at": [
+        299,
+        266
+      ],
+      "rotate": 0.12,
+      "glow": {
+        "item": "card_bg",
+        "colour": "card_glow",
+        "blur": 8,
+        "alpha": 0.8
+      },
+      "items": [
+        {
+          "id": "card_bg",
+          "shape": "round_rect",
+          "x": -22,
+          "y": -28,
+          "w": 44,
+          "h": 56,
+          "r": 5,
+          "fill": {
+            "paint": "card"
+          },
+          "stroke": "outline",
+          "width": 3
+        },
+        {
+          "shape": "round_rect",
+          "x": -14,
+          "y": -18,
+          "w": 28,
+          "h": 3.4,
+          "r": 1.7,
+          "fill": "card_line"
+        },
+        {
+          "shape": "round_rect",
+          "x": -14,
+          "y": -8,
+          "w": 20,
+          "h": 3.4,
+          "r": 1.7,
+          "fill": "card_line"
+        },
+        {
+          "shape": "round_rect",
+          "x": -14,
+          "y": 2,
+          "w": 28,
+          "h": 3.4,
+          "r": 1.7,
+          "fill": "card_line"
+        },
+        {
+          "shape": "round_rect",
+          "x": -14,
+          "y": 12,
+          "w": 20,
+          "h": 3.4,
+          "r": 1.7,
+          "fill": "card_line"
+        }
+      ],
+      "variants": {
+        "ghost": [
+          {
+            "id": "card_bg",
+            "shape": "round_rect",
+            "x": -22,
+            "y": -28,
+            "w": 44,
+            "h": 56,
+            "r": 5,
+            "fill": "card_ghost",
+            "stroke": "outline",
+            "width": 3
+          }
+        ]
+      },
+      "lod": [
+        "full",
+        "small"
+      ]
+    }
+  ],
+  "anchors": {
+    "hand_l": {
+      "part": "arm_l",
+      "at": [
+        -12.75,
+        56.47
+      ],
+      "description": "Left hand attachment."
+    },
+    "hand_r": {
+      "part": "arm_r",
+      "at": [
+        12.75,
+        56.47
+      ],
+      "description": "Right hand attachment."
+    },
+    "foot_l": {
+      "part": "feet",
+      "at": [
+        154,
+        323
+      ],
+      "description": "Left foot position."
+    },
+    "foot_r": {
+      "part": "feet",
+      "at": [
+        226,
+        323
+      ],
+      "description": "Right foot position."
+    },
+    "crown": {
+      "part": "cap",
+      "at": [
+        -74,
+        -64
+      ],
+      "description": "Cap top button."
+    },
+    "chest": {
+      "part": "vest",
+      "at": [
+        190,
+        312
+      ],
+      "description": "Waistcoat centre."
+    },
+    "sweat": {
+      "part": "figure",
+      "at": [
+        282,
+        170
+      ],
+      "description": "Right temple sweat mark."
+    }
+  },
+  "effects": {
+    "sweat": {
+      "anchor": "sweat",
+      "layer": 60
+    }
+  },
+  "face": {
+    "part": "face_owner",
+    "kit": "brim_face",
+    "kit_definition": {
+      "id": "brim_face",
+      "description": "Brim source-sized painted eyes, thick brows and expressive mouth styles.",
+      "roles": [
+        "outline",
+        "feature",
+        "eye_white",
+        "shine",
+        "teeth",
+        "eyelid",
+        "tongue",
+        "iris",
+        "blush",
+        "blush_strong",
+        "sweat"
+      ],
+      "defaults": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "neutral",
+        "blush": 1
+      },
+      "eye_styles": {
+        "open": {
+          "op": "eye_ellipse",
+          "rx": 18,
+          "ry": 20.16,
+          "pupil": {
+            "r": 11.88,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "wide": {
+          "op": "eye_ellipse",
+          "rx": 18,
+          "ry": 20.16,
+          "pupil": {
+            "r": 11.88,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "worried": {
+          "op": "eye_ellipse",
+          "rx": 18,
+          "ry": 22.58,
+          "pupil": {
+            "r": 11.88,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "focused": {
+          "op": "eye_ellipse",
+          "rx": 18,
+          "ry": 18.55,
+          "pupil": {
+            "r": 11.88,
+            "look_range": [
+              7,
+              7
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0.3,
+          "slant": 0,
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "happy": {
+          "op": "eye_arc",
+          "r": 15.84,
+          "start": 3.455751918948773,
+          "end": 5.969026041820607,
+          "y": 6.3,
+          "width": 5.6,
+          "stroke": "feature",
+          "hide_brows": false
+        },
+        "closed": {
+          "op": "eye_arc",
+          "r": 15.84,
+          "start": 3.455751918948773,
+          "end": 5.969026041820607,
+          "y": 6.3,
+          "width": 5.6,
+          "stroke": "feature",
+          "hide_brows": false
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M 0 0",
+          "width": 0,
+          "stroke": "feature",
+          "y": -27.9
+        },
+        "neutral": {
+          "op": "brow_path",
+          "d": "M -20 2 Q 0 -8.4 20 2",
+          "width": 8,
+          "stroke": "feature",
+          "y": -27.9
+        },
+        "raised": {
+          "op": "brow_path",
+          "d": "M -20 2 Q 0 -8.4 20 2",
+          "width": 8,
+          "stroke": "feature",
+          "y": -35
+        },
+        "worried": {
+          "op": "brow_path",
+          "d": "M -20 2 Q 0 8.4 20 2",
+          "width": 8,
+          "stroke": "feature",
+          "y": -27.9
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            15
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 -0.05 Q 0 0.4 1 -0.05",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            15
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0 Q 0 -0.05 1 0",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        },
+        "worried": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            15
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0.1 C -0.5 -0.8 0.5 0.1 1 0.1",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        },
+        "grin": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            15
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 -0.05 Q 0 0.24 1 -0.05 C 0.9 0.95 -0.9 0.95 -1 -0.05 Z",
+              "fill": "mouth_in",
+              "stroke": "feature",
+              "width": 3.6
+            }
+          ]
+        }
+      },
+      "effects": {
+        "sweat": {
+          "mode": "progress",
+          "items": [
+            {
+              "shape": "path",
+              "d": "M 0 -13 C 9 0 9 9 0 9 C -9 9 -9 0 0 -13 Z",
+              "fill": "sweat",
+              "stroke": "outline",
+              "width": 2.4
+            },
+            {
+              "shape": "ellipse",
+              "x": -2.6,
+              "y": 2,
+              "rx": 2,
+              "ry": 3.3,
+              "rotate": 0.3,
+              "fill": "shine"
+            }
+          ]
+        }
+      }
+    },
+    "at": [
+      190,
+      226
+    ],
+    "eyes": {
+      "y": 0,
+      "spacing": 38,
+      "lashes": false,
+      "iris": "iris"
+    },
+    "mouth": {
+      "y": 58
+    },
+    "blush": {
+      "x": 44.3,
+      "y": 31.5,
+      "rx": 11.16,
+      "ry": 6.12,
+      "alpha": 0.5,
+      "strong_alpha": 0.5
+    }
+  },
+  "moods": {
+    "idle": {
+      "description": "Idle archivist pose holding glowing card.",
+      "status": "Browsing the catalogue.",
+      "face": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "neutral",
+        "open": 1
+      },
+      "channels": {
+        "arm_l.rotate": 0,
+        "arm_r.rotate": 0,
+        "root.rotate": 0,
+        "root.lift": 0
+      }
+    },
+    "thinking": {
+      "description": "Thinking pose searching for the record.",
+      "status": "Searching the archives.",
+      "face": {
+        "eyes": "focused",
+        "mouth": "flat",
+        "brows": "raised",
+        "look_x": 0.7,
+        "look_y": -0.7,
+        "open": 1
+      },
+      "channels": {
+        "arm_l.rotate": 0.67,
+        "arm_r.rotate": 0.32,
+        "root.rotate": -0.07,
+        "root.lift": 0
+      }
+    },
+    "happy": {
+      "description": "Happy pose tipping the cap.",
+      "status": "Found the exact entry.",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "neutral",
+        "open": 0.55
+      },
+      "channels": {
+        "cap.rotate": -0.15,
+        "stache.variant": "happy",
+        "arm_l.rotate": 1.8,
+        "arm_r.rotate": 0.45,
+        "root.rotate": 0.05,
+        "root.lift": 1.008
+      }
+    },
+    "worried": {
+      "description": "Worried pose with displaced dashed card.",
+      "status": "Record missing or displaced.",
+      "face": {
+        "eyes": "worried",
+        "mouth": "worried",
+        "brows": "worried",
+        "open": 1
+      },
+      "channels": {
+        "card.variant": "ghost",
+        "arm_l.rotate": 0.32,
+        "arm_r.rotate": 0.32,
+        "root.rotate": 0,
+        "root.lift": 0
+      },
+      "effects": {
+        "sweat": 0.8
+      }
+    },
+    "celebrating": {
+      "description": "Celebrating pose raising the card with both arms up.",
+      "status": "Complete archive restored!",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "raised",
+        "open": 1
+      },
+      "channels": {
+        "stache.variant": "happy",
+        "arm_l.rotate": 2.27,
+        "arm_r.rotate": 2.27,
+        "root.rotate": 0,
+        "root.lift": 10.08
+      }
+    }
+  },
+  "gestures": {
+    "nod": {
+      "description": "A genial nod and cap tip.",
+      "frames": 24,
+      "tracks": {
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.3,
+            0.04
+          ],
+          [
+            0.7,
+            -0.02
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "wave": {
+      "description": "A welcoming wave with the right arm.",
+      "frames": 24,
+      "tracks": {
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.3,
+            0.03
+          ],
+          [
+            0.7,
+            -0.02
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "arm_r.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            0.15
+          ],
+          [
+            0.5,
+            -0.1
+          ],
+          [
+            0.75,
+            0.15
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "lod": {
+    "small": {
+      "hide": [
+        "body.inner_bevel",
+        "body.rim_light",
+        "vest.vest_stitch"
+      ]
+    },
+    "micro": {
+      "hide": [
+        "feet",
+        "arm_l",
+        "arm_r",
+        "card",
+        "vest",
+        "nose",
+        "body.inner_bevel",
+        "body.rim_light",
+        "body.gold_rim",
+        "stache.stache_r",
+        "stache.stache_l"
+      ],
+      "variants": {
+        "stache": "micro",
+        "cap": "micro",
+        "body": "micro"
+      },
+      "face": {
+        "lashes": false,
+        "brows": false,
+        "iris": false
+      },
+      "glow": false
+    }
+  },
+  "note": "Source: picked round5.md, the recovered drawing source drawBrim lines 115-139, the picked contact sheet row 2. True squat hex geometry, saffron palette, flat cap, teal waistcoat, gold buttons, bulb nose, two-piece moustache and glowing card. Ground origin [150, 270], figure parent at [-144, -253.44] scale 0.72 maps source 400x400 frame with ground at y=352. Format gaps: dynamic smile-keyed moustache deformation; cap group translation/rotation linked to left hand; procedural paper grain/fibers; text line dash pattern; continuous star sparkle particles; shadowBlur bloom. Rim stroke uses a flat source gold role: contract 3.5 types stroke as a role, although the accounting prose mentions gradient stroke invocations. Gradient-stroke authoring needs an explicit freeze decision; the fixture does not silently extend that field."
+}

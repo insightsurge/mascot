@@ -275,6 +275,84 @@
       "code": "non_finite",
       "path": "$.ground.centre_height",
       "fix": "Use a finite number within the geometry range."
+    },
+    {
+      "id": "neer",
+      "file": "characters/neer.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "picked improved drawing; reference translation, issue #289",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "neer",
+        "evidence": "separable_componentwise_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "selected_structure_and_reference_accounting_only; visual_acceptance_pending"
+    },
+    {
+      "id": "sela",
+      "file": "characters/sela.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "picked character drawing; reference translation, issue #289",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "sela",
+        "evidence": "separable_componentwise_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "selected_structure_and_reference_accounting_only; visual_acceptance_pending"
+    },
+    {
+      "id": "brim",
+      "file": "characters/brim.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "picked character drawing; reference translation, issue #289",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "brim",
+        "evidence": "separable_componentwise_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "selected_structure_and_reference_accounting_only; visual_acceptance_pending"
+    },
+    {
+      "id": "iso",
+      "file": "characters/iso.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "picked character drawing; reference translation, issue #289",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "iso",
+        "evidence": "separable_componentwise_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "selected_structure_and_reference_accounting_only; visual_acceptance_pending"
+    },
+    {
+      "id": "knurl",
+      "file": "characters/knurl.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "picked character drawing; reference translation, issue #289",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "knurl",
+        "evidence": "separable_componentwise_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "selected_structure_and_reference_accounting_only; visual_acceptance_pending"
+    },
+    {
+      "id": "cinder",
+      "file": "characters/cinder.json",
+      "kind": "character",
+      "expected": "valid_after_full_check",
+      "origin": "picked character drawing; reference translation, issue #289",
+      "expanded_work_totals": {
+        "file": "../budgets.json",
+        "character": "cinder",
+        "evidence": "separable_componentwise_reference_maxima_and_conservative_authored_glow_bound; not_R1c_or_runtime"
+      },
+      "evidence": "selected_structure_and_reference_accounting_only; visual_acceptance_pending"
     }
   ],
   "scenarios": [

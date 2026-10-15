@@ -4,7 +4,7 @@ Status: accounting-review fixes, 2026-10-15; [#287](https://github.com/insightsu
 
 ## Method and compatibility
 
-[operations.json](operations.json) defines the shared policy. [budget.py](budget.py) computes a **separable componentwise upper bound** using only the Python standard library; [budgets.json](budgets.json) records twelve rows and per-component proofs. It sums local part maxima, the maximum per exclusive accessory slot, the face bound, ground and concurrent effects; blur takes a maximum. Same-part clips use that part's selected variant; cross-component clip targets use their largest band-resolved geometry. Clip bounds are cached; face styles are maximised without a joint style product.
+[operations.json](operations.json) defines the shared policy. [budget.py](budget.py) computes a **separable componentwise upper bound** using only the Python standard library; [budgets.json](budgets.json) records thirty rows and per-component proofs. It sums local part maxima, the maximum per exclusive accessory slot, the face bound, ground and concurrent effects; blur takes a maximum. Same-part clips use that part's selected variant; cross-component clip targets use their largest band-resolved geometry. Clip bounds are cached; face styles are maximised without a joint style product.
 
 This replaces exact joint enumeration, not just its implementation. A local proof can use a different target variant from another component. The integers are conservative bounds, not guaranteed attainable joint-frame maxima. For example, a two-variant clip-target probe has exact joint path work 21 but a separable bound 23. Different metrics also have different component choices. This can reject a file whose actual joint frames would fit; do not quietly substitute a different, tighter integer algorithm in R or JS.
 
@@ -86,3 +86,7 @@ The source changes require these copies on feat/character-foundation, per docs/c
 | budgets.json | tests/testthat/fixtures/format/work-expected.json | Copy identically, including new bounds, proof structure and versions. |
 
 No character/kit fixtures changed; their package copies need no refresh for this task. No operations.json or core-contract package copy is listed in that table. Copying data alone is insufficient: wire the trigger cap and effect-clip rule into schema/semantics (inst/format/character-v1.json currently uses ordinary item definitions for kit effects and has no gesture-effects input_limit), align R/character-work.R with emitted paint groups/solid gradients and the common bound policy, and rerun the character-work tests. That branch was read only and remains outside this task.
+
+## Picked-roster expansion (2026-10-15)
+
+[reference-characters.md](reference-characters.md) records the six new candidates and their eighteen rows, source fidelity limits and freeze gaps. The twelve earlier rows above are unchanged. The manifest drives the current thirty-row certificate inventory; selected checks and static previews do not imply runtime or visual acceptance.

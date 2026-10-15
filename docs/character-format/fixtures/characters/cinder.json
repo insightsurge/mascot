@@ -1,0 +1,3018 @@
+{
+  "format_version": 1,
+  "id": "cinder",
+  "name": "Cinder",
+  "family": "elementals",
+  "description": "A friendly monitor for long-running jobs and schedulers, translated from the round-5 living flame drawing.",
+  "resolved": true,
+  "family_definition": {
+    "id": "elementals",
+    "name": "Elementals",
+    "description": "Living elements.",
+    "defaults": {}
+  },
+  "requires": [
+    "parts",
+    "paints",
+    "clip",
+    "outline",
+    "face_kit",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "outline": "#8E1030",
+    "feature": "#1B1230",
+    "eye_white": "#FFF3C4",
+    "shine": "#FFFFFF",
+    "teeth": "#FFFDF4",
+    "eyelid": "#2A1A3A",
+    "tongue": "#FF6A3D",
+    "flame": "#F03A55",
+    "flame_tip": "#C81E4A",
+    "orange": "#FF7A1A",
+    "mid_orange": "#FF8A1F",
+    "core_warm": "#FFC23A",
+    "core": "#FFE66B",
+    "core_light": "#FFF6C9",
+    "blue_core": "#2F7BFF",
+    "blue_pale": "#9ADFFF",
+    "blue_light": "#7FD0FF",
+    "mask_light": "#5E3D7E",
+    "mask_dark": "#2A1640",
+    "ember": "#FFB347",
+    "eye_arc": "#FFD27A",
+    "iris": "#FF5A1F",
+    "brow": "#FFB347",
+    "mouth": "#FFB347",
+    "mouth_in": "#7A1030",
+    "blush": "#FF6A3D",
+    "blush_strong": "#FF6A3D",
+    "hand": "#FFD23F",
+    "shadow": "#30103C",
+    "ivory": "#FFF6E0",
+    "smoke": "#6B6480",
+    "sweat": "#27B8F0",
+    "sparkle": "#FFE66B",
+    "sparkle_outline": "#8E1030",
+    "sweat_light": "#BDF3FF",
+    "sweat_base": "#27B8F0"
+  },
+  "colour_descriptions": {
+    "outline": "Deep crimson boundary and flame edge outline.",
+    "feature": "Ink colour for eyes and facial outlines.",
+    "eye_white": "Warm ivory sclera colour.",
+    "shine": "Pure white eye glint highlights.",
+    "teeth": "Ivory teeth colour.",
+    "eyelid": "Charcoal lid cover on the mask.",
+    "tongue": "Warm orange-red mouth interior tongue.",
+    "flame": "Saturated crimson flame body fill colour.",
+    "flame_tip": "Deep ruby tip colour at flame apex.",
+    "orange": "Vivid orange gradient base colour.",
+    "mid_orange": "Mid-layer orange gradient colour.",
+    "core_warm": "Warm amber base for mid flame layer.",
+    "core": "Golden yellow flame core colour.",
+    "core_light": "Pale cream apex of inner flame.",
+    "blue_core": "Electric blue core apex when thinking.",
+    "blue_pale": "Pale cyan core tip when thinking.",
+    "blue_light": "Light cyan base when thinking.",
+    "mask_light": "Charcoal violet upper mask gradient stop.",
+    "mask_dark": "Deep charcoal lower mask gradient stop.",
+    "ember": "Warm amber ember glow for brows, mouth and cracks.",
+    "eye_arc": "Warm gold arc for happy smiling eyes.",
+    "iris": "Warm fiery orange eye iris.",
+    "brow": "Ember brow colour.",
+    "mouth": "Ember mouth outline colour.",
+    "mouth_in": "Deep dark red inner mouth cavern.",
+    "blush": "Warm orange blush on mask cheeks.",
+    "blush_strong": "Emphasised warm blush.",
+    "hand": "Warm gold flame hand disc.",
+    "shadow": "Soft ground shadow beneath flame.",
+    "ivory": "Warm ivory outer secondary contour.",
+    "smoke": "Muted grey-purple smoke puffs in worried mood.",
+    "sweat": "Cyan sweat bead in worried mood.",
+    "sparkle": "Golden spark particle colour.",
+    "sparkle_outline": "Deep crimson sparkle outline."
+  },
+  "brand": {
+    "primary": "flame",
+    "secondary": "core"
+  },
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "eye_white",
+      "min": 3,
+      "where": "eyes on eye white"
+    },
+    {
+      "fg": "eye_white",
+      "bg": "mask_dark",
+      "min": 3,
+      "where": "eye whites on charcoal mask"
+    },
+    {
+      "fg": "brow",
+      "bg": "mask_dark",
+      "min": 3,
+      "where": "ember brows on charcoal mask"
+    },
+    {
+      "fg": "mouth",
+      "bg": "mask_dark",
+      "min": 3,
+      "where": "ember mouth on charcoal mask"
+    },
+    {
+      "fg": "flame",
+      "bg": "page",
+      "min": 3,
+      "where": "flame body on page"
+    }
+  ],
+  "ground": {
+    "centre_height": 99.36,
+    "shadow": {
+      "rx": 64.8,
+      "ry": 11.664,
+      "alpha": 0.25,
+      "colour": "shadow"
+    }
+  },
+  "outline": {
+    "width": 3,
+    "colour": "outline",
+    "join": "round",
+    "cap": "round",
+    "second": {
+      "width": 5,
+      "colour": "ivory"
+    }
+  },
+  "paints": {
+    "flame_outer": {
+      "type": "linear",
+      "from": [
+        200,
+        338
+      ],
+      "to": [
+        200,
+        59
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          0.8,
+          "flame"
+        ],
+        [
+          1,
+          "flame_tip"
+        ]
+      ]
+    },
+    "flame_mid": {
+      "type": "linear",
+      "from": [
+        200,
+        338
+      ],
+      "to": [
+        200,
+        114.8
+      ],
+      "stops": [
+        [
+          0,
+          "core_warm"
+        ],
+        [
+          1,
+          "mid_orange"
+        ]
+      ]
+    },
+    "flame_mid_blue": {
+      "type": "linear",
+      "from": [
+        200,
+        338
+      ],
+      "to": [
+        200,
+        114.8
+      ],
+      "stops": [
+        [
+          0,
+          "blue_light"
+        ],
+        [
+          1,
+          "blue_core"
+        ]
+      ]
+    },
+    "flame_inner": {
+      "type": "linear",
+      "from": [
+        200,
+        338
+      ],
+      "to": [
+        200,
+        184.55
+      ],
+      "stops": [
+        [
+          0,
+          "core_light"
+        ],
+        [
+          1,
+          "core"
+        ]
+      ]
+    },
+    "flame_inner_blue": {
+      "type": "linear",
+      "from": [
+        200,
+        338
+      ],
+      "to": [
+        200,
+        184.55
+      ],
+      "stops": [
+        [
+          0,
+          "shine"
+        ],
+        [
+          1,
+          "blue_pale"
+        ]
+      ]
+    },
+    "tongue_l": {
+      "type": "linear",
+      "from": [
+        99.858,
+        330
+      ],
+      "to": [
+        99.858,
+        190.5
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "tongue_r": {
+      "type": "linear",
+      "from": [
+        300.142,
+        330
+      ],
+      "to": [
+        300.142,
+        190.5
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "mask": {
+      "type": "linear",
+      "from": [
+        0,
+        -62
+      ],
+      "to": [
+        0,
+        60
+      ],
+      "stops": [
+        [
+          0,
+          "mask_light"
+        ],
+        [
+          1,
+          "mask_dark"
+        ]
+      ]
+    },
+    "flame_outer_idle": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        59.0
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          0.8,
+          "flame"
+        ],
+        [
+          1,
+          "flame_tip"
+        ]
+      ]
+    },
+    "flame_mid_idle": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        114.79999999999998
+      ],
+      "stops": [
+        [
+          0,
+          "core_warm"
+        ],
+        [
+          1,
+          "mid_orange"
+        ]
+      ]
+    },
+    "flame_inner_idle": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        184.54999999999998
+      ],
+      "stops": [
+        [
+          0,
+          "core_light"
+        ],
+        [
+          1,
+          "core"
+        ]
+      ]
+    },
+    "flame_side_l_idle": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        206.32024094132078
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_side_r_idle": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        196.7790400952975
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_outer_thinking": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        74.60000000000002
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          0.8,
+          "flame"
+        ],
+        [
+          1,
+          "flame_tip"
+        ]
+      ]
+    },
+    "flame_mid_thinking": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        127.28
+      ],
+      "stops": [
+        [
+          0,
+          "blue_light"
+        ],
+        [
+          1,
+          "blue_core"
+        ]
+      ]
+    },
+    "flame_inner_thinking": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        193.13
+      ],
+      "stops": [
+        [
+          0,
+          "shine"
+        ],
+        [
+          1,
+          "blue_pale"
+        ]
+      ]
+    },
+    "flame_side_l_thinking": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        214.1202409413208
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_side_r_thinking": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        204.5790400952975
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_outer_happy": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        33
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          0.8,
+          "flame"
+        ],
+        [
+          1,
+          "flame_tip"
+        ]
+      ]
+    },
+    "flame_mid_happy": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        94.0
+      ],
+      "stops": [
+        [
+          0,
+          "core_warm"
+        ],
+        [
+          1,
+          "mid_orange"
+        ]
+      ]
+    },
+    "flame_inner_happy": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        170.25
+      ],
+      "stops": [
+        [
+          0,
+          "core_light"
+        ],
+        [
+          1,
+          "core"
+        ]
+      ]
+    },
+    "flame_side_l_happy": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        193.32024094132078
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_side_r_happy": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        183.7790400952975
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_outer_worried": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        85.0
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          0.8,
+          "flame"
+        ],
+        [
+          1,
+          "flame_tip"
+        ]
+      ]
+    },
+    "flame_mid_worried": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        135.6
+      ],
+      "stops": [
+        [
+          0,
+          "core_warm"
+        ],
+        [
+          1,
+          "mid_orange"
+        ]
+      ]
+    },
+    "flame_inner_worried": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        198.85
+      ],
+      "stops": [
+        [
+          0,
+          "core_light"
+        ],
+        [
+          1,
+          "core"
+        ]
+      ]
+    },
+    "flame_side_l_worried": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        219.32024094132078
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_side_r_worried": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        209.7790400952975
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_outer_celebrating": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        21.0
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          0.8,
+          "flame"
+        ],
+        [
+          1,
+          "flame_tip"
+        ]
+      ]
+    },
+    "flame_mid_celebrating": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        84.39999999999998
+      ],
+      "stops": [
+        [
+          0,
+          "core_warm"
+        ],
+        [
+          1,
+          "mid_orange"
+        ]
+      ]
+    },
+    "flame_inner_celebrating": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        163.64999999999998
+      ],
+      "stops": [
+        [
+          0,
+          "core_light"
+        ],
+        [
+          1,
+          "core"
+        ]
+      ]
+    },
+    "flame_side_l_celebrating": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        187.32024094132078
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "flame_side_r_celebrating": {
+      "type": "linear",
+      "from": [
+        0,
+        338
+      ],
+      "to": [
+        0,
+        177.7790400952975
+      ],
+      "stops": [
+        [
+          0,
+          "orange"
+        ],
+        [
+          1,
+          "flame"
+        ]
+      ]
+    },
+    "droplet": {
+      "type": "linear",
+      "from": [
+        0,
+        -13
+      ],
+      "to": [
+        0,
+        9
+      ],
+      "stops": [
+        [
+          0,
+          "sweat_light"
+        ],
+        [
+          1,
+          "sweat_base"
+        ]
+      ]
+    }
+  },
+  "parts": [
+    {
+      "id": "figure",
+      "at": [
+        -144,
+        -253.44
+      ],
+      "scale": 0.72,
+      "items": []
+    },
+    {
+      "id": "flame_side_l",
+      "parent": "figure",
+      "layer": 8,
+      "items": [
+        {
+          "shape": "path",
+          "d": "M91.156434 198.320241 C105.96806 235.190573 148.6228 253.345113 143.398 293.129667 C141.221 324.73281 119.451 330 99.858 330 C80.265 330 58.495 324.73281 56.318 293.129667 C51.0932 253.906366 92.90606 235.190573 91.156434 198.320241 Z",
+          "fill": {
+            "paint": "flame_side_l_idle"
+          },
+          "stroke": "outline",
+          "width": 4.5
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ],
+      "variants": {
+        "idle": [
+          {
+            "shape": "path",
+            "d": "M91.156434 198.320241 C105.96806 235.190573 148.6228 253.345113 143.398 293.129667 C141.221 324.73281 119.451 330 99.858 330 C80.265 330 58.495 324.73281 56.318 293.129667 C51.0932 253.906366 92.90606 235.190573 91.156434 198.320241 Z",
+            "fill": {
+              "paint": "flame_side_l_idle"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ],
+        "thinking": [
+          {
+            "shape": "path",
+            "d": "M95.103234 206.120241 C109.65746 240.806573 150.64768 257.869113 145.6288 295.313667 C143.5376 325.04481 122.6256 330 103.8048 330 C84.984 330 64.072 325.04481 61.9808 295.313667 C56.96192 258.430366 97.11026 240.806573 95.103234 206.120241 Z",
+            "fill": {
+              "paint": "flame_side_l_thinking"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ],
+        "happy": [
+          {
+            "shape": "path",
+            "d": "M84.578434 185.320241 C99.81906 225.830573 145.248 245.805113 139.68 289.489667 C137.36 324.21281 114.16 330 93.28 330 C72.4 330 49.2 324.21281 46.88 289.489667 C41.312 246.366366 85.89906 225.830573 84.578434 185.320241 Z",
+            "fill": {
+              "paint": "flame_side_l_happy"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ],
+        "worried": [
+          {
+            "shape": "path",
+            "d": "M97.734434 211.320241 C112.11706 244.550573 151.9976 260.885113 147.116 296.769667 C145.082 325.25281 124.742 330 106.436 330 C88.13 330 67.79 325.25281 65.756 296.769667 C60.8744 261.446366 99.91306 244.550573 97.734434 211.320241 Z",
+            "fill": {
+              "paint": "flame_side_l_worried"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ],
+        "celebrating": [
+          {
+            "shape": "path",
+            "d": "M81.542434 179.320241 C96.98106 221.510573 143.6904 242.325113 137.964 287.809667 C135.578 323.97281 111.718 330 90.244 330 C68.77 330 44.91 323.97281 42.524 287.809667 C36.7976 242.886366 82.66506 221.510573 81.542434 179.320241 Z",
+            "fill": {
+              "paint": "flame_side_l_celebrating"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "flame_side_r",
+      "parent": "figure",
+      "layer": 8,
+      "items": [
+        {
+          "shape": "path",
+          "d": "M310.018 188.77904 C307.7986 228.320909 348.9068 248.842243 343.682 290.458131 C341.505 324.351162 319.735 330 300.142 330 C280.549 330 258.779 324.351162 256.602 290.458131 C251.3772 247.341443 294.7366 228.320909 310.018 188.77904 Z",
+          "fill": {
+            "paint": "flame_side_r_idle"
+          },
+          "stroke": "outline",
+          "width": 4.5
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ],
+      "variants": {
+        "idle": [
+          {
+            "shape": "path",
+            "d": "M310.018 188.77904 C307.7986 228.320909 348.9068 248.842243 343.682 290.458131 C341.505 324.351162 319.735 330 300.142 330 C280.549 330 258.779 324.351162 256.602 290.458131 C251.3772 247.341443 294.7366 228.320909 310.018 188.77904 Z",
+            "fill": {
+              "paint": "flame_side_r_idle"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ],
+        "thinking": [
+          {
+            "shape": "path",
+            "d": "M306.0712 196.57904 C303.5944 233.936909 343.03808 253.366243 338.0192 292.642131 C335.928 324.663162 315.016 330 296.1952 330 C277.3744 330 256.4624 324.663162 254.3712 292.642131 C249.35232 251.865443 291.0472 233.936909 306.0712 196.57904 Z",
+            "fill": {
+              "paint": "flame_side_r_thinking"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ],
+        "happy": [
+          {
+            "shape": "path",
+            "d": "M316.596 175.77904 C314.8056 218.960909 358.688 241.302243 353.12 286.818131 C350.8 323.831162 327.6 330 306.72 330 C285.84 330 262.64 323.831162 260.32 286.818131 C254.752 239.801443 300.8856 218.960909 316.596 175.77904 Z",
+            "fill": {
+              "paint": "flame_side_r_happy"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ],
+        "worried": [
+          {
+            "shape": "path",
+            "d": "M303.44 201.77904 C300.7916 237.680909 339.1256 256.382243 334.244 294.098131 C332.21 324.871162 311.87 330 293.564 330 C275.258 330 254.918 324.871162 252.884 294.098131 C248.0024 254.881443 288.5876 237.680909 303.44 201.77904 Z",
+            "fill": {
+              "paint": "flame_side_r_worried"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ],
+        "celebrating": [
+          {
+            "shape": "path",
+            "d": "M319.632 169.77904 C318.0396 214.640909 363.2024 237.822243 357.476 285.138131 C355.09 323.591162 331.23 330 309.756 330 C288.282 330 264.422 323.591162 262.036 285.138131 C256.3096 236.321443 303.7236 214.640909 319.632 169.77904 Z",
+            "fill": {
+              "paint": "flame_side_r_celebrating"
+            },
+            "stroke": "outline",
+            "width": 4.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "flame_outer",
+      "parent": "figure",
+      "layer": 10,
+      "items": [
+        {
+          "id": "silhouette",
+          "shape": "path",
+          "d": "M199.425791 59 C216.937681 137.12 321.912 176.586787 308.85 259.88 C303.4075 326.84 248.9825 338 200 338 C151.0175 338 96.5925 326.84 91.15 259.88 C78.088 175.773213 184.282681 137.12 199.425791 59 Z",
+          "fill": {
+            "paint": "flame_outer_idle"
+          },
+          "stroke": "outline",
+          "width": 5
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M 200.000 38.000 C 213.800 122.000 303.040 164.000 292.000 254.000 C 287.400 326.000 241.400 338.000 200.000 338.000 C 158.600 338.000 112.600 326.000 108.000 254.000 C 96.960 164.000 186.200 122.000 200.000 38.000 Z",
+            "fill": "flame",
+            "stroke": "outline",
+            "width": 11
+          }
+        ],
+        "idle": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M199.425791 59 C216.937681 137.12 321.912 176.586787 308.85 259.88 C303.4075 326.84 248.9825 338 200 338 C151.0175 338 96.5925 326.84 91.15 259.88 C78.088 175.773213 184.282681 137.12 199.425791 59 Z",
+            "fill": {
+              "paint": "flame_outer_idle"
+            },
+            "stroke": "outline",
+            "width": 5
+          }
+        ],
+        "thinking": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M194.932 74.6 C216.117906 148.352 317.1072 185.517271 304.56 264.248 C299.332 327.464 247.052 338 200 338 C152.948 338 100.668 327.464 95.44 264.248 C82.8928 184.938729 184.749906 148.352 194.932 74.6 Z",
+            "fill": {
+              "paint": "flame_outer_thinking"
+            },
+            "stroke": "outline",
+            "width": 5
+          }
+        ],
+        "happy": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M202.915442 33 C218.303971 118.4 329.92 161.702648 316 252.6 C310.2 325.8 252.2 338 200 338 C147.8 338 89.8 325.8 84 252.6 C70.08 160.497352 183.503971 118.4 202.915442 33 Z",
+            "fill": {
+              "paint": "flame_outer_happy"
+            },
+            "stroke": "outline",
+            "width": 5
+          }
+        ],
+        "worried": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M198.93614 85 C215.57139 155.84 313.904 191.470927 301.7 267.16 C296.615 327.88 245.765 338 200 338 C154.235 338 103.385 327.88 98.3 267.16 C86.096 191.049073 185.06139 155.84 198.93614 85 Z",
+            "fill": {
+              "paint": "flame_outer_worried"
+            },
+            "stroke": "outline",
+            "width": 5
+          }
+        ],
+        "celebrating": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M200.141435 21 C218.934567 109.76 333.616 154.833045 319.3 249.24 C313.335 325.32 253.685 338 200 338 C146.315 338 86.665 325.32 80.7 249.24 C66.384 153.446955 183.144567 109.76 200.141435 21 Z",
+            "fill": {
+              "paint": "flame_outer_celebrating"
+            },
+            "stroke": "outline",
+            "width": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "flame_mid",
+      "parent": "figure",
+      "layer": 12,
+      "items": [
+        {
+          "id": "silhouette",
+          "shape": "path",
+          "d": "M199.540633 105.22 C213.550145 169.2784 297.5296 201.63303 287.08 269.9416 C282.726 324.8488 239.186 334 200 334 C160.814 334 117.274 324.8488 112.92 269.9416 C102.4704 200.98217 187.426145 169.2784 199.540633 105.22 Z",
+          "fill": {
+            "paint": "flame_mid_idle"
+          }
+        }
+      ],
+      "variants": {
+        "blue": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M 200.000 105.220 C 213.062 169.278 297.530 201.308 287.080 269.942 C 282.726 324.849 239.186 334.000 200.000 334.000 C 160.814 334.000 117.274 324.849 112.920 269.942 C 102.470 201.308 186.938 169.278 200.000 105.220 Z",
+            "fill": {
+              "paint": "flame_mid_blue"
+            }
+          }
+        ],
+        "idle": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M199.540633 105.22 C213.550145 169.2784 297.5296 201.63303 287.08 269.9416 C282.726 324.8488 239.186 334 200 334 C160.814 334 117.274 324.8488 112.92 269.9416 C102.4704 200.98217 187.426145 169.2784 199.540633 105.22 Z",
+            "fill": {
+              "paint": "flame_mid_idle"
+            }
+          }
+        ],
+        "thinking": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M195.9456 118.012 C212.894325 178.48864 293.68576 208.958377 283.648 273.52336 C279.4656 325.36048 237.6416 334 200 334 C162.3584 334 120.5344 325.36048 116.352 273.52336 C106.31424 208.495543 187.799925 178.48864 195.9456 118.012 Z",
+            "fill": {
+              "paint": "flame_mid_thinking"
+            }
+          }
+        ],
+        "happy": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M202.332354 83.9 C214.643177 153.928 303.936 189.424118 292.8 263.972 C288.16 323.996 241.76 334 200 334 C158.24 334 111.84 323.996 107.2 263.972 C96.064 188.459882 186.803177 153.928 202.332354 83.9 Z",
+            "fill": {
+              "paint": "flame_mid_happy"
+            }
+          }
+        ],
+        "worried": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M199.148912 126.54 C212.457112 184.6288 291.1232 213.841941 281.36 275.9112 C277.292 325.7016 236.612 334 200 334 C163.388 334 122.708 325.7016 118.64 275.9112 C108.8768 213.504459 188.049112 184.6288 199.148912 126.54 Z",
+            "fill": {
+              "paint": "flame_mid_worried"
+            }
+          }
+        ],
+        "celebrating": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M200.113148 74.06 C215.147654 146.8432 306.8928 183.789236 295.44 261.2168 C290.668 323.6024 242.948 334 200 334 C157.052 334 109.332 323.6024 104.56 261.2168 C93.1072 182.680364 186.515654 146.8432 200.113148 74.06 Z",
+            "fill": {
+              "paint": "flame_mid_celebrating"
+            }
+          }
+        ]
+      },
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "flame_inner",
+      "parent": "figure",
+      "layer": 14,
+      "items": [
+        {
+          "id": "silhouette",
+          "shape": "path",
+          "d": "M199.655475 164.6 C209.836058 211.472 270.70896 235.152072 263.133 285.128 C259.97635 325.304 228.40985 332 200 332 C171.59015 332 140.02365 325.304 136.867 285.128 C129.29104 234.663928 190.896158 211.472 199.655475 164.6 Z",
+          "fill": {
+            "paint": "flame_inner_idle"
+          }
+        }
+      ],
+      "variants": {
+        "blue": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M 200.000 164.600 C 209.470 211.472 270.709 234.908 263.133 285.128 C 259.976 325.304 228.410 332.000 200.000 332.000 C 171.590 332.000 140.024 325.304 136.867 285.128 C 129.291 234.908 190.530 211.472 200.000 164.600 Z",
+            "fill": {
+              "paint": "flame_inner_blue"
+            }
+          }
+        ],
+        "micro": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M 200.000 86.000 C 209.000 153.200 267.200 186.800 260.000 258.800 C 257.000 316.400 227.000 326.000 200.000 326.000 C 173.000 326.000 143.000 316.400 140.000 258.800 C 132.800 186.800 191.000 153.200 200.000 86.000 Z",
+            "fill": "core"
+          }
+        ],
+        "idle": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M199.655475 164.6 C209.836058 211.472 270.70896 235.152072 263.133 285.128 C259.97635 325.304 228.40985 332 200 332 C171.59015 332 140.02365 325.304 136.867 285.128 C129.29104 234.663928 190.896158 211.472 199.655475 164.6 Z",
+            "fill": {
+              "paint": "flame_inner_idle"
+            }
+          }
+        ],
+        "thinking": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M196.9592 173.96 C209.357064 218.2112 267.922176 240.510362 260.6448 287.7488 C257.61256 325.6784 227.29016 332 200 332 C172.70984 332 142.38744 325.6784 139.3552 287.7488 C132.077824 240.163238 191.163624 218.2112 196.9592 173.96 Z",
+            "fill": {
+              "paint": "flame_inner_thinking"
+            }
+          }
+        ],
+        "happy": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M201.749265 149 C210.634383 200.24 275.3536 226.221589 267.28 280.76 C263.916 324.68 230.276 332 200 332 C169.724 332 136.084 324.68 132.72 280.76 C124.6464 225.498411 190.450383 200.24 201.749265 149 Z",
+            "fill": {
+              "paint": "flame_inner_happy"
+            }
+          }
+        ],
+        "worried": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M199.361684 180.2 C209.037734 222.704 266.06432 244.082556 258.986 289.496 C256.0367 325.928 226.5437 332 200 332 C173.4563 332 143.9633 325.928 141.014 289.496 C133.93568 243.829444 191.341934 222.704 199.361684 180.2 Z",
+            "fill": {
+              "paint": "flame_inner_worried"
+            }
+          }
+        ],
+        "celebrating": [
+          {
+            "id": "silhouette",
+            "shape": "path",
+            "d": "M200.084861 141.8 C211.00284 195.056 277.49728 222.099827 269.194 278.744 C265.7343 324.392 231.1373 332 200 332 C168.8627 332 134.2657 324.392 130.806 278.744 C122.50272 221.268173 190.24464 195.056 200.084861 141.8 Z",
+            "fill": {
+              "paint": "flame_inner_celebrating"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "arm_l",
+      "parent": "figure",
+      "layer": 20,
+      "at": [
+        106.389,
+        268
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -7.738,
+              26.91
+            ],
+            [
+              -11.562,
+              50.603
+            ]
+          ],
+          "stroke": "outline",
+          "width": 20,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -7.738,
+              26.91
+            ],
+            [
+              -11.562,
+              50.603
+            ]
+          ],
+          "stroke": "orange",
+          "width": 15,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -7.738,
+              26.91
+            ],
+            [
+              -11.562,
+              50.603
+            ]
+          ],
+          "stroke": "core",
+          "width": 3.75,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "circle",
+          "x": -11.562,
+          "y": 50.603,
+          "r": 9,
+          "fill": "hand",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ],
+      "variants": {
+        "idle": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                -11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                -11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                -11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": -11.56159511853709,
+            "y": 50.60300707371663,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ],
+        "thinking": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -22.775634134102464,
+                16.28712650498874
+              ],
+              [
+                -5.5590879525139165,
+                33.00808752932071
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -22.775634134102464,
+                16.28712650498874
+              ],
+              [
+                -5.5590879525139165,
+                33.00808752932071
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -22.775634134102464,
+                16.28712650498874
+              ],
+              [
+                -5.5590879525139165,
+                33.00808752932071
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": -5.5590879525139165,
+            "y": 33.00808752932071,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ],
+        "happy": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                -11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                -11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                -11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": -11.56159511853709,
+            "y": 50.60300707371663,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ],
+        "worried": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                7.6073713327788255,
+                28.36555770770399
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                7.6073713327788255,
+                28.36555770770399
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                7.6073713327788255,
+                28.36555770770399
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": 7.6073713327788255,
+            "y": 28.36555770770399,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ],
+        "celebrating": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -15.615144086959676,
+                -23.24149898658622
+              ],
+              [
+                -25.8722612125716,
+                -44.93923039499568
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -15.615144086959676,
+                -23.24149898658622
+              ],
+              [
+                -25.8722612125716,
+                -44.93923039499568
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                -15.615144086959676,
+                -23.24149898658622
+              ],
+              [
+                -25.8722612125716,
+                -44.93923039499568
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": -25.8722612125716,
+            "y": -44.93923039499568,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "arm_r",
+      "parent": "figure",
+      "layer": 20,
+      "at": [
+        293.611,
+        268
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              7.738,
+              26.91
+            ],
+            [
+              11.562,
+              50.603
+            ]
+          ],
+          "stroke": "outline",
+          "width": 20,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              7.738,
+              26.91
+            ],
+            [
+              11.562,
+              50.603
+            ]
+          ],
+          "stroke": "orange",
+          "width": 15,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              7.738,
+              26.91
+            ],
+            [
+              11.562,
+              50.603
+            ]
+          ],
+          "stroke": "core",
+          "width": 3.75,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "circle",
+          "x": 11.562,
+          "y": 50.603,
+          "r": 9,
+          "fill": "hand",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ],
+      "variants": {
+        "idle": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                7.737958159795186,
+                26.909552272701585
+              ],
+              [
+                11.56159511853709,
+                50.60300707371663
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": 11.56159511853709,
+            "y": 50.60300707371663,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ],
+        "thinking": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                39.80479959560556,
+                23.608473084745217
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                39.80479959560556,
+                23.608473084745217
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                39.80479959560556,
+                23.608473084745217
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": 39.80479959560556,
+            "y": 23.608473084745217,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ],
+        "happy": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                25.460327951119087,
+                -11.652111423319987
+              ],
+              [
+                48.53090043450038,
+                -18.266390317428524
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                25.460327951119087,
+                -11.652111423319987
+              ],
+              [
+                48.53090043450038,
+                -18.266390317428524
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                25.460327951119087,
+                -11.652111423319987
+              ],
+              [
+                48.53090043450038,
+                -18.266390317428524
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": 48.53090043450038,
+            "y": -18.266390317428524,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ],
+        "worried": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                -7.6073713327788255,
+                28.36555770770399
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                -7.6073713327788255,
+                28.36555770770399
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.80998925506099,
+                23.109397217470992
+              ],
+              [
+                -7.6073713327788255,
+                28.36555770770399
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": -7.6073713327788255,
+            "y": 28.36555770770399,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ],
+        "celebrating": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.615144086959676,
+                -23.24149898658622
+              ],
+              [
+                25.8722612125716,
+                -44.93923039499568
+              ]
+            ],
+            "stroke": "outline",
+            "width": 20,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.615144086959676,
+                -23.24149898658622
+              ],
+              [
+                25.8722612125716,
+                -44.93923039499568
+              ]
+            ],
+            "stroke": "orange",
+            "width": 15,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                0
+              ],
+              [
+                15.615144086959676,
+                -23.24149898658622
+              ],
+              [
+                25.8722612125716,
+                -44.93923039499568
+              ]
+            ],
+            "stroke": "core",
+            "width": 3.75,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": 25.8722612125716,
+            "y": -44.93923039499568,
+            "r": 9,
+            "fill": "hand",
+            "outline": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "mask",
+      "parent": "figure",
+      "layer": 30,
+      "at": [
+        200,
+        214
+      ],
+      "scale": 0.88,
+      "items": [
+        {
+          "id": "silhouette",
+          "shape": "path",
+          "d": "M 0 -62 C -50 -62 -66 -28 -62 6 C -58 36 -30 54 0 60 C 30 54 58 36 62 6 C 66 -28 50 -62 0 -62 Z",
+          "fill": {
+            "paint": "mask"
+          },
+          "stroke": "feature",
+          "width": 5
+        },
+        {
+          "id": "ember_arc",
+          "shape": "path",
+          "d": "M -54 -30 Q 0 -74 54 -30",
+          "stroke": "ember",
+          "width": 4,
+          "alpha": 0.9,
+          "clip": "mask.silhouette",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "crack1",
+          "shape": "path",
+          "d": "M -50 30 L -32 12",
+          "stroke": "ember",
+          "width": 1.8,
+          "alpha": 0.6,
+          "clip": "mask.silhouette",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "crack2",
+          "shape": "path",
+          "d": "M 50 34 L 32 14",
+          "stroke": "ember",
+          "width": 1.8,
+          "alpha": 0.6,
+          "clip": "mask.silhouette",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "crack3",
+          "shape": "path",
+          "d": "M -4 -52 L 6 -36",
+          "stroke": "ember",
+          "width": 1.8,
+          "alpha": 0.6,
+          "clip": "mask.silhouette",
+          "lod": [
+            "full"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "id": "silhouette",
+            "shape": "ellipse",
+            "x": 0,
+            "y": 8,
+            "rx": 63.6,
+            "ry": 68.2,
+            "fill": "eyelid"
+          }
+        ]
+      }
+    },
+    {
+      "id": "flakes",
+      "parent": "figure",
+      "layer": 35,
+      "items": [
+        {
+          "shape": "path",
+          "d": "M 136.92 168.05 L 149.88 169.73 L 146.54 181.24 L 136.05 179.08 Z",
+          "fill": "mask_light",
+          "stroke": "ember",
+          "width": 2.4
+        },
+        {
+          "shape": "path",
+          "d": "M 261.95 159.29 L 269.52 167.56 L 260.98 173.25 L 255.29 166.05 Z",
+          "fill": "mask_light",
+          "stroke": "ember",
+          "width": 2.4
+        },
+        {
+          "shape": "path",
+          "d": "M 251.60 246.56 L 260.91 245.89 L 260.20 254.42 L 252.56 254.40 Z",
+          "fill": "mask_light",
+          "stroke": "ember",
+          "width": 2.4
+        }
+      ],
+      "lod": [
+        "full"
+      ]
+    },
+    {
+      "id": "face_owner",
+      "parent": "mask",
+      "layer": 32,
+      "items": []
+    },
+    {
+      "id": "smoke_still",
+      "parent": "figure",
+      "layer": 5,
+      "items": [],
+      "variants": {
+        "worried": [
+          {
+            "shape": "ellipse",
+            "x": 241.1030286205967,
+            "y": 46.05,
+            "rx": 19.7,
+            "ry": 18.93,
+            "fill": "smoke",
+            "alpha": 0.33825
+          },
+          {
+            "shape": "ellipse",
+            "x": 182.879517951816,
+            "y": 27.15,
+            "rx": 25.1,
+            "ry": 23.79,
+            "fill": "smoke",
+            "alpha": 0.18975
+          },
+          {
+            "shape": "ellipse",
+            "x": 231.68981407087102,
+            "y": 8.25,
+            "rx": 30.5,
+            "ry": 28.650000000000002,
+            "fill": "smoke",
+            "alpha": 0.04124999999999998
+          },
+          {
+            "shape": "ellipse",
+            "x": 229.2487352980878,
+            "y": 59.349999999999994,
+            "rx": 15.900000000000002,
+            "ry": 15.510000000000002,
+            "fill": "smoke",
+            "alpha": 0.44275
+          }
+        ]
+      },
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "worry_mark",
+      "parent": "figure",
+      "at": [
+        291.53,
+        154
+      ],
+      "scale": 1.1,
+      "layer": 60,
+      "items": [],
+      "lod": [
+        "full",
+        "small"
+      ],
+      "variants": {
+        "drop": [
+          {
+            "shape": "path",
+            "d": "M0 -13 C9 0 9 9 0 9 C-9 9 -9 0 0 -13 Z",
+            "fill": {
+              "paint": "droplet"
+            },
+            "stroke": "feature",
+            "width": 2.4
+          },
+          {
+            "shape": "ellipse",
+            "x": -2.6,
+            "y": 2,
+            "rx": 2,
+            "ry": 3.3,
+            "rotate": 0.3,
+            "fill": "shine"
+          }
+        ]
+      }
+    }
+  ],
+  "anchors": {
+    "crown": {
+      "part": "flame_outer",
+      "at": [
+        200,
+        59
+      ],
+      "description": "Tip of the outer flame."
+    },
+    "hand_l": {
+      "part": "arm_l",
+      "at": [
+        -11.562,
+        50.603
+      ],
+      "side": "l",
+      "description": "Left flame hand."
+    },
+    "hand_r": {
+      "part": "arm_r",
+      "at": [
+        11.562,
+        50.603
+      ],
+      "side": "r",
+      "description": "Right flame hand."
+    },
+    "face": {
+      "part": "mask",
+      "at": [
+        0,
+        -4
+      ],
+      "description": "Center of the charcoal face mask."
+    },
+    "forehead": {
+      "part": "mask",
+      "at": [
+        0,
+        -40
+      ],
+      "description": "Upper charcoal mask."
+    },
+    "chest": {
+      "part": "flame_outer",
+      "at": [
+        200,
+        260
+      ],
+      "description": "Flame body core."
+    },
+    "chin": {
+      "part": "mask",
+      "at": [
+        0,
+        50
+      ],
+      "description": "Bottom tip of charcoal mask."
+    }
+  },
+  "face": {
+    "part": "face_owner",
+    "kit": "cinder_face",
+    "kit_definition": {
+      "id": "cinder_face",
+      "description": "Cinder ember-lit eyes, brows and mouth on charcoal mask.",
+      "roles": [
+        "feature",
+        "eye_white",
+        "shine",
+        "eyelid",
+        "teeth",
+        "tongue",
+        "outline",
+        "brow",
+        "iris",
+        "blush",
+        "blush_strong",
+        "mouth",
+        "mouth_in",
+        "eye_arc"
+      ],
+      "defaults": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "neutral",
+        "blush": 1
+      },
+      "eye_styles": {
+        "open": {
+          "op": "eye_ellipse",
+          "rx": 20,
+          "ry": 22.4,
+          "pupil": {
+            "r": 13.2,
+            "look_range": [
+              6.8,
+              6
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ]
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          }
+        },
+        "happy": {
+          "op": "eye_arc",
+          "r": 17.6,
+          "y": 7,
+          "start": 3.45575,
+          "end": 5.96903,
+          "stroke": "eye_arc",
+          "width": 5.6
+        },
+        "worried": {
+          "op": "eye_ellipse",
+          "rx": 20,
+          "ry": 25.1,
+          "pupil": {
+            "r": 13.2,
+            "look_range": [
+              6.8,
+              6
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ]
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          }
+        },
+        "focused": {
+          "op": "eye_ellipse",
+          "rx": 20,
+          "ry": 20.6,
+          "lid": 0.3,
+          "pupil": {
+            "r": 13.2,
+            "look_range": [
+              6.8,
+              6
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ]
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          }
+        }
+      },
+      "brow_styles": {
+        "neutral": {
+          "op": "brow_path",
+          "d": "M -19 2 Q 0 -8 19 2",
+          "stroke": "brow",
+          "width": 5.5
+        },
+        "worried": {
+          "op": "brow_path",
+          "d": "M -19 -6 Q 0 4 19 8",
+          "stroke": "brow",
+          "width": 5.5
+        },
+        "raised": {
+          "op": "brow_path",
+          "d": "M -19 6 Q 0 -6 19 0",
+          "stroke": "brow",
+          "width": 5.5
+        },
+        "none": {
+          "op": "brow_path",
+          "d": "M 0 0",
+          "width": 0
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            8
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 -0.1 Q 0 0.77 1 -0.1",
+              "stroke": "mouth",
+              "width": 4.6
+            }
+          ]
+        },
+        "grin": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            12
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 -0.06 Q 0 0.22 1 -0.06 C 0.9 0.95 -0.9 0.95 -1 -0.06 Z",
+              "fill": "mouth_in",
+              "stroke": "mouth",
+              "width": 4.6
+            },
+            {
+              "shape": "ellipse",
+              "x": 0,
+              "y": 6,
+              "rx": 9,
+              "ry": 5,
+              "fill": "tongue"
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            8
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0 Q 0 -0.05 1 0",
+              "stroke": "mouth",
+              "width": 4.6
+            }
+          ]
+        },
+        "worried": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            8
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0.25 C -0.5 -1.56 0.5 0.12 1 0.25",
+              "stroke": "mouth",
+              "width": 4.6
+            }
+          ]
+        },
+        "open": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            14
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 -0.06 Q 0 0.22 1 -0.06 C 0.9 0.95 -0.9 0.95 -1 -0.06 Z",
+              "fill": "mouth_in",
+              "stroke": "mouth",
+              "width": 4.6
+            },
+            {
+              "shape": "ellipse",
+              "x": 0,
+              "y": 8,
+              "rx": 9,
+              "ry": 6,
+              "fill": "tongue"
+            }
+          ]
+        }
+      },
+      "effects": {}
+    },
+    "at": [
+      0,
+      -4
+    ],
+    "eyes": {
+      "y": 0,
+      "spacing": 31,
+      "lashes": false,
+      "iris": "iris"
+    },
+    "mouth": {
+      "y": 40
+    },
+    "blush": {
+      "x": 38,
+      "y": 28,
+      "rx": 12.4,
+      "ry": 6.8,
+      "alpha": 0.5,
+      "strong_alpha": 0.5
+    }
+  },
+  "moods": {
+    "idle": {
+      "description": "Idle warm flame.",
+      "status": "The job queue is warm.",
+      "face": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "neutral",
+        "open": 1
+      },
+      "channels": {
+        "arm_l.rotate": 0,
+        "arm_r.rotate": 0,
+        "root.rotate": 0,
+        "root.lift": 0,
+        "flame_outer.variant": "idle",
+        "flame_mid.variant": "idle",
+        "flame_inner.variant": "idle",
+        "flame_side_l.variant": "idle",
+        "flame_side_r.variant": "idle",
+        "arm_l.variant": "idle",
+        "arm_l.x": 1.4210854715202004e-14,
+        "arm_r.variant": "idle",
+        "arm_r.x": 0.0
+      }
+    },
+    "thinking": {
+      "description": "Thinking state with blue core flame.",
+      "status": "The job is running steadily.",
+      "face": {
+        "eyes": "focused",
+        "mouth": "flat",
+        "brows": "raised",
+        "open": 1,
+        "look_x": 0.7,
+        "look_y": -0.7
+      },
+      "channels": {
+        "arm_l.rotate": 0,
+        "arm_r.rotate": 0,
+        "root.rotate": 0,
+        "root.lift": 0,
+        "flame_mid.variant": "thinking",
+        "flame_inner.variant": "thinking",
+        "flame_outer.variant": "thinking",
+        "flame_side_l.variant": "thinking",
+        "flame_side_r.variant": "thinking",
+        "arm_l.variant": "thinking",
+        "arm_l.x": 3.6894000000000062,
+        "arm_r.variant": "thinking",
+        "arm_r.x": -3.689399999999978
+      }
+    },
+    "happy": {
+      "description": "Happy flared flame with waving arm.",
+      "status": "The job finished.",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "neutral",
+        "open": 0.55
+      },
+      "channels": {
+        "arm_l.rotate": 0,
+        "arm_r.rotate": 0,
+        "root.rotate": 0,
+        "root.lift": 0.864,
+        "flame_outer.variant": "happy",
+        "flame_mid.variant": "happy",
+        "flame_inner.variant": "happy",
+        "flame_side_l.variant": "happy",
+        "flame_side_r.variant": "happy",
+        "arm_l.variant": "happy",
+        "arm_l.x": -6.149000000000001,
+        "arm_r.variant": "happy",
+        "arm_r.x": 6.149000000000001
+      }
+    },
+    "worried": {
+      "description": "Worried sputtering flame pulled inward.",
+      "status": "The job is sputtering.",
+      "face": {
+        "eyes": "worried",
+        "mouth": "worried",
+        "brows": "worried",
+        "open": 1,
+        "look_x": -0.25,
+        "look_y": 0.1
+      },
+      "channels": {
+        "arm_l.rotate": 0,
+        "arm_r.rotate": 0,
+        "root.rotate": 0,
+        "root.lift": 0,
+        "flame_outer.variant": "worried",
+        "flame_mid.variant": "worried",
+        "flame_inner.variant": "worried",
+        "flame_side_l.variant": "worried",
+        "flame_side_r.variant": "worried",
+        "arm_l.variant": "worried",
+        "arm_l.x": 6.149000000000001,
+        "arm_r.variant": "worried",
+        "arm_r.x": -6.149000000000001,
+        "smoke_still.variant": "worried",
+        "worry_mark.variant": "drop"
+      }
+    },
+    "celebrating": {
+      "description": "Celebrating tall flared flame with both arms raised.",
+      "status": "Everything ran to completion.",
+      "face": {
+        "eyes": "happy",
+        "mouth": "open",
+        "brows": "raised",
+        "open": 1
+      },
+      "channels": {
+        "arm_l.rotate": 0,
+        "arm_r.rotate": 0,
+        "root.rotate": 0,
+        "root.lift": 7.2,
+        "flame_outer.variant": "celebrating",
+        "flame_mid.variant": "celebrating",
+        "flame_inner.variant": "celebrating",
+        "flame_side_l.variant": "celebrating",
+        "flame_side_r.variant": "celebrating",
+        "arm_l.variant": "celebrating",
+        "arm_l.x": -8.986999999999995,
+        "arm_r.variant": "celebrating",
+        "arm_r.x": 8.987000000000023
+      }
+    }
+  },
+  "gestures": {
+    "flare": {
+      "description": "The flame flares taller before settling.",
+      "frames": 30,
+      "tracks": {
+        "root.lift": [
+          [
+            0,
+            0
+          ],
+          [
+            0.4,
+            5.0
+          ],
+          [
+            0.7,
+            3.0
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "flame_outer.scale_y": [
+          [
+            0,
+            1.0
+          ],
+          [
+            0.4,
+            1.15
+          ],
+          [
+            1,
+            1.0
+          ]
+        ]
+      }
+    },
+    "nod": {
+      "description": "A bounded nod movement.",
+      "frames": 24,
+      "tracks": {
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.3,
+            0.04
+          ],
+          [
+            0.7,
+            -0.03
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "wave": {
+      "description": "A bounded wave movement.",
+      "frames": 24,
+      "tracks": {
+        "arm_r.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.3,
+            0.4
+          ],
+          [
+            0.7,
+            -0.4
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "lod": {
+    "small": {
+      "hide": [
+        "flakes"
+      ]
+    },
+    "micro": {
+      "hide": [
+        "flame_side_l",
+        "flame_side_r",
+        "flame_mid",
+        "arm_l",
+        "arm_r",
+        "flakes"
+      ],
+      "variants": {
+        "flame_outer": "micro",
+        "flame_inner": "micro",
+        "mask": "micro"
+      },
+      "face": {
+        "lashes": false,
+        "brows": false,
+        "iris": false
+      },
+      "glow": false
+    }
+  },
+  "palettes": {},
+  "palette_sources": {},
+  "note": "Picked round-5 flame and charcoal mask. Exact held-mood flame controls and articulated arm points sampled from the restored source at t=1.1; each mood uses its own heat, lean, width and height, rather than substituting a rigid scale for flame deformation. Thinking keeps the blue core. Static worried smoke puffs preserve the source still. Gaps: continuous procedural geometry, per-frame harmonic motion, screen/additive compositing, particle sparks/smoke and the source whole-body glow within current limits. No dynamic simulation, built-in shipping or visual approval is implied."
+}

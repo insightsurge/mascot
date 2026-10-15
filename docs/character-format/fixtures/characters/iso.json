@@ -1,0 +1,1531 @@
+{
+  "format_version": 1,
+  "id": "iso",
+  "name": "Iso",
+  "family": "hexonians",
+  "description": "A meticulous hexagonal analyst with drafting dividers, blueprint grid, and model comparison chart.",
+  "resolved": true,
+  "family_definition": {
+    "id": "hexonians",
+    "name": "Hexonians",
+    "description": "Hex-shaped characters.",
+    "defaults": {}
+  },
+  "requires": [
+    "parts",
+    "paints",
+    "clip",
+    "outline",
+    "glow",
+    "face_kit",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "outline": "#1b2430",
+    "outline_light": "#fff6e0",
+    "feature": "#0e141d",
+    "eye_white": "#fffdf4",
+    "shine": "#ffffff",
+    "teeth": "#fffdf4",
+    "eyelid": "#66889a",
+    "tongue": "#ff6f8e",
+    "mouth_in": "#3a0b2e",
+    "body": "#66889a",
+    "body_shade": "#66889a",
+    "body_hi": "#66889a",
+    "gold_rim": "#d87349",
+    "gold_rim_hi": "#d87349",
+    "gold_rim_deep": "#d87349",
+    "hair_base": "#d87349",
+    "hair_deep": "#d87349",
+    "jacket_base": "#3f5563",
+    "jacket_deep": "#3f5563",
+    "jacket_piping": "#d87349",
+    "jacket_pocket": "rgba(255, 255, 255, 0.4)",
+    "glasses_glass": "rgba(180, 235, 255, 0.16)",
+    "arm_blue": "#66889a",
+    "arm_hi": "#eed592",
+    "hand": "#d87349",
+    "divider_metal": "#d5def2",
+    "divider_tip": "#29e0ff",
+    "chart_bg": "rgba(12, 20, 70, 0.92)",
+    "chart_border": "#29e0ff",
+    "chart_grid": "rgba(160, 200, 255, 0.3)",
+    "curve_cyan": "#29e0ff",
+    "curve_pink": "#ff4da6",
+    "grid_line": "rgba(255, 255, 255, 0.12)",
+    "rim_light": "rgba(120, 235, 255, 0.75)",
+    "bevel_line": "rgba(27, 18, 48, 0.38)",
+    "iris_light": "#ffd27a",
+    "iris_deep": "#b25a00",
+    "blush": "#bfe0ff",
+    "blush_strong": "#bfe0ff",
+    "shadow": "rgba(30, 16, 60, 0.3)",
+    "sweat": "#27b8f0",
+    "sweat_light": "#bdf3ff",
+    "sparkle": "#ffffff",
+    "sparkle_outline": "#d87349"
+  },
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "body",
+      "min": 3,
+      "where": "eyes and mouth on hex body"
+    }
+  ],
+  "ground": {
+    "centre_height": 99.36,
+    "shadow": {
+      "rx": 69.12,
+      "ry": 12.44,
+      "alpha": 0.3,
+      "colour": "shadow"
+    }
+  },
+  "outline": {
+    "width": 3,
+    "colour": "outline",
+    "join": "round",
+    "cap": "round",
+    "second": {
+      "width": 5,
+      "colour": "outline_light"
+    }
+  },
+  "paints": {
+    "body_gradient": {
+      "type": "linear",
+      "from": [
+        127,
+        104
+      ],
+      "to": [
+        314,
+        324
+      ],
+      "stops": [
+        [
+          0,
+          "body_hi"
+        ],
+        [
+          0.32,
+          "body"
+        ],
+        [
+          0.7,
+          "body"
+        ],
+        [
+          1,
+          "body_shade"
+        ]
+      ]
+    },
+    "gold_rim_gradient": {
+      "type": "linear",
+      "from": [
+        105,
+        104
+      ],
+      "to": [
+        325,
+        324
+      ],
+      "stops": [
+        [
+          0,
+          "gold_rim_hi"
+        ],
+        [
+          0.4,
+          "gold_rim"
+        ],
+        [
+          1,
+          "gold_rim_deep"
+        ]
+      ]
+    },
+    "jacket_gradient": {
+      "type": "linear",
+      "from": [
+        115,
+        270
+      ],
+      "to": [
+        315,
+        344
+      ],
+      "stops": [
+        [
+          0,
+          "jacket_base"
+        ],
+        [
+          1,
+          "jacket_deep"
+        ]
+      ]
+    },
+    "hair_gradient": {
+      "type": "linear",
+      "from": [
+        135,
+        54
+      ],
+      "to": [
+        295,
+        144
+      ],
+      "stops": [
+        [
+          0,
+          "hair_base"
+        ],
+        [
+          1,
+          "hair_deep"
+        ]
+      ]
+    },
+    "feet_gradient": {
+      "type": "linear",
+      "from": [
+        0,
+        -10
+      ],
+      "to": [
+        0,
+        10
+      ],
+      "stops": [
+        [
+          0,
+          "gold_rim_hi"
+        ],
+        [
+          0.6,
+          "gold_rim"
+        ],
+        [
+          1,
+          "gold_rim_deep"
+        ]
+      ]
+    }
+  },
+  "parts": [
+    {
+      "id": "figure",
+      "at": [
+        -144,
+        -253.44
+      ],
+      "scale": 0.72,
+      "items": []
+    },
+    {
+      "id": "chart_panel",
+      "parent": "figure",
+      "layer": 5,
+      "at": [
+        0,
+        0
+      ],
+      "glow": {
+        "item": "panel_bg",
+        "colour": "chart_border",
+        "blur": 8,
+        "alpha": 0.8
+      },
+      "items": [
+        {
+          "id": "panel_bg",
+          "shape": "round_rect",
+          "x": 10,
+          "y": 92,
+          "w": 96,
+          "h": 78,
+          "r": 10,
+          "fill": "chart_bg",
+          "stroke": "chart_border",
+          "width": 3.2
+        },
+        {
+          "shape": "path",
+          "d": "M 18 111.5 L 98 111.5 M 18 131 L 98 131 M 18 150.5 L 98 150.5",
+          "stroke": "chart_grid",
+          "width": 1
+        },
+        {
+          "shape": "path",
+          "d": "M 20.0 124.4 L 26.3 118.4 L 32.7 114.8 L 39.0 114.1 L 45.3 116.6 L 51.7 121.8 L 58.0 128.6 L 64.3 135.9 L 70.7 142.3 L 77.0 146.6 L 83.3 148.0 L 89.7 146.3 L 96.0 141.7",
+          "stroke": "curve_cyan",
+          "width": 4,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "path",
+          "d": "M 20.0 133.0 L 26.3 128.3 L 32.7 125.5 L 39.0 125.1 L 45.3 127.3 L 51.7 131.5 L 58.0 136.9 L 64.3 142.3 L 70.7 146.6 L 77.0 148.7 L 83.3 148.2 L 89.7 145.0 L 96.0 139.6",
+          "stroke": "curve_pink",
+          "width": 4,
+          "cap": "round",
+          "join": "round"
+        }
+      ],
+      "variants": {
+        "thinking": [
+          {
+            "id": "panel_bg",
+            "shape": "round_rect",
+            "x": 10,
+            "y": 92,
+            "w": 96,
+            "h": 78,
+            "r": 10,
+            "fill": "chart_bg",
+            "stroke": "chart_border",
+            "width": 3.2
+          },
+          {
+            "shape": "path",
+            "d": "M 18 111.5 L 98 111.5 M 18 131 L 98 131 M 18 150.5 L 98 150.5",
+            "stroke": "chart_grid",
+            "width": 1
+          },
+          {
+            "shape": "path",
+            "d": "M 20.0 124.4 L 26.3 118.4 L 32.7 114.8 L 39.0 114.1 L 45.3 116.6 L 51.7 121.8 L 58.0 128.6 L 64.3 135.9 L 70.7 142.3 L 77.0 146.6 L 83.3 148.0 L 89.7 146.3 L 96.0 141.7",
+            "stroke": "curve_cyan",
+            "width": 4,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "path",
+            "d": "M 20.0 138.2 L 26.3 134.2 L 32.7 131.9 L 39.0 131.7 L 45.3 133.7 L 51.7 137.4 L 58.0 141.9 L 64.3 146.2 L 70.7 149.2 L 77.0 150.0 L 83.3 148.3 L 89.7 144.2 L 96.0 138.3",
+            "stroke": "curve_pink",
+            "width": 4,
+            "cap": "round",
+            "join": "round"
+          }
+        ],
+        "converged": [
+          {
+            "id": "panel_bg",
+            "shape": "round_rect",
+            "x": 10,
+            "y": 92,
+            "w": 96,
+            "h": 78,
+            "r": 10,
+            "fill": "chart_bg",
+            "stroke": "chart_border",
+            "width": 3.2
+          },
+          {
+            "shape": "path",
+            "d": "M 18 111.5 L 98 111.5 M 18 131 L 98 131 M 18 150.5 L 98 150.5",
+            "stroke": "chart_grid",
+            "width": 1
+          },
+          {
+            "shape": "path",
+            "d": "M 20.0 124.4 L 26.3 118.4 L 32.7 114.8 L 39.0 114.1 L 45.3 116.6 L 51.7 121.8 L 58.0 128.6 L 64.3 135.9 L 70.7 142.3 L 77.0 146.6 L 83.3 148.0 L 89.7 146.3 L 96.0 141.7",
+            "stroke": "curve_cyan",
+            "width": 4,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": 94,
+            "y": 104,
+            "r": 5,
+            "fill": "shine"
+          }
+        ],
+        "diverged": [
+          {
+            "id": "panel_bg",
+            "shape": "round_rect",
+            "x": 10,
+            "y": 92,
+            "w": 96,
+            "h": 78,
+            "r": 10,
+            "fill": "chart_bg",
+            "stroke": "chart_border",
+            "width": 3.2
+          },
+          {
+            "shape": "path",
+            "d": "M 18 111.5 L 98 111.5 M 18 131 L 98 131 M 18 150.5 L 98 150.5",
+            "stroke": "chart_grid",
+            "width": 1
+          },
+          {
+            "shape": "path",
+            "d": "M 20.0 124.4 L 26.3 118.4 L 32.7 114.8 L 39.0 114.1 L 45.3 116.6 L 51.7 121.8 L 58.0 128.6 L 64.3 135.9 L 70.7 142.3 L 77.0 146.6 L 83.3 148.0 L 89.7 146.3 L 96.0 141.7",
+            "stroke": "curve_cyan",
+            "width": 4,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "path",
+            "d": "M 20.0 141.7 L 26.3 138.2 L 32.7 136.2 L 39.0 136.1 L 45.3 137.9 L 51.7 141.3 L 58.0 145.2 L 64.3 148.8 L 70.7 150.9 L 77.0 150.9 L 83.3 148.4 L 89.7 143.7 L 96.0 137.5",
+            "stroke": "curve_pink",
+            "width": 4,
+            "cap": "round",
+            "join": "round"
+          }
+        ]
+      },
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "feet",
+      "parent": "figure",
+      "layer": 10,
+      "at": [
+        0,
+        0
+      ],
+      "items": [
+        {
+          "shape": "ellipse",
+          "x": 181,
+          "y": 322.57,
+          "rx": 19,
+          "ry": 10,
+          "fill": {
+            "paint": "feet_gradient"
+          },
+          "outline": true
+        },
+        {
+          "shape": "ellipse",
+          "x": 249,
+          "y": 322.57,
+          "rx": 19,
+          "ry": 10,
+          "fill": {
+            "paint": "feet_gradient"
+          },
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "body",
+      "parent": "figure",
+      "layer": 20,
+      "at": [
+        0,
+        0
+      ],
+      "items": [
+        {
+          "id": "hex",
+          "shape": "path",
+          "d": "M 200.54 107.44 Q 215.0 98.5 229.46 107.44 L 293.9 147.31 Q 308.36 156.25 308.36 173.25 L 308.36 254.75 Q 308.36 271.75 293.9 280.69 L 229.46 320.56 Q 215.0 329.5 200.54 320.56 L 136.1 280.69 Q 121.64 271.75 121.64 254.75 L 121.64 173.25 Q 121.64 156.25 136.1 147.31 Z",
+          "fill": {
+            "paint": "body_gradient"
+          },
+          "outline": true
+        },
+        {
+          "id": "grid",
+          "shape": "path",
+          "d": "M 115 182 L 315 182 M 115 214 L 315 214 M 115 246 L 315 246 M 183 100 L 183 330 M 215 100 L 215 330 M 247 100 L 247 330",
+          "stroke": "grid_line",
+          "width": 1.2,
+          "clip": "body.hex",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "rim_light",
+          "shape": "path",
+          "d": "M 308.36 214 L 308.36 254.75 Q 308.36 271.75 293.9 280.69 L 229.46 320.56 Q 215.0 329.5 200.54 320.56 L 180 308",
+          "stroke": "rim_light",
+          "width": 7,
+          "alpha": 0.8,
+          "clip": "body.hex",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "gold_rim",
+          "shape": "path",
+          "d": "M 200.54 107.44 Q 215.0 98.5 229.46 107.44 L 293.9 147.31 Q 308.36 156.25 308.36 173.25 L 308.36 254.75 Q 308.36 271.75 293.9 280.69 L 229.46 320.56 Q 215.0 329.5 200.54 320.56 L 136.1 280.69 Q 121.64 271.75 121.64 254.75 L 121.64 173.25 Q 121.64 156.25 136.1 147.31 Z",
+          "stroke": "gold_rim",
+          "width": 17,
+          "clip": "body.hex"
+        },
+        {
+          "id": "inner_bevel",
+          "shape": "path",
+          "d": "M 204.79 116.36 Q 215.0 110.05 225.21 116.36 L 288.82 155.71 Q 299.02 162.03 299.02 174.03 L 299.02 253.98 Q 299.02 265.98 288.82 272.29 L 225.21 311.64 Q 215.0 317.95 204.79 311.64 L 141.18 272.29 Q 130.98 265.98 130.98 253.98 L 130.98 174.02 Q 130.98 162.02 141.18 155.71 Z",
+          "stroke": "bevel_line",
+          "width": 1.8,
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "id": "hex",
+            "shape": "path",
+            "d": "M 200.54 107.44 Q 215.0 98.5 229.46 107.44 L 293.9 147.31 Q 308.36 156.25 308.36 173.25 L 308.36 254.75 Q 308.36 271.75 293.9 280.69 L 229.46 320.56 Q 215.0 329.5 200.54 320.56 L 136.1 280.69 Q 121.64 271.75 121.64 254.75 L 121.64 173.25 Q 121.64 156.25 136.1 147.31 Z",
+            "fill": {
+              "paint": "body_gradient"
+            },
+            "outline": true
+          },
+          {
+            "id": "gold_rim",
+            "shape": "path",
+            "d": "M 200.54 107.44 Q 215.0 98.5 229.46 107.44 L 293.9 147.31 Q 308.36 156.25 308.36 173.25 L 308.36 254.75 Q 308.36 271.75 293.9 280.69 L 229.46 320.56 Q 215.0 329.5 200.54 320.56 L 136.1 280.69 Q 121.64 271.75 121.64 254.75 L 121.64 173.25 Q 121.64 156.25 136.1 147.31 Z",
+            "stroke": "gold_rim",
+            "width": 10
+          }
+        ]
+      }
+    },
+    {
+      "id": "jacket",
+      "parent": "figure",
+      "layer": 25,
+      "at": [
+        0,
+        0
+      ],
+      "items": [
+        {
+          "id": "jacket_body",
+          "shape": "path",
+          "d": "M 85 274 L 181 270 L 207 334 L 223 334 L 249 270 L 345 274 L 345 354 L 85 354 Z",
+          "fill": {
+            "paint": "jacket_gradient"
+          },
+          "stroke": "feature",
+          "width": 3.5,
+          "clip": "body.hex"
+        },
+        {
+          "id": "piping",
+          "shape": "path",
+          "d": "M 89 280 L 181 276 L 211 332 M 341 280 L 249 276 L 219 332",
+          "stroke": "jacket_piping",
+          "width": 3,
+          "clip": "body.hex"
+        },
+        {
+          "id": "pocket",
+          "shape": "round_rect",
+          "x": 129,
+          "y": 298,
+          "w": 30,
+          "h": 22,
+          "r": 4,
+          "stroke": "jacket_pocket",
+          "width": 2.4,
+          "clip": "body.hex",
+          "lod": [
+            "full"
+          ]
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "face_owner",
+      "parent": "figure",
+      "layer": 30,
+      "at": [
+        215,
+        216
+      ],
+      "items": []
+    },
+    {
+      "id": "eyewear",
+      "parent": "figure",
+      "layer": 35,
+      "at": [
+        0,
+        0
+      ],
+      "items": [
+        {
+          "shape": "circle",
+          "x": 179,
+          "y": 216,
+          "r": 25,
+          "stroke": "feature",
+          "width": 8.5
+        },
+        {
+          "shape": "circle",
+          "x": 179,
+          "y": 216,
+          "r": 25,
+          "stroke": "gold_rim",
+          "width": 5
+        },
+        {
+          "shape": "arc",
+          "x": 179,
+          "y": 216,
+          "r": 20,
+          "start": 3.4558,
+          "end": 4.7124,
+          "stroke": "shine",
+          "width": 2.4,
+          "alpha": 0.8,
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "circle",
+          "x": 251,
+          "y": 216,
+          "r": 25,
+          "stroke": "feature",
+          "width": 8.5
+        },
+        {
+          "shape": "circle",
+          "x": 251,
+          "y": 216,
+          "r": 25,
+          "stroke": "gold_rim",
+          "width": 5
+        },
+        {
+          "shape": "arc",
+          "x": 251,
+          "y": 216,
+          "r": 20,
+          "start": 3.4558,
+          "end": 4.7124,
+          "stroke": "shine",
+          "width": 2.4,
+          "alpha": 0.8,
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "path",
+          "d": "M 203 214 Q 215 208 227 214",
+          "stroke": "feature",
+          "width": 7.5
+        },
+        {
+          "shape": "path",
+          "d": "M 203 214 Q 215 208 227 214",
+          "stroke": "gold_rim",
+          "width": 4
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "quiff",
+      "parent": "figure",
+      "layer": 40,
+      "at": [
+        0,
+        0
+      ],
+      "items": [
+        {
+          "id": "hair",
+          "shape": "path",
+          "d": "M 139 148 C 119 92 185 48 245 64 C 275 68 301 82 313 92 C 281 90 269 104 285 122 C 263 118 251 132 245 140 C 219 124 175 126 139 148 Z",
+          "fill": {
+            "paint": "hair_gradient"
+          },
+          "outline": true
+        },
+        {
+          "id": "hair_highlight",
+          "shape": "path",
+          "d": "M 155 114 Q 195 68 255 80",
+          "stroke": "shine",
+          "width": 4,
+          "alpha": 0.6,
+          "cap": "round",
+          "clip": "quiff.hair",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "hair_strands",
+          "shape": "path",
+          "d": "M 155 134 Q 175 94 225 84 M 175 134 Q 197 94 245 90 M 195 134 Q 219 94 265 96 M 215 134 Q 241 94 285 102",
+          "stroke": "hair_deep",
+          "width": 2,
+          "alpha": 0.4,
+          "clip": "quiff.hair",
+          "lod": [
+            "full"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "shape": "path",
+            "d": "M 130 120 Q 180 40 280 96 Q 220 92 262 138 L 130 150 Z",
+            "fill": "hair_base",
+            "outline": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "arm_l",
+      "parent": "figure",
+      "layer": 15,
+      "at": [
+        123,
+        226
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -8.29,
+              28.83
+            ],
+            [
+              -12.75,
+              56.47
+            ]
+          ],
+          "stroke": "outline",
+          "width": 18,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -8.29,
+              28.83
+            ],
+            [
+              -12.75,
+              56.47
+            ]
+          ],
+          "stroke": "arm_blue",
+          "width": 13,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -8.29,
+              28.83
+            ],
+            [
+              -12.75,
+              56.47
+            ]
+          ],
+          "stroke": "arm_hi",
+          "width": 3.25,
+          "cap": "round",
+          "join": "round",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "circle",
+          "x": -12.75,
+          "y": 56.47,
+          "r": 9,
+          "fill": "hand",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "arm_r",
+      "parent": "figure",
+      "layer": 50,
+      "at": [
+        307,
+        226
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              8.29,
+              28.83
+            ],
+            [
+              12.75,
+              56.47
+            ]
+          ],
+          "stroke": "outline",
+          "width": 18,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              8.29,
+              28.83
+            ],
+            [
+              12.75,
+              56.47
+            ]
+          ],
+          "stroke": "arm_blue",
+          "width": 13,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              8.29,
+              28.83
+            ],
+            [
+              12.75,
+              56.47
+            ]
+          ],
+          "stroke": "arm_hi",
+          "width": 3.25,
+          "cap": "round",
+          "join": "round",
+          "lod": [
+            "full"
+          ]
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "divider",
+      "parent": "arm_r",
+      "layer": 52,
+      "at": [
+        12.75,
+        56.47
+      ],
+      "rotate": -0.5,
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -19.78,
+              -60.87
+            ]
+          ],
+          "stroke": "divider_metal",
+          "width": 5,
+          "outline": true,
+          "cap": "round"
+        },
+        {
+          "shape": "circle",
+          "x": -20.4,
+          "y": -62.77,
+          "r": 4,
+          "fill": "divider_tip"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              19.78,
+              -60.87
+            ]
+          ],
+          "stroke": "divider_metal",
+          "width": 5,
+          "outline": true,
+          "cap": "round"
+        },
+        {
+          "shape": "circle",
+          "x": 20.4,
+          "y": -62.77,
+          "r": 4,
+          "fill": "divider_tip"
+        },
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 5.5,
+          "fill": "divider_metal",
+          "stroke": "outline",
+          "width": 2
+        },
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 9,
+          "fill": "hand",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "sweat",
+      "parent": "figure",
+      "layer": 60,
+      "at": [
+        299,
+        144
+      ],
+      "items": [],
+      "variants": {
+        "visible": [
+          {
+            "shape": "path",
+            "d": "M 0 -13 C 9 0 9 9 0 9 C -9 9 -9 0 0 -13 Z",
+            "fill": "sweat",
+            "stroke": "outline",
+            "width": 2.4
+          },
+          {
+            "shape": "ellipse",
+            "x": -2.6,
+            "y": 2,
+            "rx": 2,
+            "ry": 3.3,
+            "rotate": 0.3,
+            "fill": "shine"
+          }
+        ]
+      },
+      "lod": [
+        "full",
+        "small"
+      ]
+    }
+  ],
+  "anchors": {
+    "hand_l": {
+      "part": "arm_l",
+      "at": [
+        -12.75,
+        56.47
+      ],
+      "side": "l",
+      "description": "Left hand"
+    },
+    "hand_r": {
+      "part": "arm_r",
+      "at": [
+        12.75,
+        56.47
+      ],
+      "side": "r",
+      "description": "Right hand"
+    },
+    "head": {
+      "part": "figure",
+      "at": [
+        215,
+        120
+      ],
+      "description": "Head crown"
+    }
+  },
+  "face": {
+    "part": "face_owner",
+    "kit": "iso_face",
+    "kit_definition": {
+      "id": "iso_face",
+      "description": "Iso face kit with glinting eyes, amber irises, and expressive brows.",
+      "roles": [
+        "outline",
+        "feature",
+        "eye_white",
+        "shine",
+        "teeth",
+        "eyelid",
+        "tongue",
+        "mouth_in",
+        "body",
+        "iris_deep",
+        "blush",
+        "blush_strong"
+      ],
+      "defaults": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "neutral",
+        "blush": 1
+      },
+      "eye_styles": {
+        "open": {
+          "op": "eye_ellipse",
+          "rx": 16,
+          "ry": 18,
+          "pupil": {
+            "r": 10.5,
+            "look_range": [
+              5.5,
+              5.0
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "focused": {
+          "op": "eye_ellipse",
+          "rx": 16,
+          "ry": 18,
+          "pupil": {
+            "r": 10.5,
+            "look_range": [
+              5.5,
+              5.0
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0.3,
+          "slant": 0,
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "worried": {
+          "op": "eye_ellipse",
+          "rx": 16,
+          "ry": 20,
+          "pupil": {
+            "r": 10.5,
+            "look_range": [
+              5.5,
+              5.0
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "happy": {
+          "op": "eye_arc",
+          "r": 14,
+          "start": 3.455751918948773,
+          "end": 5.969026041820607,
+          "y": 5.6,
+          "width": 5.6,
+          "stroke": "feature",
+          "hide_brows": false
+        },
+        "closed": {
+          "op": "eye_arc",
+          "r": 14,
+          "start": 3.455751918948773,
+          "end": 5.969026041820607,
+          "y": 5.6,
+          "width": 5.6,
+          "stroke": "feature",
+          "hide_brows": false
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M 0 0",
+          "width": 0,
+          "stroke": "feature",
+          "y": -33.6
+        },
+        "neutral": {
+          "op": "brow_path",
+          "d": "M -15.2 2 Q 0 -6.38 15.2 2",
+          "width": 5.5,
+          "stroke": "feature",
+          "y": -33.6
+        },
+        "thinking": {
+          "op": "brow_path",
+          "d": "M -15.2 5 Q 0 -4.0 15.2 -1",
+          "width": 5.5,
+          "stroke": "feature",
+          "y": -33.6
+        },
+        "raised": {
+          "op": "brow_path",
+          "d": "M -15.2 0 Q 0 -10.0 15.2 0",
+          "width": 5.5,
+          "stroke": "feature",
+          "y": -40.0
+        },
+        "worried": {
+          "op": "brow_path",
+          "d": "M -15.2 -6 Q 0 0 15.2 6",
+          "width": 5.5,
+          "stroke": "feature",
+          "y": -33.6
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            15
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 -0.055 Q 0 0.4125 1 -0.055",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            15
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0 Q 0 -0.05 1 0",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        },
+        "grin": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            15
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 -0.05 Q 0 0.24 1 -0.05 C 0.9 0.95 -0.9 0.95 -1 -0.05 Z",
+              "fill": "mouth_in",
+              "stroke": "feature",
+              "width": 3.6
+            },
+            {
+              "shape": "path",
+              "d": "M -1 -0.05 L 1 -0.05 L 1 0.25 L -1 0.25 Z",
+              "fill": "teeth"
+            },
+            {
+              "shape": "ellipse",
+              "x": 0,
+              "y": 10,
+              "rx": 9,
+              "ry": 5,
+              "fill": "tongue"
+            }
+          ]
+        },
+        "worried": {
+          "op": "mouth_path",
+          "box": [
+            15,
+            15
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0.1 C -0.5 -0.4 0.5 0.3 1 0.1",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        }
+      },
+      "effects": {}
+    },
+    "at": [
+      0,
+      0
+    ],
+    "eyes": {
+      "y": 0,
+      "spacing": 36,
+      "lashes": false,
+      "iris": "iris_deep"
+    },
+    "mouth": {
+      "y": 42
+    },
+    "blush": {
+      "x": 41.6,
+      "y": 28,
+      "rx": 9.92,
+      "ry": 5.44,
+      "alpha": 0.5,
+      "strong_alpha": 0.5
+    }
+  },
+  "moods": {
+    "idle": {
+      "description": "Idle analyst state reviewing model curves.",
+      "status": "Reviewing convergence parameters.",
+      "face": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "neutral",
+        "open": 1
+      },
+      "channels": {
+        "root.lift": 0.0,
+        "root.rotate": 0.0,
+        "arm_l.rotate": 0.0,
+        "arm_r.rotate": 0.0,
+        "divider.rotate": -0.5,
+        "chart_panel.variant": "default",
+        "sweat.variant": "default"
+      }
+    },
+    "thinking": {
+      "description": "Thinking state comparing parameter intervals.",
+      "status": "Comparing parameter bounds.",
+      "face": {
+        "eyes": "focused",
+        "mouth": "flat",
+        "brows": "thinking",
+        "look_x": 0.7,
+        "look_y": -0.7,
+        "open": 1
+      },
+      "channels": {
+        "root.lift": 0.0,
+        "root.rotate": -0.07,
+        "arm_l.rotate": 0.35,
+        "arm_r.rotate": 0.25,
+        "divider.rotate": -0.3,
+        "chart_panel.variant": "thinking",
+        "sweat.variant": "default"
+      }
+    },
+    "happy": {
+      "description": "Happy state when curves converge.",
+      "status": "Model curves converged.",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "raised",
+        "open": 0.55
+      },
+      "channels": {
+        "root.lift": 2.16,
+        "root.rotate": 0.05,
+        "arm_l.rotate": 0.1,
+        "arm_r.rotate": 0.8,
+        "divider.rotate": -0.8,
+        "chart_panel.variant": "converged",
+        "sweat.variant": "default"
+      }
+    },
+    "worried": {
+      "description": "Worried state when curves diverge.",
+      "status": "Curves diverging beyond tolerance.",
+      "face": {
+        "eyes": "worried",
+        "mouth": "worried",
+        "brows": "worried",
+        "look_x": -0.25,
+        "look_y": 0.1,
+        "open": 1
+      },
+      "channels": {
+        "root.lift": 0.0,
+        "root.rotate": 0.0,
+        "arm_l.rotate": 0.4,
+        "arm_r.rotate": 0.4,
+        "divider.rotate": -0.2,
+        "chart_panel.variant": "diverged",
+        "sweat.variant": "visible"
+      }
+    },
+    "celebrating": {
+      "description": "Celebrating the converged curves.",
+      "status": "Model curves converged.",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "raised",
+        "open": 1.0
+      },
+      "channels": {
+        "root.lift": 18.0,
+        "root.rotate": 0.0,
+        "arm_l.rotate": -1.2,
+        "arm_r.rotate": 1.2,
+        "divider.rotate": -1.0,
+        "chart_panel.variant": "converged",
+        "sweat.variant": "default"
+      }
+    }
+  },
+  "gestures": {
+    "nod": {
+      "description": "A bounded nod movement (root rotation fallback).",
+      "frames": 24,
+      "tracks": {
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.3,
+            0.04
+          ],
+          [
+            0.7,
+            -0.02
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "wave": {
+      "description": "A bounded wave movement (root rotation fallback).",
+      "frames": 24,
+      "tracks": {
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.3,
+            0.04
+          ],
+          [
+            0.7,
+            -0.02
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "lod": {
+    "small": {
+      "hide": [
+        "body.grid",
+        "jacket.pocket",
+        "quiff.hair_highlight",
+        "quiff.hair_strands",
+        "arm_l.limb_hi",
+        "arm_r.limb_hi"
+      ]
+    },
+    "micro": {
+      "hide": [
+        "chart_panel",
+        "feet",
+        "jacket",
+        "eyewear",
+        "arm_l",
+        "arm_r",
+        "divider",
+        "sweat"
+      ],
+      "variants": {
+        "body": "micro",
+        "quiff": "micro"
+      },
+      "face": {
+        "lashes": false,
+        "brows": false,
+        "iris": false
+      },
+      "glow": false
+    }
+  },
+  "palettes": {},
+  "palette_sources": {},
+  "note": "Source: picked round5.md and recovered the recovered drawing source (lines 140-164). True source geometry for pointy-top hex with sx=0.98, sy=1.05, quiff, circular eyewear, jacket with piping, feet, and drafting divider. Dynamic curve equations in chart panel captured via static variants (idle, thinking, converged, diverged). Gestures nod and wave use explicit root-rotation fallbacks. Rim stroke uses a flat source gold role: contract 3.5 types stroke as a role, although the accounting prose mentions gradient stroke invocations. Gradient-stroke authoring needs an explicit freeze decision; the fixture does not silently extend that field. Founder palette pick applied from the round-2 showcase: slate body #66889a, copper rim #d87349, slate jacket #3f5563, ink #1b2430/#0e141d; these deliberately differ from the round-5 source colours in the comparison. Retains the picked quiff and untinted wire glasses; no lens fill."
+}

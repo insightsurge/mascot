@@ -319,7 +319,13 @@ def check():
     counts = load(root / "budgets.json")
     require(counts["accounting_version"] == counts["operation_manifest_version"] == policy["operation_manifest_version"] == 2 and counts["policy_version"] == policy["policy_version"], "accounting/policy version pair differs")
     require(counts["method"] == "separable_componentwise_upper_bound", "accounting method differs")
-    require(len(counts["rows"]) == 12, "reference-count inventory differs")
+    # Every distinct resolved character has exactly one row for each band.
+    expected_counts = {f["expanded_work_totals"]["character"] for f in manifest["fixtures"]
+                       if f["kind"] == "character" and f["expected"] != "reject"}
+    require(len(counts["rows"]) == 3 * len(expected_counts), "reference-count inventory differs")
+    require({(row["character"], row["band"]) for row in counts["rows"]} ==
+            {(character, band) for character in expected_counts for band in ("full", "small", "micro")},
+            "reference-count character/band inventory differs")
     for fixture in manifest["fixtures"]:
         if fixture.get("expected") != "reject" and fixture["kind"] == "character":
             require(len([row for row in counts["rows"] if row["character"] == fixture["expanded_work_totals"]["character"]]) == 3, "manifest count pointer misses a character")

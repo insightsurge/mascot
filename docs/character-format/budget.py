@@ -494,8 +494,23 @@ def calculate():
     require(operations['primitive_numbers']=={'circle':5,'ellipse':7,'rect':4,'round_rect':8,'arc':5,'polyline_per_point':2,'polygon_per_vertex':2,'rounded_polygon_per_vertex':6,'path_commands':{'M':2,'L':2,'Q':4,'C':6,'Z':0}},'primitive counting policy differs')
     require(policy['operation_manifest_version']==2 and policy['policy_version']==2,'unsupported policy/accounting pair')
     result={'accounting_version':2,'operation_manifest_version':2,'policy_version':2,'method':'separable_componentwise_upper_bound','status':'reference_counts_and_conservative_authored_glow_bounds_not_validator_or_runtime_evidence','limits':'limits.json','operations':'operations.json','rows':[],'runtime_scale_stress':[]}
-    for file in ('characters/tessa.json','characters/alpha_visor.json','expected/study_bot.json','characters/anchor_probe.json'):
-        character=load(ROOT/'fixtures'/file)
+    # Manifest certificates are the reference inventory; source recipes point at
+    # their resolved oracle, and duplicate source/oracle certificates count once.
+    files = {}
+    fixture_root = (ROOT/'fixtures').resolve()
+    for fixture in load(ROOT/'fixtures/manifest.json')['fixtures']:
+        if fixture['kind'] != 'character' or fixture['expected'] == 'reject':
+            continue
+        certificate = fixture['expanded_work_totals']
+        file = certificate.get('resolved_reference', fixture['file'])
+        path = (fixture_root/file).resolve()
+        require(path.is_relative_to(fixture_root), 'reference certificate escapes fixture directory')
+        require(file not in files or files[file] == certificate['character'], 'conflicting reference certificate')
+        files[file] = certificate['character']
+    require(len(set(files.values())) == len(files), 'duplicate resolved character certificate')
+    for file, expected_id in files.items():
+        character=load(fixture_root/file)
+        require(character['id'] == expected_id, 'reference certificate character differs')
         for band in ('full','small','micro'):
             counter=Counter(character,band,operations)
             maxima,witnesses,options=counter.maxima()
@@ -696,7 +711,7 @@ def main():
     # Invalid reference data is reportable evidence, not a successful acceptance.
     if any(row['exceeded'] for row in result['rows']):
         raise ValueError('reference recipe exceeds the agreed limits')
-    print('PASS: 12 reference rows recomputed; separable componentwise integer upper bounds and conservative authored glow-area bounds. No renderer, full validator, frame-fit or performance evidence.')
+    print(f'PASS: {len(result["rows"])} reference rows recomputed; separable componentwise integer upper bounds and conservative authored glow-area bounds. No renderer, full validator, frame-fit or performance evidence.')
 
 
 if __name__=='__main__':

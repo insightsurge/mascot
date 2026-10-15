@@ -1,7 +1,7 @@
 {
-  "operation_manifest_version": 1,
+  "operation_manifest_version": 2,
   "format_version": 1,
-  "status": "reference_accounting_contract_pending_implementation_review",
+  "status": "reference_accounting_rules_v2_pending_R_JS_reproduction_and_freeze_decisions",
   "metrics": [
     "active_parts",
     "painted_items",
@@ -40,8 +40,8 @@
     "ref": "Expand one non-ref definition then apply permitted overrides. Count each use, never only the shared definition."
   },
   "expansion": {
-    "ordinary_item": "One painted item if it has any enabled fill/stroke/outline or emission. Reuse its geometry across normal and glow paint passes; count geometry once per draw-list item.",
-    "paint": "One pass for fill, detail stroke, primary outline and secondary outline when enabled. One additional glow pass per named part emitter or emitted face glyph group. No occlusion culling or identical-colour pass merging.",
+    "ordinary_item": "One painted item for each shape with any reachable normal paint or emission. Emission-only geometry contributes one item and its geometry operands even with no normal fill/stroke/outline.",
+    "paint": "One normal pass per enabled fill, detail stroke, primary outline and secondary outline. A named emitter/glyph group adds one blurred pass per distinct compatible paint operation: merge same-operation subpaths only with equal alpha and, for strokes, equal width/cap/join. Fill and stroke never merge. Emission-only geometry uses a fill mask. No occlusion culling.",
     "ellipse_eye": [
       "sclera ellipse",
       "optional iris circle",
@@ -60,24 +60,33 @@
     "brow": "One item per visible eye when width>0 and not hidden by the eye style or detail band.",
     "mouth": "Each mouth item counts separately, but all items belong to one mouth emission group.",
     "blush_shadow": "Two blush ellipses when a placement and positive control are active; one ground-shadow ellipse when configured.",
-    "effects": "Expand each active mapped kit effect; reduction selects reduced_items for pulse/track, preserves progress geometry. Count all concurrently selectable controls, not only one mood screenshot.",
-    "parts": "Count active authored/expanded parts plus ancestors needed by painted or clip-only geometry. Do not count root, face/effect pseudo-groups or parts in completely suppressed unused subtrees.",
-    "gradient": "Count each actual gradient paint invocation, including a gradient emitter emission pass. A shared paint id does not deduplicate uses.",
-    "opacity": "Suppress a provably zero-alpha item. Do not subtract geometry merely covered by another opaque item; style/shape computations still occur.",
-    "bands": "Resolve each band from the full recipe, never from the preceding band. Apply hidden ancestors, item bands, explicit band variants and per-band outline/face/glow policy before counting."
+    "effects": "Kit effect items and reduced_items cannot carry clip: kit definitions have no character-specific part/item binding. Count ordinary mapped effect instances plus all possibly overlapping trigger instances in the selected gesture. Never deduplicate by effect name or anchor; retriggering creates a separate instance, clipped to the action deadline. Maximum is over one playable gesture/change, not a sum of mutually exclusive gestures. The reference profile refuses triggers and track-mode effects until their full expansion is implemented.",
+    "parts": "Count every band-visible authored/expanded part whose ancestors are visible, including empty pivots. Exclude root and face/effect pseudo-groups. Additionally count transform-only clip target owners and required ancestors once, even when suppressed for painting; the reference profile refuses such hidden-owner closures until supported.",
+    "gradient": "Count each actual gradient fill/stroke invocation. Solid emitter colour replaces source paints, so its shadow mask does not invoke the source gradient again. Shared paint ids never deduplicate normal invocations.",
+    "opacity": "Suppress an item only if its effective alpha/opacity is provably zero in every reachable rest, pose, mood, reduced state, held control and track. A resting zero does not suppress a later positive state. Bounds include any reachable enabled fill/stroke/outline/emission.",
+    "bands": "Resolve each band independently from the full recipe. An explicit band variant overrides rest, pose, mood, discrete track and switch variants; variant anchors use that final band variant. Apply hidden ancestors, item bands and outline/face/glow policy before counting.",
+    "resolved_overrides": "Resolve complete face style replacements then numeric tune before expansion; positive tuned glints and other operations count. Resolve ordinary/reduced mood item paint overrides and reachable visibility/opacity/variant tracks before taking per-component bounds. Accessory-level band overrides use the same rules as character/part bands. Unsupported reference constructs must fail, not count as free.",
+    "faceless": "A faceless character cannot map kit effects or use kit effect triggers; it may draw and animate ordinary parts instead.",
+    "host_swap": "Freeze the outgoing character as a cached bitmap. Each swap frame has the incoming character bound plus at most two host drawImage composite passes, not a redraw of two vector characters. These host passes and two backing images are separate E5c workload/allocation obligations, not silently omitted performance work."
   },
   "maximisation": {
-    "result": "Componentwise maxima; each metric has its own witness. The displayed maxima need not occur together in one frame.",
-    "controls": "All declared left/right eye styles, brow/mouth styles, positive blush/lid controls, declared effects, variants and legal accessory-slot choices. Iris follows the authored role and band flag, rather than inventing a new role.",
-    "exclusive_choices": "Choose one variant per part and at most one accessory per slot. Never sum alternatives; inactive fallback candidates are input work only.",
-    "canonical_profile": "The reference counter supports the current four resolved recipes; unsupported new counting constructs fail explicitly. It does not enumerate a general future format state machine.",
-    "motion_counts": "For the current recipes, numeric tracks alter transforms only, with no authored alpha crossing zero or changing item counts. Discrete held style/variant choices cover the finite structural states; count upper states include hidden-parent suppression."
+    "result": "Sum each part component maximum, each exclusive accessory-slot maximum, the face bound, ground and concurrent effects; blur uses max. Each metric has its own component proof. This is a conservative integer upper bound, not the exact joint-frame maximum; component choices can be mutually inconsistent across shared clip targets.",
+    "controls": "Bound all reachable rest/pose/mood/reduced/held/track values. Resolve face styles/tune first, then maximise each eye-plus-allowed-brow and mouth separately. Account for effects per concurrent instance; require R and JS to reproduce the same integer upper-bound policy.",
+    "exclusive_choices": "Take a maximum, never a sum, over alternatives within one part or accessory slot. For cross-component clip targets take the largest geometry cost over band-resolved variants; a same-part item clip uses its already selected source variant. Sum independent components even when correlation makes the result conservative.",
+    "canonical_profile": "The reference supports the four current resolved recipes plus documented hand probes. It refuses unsupported semantic constructs; no generic full-format state-machine or renderer claim. It does not enumerate the Cartesian product of parts and slots.",
+    "motion_counts": "Structural bounds inspect all band-resolved part alternatives without the old equal-cost switch refusal. Default-invisible/zero-opacity parts, structural tracks and overrides remain refused by this reference until full reachability/closure support exists.",
+    "method": "separable_componentwise_upper_bound"
   },
   "glow_area": {
     "status": "conservative_bound_not_pixel_measurement",
-    "formula": "For each emitting glyph/item, bound its local control-point/primitive box including strokes; its diagonal times the product of ancestor maximum scale norms bounds the transformed box side under any rotation. Add 6*blur design units to that side; square, sum and divide by 90000. Move the computed total one floating-point step outwards and round up to 12 decimal places; zero emission stays exactly zero.",
-    "scale_scope": "Authored rest/pose/mood/gesture extrema plus bounded idle breathing. Numeric add/set key interpolation uses only monotone supported easing; inspect every base plus key extrema. Rotations cannot exceed the enclosing-circle bound. Translation does not change area. Arbitrary external held scale/face-scale is excluded from this authored certificate and must be budget-guarded at runtime.",
-    "runtime": "Reference stress cases set an external uniform root scale of 16 and report the bound against the same limits. They demonstrate that the authored certificate is not permission to accept arbitrary live scaling.",
-    "not_proved": "This circle/scale bound is intentionally conservative, not the exact maximum raster rectangle or a rendering/performance/fit proof. Full R1c must independently reproduce or tighten it; an excessive bound is not a pass."
+    "formula": "For each compatible blurred paint operation of an emitter/glyph, bound the local primitive/control-point box including stroke extent. Its diagonal times the ancestor maximum scale norms and applicable face/anchor scale bounds its transformed box side under arbitrary rotation. Add 6*blur, square, sum once per blurred operation and divide by 90000. Round one floating-point step outward and then up to 12 decimal places; zero emission stays zero.",
+    "scale_scope": "Authored rest/pose/mood/gesture extrema plus multiplicative idle breathing: each axis multiplies by a factor in [1-breathe,1+breathe]. Built-in hop is lift-only, height*sin(pi*u), with no scale contribution; squash must be an explicit bounded track. Attachment roots include anchor.scale and all reachable variant-anchor scale maxima. Translation changes no area. External held root/part/face scale requires the same live bound before acceptance; attachment glow remains refused by the reference.",
+    "runtime": "If the supported conservative bound exceeds the target-band limit, reject the whole resource-sensitive update before applying any field unless a tighter proved bound passes. No silent clamping or dropping glow. Stress rows are reference calculations, not executed runtime rejections.",
+    "not_proved": "The enclosing-circle bound is conservative, not a pixel/performance/fit proof. A rotation-aware tighter box is optional only with a proved reachable rotation interval. Normalised area does not bound absolute backing pixels at arbitrary CSS width/DPR; E5c and allocation-policy decisions remain."
+  },
+  "compatibility": {
+    "counting": "Any change to item/pass/operand/instance/upper-bound semantics increments operation_manifest_version. Current version 2 supersedes unfrozen version 1. After freeze, format v1 retains its frozen accounting/admission semantics: a changed count requires a new format version or an explicit compatible old-admission path, never silently invalidating a formerly valid file.",
+    "limits": "Numeric/input limit policy changes increment policy_version. After format-v1 freeze, ceilings may be raised but never lowered for the same accounting version; admission cannot invalidate previously accepted files. Counting changes require explicit compatibility/revalidation, not an unnoticed limit edit.",
+    "freeze": "Rules and numeric caps are not declared frozen by these reference checks; full fixtures, independent reproduction and remaining product/allocation choices precede freeze."
   }
 }

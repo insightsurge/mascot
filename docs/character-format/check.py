@@ -184,13 +184,14 @@ def check_limits(policy, proposal):
         "gestures": (r"moods, (\d+) gestures", 1),
         "keys_per_track": (r"gestures, (\d+) keys per track", 1),
         "tracks_per_gesture": (r"keys per track, (\d+) tracks per gesture", 1),
+        "effect_triggers_per_gesture": (r"tracks per gesture, (\d+) effect triggers per gesture", 1),
     }
     for key, (pattern, multiplier) in input_matches.items():
         match = re.search(pattern, proposal)
         require(match is not None, "missing input limit: " + key)
         number = 10 if match[1] == "ten" else int(match[1].replace(",", ""))
         require(policy["input"][key] == number * multiplier, "input limit differs: " + key)
-    require(policy["policy_version"] == 1 and policy["format_version"] == 1, "policy version differs")
+    require(policy["policy_version"] == 2 and policy["operation_manifest_version"] == 2 and policy["format_version"] == 1, "policy version differs")
     require(policy["status"] == "design_limits_not_measured_performance", "policy overstates evidence")
     require(policy["motion"]["key_time_range"] == [0, 1] and policy["motion"]["minimum_keys"] == 2, "track key limits differ")
     easing = re.search(r"Allowed easings (.*?)\. Their formulas", proposal).group(1).split("/")
@@ -316,6 +317,8 @@ def check():
     count_result = subprocess.run([sys.executable, "-I", *( ["-O"] if sys.flags.optimize else []), str(root / "budget.py"), "--check"], capture_output=True, text=True)
     require(count_result.returncode == 0, "accounting checks failed: " + (count_result.stderr or count_result.stdout).strip())
     counts = load(root / "budgets.json")
+    require(counts["accounting_version"] == counts["operation_manifest_version"] == policy["operation_manifest_version"] == 2 and counts["policy_version"] == policy["policy_version"], "accounting/policy version pair differs")
+    require(counts["method"] == "separable_componentwise_upper_bound", "accounting method differs")
     require(len(counts["rows"]) == 12, "reference-count inventory differs")
     for fixture in manifest["fixtures"]:
         if fixture.get("expected") != "reject" and fixture["kind"] == "character":

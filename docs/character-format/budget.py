@@ -5,7 +5,6 @@ updates that documentation artefact. No R, browser, network or package imports.
 """
 from pathlib import Path
 import copy
-import itertools
 import json
 import math
 import re
@@ -76,6 +75,7 @@ def path_values(text):
 
 class Counter:
     def __init__(self, character, band, operations, external_scale=1):
+        require(operations['operation_manifest_version'] == 2, 'unsupported accounting version')
         self.character, self.band, self.operations = character, band, operations
         self.numbers = operations["primitive_numbers"]
         self.outline = copy.deepcopy(character.get("outline", {}))
@@ -92,7 +92,13 @@ class Counter:
             require(not gesture.get("effects"), "reference profile does not yet expand gesture effect triggers")
             for channel in gesture["tracks"]:
                 require(channel.endswith((".rotate", ".scale_x", ".scale_y", ".x", ".y", ".lift")), "reference profile needs additional track reachability rules: " + channel)
+        require(character.get('face') is not None or not character.get('effects'), 'faceless characters cannot map kit effects')
+        if character.get('face'):
+            for effect in character['face']['kit_definition'].get('effects', {}).values():
+                for item in effect.get('items', []) + effect.get('reduced_items', []):
+                    require('clip' not in item, 'kit effect items cannot contain character-specific clips')
         self.original_parts = {p["id"]: p for p in character["parts"]}
+        self.clip_bound_cache = {}
         require(all(p.get("visible", True) and p.get("opacity", 1) > 0 for p in self.original_parts.values()), "reference profile needs explicit default-invisible/zero-opacity reachability")
 
     def expand(self, item):
@@ -166,6 +172,7 @@ class Counter:
             width = max(width, self.outline.get("width", 0), (self.outline.get("second") or {}).get("width", 0))
         # Miter tips require their own bounded miter-limit policy, not half-width.
         require(width == 0 or item.get("join", "round") in ("round", "bevel"), "glow profile cannot prove miter stroke bounds")
+        require(not item.get('outline') or self.outline.get('join', 'round') in ('round', 'bevel'), 'glow profile cannot prove miter outline bounds')
         pad = width / 2
         return [box[0]-pad, box[1]-pad, box[2]+pad, box[3]+pad]
 
@@ -199,18 +206,47 @@ class Counter:
                 return factor
             owner = part.get("parent", "root")
 
+    def emission_operations(self, items):
+        # A solid emitter colour replaces source paints. Merge subpaths only
+        # when operation, alpha, width, cap and join are compatible.
+        groups = set()
+        for raw in items:
+            item = self.expand(raw)
+            if item.get('alpha', 1) <= 0:
+                continue
+            alpha = item.get('alpha', 1)
+            local = set()
+            if item.get('fill') is not None:
+                local.add(('fill', alpha))
+            if item.get('stroke') is not None and item.get('width', 2.5) > 0:
+                local.add(('stroke', alpha, item.get('width', 2.5), item.get('cap', 'round'), item.get('join', 'round')))
+            if item.get('outline'):
+                for outline in (self.outline, self.outline.get('second') or {}):
+                    if outline.get('width', 0) > 0:
+                        local.add(('stroke', alpha, outline['width'], self.outline.get('cap', 'round'), self.outline.get('join', 'round')))
+            groups.update(local or {('fill', alpha)})  # Emission-only silhouette.
+        return len(groups)
+
     def glow(self, items, definition, owner, face_scale=1):
         cost = blank()
-        if not self.glow_on or definition.get("alpha", 1) <= 0 or not items:
+        require(all(item['shape'] != 'ref' for item in items), 'reference glow bounds need explicit ref-transform expansion')
+        items = [self.expand(item) for item in items]
+        items = [item for item in items if item.get('alpha', 1) > 0]
+        if not self.glow_on or definition.get('alpha', 1) <= 0 or not items:
             return cost
         boxes = [self.local_box(item) for item in items]
         width = max(b[2] for b in boxes) - min(b[0] for b in boxes)
         height = max(b[3] for b in boxes) - min(b[1] for b in boxes)
         diameter = math.hypot(width, height) * self.scale_bound(owner) * face_scale
-        blur = definition["blur"]
-        cost["inflated_glow_area_ratio"] = (diameter + 6*blur)**2 / 90000
-        cost["glow_emitters"], cost["paint_passes"], cost["blur_design_units"] = 1, 1, blur
-        cost["gradient_uses"] = int(isinstance(items[0].get("fill"), dict))
+        blur = definition['blur']
+        passes = self.emission_operations(items)
+        cost['inflated_glow_area_ratio'] = passes * (diameter + 6 * blur) ** 2 / 90000
+        cost['glow_emitters'], cost['paint_passes'], cost['blur_design_units'] = 1, passes, blur
+        # Solid named emission colour uses no source gradient invocation.
+        for item in items:
+            if self.item(item)['painted_items'] == 0:
+                cost['painted_items'] += 1
+                cost['path_numbers'] += self.operands(item)
         return cost
 
     def eye(self, style):
@@ -289,139 +325,196 @@ class Counter:
         if face.get("clip"):
             owner,item_id=face["clip"].split(".",1)
             require(owner==face["part"], "reference profile needs coupled cross-owner face-clip geometry")
-            target=next(item for item in parts[owner]["items"] if item.get("id")==item_id)
-            constant=combine(constant,self.clip(target))
+            constant=combine(constant,self.clip_max(face["clip"], parts)[0])
         if face.get("blush"):
             constant=combine(constant,self.item({"shape":"ellipse","rx":1,"ry":1,"fill":"blush"}),self.item({"shape":"ellipse","rx":1,"ry":1,"fill":"blush"}))
         scale=face.get("scale",1)*flags.get("scale",1)
-        best={metric:(-1,None) for metric in blank()}
-        for left,right,brow,mouth in itertools.product(eyes,eyes,brows,mouths):
-            (left_cost,left_items),left_hidden=eyes[left]
-            (right_cost,right_items),right_hidden=eyes[right]
-            brow_cost,brow_item=brows[brow]
-            brow_count=int(not left_hidden)+int(not right_hidden)
-            cost=combine(constant,left_cost,right_cost,mouths[mouth][0],*(brow_cost for _ in range(brow_count)))
-            if kit.get("glow"):
-                cost=combine(cost,self.glow(left_items,kit["glow"],face["part"],scale),self.glow(right_items,kit["glow"],face["part"],scale),self.glow(mouths[mouth][1],kit["glow"],face["part"],scale))
-                if brow_item:
-                    cost=combine(cost,*(self.glow([brow_item],kit["glow"],face["part"],scale) for _ in range(brow_count)))
-            for metric,value in cost.items():
-                if value>best[metric][0]:
-                    best[metric]=(value,{"eyes":[left,right],"brows":brow,"mouth":mouth,"positive_lid":True,"positive_blush":bool(face.get("blush"))})
+        # Per-style bounds avoid an eyes x eyes x brows x mouths product.
+        eye_bounds = {name: (combine(cost, self.glow(items, kit['glow'], face['part'], scale) if kit.get('glow') else blank()), hidden) for name, ((cost, items), hidden) in eyes.items()}
+        brow_bounds = {name: combine(cost, self.glow([item], kit['glow'], face['part'], scale) if kit.get('glow') and item else blank()) for name, (cost, item) in brows.items()}
+        mouth_bounds = {name: combine(cost, self.glow(items, kit['glow'], face['part'], scale) if kit.get('glow') else blank()) for name, (cost, items) in mouths.items()}
+        best = {}
+        for metric in blank():
+            _, brow_name = max((cost[metric], name) for name, cost in brow_bounds.items())
+            eye_best = (-1, None)
+            for name, (cost, hidden) in eye_bounds.items():
+                extra = 0 if hidden else brow_bounds[brow_name][metric]
+                value = max(cost[metric], extra) if metric == 'blur_design_units' else cost[metric] + extra
+                if value > eye_best[0]:
+                    eye_best = (value, name)
+            mouth_best = (-1, None)
+            for name, cost in mouth_bounds.items():
+                if cost[metric] > mouth_best[0]:
+                    mouth_best = (cost[metric], name)
+            value = max(constant[metric], eye_best[0], mouth_best[0]) if metric == 'blur_design_units' else constant[metric] + 2 * eye_best[0] + mouth_best[0]
+            best[metric] = (value, {'eyes': [eye_best[1], eye_best[1]], 'brows': brow_name, 'mouth': mouth_best[1], 'positive_lid': True, 'positive_blush': bool(face.get('blush')), 'method': 'separable_component_bound'})
         return best
 
-    def body_options(self):
-        slots={}
-        for name,accessory in self.character.get("accessories",{}).items():
-            require(not accessory.get("lod"), "reference profile needs accessory-level band expansion")
-            slots.setdefault(accessory["slot"],[]).append(name)
-        choices=itertools.product(*([None]+names for names in slots.values()))
-        for worn in choices:
-            worn=[name for name in worn if name is not None]
-            parts=copy.deepcopy(self.original_parts)
-            for name in worn:
-                accessory=self.character["accessories"][name]
-                owner=self.character["anchors"][accessory["anchor"]]["part"]
-                for part in accessory["parts"]:
-                    expanded=copy.deepcopy(part)
-                    expanded["parent"]=(f"wear_{name}_{part['parent']}" if part.get("parent","root")!="root" else owner)
-                    parts[f"wear_{name}_{part['id']}"]=expanded
-            for name,part in parts.items():
-                if part.get("switch"):
-                    require(not part.get("glow"), "reference profile needs correlated switch/glow geometry")
-                    default=combine(*(self.item(item) for item in part.get("items",[])))
-                    require(all(combine(*(self.item(item) for item in items))==default for items in part.get("variants",{}).values()), "reference profile needs correlated threshold-variant maxima")
-            variants={name:["default"]+list(part.get("variants",{})) for name,part in parts.items()}
-            for selected in itertools.product(*variants.values()):
-                selected=dict(zip(variants,selected));resolved=copy.deepcopy(parts)
-                for name,variant in selected.items():
-                    variant=self.lod.get("variants",{}).get(name,variant)
-                    selected[name]=variant
-                    resolved[name]["items"]=copy.deepcopy(resolved[name].get("items",[]) if variant=="default" else resolved[name]["variants"][variant])
-                visible=set()
-                def shown(name):
-                    part=resolved[name]
-                    if name in self.lod.get("hide",[]) or self.band not in part.get("lod",["full","small","micro"]):return False
-                    parent=part.get("parent","root")
-                    return parent=="root" or shown(parent)
-                for name in resolved:
-                    if shown(name):visible.add(name)
-                cost=blank();cost["active_parts"]=len(visible)
-                for name in sorted(visible):
-                    part=resolved[name]
-                    for item in part.get("items",[]):
-                        if self.band not in item.get("lod",["full","small","micro"]) or f"{name}.{item.get('id')}" in self.lod.get("hide",[]):continue
-                        item_cost=self.item(item)
-                        if item_cost["painted_items"]==0:continue
-                        cost=combine(cost,item_cost)
-                        if item.get("clip"):
-                            owner,item_id=item["clip"].split(".",1)
-                            target=next(target for target in resolved[owner]["items"] if target.get("id")==item_id)
-                            cost=combine(cost,self.clip(target))
-                            require(owner in visible,"reference profile requires explicit clip-only active-part closure")
-                        glow=part.get("glow")
-                        if glow and glow["item"]==item.get("id"):
-                            require(name in self.original_parts,"reference profile needs attachment glow scale bounds")
-                            cost=combine(cost,self.glow([item],glow,name))
-                shadow=self.character.get("ground",{}).get("shadow")
-                if shadow and shadow.get("alpha",1)>0:
-                    cost=combine(cost,self.item({"shape":"ellipse","rx":shadow["rx"],"ry":shadow["ry"],"fill":shadow.get("colour","shadow")}))
-                face=self.character.get("face")
-                if face:
-                    for name,placement in self.character.get("effects",{}).items():
-                        owner=self.character["anchors"][placement["anchor"]]["part"]
-                        if owner not in visible:continue
-                        effect=face["kit_definition"]["effects"][name]
-                        require(effect["mode"] in ("progress","pulse"),"reference profile needs track-effect accounting")
-                        options=[effect["items"]]
-                        if effect["mode"]!="progress":options.append(effect.get("reduced_items",[]))
-                        costs=[combine(*(self.item(item) for item in items)) for items in options]
-                        # Current reduced shapes have identical or lower counters;
-                        # componentwise maxima are safe under one shared mode.
-                        require(all(all(option[k]<=costs[0][k] for k in blank()) for option in costs[1:]),"reduced effects need correlated mode enumeration")
-                        cost=combine(cost,costs[0])
-                yield cost,resolved,visible,{"wear":worn,"variants":{k:v for k,v in selected.items() if v!="default"},"effects":list(self.character.get("effects",{}))}
+    def variant_items(self, name, part):
+        selected = self.lod.get('variants', {}).get(name)
+        names = [selected] if selected is not None else ['default'] + list(part.get('variants', {}))
+        for variant in names:
+            yield variant, part.get('items', []) if variant == 'default' else part['variants'][variant]
+
+    def clip_max(self, target, parts, source_id=None, source_variant=None):
+        owner, item_id = target.split('.', 1)
+        key = (target, source_variant if owner == source_id else None)
+        if key in self.clip_bound_cache:
+            return self.clip_bound_cache[key]
+        require(owner in parts, 'reference profile needs cross-slot clip ownership')
+        options = []
+        for variant, items in self.variant_items(owner, parts[owner]):
+            if owner == source_id and variant != source_variant:
+                continue
+            item = next(item for item in items if item.get('id') == item_id)
+            options.append((self.clip(item), {'target': target, 'variant': variant}))
+        self.clip_bound_cache[key] = self.component_max(options)
+        return self.clip_bound_cache[key]
+
+    @staticmethod
+    def component_max(options):
+        best = {metric: (-1, None) for metric in blank()}
+        for cost, state in options:
+            for metric, value in cost.items():
+                if value > best[metric][0]:
+                    best[metric] = (value, state)
+        require(all(value >= 0 for value, _ in best.values()), 'no component choices')
+        return ({metric: value for metric, (value, _) in best.items()},
+                {metric: state for metric, (_, state) in best.items()})
+
+    def shown(self, name, parts):
+        part = parts[name]
+        if name in self.lod.get('hide', []) or self.band not in part.get('lod', ['full', 'small', 'micro']):
+            return False
+        parent = part.get('parent', 'root')
+        return parent == 'root' or self.shown(parent, parts)
+
+    def part_bound(self, name, part, parts):
+        if not self.shown(name, parts):
+            return blank(), {metric: {'part': name, 'hidden': True} for metric in blank()}, 1
+        options = []
+        for variant, items in self.variant_items(name, part):
+            cost = blank()
+            cost['active_parts'] = 1  # Includes visible empty pivots.
+            clip_proofs = []
+            for raw in items:
+                item = self.expand(raw)
+                if self.band not in item.get('lod', ['full', 'small', 'micro']) or f"{name}.{item.get('id')}" in self.lod.get('hide', []):
+                    continue
+                item_cost = self.item(item)
+                glow = part.get('glow')
+                emission = blank()
+                if glow and glow['item'] == item.get('id'):
+                    require(name in self.original_parts, 'reference profile needs attachment glow scale bounds')
+                    emission = self.glow([raw], glow, name)
+                if item_cost['painted_items'] == 0 and emission['painted_items'] == 0:
+                    continue
+                cost = combine(cost, item_cost, emission)
+                if item.get('clip'):
+                    owner = item['clip'].split('.', 1)[0]
+                    require(self.shown(owner, parts), 'reference profile requires explicit clip-only active-part closure')
+                    clip_cost, proof = self.clip_max(item['clip'], parts, name, variant)
+                    cost = combine(cost, clip_cost)
+                    clip_proofs.append(proof)
+            options.append((cost, {'part': name, 'variant': variant, 'clip_bounds': clip_proofs}))
+        cost, proofs = self.component_max(options)
+        proofs = {metric: {**state, 'clip_bounds': [proof[metric] for proof in state['clip_bounds']] if metric in ('path_numbers', 'clip_applications') else []} for metric, state in proofs.items()}
+        return cost, proofs, len(options)
+
+    def body_components(self):
+        # Sum local maxima, never enumerate the Cartesian product of parts/slots.
+        for name, part in self.original_parts.items():
+            yield name, self.part_bound(name, part, self.original_parts)
+        slots = {}
+        for name, accessory in self.character.get('accessories', {}).items():
+            require(not accessory.get('lod'), 'reference profile needs accessory-level band expansion')
+            slots.setdefault(accessory['slot'], []).append(name)
+        for slot, names in slots.items():
+            options = [(blank(), {'wear': None})]
+            count = 1
+            for name in names:
+                accessory = self.character['accessories'][name]
+                owner = self.character['anchors'][accessory['anchor']]['part']
+                parts = dict(self.original_parts)
+                expanded_names = []
+                for part in accessory['parts']:
+                    expanded = copy.deepcopy(part)
+                    part_id = f"wear_{name}_{part['id']}"
+                    expanded['parent'] = (f"wear_{name}_{part['parent']}" if part.get('parent', 'root') != 'root' else owner)
+                    parts[part_id] = expanded
+                    expanded_names.append(part_id)
+                cost, local_proofs = blank(), {}
+                for part_id in expanded_names:
+                    local, proofs, evaluated = self.part_bound(part_id, parts[part_id], parts)
+                    cost = combine(cost, local)
+                    local_proofs[part_id] = proofs
+                    count += evaluated
+                options.append((cost, {'wear': name, 'parts': local_proofs}))
+            cost, proofs = self.component_max(options)
+            proofs = {metric: {'wear': state['wear'], 'parts': {name: local[metric] for name, local in state.get('parts', {}).items()}} for metric, state in proofs.items()}
+            yield 'slot:' + slot, (cost, proofs, count)
+        shadow = self.character.get('ground', {}).get('shadow')
+        if shadow and shadow.get('alpha', 1) > 0:
+            cost = self.item({'shape': 'ellipse', 'rx': shadow['rx'], 'ry': shadow['ry'], 'fill': shadow.get('colour', 'shadow')})
+            yield 'shadow', (cost, {metric: {'shadow': True} for metric in blank()}, 1)
+        face = self.character.get('face')
+        if face:
+            for name, placement in self.character.get('effects', {}).items():
+                owner = self.character['anchors'][placement['anchor']]['part']
+                if not self.shown(owner, self.original_parts):
+                    continue
+                effect = face['kit_definition']['effects'][name]
+                require(effect['mode'] in ('progress', 'pulse'), 'reference profile needs track-effect accounting')
+                options = [('ordinary', effect['items'])]
+                if effect['mode'] != 'progress':
+                    options.append(('reduced', effect.get('reduced_items', [])))
+                cost, proofs = self.component_max((combine(*(self.item(item) for item in items)), {'effect': name, 'mode': mode}) for mode, items in options)
+                yield 'effect:' + name, (cost, proofs, len(options))
 
     def maxima(self):
-        best={metric:(-1,None) for metric in blank()}
-        # All canonical body options retain the same face/clip geometry and
-        # availability within a band; prove that before reusing the face maxima.
-        face_best,face_key=None,None
-        options=0
-        for cost,parts,visible,state in self.body_options():
-            options+=1
-            face=self.character.get("face")
-            key=None if not face else (face["part"] in visible, json.dumps(parts[face["part"]]["items"],sort_keys=True))
-            require(face_key is None or face_key==key,"body option changes face geometry/availability; enumerate coupled states")
-            if face_best is None:
-                face_best=self.face_maxima(parts,visible);face_key=key
-            for metric,value in cost.items():
-                face_value,face_state=face_best[metric]
-                total=max(value,face_value) if metric=="blur_design_units" else value+face_value
-                if total>best[metric][0]:best[metric]=(total,{"body":state,"face":face_state})
-        require(options>0,"no body states")
-        result={metric:value for metric,(value,_) in best.items()}
-        result["inflated_glow_area_ratio"]=(math.ceil(math.nextafter(result["inflated_glow_area_ratio"], math.inf)*1e12)/1e12 if result["inflated_glow_area_ratio"] else 0.0)
-        return result,{metric:state for metric,(_,state) in best.items()},options
-
+        result = blank()
+        witnesses = {metric: {'components': []} for metric in blank()}
+        evaluated = 0
+        for name, (cost, proofs, count) in self.body_components():
+            result = combine(result, cost)
+            evaluated += count
+            for metric in result:
+                if cost[metric] > 0:
+                    witnesses[metric]['components'].append({'component': name, 'bound': cost[metric], 'choice': proofs[metric]})
+        face_best = self.face_maxima(self.original_parts, {name for name in self.original_parts if self.shown(name, self.original_parts)})
+        result = combine(result, {metric: value for metric, (value, _) in face_best.items()})
+        for metric in result:
+            witnesses[metric]['face'] = face_best[metric][1]
+        result['inflated_glow_area_ratio'] = (math.ceil(math.nextafter(result['inflated_glow_area_ratio'], math.inf) * 1e12) / 1e12 if result['inflated_glow_area_ratio'] else 0.0)
+        return result, witnesses, evaluated
 
 def calculate():
     operations,policy=load(ROOT/'operations.json'),load(ROOT/'limits.json')
-    require(operations['operation_manifest_version']==1,'unsupported accounting version')
+    require(operations['operation_manifest_version']==2,'unsupported accounting version')
     require(operations['primitive_numbers']=={'circle':5,'ellipse':7,'rect':4,'round_rect':8,'arc':5,'polyline_per_point':2,'polygon_per_vertex':2,'rounded_polygon_per_vertex':6,'path_commands':{'M':2,'L':2,'Q':4,'C':6,'Z':0}},'primitive counting policy differs')
-    result={'accounting_version':1,'status':'reference_counts_and_conservative_authored_glow_bounds_not_validator_or_runtime_evidence','limits':'limits.json','operations':'operations.json','rows':[],'runtime_scale_stress':[]}
+    require(policy['operation_manifest_version']==2 and policy['policy_version']==2,'unsupported policy/accounting pair')
+    result={'accounting_version':2,'operation_manifest_version':2,'policy_version':2,'method':'separable_componentwise_upper_bound','status':'reference_counts_and_conservative_authored_glow_bounds_not_validator_or_runtime_evidence','limits':'limits.json','operations':'operations.json','rows':[],'runtime_scale_stress':[]}
     for file in ('characters/tessa.json','characters/alpha_visor.json','expected/study_bot.json','characters/anchor_probe.json'):
         character=load(ROOT/'fixtures'/file)
         for band in ('full','small','micro'):
             counter=Counter(character,band,operations)
             maxima,witnesses,options=counter.maxima()
             exceeded=[metric for metric,value in maxima.items() if value>policy['bands'][band][metric]]
-            result['rows'].append({'character':character['id'],'file':file,'band':band,'maxima':maxima,'witnesses':witnesses,'body_choice_count':options,'exceeded':exceeded,'structural_counts_exact_for_reference_profile':True,'glow_area':'conservative_authored_upper_bound','semantic_visual_runtime_acceptance':'not_run'})
+            result['rows'].append({'character':character['id'],'file':file,'band':band,'maxima':maxima,'witnesses':witnesses,'evaluated_body_component_choices':options,'exceeded':exceeded,'structural_counts':'separable_componentwise_upper_bound','glow_area':'conservative_authored_upper_bound','semantic_visual_runtime_acceptance':'not_run'})
         # The same authored scale bound with an additional external uniform root
         # scale illustrates why file acceptance cannot skip live budget guards.
         stress,_,_=Counter(character,'small',operations,external_scale=16).maxima()
-        result['runtime_scale_stress'].append({'character':character['id'],'band':'small','external_root_scale':16,'glow_area_upper_bound':stress['inflated_glow_area_ratio'],'limit':policy['bands']['small']['inflated_glow_area_ratio'],'bound_exceeds_limit':stress['inflated_glow_area_ratio']>policy['bands']['small']['inflated_glow_area_ratio'],'interpretation':'reject_or_tighten_proof_before_acceptance_when_bound_exceeds; this is not a runtime execution'})
+        result['runtime_scale_stress'].append({'character':character['id'],'band':'small','external_root_scale':16,'glow_area_upper_bound':stress['inflated_glow_area_ratio'],'limit':policy['bands']['small']['inflated_glow_area_ratio'],'bound_exceeds_limit':stress['inflated_glow_area_ratio']>policy['bands']['small']['inflated_glow_area_ratio'],'interpretation':'reject_entire_transform_update_before_apply_unless_tighter_proof_passes; this is not a runtime execution'})
     return result
+
+
+def check_rows(result, policy):
+    for row in result['rows']:
+        if row['exceeded']:
+            metric = row['exceeded'][0]
+            path = '$'
+            witness = json.dumps(row['witnesses'][metric], sort_keys=True)
+            raise ValueError(f"budget at {path} ({row['band']}): {row['character']} {metric} bound {row['maxima'][metric]} exceeds {policy['bands'][row['band']][metric]}; fix: simplify {metric} in {row['band']}; component choices {witness}")
 
 
 def self_test():
@@ -495,7 +588,93 @@ def self_test():
     transparent['parts'][5]['items'][1]['alpha']=0
     transparent_counts,_,_=Counter(transparent,'full',operations).maxima()
     expect('zero_alpha_emitter_is_suppressed',transparent_counts,{'glow_emitters':3,'painted_items':36})
-    print(f'PASS: {len(completed)} hand-calculated/reference accounting cases, including the old over-budget clip, slot/variant exclusivity, hidden clip geometry, repeated refs, glyph emission, external scale and explicit unsupported-state failure. Not R/JS/runtime tests.')
+    # Review counterexamples: fail closed for deliberately unsupported syntax.
+    clipped = copy.deepcopy(tessa)
+    clipped['face']['kit_definition']['effects']['sparkle']['items'][0]['clip'] = 'body.rim'
+    try:
+        Counter(clipped, 'micro', operations)
+    except ValueError as error:
+        require('kit effect items' in str(error), 'wrong effect-clip refusal')
+        completed.append('H1_effect_clip_refused')
+    else:
+        raise ValueError('effect clip silently undercounted')
+    band_variant = copy.deepcopy(probe)
+    band_variant['lod'] = {'small': {'variants': {'panel': 'default'}}}
+    band_variant['parts'][0]['variants']['raised'] += [copy.deepcopy(band_variant['parts'][0]['items'][0]) for _ in range(5)]
+    expect('H3_band_variant_wins', Counter(band_variant, 'small', operations).maxima()[0], {'painted_items': 2})
+    emit = Counter(robot, 'full', operations)
+    expect('M1_fill_stroke_are_two_blur_operations', emit.glow([{'shape': 'circle', 'r': 2, 'fill': 'feature', 'stroke': 'feature', 'width': 2}], {'blur': 3}, 'head'), {'paint_passes': 2, 'glow_emitters': 1})
+    expect('solid_glow_does_not_reinvoke_source_gradient', emit.glow([{'shape': 'circle', 'r': 2, 'fill': {'paint': 'lamp_grad'}}], {'blur': 3, 'colour': 'light'}, 'head'), {'gradient_uses': 0, 'paint_passes': 1})
+    expect('emission_only_geometry_is_counted', emit.glow([{'shape': 'circle', 'r': 2}], {'blur': 3}, 'head'), {'painted_items': 1, 'path_numbers': 5, 'paint_passes': 1})
+    breathing = copy.deepcopy(probe)
+    breathing['parts'][0]['scale'] = 0.5
+    breathing['motion'] = {'idle': {'breathe': 0.012, 'breathe_part': 'panel'}}
+    require(math.isclose(Counter(breathing, 'full', operations).scale_bound('panel'), 0.506), 'breathing must multiply the current scale')
+    completed.append('M3_breathing_is_multiplicative')
+    pivots = copy.deepcopy(probe)
+    pivots['parts'][0]['items'] = []
+    pivots['parts'][0].pop('variants', None)
+    expect('L1_empty_visible_pivot_is_active', Counter(pivots, 'full', operations).maxima()[0], {'active_parts': 2})
+    faceless = copy.deepcopy(probe)
+    faceless['effects'] = {'sparkle': {'anchor': 'badge'}}
+    try:
+        Counter(faceless, 'full', operations)
+    except ValueError as error:
+        require('faceless' in str(error), 'wrong faceless-effect refusal')
+        completed.append('L3_faceless_kit_effect_refused')
+    else:
+        raise ValueError('faceless mapped effects counted as free')
+    many = copy.deepcopy(probe)
+    many['parts'] = [dict(copy.deepcopy(probe['parts'][0]), id=f'p{i}', parent='root') for i in range(64)]
+    many['anchors'], many['accessories'], many['wear'], many['lod'] = {}, {}, [], {}
+    _, _, choices = Counter(many, 'full', operations).maxima()
+    require(choices == 128, '64 two-variant parts should evaluate 128 local choices')
+    completed.append('M4_no_variant_cartesian_product')
+    coupled = copy.deepcopy(many)
+    coupled['parts'] = [
+        {'id': 'target', 'items': [{'id': 'mask', 'shape': 'circle', 'r': 2, 'fill': 'ink'}, {'shape': 'circle', 'r': 1, 'fill': 'ink'}],
+         'variants': {'large_mask': [{'id': 'mask', 'shape': 'path', 'd': 'M0 0 L1 1 L2 2 L3 3', 'fill': 'ink'}]}},
+        {'id': 'source', 'items': [{'shape': 'circle', 'r': 1, 'fill': 'ink', 'clip': 'target.mask'}]}]
+    expect('M4_clip_geometry_separable_upper_bound', Counter(coupled, 'full', operations).maxima()[0], {'path_numbers': 23})
+    # Derived accounting probes, not complete semantic rejection fixtures.
+    policy = load(ROOT/'limits.json')
+    for band, limit in policy['bands'].items():
+        for metric in blank():
+            ch = copy.deepcopy(many)
+            ch['parts'] = [{'id': 'panel', 'items': []}]
+            ch['outline'] = {'width': 2, 'colour': 'ink', 'second': {'width': 4, 'colour': 'ink'}}
+            ch['lod'] = {'micro': {'glow': True}}
+            item = {'shape': 'circle', 'r': 1, 'fill': 'ink'}
+            if metric == 'active_parts':
+                ch['parts'] = [{'id': f'p{i}', 'items': []} for i in range(limit[metric] + 1)]
+            elif metric == 'painted_items':
+                ch['parts'][0]['items'] = [dict(item) for _ in range(limit[metric] + 1)]
+            elif metric == 'paint_passes':
+                ch['parts'][0]['items'] = [dict(item, stroke='ink', width=1, outline=True) for _ in range(limit[metric] // 4 + 1)]
+            elif metric == 'path_numbers':
+                ch['parts'][0]['items'] = [{'shape': 'path', 'd': 'M0 0' + ' L1 1' * (limit[metric] // 2), 'fill': 'ink'}]
+            elif metric == 'clip_applications':
+                ch['parts'][0]['items'] = [dict(item, clip='panel.mask') for _ in range(limit[metric] + 1)] + [{'id': 'mask', 'shape': 'circle', 'r': 2}]
+            elif metric == 'gradient_uses':
+                ch['parts'][0]['items'] = [dict(item, fill={'paint': 'gradient'}) for _ in range(limit[metric] + 1)]
+            elif metric == 'glow_emitters':
+                ch['parts'] = [{'id': f'p{i}', 'items': [dict(item, id='lamp')], 'glow': {'item': 'lamp', 'colour': 'ink', 'blur': 1}} for i in range(limit[metric] + 1)]
+            else:
+                ch['parts'][0]['items'] = [dict(item, id='lamp')]
+                ch['parts'][0]['glow'] = {'item': 'lamp', 'colour': 'ink', 'blur': limit['blur_design_units'] + 1 if metric == 'blur_design_units' else limit['blur_design_units']}
+                if metric == 'inflated_glow_area_ratio':
+                    ch['parts'][0]['items'] = [{'id': 'lamp', 'shape': 'rect', 'x': -100, 'y': -200, 'w': 200, 'h': 200, 'fill': 'ink'}]
+            values, witnesses, _ = Counter(ch, band, operations).maxima()
+            require(values[metric] > limit[metric], f'{band}/{metric} did not exceed its cap')
+            row = {'character': ch['id'], 'band': band, 'maxima': values, 'witnesses': witnesses, 'exceeded': [key for key, value in values.items() if value > limit[key]]}
+            try:
+                check_rows({'rows': [row]}, policy)
+            except ValueError as error:
+                require('budget at $ (' + band + ')' in str(error) and 'fix:' in str(error), 'drawing-budget diagnostic lost its band/fix')
+            else:
+                raise ValueError('over-budget accounting row accepted')
+            completed.append('budget_boundary_' + band + '_' + metric)
+    print(f'PASS: {len(completed)} hand-calculated/reference accounting cases, including review regressions, 27 per-band counter boundary probes, slot/variant exclusivity, hidden clip geometry, glyph emission and unsupported-state refusals. Not R/JS/runtime tests.')
 
 
 def main():
@@ -506,6 +685,7 @@ def main():
         return
     result=calculate()
     target=ROOT/'budgets.json'
+    check_rows(result, load(ROOT/'limits.json'))
     if mode==['--write']:
         target.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n',encoding='utf-8')
     else:
@@ -516,7 +696,7 @@ def main():
     # Invalid reference data is reportable evidence, not a successful acceptance.
     if any(row['exceeded'] for row in result['rows']):
         raise ValueError('reference recipe exceeds the agreed limits')
-    print('PASS: 12 reference rows recomputed; exact discrete counters and conservative authored glow-area bounds. No renderer, full validator, frame-fit or performance evidence.')
+    print('PASS: 12 reference rows recomputed; separable componentwise integer upper bounds and conservative authored glow-area bounds. No renderer, full validator, frame-fit or performance evidence.')
 
 
 if __name__=='__main__':

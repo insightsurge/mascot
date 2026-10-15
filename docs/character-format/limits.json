@@ -1,5 +1,5 @@
 {
-  "policy_version": 1,
+  "policy_version": 2,
   "format_version": 1,
   "status": "design_limits_not_measured_performance",
   "input": {
@@ -10,7 +10,8 @@
     "moods": 64,
     "gestures": 128,
     "keys_per_track": 64,
-    "tracks_per_gesture": 256
+    "tracks_per_gesture": 256,
+    "effect_triggers_per_gesture": 256
   },
   "geometry": {
     "frame": [
@@ -139,8 +140,20 @@
     "aim_new_art": 4.5
   },
   "evidence": {
-    "expanded_totals": "reference_counts_and_conservative_authored_glow_bounds_in_budgets.json; pending_independent_R1c_reproduction",
+    "expanded_totals": "separable_componentwise_integer_upper_bounds_and_conservative_authored_glow_bounds_in_budgets.json; pending_independent_R1c_reproduction",
     "visuals": "pending_T1_and_renderer",
     "performance": "pending_E5c"
+  },
+  "operation_manifest_version": 2,
+  "compatibility": {
+    "operation_manifest_version": 2,
+    "admission": "candidate_before_format_freeze; after_freeze_ceiling_changes_may_raise_not_lower_for_matching_accounting_version",
+    "counting_change": "requires_new_operation_manifest_version_and_explicit_compatibility_review"
+  },
+  "drawing_diagnostic": {
+    "code": "budget",
+    "path": "$",
+    "fix": "name exceeded metric and component bound choices; these are not necessarily one reachable joint frame",
+    "band": "explicit full/small/micro context, since full is not an authored lod.full object"
   }
 }

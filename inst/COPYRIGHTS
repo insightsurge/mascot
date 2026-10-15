@@ -65,3 +65,7 @@ inst/format/policy-v1.json
 tests/testthat/fixtures/format/invalid/*.json
     Source: deliberately malformed character-format reference inputs written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/www/mascot-tessa-adapter.js
+    Source: provisional legacy Tessa bridge to format-v1 parts and geometry written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.

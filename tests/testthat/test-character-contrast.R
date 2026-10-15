@@ -145,4 +145,60 @@ describe("contrast promises for built-in faces", {
     custom$contrast <- list()
     expect_s3_class(character_format_check(custom), "mascot_character_data")
   })
+
+  it("calculates HSL follow adjustments for green and blue maximum channels", {
+    # Hand calculation for green maximum:
+    # Pure green: rgb = c(0, 1, 0, 1) -> high = 1, low = 0, delta = 1, light = 0.5
+    # hue = (0 - 0)/1 + 2 = 2.0
+    # Raising HSL lightness from 0.5 to 0.6 gives RGB (0.2, 1, 0.2).
+    green_follow <- character_colour_follow(c(0, 1, 0, 1), list(amount = 0.1))
+    expect_equal(green_follow, c(0.2, 1, 0.2, 1))
+
+    # Hand calculation for blue maximum:
+    # Pure blue: rgb = c(0, 0, 1, 1) -> high = 1, low = 0, delta = 1, light = 0.5
+    # hue = (0 - 0)/1 + 4 = 4.0
+    # Raising HSL lightness from 0.5 to 0.6 gives RGB (0.2, 0.2, 1).
+    blue_follow <- character_colour_follow(c(0, 0, 1, 1), list(amount = 0.1))
+    expect_equal(blue_follow, c(0.2, 0.2, 1, 1))
+  })
+
+  it("applies dark mode colour overrides and rejects undeclared palettes", {
+    recipe <- format_recipe("anchor_probe")
+    recipe$modes <- list(dark = list(colours = list(body = "#ffffff")))
+    data <- character_format_resolve(recipe)
+    cols <- character_format_colours(data, mode = "dark")
+    expect_equal(cols$body, c(1, 1, 1, 1))
+
+    # Undeclared palette preset
+    format_problem("missing_reference", "$.palettes", character_format_colours(data, preset = "ghost_preset"))
+  })
+
+  it("evaluates page_light and page_dark baselines and rejects missing contrast references", {
+    # Contrast pairs with page_light and page_dark baselines
+    recipe <- format_recipe("anchor_probe")
+    recipe$contrast <- list(
+      list(fg = "outline", bg = "page_light", min = 3),
+      list(fg = "body", bg = "page_dark", min = 3)
+    )
+    data <- character_format_resolve(recipe)
+    result <- character_format_contrast(data)
+    expect_true(length(result) >= 2)
+    expect_true(all(vapply(result, function(r) r$ratio_lower_bound >= 3, logical(1))))
+
+    # Undeclared foreground colour role
+    data_bad_fg <- data
+    data_bad_fg$contrast[[1]]$fg <- "ghost_fg"
+    format_problem("invalid_colour", "$.contrast[0].fg", character_format_contrast(data_bad_fg))
+
+    # Undeclared background colour role
+    data_bad_bg <- data
+    data_bad_bg$contrast[[1]]$bg <- "ghost_bg"
+    format_problem("invalid_colour", "$.contrast[0].bg", character_format_contrast(data_bad_bg))
+
+    # Undeclared bg_paint in contrast pair
+    data_bad_paint <- data
+    data_bad_paint$contrast[[1]]$bg <- "outline"
+    data_bad_paint$contrast[[1]]$bg_paint <- "ghost_paint"
+    format_problem("missing_reference", "$.contrast[0].bg_paint", character_format_contrast(data_bad_paint))
+  })
 })

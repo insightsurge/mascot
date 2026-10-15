@@ -11,7 +11,17 @@ skip_without_chrome <- function() {
 local_engine_page <- function(env = parent.frame()) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
-  scripts <- file.path(www, c("mascot.js", "mascot-draw.js", "mascot-motion.js"))
+  scripts <- file.path(
+    www,
+    c(
+      "mascot.js",
+      "mascot-draw.js",
+      "mascot-motion.js",
+      "mascot-parts.js",
+      "mascot-geometry.js",
+      "mascot-tessa-adapter.js"
+    )
+  )
   tessa <- system.file("characters", "tessa.json", package = "mascot")
   blob <- testthat::test_path("fixtures", "characters", "blob.json")
   page <- file.path(dir, "page.html")

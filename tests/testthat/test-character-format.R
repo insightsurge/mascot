@@ -276,4 +276,59 @@ describe("character_format_parse()", {
     data$parts[[1]]$items[[1]]$fill <- TRUE
     format_problem("input_type", "$.parts[0].items[0].fill", character_format_parse(data))
   })
+
+  it("enforces container depth, non-executable data, and UTF-8 string contracts", {
+    # Non-list, non-atomic, non-null value (e.g. environment or symbol)
+    data <- format_recipe()
+    data$note <- as.symbol("executable_symbol")
+    format_problem("input_type", "$.note", character_format_parse(data))
+
+    # Container depth limit
+    format_problem(
+      "budget",
+      "$",
+      character_format_bounds(list(list(list(1))), max_depth = 2)
+    )
+
+    # Invalid UTF-8 text in character vector
+    bad_utf8 <- rawToChar(as.raw(c(0xc0, 0xaf)))
+    data <- format_recipe()
+    data$description <- bad_utf8
+    format_problem("input_type", "$.description", character_format_parse(data))
+    format_problem("input_type", "$", character_format_parse(bad_utf8, "text"))
+
+    # Data frame is rejected by checkmate before list parsing
+    expect_error(character_format_parse(data.frame(id = "test")))
+
+    # JSON array root instead of object
+    format_problem("input_type", "$", character_format_parse("[1, 2, 3]", "text"))
+  })
+
+  it("checks discriminator operations, map key patterns, choices, and numeric trees", {
+    # Discriminator field missing
+    data <- format_recipe()
+    data$parts[[1]]$items[[1]] <- list(id = "test_item", x = 0, y = 0)
+    format_problem("input_type", "$.parts[0].items[0].shape", character_format_parse(data))
+
+    # Map key pattern mismatch (colour role names must match regex)
+    data <- format_recipe()
+    data$colours[["Invalid-Colour-Key"]] <- "#ffffff"
+    format_problem("input_type", "$.colours.Invalid-Colour-Key", character_format_parse(data))
+
+    # Choices mismatch (e.g. track mode)
+    data <- format_recipe()
+    data$gestures$rock$tracks[[1]]$mode <- "invalid_mode"
+    format_problem("input_type", "$.gestures.rock.tracks.root.rotate.mode", character_format_parse(data))
+
+    # String pattern mismatch (character id format)
+    data <- format_recipe()
+    data$id <- "Invalid_ID_With_Caps"
+    format_problem("input_type", "$.id", character_format_parse(data))
+
+    # Numeric tree containing nested lists for tuning
+    data <- format_recipe("study_bot")
+    data$face$tune <- list(eyes = list(open = list(rx = list(1, 2))))
+    parsed <- character_format_parse(data)
+    expect_identical(parsed$face$tune$eyes$open$rx, list(1, 2))
+  })
 })

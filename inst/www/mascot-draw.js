@@ -710,37 +710,43 @@
     g.translate(0, -ch.centreHeight);
     g.rotate(p.rot);
 
-    // A. feet
-    const feet = ch.feet;
-    if (feet) {
-      const tuck = p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6);
-      g.fillStyle = c.limb;
-      g.strokeStyle = c.outline;
-      g.lineWidth = feet.lineWidth;
-      if (tuck) {
-        const ft = feet.tuck;
-        for (const s of [-1, 1]) {
-          g.save();
-          g.translate(s * ft.x, ft.y);
-          g.rotate(-s * ft.rotate);
-          g.beginPath();
-          g.roundRect(ft.rect.x, ft.rect.y, ft.rect.w, ft.rect.h, ft.rect.r);
-          g.fill();
-          stroke(g, 'butt');
-          g.restore();
-        }
-      } else if (!tuck) {
-        for (const f of feet.stand) {
-          g.beginPath();
-          g.roundRect(f.x, f.y, f.w, f.h, f.r);
-          g.fill();
-          stroke(g, 'butt');
+    // Internal opt-in only; the live host stays on the legacy drawing path.
+    if (ns.internal?.useCharacterAdapter === true) {
+      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
+      ns.tessaAdapter.drawBase(g, ch, p, c);
+    } else {
+      // A. feet
+      const feet = ch.feet;
+      if (feet) {
+        const tuck = p.feet === 'tuck' || (p.feet === 'auto' && p.lift > 6);
+        g.fillStyle = c.limb;
+        g.strokeStyle = c.outline;
+        g.lineWidth = feet.lineWidth;
+        if (tuck) {
+          const ft = feet.tuck;
+          for (const s of [-1, 1]) {
+            g.save();
+            g.translate(s * ft.x, ft.y);
+            g.rotate(-s * ft.rotate);
+            g.beginPath();
+            g.roundRect(ft.rect.x, ft.rect.y, ft.rect.w, ft.rect.h, ft.rect.r);
+            g.fill();
+            stroke(g, 'butt');
+            g.restore();
+          }
+        } else if (!tuck) {
+          for (const f of feet.stand) {
+            g.beginPath();
+            g.roundRect(f.x, f.y, f.w, f.h, f.r);
+            g.fill();
+            stroke(g, 'butt');
+          }
         }
       }
-    }
 
-    // B. body
-    for (const part of ch.body) drawPart(g, c, part);
+      // B. body
+      for (const part of ch.body) drawPart(g, c, part);
+    }
 
     // C. face
     const at = Object.hasOwn(ch.anchors || {}, 'face') ? ch.anchors.face : {};

@@ -83,6 +83,47 @@ describe("character_format_resolve()", {
     source <- format_recipe("study_bot")
     source$family_definition <- NULL
     format_problem("family", "$.family", character_format_resolve(source))
+
+    # Family gesture cannot declare member-specific needs
+    source <- format_recipe("study_bot")
+    source$family_definition$defaults$gestures$wave$needs <- list("member_hand")
+    format_problem(
+      "family",
+      "$.family_definition.defaults.gestures.wave.needs",
+      character_format_resolve(source)
+    )
+  })
+
+  it("validates resolved snapshots, palette reservation, and face kit matching", {
+    # Resolved character recipe missing embedded family_definition
+    snap <- format_recipe("study_bot-resolved")
+    snap$family_definition <- NULL
+    format_problem("family", "$.family_definition", character_format_resolve(snap))
+
+    # Resolved character recipe cannot have non-empty defaults in snapshot
+    snap <- format_recipe("study_bot-resolved")
+    snap$family_definition$defaults <- list(moods = list())
+    format_problem("family", "$.family_definition.defaults", character_format_resolve(snap))
+
+    # Palette named 'original' is reserved for native palette
+    source <- format_recipe("study_bot")
+    source$palettes$original <- list(description = "Original", light = list(body = "#ffffff"))
+    format_problem("input_type", "$.palettes.original", character_format_resolve(source))
+
+    # Palette sources provenance must match palettes exactly
+    snap <- format_recipe("study_bot-resolved")
+    snap$palette_sources$extraneous <- "character"
+    format_problem("input_type", "$.palette_sources", character_format_resolve(snap))
+
+    # Character declaring face must select a kit
+    source <- format_recipe("study_bot")
+    source$face$kit <- NULL
+    format_problem("missing_reference", "$.face.kit", character_format_resolve(source))
+
+    # Embedded kit definition id must match selected kit id
+    snap <- format_recipe("study_bot-resolved")
+    snap$face$kit_definition$id <- "different_kit_id"
+    format_problem("missing_reference", "$.face.kit_definition.id", character_format_resolve(snap))
   })
 
   it("checks helper arguments and keeps array order in canonical identity", {

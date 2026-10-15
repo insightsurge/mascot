@@ -1,0 +1,58 @@
+{
+  "status": "template-only; no approved canonical lock exists",
+  "container": null,
+  "platform": "linux/amd64",
+  "os": "Ubuntu 24.04",
+  "chrome": null,
+  "chrome_sha256": null,
+  "chromote": null,
+  "font_files": null,
+  "font_packages": null,
+  "viewport": [
+    1280,
+    960
+  ],
+  "dpr": [
+    1,
+    2
+  ],
+  "sizes": [
+    160,
+    96,
+    24
+  ],
+  "colour_space": "srgb",
+  "locale": "en-GB",
+  "timezone": "UTC",
+  "flags": [
+    "--headless=new",
+    "--disable-gpu",
+    "--disable-skia-runtime-opts",
+    "--force-color-profile=srgb",
+    "--disable-extensions",
+    "--mute-audio",
+    "--lang=en-GB"
+  ],
+  "font_use": "No text is drawn in these canvas-only baseline frames; font package and file checksums still required in the canonical lock.",
+  "source": "ace06f5",
+  "moods": [
+    "idle",
+    "thinking",
+    "happy",
+    "worried",
+    "celebrating"
+  ],
+  "frame": 0,
+  "origin": [
+    150,
+    270
+  ],
+  "backdrops": {
+    "light": "#ffffff",
+    "dark": "#212529"
+  },
+  "store": "insightsurge/mascot design-assets branch",
+  "owner": "Harsh Verma",
+  "chrome_path": null,
+  "r_library": null
+}

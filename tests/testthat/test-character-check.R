@@ -1,7 +1,7 @@
 describe("character_format_check()", {
   it("promotes only complete checked reference recipes and records derived evidence", {
     for (id in c("tessa", "alpha_visor", "study_bot", "anchor_probe")) {
-      checked <- character_format_check(format_recipe(id))
+      checked <- character_format_check(format_recipe(id), builtin = id %in% c("tessa", "alpha_visor"))
       expect_s3_class(checked, "mascot_character_data")
       manifest <- attr(checked, "mascot_manifest")
       expect_identical(manifest$identity, character_format_identity(checked))
@@ -119,7 +119,7 @@ describe("character_format_check()", {
   it("rejects omitted used capabilities and unproved authored fit", {
     data <- format_recipe("tessa")
     data$requires <- setdiff(unlist(data$requires), "clip")
-    format_problem("capability", "$.requires", character_format_check(data))
+    format_problem("capability", "$.requires", character_format_check(data, builtin = TRUE))
     data <- format_recipe()
     data$parts[[1]]$at <- list(180, -60)
     format_problem("budget", "$.frame_fit.full", character_format_check(data))
@@ -133,5 +133,45 @@ describe("character_format_check()", {
     expect_error(character_format_capabilities(1, list(), list()))
     expect_error(character_format_capabilities(list(), 1, list()))
     expect_error(character_format_capabilities(list(), list(), 1))
+  })
+})
+
+describe("checked character provenance and first diagnostics", {
+  it("rejects reserved ids on direct objects, text, files and forged checked objects", {
+    for (id in character_data_reserved()) {
+      data <- format_recipe("study_bot")
+      data$id <- id
+      format_problem("identity", "$.id", character_format_check(data))
+    }
+    data <- format_recipe("study_bot")
+    data$id <- "neer"
+    text <- as.character(jsonlite::toJSON(data, auto_unbox = TRUE, null = "null", digits = NA))
+    format_problem("identity", "$.id", character_format_check(text, from = "text"))
+    path <- withr::local_tempfile(fileext = ".json")
+    writeLines(text, path)
+    format_problem("identity", "$.id", character_format_check(path, from = "file"))
+    class(data) <- c("mascot_character_data", "list")
+    attr(data, "builtin") <- TRUE
+    format_problem("identity", "$.id", character_format_check(data))
+    expect_error(character_format_check(data, builtin = NA))
+    expect_error(character_format_check(data, builtin = "yes"))
+  })
+
+  it("checks fit budgets before built-in contrast promises when both are broken", {
+    data <- format_recipe("tessa")
+    data$parts[[1]]$at <- list(1000, 1000)
+    data$contrast <- list()
+    format_problem("budget", "$.frame_fit.full", character_format_check(data, builtin = TRUE))
+    data$parts[[1]]$at <- format_recipe("tessa")$parts[[1]]$at
+    format_problem("invalid_colour", "$.contrast", character_format_check(data, builtin = TRUE))
+  })
+
+  it("rejects malformed nested inputs before callbacks can consume checked data", {
+    data <- format_recipe()
+    data$parts[[1]]$at <- list("bad", 0)
+    format_problem("input_type", "$.parts[0].at[0]", character_format_check(data))
+    data <- format_recipe()
+    data$contrast <- list(list(fg = TRUE, bg = "body", min = 3))
+    format_problem("input_type", "$.contrast[0].fg", character_format_check(data))
   })
 })

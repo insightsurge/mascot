@@ -80,7 +80,7 @@ describe("character_data_register() and character_data_get()", {
     character_data_reset()
 
     tessa_recipe <- format_recipe("tessa")
-    checked_tessa <- character_format_check(tessa_recipe)
+    checked_tessa <- character_format_check(tessa_recipe, builtin = TRUE)
     expect_identical(checked_tessa$id, "tessa")
 
     format_problem("identity", "$.id", character_data_register(checked_tessa))
@@ -95,7 +95,7 @@ describe("character_data_register() and character_data_get()", {
   })
 })
 
-describe("character store reserved ids and retrieval cost", {
+describe("character store reserved ids and retrieved values", {
   it("reserves the planned built-in ids before they ship", {
     before <- character_data_snapshot()
     withr::defer(character_data_reset(before))
@@ -103,19 +103,22 @@ describe("character store reserved ids and retrieval cost", {
     for (id in c("neer", "alpha_visor", "knurl")) {
       recipe <- format_recipe()
       recipe$id <- id
-      format_problem("identity", "$.id", character_data_register(character_format_check(recipe)))
+      format_problem("identity", "$.id", character_data_register(character_format_check(recipe, builtin = TRUE)))
     }
     expect_identical(character_data_ids(), character())
   })
 
-  it("returns the entry verified at registration without checking it again", {
+  it("isolates nested metadata and manifests edited by separate callers", {
     before <- character_data_snapshot()
     withr::defer(character_data_reset(before))
     character_data_reset()
     checked <- character_format_check(format_recipe())
     character_data_register(checked)
-    local_mocked_bindings(character_format_check = function(...) stop("checked again"))
-    expect_identical(unclass(character_data_get("anchor_probe")), unclass(checked))
+    first <- character_data_get("anchor_probe")
+    second <- character_data_get("anchor_probe")
+    first$family_definition$name <- "Changed by first caller"
+    attr(second, "mascot_manifest")$work$full[[1]] <- 99999
+    expect_identical(character_data_get("anchor_probe"), checked)
   })
 })
 
@@ -200,7 +203,7 @@ describe("character store validation and isolation", {
       retrieved <- character_data_get("anchor_probe")
       expect_identical(retrieved$id, "anchor_probe")
 
-      visor <- character_format_check(format_recipe("alpha_visor"))
+      visor <- character_format_check(format_recipe("alpha_visor"), builtin = TRUE)
       format_problem("registry", "$", character_data_register(visor))
     })
 
@@ -237,5 +240,23 @@ describe("character store validation and isolation", {
     character_data_reset()
     expect_identical(character_data_ids(), character())
     expect_identical(options(), opts_before)
+  })
+})
+
+describe("character store snapshot validation", {
+  it("rejects mismatched names and reserved ids without changing existing state", {
+    before <- character_data_snapshot()
+    withr::defer(character_data_reset(before))
+    character_data_reset()
+    checked <- character_format_check(format_recipe())
+    character_data_register(checked)
+    saved <- character_data_snapshot()
+    format_problem("identity", "$.id", character_data_reset(list(items = list(foo = checked), order = "foo")))
+    expect_identical(character_data_snapshot(), saved)
+    builtin <- character_format_check(format_recipe("tessa"), builtin = TRUE)
+    format_problem("identity", "$.id", character_data_reset(list(items = list(tessa = builtin), order = "tessa")))
+    expect_identical(character_data_snapshot(), saved)
+    character_data_reset(saved)
+    expect_identical(character_data_snapshot(), saved)
   })
 })

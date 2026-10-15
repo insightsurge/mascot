@@ -49,13 +49,25 @@ character_format_capabilities <- function(x, graph, work) {
 #'
 #' The manifest is derived internal data, not part of the saved format. Neither
 #' a resolved flag nor a caller-supplied class/manifest skips these checks.
+#' `builtin = TRUE` is reserved for internal loading of shipped recipes. The
+#' default custom path never infers provenance from ids or caller attributes.
 #' @noRd
-character_format_check <- function(x, from = "list", families = character_object(), kits = character_format_kits()) {
+character_format_check <- function(
+  x,
+  from = "list",
+  families = character_object(),
+  kits = character_format_kits(),
+  builtin = FALSE
+) {
   checkmate::assert(checkmate::check_list(x), checkmate::check_character(x, any.missing = FALSE))
   checkmate::assert_choice(from, c("list", "text", "file"))
   checkmate::assert_list(families, names = "unique")
   checkmate::assert_list(kits, names = "unique")
+  checkmate::assert_flag(builtin)
   parsed <- character_format_parse(x, from)
+  if (!builtin && parsed$id %in% character_data_reserved()) {
+    character_format_abort("identity", "$.id", parsed$id, "Do not replace a built-in character id.")
+  }
   resolved <- character_format_resolve(parsed, families, kits, parsed = TRUE)
   graph <- character_format_references(resolved)
   behaviour <- character_format_behaviour(resolved, graph)
@@ -66,7 +78,6 @@ character_format_check <- function(x, from = "list", families = character_object
     c("full", "small", "micro")
   )
   character_format_capabilities(resolved, graph, work)
-  contrast <- character_format_contrast(resolved)
   fit <- stats::setNames(
     lapply(names(work), function(band) {
       proof <- character_format_fit(resolved, graph, behaviour, band)
@@ -82,6 +93,7 @@ character_format_check <- function(x, from = "list", families = character_object
     }),
     names(work)
   )
+  contrast <- character_format_contrast(resolved, builtin = builtin)
   manifest <- list(
     format_version = 1L,
     policy_version = 1L,

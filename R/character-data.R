@@ -27,8 +27,8 @@ character_data_verify <- function(x) {
 #' Registers a verified character recipe for the lifetime of the R process.
 #' Registration inside an active reactive domain is rejected. Re-registering
 #' identical content is idempotent; conflicting content with an existing custom
-#' or reserved built-in identifier raises an error. This is the only place the
-#' store is written, so entries are verified exactly once.
+#' or reserved built-in identifier raises an error. Normal registration verifies
+#' entries once; the internal reset helper also verifies restored snapshots.
 #' @noRd
 character_data_register <- function(x) {
   checkmate::assert_class(x, "mascot_character_data")
@@ -42,14 +42,6 @@ character_data_register <- function(x) {
   }
   verified <- character_data_verify(x)
   id <- verified$id
-  if (id %in% character_data_reserved()) {
-    character_format_abort(
-      code = "identity",
-      path = "$.id",
-      value = id,
-      fix = "Do not replace a built-in character id."
-    )
-  }
   identity <- attr(verified, "mascot_manifest")$identity
   if (id %in% names(character_data_store$items)) {
     existing <- character_data_store$items[[id]]
@@ -118,6 +110,11 @@ character_data_reset <- function(state = NULL) {
       checkmate::assert_names(names(state$items), identical.to = state$order)
     }
     state$items <- lapply(state$items, character_data_verify)
+    for (id in state$order) {
+      if (!identical(id, state$items[[id]]$id)) {
+        character_format_abort("identity", "$.id", state$items[[id]]$id, "Match each snapshot key to its character id.")
+      }
+    }
     character_data_store$items <- state$items
     character_data_store$order <- state$order
   }

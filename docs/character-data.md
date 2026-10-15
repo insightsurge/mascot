@@ -32,15 +32,19 @@ The registry provides internal helpers (`@noRd`):
   `missing_reference` at `$.id`. Retrieval is permitted inside and outside reactive domains.
 - `character_data_ids()`: Returns a character vector of custom registered character identifiers
   in deterministic registration order.
-- `character_data_reset(state = NULL)`: Test and lifecycle helper to clear or restore store state.
+- `character_data_reset(state = NULL)`: Internal test and lifecycle helper to clear or restore store state.
+  Restoration re-verifies every entry as custom data, rejects reserved ids and mismatched snapshot keys,
+  and replaces the store only after the complete snapshot passes.
 
 ## Behaviour
 
 1. **Verified once**: An unchecked list, forged `mascot_character_data` class, or
-   mutated manifest cannot bypass the check at registration, the only write to the store.
+   mutated manifest cannot bypass registration verification. Internal snapshot restoration also verifies
+   entries before writing the store; retrieval does not re-check them.
 2. **Separate values**: Caller modifications to retrieved structures do not affect the store.
 3. **Registration timing**: Process state cannot be modified during active reactive execution
-   (`shiny::getDefaultReactiveDomain()` is checked before state modification).
+   through registration (`shiny::getDefaultReactiveDomain()` is checked before registration).
+   Internal test/lifecycle reset is a separate restoration operation, not a registration API.
 4. **Idempotence**: Re-registering identical content produces no duplicate entries in
    `character_data_ids()`.
 

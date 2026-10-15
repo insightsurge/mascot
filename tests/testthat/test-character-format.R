@@ -332,3 +332,37 @@ describe("character_format_parse()", {
     expect_identical(parsed$face$tune$eyes$open$rx, list(1, 2))
   })
 })
+
+describe("track structure and numeric-tree normalisation", {
+  it("distinguishes too few track keys from exceeding the key budget", {
+    for (keys in list(list(), list(list(0, 0)))) {
+      data <- format_recipe()
+      data$gestures$rock$tracks <- list("panel.rotate" = keys)
+      format_problem("input_type", "$.gestures.rock.tracks.panel.rotate", character_format_parse(data))
+      data$gestures$rock$tracks <- list("panel.rotate" = list(mode = "set", keys = keys))
+      format_problem("input_type", "$.gestures.rock.tracks.panel.rotate.keys", character_format_parse(data))
+      kit_data <- format_recipe("study_bot")
+      kit_data$face$kit_definition <- character_format_kits()$classic
+      kit_data$face$kit_definition$effects$sweat$mode <- "track"
+      kit_data$face$kit_definition$effects$sweat$tracks <- list(x = keys)
+      format_problem("input_type", "$.face.kit_definition.effects.sweat.tracks.x", character_format_parse(kit_data))
+    }
+    data$gestures$rock$tracks$panel.rotate$keys <- lapply(seq(0, 1, length.out = 65), function(t) list(t, 0))
+    format_problem("budget", "$.gestures.rock.tracks.panel.rotate.keys", character_format_parse(data))
+  })
+
+  it("rejects data frames and strips custom list attributes in numeric tuning trees", {
+    data <- format_recipe("study_bot")
+    data$face$tune <- data.frame(eyes = 1)
+    format_problem("input_type", "$.face.tune", character_format_parse(data))
+    data$face$tune <- structure(
+      list(eyes = structure(list(1, 2), class = "caller_array")),
+      class = "caller_tree",
+      caller_note = "discard"
+    )
+    parsed <- character_format_parse(data)
+    expect_identical(parsed$face$tune, list(eyes = list(1, 2)))
+    encoded <- as.character(jsonlite::toJSON(parsed, auto_unbox = TRUE, null = "null", digits = NA))
+    expect_equal(character_format_parse(encoded, "text")$face$tune, parsed$face$tune)
+  })
+})

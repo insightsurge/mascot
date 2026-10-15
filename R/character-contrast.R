@@ -154,9 +154,10 @@ character_luminance <- function(rgb) {
 
 #' Conservative contrast across both modes, every preset and mood recolour
 #' @noRd
-character_format_contrast <- function(x) {
+character_format_contrast <- function(x, builtin = FALSE) {
   checkmate::assert_list(x)
-  if (!is.null(x$face) && isTRUE(x$id %in% character_data_reserved())) {
+  checkmate::assert_flag(builtin)
+  if (!is.null(x$face) && builtin) {
     feature <- x$face$colours[["feature"]]
     feature <- if (is.null(feature)) "feature" else feature
     if (!any(vapply(x$contrast, function(pair) identical(pair$fg, feature), logical(1)))) {

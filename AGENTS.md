@@ -29,8 +29,10 @@ starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Ex
 - **CRAN:** 0 errors, 0 warnings, 0 notes. No network in code, examples, tests or vignettes; write only to
   `tempdir()` or a path the user passes; no side effects on load; restore anything you change (options, working
   directory, graphics state). Everything the package draws with ships in `inst/`; no CDN.
-- **house:** every function starts with `checkmate::assert_*()` for each argument; other messages and errors use
-  cli; call other packages as `pkg::fn()`; no `library()`, `print()` or `cat()` in package code.
+- **house:** every function starts with `checkmate::assert_*()` for each argument; per-node/recursive helpers
+  may reuse caller-checked inputs as specified in `r-code.md` (top-level helpers need a comment; inner closures
+  may reuse the enclosing function's checked inputs). Other messages and errors use cli; call other packages as
+  `pkg::fn()`; no `library()`, `print()` or `cat()` in package code.
 - **CRAN/house:** roxygen2 with markdown; every export has `@returns` and offline `@examples`; never edit `man/` or
   `NAMESPACE` by hand.
 - **house:** a helper per argument: each `mascot()` argument takes a plain shortcut or a `mascot_*()` helper; every

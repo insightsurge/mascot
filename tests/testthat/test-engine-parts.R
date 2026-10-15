@@ -128,3 +128,33 @@ describe("character-format part transforms", {
     expect_identical(evaluate_error("mascot.parts.compile({format_version:2,parts:[]})")$code, "version")
   })
 })
+
+describe("prototype names in anchors and accessories", {
+  it("rejects undeclared prototype names at their authored paths and accepts declared names", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    payload <- as.character(jsonlite::toJSON(format_recipe(), auto_unbox = TRUE, null = "null", digits = NA))
+    js(paste0("window.prototypeSource=", payload))
+    run <- function(mutation) {
+      js(paste0(
+        "(() => {const ch=JSON.parse(JSON.stringify(prototypeSource));",
+        mutation,
+        ";try {return mascot.parts.frame(mascot.parts.compile(ch), {}, 'full');}",
+        "catch(e) {return {code:e.code,path:e.path};}})()"
+      ))
+    }
+    bad_wear <- run("ch.wear=['toString']")
+    expect_identical(bad_wear$code, "missing_reference")
+    expect_identical(bad_wear$path, "$.wear[0]")
+    bad_anchor <- run("ch.accessories.badge.anchor='valueOf'")
+    expect_identical(bad_anchor$code, "missing_reference")
+    expect_identical(bad_anchor$path, "$.accessories.badge.anchor")
+    anchor <- run("ch.anchors={constructor:ch.anchors.badge};ch.accessories.badge.anchor='constructor'")
+    expect_true(anchor$anchors$constructor$available)
+    expect_true(anchor$parts$wear_badge_disc$available)
+    expect_equal(unlist(anchor$anchors$constructor$matrix)[5:6], c(168, 198))
+    accessory <- run("ch.accessories={constructor:ch.accessories.badge};ch.wear=['constructor']")
+    expect_true(accessory$parts$wear_constructor_disc$available)
+    expect_equal(unlist(accessory$parts$wear_constructor_disc$matrix)[5:6], c(168, 198))
+  })
+})

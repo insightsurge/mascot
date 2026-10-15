@@ -49,7 +49,7 @@ claim about the package's status.
 | Nothing is downloaded at run time; internet use, if any, fails gracefully. `mascot` uses no network at all | CRAN | POL |
 | No `:::` into base packages and no `.Internal()`; avoid `:::` into any other package too | CRAN | POL |
 | Send no data about the user's session anywhere | CRAN | POL |
-| Every function, exported or internal, checks its arguments first with checkmate | house | - |
+| Every function checks its arguments first with checkmate; per-node/recursive helpers may reuse caller-checked inputs under the exception in `.claude/rules/r-code.md` (top-level helpers need a comment; inner closures may reuse the enclosing checked inputs) | house | - |
 | Other messages, warnings and errors use cli | house | - |
 | Every top-level `mascot()` argument takes a plain shortcut or a `mascot_*()` helper (bslib style); every helper and listing function uses `mascot_` for autocomplete and to avoid clashes. Check new exports against base R, shiny, bslib and ggplot2 | house | - |
 

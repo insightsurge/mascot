@@ -219,10 +219,11 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
       attributes(value) <- NULL
       return(value)
     }
-    if (!is.list(value)) {
+    if (!is.list(value) || is.data.frame(value)) {
       fail()
     }
     result <- value
+    attributes(result) <- if (is.null(names(value))) NULL else list(names = names(value))
     for (index in seq_along(value)) {
       key <- if (is.null(names(value))) paste0("[", index - 1L, "]") else paste0(".", names(value)[[index]])
       result[index] <- list(character_format_node(value[[index]], rule, paste0(path, key), definitions, json_source))
@@ -282,8 +283,14 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     }
     attributes(value) <- NULL
     size <- length(value)
-    if ((!is.null(rule$min_length) && size < rule$min_length) || (!is.null(maximum_length) && size > maximum_length)) {
-      fail(if (is.null(rule$length_code)) "input_type" else rule$length_code, "Use the documented array length.")
+    if (!is.null(rule$min_length) && size < rule$min_length) {
+      fail("input_type", "Use the documented minimum array length.")
+    }
+    if (!is.null(maximum_length) && size > maximum_length) {
+      fail(
+        if (is.null(rule$length_code)) "input_type" else rule$length_code,
+        "Use the documented maximum array length."
+      )
     }
     if (isTRUE(rule$unique) && anyDuplicated(value)) {
       fail(fix = "Keep each array value once.")

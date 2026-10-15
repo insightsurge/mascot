@@ -2,7 +2,7 @@ describe("character-format authored colour and contrast", {
   it("checks native colours and all presets in both modes on the reference recipes", {
     for (id in c("tessa", "alpha_visor", "study_bot", "anchor_probe")) {
       data <- character_format_resolve(format_recipe(id))
-      result <- character_format_contrast(data)
+      result <- character_format_contrast(data, builtin = id %in% c("tessa", "alpha_visor"))
       if (length(data$contrast)) {
         expect_true(all(vapply(result, function(row) row$ratio_lower_bound >= 3, logical(1))))
         expect_setequal(vapply(result, `[[`, character(1), "mode"), c("light", "dark"))
@@ -134,13 +134,15 @@ describe("contrast promises for built-in faces", {
   it("requires a built-in face to declare its feature contrast", {
     data <- format_recipe("tessa")
     data$contrast <- list()
-    format_problem("invalid_colour", "$.contrast", character_format_check(data))
+    format_problem("invalid_colour", "$.contrast", character_format_check(data, builtin = TRUE))
   })
 
   it("follows a mapped feature role and leaves custom characters to their own promises", {
     data <- format_recipe("alpha_visor")
-    data$contrast <- data$contrast[2]
-    format_problem("invalid_colour", "$.contrast", character_format_check(data))
+    data$contrast <- data$contrast[1]
+    expect_s3_class(character_format_check(data, builtin = TRUE), "mascot_character_data")
+    data$contrast[[1]]$fg <- "feature"
+    format_problem("invalid_colour", "$.contrast", character_format_check(data, builtin = TRUE))
     custom <- format_recipe("study_bot")
     custom$contrast <- list()
     expect_s3_class(character_format_check(custom), "mascot_character_data")
@@ -200,5 +202,17 @@ describe("contrast promises for built-in faces", {
     data_bad_paint$contrast[[1]]$bg <- "outline"
     data_bad_paint$contrast[[1]]$bg_paint <- "ghost_paint"
     format_problem("missing_reference", "$.contrast[0].bg_paint", character_format_contrast(data_bad_paint))
+  })
+})
+
+describe("explicit built-in face provenance", {
+  it("applies the face promise to a built-in regardless of its id", {
+    data <- format_recipe("study_bot")
+    data$contrast <- list()
+    expect_s3_class(character_format_check(data), "mascot_character_data")
+    format_problem("invalid_colour", "$.contrast", character_format_check(data, builtin = TRUE))
+    resolved <- character_format_resolve(data)
+    expect_error(character_format_contrast(resolved, builtin = NA))
+    expect_error(character_format_contrast(resolved, builtin = "yes"))
   })
 })

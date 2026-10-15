@@ -21,8 +21,10 @@ exception is fine with a comment saying why). Reasons and sources: `docs/standar
   arguments can share `checkmate::makeAssertCollection()`. Functions without arguments need none.
 - **house (exception):** an internal helper that runs once per node or per recursion step, and is called only
   from a function that has already asserted the same inputs (for example `character_format_node()` inside the
-  character checker), may skip its own assertions to keep large checks fast. Say so in a one-line comment
-  above the function. Entry points and every other function keep their assertions.
+  character checker), may skip its own assertions to keep large checks fast. Top-level helpers need a one-line
+  comment above the function. Inner closures (named helpers and anonymous callbacks) inherit this exception
+  when consuming their enclosing function's checked inputs; they need no repeated comment. Entry points
+  and every other function keep their assertions.
 - **house:** exported functions wrap their checkmate assertion blocks in `with_mascot_asserts()` so failures also carry `mascot_error`.
 - **house:** every other message, warning and error uses cli (`cli::cli_abort()`, `cli::cli_warn()`,
   `cli::cli_inform()`), with the argument or value named in the message.

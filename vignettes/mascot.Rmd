@@ -493,7 +493,7 @@ text; keep ordinary error messages beside the fields they describe. Inspect
 `mascot_colour_roles()` before choosing roles, and review contrast in both
 modes. Personalising these settings keeps Tessa's existing shape and identity.
 
-A new named character comes later with `mascot_remix()` (#192).
+A new named character comes later with `mascot_remix()`.
 The Quarto `shortcode` and fuller static-site guidance are separate upcoming work.
 
 ## Check a look before using it

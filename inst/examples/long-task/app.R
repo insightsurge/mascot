@@ -2,6 +2,9 @@ library(shiny)
 if (!requireNamespace("bslib", quietly = TRUE)) {
   stop("This example needs bslib. Install it before running the app.")
 }
+if (!requireNamespace("promises", quietly = TRUE) || !requireNamespace("later", quietly = TRUE)) {
+  stop("This example needs promises and later. Install them before running the app.")
+}
 library(bslib)
 library(mascot)
 

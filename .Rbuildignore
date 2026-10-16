@@ -1,6 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.git$
+(^|/)\.DS_Store$
 ^\.github$
 ^\.claude$
 ^\.agents$

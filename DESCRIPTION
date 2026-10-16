@@ -2,7 +2,7 @@ Package: mascot
 Title: Live Mood-Driven Mascots for 'Shiny' Apps and 'Quarto' Sites
 Version: 0.0.2.9000
 Authors@R: 
-    person("Harsh", "Verma", , "analyticswithharsh@gmail.com", role = c("aut", "cre", "cph"))
+    person("Harsh", "Verma", email = "analyticswithharsh@gmail.com", role = c("aut", "cre", "cph"))
 Description: Adds a character drawn in code to 'Shiny' apps and 'Quarto'
     sites. The character shows a mood and animates when the mood changes,
     follows light and dark mode, and takes its colours from the theme. It
@@ -24,7 +24,9 @@ Suggests:
     covr,
     golem,
     knitr,
+    later,
     lifecycle,
+    promises,
     rmarkdown,
     shinytest2,
     testthat (>= 3.0.0),

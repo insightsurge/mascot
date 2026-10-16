@@ -93,10 +93,11 @@ Add one bullet for each user-facing change, in the same pull request. Write it f
 with the function or feature, and end with the issue number:
 
 ```md
-* `updateMascot()` gains a `message` argument for a speech bubble (#30).
+* `update_mascot()` gains a `message` argument for a speech bubble (#30).
 ```
 
-Until 0.1.0, bullets go under the heading `# mascot 0.0.0.9000`. Leave out internal changes such as CI, refactors and
+Until 0.1.0, bullets go under the heading `# mascot (development version)` at the top of `NEWS.md`; the milestone's
+release PR renames that heading to the milestone's version. Leave out internal changes such as CI, refactors and
 tests.
 
 ## Known users

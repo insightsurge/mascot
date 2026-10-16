@@ -320,3 +320,60 @@ describe("E3 generic face kits", {
     expect_true(result$unchanged)
   })
 })
+
+describe("I1 face clips and effect anchors", {
+  it("compiles a face clip's geometry once per clip item: the second draw of the same face compiles nothing", {
+    skip_without_chrome()
+    js <- local_face_engine()
+    result <- js(
+      r"(
+      (()=>{
+        const source=faceFixture();
+        source.parts.push({id:'mask',parent:'body',at:[-10,-60],visible:false,items:[{id:'cut',shape:'rect',w:20,h:120}]});
+        source.face.clip='mask.cut';
+        const parts=mascot.parts.compile(source),state=mascot.parts.frame(parts),face=mascot.faces.compile(source);
+        const geometry=mascot.geometry;let calls=0;
+        mascot.geometry={...geometry,compile:(...args)=>{calls++;return geometry.compile(...args);}};
+        try {
+          const c=document.createElement('canvas');c.width=c.height=300;const g=c.getContext('2d');
+          const first=mascot.faces.draw(g,face,state,{mouth:'flat'},source.colours);
+          const afterFirst=calls;
+          const second=mascot.faces.draw(g,face,state,{mouth:'flat'},source.colours);
+          return {clips:first.clip_applications,clipsAgain:second.clip_applications,firstCompiles:afterFirst,
+            secondCompiles:calls-afterFirst};
+        } finally {mascot.geometry=geometry;}
+      })()
+    )"
+    )
+    expect_equal(result$clips, 3)
+    expect_equal(result$clipsAgain, 3)
+    expect_gt(result$firstCompiles, 0)
+    expect_equal(result$secondCompiles, 0)
+  })
+
+  it("draws a triggered effect at the anchor the trigger names, and at the mapping's anchor when none is named", {
+    skip_without_chrome()
+    js <- local_face_engine()
+    result <- js(
+      r"(
+      (()=>{
+        const source=faceFixture();source.parts[0].opacity=1;
+        source.anchors.other={part:'body',at:[-60,-30]};
+        source.effects={mark:{anchor:'mark'}};
+        source.face.kit_definition.effects.mark={op:'sweat_drop',mode:'progress',travel:0,sway:0,items:[{shape:'circle',r:6,fill:'feature'}]};
+        const state=mascot.parts.frame(mascot.parts.compile(source)),face=mascot.faces.compile(source);
+        const paint=(options)=>{const c=document.createElement('canvas');c.width=c.height=300;const g=c.getContext('2d');
+          mascot.faces.effects(g,face,state,{mark:0.5},source.colours,options);return c;};
+        const at=(c,x,y)=>[...c.getContext('2d').getImageData(x,y,1,1).data][3];
+        const mapped=paint({}), named=paint({effect_anchors:{mark:'other'}});
+        // The mark is at the body origin plus (60, -30); the other anchor is at (-60, -30), a mirror of it about the body.
+        return {mappedRight:at(mapped,210,140),mappedLeft:at(mapped,90,140),namedRight:at(named,210,140),namedLeft:at(named,90,140)};
+      })()
+    )"
+    )
+    expect_gt(result$mappedRight, 0)
+    expect_equal(result$mappedLeft, 0)
+    expect_equal(result$namedRight, 0)
+    expect_gt(result$namedLeft, 0)
+  })
+})

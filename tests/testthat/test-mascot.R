@@ -1,3 +1,16 @@
+# The engine files, in load order: the legacy drawing and motion files, the format-v1 modules (parts, geometry and faces
+# before the player that uses them), the format-v1 player, then the host that mounts either.
+engine_scripts <- c(
+  "mascot.js",
+  "mascot-draw.js",
+  "mascot-parts.js",
+  "mascot-geometry.js",
+  "mascot-faces.js",
+  "mascot-motion.js",
+  "mascot-player.js",
+  "mascot-host.js"
+)
+
 describe("mascot()", {
   it("returns the accessible tag structure and a runtime dependency", {
     tag <- mascot(id = "helper")
@@ -36,7 +49,9 @@ describe("mascot()", {
     dep <- htmltools::findDependencies(tag)[[1]]
     expect_identical(dep$name, "mascot")
     expect_identical(dep$version, as.character(utils::packageVersion("mascot")))
-    expect_identical(dep$script, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
+    expect_identical(dep$script, engine_scripts)
+    # Every listed file ships with the package, so a page works offline.
+    expect_true(all(file.exists(file.path(system.file("www", package = "mascot"), dep$script))))
     expect_identical(dep$stylesheet, "mascot.css")
     expect_identical(dep$package, "mascot")
     expect_false(dep$all_files)
@@ -477,7 +492,7 @@ describe("mascot resources in modules", {
     dependencies <- htmltools::renderTags(ui())$dependencies
     engine <- Filter(function(dep) dep$name == "mascot", dependencies)
     expect_length(engine, 1)
-    expect_identical(engine[[1]]$script, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
+    expect_identical(engine[[1]]$script, engine_scripts)
     expect_identical(engine[[1]]$stylesheet, "mascot.css")
     expect_identical(engine[[1]]$src$file, system.file("www", package = "mascot"))
     expect_false(grepl("https?://", engine[[1]]$src$file))

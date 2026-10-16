@@ -4,10 +4,63 @@ title: "Engine changelog"
 
 This article records changes to the browser engine in `inst/www/` (`mascot.js`, `mascot-draw.js`,
 `mascot-motion.js`, `mascot-host.js`, `mascot-parts.js`, `mascot-geometry.js`,
-`mascot-tessa-adapter.js` and `mascot.css`), newest first. User-facing R functions and arguments are
+`mascot-tessa-adapter.js`, `mascot-faces.js`, `mascot-player.js` and `mascot.css`), newest first. User-facing R functions and arguments are
 covered in `NEWS.md`.
 
 # mascot (development version)
+
+## 2026-10-16 — Format-v1 characters mount and run in the real host (#307)
+
+**In brief:** A checked format-v1 character now mounts in the page host and runs end to end: it is drawn through the
+format-v1 modules, moves along its own tracks, swaps with another character, restores after a remount, and shows its
+own status, accessible label, gaze, theme and detail band. The default Tessa path is untouched and draws the same
+pixels. Nothing public changes: custom characters are still internal, so no user sees this until the character API
+lands.
+
+**Technical:**
+
+* `inst/www/mascot-player.js` (new): `mascot.runtime` compiles a checked character once (`compile()`, a weak cache that
+  keeps failures too) and plays it. `mount()` returns the same controller the legacy player returns (`update`, `gesture`,
+  `setMood`, `seek`, `redraw`, `setBand`, `pause`, `play`, `holdVisibility`, `destroy`, `current`, `onChange`). A frame is
+  `tracks.frameAt()` (change, gesture, idle extra, breathing, blink, deadline settle, reduction), the mood's base channels
+  (reduced ones under reduced motion), held look last, then `parts.frame()`, the ground shadow, the part layers, the face
+  and each kit effect in the order the data declares (parts by layer, the face at its owner's layer plus 0.5, effects at
+  their own layer). Colours are the character's roles, the user's overrides, then the mood's recolour with an explicit
+  user colour winning, computed again only when the mood, reduction or overrides change. The channel table of a plain
+  frame is one object per player; the face controls, the draw view and the shadow channels are reused. Validation of a
+  whole patch comes before any state or pixel changes; a frame is resolved and checked before the canvas is cleared.
+* Swaps keep the legacy timeline: the outgoing character waves (its own `wave` tracks laid over the captured channels)
+  and fades out over thirty frames, the incoming one waves and fades in over thirty, composited once through a private
+  canvas, with durations fitted to the incoming activity window. A new target mid-fade keeps the exit time that remains,
+  asking for the exiting character again reverses directly, a mood change mid-swap commits without a wiggle and does not
+  extend it, a gesture during a swap is dropped, and reduced motion or `swap: false` is instant. Without a mood in the
+  patch the incoming mood follows the contract's chain (`mascot.parts.swapMood()`). The legacy speed limit on a very early
+  reversal (`recoveryFrames()`) is not ported: the recovery lasts the entrance that remains. A format-v1 character cannot
+  swap into a legacy one or back; `update()` rejects it before any change.
+* Detail bands: `bound()` is the componentwise upper bound of the painted work of parts and their items per band: the main
+  anatomy plus, for each exclusive accessory slot, the largest declared accessory (one compile per accessory, not a product
+  over slots), blur by maximum; frozen and cached per character and band. `check()` throws `budget` at `$` before any
+  painting, and a band that passed once is not checked again. As `mascot.geometry.bandBound()` does, it counts parts and
+  items only: the face, the ground shadow and the effects are not counted here, so browser and R counts still differ there
+  (#304).
+* Gaze: held look is `face.look_x` and `face.look_y` only. `compile()` records whether the face can look (a kit with an
+  elliptical pupil); a faceless character or a kit of arcs, paths and dots has no gaze channels, and the host sends none.
+* `inst/www/mascot-host.js`: a format-v1 description is detected with `mascot.runtime.isFormat()`. Mood and gesture checks go
+  through `mascot.runtime.validate()`; the gaze goes to `face.look_x`/`face.look_y`, flipped back by the shown mood's
+  `root.flip`, and is cleared with the same channels; the band follows the canvas width for a format-v1 character with no
+  switch (the legacy path still needs the internal adapter switch); a swap without a mood records the incoming mood by
+  the fallback chain, so the host's mood matches the player's; the restore control is named with the shown status instead of
+  a mood id and takes its colours from the brand leaders. `mascot.host.state()` also reports `band`. Status in mood mode, the
+  accessible label, themes, bubbles, panels and the four public inputs already read the description generically and are
+  unchanged.
+* `inst/www/mascot-motion.js`: `mascot.mount()` hands a format-v1 character to `mascot.runtime.mount()` and every other
+  character to the legacy player; `mascot.motion.shared` exports the guards both players use (`named`, `object`,
+  `overrides`, `same`, `swapTiming`, `recoverPose`, the patch field names) so each rule has one copy; the legacy player
+  rejects a format-v1 character in `update()` with a clear message. `inst/www/mascot.js`: `checkCharacter()` dispatches the
+  same way.
+* `R/mascot.R`: the dependency now ships `mascot-parts.js`, `mascot-geometry.js`, `mascot-faces.js` and `mascot-player.js`
+  (144 KB uncompressed together, by `wc -c`) before the host. `R/preview.R`: `mascot_preview()` resolves its theme through the
+  same boundary `mascot()` uses, so a character that is not built in no longer fails its theme check there.
 
 ## 2026-10-16 — R-settled Shiny state and mount generations (#305)
 

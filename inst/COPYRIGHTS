@@ -78,3 +78,8 @@ inst/www/mascot-tessa-adapter.js
 inst/www/mascot-faces.js
     Source: generic character-format face-kit and effect operations written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/www/mascot-player.js
+    Source: character-format v1 runtime (compile once, draw through the format-v1 modules, per-canvas player) written for
+    this package.
+    Copyright (c) Harsh Verma. Licence: MIT.

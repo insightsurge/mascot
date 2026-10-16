@@ -83,7 +83,7 @@ mascot_preview <- function(
   click <- as_click_arg(click, environment())
   # Resolve once. Replace only slice 4's per-role contrast warnings with one list.
   resolved <- withCallingHandlers(
-    as_theme_arg(theme, environment(), character$id),
+    mascot_update_theme(theme, environment(), character$id),
     warning = function(warning) {
       checkmate::assert_class(warning, "warning")
       if (inherits(warning, "mascot_contrast")) {

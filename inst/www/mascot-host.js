@@ -64,6 +64,12 @@
  * Action controls use a separate strip: hover/focus reveals it, touch keeps it available, open menus hide it.
  * Restore stays reachable while minimised. Placement focus falls back to the visible menu toggle or image.
  * host.{mount,unmount,receive,state} exposes lifecycle and plain snapshots for integration tests.
+ * A character with format_version 1 is drawn and moved by mascot.runtime (mascot-player.js) through mascot.mount(); the
+ * host drives both players alike. For it the status of the shown mood and the accessible label come from the character's
+ * moods, the held look goes to face.look_x and face.look_y (flipped back by the runtime from the shown frame's
+ * root.flip; never sent to a faceless or no-gaze character), the detail band follows the canvas width with no switch, a
+ * swap without a mood follows the character's fallback chain, and the restore control is named with the shown status.
+ * The legacy Tessa path is unchanged.
  */
 (() => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: loaded with a <script> tag (a classic script, not a module)
@@ -135,6 +141,18 @@
   const has = (object, key) => Object.hasOwn(object, key);
   const label = (mood) => mood.charAt(0).toUpperCase() + mood.slice(1);
   const warn = (error) => console.warn(`mascot: ${String(error.message || error).replace(/^mascot: /, '')}`);
+  // I1: a character with format_version 1 is drawn and moved by mascot.runtime; the legacy Tessa path is untouched.
+  const isFormat = (description) => ns.runtime?.isFormat(description) === true;
+  // The detail bands follow the canvas width for a format-v1 character always, and for the legacy Tessa only behind the
+  // internal adapter switch (E5b), so the default path never reaches them.
+  const bandsApply = (description) =>
+    isFormat(description) || (ns.internal?.useCharacterAdapter === true && Boolean(ns.parts));
+  // The engine owns the vocabulary: a pure pose (legacy) or the runtime's checks (format v1) validate without changing
+  // a controller. request is {}, { mood } or { gesture }.
+  function engineValidate(description, request) {
+    if (isFormat(description)) ns.runtime.validate(description, request);
+    else ns.motion.pose(description, { ...request, reduced: true }, 0);
+  }
   // E5b, internal: the untransformed CSS width of a canvas in px (a transform does not change it). 0 means not laid out
   // (display: none, a hidden tab): such a width decides no band.
   const cssWidth = (canvas) => {
@@ -166,15 +184,21 @@
       if (record.button.getAttribute('aria-label') !== name) record.button.setAttribute('aria-label', name);
     }
     if (record.restoreButton) {
+      const description = record.descriptions.get(snapshot.character);
+      // A format-v1 name never carries a raw mood id: it names the character and the shown status.
       record.restoreButton.setAttribute(
         'aria-label',
-        `Restore ${record.names.get(snapshot.character)}, ${snapshot.mood}`,
+        `Restore ${record.names.get(snapshot.character)}, ${isFormat(description) ? shownStatus : snapshot.mood}`,
       );
-      const colours = record.palettes.get(snapshot.character) || record.descriptions.get(snapshot.character).colours;
+      const colours = record.palettes.get(snapshot.character) || description.colours;
       const fallback = Object.values(colours)[0];
-      setProperty(record.el, '--_mascot-restore-bg', colours.body || fallback);
+      // The brand leaders name a format-v1 character's main and accent colour; the legacy roles stay as they were.
+      const leaders = isFormat(description) ? description.brand : undefined;
+      const main = (leaders && colours[leaders.primary]) || colours.body;
+      const accent = (leaders && colours[leaders.secondary]) || colours.rim;
+      setProperty(record.el, '--_mascot-restore-bg', main || fallback);
       setProperty(record.el, '--_mascot-restore-fg', colours.outline || fallback);
-      setProperty(record.el, '--_mascot-restore-glow', colours.rim || colours.body || fallback);
+      setProperty(record.el, '--_mascot-restore-glow', accent || main || fallback);
     }
     const text = shownStatus;
     if (record.statusEl.textContent !== text) record.statusEl.textContent = text;
@@ -339,8 +363,7 @@
 
   function validateGesture(description, name) {
     if (typeof name !== 'string' || !name.length) throw new Error('gesture needs a non-empty name');
-    // The engine owns the vocabulary. Its pure pose path validates without changing a controller.
-    if (description) ns.motion.pose(description, { gesture: name, reduced: true }, 0);
+    if (description) engineValidate(description, { gesture: name });
   }
 
   const emptyTheme = () => ({ light: null, dark: null, mode: null, css: null, brand: null });
@@ -812,10 +835,25 @@
     return record.placement.floating && record.placement.position.startsWith('top') ? 'bottom' : 'top';
   }
 
+  // The held look with no side: only the look fields clear, whatever the mood.
+  function clearedGaze(description) {
+    if (!isFormat(description)) return { look: null, lookY: null };
+    return ns.runtime.compile(description).gaze ? { 'face.look_x': null, 'face.look_y': null } : {};
+  }
+
   // A held pose rather than motion, so it applies at once with or without reduced motion. A mirrored pose (flip)
   // mirrors the pupils too, so the horizontal look is flipped back to point at the same side of the page.
   function gazePose(record, side) {
     const description = record.descriptions.get(record.character);
+    if (isFormat(description)) {
+      // Held look goes to face.look_x and face.look_y in page terms; a faceless or no-gaze character gets no gaze
+      // channels. The runtime flips the horizontal look back from the root flip of the frame it shows (contract 3.16).
+      if (!ns.runtime.compile(description).gaze) return {};
+      return {
+        'face.look_x': side === 'left' ? -1 : side === 'right' ? 1 : null,
+        'face.look_y': side === 'top' ? -1 : side === 'bottom' ? 1 : null,
+      };
+    }
     const flip = Math.sign(ns.drawing.resolvePose(description, { mood: record.mood }).flip) || 1;
     return {
       look: side === 'left' ? -flip : side === 'right' ? flip : null,
@@ -1240,7 +1278,7 @@
     // A width of 0 decides nothing, so the band waits for the first real width.
     let drawn = false;
     const width = cssWidth(record.canvas);
-    if (ns.internal?.useCharacterAdapter === true && ns.parts && record.controller && width > 0) {
+    if (record.controller && width > 0 && bandsApply(record.descriptions.get(record.character))) {
       const band = ns.parts.bandFor(width);
       if (band !== record.band) {
         try {
@@ -1939,7 +1977,7 @@
       menuOpen: false,
       menuSide: null,
       ink: null,
-      gaze: JSON.stringify({ look: null, lookY: null }),
+      gaze: JSON.stringify(clearedGaze(description)),
       gazeSide: null,
       clicks: 0,
       button: null,
@@ -2054,7 +2092,7 @@
       // A band over budget mounts at full with one warning. A width not laid out yet (0) mounts at full and leaves
       // record.band undefined, so the first real measure decides.
       let band = null;
-      if (ns.internal?.useCharacterAdapter === true && ns.parts) {
+      if (bandsApply(description)) {
         const width = cssWidth(canvas);
         band = 'full';
         if (width > 0) {
@@ -2174,9 +2212,22 @@
     }
 
     const enginePatch = { ...prepared.enginePatch };
-    if (prepared.click && record.menuOpen) enginePatch.pose = { look: null, lookY: null };
+    if (prepared.click && record.menuOpen)
+      enginePatch.pose = clearedGaze(prepared.description || record.descriptions.get(record.character));
     try {
       if (!has(patch, 'mood') && record.problem && !prepared.changed) enginePatch.mood = record.problemMood;
+      // A format-v1 swap without a mood follows the contract's fallback chain; the legacy player starts at the first mood.
+      if (
+        prepared.changed &&
+        !has(enginePatch, 'mood') &&
+        isFormat(prepared.description) &&
+        isFormat(record.descriptions.get(record.character))
+      )
+        enginePatch.mood = ns.runtime.swapMood(
+          record.descriptions.get(record.character),
+          record.problem ? record.problemMood : record.mood,
+          prepared.description,
+        );
       // Synchronous engine notifications must not expose a partially committed host patch.
       updating.add(record);
       // Establish initial queued state before its gesture, without a mood transition or swap.
@@ -2304,14 +2355,14 @@
       description = cached || supplied;
       if (!description) throw new Error('character content cache miss');
       if (!description || description.id !== ch.id) throw new Error('character id does not match its description');
-      ns.motion.pose(description, { reduced: true }, 0);
+      engineValidate(description, {});
       enginePatch.character = description;
       changed = ch.id !== current?.id;
     }
     const candidate = description || current;
     if (has(patch, 'mood')) {
       if (typeof patch.mood !== 'string' || !patch.mood.length) throw new Error('mood needs a non-empty name');
-      if (candidate) ns.motion.pose(candidate, { mood: patch.mood, reduced: true }, 0);
+      if (candidate) engineValidate(candidate, { mood: patch.mood });
       enginePatch.mood = patch.mood;
     }
     let status;
@@ -2532,6 +2583,7 @@
       dropped: record.dropped ? { ...record.dropped } : null,
       dragging: Boolean(record.dragState?.moved),
       renderedSize: record.renderedSize,
+      band: record.band ?? null,
       bubble: record.bubble ? { ...record.bubble, remaining: remaining(record) } : null,
       hidden: record.hidden,
       offscreen: record.offscreen,

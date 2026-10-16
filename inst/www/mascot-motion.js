@@ -78,6 +78,9 @@
  * redraw() repeats the current drawing, including at rest, without changing time/state or RAF.
  * It is inert after destroy(). Hosts use it after canvas resize or a drawing-transform change.
  *
+ * Internal, I1: mascot.mount() plays a character with format_version 1 with mascot.runtime (mascot-player.js) and every
+ * other character with the player below; mascot.motion.shared holds the guards both use.
+ *
  * Internal, E4a: mascot.motion.tracks evaluates character-format v1 gestures (tracks, needs/fallback, the five
  * easings, interruption, reduction and absolute activity deadlines) as pure functions: compile() checks a v1
  * character, frameAt() returns channel values for one absolute frame. pose() uses them only while
@@ -518,6 +521,9 @@
         );
     const next = { ...current };
     if (Object.hasOwn(patch, 'character')) {
+      // A saved-format character is drawn by mascot.runtime, a different player; the two cannot swap into each other yet.
+      if (ns.runtime?.isFormat(patch.character))
+        throw new Error('mascot: update.character: a format-v1 character cannot replace a legacy character here');
       try {
         config(patch.character);
       } catch (e) {
@@ -1516,13 +1522,29 @@
     return next;
   }
 
+  // Internal, I1: the guards and helpers the format-v1 player (mascot.runtime) shares with this one, so each rule has
+  // one copy. patchFields are the update() keys both players accept.
+  const shared = Object.freeze({
+    named,
+    object,
+    overrides,
+    same,
+    swapTiming,
+    recoverPose,
+    patchFields: Object.freeze([...patchFields]),
+  });
+
   ns.motion = {
     pose,
     frame: sceneFrame,
     tracks,
     validate,
+    shared,
     settings: Object.freeze(motionFlags),
     panels: Object.freeze(panelNames),
   };
-  ns.mount = mount;
+  // I1: a character with format_version 1 is played by mascot.runtime (looked up at call time, so load order does not
+  // matter); every other character keeps this player unchanged.
+  ns.mount = (canvas, ch, options) =>
+    ns.runtime?.isFormat(ch) ? ns.runtime.mount(canvas, ch, options) : mount(canvas, ch, options);
 })();

@@ -476,7 +476,16 @@ mascot_dependency <- function() {
     version = getNamespaceVersion("mascot")[[1]],
     src = "www",
     package = "mascot",
-    script = c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"),
+    script = c(
+      "mascot.js",
+      "mascot-draw.js",
+      "mascot-parts.js",
+      "mascot-geometry.js",
+      "mascot-faces.js",
+      "mascot-motion.js",
+      "mascot-player.js",
+      "mascot-host.js"
+    ),
     stylesheet = "mascot.css",
     all_files = FALSE
   )

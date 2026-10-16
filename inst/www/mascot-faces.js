@@ -595,7 +595,12 @@
           target = own(state.parts, partId);
         const item = target?.items.find((item) => item.id === itemId);
         if (!item) fail('missing_reference', '$.face.clip', 'Resolve the active clip item.');
-        const geometry = ns.geometry.compile(item, source.shapes);
+        // Compiled once per clip item, not per frame.
+        let geometry = clipGeometry.get(item);
+        if (!geometry) {
+          geometry = ns.geometry.compile(item, source.shapes);
+          clipGeometry.set(item, geometry);
+        }
         const matrix = ns.parts.multiply(target.matrix, geometry.transform);
         if (Math.abs(matrix[0] * matrix[3] - matrix[1] * matrix[2]) < 1e-12) return counts;
         ctx.setTransform(...ns.parts.multiply([base.a, base.b, base.c, base.d, base.e, base.f], target.matrix));
@@ -616,6 +621,7 @@
     return counts;
   };
 
+  const clipGeometry = new WeakMap();
   const effects = (ctx, compiled, state, controls = {}, colours = {}, options = {}) => {
     const counts = emptyCounts(),
       { source } = compiled,
@@ -632,9 +638,11 @@
       const control = controls[id] ?? 0;
       if (!control) continue;
       const { definition, effect, compiled: drawing } = record;
-      const anchor = own(state.anchors, definition.anchor);
+      // A gesture trigger names its own anchor (options.effect_anchors); otherwise the mapping's anchor.
+      const anchorName = own(options.effect_anchors, id) ?? definition.anchor;
+      const anchor = own(state.anchors, anchorName);
       if (!anchor) fail('missing_reference', `$.effects.${id}.anchor`, 'Resolve the effect anchor.');
-      const owner = own(state.parts, source.anchors[definition.anchor].part);
+      const owner = own(state.parts, source.anchors[anchorName].part);
       if (!owner) fail('missing_reference', `$.effects.${id}.anchor`, 'Resolve the anchor owner.');
       if (!anchor.available || !owner.opacity) continue;
       let x = 0,

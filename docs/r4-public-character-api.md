@@ -76,7 +76,7 @@ each help page, and a NEWS note). Experimental means the names and arguments may
 period; the format version 1 files themselves keep loading, with one stated exception: a documented security or
 resource-safety correction may reject a file that loaded before, with its own diagnostic code and a migration note.
 Three versions are kept apart: the format version (meaning of the data), the capability set (what this package
-draws) and the admission policy version (limits.json: budgets and input bounds).
+draws) and the admission policy version (the policy file: budgets and input bounds).
 
 **D4. Registration in a running app.** **Recommended (as already designed):** `mascot_register_character()` is for
 app start-up and development; it errors inside an active Shiny reactive domain with a message that says to pass the
@@ -96,7 +96,7 @@ classes in r-api-decisions section 1, and have `@returns` and offline `@examples
 
 | Signature | Contract |
 |---|---|
-| `mascot_read_character(path)` | Reads one local JSON file the user names (no URLs, no globbing), bounded by the format's input policy (limits.json), checks it with the one checker, returns a `mascot_character_data` object visibly. File problems: `mascot_error_file` with the path. Content problems: `mascot_error_character` with code, path, value and fix. |
+| `mascot_read_character(path)` | Reads one local JSON file the user names (no URLs, no globbing), bounded by the format's input policy (the policy file, inst/format/policy-v1.json; limits.json in the design repository), checks it with the one checker, returns a `mascot_character_data` object visibly. File problems: `mascot_error_file` with the path. Content problems: `mascot_error_character` with code, path, value and fix. |
 | `mascot_check_character(x)` | `x` is a JSON string, a parsed list, or a `mascot_character_data` (rechecked for integrity). Returns the checked object visibly; never fixes or recolours silently. Not given a file path (that is read's job, so a string is never ambiguous). |
 | `mascot_register_character(x)` | `x` is checked data. Binds its id in this R process; returns the id invisibly. Errors in an active reactive domain, for a built-in id, or for the same id with different content. |
 | `mascot_save_character(x, path, ..., overwrite = FALSE)` | `x` is checked data; writes the complete resolved JSON to the user's path atomically (temporary file beside it, then rename); an existing file errors unless `overwrite = TRUE`. Returns the path invisibly. Writes nowhere else. |
@@ -125,7 +125,7 @@ internal resolver: an id string (built-in or registered), `mascot_character(id)`
 | `mascot_preview(character =)` | Accepts all three forms; wording "every size draws the full character" becomes "small sizes may hide details the character marks for small sizes" (founder decision 3, 2026-10-17). |
 | `mascot_moods()`, `mascot_gestures()`, `mascot_colour_roles()`, `mascot_anchors()`, `mascot_palettes()` | Accept all three forms and describe that character. |
 | `mascot_characters(..., family = NULL)` | Lists built-in and registered characters, with a `built_in` column (exists). |
-| `mascot_families()` | Lists built-in families and the family snapshots of registered characters. A registered character's embedded family is metadata, never a new source of defaults; two registered characters with the same family id and different snapshot labels are both listed with their character id, and built-in labels win for the family row. |
+| `mascot_families()` | Lists built-in families and the family snapshots of registered characters (a `character` column names the registered character; `NA` for built-in rows). A registered character's embedded family is metadata, never a new source of defaults; two registered characters with the same family id and different snapshot labels are both listed with their character id, and built-in labels win for the family row. |
 | `mascot_theme(preset =)` | Unchanged here; palettes are unit S1/R5. |
 
 Moods and gestures: `mascot_mood("x")` and `mascot_gesture("x")` keep checking syntax only (lowercase id); membership

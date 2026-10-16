@@ -10,6 +10,15 @@
       x `mood` must be one of "idle", "thinking", "happy", "worried", "celebrating"; "hapy" is not a mood.
       x `status` must be a non-empty string or a mascot_status() object; use mascot_status() to follow the mood.
 
+---
+
+    Code
+      update_mascot("helper", mood = "ha!py", session = session)
+    Condition
+      Warning:
+      `update_mascot()` left mascot "helper" unchanged.
+      x `mood` must be one of "idle", "thinking", "happy", "worried", "celebrating"; "ha!py" is not a mood.
+
 # update_mascot() / errors on code mistakes before inspecting runtime values
 
     Code

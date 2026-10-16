@@ -9,6 +9,23 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-16 — R-settled Shiny state and mount generations (#305)
+
+**In brief:** Shiny sends the latest complete accepted state for one mount generation. A connection ledger
+preserves gesture consumption and bubble dismissal when an element is replaced. The canvas label follows
+the status of the character and mood actually shown.
+
+**Technical:** `mascot-host.js` checks complete versioned envelopes before installation, ignores stale
+revisions and terminated generations, publishes mount and state snapshots with event priority on the existing input,
+and restores open bubbles with their remaining lifetime. Duplicate live ids leave the first binding
+authoritative. The unversioned patch path remains for browser-only/custom hosts. Optional envelope metadata
+is ignored; the version 1 core state and snapshot shapes are checked. Unknown static UI tokens trigger a
+one-time baseline exchange, allowing pages rendered before the server starts and cached pages to bind after a server restart or
+cache eviction. R checks every baseline field, character content, payload limits and the content-derived
+token before accepting it into session-owned storage; invalid baselines show a diagnostic. Dynamic tokens
+remain session-owned. Checked character metadata and content keys use bounded immutable caches.
+The public argument forms remain unchanged; target-specific forms are internal until their API unit lands.
+
 ## 2026-10-16 — Reserved capabilities rejected in R and the browser engine (#306)
 
 **In brief:** Every capability and field the format reserves for later (`extends`, `connector`, `ring_pulse`, `follow`,

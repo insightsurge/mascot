@@ -18,7 +18,7 @@ describe("mascot.host", {
     expect_identical(result$character, "tessa")
     expect_identical(result$swapping, "false")
     expect_identical(result$status, "Idle")
-    expect_identical(result$aria, "Tessa, idle")
+    expect_identical(result$aria, "Tessa, Idle")
     expect_equal(result$width, round(160 * result$ratio))
     expect_equal(result$height, result$width)
     expect_equal(result$transform, result$width / 300, tolerance = 1e-6)
@@ -42,7 +42,7 @@ describe("mascot.host", {
     expect_identical(result$markup, "&lt;b&gt;Saved&lt;/b&gt;")
     expect_identical(result$thinking, "Thinking")
     expect_identical(result$mood, "thinking")
-    expect_identical(result$aria, "Tessa, thinking")
+    expect_identical(result$aria, "Tessa, Thinking")
   })
   it("swaps to the fixture's first mood while keeping custom text", {
     skip_without_chrome()
@@ -60,7 +60,7 @@ describe("mascot.host", {
     expect_identical(result$state$mood, result$first)
     expect_identical(result$state$current$mood, result$first)
     expect_identical(result$status, "Still saving")
-    expect_identical(result$aria, paste0(result$name, ", ", result$first))
+    expect_identical(result$aria, paste0(result$name, ", Still saving"))
   })
   it("rejects entire invalid patches, including their text and desired state", {
     skip_without_chrome()
@@ -231,7 +231,7 @@ describe("mascot.host", {
     expect_true(result$inert)
     expect_true(result$same)
   })
-  it("updates every bound element with an exact matching id and no others", {
+  it("updates the authoritative exact id and refuses a duplicate live mount", {
     skip_without_chrome()
     js <- local_host_page()
     result <- js(
@@ -239,32 +239,15 @@ describe("mascot.host", {
       const first=document.getElementById('a'), duplicate=first.cloneNode(true), other=first.cloneNode(true);
       other.id='other'; document.body.append(duplicate,other); mascot.host.mount(duplicate); mascot.host.mount(other);
       mascot.host.receive({id:'a',patch:{mood:'happy'}});
-      return [first,duplicate,other].map(el=>mascot.host.state(el).current.mood);
+      return [first,duplicate,other].map(el=>mascot.host.state(el)?.current.mood ?? null);
     })()"
     )
-    expect_identical(unlist(result), c("happy", "happy", "idle"))
+    expect_identical(result, list("happy", NULL, "idle"))
   })
 })
 
 
 # Control only the bubble clock; the real engine and DOM still run in Chrome.
-install_bubble_clock <- function(js) {
-  js(
-    "(() => {
-    let now = 0, next = 0;
-    const timers = new Map();
-    window.performance.now = () => now;
-    window.setTimeout = (fn, delay) => { const id = ++next; timers.set(id, {fn, due: now + delay}); return id; };
-    window.clearTimeout = id => timers.delete(id);
-    window.bubbleClock = {
-      advance(ms) { now += ms; },
-      tick(ms) { now += ms; for (const [id,timer] of [...timers]) if (timer.due <= now) { timers.delete(id); timer.fn(); } },
-      count() { return timers.size; }
-    };
-    return true;
-  })()"
-  )
-}
 
 describe("mascot.host bubbles", {
   it("starts a static bubble's timer when mounted and announces it separately", {

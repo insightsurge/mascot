@@ -161,9 +161,13 @@ validation package such as \code{shinyvalidate}) and set the mood from it:
 
 \strong{Queued updates.} Updates sent before a mascot appears are kept per session,
 including when the first mascot is created by \code{\link[shiny:renderUI]{shiny::renderUI()}} or
-\code{\link[shiny:insertUI]{shiny::insertUI()}}. Only the latest value of each argument and the latest early
-gesture are kept. A replacement with the same id receives the retained state;
-gestures play once.
+\code{\link[shiny:insertUI]{shiny::insertUI()}}. Once the character is known, R validates each whole call
+before accepting its latest values. Before that, a bounded buffer keeps whole
+calls for validation against the first known character. An invalid call never
+contributes its bubble, status or other fields. A replacement with the same id
+receives the latest accepted state; only the latest pending gesture can play,
+once. Dismissed bubbles stay dismissed through replacement; an explicit bubble
+update starts a new bubble, including when its text is unchanged.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

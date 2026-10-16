@@ -187,7 +187,7 @@ mascot <- function(
   bubble <- as_bubble_arg(bubble, environment())
   size <- as_size_arg(size, environment())
   placement <- as_placement_arg(placement, environment())
-  theme <- as_theme_arg(theme, environment(), character$id)
+  theme <- mascot_update_theme(theme, environment(), character$id)
   motion <- as_motion_arg(motion, environment())
   click <- as_click_arg(click, environment())
   if (...length() > 0L) {
@@ -200,10 +200,50 @@ mascot <- function(
   }
   mode <- if (is.null(status$text)) "mood" else "custom"
   placement_fields <- placement_wire(placement)
+  wire_character <- list(
+    id = character$id,
+    name = character$name,
+    json = if (is.null(character$json)) character_json(character$id) else character$json
+  )
+  baseline <- list(
+    character = wire_character,
+    mood = mood$name,
+    status = if (mode == "mood") list(mode = "mood") else list(mode = "custom", text = status$text),
+    bubble = if (is.null(bubble$text)) {
+      list(clear = TRUE)
+    } else {
+      list(
+        text = bubble$text,
+        html = bubble$html,
+        closable = bubble$closable,
+        duration = if (is.finite(bubble$duration)) bubble$duration else NULL
+      )
+    },
+    size = unclass(size),
+    placement = placement_fields,
+    theme = if (is.null(theme)) mascot_empty_theme() else theme,
+    motion = motion,
+    click = if (is.null(click)) list(type = "none") else click
+  )
+  # UI mistakes fail during construction; only a validated ready establishes
+  # this emitted specification as the session's baseline.
+  public_call <- environment()
+  prepared <- tryCatch(
+    {
+      mascot_wire_check(baseline)
+      mascot_state_prepare(list(desired = list(), context = NULL), baseline)
+    },
+    error = function(error) {
+      cli::cli_abort("{conditionMessage(error)}", class = "mascot_error", call = public_call)
+    }
+  )
+  token <- mascot_mount_token(id, prepared$desired)
+  shown_status <- if (mode == "mood") character_catalogue_status(prepared$context$data, mood$name) else status$text
   tag <- htmltools::tags$div(
     class = "mascot",
     id = id,
     tabindex = "-1",
+    `data-mount-token` = token,
     `data-character` = character$id,
     `data-mood` = mood$name,
     `data-status` = mode,
@@ -225,20 +265,21 @@ mascot <- function(
     htmltools::tags$script(
       type = "application/json",
       `data-mascot-character` = character$id,
-      htmltools::HTML(character_json(character$id))
+      htmltools::HTML(gsub("</", "<\\/", wire_character$json, fixed = TRUE))
     ),
+    mascot_baseline_tag(prepared$desired, token),
     theme_tag(theme),
     click_tag(click),
     # A picture until a click makes it a button; the browser then wraps it in one.
     htmltools::tags$canvas(
       class = "mascot-canvas",
       role = "img",
-      `aria-label` = paste0(character$name, ", ", mood$name)
+      `aria-label` = paste0(character$name, ", ", shown_status)
     ),
     htmltools::tags$div(
       class = "mascot-status",
       role = "status",
-      if (mode == "mood") mood_label(mood$name) else status$text
+      shown_status
     ),
     bubble_tag(bubble)
   )

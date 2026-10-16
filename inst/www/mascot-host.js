@@ -1,8 +1,9 @@
 /**
  * Page host for mascot: one record and controller per element, with an idempotent lifecycle.
  * A Shiny input binding mounts for its initial value/subscribe and destroys on unsubscribe; static pages mount at DOM ready.
- * Custom messages carry { id, patch }; late state merges by id, including the latest one-off gesture.
- * At most 20 patches wait per id; beyond that the newest are kept and the server re-sends its retained state on mount.
+ * Shiny messages use versioned, generation-bound complete state settled by R.
+ * A connection-local ledger retains consumed gestures and bubble dismissal through DOM replacement.
+ * Browser-only/custom hosts retain the legacy { id, patch } path and its bounded early queue.
  * In Shiny development mode, updates waiting 2 s for "x" while "<namespace>-x" is mounted, or for "<namespace>-x" while
  * "x" is mounted, warn once with the likely namespace fix.
  * Patches are atomic: prepare descriptions/status, ask the engine to validate, then commit host state.
@@ -75,6 +76,17 @@
   const records = new WeakMap();
   const pending = new Map();
   const playedGestures = new Map();
+  // Connection-local action/dismissal ledger survives DOM removal. Complete
+  // state revisions are generation-local; action watermarks never reset.
+  const ledgers = new Map();
+  const safeCounter = (x) => Number.isSafeInteger(x) && x >= 0;
+  const sameValue = (a, b) => {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b))
+      return false;
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length && keys.every((key) => has(b, key) && sameValue(a[key], b[key]));
+  };
   const queueLimit = 20;
   const warnedIds = new Set();
   const namespaceDelay = 2000;
@@ -142,7 +154,12 @@
     record.el.dataset.shownCharacter = snapshot.character;
     record.el.dataset.shownMood = snapshot.mood;
     record.el.dataset.swapping = String(snapshot.swapping);
-    const accessibleLabel = `${record.names.get(snapshot.character)}, ${snapshot.mood}`;
+    const shownStatus =
+      record.problem ||
+      (record.status.mode === 'mood'
+        ? record.descriptions.get(snapshot.character)?.moods[snapshot.mood]?.status || label(snapshot.mood)
+        : record.status.text);
+    const accessibleLabel = `${record.names.get(snapshot.character)}, ${shownStatus}`;
     record.canvas.setAttribute('aria-label', accessibleLabel);
     if (record.button) {
       const name = record.click.label || `${record.names.get(snapshot.character)}, menu`;
@@ -159,8 +176,14 @@
       setProperty(record.el, '--_mascot-restore-fg', colours.outline || fallback);
       setProperty(record.el, '--_mascot-restore-glow', colours.rim || colours.body || fallback);
     }
-    const text = record.problem || (record.status.mode === 'mood' ? label(snapshot.mood) : record.status.text);
+    const text = shownStatus;
     if (record.statusEl.textContent !== text) record.statusEl.textContent = text;
+    for (const id of record.descriptions.keys())
+      if (id !== record.character && id !== snapshot.character) {
+        record.descriptions.delete(id);
+        record.names.delete(id);
+        record.palettes.delete(id);
+      }
   }
 
   // Bubble time is independent of the deterministic drawing engine, in seconds.
@@ -207,6 +230,11 @@
   }
 
   function clearBubble(record) {
+    if (record.bubble && record.ledger && !record.installing && record.ledger.bubble_watermark) {
+      record.ledger.dismissed_bubble_revision = record.ledger.bubble_watermark;
+      record.ledger.bubble = null;
+      publish(record, 'mounted');
+    }
     stopTimer(record);
     record.bubble = null;
     const focused = record.bubbleEl.contains(document.activeElement);
@@ -1853,9 +1881,20 @@
   }
 
   function mount(el) {
-    if (records.has(el)) return;
+    if (records.has(el)) return true;
+    const authoritative = ledgers.get(el.id);
+    if (authoritative?.live) {
+      warn(`duplicate live mascot id "${el.id}"; the first binding remains authoritative`);
+      return false;
+    }
+    if (!Number.isSafeInteger(mountSerial + 1)) throw new Error('mascot mount generation exhausted');
     const id = el.dataset.character;
-    const description = ns.readCharacter(id, el);
+    // Rebinding the same DOM may follow an accepted character swap: its live
+    // data-character then names the last checked content, not the original UI
+    // script. Keep only that referenced descriptor per retained id.
+    const local = el.querySelector(`script[data-mascot-character="${id}"]`);
+    const cached = known.get(el.id);
+    const description = local || cached?.id !== id ? ns.readCharacter(id, el) : cached;
     const canvas = el.querySelector('.mascot-canvas');
     const statusEl = el.querySelector('.mascot-status');
     const bubbleEl = el.querySelector('.mascot-bubble');
@@ -1986,6 +2025,26 @@
       placementCopy: null,
       panelExits: new Set(),
     };
+    const previousLedger = ledgers.get(el.id);
+    record.ledger = {
+      generation: record.mountSerial,
+      mount_token: el.dataset.mountToken || '',
+      lifecycle: 'ready',
+      applied_revision: 0,
+      gesture_watermark: previousLedger?.gesture_watermark || 0,
+      bubble_watermark: previousLedger?.bubble_watermark || 0,
+      dismissed_bubble_revision: previousLedger?.dismissed_bubble_revision || 0,
+      bubble: previousLedger?.bubble || null,
+      live: true,
+      record,
+    };
+    ledgers.set(el.id, record.ledger);
+    // A Shiny baseline is installed only after R resolves ownership. In
+    // particular a dismissed UI bubble must not flash during remount.
+    if (window.Shiny?.InputBinding) {
+      record.bubble = null;
+      record.bubbleEl.hidden = true;
+    }
     records.set(el, record);
     try {
       layout(record);
@@ -2044,6 +2103,8 @@
       record.actions.remove();
       record.restoreButton.remove();
       records.delete(el);
+      record.ledger.live = false;
+      record.ledger.record = null;
       throw error;
     }
     resumeTimer(record);
@@ -2236,13 +2297,18 @@
       const ch = patch.character;
       if (!ch || typeof ch.id !== 'string' || !ch.id || typeof ch.name !== 'string' || !ch.name)
         throw new Error('character needs an id and name');
-      description = descriptions.get(ch.id) || JSON.parse(ch.json);
+      const supplied = typeof ch.json === 'string' ? JSON.parse(ch.json) : null;
+      const cached = descriptions.get(ch.id);
+      if (cached && supplied && !sameValue(cached, supplied))
+        throw new Error('same character id has different content');
+      description = cached || supplied;
+      if (!description) throw new Error('character content cache miss');
       if (!description || description.id !== ch.id) throw new Error('character id does not match its description');
       ns.motion.pose(description, { reduced: true }, 0);
       enginePatch.character = description;
       changed = ch.id !== current?.id;
     }
-    const candidate = changed ? description : current;
+    const candidate = description || current;
     if (has(patch, 'mood')) {
       if (typeof patch.mood !== 'string' || !patch.mood.length) throw new Error('mood needs a non-empty name');
       if (candidate) ns.motion.pose(candidate, { mood: patch.mood, reduced: true }, 0);
@@ -2360,6 +2426,14 @@
   }
 
   function receive(message) {
+    if (!message || typeof message !== 'object' || typeof message.id !== 'string') {
+      warn('update envelope needs an id');
+      return;
+    }
+    if (has(message, 'version')) return receiveState(message);
+    // The compatibility patch route belongs to custom hosts. Typed Shiny
+    // bindings accept versioned state/diagnostic envelopes only.
+    if (window.Shiny?.InputBinding) return;
     const targets = [...document.querySelectorAll('.mascot')].filter((el) => el.id === message.id && records.has(el));
     if (!message.patch || typeof message.patch !== 'object' || Array.isArray(message.patch)) {
       if (!targets.length) queue(message.id, message.patch, message.revision);
@@ -2410,8 +2484,14 @@
   function unmount(el) {
     const record = records.get(el);
     if (!record) return;
-    removeClick(record);
+    // Terminal notice is emitted while the binding/ledger still exist, before
+    // Shiny tears down the element. The explicit event route is repeatable.
     stopTimer(record);
+    record.ledger.bubble = record.bubble ? { ...record.bubble } : null;
+    record.ledger.live = false;
+    publish(record, 'unmounted');
+    record.ledger.record = null;
+    removeClick(record);
     unwatch(record);
     unlistenDrag(record);
     for (const [name, handler] of Object.entries(record.handlers))
@@ -2457,30 +2537,213 @@
       offscreen: record.offscreen,
       measures: record.measures,
       revision: record.revision,
+      snapshot: snapshot(record),
       current: record.controller.current(),
     };
   }
 
-  ns.host = { mount, unmount, receive, state };
+  function snapshot(record, lifecycle = record.ledger.lifecycle) {
+    const ledger = record.ledger;
+    return {
+      version: 1,
+      generation: ledger.generation,
+      mount_token: ledger.mount_token,
+      lifecycle,
+      applied_revision: ledger.applied_revision,
+      gesture_watermark: ledger.gesture_watermark,
+      bubble_watermark: ledger.bubble_watermark,
+      dismissed_bubble_revision: ledger.dismissed_bubble_revision,
+    };
+  }
+
+  function publish(record, lifecycle) {
+    record.ledger.lifecycle = lifecycle;
+    if (record.ledger.mount_token)
+      window.Shiny?.setInputValue?.(`${record.el.id}:mascot.state`, snapshot(record), { priority: 'event' });
+  }
+
+  function receiveState(message) {
+    const ledger = ledgers.get(message.id),
+      record = ledger?.record;
+    if (
+      message.version !== 1 ||
+      !record ||
+      !ledger.live ||
+      message.generation !== ledger.generation ||
+      !safeCounter(message.revision)
+    )
+      return;
+    if (message.kind === 'template-needed' || message.kind === 'template-rejected') {
+      if (
+        message.mount_token !== ledger.mount_token ||
+        ledger.applied_revision !== 0 ||
+        typeof message.problem !== 'string' ||
+        !message.problem.length
+      )
+        return;
+      if (message.kind === 'template-needed' && record.recoverySent) return;
+      if (message.kind === 'template-needed') {
+        record.recoverySent = true;
+        try {
+          const script = record.el.querySelector('script[data-mascot-baseline]');
+          const baseline = JSON.parse(script.textContent);
+          const character = record.el.querySelector(`script[data-mascot-character="${baseline.character.id}"]`);
+          baseline.character.json = character.textContent;
+          window.Shiny?.setInputValue?.(
+            `${record.el.id}:mascot.state`,
+            { ...snapshot(record, 'ready'), baseline },
+            { priority: 'event' },
+          );
+          return;
+        } catch (error) {
+          warn(`cannot recover mascot UI baseline: ${error.message}`);
+        }
+      }
+      apply(record.el, { problem: message.problem });
+      warn(message.problem);
+      return;
+    }
+    if (message.kind === 'diagnostic') {
+      if (message.revision >= ledger.applied_revision && typeof message.problem === 'string' && message.problem.length)
+        apply(record.el, { problem: message.problem });
+      return;
+    }
+    // Unknown additive kinds are optional extensions, not state candidates.
+    if (message.kind != null && message.kind !== 'state') return;
+    if (message.revision <= ledger.applied_revision) return;
+    try {
+      if (
+        !safeCounter(message.bubble_revision) ||
+        !safeCounter(message.gesture_watermark) ||
+        message.gesture_watermark > message.revision ||
+        typeof message.restore !== 'boolean'
+      )
+        throw new Error('invalid complete-state counters');
+      if (message.problem != null && (typeof message.problem !== 'string' || !message.problem.length))
+        throw new Error('invalid development diagnostic');
+      const fields = ['character', 'mood', 'status', 'bubble', 'size', 'placement', 'theme', 'motion', 'click'];
+      if (
+        !message.state ||
+        Object.keys(message.state).length !== fields.length ||
+        fields.some((key) => !has(message.state, key))
+      )
+        throw new Error('incomplete state');
+      const gesture = message.gesture;
+      if (
+        gesture !== null &&
+        (!gesture ||
+          Object.keys(gesture).some((key) => !['name', 'revision'].includes(key)) ||
+          !safeCounter(gesture.revision) ||
+          gesture.revision === 0 ||
+          gesture.revision > message.revision)
+      )
+        throw new Error('invalid gesture revision');
+      const whole = { ...message.state };
+      if (gesture) whole.gesture = gesture.name;
+      // Pure preflight of the entire state against ONE incoming character.
+      const checkedState = prepare(
+        whole,
+        record.descriptions.get(record.character),
+        record.descriptions,
+        record.theme,
+        record.anchor || record.el,
+        true,
+        record.motion,
+      );
+      if (checkedState.description.name !== whole.character.name)
+        throw new Error('character display name disagrees with content');
+      const patch = {};
+      for (const field of fields) {
+        const previous = record.completeState?.[field] ?? record[field];
+        const unchanged =
+          field === 'character'
+            ? record.character === message.state.character.id
+            : field === 'status'
+              ? record.status.mode === message.state.status.mode &&
+                (record.status.mode === 'mood' || record.status.text === message.state.status.text)
+              : sameValue(message.state[field], previous);
+        if (field !== 'bubble' && !unchanged) patch[field] = message.state[field];
+      }
+      // Keep timer/visibility locally even when an acknowledgement was lost.
+      const newBubble = message.bubble_revision > ledger.bubble_watermark;
+      if (newBubble) patch.bubble = message.state.bubble;
+      else if (ledger.applied_revision === 0) {
+        patch.bubble =
+          ledger.dismissed_bubble_revision >= message.bubble_revision || !ledger.bubble
+            ? { clear: true }
+            : {
+                text: ledger.bubble.text,
+                html: ledger.bubble.html,
+                closable: ledger.bubble.closable,
+                duration: ledger.bubble.remaining,
+              };
+      }
+      // Consume before scheduling, even if motion/swap policy discards it.
+      ledger.gesture_watermark = Math.max(ledger.gesture_watermark, message.gesture_watermark);
+      if (gesture && gesture.revision > ledger.gesture_watermark) {
+        ledger.gesture_watermark = gesture.revision;
+        patch.gesture = gesture.name;
+      }
+      record.installing = true;
+      try {
+        if (!apply(record.el, patch, message.restore || ledger.applied_revision === 0))
+          throw new Error('complete-state installation failed');
+      } finally {
+        record.installing = false;
+      }
+      if (message.problem) apply(record.el, { problem: message.problem });
+      record.completeState = message.state;
+      ledger.applied_revision = message.revision;
+      record.revision = message.revision;
+      ledger.bubble_watermark = Math.max(ledger.bubble_watermark, message.bubble_revision);
+      ledger.bubble = record.bubble ? { ...record.bubble, remaining: remaining(record) } : null;
+      publish(record, 'mounted');
+    } catch (error) {
+      warn(`complete-state invariant failure: ${error.message}`);
+      publish(record, 'error');
+    }
+  }
+
+  ns.host = {
+    mount,
+    unmount,
+    receive,
+    state,
+    reconcile: (el) => {
+      const record = records.get(el);
+      if (record) publish(record, 'reconcile');
+    },
+  };
   if (window.Shiny?.InputBinding) {
     class MascotBinding extends window.Shiny.InputBinding {
       find(scope) {
         return window.jQuery(scope).find('.mascot, .mascot-source');
       }
+      getType() {
+        return 'mascot.state';
+      }
       getId(el) {
-        return sources.get(el)?.el.id || el.id || null;
+        const record = sources.get(el) || records.get(el),
+          id = record?.el.id || el.id;
+        const authoritative = ledgers.get(id);
+        if (authoritative?.live && record !== authoritative.record) {
+          warn(`duplicate live mascot id "${id}"; the first binding remains authoritative`);
+          return null;
+        }
+        return id || null;
       }
       getValue(el) {
         // Shiny bindInputs reads the initial value before subscribe.
         if (!sources.has(el)) mount(el);
         const record = sources.get(el) || records.get(el);
-        return record ? { mount: record.mountSerial, revision: record.revision } : null;
+        return record ? snapshot(record) : null;
       }
       subscribe(el) {
-        mount(el);
+        if (!mount(el)) return;
         const record = records.get(el);
         record.binding = this;
         syncBinding(record);
+        publish(record, 'ready');
       }
       unsubscribe(el) {
         unmount(sources.get(el)?.el || el);

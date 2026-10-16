@@ -619,7 +619,7 @@
     let glow = (lod.glow ?? band !== 'micro') ? kit.glow : null;
     if (glow) {
       number(glow.blur, '$.face.glow.blur', 0);
-      number(glow.alpha, '$.face.glow.alpha', 0, 1);
+      glow = { ...glow, alpha: number(glow.alpha ?? 1, '$.face.glow.alpha', 0, 1) };
       if (!glow.alpha) glow = null;
     }
     ctx.save();

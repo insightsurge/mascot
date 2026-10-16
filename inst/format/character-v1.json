@@ -1599,7 +1599,8 @@
         "alpha": {
           "type": "number",
           "min": 0,
-          "max": 1
+          "max": 1,
+          "default": 1
         },
         "note": {
           "type": "string"
@@ -1608,8 +1609,7 @@
       "required": [
         "item",
         "colour",
-        "blur",
-        "alpha"
+        "blur"
       ]
     },
     "part": {
@@ -2889,12 +2889,12 @@
             "alpha": {
               "type": "number",
               "min": 0,
-              "max": 1
+              "max": 1,
+              "default": 1
             }
           },
           "required": [
-            "blur",
-            "alpha"
+            "blur"
           ]
         },
         "note": {

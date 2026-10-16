@@ -9,6 +9,42 @@ describe("character_format_parse()", {
     }
   })
 
+  it("defaults absent part and kit glow alpha to one for objects, text and files", {
+    data <- format_recipe("alpha_visor")
+    index <- which(vapply(data$parts, function(part) !is.null(part$glow), logical(1)))[[1]]
+    data$parts[[index]]$glow$alpha <- NULL
+    data$face$kit_definition$glow$alpha <- NULL
+    text <- as.character(jsonlite::toJSON(data, auto_unbox = TRUE, null = "null", digits = NA))
+    file <- withr::local_tempfile(fileext = ".json")
+    writeLines(text, file)
+    for (from in c("list", "text", "file")) {
+      input <- switch(from, list = data, text = text, file = file)
+      parsed <- character_format_parse(input, from)
+      expect_equal(parsed$parts[[index]]$glow$alpha, 1)
+      expect_equal(parsed$face$kit_definition$glow$alpha, 1)
+    }
+    for (value in list(0, 0.4, 1)) {
+      data$parts[[index]]$glow$alpha <- value
+      data$face$kit_definition$glow$alpha <- value
+      parsed <- character_format_parse(data)
+      expect_identical(parsed$parts[[index]]$glow$alpha, value)
+      expect_identical(parsed$face$kit_definition$glow$alpha, value)
+    }
+    for (value in list(NULL, -0.1, 1.1, "1")) {
+      for (target in c("part", "kit")) {
+        bad <- data
+        if (target == "part") {
+          bad$parts[[index]]$glow["alpha"] <- list(value)
+          path <- paste0("$.parts[", index - 1L, "].glow.alpha")
+        } else {
+          bad$face$kit_definition$glow["alpha"] <- list(value)
+          path <- "$.face.kit_definition.glow.alpha"
+        }
+        format_problem("input_type", path, character_format_parse(bad))
+      }
+    }
+  })
+
   it("never preserves a caller's checked class or arbitrary attributes", {
     data <- format_recipe()
     class(data) <- c("mascot_character_data", "list")

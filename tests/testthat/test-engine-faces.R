@@ -194,6 +194,23 @@ describe("E3 generic face kits", {
     expect_equal(result$centre, 255)
   })
 
+  it("uses full glow alpha when an embedded kit omits it", {
+    skip_without_chrome()
+    js <- local_face_engine()
+    result <- js(
+      r"(
+      (()=>{
+        const source=faceFixture('screen');source.face.kit_definition.glow.alpha=1;
+        const explicit=paintFace(source);delete source.face.kit_definition.glow.alpha;
+        const implicit=paintFace(source);
+        return {same:explicit.canvas.toDataURL()===implicit.canvas.toDataURL(),halo:implicit.pixel(127,158)[3]};
+      })()
+    )"
+    )
+    expect_true(result$same)
+    expect_gt(result$halo, 0)
+  })
+
   it("retains static sweat under reduction, bounds pulse phase and reuses effect compiles", {
     skip_without_chrome()
     js <- local_face_engine()

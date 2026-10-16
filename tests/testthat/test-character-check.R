@@ -12,6 +12,26 @@ describe("character_format_check()", {
     }
   })
 
+  it("checks and rereads omitted glow alpha with the same evidence as explicit one", {
+    data <- format_recipe("alpha_visor")
+    index <- which(vapply(data$parts, function(part) !is.null(part$glow), logical(1)))[[1]]
+    data$parts[[index]]$glow$alpha <- 1
+    data$face$kit_definition$glow$alpha <- 1
+    explicit <- character_format_check(data, builtin = TRUE)
+    data$parts[[index]]$glow$alpha <- NULL
+    data$face$kit_definition$glow$alpha <- NULL
+    implicit <- character_format_check(data, builtin = TRUE)
+    expect_identical(character_format_identity(implicit), character_format_identity(explicit))
+    expect_identical(attr(implicit, "mascot_manifest"), attr(explicit, "mascot_manifest"))
+    plain <- character_format_parse(implicit)
+    text <- as.character(jsonlite::toJSON(plain, auto_unbox = TRUE, null = "null", digits = NA))
+    file <- withr::local_tempfile(fileext = ".json")
+    writeLines(text, file)
+    reread <- character_format_check(file, from = "file", builtin = TRUE)
+    expect_identical(character_format_identity(character_format_parse(reread)), character_format_identity(plain))
+    expect_identical(attr(reread, "mascot_manifest")$work, attr(explicit, "mascot_manifest")$work)
+  })
+
   it("reproduces the selected first diagnostic on all fourteen invalid recipes", {
     cases <- jsonlite::fromJSON(test_path("fixtures", "format", "diagnostic-expected.json"), simplifyVector = FALSE)
     expect_length(cases, 14)

@@ -272,6 +272,18 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
       }
       value[key] <- list(character_format_node(value[[key]], next_rule, child, definitions, json_source))
     }
+    if (kind == "object") {
+      for (key in setdiff(names(fields), keys)) {
+        if ("default" %in% names(fields[[key]])) {
+          value[key] <- list(character_format_node(
+            fields[[key]]$default,
+            fields[[key]],
+            paste0(path, ".", key),
+            definitions
+          ))
+        }
+      }
+    }
     return(value)
   }
   if (kind %in% c("array", "tuple")) {

@@ -1,6 +1,6 @@
 # Picked character references
 
-Issues [#289](https://github.com/insightsurge/mascot/issues/289) and [#291](https://github.com/insightsurge/mascot/issues/291), parent [#278](https://github.com/insightsurge/mascot/issues/278). Six additional resolved reference candidates exercise the existing v1 grammar. They do not install package built-ins or approve the format freeze. Existing Tessa and alpha_visor proposal examples remain unchanged.
+Issues [#289](https://github.com/insightsurge/mascot/issues/289) and [#291](https://github.com/insightsurge/mascot/issues/291), fidelity follow-up [#292](https://github.com/insightsurge/mascot/issues/292), parent [#278](https://github.com/insightsurge/mascot/issues/278). Six additional resolved reference candidates exercise the existing v1 grammar. They do not install package built-ins or approve the format freeze. Existing Tessa and alpha_visor proposal examples remain unchanged.
 
 ## Source and status
 
@@ -29,6 +29,14 @@ All six files pass the package R checker in file mode. The checker, grammar and 
 
 The affected static previews were regenerated and inspected across all five moods. The added padding changes apparent size for Neer, Iso and Knurl; their proportions, geometry, colours and props are retained. Founder visual approval remains pending. The Python budget table below is recomputed separately and is not an independent reproduction of R accounting.
 
+## Source fidelity follow-up
+
+Confirmed differences are corrected against the drawing code: Brim’s moustache gradients now use drawing-space coordinates symmetrically, each mood samples the original smile/open lift, fine full-size hair strokes are restored, and vest buttons are clipped to the body. The source does have two moustache lobes and feet; its cap path was already exact. Neer regains the ordinary water-depth fill, local gleam and a slim dark contour after the inner band. Sela’s gold sparkle uses the original four outer tips without an outline, with the source body gleam and purple shadow colour; fringe highlight coordinates, widths and alpha already match.
+
+Iso keeps round-2 slate/copper colours: dark ink bounds the copper body rim, sleeves use the showcase copper and boots use its dark ink. Its source lower-jacket shape remains present in the chosen slate, rather than restoring the superseded round-5 navy. Knurl’s source eyes are filled capsules, which are retained; painting the neck after the chassis restores its overlap, and separate dark/metal antenna strokes match the source. Cinder has no confirmed new discrepancy and is unchanged in this follow-up.
+
+These corrections preserve RC-01 frame padding and R acceptance. All strokes remain flat roles. The source gradient stroke on Neer’s inner water band is still approximated by its middle-stop colour/alpha; no grammar, checker or limits are extended. Source versus JSON previews remain the basis for founder visual approval.
+
 ## Format-freeze gaps
 
 1. **Continuous shape deformation has no v1 numeric geometry binding.** Neer’s crest controls and Cinder’s flame width/height/lean/wobble are source formulas. Exact held-mood samples are legal variants; neither shape interpolation nor a live formula solver is implemented. Brim’s smile-driven moustache controls have the same distinction. Root or part rotation is not labelled a replacement for crest flex or flame deformation.
@@ -44,20 +52,20 @@ Not intrinsic grammar gaps: coordinated cap/hand tracks, hair lag encoded as fin
 
 | Character | Band | Parts | Items | Passes | Numbers | Clips | Gradients | Emitters | Blur | Area bound |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| neer | full | 9 | 45 | 62 | 631 | 6 | 3 | 0 | 0 | 0.0 |
-| neer | small | 8 | 41 | 58 | 546 | 5 | 3 | 0 | 0 | 0.0 |
-| neer | micro | 3 | 17 | 22 | 157 | 2 | 1 | 0 | 0 | 0.0 |
-| sela | full | 12 | 49 | 74 | 510 | 4 | 6 | 1 | 8 | 0.239110298957 |
-| sela | small | 12 | 49 | 74 | 510 | 4 | 6 | 1 | 8 | 0.239110298957 |
+| neer | full | 9 | 48 | 65 | 742 | 7 | 5 | 0 | 0 | 0.0 |
+| neer | small | 8 | 44 | 61 | 657 | 6 | 5 | 0 | 0 | 0.0 |
+| neer | micro | 3 | 18 | 23 | 207 | 2 | 1 | 0 | 0 | 0.0 |
+| sela | full | 12 | 50 | 73 | 546 | 4 | 7 | 1 | 8 | 0.239110298957 |
+| sela | small | 12 | 50 | 73 | 546 | 4 | 7 | 1 | 8 | 0.239110298957 |
 | sela | micro | 4 | 19 | 26 | 201 | 2 | 0 | 0 | 0 | 0.0 |
-| brim | full | 11 | 51 | 76 | 717 | 8 | 10 | 1 | 8 | 0.235585462672 |
-| brim | small | 11 | 47 | 72 | 507 | 4 | 6 | 1 | 8 | 0.235585462672 |
+| brim | full | 11 | 53 | 78 | 901 | 12 | 10 | 1 | 8 | 0.235585462672 |
+| brim | small | 11 | 47 | 72 | 579 | 6 | 6 | 1 | 8 | 0.235585462672 |
 | brim | micro | 5 | 21 | 28 | 180 | 2 | 0 | 0 | 0 | 0.0 |
-| iso | full | 12 | 62 | 83 | 888 | 10 | 5 | 1 | 8 | 0.381528179096 |
-| iso | small | 12 | 54 | 75 | 668 | 6 | 5 | 1 | 8 | 0.381528179096 |
-| iso | micro | 4 | 21 | 28 | 206 | 2 | 1 | 0 | 0 | 0.0 |
-| knurl | full | 10 | 53 | 89 | 582 | 8 | 8 | 6 | 8 | 0.205761427877 |
-| knurl | small | 10 | 44 | 78 | 444 | 6 | 6 | 4 | 8 | 0.171372798894 |
+| iso | full | 12 | 63 | 84 | 924 | 10 | 3 | 1 | 8 | 0.381528179096 |
+| iso | small | 12 | 55 | 76 | 704 | 6 | 3 | 1 | 8 | 0.381528179096 |
+| iso | micro | 4 | 22 | 29 | 242 | 2 | 1 | 0 | 0 | 0.0 |
+| knurl | full | 10 | 54 | 88 | 588 | 8 | 8 | 6 | 8 | 0.205761427877 |
+| knurl | small | 10 | 45 | 77 | 450 | 6 | 6 | 4 | 8 | 0.171372798894 |
 | knurl | micro | 4 | 10 | 17 | 139 | 1 | 0 | 0 | 0 | 0.0 |
 | cinder | full | 13 | 46 | 61 | 525 | 6 | 7 | 0 | 0 | 0.0 |
 | cinder | small | 12 | 40 | 52 | 411 | 3 | 7 | 0 | 0 | 0.0 |

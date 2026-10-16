@@ -52,7 +52,7 @@
     "arm": "#C92C80",
     "arm_highlight": "#FF8EC5",
     "gold": "#FFC93C",
-    "shadow": "#A2AEA7",
+    "shadow": "#1E103C",
     "sweat": "#BDF3FF",
     "sweat_deep": "#27B8F0"
   },
@@ -265,6 +265,31 @@
         [
           1,
           "chip_b"
+        ]
+      ]
+    },
+    "body_gleam": {
+      "type": "radial",
+      "centre": [
+        174.2,
+        203.2
+      ],
+      "focus": [
+        158,
+        176.2
+      ],
+      "r0": 2,
+      "r1": 118.8,
+      "stops": [
+        [
+          0,
+          "shine",
+          0.34
+        ],
+        [
+          1,
+          "shine",
+          0
         ]
       ]
     }
@@ -530,6 +555,21 @@
           }
         },
         {
+          "id": "body_gleam",
+          "shape": "hexagon",
+          "x": 185,
+          "y": 214,
+          "r": 97,
+          "corner": 14,
+          "fill": {
+            "paint": "body_gleam"
+          },
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
           "shape": "hexagon",
           "x": 185,
           "y": 214,
@@ -614,9 +654,8 @@
         },
         {
           "shape": "path",
-          "d": "M 119.58 125.26 L 119.38 136.42 L 129.74 140.58 L 118.58 140.38 L 114.42 150.74 L 114.62 139.58 L 104.26 135.42 L 115.42 135.62 Z",
+          "d": "M119.582701300 125.259134488 L119.383787561 136.419760504 L129.740865512 140.582701300 L118.580239496 140.383787561 L114.417298700 150.740865512 L114.616212439 139.580239496 L104.259134488 135.417298700 L115.419760504 135.616212439 Z",
           "fill": "star",
-          "outline": true,
           "lod": [
             "full",
             "small"
@@ -1326,5 +1365,5 @@
   },
   "palettes": {},
   "palette_sources": {},
-  "note": "Source: picked round5.md and the recovered drawing source drawSela lines 90-113. True source geometry, coordinates, palette, and features. Preserves source coordinates inside figure parent at [-144, -253.44] scale 0.72 mapping source ground 352 to 270. Format gaps: dynamic time block clipping/hatching, procedural honeycomb canvas texture, dual-rotation group lag, shadowBlur glow on canvas, fine procedural hair strands."
+  "note": "Source: picked round5.md and the recovered drawing source drawSela lines 90-113. True source geometry, coordinates, palette, and features. Preserves source coordinates inside figure parent at [-144, -253.44] scale 0.72 mapping source ground 352 to 270. Format gaps: dynamic time block clipping/hatching, procedural honeycomb canvas texture, dual-rotation group lag, shadowBlur glow on canvas, fine procedural hair strands. Fidelity correction: source four-tip gold sparkle at radius 13/inner ratio 0.22 and rotation 0.2, without an outline; restored the body radial gleam and purple shadow colour. Fringe pink/cyan paths, widths and alpha already match the source; no arbitrary highlight brightening."
 }

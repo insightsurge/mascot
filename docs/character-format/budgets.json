@@ -4546,11 +4546,11 @@
       "band": "full",
       "maxima": {
         "active_parts": 9,
-        "painted_items": 45,
-        "paint_passes": 62,
-        "path_numbers": 631,
-        "clip_applications": 6,
-        "gradient_uses": 3,
+        "painted_items": 48,
+        "paint_passes": 65,
+        "path_numbers": 742,
+        "clip_applications": 7,
+        "gradient_uses": 5,
         "glow_emitters": 0,
         "blur_design_units": 0,
         "inflated_glow_area_ratio": 0.0
@@ -4683,7 +4683,7 @@
             },
             {
               "component": "body",
-              "bound": 4,
+              "bound": 7,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -4768,7 +4768,7 @@
             },
             {
               "component": "body",
-              "bound": 6,
+              "bound": 9,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -4853,11 +4853,15 @@
             },
             {
               "component": "body",
-              "bound": 322,
+              "bound": 433,
               "choice": {
                 "part": "body",
                 "variant": "default",
                 "clip_bounds": [
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
                   {
                     "target": "body.silhouette",
                     "variant": "default"
@@ -4929,11 +4933,15 @@
           "components": [
             {
               "component": "body",
-              "bound": 3,
+              "bound": 4,
               "choice": {
                 "part": "body",
                 "variant": "default",
                 "clip_bounds": [
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
                   {
                     "target": "body.silhouette",
                     "variant": "default"
@@ -4980,7 +4988,7 @@
           "components": [
             {
               "component": "body",
-              "bound": 1,
+              "bound": 3,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -5073,11 +5081,11 @@
       "band": "small",
       "maxima": {
         "active_parts": 8,
-        "painted_items": 41,
-        "paint_passes": 58,
-        "path_numbers": 546,
-        "clip_applications": 5,
-        "gradient_uses": 3,
+        "painted_items": 44,
+        "paint_passes": 61,
+        "path_numbers": 657,
+        "clip_applications": 6,
+        "gradient_uses": 5,
         "glow_emitters": 0,
         "blur_design_units": 0,
         "inflated_glow_area_ratio": 0.0
@@ -5201,7 +5209,7 @@
             },
             {
               "component": "body",
-              "bound": 3,
+              "bound": 6,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -5277,7 +5285,7 @@
             },
             {
               "component": "body",
-              "bound": 5,
+              "bound": 8,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -5353,11 +5361,15 @@
             },
             {
               "component": "body",
-              "bound": 252,
+              "bound": 363,
               "choice": {
                 "part": "body",
                 "variant": "default",
                 "clip_bounds": [
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
                   {
                     "target": "body.silhouette",
                     "variant": "default"
@@ -5416,11 +5428,15 @@
           "components": [
             {
               "component": "body",
-              "bound": 2,
+              "bound": 3,
               "choice": {
                 "part": "body",
                 "variant": "default",
                 "clip_bounds": [
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
                   {
                     "target": "body.silhouette",
                     "variant": "default"
@@ -5463,7 +5479,7 @@
           "components": [
             {
               "component": "body",
-              "bound": 1,
+              "bound": 3,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -5556,9 +5572,9 @@
       "band": "micro",
       "maxima": {
         "active_parts": 3,
-        "painted_items": 17,
-        "paint_passes": 22,
-        "path_numbers": 157,
+        "painted_items": 18,
+        "paint_passes": 23,
+        "path_numbers": 207,
         "clip_applications": 2,
         "gradient_uses": 1,
         "glow_emitters": 0,
@@ -5612,7 +5628,7 @@
           "components": [
             {
               "component": "body",
-              "bound": 1,
+              "bound": 2,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -5643,7 +5659,7 @@
           "components": [
             {
               "component": "body",
-              "bound": 3,
+              "bound": 4,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -5674,7 +5690,7 @@
           "components": [
             {
               "component": "body",
-              "bound": 50,
+              "bound": 100,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -5794,11 +5810,11 @@
       "band": "full",
       "maxima": {
         "active_parts": 12,
-        "painted_items": 49,
-        "paint_passes": 74,
-        "path_numbers": 510,
+        "painted_items": 50,
+        "paint_passes": 73,
+        "path_numbers": 546,
         "clip_applications": 4,
-        "gradient_uses": 6,
+        "gradient_uses": 7,
         "glow_emitters": 1,
         "blur_design_units": 8,
         "inflated_glow_area_ratio": 0.239110298957
@@ -5976,7 +5992,7 @@
             },
             {
               "component": "body",
-              "bound": 3,
+              "bound": 4,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -6088,7 +6104,7 @@
             },
             {
               "component": "body",
-              "bound": 5,
+              "bound": 6,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -6097,7 +6113,7 @@
             },
             {
               "component": "fringe",
-              "bound": 8,
+              "bound": 6,
               "choice": {
                 "part": "fringe",
                 "variant": "default",
@@ -6200,7 +6216,7 @@
             },
             {
               "component": "body",
-              "bound": 108,
+              "bound": 144,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -6336,7 +6352,7 @@
             },
             {
               "component": "body",
-              "bound": 2,
+              "bound": 3,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -6450,11 +6466,11 @@
       "band": "small",
       "maxima": {
         "active_parts": 12,
-        "painted_items": 49,
-        "paint_passes": 74,
-        "path_numbers": 510,
+        "painted_items": 50,
+        "paint_passes": 73,
+        "path_numbers": 546,
         "clip_applications": 4,
-        "gradient_uses": 6,
+        "gradient_uses": 7,
         "glow_emitters": 1,
         "blur_design_units": 8,
         "inflated_glow_area_ratio": 0.239110298957
@@ -6632,7 +6648,7 @@
             },
             {
               "component": "body",
-              "bound": 3,
+              "bound": 4,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -6744,7 +6760,7 @@
             },
             {
               "component": "body",
-              "bound": 5,
+              "bound": 6,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -6753,7 +6769,7 @@
             },
             {
               "component": "fringe",
-              "bound": 8,
+              "bound": 6,
               "choice": {
                 "part": "fringe",
                 "variant": "default",
@@ -6856,7 +6872,7 @@
             },
             {
               "component": "body",
-              "bound": 108,
+              "bound": 144,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -6992,7 +7008,7 @@
             },
             {
               "component": "body",
-              "bound": 2,
+              "bound": 3,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -7370,10 +7386,10 @@
       "band": "full",
       "maxima": {
         "active_parts": 11,
-        "painted_items": 51,
-        "paint_passes": 76,
-        "path_numbers": 717,
-        "clip_applications": 8,
+        "painted_items": 53,
+        "paint_passes": 78,
+        "path_numbers": 901,
+        "clip_applications": 12,
         "gradient_uses": 10,
         "glow_emitters": 1,
         "blur_design_units": 8,
@@ -7534,7 +7550,7 @@
             },
             {
               "component": "stache",
-              "bound": 2,
+              "bound": 4,
               "choice": {
                 "part": "stache",
                 "variant": "default",
@@ -7645,7 +7661,7 @@
             },
             {
               "component": "stache",
-              "bound": 4,
+              "bound": 6,
               "choice": {
                 "part": "stache",
                 "variant": "default",
@@ -7751,11 +7767,19 @@
             },
             {
               "component": "vest",
-              "bound": 100,
+              "bound": 172,
               "choice": {
                 "part": "vest",
                 "variant": "default",
                 "clip_bounds": [
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
                   {
                     "target": "body.silhouette",
                     "variant": "default"
@@ -7778,11 +7802,20 @@
             },
             {
               "component": "stache",
-              "bound": 52,
+              "bound": 164,
               "choice": {
                 "part": "stache",
                 "variant": "default",
-                "clip_bounds": []
+                "clip_bounds": [
+                  {
+                    "target": "stache.stache_r",
+                    "variant": "default"
+                  },
+                  {
+                    "target": "stache.stache_l",
+                    "variant": "default"
+                  }
+                ]
               }
             },
             {
@@ -7880,7 +7913,7 @@
             },
             {
               "component": "vest",
-              "bound": 2,
+              "bound": 4,
               "choice": {
                 "part": "vest",
                 "variant": "default",
@@ -7891,6 +7924,32 @@
                   },
                   {
                     "target": "body.silhouette",
+                    "variant": "default"
+                  },
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  }
+                ]
+              }
+            },
+            {
+              "component": "stache",
+              "bound": 2,
+              "choice": {
+                "part": "stache",
+                "variant": "default",
+                "clip_bounds": [
+                  {
+                    "target": "stache.stache_r",
+                    "variant": "default"
+                  },
+                  {
+                    "target": "stache.stache_l",
                     "variant": "default"
                   }
                 ]
@@ -8074,7 +8133,7 @@
           }
         }
       },
-      "evaluated_body_component_choices": 18,
+      "evaluated_body_component_choices": 21,
       "exceeded": [],
       "structural_counts": "separable_componentwise_upper_bound",
       "glow_area": "conservative_authored_upper_bound",
@@ -8088,8 +8147,8 @@
         "active_parts": 11,
         "painted_items": 47,
         "paint_passes": 72,
-        "path_numbers": 507,
-        "clip_applications": 4,
+        "path_numbers": 579,
+        "clip_applications": 6,
         "gradient_uses": 6,
         "glow_emitters": 1,
         "blur_design_units": 8,
@@ -8459,11 +8518,19 @@
             },
             {
               "component": "vest",
-              "bound": 60,
+              "bound": 132,
               "choice": {
                 "part": "vest",
                 "variant": "default",
                 "clip_bounds": [
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
                   {
                     "target": "body.silhouette",
                     "variant": "default"
@@ -8571,11 +8638,19 @@
             },
             {
               "component": "vest",
-              "bound": 1,
+              "bound": 3,
               "choice": {
                 "part": "vest",
                 "variant": "default",
                 "clip_bounds": [
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
+                  {
+                    "target": "body.silhouette",
+                    "variant": "default"
+                  },
                   {
                     "target": "body.silhouette",
                     "variant": "default"
@@ -8720,7 +8795,7 @@
           }
         }
       },
-      "evaluated_body_component_choices": 18,
+      "evaluated_body_component_choices": 21,
       "exceeded": [],
       "structural_counts": "separable_componentwise_upper_bound",
       "glow_area": "conservative_authored_upper_bound",
@@ -9056,11 +9131,11 @@
       "band": "full",
       "maxima": {
         "active_parts": 12,
-        "painted_items": 62,
-        "paint_passes": 83,
-        "path_numbers": 888,
+        "painted_items": 63,
+        "paint_passes": 84,
+        "path_numbers": 924,
         "clip_applications": 10,
-        "gradient_uses": 5,
+        "gradient_uses": 3,
         "glow_emitters": 1,
         "blur_design_units": 8,
         "inflated_glow_area_ratio": 0.381528179096
@@ -9211,7 +9286,7 @@
             },
             {
               "component": "body",
-              "bound": 5,
+              "bound": 6,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -9323,7 +9398,7 @@
             },
             {
               "component": "body",
-              "bound": 7,
+              "bound": 8,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -9435,7 +9510,7 @@
             },
             {
               "component": "body",
-              "bound": 256,
+              "bound": 292,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -9640,15 +9715,6 @@
         "gradient_uses": {
           "components": [
             {
-              "component": "feet",
-              "bound": 2,
-              "choice": {
-                "part": "feet",
-                "variant": "default",
-                "clip_bounds": []
-              }
-            },
-            {
               "component": "body",
               "bound": 1,
               "choice": {
@@ -9773,11 +9839,11 @@
       "band": "small",
       "maxima": {
         "active_parts": 12,
-        "painted_items": 54,
-        "paint_passes": 75,
-        "path_numbers": 668,
+        "painted_items": 55,
+        "paint_passes": 76,
+        "path_numbers": 704,
         "clip_applications": 6,
-        "gradient_uses": 5,
+        "gradient_uses": 3,
         "glow_emitters": 1,
         "blur_design_units": 8,
         "inflated_glow_area_ratio": 0.381528179096
@@ -9928,7 +9994,7 @@
             },
             {
               "component": "body",
-              "bound": 4,
+              "bound": 5,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -10040,7 +10106,7 @@
             },
             {
               "component": "body",
-              "bound": 6,
+              "bound": 7,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -10152,7 +10218,7 @@
             },
             {
               "component": "body",
-              "bound": 196,
+              "bound": 232,
               "choice": {
                 "part": "body",
                 "variant": "default",
@@ -10314,15 +10380,6 @@
         "gradient_uses": {
           "components": [
             {
-              "component": "feet",
-              "bound": 2,
-              "choice": {
-                "part": "feet",
-                "variant": "default",
-                "clip_bounds": []
-              }
-            },
-            {
               "component": "body",
               "bound": 1,
               "choice": {
@@ -10447,9 +10504,9 @@
       "band": "micro",
       "maxima": {
         "active_parts": 4,
-        "painted_items": 21,
-        "paint_passes": 28,
-        "path_numbers": 206,
+        "painted_items": 22,
+        "paint_passes": 29,
+        "path_numbers": 242,
         "clip_applications": 2,
         "gradient_uses": 1,
         "glow_emitters": 0,
@@ -10512,7 +10569,7 @@
           "components": [
             {
               "component": "body",
-              "bound": 2,
+              "bound": 3,
               "choice": {
                 "part": "body",
                 "variant": "micro",
@@ -10552,7 +10609,7 @@
           "components": [
             {
               "component": "body",
-              "bound": 4,
+              "bound": 5,
               "choice": {
                 "part": "body",
                 "variant": "micro",
@@ -10592,7 +10649,7 @@
           "components": [
             {
               "component": "body",
-              "bound": 72,
+              "bound": 108,
               "choice": {
                 "part": "body",
                 "variant": "micro",
@@ -10721,9 +10778,9 @@
       "band": "full",
       "maxima": {
         "active_parts": 10,
-        "painted_items": 53,
-        "paint_passes": 89,
-        "path_numbers": 582,
+        "painted_items": 54,
+        "paint_passes": 88,
+        "path_numbers": 588,
         "clip_applications": 8,
         "gradient_uses": 8,
         "glow_emitters": 6,
@@ -10876,7 +10933,7 @@
             },
             {
               "component": "head",
-              "bound": 13,
+              "bound": 14,
               "choice": {
                 "part": "head",
                 "variant": "default",
@@ -10995,7 +11052,7 @@
             },
             {
               "component": "head",
-              "bound": 20,
+              "bound": 19,
               "choice": {
                 "part": "head",
                 "variant": "default",
@@ -11127,7 +11184,7 @@
             },
             {
               "component": "head",
-              "bound": 120,
+              "bound": 126,
               "choice": {
                 "part": "head",
                 "variant": "default",
@@ -11413,9 +11470,9 @@
       "band": "small",
       "maxima": {
         "active_parts": 10,
-        "painted_items": 44,
-        "paint_passes": 78,
-        "path_numbers": 444,
+        "painted_items": 45,
+        "paint_passes": 77,
+        "path_numbers": 450,
         "clip_applications": 6,
         "gradient_uses": 6,
         "glow_emitters": 4,
@@ -11568,7 +11625,7 @@
             },
             {
               "component": "head",
-              "bound": 10,
+              "bound": 11,
               "choice": {
                 "part": "head",
                 "variant": "default",
@@ -11687,7 +11744,7 @@
             },
             {
               "component": "head",
-              "bound": 17,
+              "bound": 16,
               "choice": {
                 "part": "head",
                 "variant": "default",
@@ -11815,7 +11872,7 @@
             },
             {
               "component": "head",
-              "bound": 92,
+              "bound": 98,
               "choice": {
                 "part": "head",
                 "variant": "default",

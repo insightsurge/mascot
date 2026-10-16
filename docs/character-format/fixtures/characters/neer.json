@@ -31,7 +31,7 @@
     "body": "#2A74C0",
     "body_light": "#6FC0FF",
     "body_deep": "#164C8A",
-    "band": "#BFE3FF",
+    "band": "#9DCDF5",
     "hand": "#9DC3E6",
     "ivory": "#FFF6E0",
     "brow": "#FFFFFF",
@@ -47,7 +47,9 @@
     "sparkle": "#FFFFFF",
     "sparkle_outline": "#9DC3E6",
     "sweat_light": "#BDF3FF",
-    "sweat_base": "#27B8F0"
+    "sweat_base": "#27B8F0",
+    "water_top": "#14468C",
+    "water_bottom": "#0A2864"
   },
   "ground": {
     "centre_height": 79.2,
@@ -137,6 +139,54 @@
         [
           1,
           "sweat_base"
+        ]
+      ]
+    },
+    "water_depth": {
+      "type": "linear",
+      "from": [
+        0,
+        222
+      ],
+      "to": [
+        0,
+        330
+      ],
+      "stops": [
+        [
+          0,
+          "water_top",
+          0
+        ],
+        [
+          1,
+          "water_bottom",
+          0.35
+        ]
+      ]
+    },
+    "water_gleam": {
+      "type": "radial",
+      "centre": [
+        98,
+        244
+      ],
+      "focus": [
+        92,
+        230
+      ],
+      "r0": 1,
+      "r1": 34,
+      "stops": [
+        [
+          0,
+          "shine",
+          0.35
+        ],
+        [
+          1,
+          "shine",
+          0
         ]
       ]
     }
@@ -327,12 +377,28 @@
           "outline": true
         },
         {
+          "id": "water_depth",
+          "shape": "rect",
+          "x": 30,
+          "y": 222,
+          "w": 330,
+          "h": 110,
+          "fill": {
+            "paint": "water_depth"
+          },
+          "clip": "body.silhouette",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
           "id": "band",
           "shape": "path",
           "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 74 172.4 140 151.28 C200 126.64 274 114.32 316 144.24 C348 167.12 338 200.56 308 204.08 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
           "stroke": "band",
           "width": 24,
-          "alpha": 0.65,
+          "alpha": 0.5,
           "clip": "body.silhouette",
           "lod": [
             "full",
@@ -469,6 +535,29 @@
             "full",
             "small"
           ]
+        },
+        {
+          "id": "water_gleam",
+          "shape": "ellipse",
+          "x": 98,
+          "y": 244,
+          "rx": 18,
+          "ry": 34,
+          "rotate": 0.3,
+          "fill": {
+            "paint": "water_gleam"
+          },
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "dark_contour",
+          "shape": "path",
+          "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 74 172.4 140 151.28 C200 126.64 274 114.32 316 144.24 C348 167.12 338 200.56 308 204.08 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
+          "stroke": "outline",
+          "width": 3
         }
       ],
       "variants": {
@@ -483,12 +572,28 @@
             "outline": true
           },
           {
+            "id": "water_depth",
+            "shape": "rect",
+            "x": 30,
+            "y": 222,
+            "w": 330,
+            "h": 110,
+            "fill": {
+              "paint": "water_depth"
+            },
+            "clip": "body.silhouette",
+            "lod": [
+              "full",
+              "small"
+            ]
+          },
+          {
             "id": "band",
             "shape": "path",
             "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 73.2 170.64 139.2 149.52 C200 124.176 275.2 111.504 318 141.776 C350.4 165.008 340 199.504 309.2 203.728 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
             "stroke": "band",
             "width": 24,
-            "alpha": 0.65,
+            "alpha": 0.5,
             "clip": "body.silhouette",
             "lod": [
               "full",
@@ -625,6 +730,29 @@
               "full",
               "small"
             ]
+          },
+          {
+            "id": "water_gleam",
+            "shape": "ellipse",
+            "x": 98,
+            "y": 244,
+            "rx": 18,
+            "ry": 34,
+            "rotate": 0.3,
+            "fill": {
+              "paint": "water_gleam"
+            },
+            "lod": [
+              "full",
+              "small"
+            ]
+          },
+          {
+            "id": "dark_contour",
+            "shape": "path",
+            "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 73.2 170.64 139.2 149.52 C200 124.176 275.2 111.504 318 141.776 C350.4 165.008 340 199.504 309.2 203.728 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
+            "stroke": "outline",
+            "width": 3
           }
         ],
         "happy": [
@@ -638,12 +766,28 @@
             "outline": true
           },
           {
+            "id": "water_depth",
+            "shape": "rect",
+            "x": 30,
+            "y": 222,
+            "w": 330,
+            "h": 110,
+            "fill": {
+              "paint": "water_depth"
+            },
+            "clip": "body.silhouette",
+            "lod": [
+              "full",
+              "small"
+            ]
+          },
+          {
             "id": "band",
             "shape": "path",
             "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 72 168 138 146.88 C200 120.48 277 107.28 321 138.08 C354 161.84 343 197.92 311 203.2 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
             "stroke": "band",
             "width": 24,
-            "alpha": 0.65,
+            "alpha": 0.5,
             "clip": "body.silhouette",
             "lod": [
               "full",
@@ -780,6 +924,29 @@
               "full",
               "small"
             ]
+          },
+          {
+            "id": "water_gleam",
+            "shape": "ellipse",
+            "x": 98,
+            "y": 244,
+            "rx": 18,
+            "ry": 34,
+            "rotate": 0.3,
+            "fill": {
+              "paint": "water_gleam"
+            },
+            "lod": [
+              "full",
+              "small"
+            ]
+          },
+          {
+            "id": "dark_contour",
+            "shape": "path",
+            "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 72 168 138 146.88 C200 120.48 277 107.28 321 138.08 C354 161.84 343 197.92 311 203.2 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
+            "stroke": "outline",
+            "width": 3
           }
         ],
         "worried": [
@@ -793,12 +960,28 @@
             "outline": true
           },
           {
+            "id": "water_depth",
+            "shape": "rect",
+            "x": 30,
+            "y": 222,
+            "w": 330,
+            "h": 110,
+            "fill": {
+              "paint": "water_depth"
+            },
+            "clip": "body.silhouette",
+            "lod": [
+              "full",
+              "small"
+            ]
+          },
+          {
             "id": "band",
             "shape": "path",
             "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 75.6 175.92 141.6 154.8 C200 131.568 271.6 119.952 312 149.168 C343.2 171.344 334 202.672 305.6 204.784 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
             "stroke": "band",
             "width": 24,
-            "alpha": 0.65,
+            "alpha": 0.5,
             "clip": "body.silhouette",
             "lod": [
               "full",
@@ -935,6 +1118,29 @@
               "full",
               "small"
             ]
+          },
+          {
+            "id": "water_gleam",
+            "shape": "ellipse",
+            "x": 98,
+            "y": 244,
+            "rx": 18,
+            "ry": 34,
+            "rotate": 0.3,
+            "fill": {
+              "paint": "water_gleam"
+            },
+            "lod": [
+              "full",
+              "small"
+            ]
+          },
+          {
+            "id": "dark_contour",
+            "shape": "path",
+            "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 75.6 175.92 141.6 154.8 C200 131.568 271.6 119.952 312 149.168 C343.2 171.344 334 202.672 305.6 204.784 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
+            "stroke": "outline",
+            "width": 3
           }
         ],
         "celebrating": [
@@ -948,12 +1154,28 @@
             "outline": true
           },
           {
+            "id": "water_depth",
+            "shape": "rect",
+            "x": 30,
+            "y": 222,
+            "w": 330,
+            "h": 110,
+            "fill": {
+              "paint": "water_depth"
+            },
+            "clip": "body.silhouette",
+            "lod": [
+              "full",
+              "small"
+            ]
+          },
+          {
             "id": "band",
             "shape": "path",
             "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 70 163.6 136 142.48 C200 114.32 280 100.24 326 131.92 C360 156.56 348 195.28 314 202.32 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
             "stroke": "band",
             "width": 24,
-            "alpha": 0.65,
+            "alpha": 0.5,
             "clip": "body.silhouette",
             "lod": [
               "full",
@@ -1090,6 +1312,29 @@
               "full",
               "small"
             ]
+          },
+          {
+            "id": "water_gleam",
+            "shape": "ellipse",
+            "x": 98,
+            "y": 244,
+            "rx": 18,
+            "ry": 34,
+            "rotate": 0.3,
+            "fill": {
+              "paint": "water_gleam"
+            },
+            "lod": [
+              "full",
+              "small"
+            ]
+          },
+          {
+            "id": "dark_contour",
+            "shape": "path",
+            "d": "M78 322 C52 322 40 302.64 46 276.24 C40 225.2 70 163.6 136 142.48 C200 114.32 280 100.24 326 131.92 C360 156.56 348 195.28 314 202.32 C286 205.84 266 202.32 258 193.52 C250 209.36 252 218.16 262 221.68 C280 228.72 318 226.96 336 255.12 C348 276.24 346 306.16 328 322 Z",
+            "stroke": "outline",
+            "width": 3
           }
         ]
       }
@@ -1831,7 +2076,7 @@
   },
   "palettes": {},
   "palette_sources": {},
-  "note": "Source: the picked drawing improved.md and recovered drawNeer in the report. Crest variants preserve exact cubic controls at each held mood; no background wave. Slim outline follows founder preference. Gaps: continuous numeric flex/body rebuilding between held moods; animated screen caustics; particles; radial iris gradient and original pupil ratio; shell spring; open-mouth inner tongue/teeth clipping. Only static supported geometry is included. Nod/wave are explicitly root-tilt fallbacks, not the unsupported crest-flex gesture. Source Canvas arc in shell converted to cubic within 0.006 source units. Micro omits the inner band to retain the two eye clips within the cap; this is an explicit detail simplification. Body y coordinates bake the picked drawing’s exact 0.88 path-only compression; sheen/surface remain in their original source space. Authored figure scale is 0.60 with a raised origin so the complete arm rotation envelopes fit the frame; source geometry and all held arm angles are unchanged.",
+  "note": "Source: the picked drawing improved.md and recovered drawNeer in the report. Crest variants preserve exact cubic controls at each held mood; no background wave. Slim outline follows founder preference. Gaps: continuous numeric flex/body rebuilding between held moods; animated screen caustics; particles; radial iris gradient and original pupil ratio; shell spring; open-mouth inner tongue/teeth clipping. Only static supported geometry is included. Nod/wave are explicitly root-tilt fallbacks, not the unsupported crest-flex gesture. Source Canvas arc in shell converted to cubic within 0.006 source units. Micro omits the inner band to retain the two eye clips within the cap; this is an explicit detail simplification. Body y coordinates bake the picked drawing’s exact 0.88 path-only compression; sheen/surface remain in their original source space. Authored figure scale is 0.60 with a raised origin so the complete arm rotation envelopes fit the frame; source geometry and all held arm angles are unchanged. Fidelity correction: restored the source dark water-depth fill and local white gleam, and paint a slim dark contour after the inner band. The flat role-only band uses the source middle-stop blue/alpha; the source gradient stroke remains approximated, without extending v1 stroke typing.",
   "contrast": [
     {
       "fg": "feature",

@@ -44,7 +44,7 @@
     "jacket_piping": "#d87349",
     "jacket_pocket": "rgba(255, 255, 255, 0.4)",
     "glasses_glass": "rgba(180, 235, 255, 0.16)",
-    "arm_blue": "#66889a",
+    "arm_blue": "#d87349",
     "arm_hi": "#eed592",
     "hand": "#d87349",
     "divider_metal": "#d5def2",
@@ -65,7 +65,8 @@
     "sweat": "#27b8f0",
     "sweat_light": "#bdf3ff",
     "sparkle": "#ffffff",
-    "sparkle_outline": "#d87349"
+    "sparkle_outline": "#d87349",
+    "boot": "#1b2430"
   },
   "contrast": [
     {
@@ -406,9 +407,7 @@
           "y": 322.57,
           "rx": 19,
           "ry": 10,
-          "fill": {
-            "paint": "feet_gradient"
-          },
+          "fill": "boot",
           "outline": true
         },
         {
@@ -417,9 +416,7 @@
           "y": 322.57,
           "rx": 19,
           "ry": 10,
-          "fill": {
-            "paint": "feet_gradient"
-          },
+          "fill": "boot",
           "outline": true
         }
       ],
@@ -488,6 +485,13 @@
             "full",
             "small"
           ]
+        },
+        {
+          "id": "dark_contour",
+          "shape": "path",
+          "d": "M 200.54 107.44 Q 215.0 98.5 229.46 107.44 L 293.9 147.31 Q 308.36 156.25 308.36 173.25 L 308.36 254.75 Q 308.36 271.75 293.9 280.69 L 229.46 320.56 Q 215.0 329.5 200.54 320.56 L 136.1 280.69 Q 121.64 271.75 121.64 254.75 L 121.64 173.25 Q 121.64 156.25 136.1 147.31 Z",
+          "stroke": "outline",
+          "width": 3
         }
       ],
       "variants": {
@@ -507,6 +511,13 @@
             "d": "M 200.54 107.44 Q 215.0 98.5 229.46 107.44 L 293.9 147.31 Q 308.36 156.25 308.36 173.25 L 308.36 254.75 Q 308.36 271.75 293.9 280.69 L 229.46 320.56 Q 215.0 329.5 200.54 320.56 L 136.1 280.69 Q 121.64 271.75 121.64 254.75 L 121.64 173.25 Q 121.64 156.25 136.1 147.31 Z",
             "stroke": "gold_rim",
             "width": 10
+          },
+          {
+            "id": "dark_contour",
+            "shape": "path",
+            "d": "M 200.54 107.44 Q 215.0 98.5 229.46 107.44 L 293.9 147.31 Q 308.36 156.25 308.36 173.25 L 308.36 254.75 Q 308.36 271.75 293.9 280.69 L 229.46 320.56 Q 215.0 329.5 200.54 320.56 L 136.1 280.69 Q 121.64 271.75 121.64 254.75 L 121.64 173.25 Q 121.64 156.25 136.1 147.31 Z",
+            "stroke": "outline",
+            "width": 3
           }
         ]
       }
@@ -1527,5 +1538,5 @@
   },
   "palettes": {},
   "palette_sources": {},
-  "note": "Source: picked round5.md and recovered the recovered drawing source (lines 140-164). True source geometry for pointy-top hex with sx=0.98, sy=1.05, quiff, circular eyewear, jacket with piping, feet, and drafting divider. Dynamic curve equations in chart panel captured via static variants (idle, thinking, converged, diverged). Gestures nod and wave use explicit root-rotation fallbacks. Rim stroke uses a flat source gold role: contract 3.5 types stroke as a role, although the accounting prose mentions gradient stroke invocations. Gradient-stroke authoring needs an explicit freeze decision; the fixture does not silently extend that field. Founder palette pick applied from the round-2 showcase: slate body #66889a, copper rim #d87349, slate jacket #3f5563, ink #1b2430/#0e141d; these deliberately differ from the round-5 source colours in the comparison. Retains the picked quiff and untinted wire glasses; no lens fill. Authored figure scale is 0.64 with a centred origin to retain the complete chart glow and divider motion inside the frame. Mouth ellipses use normalised kit coordinates."
+  "note": "Source: picked round5.md and recovered the recovered drawing source (lines 140-164). True source geometry for pointy-top hex with sx=0.98, sy=1.05, quiff, circular eyewear, jacket with piping, feet, and drafting divider. Dynamic curve equations in chart panel captured via static variants (idle, thinking, converged, diverged). Gestures nod and wave use explicit root-rotation fallbacks. Rim stroke uses a flat source gold role: contract 3.5 types stroke as a role, although the accounting prose mentions gradient stroke invocations. Gradient-stroke authoring needs an explicit freeze decision; the fixture does not silently extend that field. Founder palette pick applied from the round-2 showcase: slate body #66889a, copper rim #d87349, slate jacket #3f5563, ink #1b2430/#0e141d; these deliberately differ from the round-5 source colours in the comparison. Retains the picked quiff and untinted wire glasses; no lens fill. Authored figure scale is 0.64 with a centred origin to retain the complete chart glow and divider motion inside the frame. Mouth ellipses use normalised kit coordinates. Fidelity correction: final slim dark body contour remains visible outside the copper rim; sleeves and dark boots use the round-2 showcase copper and ink roles. The lower jacket path is source-exact and remains round-2 slate #3f5563, rather than restoring the superseded round-5 navy palette."
 }

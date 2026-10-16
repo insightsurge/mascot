@@ -2,7 +2,7 @@
 
 Status: reference contract and fixture preparation, 2026-10-14; issue [#278](https://github.com/insightsurge/mascot/issues/278), parent #3 under M1 #11.
 
-This set makes the reviewed recipe concrete. It does not implement the parser, full validator, renderer or R builder. No fixture is certified valid merely because it parses. The operation manifest and reference per-band counts are now recorded. R1a acceptance still requires review of the new accounting details; R1c must independently reproduce the counts and conservative glow-area bounds through the implementation. Visual acceptance and performance remain separate.
+This set makes the reviewed recipe concrete. It does not implement the parser, full validator, renderer or R builder. No fixture is certified valid merely because it parses. Every reference or built-in character file must pass the actual R `character_format_check()` before it is done; Python syntax and budget checks alone are insufficient. The operation manifest and reference per-band counts are now recorded. R1a acceptance still requires review of the new accounting details; R1c must independently reproduce the counts and conservative glow-area bounds through the implementation. Visual acceptance and performance remain separate.
 
 ## Reading order and ownership
 
@@ -181,7 +181,7 @@ Every part draws a list of **items**. An item is a shape plus how to paint it.
 | `shape` | one of `polygon`, `hexagon`, `circle`, `ellipse`, `rect`, `round_rect`, `path`, `polyline`, `arc`, `ref` | required | |
 | geometry | see below | | Numbers in the part's space. |
 | `fill` | role or `{ "paint": id }` | none | |
-| `stroke` | role | none | Detail line (not the outline). |
+| `stroke` | role | none | Detail line (not the outline). Version 1 strokes use flat colour roles; gradient strokes are unsupported. |
 | `width` | number > 0 | `2.5` | Stroke width. |
 | `alpha` | number 0..1 | `1` | Applies to fill and stroke. |
 | `outline` | boolean | `false` | Stroke with the character's outline style (3.7). |
@@ -242,7 +242,7 @@ Hexonians' family sets `{ "width": 2.5, "colour": "outline" }` with ink `#16201b
 | `variants` | `{ name: [items] }` | none | Alternative item lists; `items` is the variant `default`. A mood, track or switch picks one (shape swap). |
 | `switch` | object | none | `{ "channel": "root.lift", "above": 6, "variant": "tuck" }`: a declarative threshold, no expressions. |
 | `opacity` | number 0..1 | `1` | |
-| `glow` | object or `null` | `null` | `{ "item": item_id, "colour": role, "blur": n, "alpha": a }` within budget. |
+| `glow` | object or `null` | `null` | `{ "item": item_id, "colour": role, "blur": n, "alpha": a }` within budget; `alpha` is optional and defaults to `1`. |
 | `visible` | boolean | `true` | |
 | `keep_upright` | boolean | `false` | Uses the explicit affine rule below; position follows parent. |
 | `no_flip` | boolean | `false` | Removes the defined inherited reflection, by the affine rule below. |
@@ -332,7 +332,7 @@ Clips use the active target item's filled geometry in its world matrix, even if 
 
 A face is optional (`null` for faceless characters). Otherwise fields are: part (required real part), at [0,0], scale 1, layer (owning layer+0.5), kit (family default or required classic/screen), kit_definition (required complete matching kit in resolved/saved data, including built-ins; optional in source), clip (optional filled item), eyes {y:-12,spacing:30,lashes:true,iris:null}, mouth {y:24}, blush (optional ellipse placement), colours (kit-role mapping), tune (style numeric overrides), styles (complete replacement style objects), caps {left:"round",right:"round",join:"round"}. Numbers are finite; scale>0; spacing>=0. eyes.iris is a colour-role name or null; it enables an iris layer in ellipse eyes. Each colour actually used must map to a declared role. Unused kit roles need no dummy colour.
 
-The kit fields are id, description, roles (array), defaults {eyes,mouth,brows,blush:0}, eye_styles, brow_styles, mouth_styles, effects and glow (optional {blur,alpha}). All maps use named styles; unknown fields error. A valid closed eye style is required. Every default style must exist; defaults.blush is 0..1 or strong. Eye styles may set hide_brows (boolean, default false); when true they suppress the selected brow on that eye. There are no parameter expressions, arbitrary callbacks or style-name switches in engine code. A kit selects bounded generic operations described below; an operation may serve any character/family.
+The kit fields are id, description, roles (array), defaults {eyes,mouth,brows,blush:0}, eye_styles, brow_styles, mouth_styles, effects and glow (optional {blur,alpha}, with alpha optional and defaulting to 1). All maps use named styles; unknown fields error. A valid closed eye style is required. Every default style must exist; defaults.blush is 0..1 or strong. Eye styles may set hide_brows (boolean, default false); when true they suppress the selected brow on that eye. There are no parameter expressions, arbitrary callbacks or style-name switches in engine code. A kit selects bounded generic operations described below; an operation may serve any character/family.
 
 | Operation | Required data | Optional defaults and algorithm |
 |---|---|---|

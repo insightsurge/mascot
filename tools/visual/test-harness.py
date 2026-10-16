@@ -102,22 +102,55 @@ class HarnessTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'never overwrite'):
                 write_report(output, old, new, record, record, visual.rgba)
 
+    def test_compare_rejects_manifest_with_four_moods(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            baseline, candidate = root / 'old', root / 'new'
+            baseline.mkdir()
+            candidate.mkdir()
+            four_moods = ['idle', 'thinking', 'happy', 'worried']
+            record_bad = {
+                'profile': {'moods': four_moods},
+                'runtime': {},
+                'files': {},
+                'cases': {},
+                'source': 'test',
+                'status': 'provisional-test',
+            }
+            record_good = {
+                'profile': {'moods': ['idle', 'thinking', 'happy', 'worried', 'celebrating']},
+                'runtime': {},
+                'files': {},
+                'cases': {},
+                'source': 'test',
+                'status': 'provisional-test',
+            }
+            visual.write_json(baseline / 'manifest.json', record_bad)
+            visual.write_json(candidate / 'manifest.json', record_bad)
+            with self.assertRaisesRegex(ValueError, 'core moods'):
+                visual.compare(baseline, candidate)
+            visual.write_json(baseline / 'manifest.json', record_good)
+            with self.assertRaisesRegex(ValueError, 'core moods'):
+                visual.compare(baseline, candidate)
+
     def test_comparison_failure_stays_nonzero_with_pictures_and_bad_environments_make_no_report(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             baseline, candidate = root / 'old', root / 'new'
             baseline.mkdir(); candidate.mkdir()
-            record = {'profile': {'moods': ['idle']}, 'runtime': {}, 'files': {}, 'cases': {}, 'source': 'test', 'status': 'provisional-test'}
-            for mode in ('light', 'dark'):
-                for size in (160, 96, 24):
-                    for dpr in (1, 2):
-                        name = f'tessa-idle-{mode}-{size}-dpr{dpr}.png'
-                        dimension = size * dpr
-                        pixels = bytes([255, 255, 255, 255]) * dimension * dimension
-                        image = raw_png(dimension, dimension, pixels)
-                        for path in (baseline, candidate): (path / name).write_bytes(image)
-                        record['files'][name] = {'png_sha256': visual.sha(image), 'rgba_sha256': visual.sha(pixels)}
-                        record['cases'][name] = {'mood': 'idle', 'mode': mode, 'size': size, 'dpr': dpr, 'frame': 0}
+            moods = ['idle', 'thinking', 'happy', 'worried', 'celebrating']
+            record = {'profile': {'moods': moods}, 'runtime': {}, 'files': {}, 'cases': {}, 'source': 'test', 'status': 'provisional-test'}
+            for mood in moods:
+                for mode in ('light', 'dark'):
+                    for size in (160, 96, 24):
+                        for dpr in (1, 2):
+                            name = f'tessa-{mood}-{mode}-{size}-dpr{dpr}.png'
+                            dimension = size * dpr
+                            pixels = bytes([255, 255, 255, 255]) * dimension * dimension
+                            image = raw_png(dimension, dimension, pixels)
+                            for path in (baseline, candidate): (path / name).write_bytes(image)
+                            record['files'][name] = {'png_sha256': visual.sha(image), 'rgba_sha256': visual.sha(pixels)}
+                            record['cases'][name] = {'mood': mood, 'mode': mode, 'size': size, 'dpr': dpr, 'frame': 0}
             visual.write_json(baseline / 'manifest.json', record)
             name = 'tessa-idle-light-24-dpr1.png'
             pixels = bytes([128, 255, 255, 255]) + bytes([255, 255, 255, 255]) * (24 * 24 - 1)
@@ -125,7 +158,7 @@ class HarnessTests(unittest.TestCase):
             (candidate / name).write_bytes(image)
             record['files'][name] = {'png_sha256': visual.sha(image), 'rgba_sha256': visual.sha(pixels)}
             visual.write_json(candidate / 'manifest.json', record)
-            with self.assertRaisesRegex(ValueError, '1/12 frames differ'):
+            with self.assertRaisesRegex(ValueError, '1/60 frames differ'):
                 visual.compare(baseline, candidate, report=root / 'report')
             result = json.loads((root / 'report/results.json').read_text())
             self.assertEqual(result['different_frames'], 1)

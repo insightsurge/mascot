@@ -206,6 +206,10 @@ def verify_archive(path, digest, directory):
 def compare(baseline, candidate, strict=False, lock=None, archive_file=None, archive_sha256=None, report=None):
     baseline, candidate = Path(baseline), Path(candidate)
     old, new = read_json(baseline / 'manifest.json'), read_json(candidate / 'manifest.json')
+    CORE_MOODS = ('idle', 'thinking', 'happy', 'worried', 'celebrating')
+    for record in (old, new):
+        if tuple(record.get('profile', {}).get('moods', [])) != CORE_MOODS:
+            raise ValueError('Manifest profile moods must be exactly the five core moods')
     if strict:
         verify_archive(archive_file, archive_sha256, baseline)
         profile_check(lock)
@@ -214,7 +218,7 @@ def compare(baseline, candidate, strict=False, lock=None, archive_file=None, arc
                 raise ValueError('Missing/different canonical profile; provisional captures are never accepted')
     if old['profile'] != new['profile'] or old['runtime'] != new['runtime']:
         raise ValueError('Different capture environments; review/rebaseline explicitly')
-    expected = {f'tessa-{m}-{mode}-{size}-dpr{dpr}.png' for m in old['profile']['moods']
+    expected = {f'tessa-{m}-{mode}-{size}-dpr{dpr}.png' for m in CORE_MOODS
                 for mode in ('light', 'dark') for size in (160, 96, 24) for dpr in (1, 2)}
     if set(old['files']) != expected or set(new['files']) != expected:
         raise ValueError('Incomplete or different frame sets')

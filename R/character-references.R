@@ -120,7 +120,8 @@ character_format_tune <- function(base, tune, path = "$.face.tune") {
   if (!is.list(tune) || is.null(names(base)) != is.null(names(tune))) {
     character_format_abort("input_type", path, NULL, "Retain the existing numeric structure.")
   }
-  if (is.null(names(base))) {
+  is_array <- is.null(names(base))
+  if (is_array) {
     if (length(tune) != length(base)) {
       character_format_abort("input_type", path, NULL, "Retain the numeric array length.")
     }
@@ -139,10 +140,11 @@ character_format_tune <- function(base, tune, path = "$.face.tune") {
   }
   result <- base
   for (key in keys) {
+    key_path <- if (is_array) paste0(path, "[", key - 1L, "]") else paste0(path, ".", key)
     if (!is.numeric(base[[key]]) && !is.list(base[[key]])) {
-      character_format_abort("input_type", paste0(path, ".", key), NULL, "Only numeric leaves can be tuned.")
+      character_format_abort("input_type", key_path, NULL, "Only numeric leaves can be tuned.")
     }
-    result[key] <- list(character_format_tune(base[[key]], tune[[key]], paste0(path, ".", key)))
+    result[key] <- list(character_format_tune(base[[key]], tune[[key]], key_path))
   }
   result
 }

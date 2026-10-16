@@ -37,7 +37,14 @@
           join: item.round ? 'round' : 'miter',
         };
       });
-    const parts = [{ id: 'torso', at: [0, -character.centreHeight], layer: 1, items: items(character.body) }];
+    const parts = [
+      {
+        id: 'torso',
+        at: [0, -character.centreHeight],
+        layer: character.body?.layer ?? 1,
+        items: items(character.body),
+      },
+    ];
     const anchors = {};
     const anchor = (id, at, owner = 'torso') => {
       anchors[id] = { part: owner, at: [at.x ?? 0, at.y ?? 0], rotate: at.rotate ?? 0, scale: at.scale ?? 1 };
@@ -58,7 +65,7 @@
         parts.push({
           id,
           parent: 'torso',
-          layer: 0,
+          layer: feet.layer ?? 0,
           at: tucked ? [sign * feet.tuck.x, feet.tuck.y] : [0, 0],
           rotate: tucked ? -sign * feet.tuck.rotate : 0,
           items: [
@@ -87,7 +94,7 @@
         parts.push({
           id,
           parent: 'torso',
-          layer: 4,
+          layer: arms.layer ?? 4,
           at: [sign * character.anchors.shoulders.x, character.anchors.shoulders.y],
           rotate: angles[side],
           items: [
@@ -129,7 +136,7 @@
       accessories[id] = {
         slot: item.slot,
         anchor: paired ? `${name}_${item.side === 'L' ? 'left' : 'right'}` : name,
-        parts: [{ id: 'drawing', layer: 3, items: items(item.parts, item.colours) }],
+        parts: [{ id: 'drawing', layer: item.layer ?? 3, items: items(item.parts, item.colours) }],
       };
       wear.push(id);
     });
@@ -149,6 +156,11 @@
       'root.flip': pose.flip,
     };
     const state = ns.parts.frame(compiled, channels, 'full', { x, base_y: baseY });
+    for (const [id, partState] of Object.entries(state.parts)) {
+      if (![0, 1, 3, 4].includes(partState.layer)) {
+        throw new Error(`mascot: unsupported part layer ${partState.layer} for part '${id}'; must be in {0, 1, 3, 4}`);
+      }
+    }
     return { compiled, state, colours: palette };
   }
 

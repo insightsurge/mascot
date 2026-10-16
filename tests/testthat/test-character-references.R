@@ -128,7 +128,15 @@ describe("character_format_references()", {
 
     # Array length mismatch in unnamed array
     arr_base <- list(list(1, 2))
-    format_problem("input_type", "$.face.tune.1", character_format_tune(arr_base, list(list(1, 2, 3))))
+    format_problem("input_type", "$.face.tune[0]", character_format_tune(arr_base, list(list(1, 2, 3))))
+
+    # Nested unnamed array
+    nested_base <- list(list(list(1, 2)))
+    format_problem(
+      "input_type",
+      "$.face.tune[0][0]",
+      character_format_tune(nested_base, list(list(list(1, 2, 3))))
+    )
   })
 
   it("checks colour descriptions, dark mode palette, and paint ordering", {

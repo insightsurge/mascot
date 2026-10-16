@@ -41,6 +41,14 @@ describe("provisional Tessa adapter", {
       )),
       "load the provisional Tessa adapter"
     )
+    expect_match(
+      js(paste0(
+        "(() => {const ch=JSON.parse(JSON.stringify(mascot.readCharacter('tessa')));ch.accessories.bow.layer=2;",
+        "const p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);",
+        "try{mascot.tessaAdapter.scene(ch,p,ch.colours);}catch(e){return e.message;}})()"
+      )),
+      "unsupported part layer"
+    )
   })
 })
 

@@ -1137,3 +1137,58 @@ describe("E4a behind the internal adapter switch", {
     expect_true(r$sameSeries)
   })
 })
+
+describe("E5b band changes in the motion controller", {
+  it("redraws in the new band without moving time, activity or the frame loop or announcing a change", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=mascot.readCharacter('tessa'),canvas=document.createElement('canvas');",
+      "canvas.width=300;canvas.height=300;const bands=[],adapter=mascot.tessaAdapter;",
+      "mascot.tessaAdapter={...adapter,draw:(...a)=>{bands.push(a[6]);return adapter.draw(...a);}};",
+      "const frameRequest=window.requestAnimationFrame;let frames=0;",
+      "window.requestAnimationFrame=f=>{frames++;return frameRequest(f);};",
+      "mascot.internal={useCharacterAdapter:true};let changes=0;",
+      "const ctrl=mascot.mount(canvas,ch,{x:150,baseY:270,onChange:()=>changes++});",
+      "ctrl.seek(12);const before=JSON.stringify(ctrl.current());const seen=changes,requested=frames,drawn=bands.length;",
+      "ctrl.setBand('micro');ctrl.setBand('micro');ctrl.setBand('small');",
+      "const after=JSON.stringify(ctrl.current());",
+      "let rejected=null;try{ctrl.setBand('tiny');}catch(e){rejected=e.message;}",
+      "const result={same:before===after,changes:changes-seen,requests:frames-requested,",
+      "drawnBands:bands.slice(drawn),rejected};",
+      "ctrl.destroy();mascot.tessaAdapter=adapter;window.requestAnimationFrame=frameRequest;delete mascot.internal;",
+      "return result;})()"
+    ))
+    expect_true(result$same)
+    expect_equal(result$changes, 0)
+    expect_equal(result$requests, 0)
+    expect_identical(unlist(result$drawnBands), c("micro", "small"))
+    expect_match(result$rejected, "band")
+  })
+})
+
+describe("E5b atomic band change in the motion controller", {
+  it("throws for an over-budget band with the old band, pixels and state unchanged", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const base=mascot.readCharacter('tessa'),painting=base.body.find(item=>item.fill);",
+      "const ch={...base,body:Array.from({length:40},()=>({shape:'circle',x:0,y:-20,r:4,fill:painting.fill}))};",
+      "const canvas=document.createElement('canvas');canvas.width=300;canvas.height=300;",
+      "const bands=[],adapter=mascot.tessaAdapter;",
+      "mascot.tessaAdapter={...adapter,draw:(...a)=>{bands.push(a[6]);return adapter.draw(...a);}};",
+      "mascot.internal={useCharacterAdapter:true};",
+      "const ctrl=mascot.mount(canvas,ch,{x:150,baseY:270,band:'small'});",
+      "const before=canvas.toDataURL(),state=JSON.stringify(ctrl.current()),drawn=bands.length;",
+      "let error=null;try{ctrl.setBand('micro');}catch(e){error=[e.code,e.path];}",
+      "const result={error,pixels:canvas.toDataURL()===before,state:JSON.stringify(ctrl.current())===state,",
+      "drawnDuringRefusal:bands.length-drawn,lastBand:bands[bands.length-1]};",
+      "ctrl.destroy();mascot.tessaAdapter=adapter;delete mascot.internal;return result;})()"
+    ))
+    expect_identical(unlist(result$error), c("budget", "$"))
+    expect_true(result$pixels)
+    expect_true(result$state)
+    expect_equal(result$drawnDuringRefusal, 0)
+    expect_identical(result$lastBand, "small")
+  })
+})

@@ -136,6 +136,7 @@
       };
       wear.push(id);
     });
+    // E5b: a character's detail-band overrides (lod) travel with the compiled source; characters without lod are unchanged.
     const compiled = ns.parts.compile({
       format_version: 1,
       ground: { centre_height: character.centreHeight },
@@ -143,11 +144,12 @@
       anchors,
       accessories,
       wear,
+      ...(character.lod !== undefined ? { lod: character.lod } : {}),
     });
     return { compiled, bindings };
   }
 
-  function scene(character, pose, colours, x = 0, baseY = 0) {
+  function scene(character, pose, colours, x = 0, baseY = 0, band = 'full') {
     if (!ns.parts || !ns.geometry) throw new Error('mascot: the Tessa adapter needs parts and geometry modules');
     if (character.id !== 'tessa') throw new Error('mascot: the provisional adapter supports only Tessa');
     // Resolve/validate the worn set even on a cache hit (duplicate slots still error).
@@ -181,7 +183,7 @@
       channels['arm_left.rotate'] = angles.L;
       channels['arm_right.rotate'] = angles.R;
     }
-    const state = ns.parts.frame(compiled, channels, 'full', { x, base_y: baseY });
+    const state = ns.parts.frame(compiled, channels, band, { x, base_y: baseY });
     for (const [id, partState] of Object.entries(state.parts)) {
       if (![0, 1, 3, 4].includes(partState.layer)) {
         throw new Error(`mascot: unsupported part layer ${partState.layer} for part '${id}'; must be in {0, 1, 3, 4}`);
@@ -225,10 +227,12 @@
     return faces.get(character);
   }
 
-  function draw(ctx, character, pose, colours, x, baseY) {
+  function draw(ctx, character, pose, colours, x, baseY, band = 'full') {
     // Build before painting: missing modules or unsupported characters leave the
     // caller's canvas state/pixels unchanged rather than half drawing a frame.
-    const frame = scene(character, pose, colours, x, baseY);
+    const frame = scene(character, pose, colours, x, baseY, band);
+    // E5b: an over-budget band is refused before the first paint, so the canvas keeps its previous pixels.
+    ns.geometry.checkBudget(frame.compiled, band);
     const face = faceDefinition(character);
     const counts = { painted_items: 0, paint_passes: 0 };
     const add = (cost) => {
@@ -298,5 +302,10 @@
     layer((value) => value === 4);
     return { counts, state: frame.state };
   }
-  ns.tessaAdapter = Object.freeze({ scene, draw });
+  // E5b: the band budget alone, without painting (used before a band change so a refusal changes nothing).
+  function check(character, pose, colours, x, baseY, band) {
+    const frame = scene(character, pose, colours, x, baseY, band);
+    ns.geometry.checkBudget(frame.compiled, band);
+  }
+  ns.tessaAdapter = Object.freeze({ scene, draw, check });
 })();

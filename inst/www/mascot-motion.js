@@ -686,6 +686,11 @@
       reduced: media.matches || values.reduced === true,
     };
     if (state.reduced) state.activeAt = null;
+    // E5b: the detail band is drawing state only; setBand() changes it without touching time or activity.
+    const bandNames = ['full', 'small', 'micro'];
+    if (options.band !== undefined && !bandNames.includes(options.band))
+      throw new Error("mascot: band: use 'full', 'small' or 'micro'.");
+    let band = options.band ?? 'full';
     let frame = 0;
     let request = null;
     let origin = null;
@@ -735,7 +740,14 @@
       } finally {
         ctx.restore();
       }
-      const drawing = { x: options.x, baseY: options.baseY, colours: visible.colours, pose: visible.pose, frame };
+      const drawing = {
+        x: options.x,
+        baseY: options.baseY,
+        colours: visible.colours,
+        pose: visible.pose,
+        frame,
+        band,
+      };
       if (!visible.swapping) {
         ctx.save();
         try {
@@ -822,6 +834,31 @@
        * @returns {void}
        */
       redraw() {
+        drawFrame();
+      },
+      /**
+       * Internal, E5b: set the detail band ('full', 'small' or 'micro') and redraw the current frame. Time, activity,
+       * the RAF loop and the gesture or mood in progress are unchanged, so a band change never replays motion. It is
+       * atomic: when the new band is over budget it throws before anything changes, and the old band stays.
+       * @param {string} name The band to draw with.
+       * @returns {void}
+       */
+      setBand(name) {
+        if (destroyed) return;
+        if (!bandNames.includes(name)) throw new Error("mascot: band: use 'full', 'small' or 'micro'.");
+        if (name === band) return;
+        // Atomic: the new band's budget is checked before anything changes; a refusal throws with the old band,
+        // canvas pixels and state untouched.
+        const visible = sceneFrame(ch, state, frame);
+        ns.checkBand(visible.character, {
+          x: options.x,
+          baseY: options.baseY,
+          colours: visible.colours,
+          pose: visible.pose,
+          frame,
+          band: name,
+        });
+        band = name;
         drawFrame();
       },
       /**

@@ -123,6 +123,8 @@
   const has = (object, key) => Object.hasOwn(object, key);
   const label = (mood) => mood.charAt(0).toUpperCase() + mood.slice(1);
   const warn = (error) => console.warn(`mascot: ${String(error.message || error).replace(/^mascot: /, '')}`);
+  // E5b, internal: the untransformed CSS width of a canvas (a transform on the canvas does not change it).
+  const cssWidth = (canvas) => parseFloat(getComputedStyle(canvas).width) || canvas.clientWidth;
 
   function show(record, snapshot) {
     if (updating.has(record)) return;
@@ -1192,8 +1194,29 @@
     }
     measureMenu(record);
     measureTooltip(record);
+    // E5b, internal only: the band follows the untransformed CSS width (not the transformed rectangle). setBand() is
+    // atomic: a band over budget throws before anything changes, so the old band stays, measuring goes on, and the
+    // refusal is reported once per band. It never throws out of measure(). The public default never gets here.
+    let drawn = false;
+    if (ns.internal?.useCharacterAdapter === true && ns.parts && record.controller) {
+      const band = ns.parts.bandFor(cssWidth(record.canvas));
+      if (band !== record.band) {
+        try {
+          record.controller.setBand(band);
+          record.band = band;
+          drawn = true;
+        } catch (error) {
+          record.reportedBands ??= new Set();
+          if (!record.reportedBands.has(band)) {
+            record.reportedBands.add(band);
+            warn(error);
+          }
+        }
+      }
+    }
     record.renderedSize = size;
-    if (resized) record.controller.redraw();
+    // A successful band change has already drawn the current frame on the resized canvas: draw once, not twice.
+    if (resized && !drawn) record.controller.redraw();
   }
 
   function refreshViewport() {
@@ -1959,14 +1982,18 @@
       layout(record);
       const resolved = resolveTheme(record.theme, description, record.anchor || el, true);
       commitPalette(record, description, resolved);
+      // E5b, internal only: mount with the band the canvas measures, so a small mascot never draws a full-band frame.
+      const band = ns.internal?.useCharacterAdapter === true && ns.parts ? ns.parts.bandFor(cssWidth(canvas)) : null;
       record.controller = ns.mount(canvas, description, {
         x: 150,
         baseY: 270,
         mood: el.dataset.mood,
         colours: record.colours,
         ...record.motion,
+        ...(band ? { band } : {}),
         onChange: (snapshot) => show(record, snapshot),
       });
+      if (band) record.band = band;
       listenBubble(record);
       listenDrag(record);
       replaceClick(record, record.click);

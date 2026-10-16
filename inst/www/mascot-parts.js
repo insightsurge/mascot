@@ -308,11 +308,64 @@
       : (compiled.items?.[moodId] ?? {});
   };
 
+  // E5b detail bands. The host passes the band from the canvas's untransformed CSS width, compared unrounded:
+  // full from 128 px, small from 48 px, micro below 48 px. Micro never inherits small.
+  const bands = ['full', 'small', 'micro'];
+  const bandFor = (width) => {
+    if (typeof width !== 'number' || !Number.isFinite(width) || width < 0)
+      problem('input_type', '$.width', 'Use a finite CSS width in pixels.');
+    return width >= 128 ? 'full' : width >= 48 ? 'small' : 'micro';
+  };
+  const plainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const bandOverrideKeys = ['hide', 'outline', 'face', 'glow', 'variants', 'note'];
+  const faceFlagKeys = ['scale', 'lashes', 'brows', 'iris'];
+  // Rejects unknown band names and keys, and micro glow, at compile time: policy wins, nothing is dropped silently.
+  const checkBands = (source) => {
+    if (source.lod !== undefined) {
+      if (!plainObject(source.lod)) problem('input_type', '$.lod', 'Use an object of band overrides.');
+      for (const [band, override] of Object.entries(source.lod)) {
+        const path = `$.lod.${band}`;
+        // full is the file as written, not an authored override (R rejects lod.full the same way).
+        if (!['small', 'micro'].includes(band)) problem('unknown_key', path, 'Author lod.small or lod.micro only.');
+        if (!plainObject(override)) problem('input_type', path, 'Use an object of band overrides.');
+        for (const key of Object.keys(override)) {
+          if (!bandOverrideKeys.includes(key))
+            problem('unknown_key', `${path}.${key}`, 'Use hide, outline, face, glow, variants or note.');
+        }
+        if (override.glow !== undefined && typeof override.glow !== 'boolean')
+          problem('input_type', `${path}.glow`, 'Use true or false.');
+        // Drawing-budget diagnostics use code budget and root path $ (contract); the message names the band and key.
+        if (band === 'micro' && override.glow === true)
+          problem(
+            'budget',
+            '$',
+            'band micro: lod.micro.glow is true, but micro has no glow emitters or blur; remove lod.micro.glow or set it to false',
+          );
+        if (override.face !== undefined) {
+          if (!plainObject(override.face)) problem('input_type', `${path}.face`, 'Use an object of face flags.');
+          for (const key of Object.keys(override.face)) {
+            if (!faceFlagKeys.includes(key))
+              problem('unknown_key', `${path}.face.${key}`, 'Use scale, lashes, brows or iris.');
+          }
+        }
+      }
+    }
+    (source.parts ?? []).forEach((part, index) => {
+      if (part.lod === undefined) return;
+      if (!Array.isArray(part.lod)) problem('input_type', `$.parts[${index}].lod`, 'Use a list of bands.');
+      part.lod.forEach((band, at) => {
+        if (!bands.includes(band))
+          problem('unknown_key', `$.parts[${index}].lod[${at}]`, 'Use the full, small or micro band.');
+      });
+    });
+  };
+
   const compile = (character) => {
     if (!character || !Array.isArray(character.parts)) problem('input_type', '$.parts', 'Supply a part array.');
     if (character.format_version !== 1) problem('version', '$.format_version', 'Use character format 1.');
     // Never retain mutable caller-owned templates. This stage is not the R checker.
     const source = JSON.parse(JSON.stringify(character));
+    checkBands(source);
     const parts = [];
     const byId = new Map();
     const insert = (part, path, attachment = null) => {
@@ -698,6 +751,7 @@
     root,
     child,
     compile,
+    bandFor,
     frame,
     resolveChannels,
     resolveColours,

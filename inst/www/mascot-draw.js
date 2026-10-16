@@ -691,14 +691,14 @@
    * character(ctx, ch, x, baseY, p): draws the character described by `ch` with its feet on baseY, in pose `p`
    * (already merged with the defaults, the character's pose and its mood).
    */
-  function character(ctx, ch, x, baseY, p, colours) {
+  function character(ctx, ch, x, baseY, p, colours, band = 'full') {
     const g = ctx;
     const c = colours || ch.colours;
     const sc = p.scale;
-    // Internal opt-in only; the public host does not load these modules.
+    // Internal opt-in only; the public host does not load these modules. The band is read only on this branch.
     if (ns.internal?.useCharacterAdapter === true) {
       if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
-      ns.tessaAdapter.draw(g, ch, p, c, x, baseY);
+      ns.tessaAdapter.draw(g, ch, p, c, x, baseY, band);
       return;
     }
     if (!styles.has(ch))

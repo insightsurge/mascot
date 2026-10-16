@@ -704,7 +704,120 @@
     counts._active_parts = activeParts;
     return counts;
   };
+  // E5b policy caps per detail band: the metrics this engine counts, mirroring inst/format/policy-v1.json (a test
+  // compares them). Clip applications and gradient uses are not bounded here yet.
+  const bandCaps = Object.freeze({
+    full: Object.freeze({
+      active_parts: 64,
+      painted_items: 160,
+      paint_passes: 320,
+      path_numbers: 1500,
+      glow_emitters: 8,
+      blur_design_units: 16,
+    }),
+    small: Object.freeze({
+      active_parts: 40,
+      painted_items: 90,
+      paint_passes: 180,
+      path_numbers: 900,
+      glow_emitters: 4,
+      blur_design_units: 10,
+    }),
+    micro: Object.freeze({
+      active_parts: 16,
+      painted_items: 30,
+      paint_passes: 60,
+      path_numbers: 300,
+      glow_emitters: 0,
+      blur_design_units: 0,
+    }),
+  });
+  const boundCache = new WeakMap();
+  // An upper bound on the work one band can paint. Part lod, attachment lod, lod.hide and item lod are applied as
+  // draw() applies them; every candidate variant of a part is counted and the largest one kept, because only one
+  // variant of a part is shown at a time. Glow passes count as draw() counts them. Computed once per compiled
+  // character and band, never per frame.
+  const bandBound = (compiled, band) => {
+    let perBand = boundCache.get(compiled);
+    if (!perBand) {
+      perBand = new Map();
+      boundCache.set(compiled, perBand);
+    }
+    if (perBand.has(band)) return perBand.get(band);
+    const source = compiled.source;
+    const lod = source.lod?.[band] ?? {};
+    const hidden = new Set(lod.hide ?? []);
+    const outline = { ...(source.outline ?? {}), ...source.outline?.lod?.[band], ...lod.outline };
+    const glowOn = band !== 'micro' && (lod.glow ?? true);
+    const total = {
+      active_parts: 0,
+      painted_items: 0,
+      paint_passes: 0,
+      path_numbers: 0,
+      glow_emitters: 0,
+      blur_design_units: 0,
+    };
+    for (const part of compiled.parts) {
+      if (part.lod && !part.lod.includes(band)) continue;
+      if (part.attachment?.lod && !part.attachment.lod.includes(band)) continue;
+      if (hidden.has(part.id)) continue;
+      total.active_parts += 1;
+      const glow = glowOn && part.glow && part.glow.blur > 0 && part.glow.alpha > 0 ? part.glow : null;
+      const selected = lod.variants?.[part.id];
+      const choices = selected !== undefined ? [selected] : ['default', ...Object.keys(part.variants ?? {})];
+      const largest = { painted_items: 0, paint_passes: 0, path_numbers: 0, glow_emitters: 0, blur_design_units: 0 };
+      for (const choice of choices) {
+        const items = choice === 'default' ? (part.items ?? []) : (part.variants?.[choice] ?? []);
+        const work = { painted_items: 0, paint_passes: 0, path_numbers: 0, glow_emitters: 0, blur_design_units: 0 };
+        items.forEach((item, index) => {
+          if (item.lod && !item.lod.includes(band)) return;
+          if (hidden.has(`${part.id}.${item.id}`)) return;
+          const geometry = compile(item, source.shapes, `${part.path}.items[${index}]`);
+          const style = geometry.style;
+          const strokes = [];
+          if (style.outline) {
+            if ((outline.second?.width ?? 0) > 0) strokes.push(outline.second);
+            if ((outline.width ?? 0) > 0) strokes.push(outline);
+          }
+          if (style.stroke && (style.width ?? 2.5) > 0) strokes.push(style.stroke);
+          const emitter = glow !== null && item.id === glow.item;
+          if (!(style.fill || strokes.length > 0) && !emitter) return;
+          let passes = (style.fill ? 1 : 0) + strokes.length;
+          if (emitter) {
+            passes += (style.fill || strokes.length === 0 ? 1 : 0) + (strokes.length > 0 ? 1 : 0);
+            work.glow_emitters += 1;
+            work.blur_design_units = Math.max(work.blur_design_units, glow.blur);
+          }
+          work.painted_items += 1;
+          work.paint_passes += passes;
+          work.path_numbers += geometry.numbers;
+        });
+        for (const key of Object.keys(largest)) largest[key] = Math.max(largest[key], work[key]);
+      }
+      total.painted_items += largest.painted_items;
+      total.paint_passes += largest.paint_passes;
+      total.path_numbers += largest.path_numbers;
+      total.glow_emitters += largest.glow_emitters;
+      total.blur_design_units = Math.max(total.blur_design_units, largest.blur_design_units);
+    }
+    perBand.set(band, total);
+    return total;
+  };
+  // Refuses an over-budget band before anything is painted; the message names the metric and the limit.
+  const checkBudget = (compiled, band) => {
+    if (!Object.hasOwn(bandCaps, band)) fail('input_type', '$.band', "Use 'full', 'small' or 'micro'.");
+    const work = bandBound(compiled, band);
+    for (const [metric, limit] of Object.entries(bandCaps[band])) {
+      if (work[metric] > limit)
+        fail('budget', '$', `the ${band} band paints too much (${metric} ${work[metric]} > ${limit}); reduce it`);
+    }
+    return work;
+  };
+
   ns.geometry = Object.freeze({
+    bandCaps,
+    bandBound,
+    checkBudget,
     commands,
     compile,
     paint,

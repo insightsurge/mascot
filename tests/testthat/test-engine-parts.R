@@ -229,3 +229,103 @@ describe("declarative threshold switches and variant anchors", {
     expect_identical(res$lookupCount, 0L)
   })
 })
+
+describe("E5b detail bands and compile-time band policy", {
+  it("classifies the unrounded CSS width: micro below 48, small from 48 to 127.999, full from 128", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    expect_identical(
+      unlist(js("[47.999, 48, 127.999, 128, 0, 300].map(w => mascot.parts.bandFor(w))")),
+      c("micro", "small", "small", "full", "micro", "full")
+    )
+    for (bad in c("NaN", "-1", "'48'", "Infinity")) {
+      expect_true(js(sprintf(
+        "(() => {try {mascot.parts.bandFor(%s);return false;} catch (e) {return e.code === 'input_type' && e.path === '$.width';}})()",
+        bad
+      )))
+    }
+  })
+
+  it("rejects unknown bands, keys, face flags, part bands and micro glow with code and path at compile time", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    compile_result <- function(lod = "undefined", part_lod = "undefined") {
+      js(sprintf(
+        paste0(
+          "(() => {const source={format_version:1,ground:{centre_height:100},",
+          "parts:[{id:'body',lod:%s,items:[{id:'dot',shape:'circle',r:4,fill:'ink'}]}],",
+          "colours:{ink:'#000'},lod:%s};",
+          "try{mascot.parts.compile(source);return 'ok';}catch(e){return [e.code,e.path];}})()"
+        ),
+        part_lod,
+        lod
+      ))
+    }
+    # Micro glow is a drawing-budget diagnostic: code budget at the root path, naming the band, key and fix.
+    expect_identical(unlist(compile_result('{ micro: { glow: true } }')), c("budget", "$"))
+    micro_message <- js(paste0(
+      "(() => {const source={format_version:1,ground:{centre_height:100},parts:[],",
+      "lod:{micro:{glow:true}}};try{mascot.parts.compile(source);return '';}catch(e){return e.message;}})()"
+    ))
+    expect_match(micro_message, "band micro")
+    expect_match(micro_message, "lod.micro.glow")
+    expect_match(micro_message, "remove")
+    # full is the file as written, not an override: JS rejects it as R does.
+    expect_identical(unlist(compile_result('{ full: { hide: [] } }')), c("unknown_key", "$.lod.full"))
+    expect_identical(unlist(compile_result('{ tiny: {} }')), c("unknown_key", "$.lod.tiny"))
+    expect_identical(unlist(compile_result('{ micro: { tint: 1 } }')), c("unknown_key", "$.lod.micro.tint"))
+    expect_identical(
+      unlist(compile_result('{ micro: { face: { blink: true } } }')),
+      c("unknown_key", "$.lod.micro.face.blink")
+    )
+    expect_identical(unlist(compile_result('{ small: { glow: "yes" } }')), c("input_type", "$.lod.small.glow"))
+    expect_identical(unlist(compile_result("undefined", "['huge']")), c("unknown_key", "$.parts[0].lod[0]"))
+    expect_identical(
+      unlist(compile_result('{ small: { glow: true }, micro: { face: { lashes: false }, note: "x" } }')),
+      "ok"
+    )
+    expect_identical(unlist(compile_result("undefined", "['small', 'micro']")), "ok")
+  })
+
+  it("applies a band variant over the default and hides parts only in the bands they are not listed for", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(paste0(
+      "(() => {const source={format_version:1,ground:{centre_height:100},",
+      "parts:[{id:'body',items:[{id:'plain',shape:'circle',r:4,fill:'ink'}],",
+      "variants:{alt:[{id:'alt_dot',shape:'circle',r:2,fill:'ink'}]}},",
+      "{id:'badge',lod:['full'],items:[{id:'b',shape:'circle',r:3,fill:'ink'}]}],",
+      "colours:{ink:'#000'},lod:{small:{variants:{body:'alt'}}}};",
+      "const compiled=mascot.parts.compile(source);",
+      "const full=mascot.parts.frame(compiled,{},'full'),small=mascot.parts.frame(compiled,{},'small');",
+      "return {fullItem:full.parts.body.items[0].id,smallItem:small.parts.body.items[0].id,",
+      "fullBadge:full.parts.badge.available,smallBadge:small.parts.badge.available};})()"
+    ))
+    expect_identical(result$fullItem, "plain")
+    expect_identical(result$smallItem, "alt_dot")
+    expect_true(result$fullBadge)
+    expect_false(result$smallBadge)
+  })
+
+  it("lets a band variant beat the mood variant and the switch variant", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(paste0(
+      "(() => {const item=id=>({id,shape:'circle',r:4,fill:'ink'});",
+      "const source={format_version:1,ground:{centre_height:100},",
+      "parts:[{id:'body',items:[item('plain')],switch:{channel:'root.lift',above:0,variant:'switched'},",
+      "variants:{switched:[item('switched')],mood_v:[item('mood')],band_v:[item('band')]}}],",
+      "colours:{ink:'#000'},lod:{small:{variants:{body:'band_v'}}}};",
+      "const compiled=mascot.parts.compile(source);",
+      "const pick=(channels,band)=>mascot.parts.frame(compiled,channels,band).parts.body.items[0].id;",
+      "return {mood:pick({'body.variant':'mood_v'},'full'),switched:pick({'root.lift':5},'full'),",
+      "bandOverMood:pick({'body.variant':'mood_v'},'small'),bandOverSwitch:pick({'root.lift':5},'small'),",
+      "bandOverBoth:pick({'root.lift':5,'body.variant':'mood_v'},'small')};})()"
+    ))
+    expect_identical(result$mood, "mood")
+    expect_identical(result$switched, "switched")
+    expect_identical(result$bandOverMood, "band")
+    expect_identical(result$bandOverSwitch, "band")
+    expect_identical(result$bandOverBoth, "band")
+  })
+})

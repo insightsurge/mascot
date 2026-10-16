@@ -48,6 +48,20 @@ describe("independent R expanded drawing-work bounds", {
     format_problem("budget", "$.budgets.micro.painted_items", character_format_work(data, graph, behaviour, "micro"))
   })
 
+  it("rejects lod.full as an unknown key at its path, since full is not an authored override", {
+    data <- character_format_resolve(format_recipe())
+    data$lod$full <- list(hide = list())
+    format_problem("unknown_key", "$.lod.full", character_format_resolve(data))
+  })
+
+  it("refuses authored micro glow with code budget at the root path, never silently drawing or dropping it", {
+    data <- character_format_resolve(format_recipe())
+    data$lod$micro$glow <- TRUE
+    graph <- character_format_references(data)
+    behaviour <- character_format_behaviour(data, graph)
+    format_problem("budget", "$", character_format_work(data, graph, behaviour, "micro"))
+  })
+
   it("counts emission-only geometry as one painted item and its primitive path numbers", {
     data <- character_format_resolve(format_recipe())
     item <- list(

@@ -214,11 +214,11 @@ describe("TC-03 compiled adapter scenes", {
         const p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);
         try {
           const a=mascot.tessaAdapter.scene(ch,p,ch.colours);
-          mascot.tessaAdapter.draw(g,ch,p,ch.colours,150,270,painters);
+          mascot.tessaAdapter.draw(g,ch,p,ch.colours,150,270);
           const first=calls;
           const moved={...p,lift:5,rot:0.2,armL:0.7,armR:2,armJitter:0.1,t:9,sx:0.8};
           const b=mascot.tessaAdapter.scene(ch,moved,{...ch.colours,body:'#ff0000'});
-          mascot.tessaAdapter.draw(g,ch,moved,ch.colours,123,260,painters);
+          mascot.tessaAdapter.draw(g,ch,moved,ch.colours,123,260);
           const second=calls;
           const tuck=mascot.tessaAdapter.scene(ch,{...p,feet:'tuck'},ch.colours);
           const bare=mascot.tessaAdapter.scene(ch,{...p,accessory:'none'},ch.colours);
@@ -240,5 +240,98 @@ describe("TC-03 compiled adapter scenes", {
     expect_true(result$moved)
     expect_equal(result$colour, "#ff0000")
     expect_equal(result$source, 0)
+  })
+})
+
+describe("E5b Tessa adapter bands", {
+  it("threads the band into the frame and applies the character's band overrides", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=JSON.parse(JSON.stringify(mascot.readCharacter('tessa')));ch.lod={micro:{hide:['torso']}};",
+      "const p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);",
+      "const micro=mascot.tessaAdapter.scene(ch,p,ch.colours,150,270,'micro');",
+      "const full=mascot.tessaAdapter.scene(ch,p,ch.colours,150,270,'full');",
+      "return {microBand:micro.state.band,fullBand:full.state.band,",
+      "microTorso:micro.state.parts.torso.available,fullTorso:full.state.parts.torso.available};})()"
+    ))
+    expect_identical(result$microBand, "micro")
+    expect_identical(result$fullBand, "full")
+    expect_false(result$microTorso)
+    expect_true(result$fullTorso)
+  })
+
+  it("keeps the unmodified Tessa within every band's paint budget and refuses a planted over-budget band", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=JSON.parse(JSON.stringify(mascot.readCharacter('tessa')));",
+      "const p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);",
+      "const bounds=band=>mascot.geometry.bandBound(mascot.tessaAdapter.scene(ch,p,ch.colours,150,270,band).compiled,band);",
+      "const tessa={full:bounds('full').painted_items,small:bounds('small').painted_items,micro:bounds('micro').painted_items};",
+      "const painting=ch.body.find(item=>item.fill);const planted={...ch,body:Array.from({length:40},()=>painting)};",
+      "const canvas=document.createElement('canvas');canvas.width=300;canvas.height=300;",
+      "const g=canvas.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,300,300);",
+      "const before=[...g.getImageData(0,0,300,300).data].join(',');",
+      "let error=null;try{mascot.tessaAdapter.draw(g,planted,p,planted.colours,150,270,'micro');}catch(e){error=[e.code,e.path];}",
+      "const after=[...g.getImageData(0,0,300,300).data].join(',');",
+      "return {tessa,error,unchanged:before===after};})()"
+    ))
+    expect_lte(result$tessa$micro, 30)
+    expect_lte(result$tessa$small, 90)
+    expect_identical(unlist(result$error), c("budget", "$"))
+    expect_true(result$unchanged)
+  })
+
+  it("refuses micro glow written into a character and leaves the canvas untouched", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=JSON.parse(JSON.stringify(mascot.readCharacter('tessa')));ch.lod={micro:{glow:true}};",
+      "const p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);",
+      "const canvas=document.createElement('canvas');canvas.width=300;canvas.height=300;",
+      "const g=canvas.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,300,300);",
+      "const before=[...g.getImageData(0,0,300,300).data].join(',');",
+      "let error=null;try{mascot.tessaAdapter.draw(g,ch,p,ch.colours,150,270,'micro');}catch(e){error=[e.code,e.path];}",
+      "const after=[...g.getImageData(0,0,300,300).data].join(',');",
+      "return {error,unchanged:before===after};})()"
+    ))
+    expect_identical(unlist(result$error), c("budget", "$"))
+    expect_true(result$unchanged)
+  })
+
+  it("with the switch on, a call without a band draws the same pixels as band full (adapter only, not default-path evidence)", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=mascot.readCharacter('tessa'),p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);",
+      "const a=document.createElement('canvas'),b=document.createElement('canvas');a.width=b.width=300;a.height=b.height=300;",
+      "mascot.internal={useCharacterAdapter:true};",
+      "mascot.tessaAdapter.draw(a.getContext('2d'),ch,p,ch.colours,150,270);",
+      "mascot.tessaAdapter.draw(b.getContext('2d'),ch,p,ch.colours,150,270,'full');",
+      "delete mascot.internal;return a.toDataURL()===b.toDataURL();})()"
+    ))
+    expect_true(result)
+  })
+})
+
+describe("E5b band bound caching", {
+  it("computes the band bound once per compiled character and band, not per frame", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=mascot.readCharacter('tessa'),p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);",
+      "const g=document.createElement('canvas').getContext('2d');",
+      "const compiled=mascot.tessaAdapter.scene(ch,p,ch.colours,150,270,'small').compiled;",
+      "const first=mascot.geometry.bandBound(compiled,'small');",
+      "for(let i=0;i<5;i++)mascot.tessaAdapter.draw(g,ch,{...p,t:i/30},ch.colours,150,270,'small');",
+      "const afterFrames=mascot.geometry.bandBound(compiled,'small');",
+      "const micro=mascot.geometry.bandBound(compiled,'micro');",
+      "return {cached:first===afterFrames,otherBand:micro!==first,",
+      "sameCompiled:mascot.tessaAdapter.scene(ch,p,ch.colours,150,270,'small').compiled===compiled};})()"
+    ))
+    expect_true(result$cached)
+    expect_true(result$otherBand)
+    expect_true(result$sameCompiled)
   })
 })

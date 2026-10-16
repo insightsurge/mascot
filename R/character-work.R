@@ -306,6 +306,18 @@ character_format_work <- function(x, graph, behaviour, band = "full") {
   checkmate::assert_list(graph)
   checkmate::assert_list(behaviour)
   checkmate::assert_choice(band, c("full", "small", "micro"))
+  # E5b: policy wins over the authored override. Micro has zero glow emitters and zero blur, so glow true is refused.
+  if (isTRUE(x$lod$micro$glow)) {
+    character_format_abort(
+      "budget",
+      "$",
+      TRUE,
+      paste0(
+        "band micro: lod.micro.glow is true, but micro has no glow emitters or blur; ",
+        "remove lod.micro.glow or set it to false"
+      )
+    )
+  }
   outline <- character_work_outline(x, band)
   shapes <- if (is.null(x$shapes)) character_object() else x$shapes
   visible <- character_work_visible(x, graph, band)

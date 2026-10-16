@@ -292,13 +292,27 @@
   }
 
   /** draw(ctx, character, { x, baseY, pose, frame, colours }): one deterministic frame. */
-  ns.draw = (ctx, character, { x = 0, baseY = 0, pose = {}, frame = 0, colours } = {}) => {
+  // The validation and pose resolution of ns.draw, without painting. Shared with the internal band check.
+  const prepare = (character, { x = 0, baseY = 0, pose = {}, frame = 0, colours, band = 'full' } = {}) => {
     const errors = ns.validateCharacter(character);
     if (errors.length) throw new Error(`mascot: ${errors[0]}`);
     const p = ns.drawing.resolvePose(character, pose, frame);
     for (const role of Object.keys(colours || {})) {
       if (!Object.hasOwn(character.colours, role)) throw new Error(`mascot: colours: unknown role '${role}'`);
     }
-    ns.drawing.character(ctx, character, x, baseY, p, { ...character.colours, ...colours });
+    return { x, baseY, p, colours: { ...character.colours, ...colours }, band };
+  };
+  ns.draw = (ctx, character, options = {}) => {
+    const d = prepare(character, options);
+    ns.drawing.character(ctx, character, d.x, d.baseY, d.p, d.colours, d.band);
+  };
+  // E5b, internal: throws, without painting, when the adapter would refuse this band (the budget). A no-op on the
+  // legacy path, which has no band budget.
+  ns.checkBand = (character, options = {}) => {
+    const d = prepare(character, options);
+    if (ns.internal?.useCharacterAdapter === true) {
+      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
+      ns.tessaAdapter.check(character, d.p, d.colours, d.x, d.baseY, d.band);
+    }
   };
 })();

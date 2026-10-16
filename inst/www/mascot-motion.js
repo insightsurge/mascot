@@ -670,6 +670,7 @@
     let origin = null;
     let startFrame = 0;
     let paused = false;
+    let visibilityHeld = false;
     let destroyed = false;
     let layer = null;
     let notified = null;
@@ -751,7 +752,7 @@
       origin = null;
     }
     function schedule() {
-      if (destroyed || paused || !moving()) {
+      if (destroyed || paused || visibilityHeld || !moving()) {
         stopLoop();
       } else if (request === null) {
         request = window.requestAnimationFrame(tick);
@@ -759,7 +760,7 @@
     }
     function tick(timestamp) {
       request = null;
-      if (destroyed || paused || !moving()) return;
+      if (destroyed || paused || visibilityHeld || !moving()) return;
       if (origin === null) {
         origin = timestamp;
         startFrame = frame;
@@ -969,6 +970,16 @@
         if (destroyed) return;
         paused = true;
         stopLoop();
+      },
+      /** Hold visibility independently of user pause, without renewing activity or drawing.
+       * @param {boolean} held Whether the host is outside the viewport.
+       * @returns {void}
+       */
+      holdVisibility(held) {
+        if (destroyed || visibilityHeld === held) return;
+        visibilityHeld = held;
+        stopLoop();
+        schedule();
       },
       /**
        * Resume after pause without catching up; renew activity unless a swap is still running.

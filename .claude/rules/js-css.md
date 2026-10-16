@@ -37,3 +37,4 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 - **house:** ES2015+ for evergreen browsers (Chrome, Edge, Firefox, Safari); Biome formats and lints (`biome.json`,
   2 spaces, width 120, single quotes); the gate's `biome` step and CI run it.
 - **house:** every new file here is listed in `inst/COPYRIGHTS` (see `bundled-files.md`).
+- **house:** every change in `inst/www/` adds an entry to `vignettes/articles/engine-changelog.Rmd`.

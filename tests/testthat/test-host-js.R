@@ -3646,3 +3646,220 @@ describe("restoring from minimised", {
     }
   })
 })
+
+describe("mascot.host speed budgets (#295)", {
+  it("ignores unrelated class toggles and batches relevant mutations into one measure frame", {
+    skip_without_chrome()
+    js <- local_host_page(theme = mascot_theme(mode = "auto"))
+    r <- js(
+      "(async () => {
+        const el = document.getElementById('a');
+        const frames = async (n = 2) => {
+          for (let i = 0; i < n; i++) await new Promise(requestAnimationFrame);
+        };
+        const unrelated = document.createElement('div');
+        unrelated.id = 'unrelated';
+        document.body.append(unrelated);
+        await frames();
+        const before = mascot.host.state(el).measures;
+        for (let i = 0; i < 100; i++) {
+          unrelated.classList.toggle('active');
+          await Promise.resolve();
+        }
+        await frames();
+        const afterUnrelated = mascot.host.state(el).measures;
+        for (let i = 0; i < 100; i++) {
+          document.body.classList.toggle('quarto-dark');
+          await Promise.resolve();
+        }
+        await frames();
+        const afterRelevant = mascot.host.state(el).measures;
+        return {
+          unrelated: afterUnrelated - before,
+          batched: afterRelevant - afterUnrelated
+        };
+      })()"
+    )
+    expect_equal(r$unrelated, 0)
+    expect_equal(r$batched, 1)
+  })
+
+  it("pauses drawing when an animating mascot scrolls off-screen and resumes at the paused frame", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE, placement = "inline", viewport = c(800, 600))
+    r <- js(
+      "(async () => {
+        const el = document.getElementById('a');
+        const frames = async (n = 2) => {
+          for (let i = 0; i < n; i++) await new Promise(requestAnimationFrame);
+        };
+        const NativeIntersection = window.IntersectionObserver;
+        const observers = new Set();
+        window.IntersectionObserver = class extends NativeIntersection {
+          constructor(fn) {
+            super(fn);
+            observers.add(this);
+          }
+          disconnect() {
+            super.disconnect();
+            observers.delete(this);
+          }
+        };
+        mascot.host.unmount(el);
+        const spacer = document.createElement('div');
+        spacer.style.height = '3000px';
+        document.body.append(spacer);
+        const calls = [];
+        const origDraw = mascot.draw;
+        mascot.draw = (ctx, ch, options) => {
+          calls.push(options.frame);
+          return origDraw(ctx, ch, options);
+        };
+        mascot.host.mount(el);
+        await frames(4);
+        const onscreenDraws = calls.length;
+        window.scrollTo(0, 2000);
+        await frames(3);
+        const offscreenState = mascot.host.state(el).offscreen;
+        const pausedAt = calls.at(-1);
+        const countOff = calls.length;
+        await frames(10);
+        const offscreenDraws = calls.length - countOff;
+        window.scrollTo(0, 0);
+        await frames(6);
+        const resumedState = mascot.host.state(el).offscreen;
+        const resumedDraws = calls.length - countOff;
+        const firstResumedFrame = calls[countOff];
+        const activeWhileLive = observers.size;
+        mascot.host.unmount(el);
+        const activeAfterUnmount = observers.size;
+        mascot.draw = origDraw;
+        window.IntersectionObserver = NativeIntersection;
+        return {
+          onscreenDraws,
+          offscreenState,
+          offscreenDraws,
+          resumedState,
+          resumedDraws,
+          pausedAt,
+          firstResumedFrame,
+          activeWhileLive,
+          activeAfterUnmount
+        };
+      })()"
+    )
+    expect_gt(r$onscreenDraws, 0)
+    expect_true(r$offscreenState)
+    expect_equal(r$offscreenDraws, 0)
+    expect_false(r$resumedState)
+    expect_gt(r$resumedDraws, 0)
+    expect_equal(r$firstResumedFrame, r$pausedAt + 1)
+    expect_equal(r$activeWhileLive, 1)
+    expect_equal(r$activeAfterUnmount, 0)
+  })
+
+  it("draws no new frames when a rested idle mascot scrolls away and back", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE, viewport = c(800, 600))
+    r <- js(
+      "(async () => {
+        const el=document.getElementById('a'),mount=mascot.mount,draw=mascot.draw;
+        mascot.host.unmount(el);
+        let controller,draws=0;
+        mascot.mount=(...args)=>(controller=mount(...args));
+        mascot.draw=(...args)=>{draws++;return draw(...args);};
+        const spacer=document.createElement('div');spacer.style.height='3000px';document.body.append(spacer);
+        const frames=async()=>{for(let i=0;i<6;i++)await new Promise(requestAnimationFrame);};
+        try {
+          mascot.host.mount(el);controller.seek(150);await frames();
+          const before=draws;
+          window.scrollTo(0,2000);await frames();
+          const offscreen=mascot.host.state(el).offscreen;
+          window.scrollTo(0,0);await frames();
+          return {offscreen,returned:!mascot.host.state(el).offscreen,draws:draws-before};
+        } finally {mascot.mount=mount;mascot.draw=draw;}
+      })()"
+    )
+    expect_true(r$offscreen)
+    expect_true(r$returned)
+    expect_equal(r$draws, 0)
+  })
+
+  it("keeps rested and explicitly paused mascots at rest after leaving and re-entering view", {
+    skip_without_chrome()
+    js <- local_host_page(reduced = FALSE)
+    js(
+      "window.IntersectionObserver = class {
+      constructor(fn) { window.intersect = off => fn([{target:document.getElementById('a'),isIntersecting:!off,intersectionRatio:off?0:1}]); }
+      observe() {} unobserve() {} disconnect() {}
+    };"
+    )
+    r <- js(host_motion_js(
+      "fire(0);fire(6000);
+      const settledCount=calls.length;
+      intersect(true);intersect(false);
+      for(let i=1;i<=300;i++)fire(6000+i*16);
+      const settledDraws=calls.length-settledCount,settledQueue=queued.size;
+      send({mood:'happy'});controller.pause();
+      const pausedCount=calls.length;
+      intersect(true);intersect(false);
+      for(let i=1;i<=300;i++)fire(12000+i*16);
+      return {settledDraws,settledQueue,pausedDraws:calls.length-pausedCount,pausedQueue:queued.size};"
+    ))
+    expect_equal(r$settledDraws, 0)
+    expect_equal(r$settledQueue, 0)
+    expect_equal(r$pausedDraws, 0)
+    expect_equal(r$pausedQueue, 0)
+  })
+
+  it("keeps application theme changes and anchor removal queued beside host writes", {
+    skip_without_chrome()
+    js <- local_host_page(theme = mascot_theme(mode = "auto"), placement = mascot_placement("bottom-right"))
+    r <- js(
+      "(async () => {
+        const el=document.getElementById('a');
+        const frames=async()=>{for(let i=0;i<4;i++)await new Promise(requestAnimationFrame);};
+        await frames();
+        document.documentElement.dataset.bsTheme='dark';
+        mascot.host.receive({id:'a',patch:{status:{mode:'custom',text:'Saved'}}});
+        await frames();
+        const dark=mascot.host.state(el).mode;
+        document.querySelector('.mascot-source').remove();
+        mascot.host.receive({id:'a',patch:{status:{mode:'custom',text:'Removed'}}});
+        await frames();
+        return {dark,mounted:mascot.host.state(el)!==null};
+      })()"
+    )
+    expect_identical(r$dark, "dark")
+    expect_false(r$mounted)
+  })
+
+  it("refits a visible inline bubble when a sibling moves its unchanged-size mascot", {
+    skip_without_chrome()
+    js <- local_host_page(
+      size = 96,
+      viewport = c(600, 800),
+      bubble = mascot_bubble("All checks finished.", duration = Inf)
+    )
+    r <- js(
+      "(async () => {
+        const el=document.getElementById('a');
+        const sidebar=document.createElement('div');
+        sidebar.style.cssText='display:inline-block;width:0;height:10px';el.before(sidebar);
+        const frames=async()=>{for(let i=0;i<5;i++)await new Promise(requestAnimationFrame);};
+        await frames();
+        const width=el.getBoundingClientRect().width;
+        const before=mascot.host.state(el).measures;
+        sidebar.style.width='460px';
+        await frames();
+        const bubble=el.querySelector('.mascot-bubble').getBoundingClientRect();
+        return {width,afterWidth:el.getBoundingClientRect().width,right:bubble.right,left:bubble.left,
+          measures:mascot.host.state(el).measures-before};
+      })()"
+    )
+    expect_equal(r$afterWidth, r$width)
+    expect_gt(r$measures, 0)
+    expect_gte(r$left, 0)
+    expect_lte(r$right, 600)
+  })
+})

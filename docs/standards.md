@@ -212,7 +212,8 @@ The docs say "mascot adds no inline script of its own". They do not say it works
 itself still uses inline scripts.
 
 **Keep JS small**: decisions live in R, where they can be unit-tested. JS is tested through shinytest2 and the
-widget's rendered output (section 6).
+widget's rendered output (section 6). Every change in `inst/www/` adds an entry to
+`vignettes/articles/engine-changelog.Rmd`.
 
 ## 4. Bundled files and licences
 

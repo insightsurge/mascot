@@ -84,3 +84,7 @@ articles:
     navbar: ~
     contents:
       - mascot
+  - title: Changelog
+    navbar: Changelog
+    contents:
+      - articles/engine-changelog

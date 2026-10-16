@@ -95,6 +95,8 @@
 
 ## Minor improvements and fixes
 
+* Mascot layout reads batch into one animation frame per burst of page changes; unrelated changes are ignored unless an inline bubble needs refitting. Animating mascots pause drawing while scrolled outside the viewport; see the engine changelog on the package website (#295).
+
 * Minimised mascots restore sharp without interaction: the canvas backing size matches its displayed size times the device pixel ratio, and the character is redrawn on restore, including when animated, with `restoring = FALSE` and under reduced motion (#275).
 
 * `update_mascot()` accepts `session$ns()` ids without adding the module namespace twice, including when replaying updates after a mascot reappears (#133).

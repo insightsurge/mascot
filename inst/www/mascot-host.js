@@ -27,7 +27,9 @@
  * Missing/invalid CSS uses the character colour and warns; contrast below 3:1 warns without changing the colour.
  * One theme observer exists while auto is used; the shared scheme listener serves auto and floating bubbles.
  * CSS chooses the narrow-screen size. One ResizeObserver per element refreshes its backing canvas;
- * zero sizes retain the last usable drawing. Shared viewport/density and notification observers are reference-counted.
+ * zero sizes retain the last usable drawing. Shared viewport/density, intersection and notification observers are
+ * reference-counted; unrelated DOM mutations are ignored, relevant ones coalesce into one animation frame, and
+ * off-screen mascots pause drawing until they return to the viewport.
  * Floating elements move to body; a source marker preserves tab visibility, inherited text/theme and Shiny teardown.
  * Inline bubbles are clamped to viewport edges without changing their reserved height.
  * Floating bubbles point towards the page centre. Native buttons minimise/restore; messages pause while minimised.
@@ -116,6 +118,8 @@
   let notificationMutation = null;
   let notificationResize = null;
   let notificationPanel = null;
+  let viewportObserver = null;
+  let pageFrame = null;
   const has = (object, key) => Object.hasOwn(object, key);
   const label = (mood) => mood.charAt(0).toUpperCase() + mood.slice(1);
   const warn = (error) => console.warn(`mascot: ${String(error.message || error).replace(/^mascot: /, '')}`);
@@ -529,7 +533,7 @@
     }
     const auto = [...live].some((record) => themeMode(record.theme) === 'auto');
     if (auto && !modeMutation) {
-      modeMutation = new MutationObserver(refreshPage);
+      modeMutation = new MutationObserver(schedulePageRefresh);
       for (const el of [document.documentElement, document.body])
         modeMutation.observe(el, { attributes: true, attributeFilter: ['class', 'data-bs-theme'] });
     } else if (!auto) {
@@ -597,7 +601,9 @@
   }
 
   function setProperty(el, key, value) {
-    if (el.style.getPropertyValue(key) !== value) el.style.setProperty(key, value);
+    if (el.style.getPropertyValue(key) !== value) {
+      el.style.setProperty(key, value);
+    }
   }
 
   // Shiny registers after subscribe returns. Transfer its bound marker in the next microtask,
@@ -1148,6 +1154,7 @@
   }
 
   function measure(record) {
+    record.measures += 1;
     // A free drop stays inside the window when the window or the mascot changes size.
     if (record.dropped && record.placement.floating && !record.dragState) placeAt(record, record.dropped);
     const size = record.placementAnimation
@@ -1224,14 +1231,88 @@
     for (const record of live) {
       if (record.placement.floating && record.placement.position === 'bottom-right') {
         const value = `${offset}px`;
-        if (record.el.style.getPropertyValue('--_mascot-notification-offset') !== value)
+        if (record.el.style.getPropertyValue('--_mascot-notification-offset') !== value) {
           record.el.style.setProperty('--_mascot-notification-offset', value);
+        }
         measureMenu(record);
       }
     }
   }
 
+  function cancelPageRefresh() {
+    if (pageFrame !== null) {
+      window.cancelAnimationFrame(pageFrame);
+      pageFrame = null;
+    }
+  }
+
+  function schedulePageRefresh() {
+    if (!live.size || pageFrame !== null) return;
+    pageFrame = window.requestAnimationFrame(() => {
+      pageFrame = null;
+      refreshPage();
+    });
+  }
+
+  function affectsMascot(node) {
+    if (!(node instanceof Element)) return false;
+    for (const record of live) {
+      if (node.contains(record.el) || (record.anchor && node.contains(record.anchor))) return true;
+    }
+    return false;
+  }
+
+  function hasStyleNode(nodes) {
+    for (const node of nodes) {
+      if (!(node instanceof Element)) continue;
+      if (node.tagName === 'STYLE' || node.tagName === 'LINK' || node.querySelector?.('style, link[rel="stylesheet"]'))
+        return true;
+    }
+    return false;
+  }
+
+  function externalMutation(m, after) {
+    if (m.type !== 'attributes') return true;
+    if (m.oldValue === after) return false;
+    if (m.attributeName !== 'style' || !records.has(m.target)) return true;
+    // Compare each transition, not only the final style: application writes in the same
+    // task as host writes must survive. Only private host properties are ignored.
+    const publicStyle = (text) => {
+      const style = document.createElement('span').style;
+      style.cssText = text || '';
+      for (const key of [...style]) if (key.startsWith('--_mascot-')) style.removeProperty(key);
+      return style.cssText;
+    };
+    return publicStyle(m.oldValue) !== publicStyle(after);
+  }
+
+  function relevantMutation(m) {
+    for (const record of live) {
+      if (record.anchor && !record.anchor.isConnected) return true;
+    }
+    const panel = document.getElementById('shiny-notification-panel');
+    if (panel !== notificationPanel) return true;
+    if (panel && (m.target === panel || panel.contains(m.target))) return true;
+    if (m.type === 'attributes' && affectsMascot(m.target)) return true;
+    // A sibling's layout can move an inline bubble without resizing its mascot.
+    // Ignore mutations inside mascot UI; its own writes must not schedule another frame.
+    if (
+      ![...live].some((record) => record.el.contains(m.target)) &&
+      [...live].some((record) => !record.placement.floating && record.bubble && !record.hidden)
+    )
+      return true;
+    if (m.type === 'attributes') return false;
+    if (m.target instanceof Element && m.target.tagName === 'STYLE') return true;
+    if (document.head && (m.target === document.head || document.head.contains(m.target))) return true;
+    return (
+      hasStyleNode(m.addedNodes) ||
+      hasStyleNode(m.removedNodes) ||
+      [...m.addedNodes, ...m.removedNodes].some(affectsMascot)
+    );
+  }
+
   function refreshPage() {
+    cancelPageRefresh();
     for (const record of live) {
       if (record.anchor && !record.anchor.isConnected) unmount(record.el);
       else {
@@ -1247,18 +1328,37 @@
     // A shared page observer also catches inline messages moving near a viewport edge.
     const needed = live.size > 0;
     if (!needed) {
+      cancelPageRefresh();
       notificationMutation?.disconnect();
       notificationResize?.disconnect();
       notificationMutation = notificationResize = notificationPanel = null;
       return;
     }
     if (!notificationMutation) {
-      notificationMutation = new MutationObserver(refreshPage);
+      notificationMutation = new MutationObserver((mutations) => {
+        // MutationRecord has the old value only. Walk backwards to recover each new
+        // value even when application and host writes share the same delivery batch.
+        const values = new Map();
+        let relevant = false;
+        for (let i = mutations.length - 1; i >= 0; i--) {
+          const m = mutations[i];
+          let after;
+          if (m.type === 'attributes') {
+            if (!values.has(m.target)) values.set(m.target, new Map());
+            const attrs = values.get(m.target);
+            after = attrs.has(m.attributeName) ? attrs.get(m.attributeName) : m.target.getAttribute(m.attributeName);
+            attrs.set(m.attributeName, m.oldValue);
+          }
+          if (externalMutation(m, after) && relevantMutation(m)) relevant = true;
+        }
+        if (relevant) schedulePageRefresh();
+      });
       notificationMutation.observe(document.documentElement, {
         childList: true,
         subtree: true,
         attributes: true,
         attributeFilter: ['class', 'style', 'hidden', 'data-bs-theme'],
+        attributeOldValue: true,
       });
     }
     const needsPanel = [...live].some(
@@ -1273,6 +1373,26 @@
     refreshNotifications();
   }
 
+  function watchViewport() {
+    if (!live.size) {
+      viewportObserver?.disconnect();
+      viewportObserver = null;
+      return;
+    }
+    if (!viewportObserver && typeof window.IntersectionObserver === 'function') {
+      viewportObserver = new window.IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          const target = records.get(entry.target);
+          if (!target) continue;
+          const offscreen = !entry.isIntersecting && entry.intersectionRatio === 0;
+          if (offscreen === target.offscreen) continue;
+          target.offscreen = offscreen;
+          target.controller.holdVisibility(offscreen);
+        }
+      });
+    }
+  }
+
   function watch(record) {
     record.resize = new ResizeObserver(() => measure(record));
     record.resize.observe(record.el);
@@ -1281,18 +1401,22 @@
       window.addEventListener('resize', refreshViewport);
       densityChanged();
     }
+    watchViewport();
+    viewportObserver?.observe(record.el);
     watchNotifications();
     watchModes();
   }
 
   function unwatch(record) {
     record.resize?.disconnect();
+    viewportObserver?.unobserve(record.el);
     const registered = live.delete(record);
     if (registered && !live.size) {
       window.removeEventListener('resize', refreshViewport);
       densityMedia?.removeEventListener('change', densityChanged);
       densityMedia = null;
     }
+    watchViewport();
     watchNotifications();
     watchModes();
   }
@@ -1787,6 +1911,8 @@
       themeWarnings: new Set(),
       minimised: false,
       hidden: true,
+      offscreen: false,
+      measures: 0,
       revision: 0,
       fields: new Map(),
       mountSerial: ++mountSerial,
@@ -2277,6 +2403,8 @@
       renderedSize: record.renderedSize,
       bubble: record.bubble ? { ...record.bubble, remaining: remaining(record) } : null,
       hidden: record.hidden,
+      offscreen: record.offscreen,
+      measures: record.measures,
       revision: record.revision,
       current: record.controller.current(),
     };

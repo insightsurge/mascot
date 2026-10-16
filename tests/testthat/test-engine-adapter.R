@@ -198,3 +198,46 @@ describe("adapter face mounting", {
     expect_identical(result[[1]], result[[2]])
   })
 })
+
+
+describe("TC-03 compiled adapter scenes", {
+  it("reuses body and shadow compiles while applying frame channels and fresh colours", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(
+      r"(
+      (() => {
+        const ch=mascot.readCharacter('tessa'),compile=mascot.parts.compile;
+        let calls=0;mascot.parts={...mascot.parts,compile:(...args)=>{calls++;return compile(...args);}};
+        const g=document.createElement('canvas').getContext('2d'),painters={face:()=>{},effects:()=>{}};
+        const p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);
+        try {
+          const a=mascot.tessaAdapter.scene(ch,p,ch.colours);
+          mascot.tessaAdapter.draw(g,ch,p,ch.colours,150,270,painters);
+          const first=calls;
+          const moved={...p,lift:5,rot:0.2,armL:0.7,armR:2,armJitter:0.1,t:9,sx:0.8};
+          const b=mascot.tessaAdapter.scene(ch,moved,{...ch.colours,body:'#ff0000'});
+          mascot.tessaAdapter.draw(g,ch,moved,ch.colours,123,260,painters);
+          const second=calls;
+          const tuck=mascot.tessaAdapter.scene(ch,{...p,feet:'tuck'},ch.colours);
+          const bare=mascot.tessaAdapter.scene(ch,{...p,accessory:'none'},ch.colours);
+          const back=mascot.tessaAdapter.scene(ch,p,ch.colours);
+          const copy={...ch},other=mascot.tessaAdapter.scene(copy,p,ch.colours);
+          return {first,second,same:a.compiled===b.compiled,back:a.compiled===back.compiled,
+            different:[tuck,bare,other].every(f=>f.compiled!==a.compiled),
+            moved:JSON.stringify(a.state.parts.arm_left.matrix)!==JSON.stringify(b.state.parts.arm_left.matrix),
+            colour:b.colours.body,source:a.compiled.source.parts.find(p=>p.id==='arm_left').rotate};
+        } finally {mascot.parts={...mascot.parts,compile};}
+      })()
+    )"
+    )
+    expect_equal(result$first, 2)
+    expect_equal(result$second, 2)
+    expect_true(result$same)
+    expect_true(result$back)
+    expect_true(result$different)
+    expect_true(result$moved)
+    expect_equal(result$colour, "#ff0000")
+    expect_equal(result$source, 0)
+  })
+})

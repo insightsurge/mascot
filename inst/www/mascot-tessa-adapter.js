@@ -3,12 +3,15 @@
   const ns = window.mascot;
   if (!ns || ns.tessaAdapter) return;
 
+  // Character definitions are snapshots: replace the character object when authoring
+  // new geometry, as for the legacy face-style cache. Weak keys release unused data.
+  const scenes = new WeakMap();
+  const shadows = new WeakMap();
+
   // E1 bridge only: no saved-format claim, no live-host switch. E3/E4 still own
   // generic faces/effects. Their current painters are mounted on part matrices.
-  function scene(character, pose, colours, x = 0, baseY = 0) {
-    if (!ns.parts || !ns.geometry) throw new Error('mascot: the Tessa adapter needs parts and geometry modules');
-    if (character.id !== 'tessa') throw new Error('mascot: the provisional adapter supports only Tessa');
-    const palette = { ...colours };
+  function build(character, tucked, selected) {
+    const bindings = [];
     let roleIndex = 0;
     const items = (parts, overrides = {}) =>
       parts.map((item) => {
@@ -18,10 +21,7 @@
         // Keep the old meaning with an explicit RGBA role, including overrides.
         const role = (name, alpha) => {
           const key = `adapter_colour_${roleIndex++}`;
-          palette[key] =
-            alpha === undefined
-              ? (overrides[name] ?? colours[name])
-              : ns.drawing.rgba(overrides[name] ?? colours[name], alpha);
+          bindings.push({ key, name, alpha, override: overrides[name] });
           return key;
         };
         if (fill && (item.alpha !== undefined || Object.hasOwn(overrides, fill))) fill = role(fill, item.alpha);
@@ -58,7 +58,6 @@
     if (!anchors.face) anchor('face', {});
     const feet = character.feet;
     if (feet) {
-      const tucked = pose.feet === 'tuck' || (pose.feet === 'auto' && pose.lift > 6);
       for (const [index, sign] of [-1, 1].entries()) {
         const id = sign < 0 ? 'foot_left' : 'foot_right';
         const foot = tucked ? feet.tuck.rect : feet.stand[index];
@@ -85,18 +84,14 @@
     }
     if (character.arms) {
       const arms = character.arms;
-      const angles = ns.drawing.armAngles(character, pose);
-      for (const [side, sign] of [
-        ['L', -1],
-        ['R', 1],
-      ]) {
+      for (const sign of [-1, 1]) {
         const id = sign < 0 ? 'arm_left' : 'arm_right';
         parts.push({
           id,
           parent: 'torso',
           layer: arms.layer ?? 4,
           at: [sign * character.anchors.shoulders.x, character.anchors.shoulders.y],
-          rotate: angles[side],
+          rotate: 0,
           items: [
             {
               shape: 'round_rect',
@@ -129,7 +124,7 @@
     }
     const accessories = {};
     const wear = [];
-    ns.drawing.accessories(character, pose).forEach((item, index) => {
+    selected.forEach((item, index) => {
       const id = `attachment_${index}`;
       const name = item.anchor || 'hair';
       const paired = ['hands', 'shoulders', 'feet'].includes(name);
@@ -148,6 +143,31 @@
       accessories,
       wear,
     });
+    return { compiled, bindings };
+  }
+
+  function scene(character, pose, colours, x = 0, baseY = 0) {
+    if (!ns.parts || !ns.geometry) throw new Error('mascot: the Tessa adapter needs parts and geometry modules');
+    if (character.id !== 'tessa') throw new Error('mascot: the provisional adapter supports only Tessa');
+    // Resolve/validate the worn set even on a cache hit (duplicate slots still error).
+    const selected = ns.drawing.accessories(character, pose);
+    const tucked = pose.feet === 'tuck' || (pose.feet === 'auto' && pose.lift > 6);
+    const names = (Array.isArray(pose.accessory) ? pose.accessory : [pose.accessory]).filter(
+      (name) => name !== undefined && name !== 'none',
+    );
+    const key = JSON.stringify([tucked, !!character.arms, names]);
+    let cache = scenes.get(character);
+    if (!cache) {
+      cache = new Map();
+      scenes.set(character, cache);
+    }
+    if (!cache.has(key)) cache.set(key, build(character, tucked, selected));
+    const { compiled, bindings } = cache.get(key);
+    const palette = { ...colours };
+    for (const { key, name, alpha, override } of bindings) {
+      const colour = override ?? colours[name];
+      palette[key] = alpha === undefined ? colour : ns.drawing.rgba(colour, alpha);
+    }
     const channels = {
       'root.lift': pose.lift,
       'root.rotate': pose.rot,
@@ -155,6 +175,11 @@
       'root.scale_y': pose.scale * pose.sy,
       'root.flip': pose.flip,
     };
+    if (character.arms) {
+      const angles = ns.drawing.armAngles(character, pose);
+      channels['arm_left.rotate'] = angles.L;
+      channels['arm_right.rotate'] = angles.R;
+    }
     const state = ns.parts.frame(compiled, channels, 'full', { x, base_y: baseY });
     for (const [id, partState] of Object.entries(state.parts)) {
       if (![0, 1, 3, 4].includes(partState.layer)) {
@@ -176,25 +201,22 @@
     if (pose.shadow && character.shadow && pose.scale !== 0) {
       const shade = character.shadow;
       const k = 1 / (1 + pose.lift / 200);
-      const compiled = ns.parts.compile({
-        format_version: 1,
-        ground: { centre_height: 0 },
-        parts: [
-          {
-            id: 'ground_shadow',
-            at: [x, baseY - 1],
-            items: [
-              {
-                shape: 'ellipse',
-                rx: shade.rx * pose.scale * k * (0.6 + 0.4 * pose.sx),
-                ry: shade.ry * pose.scale * k,
-                fill: 'shadow_fill',
-              },
-            ],
-          },
-        ],
-      });
-      paint(compiled, ns.parts.frame(compiled, {}, 'full', { x: 0, base_y: 0 }), {
+      let compiled = shadows.get(character);
+      if (!compiled) {
+        compiled = ns.parts.compile({
+          format_version: 1,
+          ground: { centre_height: 0 },
+          parts: [
+            { id: 'ground_shadow', items: [{ shape: 'ellipse', rx: shade.rx, ry: shade.ry, fill: 'shadow_fill' }] },
+          ],
+        });
+        shadows.set(character, compiled);
+      }
+      const channels = {
+        'ground_shadow.scale_x': pose.scale * k * (0.6 + 0.4 * pose.sx),
+        'ground_shadow.scale_y': pose.scale * k,
+      };
+      paint(compiled, ns.parts.frame(compiled, channels, 'full', { x, base_y: baseY - 1 }), {
         shadow_fill: ns.drawing.rgba(colours.shadow, shade.alpha * k),
       });
     }

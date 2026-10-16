@@ -9,6 +9,30 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-16 — Internal format-v1 tracks, needs and fallback, interruption and deadlines (#299)
+
+**In brief:** The motion module can now evaluate saved-format gestures (tracks, fallback gestures, the five easing curves,
+interruption, reduced motion and the five-second deadline) as pure functions. Nothing changes by default;
+the provisional Tessa adapter can use it behind its internal switch.
+
+**Technical:**
+
+* `inst/www/mascot-motion.js`: added `mascot.motion.tracks`: `normalise()`/`sample()` for `[[at, value, ease?], ...]`
+  and `{ mode, keys }` tracks (add and set modes, null as the mood base, discrete values that switch at keys,
+  `linear`/`ease_in`/`ease_out`/`ease_in_out`/`step`, exact rest at the end); `compile()` for needs and fallback
+  traversal (missing, cyclic and unplayable chains error with `{ code, path }`), target-part checks and the 1 to 150
+  frame budget; `settings()` for the motion defaults and limits; `fit()` for late effects; `frameAt()` for one
+  frame-by-frame result with interruption, reduction, absolute deadline settlement, multiplicative breathing, blink
+  skipping and separate effect instances; `drawn()` for the frames a window draws.
+* `inst/www/mascot-motion.js`: `pose()` replaces the legacy change and gesture layers with these tracks only when
+  `mascot.internal.useCharacterAdapter` is true and `mascot.internal.tracks[id]` is registered. Idle stays legacy.
+  Differences from the legacy gestures on Tessa: the nod adds its offsets to the mood (celebrating lifts
+  from its own 10, not from an absolute -3); a hop follows `height * sin(pi * u)` instead of a parabola. Everything
+  else matched to 1e-9 over every mood, gesture and half-frame.
+* Room to grow: unknown gesture, channel, easing or effect names are errors, new optional fields keep defaults,
+  and morph, blend and particle behaviour stay reserved. The idle `extra` start time is not defined by the
+  format yet, so the scheduler accepts `state.extraAt` from the host rather than inventing one.
+
 ## 2026-10-16 — Filter page mutations, batch layout reads and pause off-screen mascots (#295)
 
 **In brief:** Mascots ignore unrelated page changes unless an inline bubble needs refitting. Relevant

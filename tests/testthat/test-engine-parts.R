@@ -158,3 +158,74 @@ describe("prototype names in anchors and accessories", {
     expect_equal(unlist(accessory$parts$wear_constructor_disc$matrix)[5:6], c(168, 198))
   })
 })
+
+describe("declarative threshold switches and variant anchors", {
+  it("evaluates threshold switch strictly above the boundary and recomputes variant anchors", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    recipe <- jsonlite::fromJSON(test_path("fixtures", "format", "anchor_probe.json"), simplifyVector = FALSE)
+    recipe$parts[[1]]$switch <- list(
+      channel = "root.lift",
+      above = 6,
+      variant = "raised"
+    )
+    payload <- as.character(jsonlite::toJSON(recipe, auto_unbox = TRUE, null = "null", digits = NA))
+    js(paste0("window.switchProbe = mascot.parts.compile(", payload, ")"))
+
+    state_boundary <- js("mascot.parts.frame(window.switchProbe, { 'root.lift': 6.0 })")
+    expect_identical(state_boundary$parts$panel$variant, "default")
+    expect_equal(unlist(state_boundary$anchors$badge$matrix)[5:6], c(168, 192))
+
+    state_above <- js("mascot.parts.frame(window.switchProbe, { 'root.lift': 6.001 })")
+    expect_identical(state_above$parts$panel$variant, "raised")
+    expect_equal(unlist(state_above$anchors$badge$matrix)[5:6], c(170, 193.999), tolerance = 1e-4)
+  })
+
+  it("passes resolved item overrides into frame state for geometry rendering", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    recipe <- jsonlite::fromJSON(test_path("fixtures", "format", "anchor_probe.json"), simplifyVector = FALSE)
+    recipe$moods$worried$items <- list(
+      "panel.surface" = list(fill = "outline", alpha = 0.5)
+    )
+    payload <- as.character(jsonlite::toJSON(recipe, auto_unbox = TRUE, null = "null", digits = NA))
+    js(paste0("window.overrideProbe = mascot.parts.compile(", payload, ")"))
+
+    state <- js("mascot.parts.frame(window.overrideProbe, {}, 'full', { mood: 'worried' })")
+    expect_identical(state$item_overrides$`panel.surface`$fill, "outline")
+    expect_equal(state$item_overrides$`panel.surface`$alpha, 0.5)
+  })
+
+  it("omits item_overrides on frame when absent and avoids item lookups during draw", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    recipe <- jsonlite::fromJSON(test_path("fixtures", "format", "anchor_probe.json"), simplifyVector = FALSE)
+    payload <- as.character(jsonlite::toJSON(recipe, auto_unbox = TRUE, null = "null", digits = NA))
+    js(paste0("window.overrideProbe = mascot.parts.compile(", payload, ")"))
+
+    # When no mood/item overrides are present, state.item_overrides is absent
+    state_no_overrides <- js("mascot.parts.frame(window.overrideProbe, {}, 'full')")
+    expect_null(state_no_overrides$item_overrides)
+
+    # In draw(), when no overrides are present, item keys are not looked up
+    res <- js(
+      "(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 300;
+      canvas.height = 300;
+      const ctx = canvas.getContext('2d');
+      const state = mascot.parts.frame(window.overrideProbe, {}, 'full');
+      let lookupCount = 0;
+      state.item_overrides = new Proxy({}, {
+        get(target, prop) {
+          lookupCount++;
+          return target[prop];
+        }
+      });
+      mascot.geometry.draw(ctx, window.overrideProbe, state, window.overrideProbe.source.colours);
+      return { lookupCount: lookupCount };
+    })()"
+    )
+    expect_identical(res$lookupCount, 0L)
+  })
+})

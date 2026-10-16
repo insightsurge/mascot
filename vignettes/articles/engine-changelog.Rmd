@@ -9,6 +9,31 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-16 — Internal format-v1 mood channels, recolour, switches and kit effects (#302)
+
+**In brief:** The parts and motion modules can now resolve format-v1 mood channel hierarchies, acyclic recolour
+role redirection, item overrides, variant anchors, declarative threshold switches, kit effects progress and
+swap mood fallback chains. Nothing changes by default; all character changes operate behind internal compile
+and adapter switches.
+
+**Technical:**
+
+* `inst/www/mascot-parts.js`: channel vocabulary validation against known rig target channels (`root.*`, `face.*`,
+  `effects.*`, and part transforms); merge resolution in contract order (part resting defaults -> named pose ->
+  mood channels -> reduced channels); compile-time validation requiring core moods (`idle`, `thinking`, `happy`,
+  `worried`, `celebrating`), metadata schema checks, and fallback chain traversal ending at core moods (`swapMood()`); acyclic
+  colour role redirection (`recolour`, `reduced.recolour`) resolving before paints and gradients with explicit user
+  overrides taking priority and cycle detection rejecting with `invalid_colour`; item overrides (`fill`, `stroke`,
+  `alpha`) applied per part item with undeclared target/colour validation; declarative threshold switches
+  (`switch: { channel, above, variant }`) evaluating strictly above the threshold; variant anchors recomputed
+  when owning part variant changes; numerical kit effects progress helpers (`sweatProgress()`, `sparklePulse()`)
+  with reduced motion handling.
+* `inst/www/mascot-geometry.js`: `draw()` honours dynamic mood item overrides (`state.item_overrides`,
+  `options.items`) for item fill, stroke and alpha.
+* `inst/www/mascot-motion.js`: carry-overs resolved for `pose()` bridge passing `reduced: Boolean(state.reduced)`
+  and `idle: state.idle !== false`; deterministic seeded idle extra start time scheduling when `state.extraAt` is
+  omitted using the window-proportional seeded hash rule, with suppression when `state.extraAt` is explicitly `null`.
+
 ## 2026-10-16 — Internal part glow, blur units and drawing-work accounting (#300)
 
 **In brief:** Saved-format characters can give one item of a part a soft glow in a palette colour. Glow is drawn on a

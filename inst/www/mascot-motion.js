@@ -361,24 +361,29 @@
     const activeUntil = state.activeUntil === undefined ? activeAt + idle.frames : state.activeUntil;
     const target = named(state.mood === undefined ? Object.keys(ch.moods)[0] : state.mood, ch.moods, 'mood');
     const mood = shownMood(ch, state, frame, change);
-    if (state.reduced || activeAt === null || frame >= activeUntil) return { mood: target, ...state.pose };
+    const bridge = ns.internal?.useCharacterAdapter === true ? ns.internal.tracks?.[ch.id] : undefined;
+    if (!bridge && (state.reduced || activeAt === null || frame >= activeUntil)) return { mood: target, ...state.pose };
+    if (bridge && activeAt === null) return { mood: target, ...state.pose };
     if (elapsedIdle < 0) return { mood, ...state.pose };
     const base = ns.drawing.resolvePose(ch, { mood });
     let p = { ...base, mood };
     delete p.t;
-    const bridge = ns.internal?.useCharacterAdapter === true ? ns.internal.tracks?.[ch.id] : undefined;
     const elapsed = frame - state.gestureAt;
     const gesture = gestures[state.gesture];
     const newerChange = state.changedAt !== undefined && frame >= state.changedAt && state.changedAt > state.gestureAt;
     if (bridge) {
-      // Internal adapter switch: v1 tracks replace the legacy change and gesture layers; idle stays legacy.
-      const { channels } = tracks.frameAt(
+      // Internal adapter switch: v1 tracks replace the legacy change, gesture and idle layers.
+      const reduced = Boolean(state.reduced);
+      const idleState = state.idle !== false;
+      const result = tracks.frameAt(
         bridge.compiled,
-        { ...state, mood: target, idle: false, reduced: false, activeAt, activeUntil, held: {} },
+        { ...state, mood: target, idle: idleState, reduced, activeAt, activeUntil, held: {} },
         frame,
         { settings: bridge.settings, rest: () => bridgeRest(ch, p) },
       );
-      p = bridgePose(ch, p, channels);
+      p = bridgePose(ch, p, result.channels);
+      if (result.blink !== undefined) p.blink = Math.max(p.blink ?? 0, result.blink);
+      return heldPose(ch, p, state.pose);
     } else if (state.gestures !== false && gesture && !newerChange && elapsed >= 0 && elapsed < gesture.frames) {
       p = gesturePose(ch, p, gesture, elapsed / gesture.frames);
     } else {
@@ -1381,14 +1386,27 @@
           for (const { target: key, track } of gesture.tracks) channels[key] = sample(track, p, baseOf(base, key));
         }
       }
-      // The idle extra plays once from a host-supplied start (the format leaves its timing open); an
-      // action in progress wins, and a late start is fitted into the frames left (none left: discarded).
-      if (!playing && !changing && idle.extra && state.extraAt != null && frame >= state.extraAt) {
+      // The idle extra plays once from a host-supplied start, or a deterministic seeded rule when omitted;
+      // an action in progress wins, and a late start is fitted into the frames left (none left: discarded).
+      let extraAt = state.extraAt;
+      if (extraAt === undefined && idle.extra && state.idle !== false) {
+        const extraGesture = own(compiled.gestures, own(compiled.selected, idle.extra));
+        if (!extraGesture)
+          problem('missing_reference', '$.motion.idle.extra', `Name a declared gesture, not '${idle.extra}'.`);
+        const windowLen = until - activeAt;
+        const fadeAt = Math.floor((windowLen * 2) / 3);
+        const earliest = activeAt + changeFrames;
+        const latest = activeAt + Math.max(changeFrames, fadeAt - extraGesture.frames);
+        const range = latest - earliest;
+        const hash = (Math.imul((state.seed >>> 0) ^ 0x65787472, 1664525) + 1013904223) >>> 0;
+        extraAt = earliest + (range > 0 ? hash % (range + 1) : 0);
+      }
+      if (!playing && !changing && idle.extra && extraAt != null && frame >= extraAt) {
         const extra = own(compiled.gestures, own(compiled.selected, idle.extra));
         if (!extra)
           problem('missing_reference', '$.motion.idle.extra', `Name a declared gesture, not '${idle.extra}'.`);
-        const length = fit(state.extraAt, extra.frames, until);
-        const u = length > 0 ? (frame - state.extraAt) / length : 1;
+        const length = fit(extraAt, extra.frames, until);
+        const u = length > 0 ? (frame - extraAt) / length : 1;
         if (u < 1)
           for (const { target: key, track } of extra.tracks) channels[key] = sample(track, u, baseOf(base, key));
       }

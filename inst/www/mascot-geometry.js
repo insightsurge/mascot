@@ -547,6 +547,10 @@
     const band = state.band ?? 'full';
     const lod = character.lod?.[band] ?? {};
     const glowEnabled = lod.glow ?? band !== 'micro';
+    const hasItemOverrides = Boolean(
+      (state.item_overrides && Object.keys(state.item_overrides).length > 0) ||
+        (options.items && Object.keys(options.items).length > 0),
+    );
     for (const id of state.layers) {
       const owner = state.parts[id];
       if (!owner.available || !owner.opacity) continue;
@@ -570,7 +574,12 @@
         if ((item.lod && !item.lod.includes(band)) || state.hidden.includes(`${id}.${item.id}`)) continue;
         const isEmitter = glowActive && item.id === glowDef.item;
         const geometry = local(id, index);
-        const style = geometry.style;
+        let itemOverride = null;
+        if (hasItemOverrides) {
+          const itemKey = `${id}.${item.id}`;
+          itemOverride = state.item_overrides?.[itemKey] ?? options.items?.[itemKey] ?? null;
+        }
+        const style = itemOverride ? { ...geometry.style, ...itemOverride } : geometry.style;
         const alpha = finite(style.alpha ?? 1, '$.item.alpha', 0, 1) * owner.opacity;
         const strokes = [];
         if (style.outline) {

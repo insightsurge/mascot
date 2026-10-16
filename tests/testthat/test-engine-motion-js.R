@@ -1090,4 +1090,50 @@ describe("E4a behind the internal adapter switch", {
     expect_true(r$same)
     expect_true(r$switchFlag)
   })
+
+  it("passes reduced motion and idle suppression through the pose bridge", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    r <- js(tracks_js(paste(
+      "const ch = mascot.readCharacter('tessa');",
+      "const compiled = t.compile(v1), settings = t.settings(v1);",
+      "mascot.internal = { useCharacterAdapter: true, tracks: { tessa: { compiled, settings } } };",
+      "try {",
+      "  const normal = mascot.motion.pose(ch, { mood: 'happy', previous: 'idle', changedAt: 0 }, 5);",
+      "  const reduced = mascot.motion.pose(ch, { mood: 'happy', previous: 'idle', changedAt: 0, reduced: true }, 5);",
+      "  const breathing = mascot.motion.pose(ch, { mood: 'idle', activeAt: 0, seed: 1 }, 22.5);",
+      "  const idleSuppressed = mascot.motion.pose(ch, { mood: 'idle', activeAt: 0, seed: 1, idle: false }, 22.5);",
+      "  return { normalRot: normal.rot, reducedRot: reduced.rot, normalSy: breathing.sy, suppressedSy: idleSuppressed.sy };",
+      "} finally { mascot.internal = undefined; }"
+    )))
+    expect_gt(abs(r$normalRot), 0.01)
+    expect_equal(r$reducedRot, 0)
+    expect_gt(abs(r$normalSy - 1), 0.005)
+    expect_equal(r$suppressedSy, 1)
+  })
+
+  it("schedules idle extra deterministically when extraAt is omitted and suppresses on null", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    r <- js(tracks_js(paste(
+      "const c = clone(); c.motion.idle.extra = 'nod';",
+      "const compiled = t.compile(c), settings = t.settings(c);",
+      "const rest = () => ({});",
+      "const o = { settings, rest };",
+      "const f1 = (n, s = {}) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, ...s }, n, o).channels['root.lift'];",
+      "const f2 = (n, s = {}) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, ...s }, n, o).channels['root.lift'];",
+      "const fDiffSeed = (n) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 99 }, n, o).channels['root.lift'];",
+      "const fSuppressed = (n) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, extraAt: null }, n, o).channels['root.lift'];",
+      "const series1 = Array.from({ length: 100 }, (_, n) => f1(n));",
+      "const series2 = Array.from({ length: 100 }, (_, n) => f2(n));",
+      "const seriesSuppressed = Array.from({ length: 100 }, (_, n) => fSuppressed(n));",
+      "const hasNod1 = series1.some(v => typeof v === 'number' && v < -2);",
+      "const hasNodSuppressed = seriesSuppressed.some(v => v !== undefined);",
+      "const sameSeries = JSON.stringify(series1) === JSON.stringify(series2);",
+      "return { hasNod1, hasNodSuppressed, sameSeries };"
+    )))
+    expect_true(r$hasNod1)
+    expect_false(r$hasNodSuppressed)
+    expect_true(r$sameSeries)
+  })
 })

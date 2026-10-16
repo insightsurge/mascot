@@ -109,6 +109,205 @@
     }
     return object;
   };
+  const channelVocabulary = (source, byId) => {
+    const rules = Object.create(null);
+    const add = (name, type, base, lower = -Infinity, upper = Infinity, choices = null) => {
+      rules[name] = { type, base, lower, upper, choices };
+    };
+    add('root.lift', 'number', 0, -4096, 4096);
+    add('root.rotate', 'number', 0);
+    add('root.scale_x', 'number', 1, -16, 16);
+    add('root.scale_y', 'number', 1, -16, 16);
+    add('root.flip', 'choice', 1, -Infinity, Infinity, [1, -1]);
+
+    for (const [id, part] of byId.entries()) {
+      const restingScale = Array.isArray(part.scale) ? part.scale : [part.scale ?? 1, part.scale ?? 1];
+      add(`${id}.x`, 'number', 0, -4096, 4096);
+      add(`${id}.y`, 'number', 0, -4096, 4096);
+      add(`${id}.rotate`, 'number', part.rotate ?? 0);
+      add(`${id}.scale_x`, 'number', restingScale[0], -16, 16);
+      add(`${id}.scale_y`, 'number', restingScale[1], -16, 16);
+      add(`${id}.opacity`, 'number', part.opacity ?? 1, 0, 1);
+      add(`${id}.visible`, 'boolean', part.visible ?? true);
+      const variantChoices = ['default', ...Object.keys(part.variants ?? {})];
+      add(`${id}.variant`, 'choice', 'default', -Infinity, Infinity, variantChoices);
+    }
+
+    if (source.face) {
+      add('face.look_x', 'number', 0, -1, 1);
+      add('face.look_y', 'number', 0, -1, 1);
+      add('face.blink', 'number', 0, 0, 1);
+      add('face.lid', 'number', 0, 0, 1);
+      add('face.open', 'number', 1, 0, 1);
+      const kit = source.face.kit_definition ?? (ns.faces?.readKit ? ns.faces.readKit(source.face.kit) : null) ?? {};
+      const eyeChoices = Object.keys(kit.eye_styles ?? {});
+      const mouthChoices = Object.keys(kit.mouth_styles ?? {});
+      const browChoices = Object.keys(kit.brow_styles ?? {});
+      add(
+        'face.eyes',
+        'eyes',
+        kit.defaults?.eyes ?? 'open',
+        -Infinity,
+        Infinity,
+        eyeChoices.length ? eyeChoices : null,
+      );
+      add(
+        'face.mouth',
+        'choice',
+        kit.defaults?.mouth ?? 'smile',
+        -Infinity,
+        Infinity,
+        mouthChoices.length ? mouthChoices : null,
+      );
+      add(
+        'face.brows',
+        'choice',
+        kit.defaults?.brows ?? 'none',
+        -Infinity,
+        Infinity,
+        browChoices.length ? browChoices : null,
+      );
+      add('face.blush', 'blush', kit.defaults?.blush ?? 0);
+    }
+
+    for (const [id] of Object.entries(source.effects ?? {})) {
+      const kitEffect = source.face?.kit_definition?.effects?.[id];
+      const isProgress = kitEffect?.mode === 'progress' || id === 'sweat';
+      add(`effects.${id}`, isProgress ? 'number' : 'boolean', isProgress ? 0 : false, 0, 1);
+    }
+    return rules;
+  };
+
+  const validateChannelValue = (val, rule, path) => {
+    let valid = false;
+    switch (rule.type) {
+      case 'number':
+        valid = typeof val === 'number' && Number.isFinite(val) && val >= rule.lower && val <= rule.upper;
+        break;
+      case 'boolean':
+        valid = typeof val === 'boolean';
+        break;
+      case 'choice':
+        valid =
+          (typeof val === 'string' || typeof val === 'number') &&
+          (!rule.choices || rule.choices.includes(val) || rule.choices.includes(String(val)));
+        break;
+      case 'eyes':
+        if (typeof val === 'string') {
+          valid = !rule.choices || rule.choices.includes(val);
+        } else if (Array.isArray(val) && (val.length === 1 || val.length === 2)) {
+          valid = val.every((v) => typeof v === 'string' && (!rule.choices || rule.choices.includes(v)));
+        }
+        break;
+      case 'blush':
+        valid = val === 'strong' || (typeof val === 'number' && Number.isFinite(val) && val >= 0 && val <= 1);
+        break;
+    }
+    if (!valid) {
+      problem('invalid_channel', path, "Use the channel's declared type, range and membership.");
+    }
+  };
+
+  const applyChannels = (base, channels, path, rules) => {
+    const result = { ...base };
+    for (const [target, val] of Object.entries(channels ?? {})) {
+      const rule = rules[target];
+      if (!rule) {
+        problem('missing_reference', `${path}.${target}`, 'Name a declared channel target.');
+      }
+      validateChannelValue(val, rule, `${path}.${target}`);
+      result[target] = val;
+    }
+    return result;
+  };
+
+  const swapMood = (outgoingCharacter, outgoingTargetMood, incomingCharacter) => {
+    if (!outgoingCharacter || !outgoingTargetMood) return 'idle';
+    if (incomingCharacter?.moods && Object.hasOwn(incomingCharacter.moods, outgoingTargetMood)) {
+      return outgoingTargetMood;
+    }
+    let cursor = outgoingTargetMood;
+    const seen = new Set();
+    while (cursor && !seen.has(cursor)) {
+      seen.add(cursor);
+      const moodDef = outgoingCharacter.moods?.[cursor];
+      if (!moodDef) break;
+      const fallback = moodDef.fallback;
+      if (!fallback) break;
+      if (incomingCharacter?.moods && Object.hasOwn(incomingCharacter.moods, fallback)) {
+        return fallback;
+      }
+      cursor = fallback;
+    }
+    return 'idle';
+  };
+
+  const sweatProgress = (u, effect = {}) => {
+    const progress = number(u ?? 0, '$.sweat.u', 0, 1);
+    if (progress <= 0) return { x: 0, y: 0, opacity: 0, visible: false };
+    const sway = effect.sway ?? 2;
+    const swayRate = effect.sway_rate ?? 12;
+    const travel = effect.travel ?? 26;
+    const fadeAt = effect.fade_at ?? 0.9;
+    const x = sway * Math.sin(progress * swayRate);
+    const y = progress * travel;
+    const opacity = progress <= fadeAt ? 1 : (1 - progress) / (1 - fadeAt);
+    return { x, y, opacity, visible: opacity > 0 };
+  };
+
+  const sparklePulse = (t, effect = {}, options = {}) => {
+    if (options.reduced) {
+      const hasReducedItems = Array.isArray(effect.reduced_items) && effect.reduced_items.length > 0;
+      return { scale: 1, reduced: true, items: 'reduced', visible: hasReducedItems };
+    }
+    const amplitude = number(effect.amplitude ?? 0.18, '$.sparkle.amplitude', 0, 0.5);
+    const rate = number(effect.rate ?? 9, '$.sparkle.rate', Number.MIN_VALUE, 30);
+    const deadline = options.activity_deadline ?? 150;
+    const frame = options.frame ?? t * 30;
+    const elapsed = Math.min(frame, deadline) / 30;
+    const scale = 1 + amplitude * Math.sin(rate * elapsed);
+    return { scale, reduced: false, visible: true };
+  };
+
+  const resolveChannels = (compiled, mood, options = {}) => {
+    const moodId = mood ?? 'idle';
+    const base = options.reduced
+      ? (compiled.reducedBases?.[moodId] ?? compiled.moodBases?.[moodId] ?? compiled.resting ?? {})
+      : (compiled.moodBases?.[moodId] ?? compiled.resting ?? {});
+    const channels = { ...base };
+    if (options.pose) {
+      Object.assign(channels, options.pose);
+    }
+    if (options.overrides) {
+      Object.assign(channels, options.overrides);
+    }
+    return channels;
+  };
+
+  const resolveColours = (compiled, mood, colours = {}, options = {}) => {
+    const moodId = mood ?? 'idle';
+    const recolourMap = options.reduced
+      ? (compiled.reducedRecolour?.[moodId] ?? compiled.recolour?.[moodId] ?? {})
+      : (compiled.recolour?.[moodId] ?? {});
+    const result = { ...colours };
+    const userOverrides = options.userOverrides;
+    for (const [role, dest] of Object.entries(recolourMap)) {
+      if (userOverrides && Object.hasOwn(userOverrides, role)) {
+        result[role] = userOverrides[role];
+      } else if (Object.hasOwn(colours, dest)) {
+        result[role] = colours[dest];
+      }
+    }
+    return result;
+  };
+
+  const resolveItems = (compiled, mood, options = {}) => {
+    const moodId = mood ?? 'idle';
+    return options.reduced
+      ? (compiled.reducedItems?.[moodId] ?? compiled.items?.[moodId] ?? {})
+      : (compiled.items?.[moodId] ?? {});
+  };
+
   const compile = (character) => {
     if (!character || !Array.isArray(character.parts)) problem('input_type', '$.parts', 'Supply a part array.');
     if (character.format_version !== 1) problem('version', '$.format_version', 'Use character format 1.');
@@ -180,18 +379,237 @@
       ordered.push(part.id);
     };
     parts.forEach(visit);
-    return freeze({ source, parts, order: ordered });
+
+    const rules = channelVocabulary(source, byId);
+    const resting = Object.fromEntries(Object.entries(rules).map(([k, r]) => [k, r.base]));
+
+    for (const [poseId, poseChannels] of Object.entries(source.poses ?? {})) {
+      applyChannels(resting, poseChannels, `$.poses.${poseId}`, rules);
+    }
+
+    for (const part of parts) {
+      if (part.switch) {
+        const sw = part.switch;
+        const swPath = `${part.path}.switch`;
+        if (typeof sw.channel !== 'string' || !rules[sw.channel] || rules[sw.channel].type !== 'number') {
+          problem('invalid_channel', `${swPath}.channel`, 'Use a declared numeric threshold channel.');
+        }
+        number(sw.above, `${swPath}.above`);
+        if (typeof sw.variant !== 'string' || !part.variants || !Object.hasOwn(part.variants, sw.variant)) {
+          problem('missing_reference', `${swPath}.variant`, 'Select a declared variant.');
+        }
+      }
+    }
+
+    const coreMoods = ['idle', 'thinking', 'happy', 'worried', 'celebrating'];
+    const moodBases = Object.create(null);
+    const reducedBases = Object.create(null);
+    const recolourMaps = Object.create(null);
+    const reducedRecolourMaps = Object.create(null);
+    const itemOverrides = Object.create(null);
+    const reducedItemOverrides = Object.create(null);
+
+    if (source.moods) {
+      for (const core of coreMoods) {
+        if (!Object.hasOwn(source.moods, core)) {
+          problem('missing_reference', `$.moods.${core}`, 'Supply every core mood.');
+        }
+      }
+
+      for (const [id, mood] of Object.entries(source.moods)) {
+        const path = `$.moods.${id}`;
+        if (!mood.description || typeof mood.description !== 'string') {
+          problem('input_type', `${path}.description`, 'Supply nonempty mood metadata after defaults.');
+        }
+        if (!mood.status || typeof mood.status !== 'string') {
+          problem('input_type', `${path}.status`, 'Supply nonempty mood metadata after defaults.');
+        }
+        if (coreMoods.includes(id) && mood.fallback !== undefined && mood.fallback !== null) {
+          problem('input_type', `${path}.fallback`, 'Core moods have no fallback.');
+        }
+        let cursor = id;
+        const seen = new Set();
+        while (!coreMoods.includes(cursor)) {
+          if (seen.has(cursor)) {
+            problem('missing_reference', `${path}.fallback`, 'Remove the cyclic mood fallback chain.');
+          }
+          seen.add(cursor);
+          const nextId = source.moods[cursor]?.fallback;
+          if (!nextId || !Object.hasOwn(source.moods, nextId)) {
+            problem(
+              'missing_reference',
+              `$.moods.${cursor}.fallback`,
+              'End the fallback chain at a declared core mood.',
+            );
+          }
+          cursor = nextId;
+        }
+
+        let base = { ...resting };
+        if (mood.pose) {
+          if (!own(source.poses, mood.pose)) {
+            problem('missing_reference', `${path}.pose`, 'Name a declared pose.');
+          }
+          base = applyChannels(base, source.poses[mood.pose], `$.poses.${mood.pose}`, rules);
+        }
+
+        const moodBase = applyChannels(base, mood.channels, `${path}.channels`, rules);
+        if (mood.face) {
+          for (const [key, val] of Object.entries(mood.face)) {
+            const target = `face.${key}`;
+            const rule = rules[target];
+            if (!rule) problem('missing_reference', `${path}.face.${key}`, 'Name a declared channel target.');
+            validateChannelValue(val, rule, `${path}.face.${key}`);
+            moodBase[target] = val;
+          }
+        }
+        if (mood.effects) {
+          for (const [key, val] of Object.entries(mood.effects)) {
+            const target = `effects.${key}`;
+            const rule = rules[target];
+            if (!rule) problem('missing_reference', `${path}.effects.${key}`, 'Name a declared channel target.');
+            validateChannelValue(val, rule, `${path}.effects.${key}`);
+            moodBase[target] = val;
+          }
+        }
+        moodBases[id] = moodBase;
+
+        let redBase = { ...moodBase };
+        if (mood.reduced) {
+          if (mood.reduced.channels) {
+            redBase = applyChannels(redBase, mood.reduced.channels, `${path}.reduced.channels`, rules);
+          }
+          if (mood.reduced.face) {
+            for (const [key, val] of Object.entries(mood.reduced.face)) {
+              const target = `face.${key}`;
+              const rule = rules[target];
+              if (!rule) problem('missing_reference', `${path}.reduced.face.${key}`, 'Name a declared channel target.');
+              validateChannelValue(val, rule, `${path}.reduced.face.${key}`);
+              redBase[target] = val;
+            }
+          }
+          if (mood.reduced.effects) {
+            for (const [key, val] of Object.entries(mood.reduced.effects)) {
+              const target = `effects.${key}`;
+              const rule = rules[target];
+              if (!rule)
+                problem('missing_reference', `${path}.reduced.effects.${key}`, 'Name a declared channel target.');
+              validateChannelValue(val, rule, `${path}.reduced.effects.${key}`);
+              redBase[target] = val;
+            }
+          }
+        }
+        reducedBases[id] = redBase;
+
+        const validateRecolour = (recolourObj, recolourPath) => {
+          const mapping = Object.create(null);
+          if (!recolourObj) return mapping;
+          for (const [role, dest] of Object.entries(recolourObj)) {
+            if (source.colours) {
+              if (!Object.hasOwn(source.colours, role) || !Object.hasOwn(source.colours, dest)) {
+                problem('invalid_colour', `${recolourPath}.${role}`, 'Redirect between declared colour roles.');
+              }
+            }
+            let cur = role;
+            const visited = new Set();
+            while (cur && Object.hasOwn(recolourObj, cur)) {
+              if (visited.has(cur)) {
+                problem('invalid_colour', `${recolourPath}.${role}`, 'Remove the recolour cycle.');
+              }
+              visited.add(cur);
+              cur = recolourObj[cur];
+            }
+            mapping[role] = cur;
+          }
+          return mapping;
+        };
+
+        recolourMaps[id] = validateRecolour(mood.recolour, `${path}.recolour`);
+        const redRecolour = { ...mood.recolour, ...(mood.reduced?.recolour ?? {}) };
+        reducedRecolourMaps[id] = validateRecolour(redRecolour, `${path}.reduced.recolour`);
+
+        const validateItems = (itemsObj, itemsPath) => {
+          const overrides = Object.create(null);
+          if (!itemsObj) return overrides;
+          for (const [target, spec] of Object.entries(itemsObj)) {
+            const partsPair = target.split('.');
+            if (partsPair.length !== 2) {
+              problem('missing_reference', `${itemsPath}.${target}`, 'Name a declared item as part.item.');
+            }
+            const [partId, itemId] = partsPair;
+            const part = byId.get(partId);
+            if (!part) {
+              problem('missing_reference', `${itemsPath}.${target}`, 'Name a declared item.');
+            }
+            const allItems = [...(part.items ?? [])];
+            for (const vList of Object.values(part.variants ?? {})) {
+              allItems.push(...vList);
+            }
+            if (!allItems.some((it) => it.id === itemId)) {
+              problem('missing_reference', `${itemsPath}.${target}`, 'Name a declared item.');
+            }
+            for (const field of ['fill', 'stroke']) {
+              if (typeof spec[field] === 'string' && source.colours) {
+                const colourRole = spec[field];
+                const paints = source.paints ?? {};
+                if (!Object.hasOwn(source.colours, colourRole) && !Object.hasOwn(paints, colourRole)) {
+                  problem('invalid_colour', `${itemsPath}.${target}.${field}`, 'Use a declared colour role or paint.');
+                }
+              }
+            }
+            if (spec.alpha !== undefined) {
+              number(spec.alpha, `${itemsPath}.${target}.alpha`, 0, 1);
+            }
+            overrides[target] = spec;
+          }
+          return overrides;
+        };
+
+        itemOverrides[id] = validateItems(mood.items, `${path}.items`);
+        const redItems = { ...mood.items, ...(mood.reduced?.items ?? {}) };
+        reducedItemOverrides[id] = validateItems(redItems, `${path}.reduced.items`);
+      }
+    }
+
+    return freeze({
+      source,
+      parts,
+      order: ordered,
+      rules,
+      resting,
+      moodBases,
+      reducedBases,
+      recolour: recolourMaps,
+      reducedRecolour: reducedRecolourMaps,
+      items: itemOverrides,
+      reducedItems: reducedItemOverrides,
+    });
   };
 
-  const frame = (compiled, channels = {}, band = 'full', host = {}) => {
+  const frame = (compiled, channels = {}, band = 'full', host = {}, options = {}) => {
     if (!['full', 'small', 'micro'].includes(band)) problem('input_type', '$.band', 'Choose a detail band.');
     const { source } = compiled;
-    const rootMatrix = root(source.ground.centre_height, channels, host);
+    const actualOptions =
+      options.mood !== undefined || options.items !== undefined || options.userOverrides !== undefined
+        ? options
+        : host.mood !== undefined || host.items !== undefined || host.userOverrides !== undefined
+          ? host
+          : options;
+    const actualHost =
+      host.x !== undefined || host.base_y !== undefined ? host : options.x !== undefined ? options : host;
+    const activeChannels =
+      Object.keys(channels).length === 0 && actualOptions.mood
+        ? resolveChannels(compiled, actualOptions.mood, actualOptions)
+        : channels;
+    const rootMatrix = root(source.ground.centre_height, activeChannels, actualHost);
     const records = new Map(compiled.parts.map((part) => [part.id, part]));
     const states = Object.create(null);
     const anchors = Object.create(null);
     const lod = source.lod?.[band] ?? {};
     const hidden = new Set(lod.hide ?? []);
+    const resolvedOverrides =
+      actualOptions.items ?? (actualOptions.mood ? resolveItems(compiled, actualOptions.mood, actualOptions) : null);
+    const itemOverridesMap = resolvedOverrides && Object.keys(resolvedOverrides).length > 0 ? resolvedOverrides : null;
     const anchorState = (id) => {
       if (anchors[id]) return anchors[id];
       const definition = own(source.anchors, id);
@@ -224,13 +642,15 @@
         parent = { ...anchor, opacity: states[own(source.anchors, part.attachment.id).part].opacity };
         if (part.attachment.lod && !part.attachment.lod.includes(band)) parent.available = false;
       }
-      const transform = child(parent.matrix, part, channels);
+      const transform = child(parent.matrix, part, activeChannels);
       const opacity =
-        parent.opacity * number(value(channels, `${id}.opacity`, part.opacity ?? 1), `${part.path}.opacity`, 0, 1);
-      const visible = value(channels, `${id}.visible`, part.visible ?? true);
+        parent.opacity *
+        number(value(activeChannels, `${id}.opacity`, part.opacity ?? 1), `${part.path}.opacity`, 0, 1);
+      const visible = value(activeChannels, `${id}.visible`, part.visible ?? true);
       if (typeof visible !== 'boolean') problem('invalid_channel', `${part.path}.visible`, 'Supply a boolean.');
-      let variant = value(channels, `${id}.variant`, 'default');
-      if (part.switch && value(channels, part.switch.channel, 0) > part.switch.above) variant = part.switch.variant;
+      let variant = value(activeChannels, `${id}.variant`, 'default');
+      if (part.switch && value(activeChannels, part.switch.channel, 0) > part.switch.above)
+        variant = part.switch.variant;
       variant = own(lod.variants, id) ?? variant;
       if (variant !== 'default' && !Object.hasOwn(part.variants ?? {}, variant)) {
         problem('missing_reference', `${part.path}.variants.${variant}`, 'Select a declared variant.');
@@ -256,8 +676,34 @@
     const layers = Object.keys(states).sort(
       (left, right) => states[left].layer - states[right].layer || states[left].index - states[right].index,
     );
-    return { root: rootMatrix, parts: states, anchors, layers, band, hidden: [...hidden] };
+    const result = {
+      root: rootMatrix,
+      parts: states,
+      anchors,
+      layers,
+      band,
+      hidden: [...hidden],
+    };
+    if (itemOverridesMap) {
+      result.item_overrides = itemOverridesMap;
+    }
+    return result;
   };
 
-  ns.parts = Object.freeze({ identity, own, multiply, point, root, child, compile, frame });
+  ns.parts = Object.freeze({
+    identity,
+    own,
+    multiply,
+    point,
+    root,
+    child,
+    compile,
+    frame,
+    resolveChannels,
+    resolveColours,
+    resolveItems,
+    swapMood,
+    sweatProgress,
+    sparklePulse,
+  });
 })();

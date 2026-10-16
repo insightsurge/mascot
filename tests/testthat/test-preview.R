@@ -369,11 +369,11 @@ describe("mascot_preview() of a format-v1 character in Chrome", {
     page <- mascot_preview(character = character)
     expect_false(grepl("https?://", as.character(page)))
     js <- local_preview_page(page)
-    expect_identical(js("document.querySelectorAll('.mascot canvas').length"), 40L)
+    expect_identical(js("document.querySelectorAll('.mascot canvas').length"), 48L)
     expect_identical(js("typeof window.Shiny"), "undefined")
     expect_identical(
       unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE),
-      rep(c(160L, 48L, 32L, 24L), 10)
+      rep(c(160L, 48L, 32L, 24L), 12)
     )
     # 160 px is the full band, 48 px the small one, and 32 and 24 px the micro one.
     expect_identical(
@@ -381,12 +381,12 @@ describe("mascot_preview() of a format-v1 character in Chrome", {
         js("Array.from(document.querySelectorAll('.mascot')).map(el=>mascot.host.state(el).band)"),
         use.names = FALSE
       ),
-      rep(c("full", "small", "micro", "micro"), 10)
+      rep(c("full", "small", "micro", "micro"), 12)
     )
     # The status and the accessible name come from the character's own moods.
     expect_identical(
       unlist(js("Array.from(document.querySelectorAll('.mascot-status')).map(el=>el.textContent)"), use.names = FALSE),
-      rep(rep(c("Idle", "Reading the logs", "Happy", "Worried", "Celebrating"), each = 4), 2)
+      rep(rep(c("Idle", "Reading the logs", "Happy", "Worried", "Celebrating", "Processing"), each = 4), 2)
     )
     expect_identical(
       js("document.querySelector('.mascot[data-mood=happy] canvas').getAttribute('aria-label')"),

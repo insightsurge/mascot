@@ -7,7 +7,8 @@
 mascot_gesture(name, ...)
 }
 \arguments{
-\item{name}{A required non-empty string: \code{"nod"} acknowledges an action;
+\item{name}{A required non-empty gesture id: a lowercase letter followed by
+lowercase letters, digits or underscores. \code{"nod"} acknowledges an action;
 \code{"wave"} greets (characters without arms rock instead). See
 \code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions. There is no default; \code{NULL} is not
 accepted.}
@@ -28,6 +29,10 @@ During a character swap the gesture is skipped: the wave within the swap
 replaces it. Reduced motion skips the movement. A gesture sent before the
 mascot appears is kept until it appears; only the latest early gesture plays,
 once, after the queued character and mood are applied.
+
+This helper checks only the form of the id. \code{\link[=update_mascot]{update_mascot()}} checks whether
+the chosen character declares that gesture. If it does not, the warning lists
+that character's available gestures and leaves the mascot unchanged.
 }
 \examples{
 mascot_gesture("nod")

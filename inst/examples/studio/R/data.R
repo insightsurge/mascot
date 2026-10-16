@@ -271,3 +271,16 @@ character_mistakes <- function(character) {
   }
   result
 }
+
+# Internal authoring coverage is separate from the exported function map until R4b.
+studio_character_controls <- list(
+  mascot_read_character = list(path = input_id("your_character_file", "your_character_example")),
+  mascot_check_character = list(x = input_id("your_character_check")),
+  mascot_register_character = list(x = fixed_arg("App start-up only; generated code shows registration.")),
+  mascot_save_character = list(
+    x = input_id("your_character_save"),
+    path = input_id("your_character_save"),
+    ... = fixed_arg("Must be empty."),
+    overwrite = fixed_arg("Download replaces only Shiny's supplied temporary destination.")
+  )
+)

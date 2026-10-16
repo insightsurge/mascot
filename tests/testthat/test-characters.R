@@ -4,6 +4,19 @@ describe("mascot_character()", {
     expect_s3_class(mascot_character(), "mascot_character")
     expect_identical(unclass(mascot_character()), list(id = "tessa", name = "Tessa"))
   })
+  it("shows the selected id in a recreating call, including registered characters", {
+    local_empty_registry()
+    plain <- format_recipe("study_bot")
+    plain$id <- "lab_buddy"
+    mascot_register_character(mascot_check_character(plain))
+    for (id in c("tessa", "lab_buddy")) {
+      helper <- mascot_character(id)
+      expect_identical(format(helper), paste0('mascot_character("', id, '")'))
+      expect_identical(eval(parse(text = format(helper))), helper)
+      expect_identical(capture.output(print(helper)), format(helper))
+      expect_invisible(print(helper))
+    }
+  })
   it("names unknown choices and rejects invalid strings", {
     expect_snapshot(error = TRUE, mascot_character("neer"))
     for (x in list(1, NULL, NA_character_, character(), c("tessa", "tessa"), "")) {

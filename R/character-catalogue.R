@@ -76,6 +76,16 @@ character_catalogue_resolve <- function(x, call) {
   if (inherits(x, "mascot_character_data")) {
     return(character_data_verify(x))
   }
+  if (inherits(x, "mascot_character") && !is.null(x$data)) {
+    return(character_data_verify(x$data))
+  }
+  if (inherits(x, "mascot_character") && !is.null(x$json)) {
+    data <- character_format_check(x$json, from = "text")
+    if (!identical(x$id, data$id) || !identical(x$name, data$name)) {
+      character_format_abort("identity", "$.id", x$id, "Match the helper to its checked content.")
+    }
+    return(data)
+  }
   id <- if (inherits(x, "mascot_character")) x$id else x
   known <- character_catalogue_ids()
   if (!isTRUE(checkmate::check_choice(id, known))) {

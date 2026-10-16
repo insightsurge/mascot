@@ -28,13 +28,29 @@ character_format_schema <- function() {
 
 #' Report a stable character-description diagnostic
 #' @noRd
-character_format_abort <- function(code, path, value = NULL, fix = "Supply valid character data.") {
+character_format_abort <- function(
+  code,
+  path,
+  value = NULL,
+  fix = "Supply valid character data.",
+  choices = character()
+) {
   checkmate::assert_string(code, min.chars = 1)
   checkmate::assert_string(path, min.chars = 1)
   checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
   checkmate::assert_string(fix, min.chars = 1)
+  checkmate::assert_character(choices, any.missing = FALSE, null.ok = TRUE)
+  message <- if (code == "registry" && path == "$") "{fix}" else "{path}: {fix}"
+  if (code == "missing_reference") {
+    if (length(value)) {
+      message <- c(message, "x" = "Unknown reference: {.val {value}}.")
+    }
+    if (length(choices) && length(choices) <= 8L && sum(nchar(choices)) <= 160L) {
+      message <- c(message, "i" = "Valid choices: {.or {.val {choices}}}.")
+    }
+  }
   cli::cli_abort(
-    "{path}: {fix}",
+    message,
     class = c("mascot_error_character", "mascot_error"),
     code = code,
     path = path,
@@ -174,6 +190,9 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
   maximum_length <- if (is.null(rule$input_limit)) rule$max_length else attr(definitions, "input")[[rule$input_limit]]
   kind <- rule$type
   fail <- function(code = "input_type", fix = "Supply a value of the declared type.") {
+    if (!is.null(rule$pattern) && identical(rule$pattern, definitions$colour_map$values$pattern)) {
+      character_format_abort(code, path, value, "Use #RGB, #RRGGBB or rgba(r, g, b, a), for example #3F82FF.")
+    }
     character_format_abort(code, path, NULL, fix)
   }
   if (kind == "union") {
@@ -402,24 +421,38 @@ character_format_parse <- function(x, from = "list") {
   } else {
     checkmate::assert_string(x)
     if (from == "file") {
+      fail_read <- function(message) {
+        checkmate::assert_string(message)
+        cli::cli_abort(
+          message,
+          class = c("mascot_error_file", "mascot_error"),
+          path = x,
+          operation = "read",
+          code = "io",
+          call = NULL
+        )
+      }
+      if (!file.exists(x)) {
+        fail_read("File does not exist: {.path {x}}.")
+      }
+      if (dir.exists(x)) {
+        fail_read("{.path {x}} is a directory.")
+      }
       connection <- tryCatch(
-        {
-          checkmate::assert_file_exists(x)
-          suppressWarnings(file(x, open = "rb"))
-        },
+        suppressWarnings(file(x, open = "rb")),
         error = function(error) {
           checkmate::assert_class(error, "error")
-          cli::cli_abort(
-            "Cannot read {.path {x}}.",
-            class = c("mascot_error_file", "mascot_error"),
-            path = x,
-            operation = "read",
-            parent = error
-          )
+          fail_read("Cannot read {.path {x}}.")
         }
       )
       on.exit(close(connection), add = TRUE)
-      bytes <- readBin(connection, "raw", n = schema$input$utf8_bytes + 1L)
+      bytes <- tryCatch(
+        readBin(connection, "raw", n = schema$input$utf8_bytes + 1L),
+        error = function(error) {
+          checkmate::assert_class(error, "error")
+          fail_read("Cannot read {.path {x}}.")
+        }
+      )
     } else {
       if (!validUTF8(x)) {
         character_format_abort("input_type", "$", NULL, "Use valid UTF-8 text.")
@@ -462,5 +495,8 @@ character_format_parse <- function(x, from = "list") {
   }
   data <- character_format_node(data, schema$definitions$character, "$", schema$definitions, from != "list")
   character_format_bounds(data, schema$input$nesting_depth, schema$input$structural_nodes)
+  if (from == "list" && nchar(character_format_identity(data), type = "bytes") > schema$input$utf8_bytes) {
+    character_format_abort("budget", "$", NULL, "Reduce the UTF-8 input byte length.")
+  }
   data
 }

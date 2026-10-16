@@ -3,7 +3,7 @@
     Code
       print(helper)
     Output
-      mascot_character()
+      mascot_character("tessa")
 
 ---
 

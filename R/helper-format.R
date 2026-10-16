@@ -1,4 +1,4 @@
-#' A recreating call containing only non-default public arguments
+#' A recreating call, keeping the character id and other non-default arguments
 #' @noRd
 helper_format <- function(x) {
   checkmate::assert_list(x, names = "unique")
@@ -7,7 +7,7 @@ helper_format <- function(x) {
   defaults <- formals(constructor)
   args <- unclass(x)
   if (helper == "mascot_character") {
-    args <- list(name = x$id)
+    args <- list(id = x$id)
   }
   if (helper == "mascot_bubble") {
     args$html <- NULL
@@ -23,7 +23,7 @@ helper_format <- function(x) {
     names(args),
     function(arg) {
       checkmate::assert_string(arg)
-      if (identical(defaults[[arg]], quote(expr = ))) {
+      if (helper == "mascot_character" || identical(defaults[[arg]], quote(expr = ))) {
         return(TRUE)
       }
       default <- defaults[[arg]]

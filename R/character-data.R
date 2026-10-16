@@ -2,6 +2,10 @@ character_data_store <- new.env(parent = emptyenv())
 character_data_store$items <- list()
 character_data_store$order <- character()
 
+# Verified content cache: canonical resolved content only, never visitor ids or provenance.
+character_data_verified <- new.env(parent = emptyenv())
+character_data_verified$items <- list()
+
 #' Character ids reserved for built-in characters, shipped or planned
 #'
 #' Includes the 0.1.0 candidates so a custom character registered now cannot
@@ -13,13 +17,39 @@ character_data_reserved <- function() {
 
 #' Verify internal checked character data
 #'
-#' Re-runs semantic character format verification and reconstructs the derived
-#' manifest. Caller-supplied classes, resolved flags and manifest attributes are
-#' never trusted.
+#' Checks structure and canonical content at every boundary. A bounded cache
+#' reuses semantic checks and derived manifests by complete content identity;
+#' a cache miss reconstructs them. Caller-supplied classes, resolved flags and
+#' derived manifest fields never bypass verification.
 #' @noRd
 character_data_verify <- function(x) {
   checkmate::assert_class(x, "mascot_character_data")
-  character_format_check(x)
+  parsed <- character_format_parse(x)
+  identity <- character_format_identity(parsed)
+  # Shipped data may use the reserved id only when it matches the package copy.
+  if (
+    isTRUE(checkmate::check_string(x$id)) &&
+      x$id %in% builtin_characters()$id &&
+      identical(identity, character_format_identity(character_catalogue_builtin(x$id)))
+  ) {
+    return(character_catalogue_builtin(x$id))
+  }
+  items <- character_data_verified$items
+  hit <- which(vapply(items, function(item) identical(attr(item, "mascot_manifest")$identity, identity), logical(1)))
+  if (length(hit) && identical(attr(x, "mascot_manifest")$identity, identity)) {
+    return(items[[hit[[1L]]]])
+  }
+  verified <- character_format_check(x)
+  if (!identical(attr(x, "mascot_manifest")$identity, attr(verified, "mascot_manifest")$identity)) {
+    character_format_abort(
+      "identity",
+      "$",
+      x$id,
+      "Do not edit a checked object. Edit the source list or JSON and check it again."
+    )
+  }
+  character_data_verified$items <- utils::tail(c(items, list(verified)), 16L)
+  verified
 }
 
 #' Register checked character data in the internal store
@@ -37,10 +67,19 @@ character_data_register <- function(x) {
       code = "registry",
       path = "$",
       value = NULL,
-      fix = "Register characters during process setup, not inside an active reactive domain."
+      fix = "Register characters during setup; pass the checked object instead inside an active reactive domain."
     )
   }
   verified <- character_data_verify(x)
+  if (verified$id %in% character_data_reserved()) {
+    character_format_abort(
+      "identity",
+      "$.id",
+      verified$id,
+      paste0(encodeString(verified$id, quote = '"'), " is a built-in character; give your character its own id.")
+    )
+  }
+  attr(verified, "mascot_origin") <- attr(x, "mascot_origin")
   id <- verified$id
   identity <- attr(verified, "mascot_manifest")$identity
   if (id %in% names(character_data_store$items)) {

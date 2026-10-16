@@ -7,8 +7,9 @@
 mascot_mood(name = "idle")
 }
 \arguments{
-\item{name}{A non-empty string naming a mood from \code{\link[=mascot_moods]{mascot_moods()}}. Defaults
-to \code{"idle"}; \code{NULL} is not accepted.}
+\item{name}{A non-empty mood id: a lowercase letter followed by lowercase
+letters, digits or underscores. Defaults to \code{"idle"}; \code{NULL} is not accepted.
+See \code{\link[=mascot_moods]{mascot_moods()}} for the available moods.}
 }
 \value{
 A \code{mascot_mood} object with a \code{name} element.
@@ -17,6 +18,11 @@ The returned object's fields are internal; pass the object on rather than readin
 \description{
 Set how the mascot feels and looks. You can use this helper or a plain mood
 name in \code{\link[=mascot]{mascot()}} and \code{\link[=update_mascot]{update_mascot()}}.
+}
+\details{
+This helper checks only the form of the id. \code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}
+and \code{\link[=mascot_preview]{mascot_preview()}} check whether the chosen character declares that mood.
+If it does not, their diagnostic lists that character's available moods.
 }
 \examples{
 mascot_mood()

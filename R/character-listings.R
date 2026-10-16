@@ -1,7 +1,6 @@
 #' List the characters you can use
 #'
-#' Lists every character this R session knows, with the shipped characters
-#' first. Pass an `id` to the `character` argument of [mascot()], or to the
+#' Lists the characters shipped with the package. Pass an `id` to the `character` argument of [mascot()], or to the
 #' other listings, such as [mascot_moods()].
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param family `NULL` (the default) for every character, or a family `id`
@@ -52,8 +51,9 @@ mascot_characters <- function(..., family = NULL) {
 #' A family is a group of characters that share a body plan, such as hexagonal
 #' bodies. Use a family `id` to filter [mascot_characters()].
 #' @returns A data frame with character columns `id` (the value you pass to the
-#'   `family` argument of [mascot_characters()]), `name` and `description`. The
-#'   family of the default character comes first.
+#'   `family` argument of [mascot_characters()]), `name`, `description` and
+#'   `character` (the id of the character supplying a family snapshot, or `NA`
+#'   for a built-in family). The family of the default character comes first.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers
@@ -62,18 +62,24 @@ mascot_characters <- function(..., family = NULL) {
 #' @examples
 #' mascot_families()
 mascot_families <- function() {
-  items <- lapply(character_catalogue_ids(), character_catalogue_get)
+  ids <- character_catalogue_ids()
+  items <- lapply(ids, character_catalogue_get)
   definitions <- list()
-  for (item in items) {
-    # The first character that carries a family names it; a later snapshot never renames it.
-    if (is.null(definitions[[item$family]])) {
-      definitions[[item$family]] <- item$family_definition
+  owners <- character()
+  for (index in seq_along(items)) {
+    item <- items[[index]]
+    builtin <- character_catalogue_is_builtin(ids[[index]])
+    key <- if (builtin) item$family else paste0(item$family, ":", item$id)
+    if (is.null(definitions[[key]])) {
+      definitions[[key]] <- item$family_definition
+      owners <- c(owners, if (builtin) NA_character_ else item$id)
     }
   }
   data.frame(
-    id = names(definitions),
+    id = vapply(definitions, function(definition) definition$id, character(1), USE.NAMES = FALSE),
     name = vapply(definitions, function(definition) definition$name, character(1), USE.NAMES = FALSE),
-    description = vapply(definitions, function(definition) definition$description, character(1), USE.NAMES = FALSE)
+    description = vapply(definitions, function(definition) definition$description, character(1), USE.NAMES = FALSE),
+    character = owners
   )
 }
 
@@ -81,9 +87,8 @@ mascot_families <- function() {
 #'
 #' Anchors are the named attachment points on a character, such as a hand or a
 #' badge position. They are listed in the order the author wrote them.
-#' @param character A character, defaulting to `"tessa"`: an id string, a
-#'   [mascot_character()] helper or checked character data. `NULL` is not
-#'   accepted.
+#' @param character A character, defaulting to `"tessa"`: an id string or a
+#'   [mascot_character()] helper. `NULL` is not accepted.
 #' @returns A data frame with character columns `name` (the anchor id),
 #'   `description`, `part` (the body part the anchor belongs to) and `side`
 #'   (`"l"` or `"r"`, or `NA` for an anchor on neither side).
@@ -122,9 +127,8 @@ mascot_anchors <- function(character = "tessa") {
 #' A palette is a ready-made set of colours for a character, in light and dark
 #' mode. The first row, `"original"`, stands for the character's own colours
 #' with no palette applied.
-#' @param character A character, defaulting to `"tessa"`: an id string, a
-#'   [mascot_character()] helper or checked character data. `NULL` is not
-#'   accepted.
+#' @param character A character, defaulting to `"tessa"`: an id string or a
+#'   [mascot_character()] helper. `NULL` is not accepted.
 #' @returns A data frame with character columns `name` (the palette id),
 #'   `description` and `source`: `"native"` for `"original"`, `"character"` for
 #'   a palette the character defines and `"family"` for one it takes from its

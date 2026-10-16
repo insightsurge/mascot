@@ -224,10 +224,22 @@ update_mascot <- function(
         value = mascot_update_theme(
           theme,
           environment(),
-          if (is.null(character) || !is.null(arg_problem(character, "character"))) {
+          if (is.null(character)) {
+            owner <- session$userData$mascot_protocol
+            record <- if (!is.null(owner)) owner$states[[mascot_binding_id(session, id)]]
+            context <- record$context
+            if (is.null(context)) {
+              NULL
+            } else if (context$wire$id %in% builtin_characters()$id) {
+              context$wire$id
+            } else {
+              context$data
+            }
+          } else if (!is.null(arg_problem(character, "character"))) {
             NULL
           } else {
-            as_character_arg(character, environment())$id
+            converted <- as_character_arg(character, environment())
+            if (is.null(converted$data)) converted$id else converted$data
           }
         )
       ),

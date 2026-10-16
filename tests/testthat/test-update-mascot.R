@@ -60,6 +60,13 @@ describe("update_mascot()", {
     expect_named(calls$patches[[1]], "problem")
     expect_match(calls$patches[[1]]$problem, "^mascot: .*ha!py")
   })
+  it("lists Tessa's gestures when a well-formed id is not available", {
+    session <- shiny::MockShinySession$new()
+    withr::defer(session$close())
+    local_mocked_bindings(dev_mode = function() FALSE)
+    update_mascot("a", character = "tessa", session = session)
+    expect_snapshot(update_mascot("a", gesture = mascot_gesture("waev"), session = session))
+  })
   it("errors on code mistakes before inspecting runtime values", {
     session <- shiny::MockShinySession$new()
     expect_error(update_mascot("helper", session = NULL), "inside a Shiny server function or module")

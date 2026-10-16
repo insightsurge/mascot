@@ -15,7 +15,13 @@ character_format_parts <- function(x) {
       parent <- if (is.null(part$parent)) "root" else part$parent
       path <- paste0("$.accessories.", id, ".parts[", index - 1L, "]")
       if (parent != "root" && !parent %in% local_ids) {
-        character_format_abort("missing_reference", paste0(path, ".parent"), parent, "Name a local accessory parent.")
+        character_format_abort(
+          "missing_reference",
+          paste0(path, ".parent"),
+          parent,
+          "Name a local accessory parent.",
+          choices = c("root", local_ids)
+        )
       }
       part$id <- paste0("wear_", id, "_", part$id)
       part$parent <- if (parent == "root") "root" else paste0("wear_", id, "_", parent)
@@ -51,7 +57,8 @@ character_format_parts <- function(x) {
         "missing_reference",
         paste0("$.anchors.", id, ".part"),
         x$anchors[[id]]$part,
-        "Name a declared anchor-owning part."
+        "Name a declared anchor-owning part.",
+        choices = ids
       )
     }
   }
@@ -69,7 +76,8 @@ character_format_parts <- function(x) {
             "missing_reference",
             paste0("$.accessories.", accessory, ".anchor"),
             NULL,
-            "Name a declared anchor."
+            "Name a declared anchor.",
+            choices = names(x$anchors)
           )
         }
         parent <- anchor$part
@@ -84,7 +92,8 @@ character_format_parts <- function(x) {
         "missing_reference",
         paste0(paths[[id]], ".parent"),
         parents[[id]],
-        "Name a declared parent part."
+        "Name a declared parent part.",
+        choices = c("root", ids)
       )
     }
   }
@@ -158,7 +167,7 @@ character_format_references <- function(x) {
   roles <- names(x$colours)
   role <- function(id, path) {
     if (!id %in% roles) {
-      character_format_abort("missing_reference", path, id, "Name a declared colour role.")
+      character_format_abort("missing_reference", path, id, "Name a declared colour role.", choices = roles)
     }
     invisible(NULL)
   }
@@ -190,7 +199,13 @@ character_format_references <- function(x) {
     if (is.character(fill)) {
       role(if (is.null(mapper[[fill]])) fill else mapper[[fill]], path)
     } else if (!fill$paint %in% names(x$paints)) {
-      character_format_abort("missing_reference", paste0(path, ".paint"), fill$paint, "Name a declared paint.")
+      character_format_abort(
+        "missing_reference",
+        paste0(path, ".paint"),
+        fill$paint,
+        "Name a declared paint.",
+        choices = names(x$paints)
+      )
     }
     invisible(NULL)
   }
@@ -300,7 +315,8 @@ character_format_references <- function(x) {
         "missing_reference",
         paste0(path, ".switch.variant"),
         part$switch$variant,
-        "Name a declared variant."
+        "Name a declared variant.",
+        choices = names(candidates)
       )
     }
   }
@@ -308,7 +324,13 @@ character_format_references <- function(x) {
     anchor <- x$anchors[[id]]
     path <- paste0("$.anchors.", id)
     if (!anchor$part %in% names(parts)) {
-      character_format_abort("missing_reference", paste0(path, ".part"), anchor$part, "Name a declared part.")
+      character_format_abort(
+        "missing_reference",
+        paste0(path, ".part"),
+        anchor$part,
+        "Name a declared part.",
+        choices = names(parts)
+      )
     }
     variants <- c("default", names(parts[[anchor$part]]$variants))
     for (variant in names(anchor$variants)) {
@@ -317,7 +339,8 @@ character_format_references <- function(x) {
           "missing_reference",
           paste0(path, ".variants.", variant),
           variant,
-          "Name an owning-part variant."
+          "Name an owning-part variant.",
+          choices = variants
         )
       }
     }
@@ -333,7 +356,13 @@ character_format_references <- function(x) {
   slots <- character()
   for (id in x$wear) {
     if (!id %in% names(x$accessories)) {
-      character_format_abort("missing_reference", "$.wear", id, "Name a declared accessory.")
+      character_format_abort(
+        "missing_reference",
+        "$.wear",
+        id,
+        "Name a declared accessory.",
+        choices = names(x$accessories)
+      )
     }
     slot <- x$accessories[[id]]$slot
     if (slot %in% slots) {
@@ -347,7 +376,8 @@ character_format_references <- function(x) {
         "missing_reference",
         paste0("$.accessories.", id, ".anchor"),
         NULL,
-        "Name a declared anchor."
+        "Name a declared anchor.",
+        choices = names(x$anchors)
       )
     }
     for (name in names(x$accessories[[id]]$colours)) {
@@ -399,7 +429,13 @@ character_format_references <- function(x) {
       character_format_abort("input_type", "$.face.scale", x$face$scale, "Keep face scale at most 16.")
     }
     if (!x$face$part %in% names(parts)) {
-      character_format_abort("missing_reference", "$.face.part", x$face$part, "Name a declared face-owning part.")
+      character_format_abort(
+        "missing_reference",
+        "$.face.part",
+        x$face$part,
+        "Name a declared face-owning part.",
+        choices = names(parts)
+      )
     }
     if (!is.null(x$face$clip)) {
       target(x$face$clip, "$.face.clip")
@@ -425,7 +461,8 @@ character_format_references <- function(x) {
           "missing_reference",
           paste0("$.face.kit_definition.defaults.", group),
           NULL,
-          "Name a declared style."
+          "Name a declared style.",
+          choices = names(kit[[groups[[group]]]])
         )
       }
     }
@@ -570,11 +607,18 @@ character_format_references <- function(x) {
         "missing_reference",
         paste0("$.effects.", id),
         id,
-        "Name an effect declared by the face kit."
+        "Name an effect declared by the face kit.",
+        choices = names(kit$effects)
       )
     }
     if (!is.null(x$effects[[id]]) && !x$effects[[id]]$anchor %in% names(x$anchors)) {
-      character_format_abort("missing_reference", paste0("$.effects.", id, ".anchor"), NULL, "Name a declared anchor.")
+      character_format_abort(
+        "missing_reference",
+        paste0("$.effects.", id, ".anchor"),
+        NULL,
+        "Name a declared anchor.",
+        choices = names(x$anchors)
+      )
     }
     for (index in seq_along(effect$items)) {
       item_check(

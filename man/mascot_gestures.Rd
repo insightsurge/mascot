@@ -8,8 +8,7 @@ mascot_gestures(character = NULL)
 }
 \arguments{
 \item{character}{\code{NULL} (the default) for the shared gestures, or a
-character: an id string such as \code{"tessa"}, a \code{\link[=mascot_character]{mascot_character()}} helper or
-checked character data.}
+character: an id string such as \code{"tessa"} or a \code{\link[=mascot_character]{mascot_character()}} helper.}
 }
 \value{
 A data frame with character columns \code{name} (the value you pass to

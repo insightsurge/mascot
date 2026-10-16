@@ -20,8 +20,7 @@ mood_table <- function() {
 #' it is what that character declares: the shared moods first, then its own in
 #' the order its author wrote them.
 #' @param character `NULL` (the default) for the shared moods, or a character:
-#'   an id string such as `"tessa"`, a [mascot_character()] helper or checked
-#'   character data.
+#'   an id string such as `"tessa"` or a [mascot_character()] helper.
 #' @returns A data frame with character columns `name` (the value you pass to
 #'   [mascot_mood()]), `description`, `status` (the text shown beside the mascot
 #'   for that mood), `fallback` (the mood used instead when this one is not
@@ -70,10 +69,15 @@ mascot_moods <- function(character = NULL) {
 #'
 #' Set how the mascot feels and looks. You can use this helper or a plain mood
 #' name in [mascot()] and [update_mascot()].
-#' @param name A non-empty string naming a mood from [mascot_moods()]. Defaults
-#'   to `"idle"`; `NULL` is not accepted.
+#' @param name A non-empty mood id: a lowercase letter followed by lowercase
+#'   letters, digits or underscores. Defaults to `"idle"`; `NULL` is not accepted.
+#'   See [mascot_moods()] for the available moods.
 #' @returns A `mascot_mood` object with a `name` element.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @details
+#' This helper checks only the form of the id. [mascot()], [update_mascot()]
+#' and [mascot_preview()] check whether the chosen character declares that mood.
+#' If it does not, their diagnostic lists that character's available moods.
 #' @family mascot helpers
 #' @seealso [mascot()]
 #' @export
@@ -82,11 +86,8 @@ mascot_moods <- function(character = NULL) {
 #' mascot_mood("happy")
 mascot_mood <- function(name = "idle") {
   with_mascot_asserts({
-    checkmate::assert_string(name, min.chars = 1)
+    checkmate::assert_string(name, min.chars = 1, pattern = "^[a-z][a-z0-9_]*$")
   })
-  if (!name %in% mood_table()$name) {
-    abort_choice(name, mood_table()$name, "name", "mood", environment())
-  }
   structure(list(name = name), class = "mascot_mood")
 }
 

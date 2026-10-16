@@ -85,7 +85,7 @@ describe("mascot()", {
       expect_error(mascot(id = id), "Assertion on 'id' failed")
     }
     for (x in list(NULL, 1, "", NA_character_, c("a", "b"))) {
-      expect_error(mascot("a", character = x), "character.*non-empty string")
+      expect_error(mascot("a", character = x), "Assertion on 'character' failed")
       expect_error(mascot(id = "a", mood = x), "mood.*non-empty string")
     }
     for (x in list(1, "", NA_character_, c("a", "b"))) {
@@ -499,23 +499,16 @@ describe("mascot resources in modules", {
   })
 })
 
-describe("existing public character argument forms", {
-  it("keeps target-specific extension forms internal until their public API is introduced", {
-    wire <- protocol_character()
-    checked <- character_format_check(wire$json, from = "text")
-    expect_error(mascot("helper", character = checked), class = "mascot_error")
+describe("internal R4a character argument forms", {
+  it("accepts checked data while leaving the preset shortcut outside this unit", {
+    checked <- character_format_check(protocol_character()$json, from = "text")
+    expect_no_error(mascot("helper", character = checked))
     expect_error(mascot("helper", mood = "processing"), "must be one of", class = "mascot_error")
     expect_error(mascot("helper", theme = "sea"), class = "mascot_error")
     session <- shiny::MockShinySession$new()
     withr::defer(session$close())
-    for (args in list(
-      list(character = checked),
-      list(mood = "processing"),
-      list(gesture = "spin"),
-      list(theme = "sea")
-    )) {
-      expect_warning(do.call(update_mascot, c(list(id = "helper", session = session), args)), "unchanged")
-    }
-    expect_null(session$userData$mascot_protocol)
+    update_mascot("helper", character = checked, session = session)
+    expect_identical(mascot_id_state(session, "helper")$context$data$id, checked$id)
+    expect_warning(update_mascot("helper", theme = "sea", session = session), "unchanged")
   })
 })

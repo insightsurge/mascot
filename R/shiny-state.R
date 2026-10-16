@@ -714,9 +714,8 @@ mascot_snapshot <- function(data, session, name) {
 #' @noRd
 mascot_update_theme <- function(x, call, character = NULL) {
   checkmate::assert_environment(call)
-  checkmate::assert_string(character, null.ok = TRUE)
-
-  as_theme_arg(x, call, if (is.null(character) || character %in% builtin_characters()$id) character else NULL)
+  character_catalogue_assert(character, nullable = TRUE)
+  as_theme_arg(x, call, character)
 }
 
 #' Structural preflight independent of an unknown target

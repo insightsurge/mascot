@@ -7,9 +7,8 @@
 mascot_anchors(character = "tessa")
 }
 \arguments{
-\item{character}{A character, defaulting to \code{"tessa"}: an id string, a
-\code{\link[=mascot_character]{mascot_character()}} helper or checked character data. \code{NULL} is not
-accepted.}
+\item{character}{A character, defaulting to \code{"tessa"}: an id string or a
+\code{\link[=mascot_character]{mascot_character()}} helper. \code{NULL} is not accepted.}
 }
 \value{
 A data frame with character columns \code{name} (the anchor id),

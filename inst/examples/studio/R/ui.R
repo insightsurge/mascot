@@ -851,7 +851,11 @@ guide_mistake_calls <- function(fn, character) {
     ),
     mascot = c('mascot("has spaces")', 'mascot("helper", click = c(help = "Help"))'),
     mascot_character = 'mascot_character("unknown-character")',
-    mascot_mood = 'mascot_mood("sleepy")',
+    mascot_mood = paste0(
+      'mascot("helper", character = ',
+      encodeString(character, quote = '"'),
+      ', mood = mascot_mood("sleepy"))'
+    ),
     mascot_status = 'mascot_status(1)',
     mascot_bubble = 'mascot_bubble("Hi", duration = 0)',
     mascot_motion_settings = 'mascot_motion_settings(idle = "yes")',

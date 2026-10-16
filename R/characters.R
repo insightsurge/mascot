@@ -23,7 +23,7 @@ mascot_character <- function(id = "tessa") {
   with_mascot_asserts({
     checkmate::assert_string(id, min.chars = 1)
   })
-  registry <- builtin_characters()
+  registry <- mascot_characters()
   if (!id %in% registry$id) {
     abort_choice(id, registry$id, "id", "character", environment())
   }
@@ -61,7 +61,10 @@ abort_choice <- function(value, valid, arg, what, call) {
       "x" = "{.val {value}} is not a {what}."
     ),
     call = call,
-    class = "mascot_error"
+    class = c("mascot_error_choice", "mascot_error"),
+    argument = arg,
+    choices = valid,
+    value = value
   )
 }
 

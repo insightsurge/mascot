@@ -473,3 +473,24 @@ describe("reference resolution beyond the default recipes", {
     expect_equal(ranges$y, c(0, 8))
   })
 })
+
+
+describe("reference repair messages", {
+  it("names the bad part and short declared choices for anchor and face owners", {
+    for (owner in c("anchor", "face")) {
+      data <- character_format_resolve(format_recipe("study_bot"))
+      if (owner == "anchor") {
+        data$anchors$badge$part <- "hed"
+        path <- "$.anchors.badge.part"
+      } else {
+        data$face$part <- "hed"
+        path <- "$.face.part"
+      }
+      error <- format_problem("missing_reference", path, character_format_references(data))
+      expect_identical(error$value, "hed")
+      for (text in c("hed", "Valid choices", "head", "badge_disc")) {
+        expect_match(conditionMessage(error), text, fixed = TRUE)
+      }
+    }
+  })
+})

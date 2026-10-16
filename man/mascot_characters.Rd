@@ -22,8 +22,7 @@ A base data frame. Columns may be added at the end in later versions; existing c
 names and types. The first column is the value you pass to the matching function.
 }
 \description{
-Lists every character this R session knows, with the shipped characters
-first. Pass an \code{id} to the \code{character} argument of \code{\link[=mascot]{mascot()}}, or to the
+Lists the characters shipped with the package. Pass an \code{id} to the \code{character} argument of \code{\link[=mascot]{mascot()}}, or to the
 other listings, such as \code{\link[=mascot_moods]{mascot_moods()}}.
 }
 \examples{

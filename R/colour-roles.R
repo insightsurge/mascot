@@ -5,9 +5,8 @@
 #' rules list leaders in priority order. A colour you supply for a role always
 #' wins; otherwise the role follows the first supplied or filled leader. With no
 #' available leader, the role keeps its original colour.
-#' @param character A character, defaulting to `"tessa"`: an id string, a
-#'   [mascot_character()] helper or checked character data. `NULL` is not
-#'   accepted.
+#' @param character A character, defaulting to `"tessa"`: an id string or a
+#'   [mascot_character()] helper. `NULL` is not accepted.
 #' @returns A data frame with character columns `role`, `colour`, `follows`
 #'   (comma-separated leaders), `shade` (`same`, `lighter` or `darker`),
 #'   `description` (what the role colours) and `brand` (the brand slots the role
@@ -68,8 +67,11 @@ colour_role_description <- function(role) {
 #' Read the character's colour metadata from the same description the mascot uses
 #' @noRd
 character_colour_data <- function(id) {
-  checkmate::assert_choice(id, builtin_characters()$id)
-  jsonlite::fromJSON(character_json(id), simplifyVector = FALSE)
+  character_catalogue_assert(id)
+  if (is.character(id) && id %in% builtin_characters()$id) {
+    return(jsonlite::fromJSON(character_json(id), simplifyVector = FALSE))
+  }
+  character_catalogue_resolve(id, environment())
 }
 
 #' Convert description names to the public R spelling
@@ -82,7 +84,11 @@ colour_role_names <- function(names) {
 #' Role names for a selected character, or every built-in character when unknown
 #' @noRd
 colour_role_registry <- function(character = NULL) {
-  checkmate::assert_choice(character, builtin_characters()$id, null.ok = TRUE)
-  ids <- if (is.null(character)) builtin_characters()$id else character
-  unique(unlist(lapply(ids, function(id) colour_role_names(names(character_colour_data(id)$colours)))))
+  character_catalogue_assert(character, nullable = TRUE)
+  if (!is.null(character)) {
+    return(colour_role_names(names(character_colour_data(character)$colours)))
+  }
+  unique(unlist(lapply(builtin_characters()$id, function(id) {
+    colour_role_names(names(character_colour_data(id)$colours))
+  })))
 }

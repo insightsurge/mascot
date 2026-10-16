@@ -148,3 +148,10 @@ describe("character_json_write()", {
     expect_error(character_json_write(list()), "class")
   })
 })
+
+describe("character_file_replace()", {
+  it("asserts the two rename paths", {
+    expect_error(character_file_replace(NULL, "out"), "temporary")
+    expect_error(character_file_replace("temporary", NULL), "path")
+  })
+})

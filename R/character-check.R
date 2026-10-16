@@ -66,7 +66,12 @@ character_format_check <- function(
   checkmate::assert_flag(builtin)
   parsed <- character_format_parse(x, from)
   if (!builtin && parsed$id %in% character_data_reserved()) {
-    character_format_abort("identity", "$.id", parsed$id, "Do not replace a built-in character id.")
+    character_format_abort(
+      "identity",
+      "$.id",
+      parsed$id,
+      paste0(encodeString(parsed$id, quote = '"'), " is a built-in character; give your character its own id.")
+    )
   }
   resolved <- character_format_resolve(parsed, families, kits, parsed = TRUE)
   graph <- character_format_references(resolved)

@@ -402,3 +402,43 @@ describe("track structure and numeric-tree normalisation", {
     expect_equal(character_format_parse(encoded, "text")$face$tune, parsed$face$tune)
   })
 })
+
+
+describe("character format diagnostics", {
+  it("explains the colour forms and retains the bad colour", {
+    plain <- format_recipe("study_bot")
+    for (value in list("not-a-hex", 42)) {
+      plain$colours$body <- value
+      error <- format_problem("input_type", "$.colours.body", character_format_parse(plain))
+      expect_identical(error$value, value)
+      for (form in c("#RGB", "#RRGGBB", "rgba(r, g, b, a)", "#3F82FF")) {
+        expect_match(conditionMessage(error), form, fixed = TRUE)
+      }
+    }
+    for (value in c("#abc", "#3F82FF", "rgba(63, 130, 255, 0.5)")) {
+      plain$colours$body <- value
+      expect_identical(character_format_parse(plain)$colours$body, value)
+    }
+  })
+
+  it("bounds reference choice lists without losing the bad value or stable fields", {
+    for (choices in list(paste0("part", 1:9), strrep("p", 161))) {
+      error <- format_problem(
+        "missing_reference",
+        "$.part",
+        character_format_abort(
+          "missing_reference",
+          "$.part",
+          "typo",
+          "Name a declared part.",
+          choices = choices
+        )
+      )
+      expect_match(conditionMessage(error), "typo", fixed = TRUE)
+      expect_false(grepl("Valid choices", conditionMessage(error), fixed = TRUE))
+      expect_identical(error$value, "typo")
+    }
+    expect_error(character_format_abort("missing_reference", "$", choices = 1), "choices")
+    expect_error(character_format_abort("missing_reference", "$", choices = NA_character_), "choices")
+  })
+})

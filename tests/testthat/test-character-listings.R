@@ -57,11 +57,11 @@ describe("mascot_families()", {
   it("lists the family of the shipped character", {
     local_empty_registry()
     value <- mascot_families()
-    is_listing(value, c("id", "name", "description"), rep("character", 3))
+    is_listing(value, c("id", "name", "description", "character"), rep("character", 4))
     expect_identical(value$id, "hexonians")
     expect_identical(value$name, "Hexonians")
   })
-  it("adds families of registered characters once, in order, without renaming a family", {
+  it("lists each registered family snapshot with its character, preserving built-in labels", {
     local_empty_registry()
     character_data_register(character_format_check(format_recipe("anchor_probe")))
     character_data_register(character_format_check(format_recipe("study_bot")))
@@ -70,8 +70,9 @@ describe("mascot_families()", {
     other$family_definition$name <- "Another name"
     character_data_register(character_format_check(other))
     value <- mascot_families()
-    expect_identical(value$id, c("hexonians", "test_helpers", "visorfolk"))
-    expect_identical(value$name[3], "Visorfolk")
+    expect_identical(value$id, c("hexonians", "test_helpers", "visorfolk", "visorfolk"))
+    expect_identical(value$name[3:4], c("Visorfolk", "Another name"))
+    expect_identical(value$character, c(NA_character_, "anchor_probe", "study_bot", "study_two"))
     expect_identical(mascot_characters(family = "visorfolk")$id, c("study_bot", "study_two"))
   })
   it("takes no arguments", {
@@ -102,6 +103,7 @@ describe("mascot_anchors()", {
   it("returns no rows, with the same column types, for a character without anchors", {
     custom <- character_format_check(format_recipe("study_bot"))
     custom$anchors <- NULL
+    custom <- character_format_check(unclass(custom))
     value <- mascot_anchors(custom)
     expect_identical(nrow(value), 0L)
     expect_identical(names(value), c("name", "description", "part", "side"))
@@ -134,6 +136,7 @@ describe("mascot_palettes()", {
     custom <- character_format_check(format_recipe("study_bot"))
     custom$palette_sources[["night_screen"]] <- "character"
     custom$family_definition$defaults <- character_object()
+    custom <- character_format_check(unclass(custom))
     expect_identical(mascot_palettes(custom)$source, c("native", "character", "character"))
   })
   it("names unknown characters and rejects other types", {
@@ -238,6 +241,7 @@ describe("mascot_colour_roles(character =)", {
     custom <- character_format_check(format_recipe("study_bot"))
     custom$colour_descriptions <- list(body = "The whole shell.")
     custom$brand <- list(primary = "body", secondary = "body")
+    custom <- character_format_check(unclass(custom))
     value <- mascot_colour_roles(custom)
     expect_identical(value$description[value$role == "body"], "The whole shell.")
     expect_identical(value$brand[value$role == "body"], "primary, secondary")
@@ -256,5 +260,37 @@ describe("humanised role descriptions", {
     expect_identical(colour_role_description("eye_white"), "Eye white")
     expect_identical(colour_role_description("body"), "Body")
     expect_error(colour_role_description(""), "Assertion on 'role' failed")
+  })
+})
+
+
+describe("R4a public listing documentation", {
+  it("keeps checked and registered forms for R4b and documents every family column", {
+    pages <- c(
+      "mascot",
+      "update_mascot",
+      "mascot_preview",
+      "mascot_character",
+      "mascot_characters",
+      "mascot_families",
+      "mascot_moods",
+      "mascot_gestures",
+      "mascot_colour_roles",
+      "mascot_anchors",
+      "mascot_palettes"
+    )
+    for (page in pages) {
+      file <- system.file("man", paste0(page, ".Rd"), package = "mascot")
+      rd <- if (nzchar(file)) tools::parse_Rd(file) else tools::Rd_db("mascot")[[paste0(page, ".Rd")]]
+      text <- paste(unlist(rd), collapse = " ")
+      expect_false(grepl("checked character data|mascot_character_data|registered character", text), info = page)
+      if (page == "mascot_families") {
+        value <- Filter(function(node) identical(attr(node, "Rd_tag"), "\\value"), rd)[[1]]
+        value <- paste(unlist(value), collapse = "")
+        for (fact in c("character", "supplying a family snapshot", "NA", "built-in family")) {
+          expect_match(value, fact, fixed = TRUE)
+        }
+      }
+    }
   })
 })

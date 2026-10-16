@@ -25,11 +25,11 @@ describe("mascot_gesture()", {
     for (x in list(NULL, "", 1, NA_character_, c("nod", "wave"))) {
       expect_error(mascot_gesture(x), "Assertion on 'name' failed")
     }
-    expect_snapshot(error = TRUE, mascot_gesture("jump"))
-    expect_match(arg_problem("jump", "gesture"), '"nod", "wave"')
+    expect_error(mascot_gesture("Bad Gesture"), "name")
+    expect_null(arg_problem("jump", "gesture"))
     expect_null(arg_problem(mascot_gesture("wave"), "gesture"))
-    expect_match(arg_problem(structure(list(name = "jump"), class = "mascot_gesture"), "gesture"), "gesture")
-    expect_error(check_arg("jump", "gesture", environment()), "not a gesture")
+    expect_null(arg_problem(structure(list(name = "jump"), class = "mascot_gesture"), "gesture"))
+    expect_no_error(check_arg("jump", "gesture", environment()))
   })
 })
 

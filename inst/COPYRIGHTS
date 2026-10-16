@@ -83,3 +83,7 @@ inst/www/mascot-player.js
     Source: character-format v1 runtime (compile once, draw through the format-v1 modules, per-canvas player) written for
     this package.
     Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/examples/characters/study_bot.json
+    Source: complete small Study Bot format-v1 example written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.

@@ -52,21 +52,29 @@ character_check <- function(x, ..., from = "list", families = character_object()
 #' @noRd
 character_save <- function(x, path, ..., overwrite = FALSE) {
   checkmate::assert_class(x, "mascot_character_data")
-  checkmate::assert_path_for_output(path, overwrite = TRUE)
+  checkmate::assert_string(path, min.chars = 1)
   checkmate::assert_flag(overwrite)
   character_build_dots(..., .path = "$")
-  fail <- function(message, parent = NULL) {
+  fail <- function(message, parent = NULL, code = "io") {
+    checkmate::assert_string(message)
+    checkmate::assert_class(parent, "condition", null.ok = TRUE)
+    checkmate::assert_string(code)
     cli::cli_abort(
       message,
       class = c("mascot_error_file", "mascot_error"),
       path = path,
       operation = "save",
+      code = code,
       parent = parent
     )
   }
   if (file.exists(path) && !overwrite) {
-    fail("Cannot save to {.path {path}}: the file exists. Use {.code overwrite = TRUE} to replace it.")
+    fail("Cannot save to {.path {path}}: the file exists. Use {.code overwrite = TRUE} to replace it.", code = "exists")
   }
+  tryCatch(checkmate::assert_path_for_output(path, overwrite = TRUE), error = function(error) {
+    checkmate::assert_class(error, "error")
+    fail("Cannot save to {.path {path}}: invalid output path.", error, "path")
+  })
   verified <- character_data_verify(x)
   text <- character_json_write(verified)
   again <- character_format_check(text, from = "text")
@@ -78,8 +86,8 @@ character_save <- function(x, path, ..., overwrite = FALSE) {
   tryCatch(
     {
       writeBin(charToRaw(enc2utf8(paste0(text, "\n"))), temporary)
-      if (!isTRUE(file.rename(temporary, path))) {
-        stop("Could not move the temporary file into place.", call. = FALSE)
+      if (!isTRUE(character_file_replace(temporary, path))) {
+        fail("Could not move the temporary file into {.path {path}}.")
       }
     },
     error = function(error) {
@@ -105,4 +113,12 @@ character_read <- function(x, ..., from = "file", families = character_object())
     return(character_data_get(x))
   }
   character_format_check(x, from = "file", families = families)
+}
+
+#' Rename a prepared file on the same filesystem
+#' @noRd
+character_file_replace <- function(temporary, path) {
+  checkmate::assert_string(temporary)
+  checkmate::assert_string(path)
+  file.rename(temporary, path)
 }

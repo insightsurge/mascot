@@ -37,3 +37,9 @@ mirror the implementation. After changing a source file, rerun `python3 -I docs/
 `character_format_check(..., builtin = FALSE)` rejects reserved built-in ids on every custom input path, including direct lists and saved snapshots. Only an internal loader of shipped recipes may pass `builtin = TRUE`; neither an id nor a caller attribute grants built-in provenance. The flag also selects the built-in face contrast promise, independently of the id. No public API exposes it and no live built-in loader uses this format path yet.
 
 The checker completes per-band work and fit budget proofs before evaluating contrast promises, so a recipe with both defects reports the budget first.
+
+## Authoring constructors, check and save (B1)
+
+Internal constructors in `R/character-build.R` build typed source components (`character_author_family()`, `_shape()`, `_part()`, `_anchor()`, `_face()`, `_mood()`, `_track()`, `_gesture()`, `_palette()`, `_accessory()`, `_ground()`) and `character_author_build()` assembles a source specification. Each component is checked against the reader's own schema; references between components (an anchor's part, a gesture's needs) are checked only when the whole character is checked. Optional arguments come after `...`, must be named and are written only when supplied, so a family default is never overridden by an R default; unknown arguments are errors. A new optional field is a new named argument, so existing callers and saved files keep working.
+
+`R/character-io.R` holds `character_check()` (source specification, raw list, JSON text or file, or checked data; `requires` is computed from the resolved recipe), `character_save()` (complete resolved JSON, read back and compared before an atomic replace, refusing an existing file unless `overwrite = TRUE`) and `character_read()` (a supplied file, or a registered id; never guessed). Nothing here is exported or connected to `mascot()`.

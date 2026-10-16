@@ -110,4 +110,267 @@ describe("character-format geometry and painting", {
     expect_identical(result$error, "invalid_colour")
     expect_equal(result$transform, 0)
   })
+
+  it("converts design blur to backing pixels and computes inflated scratch bounds", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    res <- js(
+      "(() => {
+        const blur = mascot.geometry.backingBlur(8, 160, 2);
+        const bounds = mascot.geometry.scratchBounds([10, 10, 20, 20], 8, [1, 0, 0, 1, 0, 0]);
+        return { blur, bounds };
+      })()"
+    )
+    expect_equal(res$blur, 8 * (160 / 300) * 2, tolerance = 1e-6)
+    expect_equal(res$bounds$left, -15)
+    expect_equal(res$bounds$top, -15)
+    expect_equal(res$bounds$width, 60)
+    expect_equal(res$bounds$height, 60)
+  })
+
+  it("renders emission-only geometry and counts single blurred pass with 8 metrics", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(
+      "(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 300;
+        canvas.height = 300;
+        const ctx = canvas.getContext('2d');
+        const ch = {
+          format_version: 1,
+          ground: { centre_height: 0 },
+          parts: [{
+            id: 'lamp',
+            at: [0, -30],
+            glow: { item: 'bulb', colour: 'glow', blur: 6, alpha: 1 },
+            items: [{ id: 'bulb', shape: 'circle', r: 10 }]
+          }]
+        };
+        const p = mascot.parts.compile(ch);
+        const s = mascot.parts.frame(p);
+        const counts = mascot.geometry.draw(ctx, p, s, { glow: '#00ffff' });
+        return {
+          counts,
+          pixel: [...ctx.getImageData(150, 240, 1, 1).data]
+        };
+      })()"
+    )
+    expect_equal(result$counts$active_parts, 1)
+    expect_equal(result$counts$painted_items, 1)
+    expect_equal(result$counts$paint_passes, 1)
+    expect_equal(result$counts$path_numbers, 5)
+    expect_equal(result$counts$glow_emitters, 1)
+    expect_equal(result$counts$blur_design_units, 6)
+    expect_gt(result$pixel[[4]], 0)
+  })
+
+  it("suppresses part glow in micro band and under zero alpha", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(
+      "(() => {
+        const ctx = document.createElement('canvas').getContext('2d');
+        const ch = {
+          format_version: 1,
+          ground: { centre_height: 0 },
+          parts: [{
+            id: 'lamp',
+            glow: { item: 'bulb', colour: 'glow', blur: 8, alpha: 0 },
+            items: [{ id: 'bulb', shape: 'circle', r: 10, fill: 'glow' }]
+          }]
+        };
+        const p = mascot.parts.compile(ch);
+        const sFull = mascot.parts.frame(p, {}, 'full');
+        const countsZeroAlpha = mascot.geometry.draw(ctx, p, sFull, { glow: '#ff0000' });
+        ch.parts[0].glow.alpha = 1;
+        const p2 = mascot.parts.compile(ch);
+        const sMicro = mascot.parts.frame(p2, {}, 'micro');
+        const countsMicro = mascot.geometry.draw(ctx, p2, sMicro, { glow: '#ff0000' });
+        return { countsZeroAlpha, countsMicro };
+      })()"
+    )
+    expect_equal(result$countsZeroAlpha$glow_emitters, 0)
+    expect_equal(result$countsZeroAlpha$blur_design_units, 0)
+    expect_equal(result$countsMicro$glow_emitters, 0)
+    expect_equal(result$countsMicro$blur_design_units, 0)
+  })
+
+  it("multiplies host ctx.globalAlpha into glow composite alpha", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(
+      "(() => {
+        const render = (alpha) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 300;
+          canvas.height = 300;
+          const ctx = canvas.getContext('2d');
+          ctx.globalAlpha = alpha;
+          const ch = {
+            format_version: 1,
+            ground: { centre_height: 0 },
+            parts: [{
+              id: 'lamp',
+              at: [0, -30],
+              glow: { item: 'bulb', colour: 'glow', blur: 6, alpha: 1 },
+              items: [{ id: 'bulb', shape: 'circle', r: 10 }]
+            }]
+          };
+          const p = mascot.parts.compile(ch);
+          const s = mascot.parts.frame(p);
+          mascot.geometry.draw(ctx, p, s, { glow: '#00ffff' });
+          return [...ctx.getImageData(150, 240, 1, 1).data];
+        };
+        return {
+          full: render(1.0),
+          half: render(0.5)
+        };
+      })()"
+    )
+    expect_gt(result$full[[4]], 0)
+    expect_equal(result$half[[4]], round(result$full[[4]] * 0.5), tolerance = 1)
+  })
+
+  it("combines accounting across draw calls with blur maximum and active-parts set union", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(
+      "(() => {
+        const first = {
+          active_parts: 1,
+          active_part_ids: ['part_a'],
+          painted_items: 2,
+          paint_passes: 2,
+          path_numbers: 10,
+          clip_applications: 0,
+          gradient_uses: 0,
+          glow_emitters: 1,
+          blur_design_units: 4
+        };
+        const second = {
+          active_parts: 2,
+          active_part_ids: ['part_a', 'part_b'],
+          painted_items: 1,
+          paint_passes: 1,
+          path_numbers: 5,
+          clip_applications: 1,
+          gradient_uses: 1,
+          glow_emitters: 1,
+          blur_design_units: 6
+        };
+        const combined = mascot.geometry.combineCounts(first, second);
+        return combined;
+      })()"
+    )
+    expect_equal(result$blur_design_units, 6)
+    expect_equal(result$active_parts, 2)
+    expect_equal(result$painted_items, 3)
+    expect_equal(result$paint_passes, 3)
+    expect_equal(result$path_numbers, 15)
+    expect_equal(result$clip_applications, 1)
+    expect_equal(result$gradient_uses, 1)
+    expect_equal(result$glow_emitters, 2)
+  })
+
+  it("reuses prepared part lookup without mutating compiled data during draw", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(
+      "(() => {
+        const ctx = document.createElement('canvas').getContext('2d');
+        const ch = {
+          format_version: 1,
+          ground: { centre_height: 0 },
+          parts: [{
+            id: 'lamp',
+            glow: { item: 'bulb', colour: 'glow', blur: 6, alpha: 1 },
+            items: [{ id: 'bulb', shape: 'circle', r: 10 }]
+          }]
+        };
+        const p = mascot.parts.compile(ch);
+        const compiledBefore = JSON.stringify(p);
+        const s = mascot.parts.frame(p);
+        mascot.geometry.draw(ctx, p, s, { glow: '#00ffff' });
+        const compiledAfterFirst = JSON.stringify(p);
+        mascot.geometry.draw(ctx, p, s, { glow: '#00ffff' });
+        const compiledAfterSecond = JSON.stringify(p);
+        return {
+          mutated: compiledBefore !== compiledAfterFirst || compiledAfterFirst !== compiledAfterSecond
+        };
+      })()"
+    )
+    expect_false(result$mutated)
+  })
+
+  it("renders emitter with both fill and stroke counting separate glow passes in JS", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(
+      "(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 300;
+        canvas.height = 300;
+        const ctx = canvas.getContext('2d');
+        const ch = {
+          format_version: 1,
+          ground: { centre_height: 0 },
+          parts: [{
+            id: 'lamp',
+            at: [0, -30],
+            glow: { item: 'bulb', colour: 'glow', blur: 6, alpha: 1 },
+            items: [{ id: 'bulb', shape: 'circle', r: 10, fill: 'glow', stroke: 'glow', width: 2 }]
+          }]
+        };
+        const p = mascot.parts.compile(ch);
+        const s = mascot.parts.frame(p);
+        const counts = mascot.geometry.draw(ctx, p, s, { glow: '#00ffff' });
+        return {
+          counts,
+          pixel: [...ctx.getImageData(150, 240, 1, 1).data]
+        };
+      })()"
+    )
+    expect_equal(result$counts$active_parts, 1)
+    expect_equal(result$counts$painted_items, 1)
+    expect_equal(result$counts$paint_passes, 4)
+    expect_equal(result$counts$path_numbers, 5)
+    expect_equal(result$counts$glow_emitters, 1)
+    expect_equal(result$counts$blur_design_units, 6)
+    expect_gt(result$pixel[[4]], 0)
+  })
+
+  it("keeps glow rendering independent of prior pass surface size", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(
+      "(() => {
+        const source = {
+          format_version: 1, ground: { centre_height: 100 },
+          parts: [{ id: 'body', at: [0, -100], items: [{ shape: 'rect', x: -80, y: -70, w: 160, h: 130, fill: 'backdrop' }] }],
+          anchors: { mark: { part: 'body', at: [60, -30] } }, effects: {},
+          colours: { feature: '#16201b', eye_white: '#f0f0f0', shine: '#ffffff', eyelid: '#3f8a66', outline: '#26312b',
+            teeth: '#ffffff', tongue: '#a33a30', sweat: '#9dc3e6', sparkle: '#ffffff', sparkle_outline: '#d9b35c',
+            blush: '#7fcba4', blush_strong: '#d9b35c', backdrop: '#3f8a66', iris: '#cc0033' },
+          face: { part: 'body', kit: 'screen', kit_definition: mascot.faces.readKit('screen'),
+            eyes: { y: -12, spacing: 30, lashes: true, iris: null },
+            mouth: { y: 24 }, blush: { x: 36, y: 18, rx: 13, ry: 7 } }
+        };
+        const paint = () => {
+          const canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 300;
+          const ctx = canvas.getContext('2d'), parts = mascot.parts.compile(source), state = mascot.parts.frame(parts, {}, 'full');
+          const compiled = mascot.faces.compile(source);
+          mascot.faces.draw(ctx, compiled, state, {}, source.colours, {});
+          return canvas;
+        };
+        mascot.geometry.resetScratch();
+        const first = paint();
+        const second = paint();
+        return {
+          same: first.toDataURL() === second.toDataURL()
+        };
+      })()"
+    )
+    expect_true(result$same)
+  })
 })

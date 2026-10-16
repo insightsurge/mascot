@@ -102,7 +102,7 @@
     glow_emitters: 0,
   });
   const addCounts = (left, right) => {
-    for (const [key, value] of Object.entries(right)) left[key] = (left[key] ?? 0) + value;
+    ns.geometry.combineCounts(left, right);
   };
 
   // This is the renderer for already checked/resolved data, not a second full
@@ -403,61 +403,27 @@
   };
 
   const intersect = (a, b) => [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.min(a[2], b[2]), Math.min(a[3], b[3])];
-  const glowPass = (ctx, op, clip, colour, glow, pixelScale, data, type) => {
+  const glowPass = (ctx, op, clip, colour, glow, pixelScale, type) => {
     const style = op.style;
     const width = type === 'stroke' ? (style.width ?? 2.5) / 2 : 0;
     let bounds = op.bounds.map((value, index) => value + (index < 2 ? -width : width));
     if (clip) bounds = intersect(bounds, clip.bounds);
     if (bounds[2] < bounds[0] || bounds[3] < bounds[1]) return false;
-    const transform = ctx.getTransform();
-    const points = [
-      [bounds[0], bounds[1]],
-      [bounds[0], bounds[3]],
-      [bounds[2], bounds[1]],
-      [bounds[2], bounds[3]],
-    ].map(([x, y]) => transform.transformPoint({ x, y }));
-    const blur = glow.blur * pixelScale;
-    const left = Math.floor(Math.min(...points.map((p) => p.x)) - 3 * blur - 1);
-    const top = Math.floor(Math.min(...points.map((p) => p.y)) - 3 * blur - 1);
-    const widthPx = Math.max(1, Math.ceil(Math.max(...points.map((p) => p.x)) + 3 * blur + 1) - left);
-    const heightPx = Math.max(1, Math.ceil(Math.max(...points.map((p) => p.y)) + 3 * blur + 1) - top);
-    if (!data.raster) data.raster = [document.createElement('canvas'), document.createElement('canvas')];
-    const [source, emitted] = data.raster;
-    source.width = widthPx;
-    source.height = heightPx;
-    emitted.width = 3 * widthPx;
-    emitted.height = heightPx;
-    const g = source.getContext('2d'),
-      e = emitted.getContext('2d');
-    if (!g || !e) fail('budget', '$.face.glow', 'The backing-pixel glyph surface could not be allocated.');
-    g.setTransform(transform.a, transform.b, transform.c, transform.d, transform.e - left, transform.f - top);
-    if (clip) g.clip(clip.path);
-    g.globalAlpha = style.alpha ?? 1;
-    g.fillStyle = '#ffffff';
-    g.strokeStyle = '#ffffff';
-    g.lineWidth = style.width ?? 2.5;
-    g.lineCap = style.cap ?? 'round';
-    g.lineJoin = style.join ?? 'round';
-    if (type === 'fill') g.fill(op.path);
-    else g.stroke(op.path);
-    // Keep the source inside a bounded scratch surface (some browsers cull an
-    // off-canvas source before shadowing). Crop the distant shadow band only;
-    // its white alpha-mask source never reaches the caller's canvas.
-    e.globalAlpha = glow.alpha;
-    e.shadowColor = colour;
-    e.shadowBlur = blur;
-    e.shadowOffsetX = 2 * widthPx;
-    e.drawImage(source, 0, 0);
-    ctx.save();
-    try {
-      ctx.setTransform(1, 0, 0, 1, left, top);
-      ctx.drawImage(emitted, 2 * widthPx, 0, widthPx, heightPx, 0, 0, widthPx, heightPx);
-    } finally {
-      ctx.restore();
-    }
-    return true;
+    return ns.geometry.glowPass(
+      ctx,
+      op.path,
+      bounds,
+      ctx.getTransform(),
+      clip ? { path: clip.path } : null,
+      colour,
+      glow,
+      pixelScale,
+      type,
+      style,
+      1,
+    );
   };
-  const paintGlyph = (ctx, glyph, source, colours, original, glow, pixelScale, data, counts) => {
+  const paintGlyph = (ctx, glyph, source, colours, original, glow, pixelScale, counts) => {
     if (glow && glyph.emit) {
       let emitted = false;
       const colour = ns.geometry.paint(ctx, 'feature', source, colours);
@@ -469,7 +435,7 @@
           for (const op of part.ops) {
             for (const type of ['fill', 'stroke']) {
               if (!op.style[type] || (type === 'stroke' && (op.style.width ?? 2.5) === 0)) continue;
-              if (glowPass(ctx, op, part.clip, colour, glow, pixelScale, data, type)) {
+              if (glowPass(ctx, op, part.clip, colour, glow, pixelScale, type)) {
                 counts.paint_passes++;
                 emitted = true;
               }
@@ -643,8 +609,7 @@
       const size = positive(face.scale ?? 1, '$.face.scale') * scale * positive(flags.scale ?? 1, '$.lod.face.scale');
       ctx.scale(size, size);
       ctx.globalAlpha *= owner.opacity;
-      for (const glyph of glyphs)
-        paintGlyph(ctx, glyph, source, mappedColours, colours, glow, pixelScale, data, counts);
+      for (const glyph of glyphs) paintGlyph(ctx, glyph, source, mappedColours, colours, glow, pixelScale, counts);
     } finally {
       ctx.restore();
     }

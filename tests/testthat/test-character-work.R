@@ -47,4 +47,85 @@ describe("independent R expanded drawing-work bounds", {
     behaviour <- character_format_behaviour(data, graph)
     format_problem("budget", "$.budgets.micro.painted_items", character_format_work(data, graph, behaviour, "micro"))
   })
+
+  it("counts emission-only geometry as one painted item and its primitive path numbers", {
+    data <- character_format_resolve(format_recipe())
+    item <- list(
+      id = "glow_emitter",
+      shape = "circle",
+      r = 10
+    )
+    data$parts[[1]]$items[[length(data$parts[[1]]$items) + 1L]] <- item
+    for (v in names(data$parts[[1]]$variants)) {
+      data$parts[[1]]$variants[[v]][[length(data$parts[[1]]$variants[[v]]) + 1L]] <- item
+    }
+    data$parts[[1]]$glow <- list(
+      item = "glow_emitter",
+      colour = "accent",
+      blur = 6,
+      alpha = 1
+    )
+    graph <- character_format_references(data)
+    behaviour <- character_format_behaviour(data, graph)
+    work <- character_format_work(data, graph, behaviour)
+    expect_equal(work[["glow_emitters"]], 1)
+    expect_equal(work[["blur_design_units"]], 6)
+  })
+
+  it("suppresses glow emitters and blur when glow alpha is zero", {
+    data <- character_format_resolve(format_recipe())
+    data$parts[[1]]$glow <- list(
+      item = data$parts[[1]]$items[[1]]$id,
+      colour = "accent",
+      blur = 6,
+      alpha = 0
+    )
+    graph <- character_format_references(data)
+    behaviour <- character_format_behaviour(data, graph)
+    work <- character_format_work(data, graph, behaviour)
+    expect_equal(work[["glow_emitters"]], 0)
+    expect_equal(work[["blur_design_units"]], 0)
+  })
+
+  it("does not increment gradient uses for solid glow emission", {
+    data <- character_format_resolve(format_recipe())
+    data$paints <- list(
+      radial_fade = list(
+        type = "radial",
+        centre = list(0, 0),
+        r1 = 20,
+        stops = list(list(0, "accent", 1), list(1, "accent", 0))
+      )
+    )
+    data$parts[[1]]$items[[1]]$fill <- list(paint = "radial_fade")
+    data$parts[[1]]$glow <- list(
+      item = data$parts[[1]]$items[[1]]$id,
+      colour = "accent",
+      blur = 4,
+      alpha = 1
+    )
+    graph <- character_format_references(data)
+    behaviour <- character_format_behaviour(data, graph)
+    work <- character_format_work(data, graph, behaviour)
+    expect_equal(work[["gradient_uses"]], 1)
+    expect_equal(work[["glow_emitters"]], 1)
+  })
+
+  it("counts fill and stroke emitter as separate passes in drawing-work accounting", {
+    data <- character_format_resolve(format_recipe())
+    data$parts[[1]]$items[[1]]$stroke <- "accent"
+    data$parts[[1]]$items[[1]]$width <- 2
+    data$parts[[1]]$glow <- list(
+      item = data$parts[[1]]$items[[1]]$id,
+      colour = "accent",
+      blur = 4,
+      alpha = 1
+    )
+    graph <- character_format_references(data)
+    behaviour <- character_format_behaviour(data, graph)
+    work <- character_format_work(data, graph, behaviour)
+    expect_equal(work[["paint_passes"]], 6)
+    expect_equal(work[["glow_emitters"]], 1)
+    expect_equal(work[["painted_items"]], 2)
+  })
 })

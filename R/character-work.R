@@ -141,20 +141,27 @@ character_work_glow <- function(items, definition, owner, x, graph, behaviour, b
   if (!enabled || is.null(definition) || !length(items) || (!is.null(definition$alpha) && definition$alpha <= 0)) {
     return(result)
   }
+  outline <- character_work_outline(x, band)
   boxes <- lapply(
     items,
     character_work_box,
     shapes = if (is.null(x$shapes)) character_object() else x$shapes,
-    outline = character_work_outline(x, band)
+    outline = outline
   )
   width <- max(vapply(boxes, `[[`, numeric(1), 3L)) - min(vapply(boxes, `[[`, numeric(1), 1L))
   height <- max(vapply(boxes, `[[`, numeric(1), 4L)) - min(vapply(boxes, `[[`, numeric(1), 2L))
   diameter <- sqrt(width^2 + height^2) * character_work_scale(owner, x, graph, behaviour) * scale
+  has_fill <- any(vapply(items, function(item) !is.null(item$fill), logical(1)))
+  has_stroke <- any(vapply(
+    items,
+    function(item) !is.null(item$stroke) && (is.null(item$width) || item$width > 0),
+    logical(1)
+  ))
   result[["glow_emitters"]] <- 1
-  result[["paint_passes"]] <- 1
+  result[["paint_passes"]] <- if (has_fill && has_stroke) 2L else 1L
   result[["blur_design_units"]] <- definition$blur
   result[["inflated_glow_area_ratio"]] <- (diameter + 6 * definition$blur)^2 / 90000
-  result[["gradient_uses"]] <- as.integer(is.list(items[[1L]]$fill))
+  result[["gradient_uses"]] <- 0L
   result
 }
 

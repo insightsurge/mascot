@@ -232,7 +232,7 @@
     const face = faceDefinition(character);
     const counts = { painted_items: 0, paint_passes: 0 };
     const add = (cost) => {
-      for (const key of Object.keys(cost)) counts[key] = (counts[key] ?? 0) + cost[key];
+      ns.geometry.combineCounts(counts, cost);
     };
     const paint = (compiled, state, palette) => {
       const cost = ns.geometry.draw(ctx, compiled, state, palette);

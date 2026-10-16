@@ -636,7 +636,7 @@
       "maxima": {
         "active_parts": 17,
         "painted_items": 37,
-        "paint_passes": 75,
+        "paint_passes": 78,
         "path_numbers": 329,
         "clip_applications": 2,
         "gradient_uses": 3,
@@ -839,7 +839,7 @@
       "maxima": {
         "active_parts": 17,
         "painted_items": 35,
-        "paint_passes": 73,
+        "paint_passes": 76,
         "path_numbers": 288,
         "clip_applications": 1,
         "gradient_uses": 2,
@@ -1245,7 +1245,7 @@
       "maxima": {
         "active_parts": 2,
         "painted_items": 8,
-        "paint_passes": 13,
+        "paint_passes": 16,
         "path_numbers": 71,
         "clip_applications": 1,
         "gradient_uses": 0,
@@ -1421,7 +1421,7 @@
       "maxima": {
         "active_parts": 2,
         "painted_items": 8,
-        "paint_passes": 13,
+        "paint_passes": 16,
         "path_numbers": 71,
         "clip_applications": 1,
         "gradient_uses": 0,

@@ -9,6 +9,27 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-16 — Internal part glow, blur units and drawing-work accounting (#300)
+
+**In brief:** Saved-format characters can give one item of a part a soft glow in a palette colour. Glow is drawn on a
+small surface sized to the item, so it costs little, and it fades with the mascot. Nothing changes by default; the
+provisional adapter uses it behind its internal switch.
+
+**Technical:**
+
+* `inst/www/mascot-geometry.js`: `glowPass()` emits one blurred pass per fill or stroke of the named emitter item on
+  a backing-pixel scratch surface sized exactly for that pass (output never depends on an earlier pass), crops the
+  distant shadow band and multiplies the caller's alpha. `backingBlur()` converts design units to backing pixels
+  (`blur * cssWidth / 300 * dpr`); `scratchBounds()` inflates the transformed item box by three blur radii. Glow is
+  off in the micro band and at alpha 0; emission-only items are drawn and counted.
+* `inst/www/mascot-geometry.js`: `draw()` reports active parts, glow emitters and blur design units beside the
+  existing counts; `combineCounts()` sums additive counts, keeps the largest blur and counts each part once across
+  draw calls. The part lookup is built once per compiled character; compiled data is never changed while drawing.
+* `inst/www/mascot-faces.js` and `inst/www/mascot-tessa-adapter.js`: faces use the shared glow pass and both use the
+  shared count combiner.
+* `R/character-work.R`: a glow paints a solid colour, so it adds no gradient use; a fill-and-stroke emitter counts
+  two blurred passes, as the contract says (fill and stroke never merge).
+
 ## 2026-10-16 — Internal format-v1 tracks, needs and fallback, interruption and deadlines (#299)
 
 **In brief:** The motion module can now evaluate saved-format gestures (tracks, fallback gestures, the five easing curves,

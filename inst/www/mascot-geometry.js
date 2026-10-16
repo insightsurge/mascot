@@ -127,10 +127,20 @@
     const y = finite(style.y ?? 0, `${path}.y`);
     const entries = [];
     let numbers = 0;
+    let bounds = [x, y, x, y];
     const shape = style.shape;
     if (shape === 'path') {
       entries.push(...commands(style.d, `${path}.d`));
       numbers = entries.reduce((sum, entry) => sum + entry.length - 1, 0);
+      const xs = [];
+      const ys = [];
+      entries.forEach(([, ...args]) => {
+        for (let i = 0; i < args.length; i += 2) {
+          xs.push(args[i]);
+          ys.push(args[i + 1]);
+        }
+      });
+      if (xs.length) bounds = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
     } else if (shape === 'circle' || shape === 'arc') {
       const radius = positive(style.r, `${path}.r`);
       entries.push([
@@ -143,18 +153,16 @@
       ]);
       if (shape === 'arc' && style.closed) entries.push(['Z']);
       numbers = 5;
+      bounds = [x - radius, y - radius, x + radius, y + radius];
     } else if (shape === 'ellipse') {
-      entries.push([
-        'ellipse',
-        x,
-        y,
-        positive(style.rx, `${path}.rx`),
-        positive(style.ry, `${path}.ry`),
-        finite(style.rotate ?? 0, `${path}.rotate`, -Infinity, Infinity),
-        0,
-        2 * Math.PI,
-      ]);
+      const rx = positive(style.rx, `${path}.rx`);
+      const ry = positive(style.ry, `${path}.ry`);
+      const rot = finite(style.rotate ?? 0, `${path}.rotate`, -Infinity, Infinity);
+      entries.push(['ellipse', x, y, rx, ry, rot, 0, 2 * Math.PI]);
       numbers = 7;
+      const dx = Math.sqrt((rx * Math.cos(rot)) ** 2 + (ry * Math.sin(rot)) ** 2);
+      const dy = Math.sqrt((rx * Math.sin(rot)) ** 2 + (ry * Math.cos(rot)) ** 2);
+      bounds = [x - dx, y - dy, x + dx, y + dy];
     } else if (shape === 'rect' || shape === 'round_rect') {
       const width = positive(style.w, `${path}.w`);
       const height = positive(style.h, `${path}.h`);
@@ -165,6 +173,7 @@
         entries.push(['round_rect', x, y, width, height, ...radii.map((radius) => finite(radius, `${path}.r`, 0))]);
       }
       numbers = shape === 'rect' ? 4 : 8;
+      bounds = [x, y, x + width, y + height];
     } else if (shape === 'polyline') {
       if (!Array.isArray(style.points) || style.points.length < 2)
         fail('input_type', `${path}.points`, 'Supply at least two points.');
@@ -174,6 +183,9 @@
         entries.push([index ? 'L' : 'M', ...point.map((axis) => finite(axis, `${path}.points[${index}]`))]);
       });
       numbers = 2 * style.points.length;
+      const xs = style.points.map((p) => p[0]);
+      const ys = style.points.map((p) => p[1]);
+      bounds = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
     } else if (shape === 'polygon' || shape === 'hexagon') {
       const sides = shape === 'hexagon' ? 6 : finite(style.sides, `${path}.sides`, 3, 12);
       if (!Number.isInteger(sides)) fail('input_type', `${path}.sides`, 'Supply an integer.');
@@ -207,6 +219,7 @@
       });
       entries.push(['Z']);
       numbers = sides * (corner ? 6 : 2);
+      bounds = [x - radius, y - radius, x + radius, y + radius];
     } else fail('capability', `${path}.shape`, 'Use a supported shape.');
     if (shape === 'polyline' || (shape === 'arc' && !style.closed)) {
       if (style.fill || style.outline) fail('input_type', path, 'Open arcs and polylines use a detail stroke only.');
@@ -215,15 +228,15 @@
     if (style.transform) {
       if (!Array.isArray(style.transform) || style.transform.length !== 3)
         fail('input_type', `${path}.transform`, 'Supply x/y/rotate.');
-      const [x, y, angle] = style.transform;
+      const [tx, ty, angle] = style.transform;
       const local = localTransform(
-        finite(x, `${path}.transform[0]`),
-        finite(y, `${path}.transform[1]`),
+        finite(tx, `${path}.transform[0]`),
+        finite(ty, `${path}.transform[1]`),
         finite(angle, `${path}.transform[2]`, -Infinity, Infinity),
       );
       transform = ns.parts.multiply(transform, local);
     }
-    return { path: transformed(geometry, transform), paint_path: geometry, transform, style, numbers, entries };
+    return { path: transformed(geometry, transform), paint_path: geometry, transform, style, numbers, entries, bounds };
   };
 
   const role = (colours, id, path) => {
@@ -275,23 +288,248 @@
     return gradient;
   };
   const prepared = new WeakMap();
-  const draw = (ctx, compiled, state, colours) => {
+  const backingBlur = (blur, cssWidth = 300, dpr = 1) => blur * (cssWidth / 300) * dpr;
+
+  const transformPoint = (matrix, x, y) => {
+    if (Array.isArray(matrix)) {
+      return {
+        x: matrix[0] * x + matrix[2] * y + matrix[4],
+        y: matrix[1] * x + matrix[3] * y + matrix[5],
+      };
+    }
+    if (matrix.transformPoint) return matrix.transformPoint({ x, y });
+    return {
+      x: matrix.a * x + matrix.c * y + matrix.e,
+      y: matrix.b * x + matrix.d * y + matrix.f,
+    };
+  };
+
+  const scratchBounds = (bounds, blur, matrix) => {
+    const corners = [
+      [bounds[0], bounds[1]],
+      [bounds[0], bounds[3]],
+      [bounds[2], bounds[1]],
+      [bounds[2], bounds[3]],
+    ];
+    const points = matrix ? corners.map(([x, y]) => transformPoint(matrix, x, y)) : corners.map(([x, y]) => ({ x, y }));
+    const minX = Math.min(...points.map((p) => p.x));
+    const minY = Math.min(...points.map((p) => p.y));
+    const maxX = Math.max(...points.map((p) => p.x));
+    const maxY = Math.max(...points.map((p) => p.y));
+    const left = Math.floor(minX - 3 * blur - 1);
+    const top = Math.floor(minY - 3 * blur - 1);
+    const width = Math.max(1, Math.ceil(maxX + 3 * blur + 1) - left);
+    const height = Math.max(1, Math.ceil(maxY + 3 * blur + 1) - top);
+    return { left, top, width, height, bounds: [left, top, left + width, top + height] };
+  };
+
+  const setContextTransformOffset = (targetCtx, matrix, dx, dy) => {
+    if (Array.isArray(matrix)) {
+      targetCtx.setTransform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4] + dx, matrix[5] + dy);
+    } else {
+      targetCtx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e + dx, matrix.f + dy);
+    }
+  };
+
+  let scratch = null;
+  const resetScratch = () => {
+    scratch = null;
+  };
+  const getScratch = () => {
+    if (!scratch && typeof document !== 'undefined' && document.createElement) {
+      scratch = [document.createElement('canvas'), document.createElement('canvas')];
+      scratch[0].width = 0;
+      scratch[0].height = 0;
+      scratch[1].width = 0;
+      scratch[1].height = 0;
+    }
+    return scratch;
+  };
+
+  const glowPass = (
+    ctx,
+    path,
+    bounds,
+    transform,
+    clip,
+    colour,
+    glow,
+    pixelScale,
+    type = 'fill',
+    style = {},
+    ownerOpacity = 1,
+  ) => {
+    const blur = glow.blur * pixelScale;
+    if (blur <= 0) return false;
+    const { left, top, width: widthPx, height: heightPx } = scratchBounds(bounds, blur, transform);
+    if (widthPx <= 0 || heightPx <= 0) return false;
+    const canvases = getScratch();
+    if (!canvases) return false;
+    const [source, emitted] = canvases;
+    const g = source.getContext('2d');
+    const e = emitted.getContext('2d');
+    if (!g || !e) fail('budget', '$.glow', 'Scratch surface allocation failed.');
+
+    if (source.width !== widthPx) source.width = widthPx;
+    if (source.height !== heightPx) source.height = heightPx;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, widthPx, heightPx);
+
+    const neededEmittedWidth = 3 * widthPx;
+    if (emitted.width !== neededEmittedWidth) emitted.width = neededEmittedWidth;
+    if (emitted.height !== heightPx) emitted.height = heightPx;
+    e.setTransform(1, 0, 0, 1, 0, 0);
+    e.clearRect(0, 0, neededEmittedWidth, heightPx);
+
+    if (clip) {
+      g.save();
+      try {
+        if (clip.transform) {
+          setContextTransformOffset(g, clip.transform, -left, -top);
+          g.clip(clip.path);
+          setContextTransformOffset(g, transform, -left, -top);
+        } else {
+          setContextTransformOffset(g, transform, -left, -top);
+          if (clip.path) g.clip(clip.path);
+        }
+      } catch (err) {
+        g.restore();
+        throw err;
+      }
+    } else {
+      setContextTransformOffset(g, transform, -left, -top);
+    }
+
+    g.globalAlpha = style.alpha ?? 1;
+    g.fillStyle = '#ffffff';
+    g.strokeStyle = '#ffffff';
+    g.lineWidth = style.width ?? 2.5;
+    g.lineCap = style.cap ?? 'round';
+    g.lineJoin = style.join ?? 'round';
+    g.shadowBlur = 0;
+    g.shadowColor = 'transparent';
+    g.shadowOffsetX = 0;
+    g.shadowOffsetY = 0;
+    g.filter = 'none';
+    try {
+      if (type === 'fill') g.fill(path);
+      else g.stroke(path);
+    } finally {
+      if (clip) g.restore();
+    }
+
+    e.globalAlpha = glow.alpha ?? 1;
+    e.shadowColor = colour;
+    e.shadowBlur = blur;
+    e.shadowOffsetX = 2 * widthPx;
+    e.shadowOffsetY = 0;
+    e.filter = 'none';
+    e.drawImage(source, 0, 0);
+
+    ctx.save();
+    try {
+      ctx.setTransform(1, 0, 0, 1, left, top);
+      ctx.globalAlpha *= ownerOpacity;
+      ctx.drawImage(emitted, 2 * widthPx, 0, widthPx, heightPx, 0, 0, widthPx, heightPx);
+    } finally {
+      ctx.restore();
+    }
+    return true;
+  };
+
+  const combineCounts = (target, source) => {
+    if (!source) return target;
+    for (const [key, value] of Object.entries(source)) {
+      if (key === 'active_parts' || key === 'active_part_ids') continue;
+      if (key === 'blur_design_units') {
+        target[key] = Math.max(target[key] ?? 0, value);
+      } else if (typeof value === 'number') {
+        target[key] = (target[key] ?? 0) + value;
+      }
+    }
+    let set = target._active_parts;
+    if (!set) {
+      set = new Set(target.active_part_ids ?? []);
+      target._active_parts = set;
+    }
+    if (source._active_parts) {
+      for (const id of source._active_parts) set.add(id);
+    } else if (source.active_part_ids) {
+      for (const id of source.active_part_ids) set.add(id);
+    }
+    if (set.size === 0 && (typeof target.active_parts === 'number' || typeof source.active_parts === 'number')) {
+      target.active_parts = (target.active_parts ?? 0) + (source.active_parts ?? 0);
+    } else {
+      target.active_parts = set.size;
+    }
+    target.active_part_ids = [...set];
+    return target;
+  };
+
+  const draw = (ctx, compiled, state, colours, options = {}) => {
     const character = compiled.source;
     const initial = ctx.getTransform();
     const base = [initial.a, initial.b, initial.c, initial.d, initial.e, initial.f];
-    const counts = { painted_items: 0, paint_passes: 0, path_numbers: 0, clip_applications: 0, gradient_uses: 0 };
-    let cache = prepared.get(compiled);
-    if (!cache) {
-      cache = new Map();
-      prepared.set(compiled, cache);
+    const pixelScale =
+      options.pixel_scale ??
+      (options.css_width ? (options.css_width / 300) * (options.dpr ?? 1) : Math.hypot(initial.a, initial.b));
+    const activeParts = new Set();
+    const counts = {
+      active_parts: 0,
+      active_part_ids: [],
+      painted_items: 0,
+      paint_passes: 0,
+      path_numbers: 0,
+      clip_applications: 0,
+      gradient_uses: 0,
+      glow_emitters: 0,
+      blur_design_units: 0,
+    };
+    let data = prepared.get(compiled);
+    if (!data) {
+      const partDefs = new Map();
+      if (Array.isArray(character.parts)) {
+        for (const part of character.parts) {
+          partDefs.set(part.id, part);
+        }
+      }
+      if (Array.isArray(compiled.parts)) {
+        for (const part of compiled.parts) {
+          const charPart = partDefs.get(part.id);
+          if (charPart) {
+            partDefs.set(part.id, {
+              ...part,
+              glow: part.glow ?? charPart.glow,
+              parent: part.parent ?? charPart.parent,
+              path: part.path ?? charPart.path,
+            });
+          } else {
+            partDefs.set(part.id, part);
+          }
+        }
+      }
+      data = {
+        items: new Map(),
+        partDefs,
+      };
+      prepared.set(compiled, data);
     }
+    const partDefs = data.partDefs;
+    const addActivePart = (id) => {
+      let current = id;
+      while (current && current !== 'root') {
+        activeParts.add(current);
+        const def = partDefs.get(current);
+        current = def ? (def.parent ?? 'root') : null;
+      }
+    };
     const local = (partId, index) => {
       const owner = state.parts[partId];
       const key = `${partId}.${owner.variant}[${index}]`;
       const item = owner.items[index];
-      if (cache.get(key)?.item !== item)
-        cache.set(key, { item, geometry: compile(item, character.shapes, `${owner.path}.items[${index}]`) });
-      return cache.get(key).geometry;
+      if (data.items.get(key)?.item !== item)
+        data.items.set(key, { item, geometry: compile(item, character.shapes, `${owner.path}.items[${index}]`) });
+      return data.items.get(key).geometry;
     };
     const target = (reference) => {
       const [partId, itemId] = reference.split('.');
@@ -299,18 +537,38 @@
       if (!owner) fail('missing_reference', '$.clip', 'Name a declared target part.');
       const index = owner.items.findIndex((item) => item.id === itemId);
       if (index < 0) fail('missing_reference', '$.clip', 'The target geometry must exist in the active variant.');
-      return { owner, geometry: local(partId, index) };
+      return { partId, owner, geometry: local(partId, index) };
     };
     const outline = {
       ...(character.outline ?? {}),
       ...character.outline?.lod?.[state.band],
       ...character.lod?.[state.band]?.outline,
     };
+    const band = state.band ?? 'full';
+    const lod = character.lod?.[band] ?? {};
+    const glowEnabled = lod.glow ?? band !== 'micro';
     for (const id of state.layers) {
       const owner = state.parts[id];
       if (!owner.available || !owner.opacity) continue;
-      owner.items.forEach((item, index) => {
-        if ((item.lod && !item.lod.includes(state.band)) || state.hidden.includes(`${id}.${item.id}`)) return;
+      const partDef = partDefs.get(id);
+      const glowDef = glowEnabled && partDef?.glow ? partDef.glow : null;
+      let glowAlpha = 1;
+      let glowActive = false;
+      let glowBlur = 0;
+      let glowColour = null;
+      if (glowDef) {
+        glowBlur = finite(glowDef.blur, `${partDef.path ?? '$.part'}.glow.blur`, 0);
+        glowAlpha = finite(glowDef.alpha ?? 1, `${partDef.path ?? '$.part'}.glow.alpha`, 0, 1);
+        if (glowBlur > 0 && glowAlpha > 0) {
+          glowColour = role(colours, glowDef.colour, `${partDef.path ?? '$.part'}.glow.colour`);
+          glowActive = true;
+        }
+      }
+      const items = owner.items;
+      for (let index = 0; index < items.length; index++) {
+        const item = items[index];
+        if ((item.lod && !item.lod.includes(band)) || state.hidden.includes(`${id}.${item.id}`)) continue;
+        const isEmitter = glowActive && item.id === glowDef.item;
         const geometry = local(id, index);
         const style = geometry.style;
         const alpha = finite(style.alpha ?? 1, '$.item.alpha', 0, 1) * owner.opacity;
@@ -321,44 +579,133 @@
         }
         if (style.stroke && (style.width ?? 2.5) > 0)
           strokes.push({ width: style.width ?? 2.5, colour: style.stroke, cap: style.cap, join: style.join });
-        if (!alpha || (!style.fill && !strokes.length)) return;
-        ctx.save();
-        try {
-          if (style.clip) {
-            const clip = target(style.clip);
-            const m = clip.owner.matrix;
-            const complete = ns.parts.multiply(m, clip.geometry.transform);
-            if (Math.abs(complete[0] * complete[3] - complete[1] * complete[2]) < 1e-12) return;
-            ctx.setTransform(...ns.parts.multiply(base, m));
-            ctx.clip(clip.geometry.path);
-            counts.clip_applications += 1;
-            counts.path_numbers += clip.geometry.numbers;
-          }
-          ctx.setTransform(...ns.parts.multiply(ns.parts.multiply(base, owner.matrix), geometry.transform));
-          ctx.globalAlpha *= alpha;
-          ctx.miterLimit = 10;
-          if (style.fill) {
-            ctx.fillStyle = paint(ctx, style.fill, character, colours, '$.item.fill');
-            ctx.fill(geometry.paint_path);
-            counts.paint_passes += 1;
-            if (typeof style.fill === 'object') counts.gradient_uses += 1;
-          }
-          for (const stroke of strokes) {
-            ctx.lineWidth = finite(stroke.width, '$.item.width', 0);
-            ctx.strokeStyle = role(colours, stroke.colour, '$.item.stroke');
-            ctx.lineCap = stroke.cap ?? 'round';
-            ctx.lineJoin = stroke.join ?? 'round';
-            ctx.stroke(geometry.paint_path);
-            counts.paint_passes += 1;
-          }
-          counts.painted_items += 1;
-          counts.path_numbers += geometry.numbers;
-        } finally {
-          ctx.restore();
+        const hasPaint = (style.fill || strokes.length > 0) && alpha > 0;
+        if (!hasPaint && !isEmitter) continue;
+
+        let clip = null;
+        if (style.clip) {
+          clip = target(style.clip);
+          const m = clip.owner.matrix;
+          const complete = ns.parts.multiply(m, clip.geometry.transform);
+          if (Math.abs(complete[0] * complete[3] - complete[1] * complete[2]) < 1e-12) continue;
+          counts.clip_applications += 1;
+          counts.path_numbers += clip.geometry.numbers;
+          addActivePart(clip.partId);
         }
-      });
+        const itemTransform = ns.parts.multiply(ns.parts.multiply(base, owner.matrix), geometry.transform);
+
+        if (isEmitter) {
+          let emittedGlow = false;
+          const strokeWidth = strokes[0]?.width ?? style.width ?? 2.5;
+          const cap = strokes[0]?.cap ?? style.cap ?? 'round';
+          const join = strokes[0]?.join ?? style.join ?? 'round';
+          const itemAlpha = finite(style.alpha ?? 1, '$.item.alpha', 0, 1);
+          const clipArg = clip
+            ? { path: clip.geometry.path, transform: ns.parts.multiply(base, clip.owner.matrix) }
+            : null;
+
+          if (style.fill || (!style.fill && !strokes.length)) {
+            if (
+              glowPass(
+                ctx,
+                geometry.paint_path,
+                geometry.bounds,
+                itemTransform,
+                clipArg,
+                glowColour,
+                { ...glowDef, alpha: glowAlpha, blur: glowBlur },
+                pixelScale,
+                'fill',
+                { width: strokeWidth, cap, join, alpha: itemAlpha },
+                owner.opacity,
+              )
+            ) {
+              counts.paint_passes += 1;
+              emittedGlow = true;
+            }
+          }
+          if (strokes.length > 0) {
+            const halfWidth = strokeWidth / 2;
+            const strokeBounds = [
+              geometry.bounds[0] - halfWidth,
+              geometry.bounds[1] - halfWidth,
+              geometry.bounds[2] + halfWidth,
+              geometry.bounds[3] + halfWidth,
+            ];
+            if (
+              glowPass(
+                ctx,
+                geometry.paint_path,
+                strokeBounds,
+                itemTransform,
+                clipArg,
+                glowColour,
+                { ...glowDef, alpha: glowAlpha, blur: glowBlur },
+                pixelScale,
+                'stroke',
+                { width: strokeWidth, cap, join, alpha: itemAlpha },
+                owner.opacity,
+              )
+            ) {
+              counts.paint_passes += 1;
+              emittedGlow = true;
+            }
+          }
+          if (emittedGlow) {
+            counts.glow_emitters += 1;
+            counts.blur_design_units = Math.max(counts.blur_design_units, glowBlur);
+          }
+        }
+
+        if (hasPaint) {
+          ctx.save();
+          try {
+            if (clip) {
+              ctx.setTransform(...ns.parts.multiply(base, clip.owner.matrix));
+              ctx.clip(clip.geometry.path);
+            }
+            ctx.setTransform(...itemTransform);
+            ctx.globalAlpha *= alpha;
+            ctx.miterLimit = 10;
+            if (style.fill) {
+              ctx.fillStyle = paint(ctx, style.fill, character, colours, '$.item.fill');
+              ctx.fill(geometry.paint_path);
+              counts.paint_passes += 1;
+              if (typeof style.fill === 'object') counts.gradient_uses += 1;
+            }
+            for (const stroke of strokes) {
+              ctx.lineWidth = finite(stroke.width, '$.item.width', 0);
+              ctx.strokeStyle = role(colours, stroke.colour, '$.item.stroke');
+              ctx.lineCap = stroke.cap ?? 'round';
+              ctx.lineJoin = stroke.join ?? 'round';
+              ctx.stroke(geometry.paint_path);
+              counts.paint_passes += 1;
+            }
+          } finally {
+            ctx.restore();
+          }
+        }
+        counts.painted_items += 1;
+        counts.path_numbers += geometry.numbers;
+        addActivePart(id);
+      }
     }
+    counts.active_parts = activeParts.size;
+    counts.active_part_ids = [...activeParts];
+    counts._active_parts = activeParts;
     return counts;
   };
-  ns.geometry = Object.freeze({ commands, compile, paint, alphaColour, draw });
+  ns.geometry = Object.freeze({
+    commands,
+    compile,
+    paint,
+    alphaColour,
+    backingBlur,
+    scratchBounds,
+    glowPass,
+    resetScratch,
+    combineCounts,
+    addCounts: combineCounts,
+    draw,
+  });
 })();

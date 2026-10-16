@@ -53,6 +53,11 @@ inst/www/mascot-geometry.js
     Source: character-format v1 canvas geometry, paints, outlines and world clips written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
+inst/format/characters/tessa.json
+    Source: Tessa's complete resolved version 1 character data (the migration of inst/characters/tessa.json), written for this
+    package. Read only for listings until the engine draws from it.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
 inst/format/kits/classic.json
 inst/format/kits/screen.json
     Source: complete version 1 face-kit authoring snapshots written for this package.

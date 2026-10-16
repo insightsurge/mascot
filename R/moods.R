@@ -13,10 +13,20 @@ mood_table <- function() {
   )
 }
 
-#' List the built-in mascot moods
+#' List mascot moods
 #'
-#' Every character uses these moods, in this order.
-#' @returns A data frame with character columns `name` and `description`.
+#' Every character has the five shared moods, in this order, and may add more
+#' of its own. With no `character`, the list is the shared vocabulary; with one,
+#' it is what that character declares: the shared moods first, then its own in
+#' the order its author wrote them.
+#' @param character `NULL` (the default) for the shared moods, or a character:
+#'   an id string such as `"tessa"`, a [mascot_character()] helper or checked
+#'   character data.
+#' @returns A data frame with character columns `name` (the value you pass to
+#'   [mascot_mood()]), `description`, `status` (the text shown beside the mascot
+#'   for that mood), `fallback` (the mood used instead when this one is not
+#'   available, or `NA`), and a logical column `shared` (`TRUE` for the five
+#'   shared moods). Shared moods have no `fallback`.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers
@@ -24,8 +34,36 @@ mood_table <- function() {
 #' @export
 #' @examples
 #' mascot_moods()
-mascot_moods <- function() {
-  mood_table()
+#' mascot_moods("tessa")
+mascot_moods <- function(character = NULL) {
+  with_mascot_asserts({
+    character_catalogue_assert(character, nullable = TRUE)
+  })
+  if (is.null(character)) {
+    ids <- mood_table()$name
+    return(data.frame(
+      name = ids,
+      description = mood_table()$description,
+      status = vapply(ids, mood_label, character(1), USE.NAMES = FALSE),
+      shared = rep(TRUE, length(ids)),
+      fallback = rep(NA_character_, length(ids))
+    ))
+  }
+  data <- character_catalogue_resolve(character, environment())
+  declared <- names(data$moods)
+  ids <- c(intersect(mood_table()$name, declared), setdiff(declared, mood_table()$name))
+  data.frame(
+    name = ids,
+    description = vapply(ids, function(id) data$moods[[id]]$description, character(1), USE.NAMES = FALSE),
+    status = vapply(ids, function(id) data$moods[[id]]$status, character(1), USE.NAMES = FALSE),
+    shared = ids %in% mood_table()$name,
+    fallback = vapply(
+      ids,
+      function(id) if (is.null(data$moods[[id]]$fallback)) NA_character_ else data$moods[[id]]$fallback,
+      character(1),
+      USE.NAMES = FALSE
+    )
+  )
 }
 
 #' Choose a mascot mood

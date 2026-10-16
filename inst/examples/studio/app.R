@@ -1327,6 +1327,14 @@ studio_server <- function(input, output, session) {
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
       update_mascot = format_call("update_mascot", server_args(reactiveValuesToList(state), style())),
       mascot_colour_roles = format_call(fn, list(character = current_character())),
+      mascot_moods = format_call(fn, list(character = current_character())),
+      mascot_gestures = format_call(fn, list(character = current_character())),
+      mascot_anchors = format_call(fn, list(character = current_character())),
+      mascot_palettes = format_call(fn, list(character = current_character())),
+      mascot_characters = format_call(
+        fn,
+        if (nzchar(input$list_family %||% "")) list(family = input$list_family) else list()
+      ),
       mascot_example = format_call(fn, list(name = examples$name[1], run = FALSE)),
       mascot_studio = format_call(fn, list(fn = "mascot_theme")),
       format_call(fn, list())

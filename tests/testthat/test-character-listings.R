@@ -1,0 +1,260 @@
+is_listing <- function(x, columns, types) {
+  expect_identical(class(x), "data.frame")
+  expect_identical(names(x), columns)
+  expect_identical(unname(vapply(x, function(column) class(column)[1], character(1))), types)
+  expect_identical(rownames(x), as.character(seq_len(nrow(x))))
+}
+
+describe("mascot_characters()", {
+  it("lists Tessa as the only shipped character, built in and the default", {
+    local_empty_registry()
+    value <- mascot_characters()
+    is_listing(
+      value,
+      c("id", "name", "description", "family", "is_default", "built_in"),
+      c("character", "character", "character", "character", "logical", "logical")
+    )
+    expect_identical(value$id, "tessa")
+    expect_identical(value$name, "Tessa")
+    expect_identical(value$family, "hexonians")
+    expect_true(nzchar(value$description))
+    expect_identical(value$is_default, TRUE)
+    expect_identical(value$built_in, TRUE)
+    expect_identical(value$id[1], formals(mascot)$character)
+  })
+  it("adds registered characters after the shipped ones, as not built in and not default", {
+    local_empty_registry()
+    character_data_register(character_format_check(format_recipe("study_bot")))
+    character_data_register(character_format_check(format_recipe("anchor_probe")))
+    value <- mascot_characters()
+    expect_identical(value$id, c("tessa", "study_bot", "anchor_probe"))
+    expect_identical(value$is_default, c(TRUE, FALSE, FALSE))
+    expect_identical(value$built_in, c(TRUE, FALSE, FALSE))
+    expect_identical(value$family, c("hexonians", "visorfolk", "test_helpers"))
+  })
+  it("filters by family and keeps the order and the column types", {
+    local_empty_registry()
+    character_data_register(character_format_check(format_recipe("study_bot")))
+    expect_identical(mascot_characters(family = "visorfolk")$id, "study_bot")
+    expect_identical(mascot_characters(family = "hexonians")$id, "tessa")
+    expect_identical(names(mascot_characters(family = "visorfolk")), names(mascot_characters()))
+  })
+  it("names unknown families and rejects bad arguments", {
+    local_empty_registry()
+    expect_error(mascot_characters(family = "robots"), "must be one of", class = "mascot_error")
+    for (x in list(1, "", NA_character_, c("a", "b"))) {
+      expect_error(mascot_characters(family = x), "Assertion on 'family' failed", class = "mascot_error")
+    }
+  })
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(names(formals(mascot_characters)), c("...", "family"))
+    expect_error(mascot_characters(typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot_characters("hexonians"), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+describe("mascot_families()", {
+  it("lists the family of the shipped character", {
+    local_empty_registry()
+    value <- mascot_families()
+    is_listing(value, c("id", "name", "description"), rep("character", 3))
+    expect_identical(value$id, "hexonians")
+    expect_identical(value$name, "Hexonians")
+  })
+  it("adds families of registered characters once, in order, without renaming a family", {
+    local_empty_registry()
+    character_data_register(character_format_check(format_recipe("anchor_probe")))
+    character_data_register(character_format_check(format_recipe("study_bot")))
+    other <- format_recipe("study_bot")
+    other$id <- "study_two"
+    other$family_definition$name <- "Another name"
+    character_data_register(character_format_check(other))
+    value <- mascot_families()
+    expect_identical(value$id, c("hexonians", "test_helpers", "visorfolk"))
+    expect_identical(value$name[3], "Visorfolk")
+    expect_identical(mascot_characters(family = "visorfolk")$id, c("study_bot", "study_two"))
+  })
+  it("takes no arguments", {
+    expect_length(formals(mascot_families), 0L)
+  })
+})
+
+describe("mascot_anchors()", {
+  it("lists Tessa's anchors in authored order with part and side", {
+    value <- mascot_anchors()
+    is_listing(value, c("name", "description", "part", "side"), rep("character", 4))
+    expect_identical(value, mascot_anchors("tessa"))
+    expect_identical(value, mascot_anchors(mascot_character("tessa")))
+    expect_identical(value$name, names(character_catalogue_builtin("tessa")$anchors))
+    expect_identical(value$side[value$name == "hand_r"], "r")
+    expect_true(is.na(value$side[value$name == "face"]))
+    expect_identical(value$part[value$name == "hand_l"], "arm_l")
+    expect_false(anyNA(value$description))
+  })
+  it("lists a registered character by id and checked data alike, in authored order", {
+    local_empty_registry()
+    custom <- catalogue_alpha_two()
+    from_object <- mascot_anchors(custom)
+    expect_identical(from_object$name, names(custom$anchors))
+    character_data_register(custom)
+    expect_identical(mascot_anchors("alpha_two"), from_object)
+  })
+  it("returns no rows, with the same column types, for a character without anchors", {
+    custom <- character_format_check(format_recipe("study_bot"))
+    custom$anchors <- NULL
+    value <- mascot_anchors(custom)
+    expect_identical(nrow(value), 0L)
+    expect_identical(names(value), c("name", "description", "part", "side"))
+    expect_identical(unname(vapply(value, typeof, character(1))), rep("character", 4))
+  })
+  it("names unknown characters and rejects other types", {
+    expect_error(mascot_anchors("missing"), "must be one of", class = "mascot_error")
+    for (x in list(NULL, 1, "", NA_character_, c("tessa", "tessa"))) {
+      expect_error(mascot_anchors(x), "Assertion on 'character' failed", class = "mascot_error")
+    }
+  })
+})
+
+describe("mascot_palettes()", {
+  it("lists only the native original row for a character without palettes", {
+    value <- mascot_palettes()
+    is_listing(value, c("name", "description", "source"), rep("character", 3))
+    expect_identical(value$name, "original")
+    expect_identical(value$source, "native")
+    expect_identical(value, mascot_palettes("tessa"))
+  })
+  it("adds the character's palettes after original, with their checked origin", {
+    value <- mascot_palettes(character_format_check(format_recipe("study_bot")))
+    expect_identical(value$name, c("original", "sea_glass", "night_screen"))
+    expect_identical(value$source, c("native", "character", "family"))
+    expect_identical(value$description[2], "My darker screen.")
+    expect_false(anyNA(value$description))
+  })
+  it("reports the origin recorded in the checked data, never today's family defaults", {
+    custom <- character_format_check(format_recipe("study_bot"))
+    custom$palette_sources[["night_screen"]] <- "character"
+    custom$family_definition$defaults <- character_object()
+    expect_identical(mascot_palettes(custom)$source, c("native", "character", "character"))
+  })
+  it("names unknown characters and rejects other types", {
+    expect_error(mascot_palettes("missing"), "must be one of", class = "mascot_error")
+    expect_error(mascot_palettes(NULL), "Assertion on 'character' failed")
+  })
+})
+
+describe("mascot_moods(character =)", {
+  it("keeps the shared listing as the first columns and appends status, shared and fallback", {
+    value <- mascot_moods()
+    is_listing(
+      value,
+      c("name", "description", "status", "shared", "fallback"),
+      c("character", "character", "character", "logical", "character")
+    )
+    expect_identical(value$name[1], "idle")
+    expect_identical(value$status, c("Idle", "Thinking", "Happy", "Worried", "Celebrating"))
+    expect_true(all(value$shared))
+    expect_true(all(is.na(value$fallback)))
+  })
+  it("lists a character's moods with the core five first and extras in authored order", {
+    value <- mascot_moods(catalogue_alpha_two())
+    expect_identical(value$name, c("idle", "thinking", "happy", "worried", "celebrating", "processing"))
+    expect_identical(value$shared, c(rep(TRUE, 5), FALSE))
+    expect_identical(value$fallback, c(rep(NA_character_, 5), "thinking"))
+    expect_identical(value$status[6], "Processing")
+    expect_identical(value$description[6], "Working through a queue.")
+  })
+  it("puts the core five first even when an author wrote an extra mood first", {
+    recipe <- format_recipe("alpha_visor")
+    recipe$id <- "alpha_three"
+    recipe$moods <- c(recipe$moods["processing"], recipe$moods[names(recipe$moods) != "processing"])
+    value <- mascot_moods(character_format_check(recipe))
+    expect_identical(value$name, c("idle", "thinking", "happy", "worried", "celebrating", "processing"))
+  })
+  it("reports Tessa's moods with the same names as the shared vocabulary", {
+    value <- mascot_moods("tessa")
+    expect_identical(value[c("name", "description")], mascot_moods()[c("name", "description")])
+    expect_identical(value$status, mascot_moods()$status)
+    expect_identical(value, mascot_moods(mascot_character("tessa")))
+  })
+  it("names unknown characters and rejects other types", {
+    expect_error(mascot_moods("missing"), "must be one of", class = "mascot_error")
+    for (x in list(1, "", NA_character_, c("tessa", "tessa"))) {
+      expect_error(mascot_moods(x), "Assertion on 'character' failed", class = "mascot_error")
+    }
+  })
+})
+
+describe("mascot_gestures(character =)", {
+  it("keeps the shared listing as the first columns and appends fallback and frames", {
+    value <- mascot_gestures()
+    is_listing(
+      value,
+      c("name", "description", "fallback", "frames"),
+      c("character", "character", "character", "integer")
+    )
+    expect_identical(value$name, c("nod", "wave"))
+    expect_identical(value$frames, c(18L, 30L))
+    expect_true(all(is.na(value$fallback)))
+  })
+  it("lists nod and wave first, then extras, with the effective playable length", {
+    value <- mascot_gestures(catalogue_alpha_two())
+    expect_identical(value$name, c("nod", "wave", "beep", "hat_hop", "rock"))
+    expect_identical(value$fallback, c(NA, "rock", NA, NA, NA))
+    expect_identical(value$frames, c(18L, 30L, 20L, 24L, 18L))
+  })
+  it("reports the fallback's length, not the declared one, when a needed part is absent", {
+    checked <- character_format_check(format_recipe("study_bot"))
+    value <- mascot_gestures(checked)
+    declared <- checked$gestures
+    expect_identical(value$fallback[value$name == "wave"], "rock")
+    expect_identical(value$frames[value$name == "wave"], as.integer(declared$rock$frames))
+    expect_false(identical(value$frames[value$name == "wave"], 30L))
+    expect_false(any(value$name == value$fallback, na.rm = TRUE))
+  })
+  it("lists Tessa's own wave and nod at their shared lengths", {
+    value <- mascot_gestures("tessa")
+    expect_identical(value$name[1:2], c("nod", "wave"))
+    expect_identical(value$frames[1:2], mascot_gestures()$frames)
+    expect_identical(value$description[1:2], mascot_gestures()$description)
+  })
+  it("names unknown characters and rejects other types", {
+    expect_error(mascot_gestures("missing"), "must be one of", class = "mascot_error")
+    for (x in list(1, "", NA_character_, c("tessa", "tessa"))) {
+      expect_error(mascot_gestures(x), "Assertion on 'character' failed", class = "mascot_error")
+    }
+  })
+})
+
+describe("mascot_colour_roles(character =)", {
+  it("appends description and brand and keeps the first four columns as before", {
+    value <- mascot_colour_roles()
+    is_listing(value, c("role", "colour", "follows", "shade", "description", "brand"), rep("character", 6))
+    expect_identical(value$description[value$role == "body_highlight"], "Body highlight")
+    expect_identical(value$brand[value$role == "body"], "primary")
+    expect_identical(value$brand[value$role == "rim"], "secondary")
+    expect_identical(sum(!is.na(value$brand)), 2L)
+  })
+  it("uses the author's role description and joins two brand slots on one role", {
+    custom <- character_format_check(format_recipe("study_bot"))
+    custom$colour_descriptions <- list(body = "The whole shell.")
+    custom$brand <- list(primary = "body", secondary = "body")
+    value <- mascot_colour_roles(custom)
+    expect_identical(value$description[value$role == "body"], "The whole shell.")
+    expect_identical(value$brand[value$role == "body"], "primary, secondary")
+  })
+  it("lists a registered character by id", {
+    local_empty_registry()
+    custom <- catalogue_alpha_two()
+    character_data_register(custom)
+    expect_identical(mascot_colour_roles("alpha_two"), mascot_colour_roles(custom))
+    expect_identical(mascot_colour_roles("alpha_two")$role, names(custom$colours))
+  })
+})
+
+describe("humanised role descriptions", {
+  it("capitalise the first word and replace underscores", {
+    expect_identical(colour_role_description("eye_white"), "Eye white")
+    expect_identical(colour_role_description("body"), "Body")
+    expect_error(colour_role_description(""), "Assertion on 'role' failed")
+  })
+})

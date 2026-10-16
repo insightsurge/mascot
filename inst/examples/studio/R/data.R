@@ -115,7 +115,7 @@ input_event <- function(...) paste0("data-event=\"", c(...), "\"")
 fixed_arg <- function(reason) list(fixed = reason)
 
 playground_controls <- list(
-  mascot_character = list(name = input_id("character")),
+  mascot_character = list(id = input_id("character")),
   mascot_mood = list(name = input_id("mood")),
   mascot_status = list(text = input_id("status_text")),
   mascot_bubble = list(
@@ -148,6 +148,15 @@ playground_controls <- list(
     drag = input_id("drag")
   ),
   mascot_colour_roles = list(character = input_id("character")),
+  mascot_palettes = list(character = input_id("character")),
+  mascot_moods = list(character = input_id("character")),
+  mascot_gestures = list(character = input_id("character")),
+  mascot_anchors = list(character = input_id("character")),
+  mascot_characters = list(
+    ... = fixed_arg("Must be empty: the family filter is named."),
+    family = input_id("list_family")
+  ),
+  mascot_families = list(),
   mascot_theme = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     light = fixed_arg("Pickers are built from the selected character roles in theme_light."),
@@ -215,10 +224,17 @@ playground_controls <- list(
   )
 )
 
-# Change only this helper when public character discovery becomes available (#162).
+# Characters the studio can mount: the shipped ones, from the public listing.
 studio_characters <- function() {
-  id <- formals(mascot::mascot)$character
-  stats::setNames(id, mascot::mascot_character(id)$name)
+  listing <- mascot::mascot_characters()
+  listing <- listing[listing$built_in, ]
+  stats::setNames(listing$id, listing$name)
+}
+
+# The family filter's choices: every family, with "all characters" first.
+studio_families <- function() {
+  listing <- mascot::mascot_families()
+  c(`All characters` = "", stats::setNames(listing$id, listing$name))
 }
 
 # Count shipped characters rather than the selector's current discovery adapter.
@@ -232,13 +248,18 @@ studio_character_hint <- function(directory = system.file("characters", package 
   paste(mascot::mascot_character(id)$name, "is the only built-in character so far.")
 }
 
-# The public listing has no brand column yet. Read the package's shipped data,
-# keeping this adaptation in one place until a public brand mapping is available.
+# The brand slots of a character, read from the public colour-role listing: slot name to role.
 studio_brand <- function(character) {
   checkmate::assert_string(character)
-  id <- mascot::mascot_character(character)$id
-  file <- system.file("characters", paste0(id, ".json"), package = "mascot", mustWork = TRUE)
-  jsonlite::fromJSON(file)$brand
+  roles <- mascot::mascot_colour_roles(character)
+  roles <- roles[!is.na(roles$brand), ]
+  result <- list()
+  for (i in seq_len(nrow(roles))) {
+    for (slot in strsplit(roles$brand[i], ", ", fixed = TRUE)[[1]]) {
+      result[[slot]] <- roles$role[i]
+    }
+  }
+  result
 }
 
 character_mistakes <- function(character) {

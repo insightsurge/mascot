@@ -1,7 +1,8 @@
 describe("mascot_gestures()", {
-  it("lists the two gestures and their descriptions in a stable order", {
+  it("lists the two gestures and their descriptions in a stable order, with the first two columns unchanged", {
+    value <- mascot_gestures()
     expect_identical(
-      mascot_gestures(),
+      value[c("name", "description")],
       data.frame(
         name = c("nod", "wave"),
         description = c(
@@ -10,6 +11,7 @@ describe("mascot_gestures()", {
         )
       )
     )
+    expect_named(value, c("name", "description", "fallback", "frames"))
   })
 })
 

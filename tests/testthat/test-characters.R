@@ -7,7 +7,7 @@ describe("mascot_character()", {
   it("names unknown choices and rejects invalid strings", {
     expect_snapshot(error = TRUE, mascot_character("neer"))
     for (x in list(1, NULL, NA_character_, character(), c("tessa", "tessa"), "")) {
-      expect_error(mascot_character(x), "Assertion on 'name' failed")
+      expect_error(mascot_character(x), "Assertion on 'id' failed")
     }
     expect_error(mascot_character("{oops"), "not a character", fixed = TRUE)
   })
@@ -49,7 +49,7 @@ describe("abort_choice()", {
 
 describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {
-    expect_error(mascot_character(name = 1), "name", class = "mascot_error")
+    expect_error(mascot_character(id = 1), "id", class = "mascot_error")
   })
   it("adds mascot_error to the registered format and print methods", {
     expect_error(format.mascot_character(1), "x", class = "mascot_error")

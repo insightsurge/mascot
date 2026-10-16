@@ -333,12 +333,16 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
   switch(
     fn,
     mascot_mood = visual_mood(),
-    mascot_moods = visual_moods(),
+    mascot_moods = visual_moods(character),
+    mascot_characters = visual_characters(),
+    mascot_families = visual_families(),
+    mascot_anchors = visual_anchors(character),
+    mascot_palettes = visual_palettes(character),
     mascot_status = visual_status(),
     mascot_bubble = visual_bubble(),
     mascot_motion_settings = visual_motion(),
     mascot_gesture = visual_gesture(),
-    mascot_gestures = visual_gestures(),
+    mascot_gestures = visual_gestures(character),
     mascot_size = visual_size(),
     mascot_placement = visual_placement(),
     mascot_colour_roles = visual_colour_roles(character),
@@ -400,10 +404,45 @@ visual_mood <- function() {
   )
 }
 
-visual_moods <- function() {
+visual_moods <- function(character = formals(mascot::mascot)$character) {
+  moods <- mascot_moods(character)
   tagList(
-    tags$h3(class = "pg-section-title", paste("The", nrow(mascot_moods()), "moods")),
-    data_table(mascot_moods())
+    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s ", nrow(moods), " moods")),
+    tags$p(
+      class = "pg-muted",
+      "The five shared moods come first. A character may add its own; a mood that is not available falls back to the
+      one named in fallback."
+    ),
+    data_table(moods)
+  )
+}
+
+visual_characters <- function() {
+  tagList(
+    tags$h3(class = "pg-section-title", "Characters this session knows"),
+    data_table(mascot_characters())
+  )
+}
+
+visual_families <- function() {
+  tagList(
+    tags$h3(class = "pg-section-title", "Character families"),
+    data_table(mascot_families())
+  )
+}
+
+visual_anchors <- function(character = formals(mascot::mascot)$character) {
+  tagList(
+    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s anchors")),
+    data_table(mascot_anchors(character))
+  )
+}
+
+visual_palettes <- function(character = formals(mascot::mascot)$character) {
+  tagList(
+    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s palettes")),
+    tags$p(class = "pg-muted", "original is the character's own colours, with no palette applied."),
+    data_table(mascot_palettes(character))
   )
 }
 
@@ -473,7 +512,18 @@ visual_gesture <- function() {
   )
 }
 
-visual_gestures <- visual_gesture
+visual_gestures <- function(character = formals(mascot::mascot)$character) {
+  gestures <- mascot_gestures(character)
+  tagList(
+    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s gestures")),
+    tags$p(
+      class = "pg-muted",
+      "frames is the length of the movement that plays, at 30 frames per second. A gesture whose parts are missing
+      plays its fallback."
+    ),
+    data_table(gestures)
+  )
+}
 
 visual_size <- function() {
   tagList(
@@ -809,6 +859,11 @@ guide_mistake_calls <- function(fn, character) {
     mascot_size = 'mascot_size(10)',
     mascot_placement = c('mascot_placement("unknown-position")', 'mascot_placement("inline", minimise = TRUE)'),
     mascot_colour_roles = sprintf('mascot_colour_roles(mascot_character(%s))', format_string(character)),
+    mascot_moods = 'mascot_moods("unknown-character")',
+    mascot_gestures = 'mascot_gestures("unknown-character")',
+    mascot_anchors = 'mascot_anchors("unknown-character")',
+    mascot_palettes = 'mascot_palettes("unknown-character")',
+    mascot_characters = 'mascot_characters(family = "unknown-family")',
     mascot_theme = format_call("mascot_theme", list(light = named_call("list", stats::setNames("not-a-colour", role)))),
     mascot_action = 'mascot_action("Open help", FALSE)',
     mascot_popup_menu = c(

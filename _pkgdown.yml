@@ -67,6 +67,10 @@ reference:
       - mascot_gesture
       - mascot_gestures
       - mascot_moods
+      - mascot_characters
+      - mascot_families
+      - mascot_anchors
+      - mascot_palettes
 
   - title: Examples
     contents:

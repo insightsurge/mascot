@@ -9,7 +9,7 @@ builtin_characters <- function() {
 #' The helper behind the `character` argument of [mascot()]. Only Tessa is
 #' built in; custom characters come later.
 #'
-#' @param name A non-empty string naming a built-in character. Defaults to
+#' @param id A non-empty string naming a built-in character. Defaults to
 #'   `"tessa"`; `NULL` is not accepted.
 #' @returns A `mascot_character` object with `id` and `name` elements.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
@@ -19,15 +19,15 @@ builtin_characters <- function() {
 #' @examples
 #' mascot_character()
 #' mascot_character("tessa")
-mascot_character <- function(name = "tessa") {
+mascot_character <- function(id = "tessa") {
   with_mascot_asserts({
-    checkmate::assert_string(name, min.chars = 1)
+    checkmate::assert_string(id, min.chars = 1)
   })
   registry <- builtin_characters()
-  if (!name %in% registry$id) {
-    abort_choice(name, registry$id, "name", "character", environment())
+  if (!id %in% registry$id) {
+    abort_choice(id, registry$id, "id", "character", environment())
   }
-  row <- registry[registry$id == name, ]
+  row <- registry[registry$id == id, ]
   structure(list(id = row$id, name = row$name), class = "mascot_character")
 }
 

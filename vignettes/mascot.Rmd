@@ -140,6 +140,17 @@ Only Tessa is built in at present. `mascot_character()` selects a character;
 it does not create a new one. The plain names `character = "tessa"` and
 `mood = "worried"` are shortcuts for their helpers.
 
+`mascot_characters()` lists the characters this R session knows, and
+`mascot_families()` their families. Give a character to a listing to see what
+it declares: `mascot_moods("tessa")` adds the status text of each mood, and
+`mascot_gestures("tessa")` the length of each movement. `mascot_anchors()` and
+`mascot_palettes()` list a character's attachment points and colour palettes.
+
+```{r character-listings}
+mascot_characters()
+mascot_gestures("tessa")
+```
+
 Without custom status, the line follows the mood: **Thinking**, **Happy**,
 and so on. Custom status stays until replaced or reset.
 
@@ -263,7 +274,9 @@ or filled leader, the original colour stays. Outline, face lines, eye whites,
 shine, teeth, sparkle, tongue, sweat and shadow keep their colours.
 
 `mascot_colour_roles()` lists `follows` (leaders in priority order) and `shade`
-(`same`, `lighter` or `darker`); `NA` means there is no follow rule. Derived
+(`same`, `lighter` or `darker`); `NA` means there is no follow rule. Its
+`description` column says what each role colours, and `brand` marks the roles
+that take a `bslib` primary or secondary colour. Derived
 shades preserve hue using calibrated lightness and saturation shifts.
 Feeding Tessa's own body, rim and bow colours back reproduces her derived
 colours within 3 units per RGB channel (0--255). Supplied colours stay exact.

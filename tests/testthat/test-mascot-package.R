@@ -59,7 +59,11 @@ describe("mascot exports", {
         "mascot_moods",
         "mascot_bubble",
         "mascot_gesture",
-        "mascot_gestures"
+        "mascot_gestures",
+        "mascot_characters",
+        "mascot_families",
+        "mascot_anchors",
+        "mascot_palettes"
       )
     )
     expect_true(all(startsWith(setdiff(exports, c("mascot", "update_mascot")), "mascot_")))

@@ -1231,7 +1231,7 @@ describe("studio round 4 regression guards", {
     }
     expect_match(as.character(map("inline", FALSE, "Review character")), "Review character, inline")
     # The one-line hint is the first sentence of the argument's help text, so it cannot depend on the selection.
-    text <- hint("mascot_character", "name")
+    text <- hint("mascot_character", "id")
     expect_false(grepl("Selected:", text, fixed = TRUE))
     expect_match(text, "built-in character", fixed = TRUE)
   })
@@ -2005,6 +2005,7 @@ describe("studio safeguards (#248)", {
       task_run = "demonstrates the session argument with a timed task",
       preview_width = "the width the preview page is shown at, not an argument",
       example_name = "the Examples view, not the mascot",
+      list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
       example_run = "the Examples view, not the mascot"
     )
     controls <- unlist(get("playground_controls", parts$env))
@@ -2414,5 +2415,24 @@ describe("framework examples", {
     app$wait_for_js("document.getElementById('second-review-choice').textContent === 'about'")
     expect_identical(app$get_value(output = "second-review-choice"), "about")
     expect_identical(app$get_js("document.getElementById('first-review-choice').textContent"), "")
+  })
+})
+
+describe("studio listings (character data)", {
+  it("reads brand slots, characters and families from the public listings", {
+    env <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
+    legacy <- jsonlite::fromJSON(system.file("characters", "tessa.json", package = "mascot", mustWork = TRUE))$brand
+    expect_identical(env$studio_brand("tessa")[c("primary", "secondary")], as.list(legacy)[c("primary", "secondary")])
+    expect_identical(env$studio_characters(), c(Tessa = "tessa"))
+    expect_identical(env$studio_families(), c(`All characters` = "", Hexonians = "hexonians"))
+    expect_error(env$studio_brand(1), "Assertion on 'character' failed")
+  })
+  it("leaves registered characters out of the choices, because mascot() cannot mount them yet", {
+    local_empty_registry()
+    character_data_register(character_format_check(format_recipe("study_bot")))
+    env <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
+    expect_identical(unname(env$studio_characters()), "tessa")
   })
 })

@@ -320,10 +320,10 @@
     {
       "id": "figure",
       "at": [
-        -144,
-        -253.44
+        -120,
+        -216.8
       ],
-      "scale": 0.72,
+      "scale": 0.56,
       "items": []
     },
     {
@@ -349,8 +349,7 @@
             ]
           ],
           "stroke": "arm_body",
-          "width": 13,
-          "outline": true
+          "width": 13
         },
         {
           "shape": "circle",
@@ -594,13 +593,26 @@
             "r": 22,
             "fill": "body",
             "outline": true
+          },
+          {
+            "id": "led_lamp",
+            "shape": "circle",
+            "x": 185,
+            "y": 230,
+            "r": 12,
+            "fill": "light",
+            "lod": [
+              "full",
+              "small"
+            ]
           }
         ]
       },
       "glow": {
         "item": "led_lamp",
         "colour": "light",
-        "blur": 8
+        "blur": 8,
+        "alpha": 1
       }
     },
     {
@@ -874,8 +886,7 @@
             ]
           ],
           "stroke": "arm_body",
-          "width": 15,
-          "outline": true
+          "width": 15
         }
       ],
       "lod": [
@@ -921,8 +932,7 @@
             ]
           ],
           "stroke": "arm_body",
-          "width": 15,
-          "outline": true
+          "width": 15
         }
       ],
       "lod": [
@@ -1639,8 +1649,7 @@
         "chassis.stud_r",
         "head.head_gloss",
         "head.ear_shine_l",
-        "head.ear_shine_r",
-        "wheel.tyre_ticks"
+        "head.ear_shine_r"
       ],
       "face": {
         "brows": false
@@ -1692,5 +1701,5 @@
     "sea_glass": "family",
     "night_screen": "family"
   },
-  "note": "Picked round-5 drawing: source wheel, trapezoid chassis, tilted visor, far socket stub and upright held spanner. Removed an unpicked star-eye style; celebrating keeps the source eye arcs. Static glints and separate dark spanner strokes preserve source details. Source screen/additive blending, particle sparks, continuous pulse and spring-driven antenna remain gaps. Finite tracks and precomputed static texture are supported authoring options, not missing grammar. No built-in shipping or visual approval is implied."
+  "note": "Picked round-5 drawing: source wheel, trapezoid chassis, tilted visor, far socket stub and upright held spanner. Removed an unpicked star-eye style; celebrating keeps the source eye arcs. Static glints and separate dark spanner strokes preserve source details. Source screen/additive blending, particle sparks, continuous pulse and spring-driven antenna remain gaps. Finite tracks and precomputed static texture are supported authoring options, not missing grammar. No built-in shipping or visual approval is implied. Authored figure scale is 0.56 with a raised, centred origin to retain every tool pose, glow and gesture inside the frame. Explicit glow alpha is 1; the micro chassis retains its lamp while micro glow is off."
 }

@@ -894,7 +894,7 @@
       "id": "figure",
       "at": [
         -144,
-        -253.44
+        -248.44
       ],
       "scale": 0.72,
       "items": []
@@ -2383,6 +2383,10 @@
       "lod": [
         "full",
         "small"
+      ],
+      "at": [
+        0,
+        42
       ]
     },
     {
@@ -2617,6 +2621,15 @@
             "colour": "feature",
             "width": 3.4
           }
+        },
+        "closed": {
+          "op": "eye_arc",
+          "r": 17.6,
+          "y": 7,
+          "start": 3.45575,
+          "end": 5.96903,
+          "stroke": "eye_arc",
+          "width": 5.6
         }
       },
       "brow_styles": {
@@ -2676,10 +2689,10 @@
             },
             {
               "shape": "ellipse",
-              "x": 0,
-              "y": 6,
-              "rx": 9,
-              "ry": 5,
+              "x": 0.0,
+              "y": 0.5,
+              "rx": 0.6,
+              "ry": 0.4166666666666667,
               "fill": "tongue"
             }
           ]
@@ -2730,10 +2743,10 @@
             },
             {
               "shape": "ellipse",
-              "x": 0,
-              "y": 8,
-              "rx": 9,
-              "ry": 6,
+              "x": 0.0,
+              "y": 0.5714285714285714,
+              "rx": 0.6,
+              "ry": 0.42857142857142855,
               "fill": "tongue"
             }
           ]
@@ -2898,7 +2911,7 @@
   },
   "gestures": {
     "flare": {
-      "description": "The flame flares taller before settling.",
+      "description": "The flame rises before settling.",
       "frames": 30,
       "tracks": {
         "root.lift": [
@@ -2917,20 +2930,6 @@
           [
             1,
             0
-          ]
-        ],
-        "flame_outer.scale_y": [
-          [
-            0,
-            1.0
-          ],
-          [
-            0.4,
-            1.15
-          ],
-          [
-            1,
-            1.0
           ]
         ]
       }
@@ -3014,5 +3013,5 @@
   },
   "palettes": {},
   "palette_sources": {},
-  "note": "Picked round-5 flame and charcoal mask. Exact held-mood flame controls and articulated arm points sampled from the restored source at t=1.1; each mood uses its own heat, lean, width and height, rather than substituting a rigid scale for flame deformation. Thinking keeps the blue core. Static worried smoke puffs preserve the source still. Gaps: continuous procedural geometry, per-frame harmonic motion, screen/additive compositing, particle sparks/smoke and the source whole-body glow within current limits. No dynamic simulation, built-in shipping or visual approval is implied."
+  "note": "Picked round-5 flame and charcoal mask. Exact held-mood flame controls and articulated arm points sampled from the restored source at t=1.1; each mood uses its own heat, lean, width and height, rather than substituting a rigid scale for flame deformation. Thinking keeps the blue core. Static worried smoke puffs preserve the source still. Gaps: continuous procedural geometry, per-frame harmonic motion, screen/additive compositing, particle sparks/smoke and the source whole-body glow within current limits. No dynamic simulation, built-in shipping or visual approval is implied. Worried smoke is lowered by 42 source units to keep every puff inside the authored frame. The flare gesture lifts the character without stretching the held flame geometry. Mouth ellipses use normalised kit coordinates."
 }

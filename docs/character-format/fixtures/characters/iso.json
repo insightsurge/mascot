@@ -221,10 +221,10 @@
     {
       "id": "figure",
       "at": [
-        -144,
-        -253.44
+        -119,
+        -225.28
       ],
-      "scale": 0.72,
+      "scale": 0.64,
       "items": []
     },
     {
@@ -785,7 +785,8 @@
           "join": "round",
           "lod": [
             "full"
-          ]
+          ],
+          "id": "limb_hi"
         },
         {
           "shape": "circle",
@@ -874,7 +875,8 @@
           "join": "round",
           "lod": [
             "full"
-          ]
+          ],
+          "id": "limb_hi"
         }
       ],
       "lod": [
@@ -906,7 +908,6 @@
           ],
           "stroke": "divider_metal",
           "width": 5,
-          "outline": true,
           "cap": "round"
         },
         {
@@ -930,7 +931,6 @@
           ],
           "stroke": "divider_metal",
           "width": 5,
-          "outline": true,
           "cap": "round"
         },
         {
@@ -1292,10 +1292,10 @@
             },
             {
               "shape": "ellipse",
-              "x": 0,
-              "y": 10,
-              "rx": 9,
-              "ry": 5,
+              "x": 0.0,
+              "y": 0.6666666666666666,
+              "rx": 0.6,
+              "ry": 0.3333333333333333,
               "fill": "tongue"
             }
           ]
@@ -1527,5 +1527,5 @@
   },
   "palettes": {},
   "palette_sources": {},
-  "note": "Source: picked round5.md and recovered the recovered drawing source (lines 140-164). True source geometry for pointy-top hex with sx=0.98, sy=1.05, quiff, circular eyewear, jacket with piping, feet, and drafting divider. Dynamic curve equations in chart panel captured via static variants (idle, thinking, converged, diverged). Gestures nod and wave use explicit root-rotation fallbacks. Rim stroke uses a flat source gold role: contract 3.5 types stroke as a role, although the accounting prose mentions gradient stroke invocations. Gradient-stroke authoring needs an explicit freeze decision; the fixture does not silently extend that field. Founder palette pick applied from the round-2 showcase: slate body #66889a, copper rim #d87349, slate jacket #3f5563, ink #1b2430/#0e141d; these deliberately differ from the round-5 source colours in the comparison. Retains the picked quiff and untinted wire glasses; no lens fill."
+  "note": "Source: picked round5.md and recovered the recovered drawing source (lines 140-164). True source geometry for pointy-top hex with sx=0.98, sy=1.05, quiff, circular eyewear, jacket with piping, feet, and drafting divider. Dynamic curve equations in chart panel captured via static variants (idle, thinking, converged, diverged). Gestures nod and wave use explicit root-rotation fallbacks. Rim stroke uses a flat source gold role: contract 3.5 types stroke as a role, although the accounting prose mentions gradient stroke invocations. Gradient-stroke authoring needs an explicit freeze decision; the fixture does not silently extend that field. Founder palette pick applied from the round-2 showcase: slate body #66889a, copper rim #d87349, slate jacket #3f5563, ink #1b2430/#0e141d; these deliberately differ from the round-5 source colours in the comparison. Retains the picked quiff and untinted wire glasses; no lens fill. Authored figure scale is 0.64 with a centred origin to retain the complete chart glow and divider motion inside the frame. Mouth ellipses use normalised kit coordinates."
 }

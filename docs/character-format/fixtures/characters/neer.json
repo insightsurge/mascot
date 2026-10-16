@@ -145,10 +145,10 @@
     {
       "id": "figure",
       "at": [
-        -144,
-        -249.12
+        -120,
+        -218
       ],
-      "scale": 0.72,
+      "scale": 0.6,
       "items": []
     },
     {
@@ -1831,5 +1831,13 @@
   },
   "palettes": {},
   "palette_sources": {},
-  "note": "Source: the picked drawing improved.md and recovered drawNeer in the report. Crest variants preserve exact cubic controls at each held mood; no background wave. Slim outline follows founder preference. Gaps: continuous numeric flex/body rebuilding between held moods; animated screen caustics; particles; radial iris gradient and original pupil ratio; shell spring; open-mouth inner tongue/teeth clipping. Only static supported geometry is included. Nod/wave are explicitly root-tilt fallbacks, not the unsupported crest-flex gesture. Source Canvas arc in shell converted to cubic within 0.006 source units. Micro omits the inner band to retain the two eye clips within the cap; this is an explicit detail simplification. Body y coordinates bake the picked drawing\u2019s exact 0.88 path-only compression; sheen/surface remain in their original source space."
+  "note": "Source: the picked drawing improved.md and recovered drawNeer in the report. Crest variants preserve exact cubic controls at each held mood; no background wave. Slim outline follows founder preference. Gaps: continuous numeric flex/body rebuilding between held moods; animated screen caustics; particles; radial iris gradient and original pupil ratio; shell spring; open-mouth inner tongue/teeth clipping. Only static supported geometry is included. Nod/wave are explicitly root-tilt fallbacks, not the unsupported crest-flex gesture. Source Canvas arc in shell converted to cubic within 0.006 source units. Micro omits the inner band to retain the two eye clips within the cap; this is an explicit detail simplification. Body y coordinates bake the picked drawing’s exact 0.88 path-only compression; sheen/surface remain in their original source space. Authored figure scale is 0.60 with a raised origin so the complete arm rotation envelopes fit the frame; source geometry and all held arm angles are unchanged.",
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "eye_white",
+      "min": 3,
+      "where": "dark pupils on the opaque eye whites"
+    }
+  ]
 }

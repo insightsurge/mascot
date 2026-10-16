@@ -273,7 +273,7 @@
     {
       "id": "figure",
       "at": [
-        -144,
+        -149,
         -253.44
       ],
       "scale": 0.72,
@@ -688,8 +688,7 @@
             ]
           ],
           "stroke": "arm",
-          "width": 13,
-          "outline": true
+          "width": 13
         },
         {
           "shape": "circle",
@@ -731,8 +730,7 @@
             ]
           ],
           "stroke": "arm",
-          "width": 13,
-          "outline": true
+          "width": 13
         },
         {
           "shape": "circle",
@@ -1301,9 +1299,7 @@
   },
   "lod": {
     "small": {
-      "hide": [
-        "body.bevel"
-      ]
+      "hide": []
     },
     "micro": {
       "hide": [

@@ -12,7 +12,7 @@ later acceptance work. Pictures alone do not prove timing or host behaviour.
 settings, image hashes and archive checksums. These are **non-canonical** and cannot pass `--strict`.
 The small PNG set in `reviewed/` comes from old main `ace06f5`. The full archives are cached locally under
 `dev/visual-baselines/`, ignored by git and excluded from the source package. Canonical Ubuntu captures and
-retained archive publication remain pending. The E1 bridge now routes root placement, feet/body, ground shadow, arms/hands and accessories through parts/geometry. Face and effect painters are reused at their computed part matrices until E3/E4; this is not the complete M1 migration. The live host never loads the adapter or enables its internal switch.
+retained archive publication remain pending. The E1 bridge now routes root placement, feet/body, ground shadow, arms/hands and accessories through parts/geometry. The E3 adapter now mounts generic faces and progress/pulse effects from embedded classic kit data. The standalone face module also paints screen-kit glyphs and consumes externally resolved track-effect states; E4 owns track scheduling. This is not the complete M1 migration or visual acceptance. The live host never loads the adapter or enables its internal switch. Current test/capture pages embed the shipped `inst/format/kits/*.json` snapshots offline. Capturing historical adapter commits still uses their original scripts.
 
 ## Reproduce provisional captures
 

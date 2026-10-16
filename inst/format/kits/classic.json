@@ -290,49 +290,49 @@
     },
     "neutral": {
       "op": "brow_path",
-      "d": "M-14 6 Q0 1 14 6",
+      "d": "M14 6 Q0 1 -14 6",
       "width": 3.5,
       "stroke": "feature",
       "y": -25
     },
     "raised": {
       "op": "brow_path",
-      "d": "M-15 5 Q0 -6 15 5",
+      "d": "M15 5 Q0 -6 -15 5",
       "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "determined": {
       "op": "brow_path",
-      "d": "M-16 10 L18 2",
+      "d": "M18 2 L-16 10",
       "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "angry": {
       "op": "brow_path",
-      "d": "M-16 10 L18 2",
+      "d": "M18 2 L-16 10",
       "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "frown": {
       "op": "brow_path",
-      "d": "M-16 10 L18 2",
+      "d": "M18 2 L-16 10",
       "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "worried": {
       "op": "brow_path",
-      "d": "M-16 2 L18 10",
+      "d": "M18 10 L-16 2",
       "width": 5,
       "stroke": "feature",
       "y": -25
     },
     "sad": {
       "op": "brow_path",
-      "d": "M-16 2 L18 10",
+      "d": "M18 10 L-16 2",
       "width": 5,
       "stroke": "feature",
       "y": -25
@@ -470,7 +470,7 @@
           "stroke": "feature",
           "width": 3.5,
           "cap": "round",
-          "join": "round",
+          "join": "miter",
           "fill": "feature"
         },
         {
@@ -511,7 +511,9 @@
           "d": "M0 -11 C8 -4 9 6 0 10 C-9 6 -8 -4 0 -11 Z",
           "fill": "sweat",
           "stroke": "feature",
-          "width": 1.5
+          "width": 1.5,
+          "cap": "round",
+          "join": "miter"
         },
         {
           "shape": "circle",

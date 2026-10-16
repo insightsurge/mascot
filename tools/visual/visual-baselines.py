@@ -152,6 +152,12 @@ def capture(output, source, lock=None, provisional=False, defect=False, adapter=
         files = dict(FILES)
         if adapter:
             files.update({name: 'inst/www/' + name for name in ('mascot-parts.js', 'mascot-geometry.js', 'mascot-tessa-adapter.js')})
+        has_faces = (ROOT / 'inst/www/mascot-faces.js').is_file() if source == 'working-tree' else subprocess.run(
+            ['git', '-C', str(ROOT), 'cat-file', '-e', f'{source_sha}:inst/www/mascot-faces.js'],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        if adapter and has_faces:
+            files.update({'mascot-faces.js': 'inst/www/mascot-faces.js',
+                          'classic.json': 'inst/format/kits/classic.json', 'screen.json': 'inst/format/kits/screen.json'})
         for name, file in files.items():
             data = (ROOT / file).read_bytes() if source == 'working-tree' else git('show', f'{source_sha}:{file}')
             hashes[file] = sha(data)

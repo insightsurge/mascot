@@ -19,6 +19,7 @@ local_engine_page <- function(env = parent.frame()) {
       "mascot-motion.js",
       "mascot-parts.js",
       "mascot-geometry.js",
+      "mascot-faces.js",
       "mascot-tessa-adapter.js"
     )
   )
@@ -34,6 +35,13 @@ local_engine_page <- function(env = parent.frame()) {
       "<script type=\"application/json\" data-mascot-character=\"blob\">",
       readLines(blob, encoding = "UTF-8"),
       "</script>",
+      unlist(lapply(c("classic", "screen"), function(id) {
+        c(
+          sprintf('<script type="application/json" data-mascot-kit="%s">', id),
+          readLines(system.file("format", "kits", paste0(id, ".json"), package = "mascot")),
+          "</script>"
+        )
+      })),
       sprintf("<script src=\"file://%s\"></script>", normalizePath(scripts, winslash = "/")),
       "</body></html>"
     ),

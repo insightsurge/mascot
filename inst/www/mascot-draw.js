@@ -695,6 +695,12 @@
     const g = ctx;
     const c = colours || ch.colours;
     const sc = p.scale;
+    // Internal opt-in only; the public host does not load these modules.
+    if (ns.internal?.useCharacterAdapter === true) {
+      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
+      ns.tessaAdapter.draw(g, ch, p, c, x, baseY);
+      return;
+    }
     if (!styles.has(ch))
       styles.set(ch, {
         style: faceStyle(ch.face.style),
@@ -708,19 +714,6 @@
       lashes: ch.face.lashes,
       style: styles.get(ch).style,
     };
-
-    // Internal opt-in only; no public argument or live host enables this path.
-    if (ns.internal?.useCharacterAdapter === true) {
-      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
-      ns.tessaAdapter.draw(g, ch, p, c, x, baseY, {
-        face: (context) => drawFace(context, ch, p, face, true),
-        effects: (context) => {
-          if (p.sparkle && Object.hasOwn(ch.anchors || {}, 'sparkle')) drawSparkle(context, c, ch.anchors.sparkle, p);
-          if (Object.hasOwn(ch.anchors || {}, 'sweat')) drawSweat(context, c, ch.anchors.sweat, p);
-        },
-      });
-      return;
-    }
 
     // ground shadow (not affected by squash, shrinks and fades with height)
     if (p.shadow && ch.shadow) {

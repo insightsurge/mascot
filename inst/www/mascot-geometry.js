@@ -237,9 +237,12 @@
       channels = [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
       channels.push(1);
     } else {
-      const match = /^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/.exec(colour);
-      if (!match) fail('invalid_colour', path, 'Use a hex or rgba colour.');
-      channels = match.slice(1).map(Number);
+      const match = /^(rgb|rgba)\(([^)]+)\)$/.exec(colour);
+      if (!match) fail('invalid_colour', path, 'Use a hex, rgb or rgba colour.');
+      channels = match[2].split(',').map(Number);
+      if (channels.length !== (match[1] === 'rgba' ? 4 : 3))
+        fail('invalid_colour', path, 'Complete the colour channels.');
+      if (channels.length === 3) channels.push(1);
     }
     channels.forEach((entry, index) => {
       finite(entry, path, 0, index === 3 ? 1 : 255);
@@ -357,5 +360,5 @@
     }
     return counts;
   };
-  ns.geometry = Object.freeze({ commands, compile, paint, draw });
+  ns.geometry = Object.freeze({ commands, compile, paint, alphaColour, draw });
 })();

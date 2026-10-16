@@ -7,9 +7,10 @@
   // new geometry, as for the legacy face-style cache. Weak keys release unused data.
   const scenes = new WeakMap();
   const shadows = new WeakMap();
+  const faces = new WeakMap();
 
-  // E1 bridge only: no saved-format claim, no live-host switch. E3/E4 still own
-  // generic faces/effects. Their current painters are mounted on part matrices.
+  // Provisional body bridge: no saved-format claim or live-host switch. Faces
+  // and effects use embedded kits; complete migration and host joins are later.
   function build(character, tucked, selected) {
     const bindings = [];
     let roleIndex = 0;
@@ -189,14 +190,53 @@
     return { compiled, state, colours: palette };
   }
 
-  function draw(ctx, character, pose, colours, x, baseY, painters) {
+  function faceDefinition(character) {
+    if (!ns.faces) throw new Error('mascot: the Tessa adapter needs the face-kit module');
+    if (!faces.has(character)) {
+      const old = character.face;
+      faces.set(
+        character,
+        ns.faces.compile({
+          face: old
+            ? {
+                part: 'torso',
+                kit: 'classic',
+                kit_definition: ns.faces.readKit('classic'),
+                eyes: { ...old.eyes, lashes: old.lashes },
+                mouth: old.mouth,
+                blush: old.blush ? { ...old.blush, strong_alpha: old.blush.strongAlpha } : undefined,
+                caps: {
+                  left: old.outline?.leftCap ?? 'round',
+                  right: old.outline?.rightCap ?? 'round',
+                  join: old.outline?.join ?? 'miter',
+                },
+                colours: { eye_white: 'eyeWhite', blush_strong: 'blushStrong', sparkle_outline: 'sparkleOutline' },
+              }
+            : null,
+          anchors: Object.fromEntries(Object.keys(character.anchors).map((id) => [id, { part: 'torso' }])),
+          effects: Object.fromEntries(
+            ['sweat', 'sparkle']
+              .filter((id) => Object.hasOwn(character.anchors, id))
+              .map((id) => [id, { anchor: id, layer: 3 }]),
+          ),
+        }),
+      );
+    }
+    return faces.get(character);
+  }
+
+  function draw(ctx, character, pose, colours, x, baseY) {
     // Build before painting: missing modules or unsupported characters leave the
     // caller's canvas state/pixels unchanged rather than half drawing a frame.
     const frame = scene(character, pose, colours, x, baseY);
+    const face = faceDefinition(character);
     const counts = { painted_items: 0, paint_passes: 0 };
+    const add = (cost) => {
+      for (const key of Object.keys(cost)) counts[key] = (counts[key] ?? 0) + cost[key];
+    };
     const paint = (compiled, state, palette) => {
       const cost = ns.geometry.draw(ctx, compiled, state, palette);
-      for (const key of Object.keys(cost)) counts[key] = (counts[key] ?? 0) + cost[key];
+      add(cost);
     };
     if (pose.shadow && character.shadow && pose.scale !== 0) {
       const shade = character.shadow;
@@ -226,19 +266,35 @@
         { ...frame.state, layers: frame.state.layers.filter((id) => test(frame.state.parts[id].layer)) },
         frame.colours,
       );
-    const mounted = (matrix, painter) => {
-      ctx.save();
-      try {
-        ctx.transform(...matrix);
-        painter(ctx);
-      } finally {
-        ctx.restore();
-      }
-    };
     layer((value) => value < 2);
-    if (frame.state.anchors.face.available) mounted(frame.state.anchors.face.matrix, painters.face);
+    if (frame.state.anchors.face.available) {
+      const eyes = pose.eyes === 'blink' ? 'closed' : pose.eyes === 'wink' ? ['open', 'happy'] : pose.eyes;
+      const controls = {
+        eyes,
+        mouth: pose.mouth,
+        brows: pose.brows ?? (pose.eyes === 'worried' ? 'worried' : pose.eyes === 'focused' ? 'frown' : 'none'),
+        look_x: Math.max(-1, Math.min(1, pose.look)),
+        look_y: Math.max(-1, Math.min(1, pose.lookY)),
+        blink: pose.blink,
+        blush: pose.blush === 'strong' ? 'strong' : pose.blush ? 1 : 0,
+      };
+      add(ns.faces.draw(ctx, face, frame.state, controls, colours, { matrix: frame.state.anchors.face.matrix }));
+    }
     layer((value) => value === 3);
-    if (frame.state.parts.torso.available) mounted(frame.state.parts.torso.matrix, painters.effects);
+    if (frame.state.parts.torso.available)
+      add(
+        ns.faces.effects(
+          ctx,
+          face,
+          frame.state,
+          {
+            ...(Object.hasOwn(character.anchors, 'sweat') ? { sweat: pose.sweat === true ? 0.5 : pose.sweat } : {}),
+            ...(Object.hasOwn(character.anchors, 'sparkle') ? { sparkle: pose.sparkle } : {}),
+          },
+          colours,
+          { frame: pose.t * 30, activity_deadline: 150, reduced: ns.internal?.reducedMotion === true },
+        ),
+      );
     layer((value) => value === 4);
     return { counts, state: frame.state };
   }

@@ -27,7 +27,14 @@ capture_visuals <- function(config_path) {
     c(
       "mascot.js",
       "mascot-draw.js",
-      if (isTRUE(config$adapter)) c("mascot-parts.js", "mascot-geometry.js", "mascot-tessa-adapter.js")
+      if (isTRUE(config$adapter)) {
+        c(
+          "mascot-parts.js",
+          "mascot-geometry.js",
+          if (file.exists(file.path(config$source, "mascot-faces.js"))) "mascot-faces.js",
+          "mascot-tessa-adapter.js"
+        )
+      }
     )
   )
   writeLines(
@@ -37,6 +44,15 @@ capture_visuals <- function(config_path) {
       '<script type="application/json" data-mascot-character="tessa">',
       readLines(file.path(config$source, "tessa.json"), warn = FALSE),
       "</script>",
+      if (file.exists(file.path(config$source, "classic.json"))) {
+        unlist(lapply(c("classic", "screen"), function(id) {
+          c(
+            sprintf('<script type="application/json" data-mascot-kit="%s">', id),
+            readLines(file.path(config$source, paste0(id, ".json"))),
+            "</script>"
+          )
+        }))
+      },
       sprintf('<script src="file://%s"></script>', normalizePath(scripts, winslash = "/")),
       "</body></html>"
     ),

@@ -14,7 +14,7 @@ describe("provisional Tessa adapter", {
     ))
     expect_equal(result$before, 0)
     expect_equal(result$calls, 4)
-    # Shadow, feet/body, bow and two arms/hands. Face/effects use shared painters.
+    # Shadow, feet/body, bow and arms/hands; the generic face paints separately.
     expect_equal(result$count$painted_items, 15)
     expect_equal(result$count$paint_passes, 25)
     expect_equal(result$pixel[[4]], 255)
@@ -94,11 +94,12 @@ describe("E1 Tessa matrices and attachment order", {
         const c=document.createElement('canvas');c.width=400;c.height=400;const g=c.getContext('2d');
         g.translate(7,9);g.scale(0.8,1.1);g.globalAlpha=0.65;g.lineWidth=7;g.lineCap='square';
         const before=[...['a','b','c','d','e','f'].map(k=>g.getTransform()[k]),g.globalAlpha,g.lineWidth,g.lineCap];
-        let face=0,effects=0;
-        const result=mascot.tessaAdapter.draw(g,ch,p,ch.colours,150,270,{face:()=>face++,effects:()=>effects++});
+        let face=0,effects=0;const faces=mascot.faces;
+        mascot.faces={...faces,draw:(...args)=>{face++;return faces.draw(...args);},effects:(...args)=>{effects++;return faces.effects(...args);}};
+        const result=mascot.tessaAdapter.draw(g,ch,p,ch.colours,150,270);
         const after=[...['a','b','c','d','e','f'].map(k=>g.getTransform()[k]),g.globalAlpha,g.lineWidth,g.lineCap];
         const layers=result.state.layers.map(id=>result.state.parts[id].layer);
-        const zero=mascot.tessaAdapter.draw(g,ch,{...p,scale:0,shadow:true},ch.colours,150,270,{face:()=>face++,effects:()=>effects++});
+        const zero=mascot.tessaAdapter.draw(g,ch,{...p,scale:0,shadow:true},ch.colours,150,270);mascot.faces=faces;
         return {before,after,layers,face,effects,zero:zero.counts.painted_items};
       })()
       )"
@@ -171,7 +172,7 @@ describe("adapter accessory placement and alpha", {
 })
 
 describe("adapter face mounting", {
-  it("applies an authored face anchor once while preserving the shared face painter", {
+  it("applies an authored face anchor once while mounting the generic face kit", {
     skip_without_chrome()
     js <- local_engine_page()
     result <- js(
@@ -231,8 +232,8 @@ describe("TC-03 compiled adapter scenes", {
       })()
     )"
     )
-    expect_equal(result$first, 2)
-    expect_equal(result$second, 2)
+    expect_equal(result$first, 4)
+    expect_equal(result$second, 4)
     expect_true(result$same)
     expect_true(result$back)
     expect_true(result$different)

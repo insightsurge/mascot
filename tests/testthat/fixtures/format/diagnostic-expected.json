@@ -24,6 +24,66 @@
     "path": "$.requires[4]"
   },
   {
+    "id": "unsupported_extends",
+    "file": "invalid/unsupported_extends.json",
+    "code": "capability",
+    "path": "$.extends"
+  },
+  {
+    "id": "unsupported_connector",
+    "file": "invalid/unsupported_connector.json",
+    "code": "capability",
+    "path": "$.connector"
+  },
+  {
+    "id": "unsupported_ring_pulse",
+    "file": "invalid/unsupported_ring_pulse.json",
+    "code": "capability",
+    "path": "$.requires[4]"
+  },
+  {
+    "id": "unsupported_follow",
+    "file": "invalid/unsupported_follow.json",
+    "code": "capability",
+    "path": "$.parts[0].follow"
+  },
+  {
+    "id": "unsupported_morph",
+    "file": "invalid/unsupported_morph.json",
+    "code": "capability",
+    "path": "$.requires[4]"
+  },
+  {
+    "id": "unsupported_blend",
+    "file": "invalid/unsupported_blend.json",
+    "code": "capability",
+    "path": "$.parts[0].items[0].blend"
+  },
+  {
+    "id": "unsupported_inputs",
+    "file": "invalid/unsupported_inputs.json",
+    "code": "capability",
+    "path": "$.inputs"
+  },
+  {
+    "id": "unsupported_fit",
+    "file": "invalid/unsupported_fit.json",
+    "code": "capability",
+    "path": "$.accessories.badge.fit"
+  },
+  {
+    "id": "unsupported_wardrobe",
+    "file": "invalid/unsupported_wardrobe.json",
+    "code": "capability",
+    "path": "$.wardrobe"
+  },
+  {
+    "id": "unsupported_vividness",
+    "file": "invalid/unsupported_vividness.json",
+    "code": "capability",
+    "path": "$.palettes.sea_glass.vividness"
+  },
+  {
     "id": "unknown_key",
     "file": "invalid/unknown_key.json",
     "code": "unknown_key",

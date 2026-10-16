@@ -329,3 +329,109 @@ describe("E5b detail bands and compile-time band policy", {
     expect_identical(result$bandOverBoth, "band")
   })
 })
+
+describe("reserved capabilities in compile()", {
+  it("rejects every reserved capability with code capability and its R path, as the R checker does", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    cases <- jsonlite::fromJSON(test_path("fixtures", "format", "diagnostic-expected.json"), simplifyVector = FALSE)
+    reserved <- Filter(function(case) identical(case$code, "capability"), cases)
+    expect_length(reserved, 11)
+    for (case in reserved) {
+      # The same fixture file as the R check; JSON is a JavaScript object literal, so it is passed as one.
+      text <- paste(readLines(test_path("fixtures", "format", case$file), warn = FALSE), collapse = "\n")
+      result <- js(paste0(
+        "(() => {try {mascot.parts.compile(",
+        text,
+        "); return null;} ",
+        "catch (e) {return {code: e.code, path: e.path, message: e.message};}})()"
+      ))
+      expect_identical(result$code, "capability", info = case$id)
+      expect_identical(result$path, case$path, info = case$id)
+      expect_match(result$message, "not supported by this version of mascot", fixed = TRUE, info = case$id)
+    }
+  })
+
+  it("does not reject a data-named key such as a colour role called follow", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    result <- js(paste0(
+      "(() => {try {mascot.parts.compile({format_version:1,ground:{centre_height:100},parts:[],",
+      "colours:{follow:'#78c8a0'}}); return null;} catch (e) {return {code: e.code};}})()"
+    ))
+    expect_null(result$code)
+  })
+})
+
+describe("reserved names in fixed and data positions in compile()", {
+  # Runs compile() on a JSON document and returns the thrown code and path, or NULL when it compiles.
+  compile_outcome <- function(js, json) {
+    js(paste0(
+      "(() => {try {mascot.parts.compile(",
+      json,
+      "); return null;} ",
+      "catch (e) {return {code: e.code, path: e.path};}})()"
+    ))
+  }
+
+  it("accepts reserved names used as data keys, as R does", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    json <- as.character(jsonlite::toJSON(format_data_named_recipe(), auto_unbox = TRUE, null = "null", digits = NA))
+    expect_null(compile_outcome(js, json))
+  })
+
+  it("rejects a reserved key in a palette preset, not in a palette id called colours", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    json <- paste0(
+      "{format_version:1,ground:{centre_height:100},parts:[],",
+      "palettes:{colours:{description:'A palette called colours.',light:{body:'#000000'},vividness:1}}}"
+    )
+    result <- compile_outcome(js, json)
+    expect_identical(result$code, "capability")
+    expect_identical(result$path, "$.palettes.colours.vividness")
+    expect_match(
+      js(paste0("(() => {try {mascot.parts.compile(", json, ");} catch (e) {return e.message;}})()")),
+      "not supported by this version of mascot",
+      fixed = TRUE
+    )
+  })
+
+  it("reports the earlier structural error when a reserved key sits in a later part, as R does", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    json <- paste0(
+      "{format_version:1,ground:{centre_height:100},parts:[{id:'Bad Id',items:[]},",
+      "{id:'panel',items:[],follow:{target:'badge'}}]}"
+    )
+    result <- compile_outcome(js, json)
+    expect_identical(result$code, "input_type")
+    expect_identical(result$path, "$.parts[0].id")
+  })
+
+  it("reports a top-level reserved key before a later structural error, where R reports the structural error", {
+    # Documented difference: R walks keys in document order, so a structural error in parts[0] comes first when
+    # `extends` is written last (as in the R test); compile() checks the top-level object before its parts.
+    skip_without_chrome()
+    js <- local_character_engine()
+    json <- paste0(
+      "{format_version:1,ground:{centre_height:100},parts:[{id:'Bad Id',items:[]}],extends:'tessa'}"
+    )
+    result <- compile_outcome(js, json)
+    expect_identical(result$code, "capability")
+    expect_identical(result$path, "$.extends")
+  })
+
+  it("rejects a reserved key in a family default mood, as R does", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    json <- paste0(
+      "{format_version:1,ground:{centre_height:100},parts:[],",
+      "family_definition:{defaults:{moods:{happy:{description:'Done.',status:'Done',channels:{},follow:1}}}}}"
+    )
+    result <- compile_outcome(js, json)
+    expect_identical(result$code, "capability")
+    expect_identical(result$path, "$.family_definition.defaults.moods.happy.follow")
+  })
+})

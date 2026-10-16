@@ -9,6 +9,34 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-16 — Reserved capabilities rejected in R and the browser engine (#306)
+
+**In brief:** Every capability and field the format reserves for later (`extends`, `connector`, `ring_pulse`, `follow`,
+`particles`, `morph`, `blend`, `inputs`, `fit`, `wardrobe` and `vividness`) is rejected with the stable code `capability`
+and the message "not supported by this version of mascot". Nothing is ignored or partly run. No reserved feature runs,
+and no shipped character uses one.
+
+**Technical:**
+
+* `inst/www/mascot-parts.js`: `compile()` first rejects a name in `requires` that is not one of the eight supported
+  capabilities, at `$.requires[n]` (R does the same). A reserved name is then rejected only as a key of a fixed-field
+  object, at its own path (for example `$.parts[0].follow`, `$.parts[0].items[0].blend`, `$.accessories.badge.fit` or
+  `$.palettes.sea_glass.vividness`). Position decides, not the name of the parent key. The fixed objects follow
+  `inst/format/character-v1.json`: an `object` with `fields` is closed, as R treats it. Map keys (ids, colour and
+  recolour roles, style ids, track targets) and the free numeric tree `face.tune` are never checked, so a colour role
+  called `follow` and a kit eye style called `follow` compile. Before this change these keys were ignored.
+* Order: R reports the first problem in document order. The engine checks the top-level object first, then each
+  object as it reads it (`lod`, parts, anchors, face, moods), then the objects it does not read (palettes, paints,
+  gestures, unworn accessories and the rest) after its structural checks. So the two can differ when a reserved key
+  comes before a structural error in the document: the engine reports a top-level reserved key first, where R reports
+  the structural error if it comes first. Both results are pinned in the tests (`test-character-check.R` and
+  `test-engine-parts.R`).
+* `R/character-format.R`: a reserved name in `requires` now gives the version message; the R checker already rejected
+  each reserved field with code `capability` at its path.
+* Fixtures: ten new invalid recipes in `tests/testthat/fixtures/format/invalid/`, one per reserved name still missing
+  (`particles` keeps its existing fixture). Each differs from its base recipe only by the reserved entry and is listed in
+  `diagnostic-expected.json`.
+
 ## 2026-10-16 — Internal detail bands, band policy and atomic band changes (#303)
 
 **In brief:** The internal Tessa adapter can draw in three detail bands (full, small and micro), chosen from the

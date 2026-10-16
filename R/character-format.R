@@ -447,11 +447,16 @@ character_format_parse <- function(x, from = "list") {
   )
   for (index in seq_along(required)) {
     if (!required[[index]] %in% unlist(schema$capabilities, use.names = FALSE)) {
+      reserved <- required[[index]] %in% unlist(schema$reserved_unsupported, use.names = FALSE)
       character_format_abort(
         "capability",
         paste0("$.requires[", index - 1L, "]"),
         required[[index]],
-        "Use supported engine capabilities."
+        if (reserved) {
+          "This capability is not supported by this version of mascot."
+        } else {
+          "Use supported engine capabilities."
+        }
       )
     }
   }

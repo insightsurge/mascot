@@ -14,3 +14,18 @@ format_problem <- function(code, path, expression) {
   expect_type(error$fix, "character")
   invisible(error)
 }
+
+# A valid recipe in which reserved names appear only as data: a colour role, a recolour role, a kit eye style id and
+# a numeric tree key. Every checker must accept it.
+format_data_named_recipe <- function() {
+  data <- format_recipe("anchor_probe")
+  data$colours$follow <- "#ffffff"
+  data$moods$happy$recolour <- list(follow = "body")
+  kit <- jsonlite::fromJSON(
+    system.file("format", "kits", "classic.json", package = "mascot", mustWork = TRUE),
+    simplifyVector = FALSE
+  )
+  kit$eye_styles$follow <- kit$eye_styles[[1]]
+  data$face <- list(part = "panel", at = list(0, 0), kit = "classic", kit_definition = kit, tune = list(fit = 1))
+  data
+}

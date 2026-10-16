@@ -32,9 +32,9 @@ describe("character_format_check()", {
     expect_identical(attr(reread, "mascot_manifest")$work, attr(explicit, "mascot_manifest")$work)
   })
 
-  it("reproduces the selected first diagnostic on all fourteen invalid recipes", {
+  it("reproduces the selected first diagnostic on all twenty-four invalid recipes", {
     cases <- jsonlite::fromJSON(test_path("fixtures", "format", "diagnostic-expected.json"), simplifyVector = FALSE)
-    expect_length(cases, 14)
+    expect_length(cases, 24)
     for (case in cases) {
       format_problem(
         case$code,
@@ -42,6 +42,28 @@ describe("character_format_check()", {
         character_format_check(test_path("fixtures", "format", case$file), from = "file")
       )
     }
+  })
+
+  it("rejects every reserved capability with code capability, its path and the version message", {
+    cases <- jsonlite::fromJSON(test_path("fixtures", "format", "diagnostic-expected.json"), simplifyVector = FALSE)
+    reserved <- Filter(function(case) identical(case$code, "capability"), cases)
+    # One fixture per reserved name (particles keeps its original fixture); a new reserved name needs one too.
+    fixture_names <- sub("^unsupported_", "", vapply(reserved, function(case) case$id, character(1)))
+    expect_setequal(fixture_names, unlist(character_format_schema()$reserved_unsupported))
+    for (case in reserved) {
+      error <- format_problem(
+        case$code,
+        case$path,
+        character_format_check(test_path("fixtures", "format", case$file), from = "file")
+      )
+      expect_match(conditionMessage(error), "not supported by this version of mascot", fixed = TRUE, info = case$id)
+    }
+  })
+
+  it("keeps data-named keys such as a colour role called follow, which are not fields", {
+    data <- format_recipe()
+    data$colours$follow <- "#78c8a0"
+    expect_identical(character_format_parse(data)$colours$follow, "#78c8a0")
   })
 
   it("verifies that invalid format fixtures isolate defects without accidental drift", {
@@ -193,5 +215,49 @@ describe("checked character provenance and first diagnostics", {
     data <- format_recipe()
     data$contrast <- list(list(fg = TRUE, bg = "body", min = 3))
     format_problem("input_type", "$.contrast[0].fg", character_format_check(data))
+  })
+})
+
+describe("reserved names in fixed and data positions", {
+  it("accepts reserved names used as data keys: a colour, a recolour role, a kit style id and a numeric tree key", {
+    expect_no_error(character_format_parse(format_data_named_recipe()))
+  })
+
+  it("rejects a reserved key in a palette preset, not a palette id called colours", {
+    data <- format_recipe()
+    data$palettes <- list(
+      colours = list(description = "A palette called colours.", light = list(body = "#000000"), vividness = 1)
+    )
+    format_problem("capability", "$.palettes.colours.vividness", character_format_parse(data))
+  })
+
+  it("reports the earlier structural error when a reserved key sits in a later part", {
+    data <- format_recipe()
+    bad <- list(id = "Bad Id", at = list(0, 0), layer = 1, items = list())
+    data$parts <- c(list(bad), data$parts)
+    data$parts[[2]]$follow <- list(target = "badge")
+    format_problem("input_type", "$.parts[0].id", character_format_parse(data))
+  })
+
+  it("reports the structural error first when a top-level reserved key is written after it (JS differs here)", {
+    # Documented difference: R walks every key in document order. compile() checks the top-level object first, so
+    # the browser engine reports `$.extends` instead (test-engine-parts.R).
+    data <- format_recipe()
+    bad <- list(id = "Bad Id", at = list(0, 0), layer = 1, items = list())
+    data$parts <- c(list(bad), data$parts)
+    data$extends <- "tessa"
+    format_problem("input_type", "$.parts[0].id", character_format_parse(data))
+  })
+
+  it("rejects a reserved key in a family default mood, where the family defaults are fixed", {
+    data <- format_recipe()
+    data$family_definition$defaults$moods <- list(
+      happy = list(description = "Done.", status = "Done", channels = list(), follow = 1)
+    )
+    format_problem(
+      "capability",
+      "$.family_definition.defaults.moods.happy.follow",
+      character_format_parse(data)
+    )
   })
 })

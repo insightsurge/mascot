@@ -134,6 +134,7 @@
     }
 
     if (source.face) {
+      checkFace(source.face, '$.face');
       add('face.look_x', 'number', 0, -1, 1);
       add('face.look_y', 'number', 0, -1, 1);
       add('face.blink', 'number', 0, 0, 1);
@@ -360,15 +361,207 @@
     });
   };
 
+  // Reserved capabilities (contract 3.18) are rejected with code capability, never ignored or partly run.
+  // Position decides, not the name of the parent key. A reserved name counts only as a key of a fixed-field object.
+  // The fixed objects come from inst/format/character-v1.json: an `object` type with `fields` is fixed (R closes it
+  // too). A `map` takes data-named keys (ids, colour and recolour roles, track targets, style ids), so only its values
+  // are checked and its keys never are. `face.tune` is a `numeric_tree` (free) and is never checked. compile() checks
+  // each object where it reads it (the top level, lod, parts, anchors, moods, face); checkRest() checks the rest once
+  // the structural checks have passed.
+  const supportedCapabilities = ['parts', 'paints', 'clip', 'outline', 'glow', 'face_kit', 'tracks', 'lod'];
+  const reservedCapabilities = [
+    'extends',
+    'connector',
+    'ring_pulse',
+    'follow',
+    'particles',
+    'morph',
+    'blend',
+    'inputs',
+    'fit',
+    'wardrobe',
+    'vividness',
+  ];
+  const unsupported = (path, name) => {
+    const reserved = reservedCapabilities.includes(name);
+    problem(
+      'capability',
+      path,
+      reserved ? `"${name}" is not supported by this version of mascot.` : 'Use supported engine capabilities.',
+    );
+  };
+  // A fixed-field object: reject each reserved key it has.
+  const fixed = (object, path) => {
+    if (!plainObject(object)) return;
+    for (const key of Object.keys(object)) {
+      if (reservedCapabilities.includes(key)) unsupported(`${path}.${key}`, key);
+    }
+  };
+  // A list of fixed objects.
+  const eachOf = (list, path, check) => {
+    if (!Array.isArray(list)) return;
+    list.forEach((entry, index) => {
+      check(entry, `${path}[${index}]`);
+    });
+  };
+  // A map: its keys are data and are not checked; each value is checked.
+  const valuesOf = (map, path, check) => {
+    if (plainObject(map)) for (const [id, entry] of Object.entries(map)) check(entry, `${path}.${id}`);
+  };
+  // Part (parts[], and accessory parts): its own keys, its switch and glow, and its base and variant item lists.
+  const checkPart = (part, path) => {
+    fixed(part, path);
+    if (!plainObject(part)) return;
+    fixed(part.switch, `${path}.switch`);
+    fixed(part.glow, `${path}.glow`);
+    eachOf(part.items, `${path}.items`, fixed);
+    valuesOf(part.variants, `${path}.variants`, (list, at) => eachOf(list, at, fixed));
+  };
+  // Anchor (anchors map value) and its variants (anchor_variant values).
+  const checkAnchor = (anchor, path) => {
+    fixed(anchor, path);
+    if (plainObject(anchor)) valuesOf(anchor.variants, `${path}.variants`, fixed);
+  };
+  // Eye, brow or mouth style. An eye style's pupil (with its glints), lashes, outline and lid edge are fixed objects,
+  // and a mouth style's items are shapes.
+  const checkStyle = (style, path) => {
+    fixed(style, path);
+    if (!plainObject(style)) return;
+    fixed(style.pupil, `${path}.pupil`);
+    eachOf(style.pupil?.glints, `${path}.pupil.glints`, fixed);
+    fixed(style.lashes, `${path}.lashes`);
+    fixed(style.lid_edge, `${path}.lid_edge`);
+    fixed(style.outline, `${path}.outline`);
+    eachOf(style.items, `${path}.items`, fixed);
+  };
+  const checkKitEffect = (effect, path) => {
+    fixed(effect, path);
+    if (!plainObject(effect)) return;
+    eachOf(effect.items, `${path}.items`, fixed);
+    eachOf(effect.reduced_items, `${path}.reduced_items`, fixed);
+    valuesOf(effect.tracks, `${path}.tracks`, fixed);
+  };
+  // Face (face) and its kit definition (kit). The style maps and the effect map are maps; their values are checked.
+  const checkFace = (face, path) => {
+    fixed(face, path);
+    if (!plainObject(face)) return;
+    for (const key of ['eyes', 'mouth', 'blush', 'caps']) fixed(face[key], `${path}.${key}`);
+    fixed(face.styles, `${path}.styles`);
+    if (plainObject(face.styles)) {
+      for (const kind of ['eyes', 'brows', 'mouth']) valuesOf(face.styles[kind], `${path}.styles.${kind}`, checkStyle);
+    }
+    const kitPath = `${path}.kit_definition`;
+    const kit = face.kit_definition;
+    fixed(kit, kitPath);
+    if (!plainObject(kit)) return;
+    fixed(kit.glow, `${kitPath}.glow`);
+    fixed(kit.defaults, `${kitPath}.defaults`);
+    for (const kind of ['eye_styles', 'brow_styles', 'mouth_styles']) {
+      valuesOf(kit[kind], `${kitPath}.${kind}`, checkStyle);
+    }
+    valuesOf(kit.effects, `${kitPath}.effects`, checkKitEffect);
+  };
+  // Mood entry (moods map value), its face controls, its item overrides and its reduced variant (mood_reduced).
+  // Recolour and channels are maps and are not checked.
+  const checkMood = (mood, path) => {
+    fixed(mood, path);
+    if (!plainObject(mood)) return;
+    fixed(mood.face, `${path}.face`);
+    valuesOf(mood.items, `${path}.items`, fixed);
+    fixed(mood.reduced, `${path}.reduced`);
+    if (plainObject(mood.reduced)) {
+      fixed(mood.reduced.face, `${path}.reduced.face`);
+      valuesOf(mood.reduced.items, `${path}.reduced.items`, fixed);
+    }
+  };
+  // Band overrides (lod and its bands) and the band face flags are fixed objects.
+  const checkLod = (lod) => {
+    fixed(lod, '$.lod');
+    if (!plainObject(lod)) return;
+    for (const band of Object.keys(lod)) {
+      const path = `$.lod.${band}`;
+      fixed(lod[band], path);
+      if (!plainObject(lod[band])) continue;
+      fixed(lod[band].face, `${path}.face`);
+      fixed(lod[band].outline, `${path}.outline`);
+    }
+  };
+  // Gesture (gestures map value): its effect triggers and its track objects. A track is an array or an object.
+  const checkGesture = (gesture, path) => {
+    fixed(gesture, path);
+    if (!plainObject(gesture)) return;
+    eachOf(gesture.effects, `${path}.effects`, fixed);
+    valuesOf(gesture.tracks, `${path}.tracks`, fixed);
+  };
+  // Outline (outline) with its second outline and its band map (outline_band values).
+  const checkOutline = (outline, path) => {
+    fixed(outline, path);
+    if (!plainObject(outline)) return;
+    fixed(outline.second, `${path}.second`);
+    valuesOf(outline.lod, `${path}.lod`, fixed);
+  };
+  // Motion (motion) with its change and idle objects.
+  const checkMotion = (motion, path) => {
+    fixed(motion, path);
+    if (!plainObject(motion)) return;
+    fixed(motion.change, `${path}.change`);
+    fixed(motion.idle, `${path}.idle`);
+  };
+  // family_definition.defaults: a fixed object whose maps hold the same entries as the character.
+  const checkDefaults = (defaults, path) => {
+    fixed(defaults, path);
+    if (!plainObject(defaults)) return;
+    checkOutline(defaults.outline, `${path}.outline`);
+    checkFace(defaults.face, `${path}.face`);
+    valuesOf(defaults.moods, `${path}.moods`, checkMood);
+    valuesOf(defaults.gestures, `${path}.gestures`, checkGesture);
+    checkMotion(defaults.motion, `${path}.motion`);
+    fixed(defaults.brand, `${path}.brand`);
+    eachOf(defaults.contrast, `${path}.contrast`, fixed);
+    valuesOf(defaults.follows, `${path}.follows`, fixed);
+    valuesOf(defaults.palettes, `${path}.palettes`, fixed);
+  };
+  // Fixed objects that compile() does not read itself, from inst/format/character-v1.json. Checked after the
+  // structural checks have passed. Poses are maps of channel values and are not checked.
+  const checkRest = (source) => {
+    fixed(source.family_definition, '$.family_definition');
+    checkDefaults(source.family_definition?.defaults, '$.family_definition.defaults');
+    fixed(source.brand, '$.brand');
+    fixed(source.modes, '$.modes');
+    fixed(source.modes?.dark, '$.modes.dark');
+    fixed(source.ground, '$.ground');
+    fixed(source.ground?.shadow, '$.ground.shadow');
+    checkOutline(source.outline, '$.outline');
+    checkMotion(source.motion, '$.motion');
+    eachOf(source.contrast, '$.contrast', fixed);
+    valuesOf(source.follows, '$.follows', fixed);
+    valuesOf(source.paints, '$.paints', fixed);
+    valuesOf(source.palettes, '$.palettes', fixed);
+    valuesOf(source.effects, '$.effects', fixed);
+    valuesOf(source.gestures, '$.gestures', checkGesture);
+    valuesOf(source.accessories, '$.accessories', (accessory, path) => {
+      fixed(accessory, path);
+      if (plainObject(accessory)) eachOf(accessory.parts, `${path}.parts`, checkPart);
+    });
+  };
+
   const compile = (character) => {
     if (!character || !Array.isArray(character.parts)) problem('input_type', '$.parts', 'Supply a part array.');
     if (character.format_version !== 1) problem('version', '$.format_version', 'Use character format 1.');
+    if (Array.isArray(character.requires)) {
+      character.requires.forEach((name, index) => {
+        if (!supportedCapabilities.includes(name)) unsupported(`$.requires[${index}]`, name);
+      });
+    }
+    fixed(character, '$');
+    checkLod(character.lod);
     // Never retain mutable caller-owned templates. This stage is not the R checker.
     const source = JSON.parse(JSON.stringify(character));
     checkBands(source);
     const parts = [];
     const byId = new Map();
     const insert = (part, path, attachment = null) => {
+      checkPart(part, path);
       if (
         typeof part.id !== 'string' ||
         !/^[a-z][a-z0-9_]*$/.test(part.id) ||
@@ -414,6 +607,7 @@
       });
     }
     for (const [id, anchor] of Object.entries(source.anchors ?? {})) {
+      checkAnchor(anchor, `$.anchors.${id}`);
       if (!byId.has(anchor.part)) problem('missing_reference', `$.anchors.${id}.part`, 'Name a declared part.');
     }
     const ordered = [];
@@ -471,6 +665,7 @@
 
       for (const [id, mood] of Object.entries(source.moods)) {
         const path = `$.moods.${id}`;
+        checkMood(mood, path);
         if (!mood.description || typeof mood.description !== 'string') {
           problem('input_type', `${path}.description`, 'Supply nonempty mood metadata after defaults.');
         }
@@ -624,6 +819,7 @@
       }
     }
 
+    checkRest(source);
     return freeze({
       source,
       parts,

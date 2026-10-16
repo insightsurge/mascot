@@ -800,24 +800,29 @@
       total.glow_emitters += largest.glow_emitters;
       total.blur_design_units = Math.max(total.blur_design_units, largest.blur_design_units);
     }
+    // Frozen before it is cached: callers share one object per compiled character and band.
+    Object.freeze(total);
     perBand.set(band, total);
     return total;
   };
   // Refuses an over-budget band before anything is painted; the message names the metric and the limit.
-  const checkBudget = (compiled, band) => {
+  // Compares a work bound with the band's caps; throws budget at $ naming the metric. Used for any bound, per scene or
+  // per character.
+  const checkWork = (work, band) => {
     if (!Object.hasOwn(bandCaps, band)) fail('input_type', '$.band', "Use 'full', 'small' or 'micro'.");
-    const work = bandBound(compiled, band);
     for (const [metric, limit] of Object.entries(bandCaps[band])) {
       if (work[metric] > limit)
         fail('budget', '$', `the ${band} band paints too much (${metric} ${work[metric]} > ${limit}); reduce it`);
     }
     return work;
   };
+  const checkBudget = (compiled, band) => checkWork(bandBound(compiled, band), band);
 
   ns.geometry = Object.freeze({
     bandCaps,
     bandBound,
     checkBudget,
+    checkWork,
     commands,
     compile,
     paint,

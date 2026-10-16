@@ -123,8 +123,19 @@
   const has = (object, key) => Object.hasOwn(object, key);
   const label = (mood) => mood.charAt(0).toUpperCase() + mood.slice(1);
   const warn = (error) => console.warn(`mascot: ${String(error.message || error).replace(/^mascot: /, '')}`);
-  // E5b, internal: the untransformed CSS width of a canvas (a transform on the canvas does not change it).
-  const cssWidth = (canvas) => parseFloat(getComputedStyle(canvas).width) || canvas.clientWidth;
+  // E5b, internal: the untransformed CSS width of a canvas in px (a transform does not change it). 0 means not laid out
+  // (display: none, a hidden tab): such a width decides no band.
+  const cssWidth = (canvas) => {
+    const value = getComputedStyle(canvas).width;
+    return value.endsWith('px') ? parseFloat(value) : 0;
+  };
+  // E5b, internal: one diagnostic per band and canvas, through the host's warn() route.
+  function reportBand(record, band, error) {
+    record.reportedBands ??= new Set();
+    if (record.reportedBands.has(band)) return;
+    record.reportedBands.add(band);
+    warn(error);
+  }
 
   function show(record, snapshot) {
     if (updating.has(record)) return;
@@ -1197,20 +1208,18 @@
     // E5b, internal only: the band follows the untransformed CSS width (not the transformed rectangle). setBand() is
     // atomic: a band over budget throws before anything changes, so the old band stays, measuring goes on, and the
     // refusal is reported once per band. It never throws out of measure(). The public default never gets here.
+    // setBand() reports whether it drew: a band that is already set draws nothing, so the redraw below still runs.
+    // A width of 0 decides nothing, so the band waits for the first real width.
     let drawn = false;
-    if (ns.internal?.useCharacterAdapter === true && ns.parts && record.controller) {
-      const band = ns.parts.bandFor(cssWidth(record.canvas));
+    const width = cssWidth(record.canvas);
+    if (ns.internal?.useCharacterAdapter === true && ns.parts && record.controller && width > 0) {
+      const band = ns.parts.bandFor(width);
       if (band !== record.band) {
         try {
-          record.controller.setBand(band);
+          drawn = record.controller.setBand(band);
           record.band = band;
-          drawn = true;
         } catch (error) {
-          record.reportedBands ??= new Set();
-          if (!record.reportedBands.has(band)) {
-            record.reportedBands.add(band);
-            warn(error);
-          }
+          reportBand(record, band, error);
         }
       }
     }
@@ -1982,8 +1991,23 @@
       layout(record);
       const resolved = resolveTheme(record.theme, description, record.anchor || el, true);
       commitPalette(record, description, resolved);
-      // E5b, internal only: mount with the band the canvas measures, so a small mascot never draws a full-band frame.
-      const band = ns.internal?.useCharacterAdapter === true && ns.parts ? ns.parts.bandFor(cssWidth(canvas)) : null;
+      // E5b, internal only: mount at the band the canvas measures, so a small mascot never draws a full-band frame.
+      // A band over budget mounts at full with one warning. A width not laid out yet (0) mounts at full and leaves
+      // record.band undefined, so the first real measure decides.
+      let band = null;
+      if (ns.internal?.useCharacterAdapter === true && ns.parts) {
+        const width = cssWidth(canvas);
+        band = 'full';
+        if (width > 0) {
+          const measured = ns.parts.bandFor(width);
+          try {
+            ns.checkCharacter(description, measured);
+            band = measured;
+          } catch (error) {
+            reportBand(record, measured, error);
+          }
+        }
+      }
       record.controller = ns.mount(canvas, description, {
         x: 150,
         baseY: 270,
@@ -1993,7 +2017,7 @@
         ...(band ? { band } : {}),
         onChange: (snapshot) => show(record, snapshot),
       });
-      if (band) record.band = band;
+      if (band && cssWidth(canvas) > 0) record.band = band;
       listenBubble(record);
       listenDrag(record);
       replaceClick(record, record.click);

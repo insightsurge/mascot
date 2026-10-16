@@ -3886,13 +3886,16 @@ describe("E5b host band follows the untransformed CSS width", {
     transitions <- paste0(
       "(() => bandLog.filter((band, index) => index === 0 || band !== bandLog[index - 1]))()"
     )
+    # The first entry is the redraw of the 1000 px canvas (full) after the switch-on resize; it is awaited first so the
+    # later steps do not depend on when the resize observer fires.
+    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), "full")
     js("parentBox.style.width = '500px'")
-    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), "small")
+    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), c("full", "small"))
     js("parentBox.style.width = '200px'")
-    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), c("small", "micro"))
+    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), c("full", "small", "micro"))
     # A scaled canvas measures smaller on screen; the band still follows the untransformed 200 px (full).
     js("el.querySelector('canvas').style.transform = 'scale(0.5)'; parentBox.style.width = '1000px'")
-    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), c("small", "micro", "full"))
+    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), c("full", "small", "micro", "full"))
     js("delete mascot.internal")
   })
 })
@@ -4052,5 +4055,93 @@ describe("E5b host band atomicity, one draw and mount band", {
     expect_gte(after$entry$t, before$last$t)
     expect_identical(after$mood, "happy")
     js("delete mascot.internal")
+  })
+})
+
+# Planted Tessa with 100 small circles: over the small caps (114 items of 90), within the full caps (160).
+host_planted_js <- paste0(
+  "const base=mascot.readCharacter('tessa',el),painting=base.body.find(item=>item.fill);",
+  "const planted={...base,body:Array.from({length:100},()=>({shape:'circle',x:0,y:-20,r:4,fill:painting.fill}))};",
+  "const holder=document.createElement('script');holder.type='application/json';",
+  "holder.dataset.mascotCharacter='planted';holder.textContent=JSON.stringify(planted);",
+  "mascot.host.unmount(el);el.append(holder);el.dataset.character='planted';mascot.host.mount(el);"
+)
+
+describe("E5b fix 2 host: mount band, zero width and drawn state", {
+  it("mounts a hidden container at full, and switches to the band of its first real width", {
+    skip_without_chrome()
+    js <- local_host_page(size = 40)
+    inject_adapter_modules(js)
+    js(paste0(
+      "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
+      "parentBox.style.cssText='width:500px;display:none';el.before(parentBox);parentBox.append(el);",
+      "window.drawLog=[];const adapter=mascot.tessaAdapter;",
+      "mascot.tessaAdapter={...adapter,draw:(...a)=>{drawLog.push({band:a[6]});return adapter.draw(...a);}};",
+      "mascot.internal={useCharacterAdapter:true};mascot.host.unmount(el);mascot.host.mount(el);return true;})()"
+    ))
+    hidden <- js("({bands: drawLog.map(e => e.band), css: getComputedStyle(el.querySelector('canvas')).width})")
+    # A fixed 40 px canvas keeps its px width while its container is hidden; only the layout width (0) says so.
+    expect_gt(length(hidden$bands), 0)
+    expect_true(all(unlist(hidden$bands) == "full"))
+    js("parentBox.style.display = 'block'")
+    shown <- host_layout(js, "return {bands: drawLog.map(e => e.band), rendered: mascot.host.state(el).renderedSize};")
+    expect_identical(unlist(shown$bands)[length(shown$bands)], "micro")
+    expect_equal(shown$rendered, 40)
+  })
+
+  it("mounts at full with one warning when the measured band is over budget, and keeps going", {
+    skip_without_chrome()
+    js <- local_host_page(size = "20%")
+    inject_adapter_modules(js)
+    js(paste0(
+      "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
+      "parentBox.style.cssText='width:500px';el.before(parentBox);parentBox.append(el);",
+      "window.drawLog=[];const adapter=mascot.tessaAdapter;",
+      "mascot.tessaAdapter={...adapter,draw:(...a)=>{drawLog.push({band:a[6]});return adapter.draw(...a);}};",
+      "window.warnings=[];console.warn=(...a)=>warnings.push(a.join(' '));",
+      "mascot.internal={useCharacterAdapter:true};",
+      host_planted_js,
+      "return true;})()"
+    ))
+    mounted <- host_layout(
+      js,
+      "return {bands: drawLog.map(e => e.band), warnings: warnings.slice(), rendered: mascot.host.state(el).renderedSize};"
+    )
+    expect_gt(length(mounted$bands), 0)
+    expect_true(all(unlist(mounted$bands) == "full"))
+    expect_length(mounted$warnings, 1)
+    expect_match(unlist(mounted$warnings), "small band")
+    expect_equal(mounted$rendered, 100)
+    js("parentBox.style.width = '480px'")
+    again <- host_layout(
+      js,
+      "return {warnings: warnings.length, band: drawLog[drawLog.length-1].band, rendered: mascot.host.state(el).renderedSize};"
+    )
+    expect_equal(again$warnings, 1)
+    expect_identical(unlist(again$band), "full")
+    expect_equal(again$rendered, 96)
+  })
+
+  it("redraws once when the band is unchanged and the canvas was resized after a switch-off mount", {
+    skip_without_chrome()
+    js <- local_host_page(size = "20%")
+    js(paste0(
+      "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
+      "parentBox.style.cssText='width:1000px';el.before(parentBox);parentBox.append(el);return true;})()"
+    ))
+    host_layout(js, "return true;")
+    inject_adapter_modules(js)
+    js(paste0(
+      "(() => {window.drawLog=[];const adapter=mascot.tessaAdapter;",
+      "mascot.tessaAdapter={...adapter,draw:(...a)=>{drawLog.push({band:a[6]});return adapter.draw(...a);}};",
+      "mascot.internal={useCharacterAdapter:true};return true;})()"
+    ))
+    start <- js("drawLog.length")
+    js("parentBox.style.width = '1100px'")
+    host_layout(js, "return true;")
+    # The record's band is undefined (the switch was off at mount), so measure asks for full, which draws nothing;
+    # the resized canvas must still be redrawn once.
+    expect_equal(js("drawLog.length") - start, 1)
+    expect_identical(js("drawLog[drawLog.length-1].band"), "full")
   })
 })

@@ -1192,3 +1192,105 @@ describe("E5b atomic band change in the motion controller", {
     expect_identical(result$lastBand, "small")
   })
 })
+
+# A Tessa whose 'happy' mood wears an 84-circle accessory: every idle scene is small enough, the happy scene is not.
+heavy_tessa_js <- paste0(
+  "const base=mascot.readCharacter('tessa'),fill=base.body.find(item=>item.fill).fill;",
+  "const ring=Array.from({length:84},()=>({shape:'circle',x:0,y:-20,r:4,fill}));",
+  "const heavy={...base,accessories:{...base.accessories,heavy:{slot:'heavy',anchor:'hair',parts:ring}},",
+  "moods:{...base.moods,happy:{...base.moods.happy,accessory:'heavy'}}};"
+)
+
+describe("E5b fix 2: the band budget holds for every reachable state", {
+  it("refuses setBand up front when a mood's accessory makes a reachable scene over budget, changing nothing", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {",
+      heavy_tessa_js,
+      "const idle=mascot.drawing.resolvePose(heavy,{mood:'idle'},0),canvas=document.createElement('canvas');",
+      "canvas.width=300;canvas.height=300;mascot.internal={useCharacterAdapter:true};",
+      "const ctrl=mascot.mount(canvas,heavy,{x:150,baseY:270,band:'full'});",
+      "const idleFits=(() => {try{mascot.geometry.checkBudget(mascot.tessaAdapter.scene(heavy,idle,heavy.colours,150,270,'small').compiled,'small');return true;}catch(e){return false;}})();",
+      "const before=canvas.toDataURL(),state=JSON.stringify(ctrl.current());",
+      "let error=null;try{ctrl.setBand('small');}catch(e){error=[e.code,e.path];}",
+      "const pixels=canvas.toDataURL()===before,unchanged=JSON.stringify(ctrl.current())===state;",
+      "let later=null;try{ctrl.seek(12);}catch(e){later=e.code;}",
+      "const result={idleFits,error,later,pixels,state:unchanged};",
+      "ctrl.destroy();delete mascot.internal;return result;})()"
+    ))
+    expect_true(result$idleFits)
+    expect_identical(unlist(result$error), c("budget", "$"))
+    # The old band is still the drawn band: a later frame at full draws without a refusal.
+    expect_null(result$later)
+    expect_true(result$pixels)
+    expect_true(result$state)
+  })
+
+  it("draws a full mood cycle and a jump at small without throwing when every state is within budget", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=mascot.readCharacter('tessa'),canvas=document.createElement('canvas');",
+      "canvas.width=300;canvas.height=300;mascot.internal={useCharacterAdapter:true};",
+      "const ctrl=mascot.mount(canvas,ch,{x:150,baseY:270,band:'small'});const errors=[];let frame=0;",
+      "const run=(patch)=>{try{ctrl.update(patch);for(let i=0;i<20;i++){frame+=7;ctrl.seek(frame);}}catch(e){errors.push(String(e));}};",
+      "for(const mood of ['thinking','happy','worried','celebrating','idle'])run({mood});",
+      "run({pose:{lift:12}});run({pose:{lift:0}});",
+      "ctrl.destroy();delete mascot.internal;return errors;})()"
+    ))
+    expect_length(result, 0)
+  })
+
+  it("checks an incoming character before any state changes, so a refusal leaves the canvas and state alone", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    # A second id is a real swap. The adapter draws only Tessa, so its check refuses the incoming character first.
+    result <- js(paste0(
+      "(() => {",
+      heavy_tessa_js,
+      "const other={...heavy,id:'other'},ch=mascot.readCharacter('tessa'),canvas=document.createElement('canvas');",
+      "canvas.width=300;canvas.height=300;mascot.internal={useCharacterAdapter:true};",
+      "const ctrl=mascot.mount(canvas,ch,{x:150,baseY:270,band:'small'});",
+      "const before=canvas.toDataURL(),state=JSON.stringify(ctrl.current());",
+      "let error=null;try{ctrl.update({character:other});}catch(e){error=e.message;}",
+      "const result={error,pixels:canvas.toDataURL()===before,state:JSON.stringify(ctrl.current())===state};",
+      "ctrl.destroy();delete mascot.internal;return result;})()"
+    ))
+    expect_match(result$error, "supports only Tessa")
+    expect_true(result$pixels)
+    expect_true(result$state)
+  })
+
+  it("checks the band before the canvas is cleared, so a refused frame keeps its pixels", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=mascot.readCharacter('tessa'),canvas=document.createElement('canvas');",
+      "canvas.width=300;canvas.height=300;const adapter=mascot.tessaAdapter;mascot.internal={useCharacterAdapter:true};",
+      "const ctrl=mascot.mount(canvas,ch,{x:150,baseY:270,band:'small'});",
+      "const before=canvas.toDataURL();",
+      "mascot.tessaAdapter={...adapter,check:()=>{throw Object.assign(new Error('refused'),{code:'budget',path:'$'});}};",
+      "let error=null;try{ctrl.seek(40);}catch(e){error=e.code;}",
+      "const result={error,pixels:canvas.toDataURL()===before};",
+      "mascot.tessaAdapter=adapter;ctrl.destroy();delete mascot.internal;return result;})()"
+    ))
+    expect_identical(result$error, "budget")
+    expect_true(result$pixels)
+  })
+
+  it("returns true from setBand only when it drew", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=mascot.readCharacter('tessa'),canvas=document.createElement('canvas');",
+      "canvas.width=300;canvas.height=300;mascot.internal={useCharacterAdapter:true};",
+      "const ctrl=mascot.mount(canvas,ch,{x:150,baseY:270});",
+      "const same=ctrl.setBand('full'),changed=ctrl.setBand('small'),again=ctrl.setBand('small');",
+      "ctrl.destroy();delete mascot.internal;return {same,changed,again};})()"
+    ))
+    expect_false(result$same)
+    expect_true(result$changed)
+    expect_false(result$again)
+  })
+})

@@ -208,7 +208,7 @@ describe("TC-03 compiled adapter scenes", {
     result <- js(
       r"(
       (() => {
-        const ch=mascot.readCharacter('tessa'),compile=mascot.parts.compile;
+        const ch=mascot.readCharacter('tessa');mascot.tessaAdapter.check(ch,'full');const compile=mascot.parts.compile;
         let calls=0;mascot.parts={...mascot.parts,compile:(...args)=>{calls++;return compile(...args);}};
         const g=document.createElement('canvas').getContext('2d'),painters={face:()=>{},effects:()=>{}};
         const p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);
@@ -333,5 +333,42 @@ describe("E5b band bound caching", {
     expect_true(result$cached)
     expect_true(result$otherBand)
     expect_true(result$sameCompiled)
+  })
+})
+
+describe("E5b fix 2 frozen bounds and the reachable bound", {
+  it("freezes the band bound before it is cached, for the geometry and for the adapter", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const ch=mascot.readCharacter('tessa'),p=mascot.drawing.resolvePose(ch,{mood:'idle'},0);",
+      "const compiled=mascot.tessaAdapter.scene(ch,p,ch.colours,150,270,'small').compiled;",
+      "const geometry=mascot.geometry.bandBound(compiled,'small');",
+      "const adapter=mascot.tessaAdapter.bound(ch,'small');",
+      "let mutated=false;try{'use strict';geometry.painted_items=0;mutated=geometry.painted_items===0;}catch(e){}",
+      "return {geometry:Object.isFrozen(geometry),adapter:Object.isFrozen(adapter),mutated};})()"
+    ))
+    expect_true(result$geometry)
+    expect_true(result$adapter)
+    expect_false(result$mutated)
+  })
+
+  it("bounds every reachable scene: a mood's accessory raises the character's bound above the idle scene", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    result <- js(paste0(
+      "(() => {const base=mascot.readCharacter('tessa'),fill=base.body.find(item=>item.fill).fill;",
+      "const ring=Array.from({length:84},()=>({shape:'circle',x:0,y:-20,r:4,fill}));",
+      "const heavy={...base,accessories:{...base.accessories,heavy:{slot:'heavy',anchor:'hair',parts:ring}},",
+      "moods:{...base.moods,happy:{...base.moods.happy,accessory:'heavy'}}};",
+      "const idle=mascot.drawing.resolvePose(heavy,{mood:'idle'},0),happy=mascot.drawing.resolvePose(heavy,{mood:'happy'},0);",
+      "const idleWork=mascot.geometry.bandBound(mascot.tessaAdapter.scene(heavy,idle,heavy.colours,150,270,'small').compiled,'small');",
+      "const happyWork=mascot.geometry.bandBound(mascot.tessaAdapter.scene(heavy,happy,heavy.colours,150,270,'small').compiled,'small');",
+      "const bound=mascot.tessaAdapter.bound(heavy,'small');",
+      "return {idle:idleWork.painted_items,happy:happyWork.painted_items,bound:bound.painted_items,pathBound:bound.path_numbers};})()"
+    ))
+    expect_gt(result$happy, result$idle)
+    expect_gte(result$bound, result$happy)
+    expect_gte(result$pathBound, result$happy)
   })
 })

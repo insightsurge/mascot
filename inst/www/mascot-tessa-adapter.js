@@ -227,12 +227,72 @@
     return faces.get(character);
   }
 
+  // E5b fix 2: the work bound of every scene the character can reach in one band. The scene depends only on the feet
+  // (tucked or not) and on the worn accessories, so the reachable scenes are: tucked both ways, times every selection of
+  // declared accessories with at most one per slot (the rule ns.drawing.accessories enforces). Moods, variants and the
+  // held pose only change parts inside a scene, which bandBound already covers by taking the largest candidate of each
+  // part. Componentwise maximum (blur included), frozen, cached per character and band. Enumerating selections is a
+  // product over slots: fine for Tessa's few accessories; the native engine (M1) uses the contract's per-slot maxima.
+  const bounds = new WeakMap();
+  function selections(character) {
+    const slots = new Map();
+    for (const name of Object.keys(character.accessories ?? {})) {
+      const slot = character.accessories[name].slot;
+      if (!slots.has(slot)) slots.set(slot, []);
+      slots.get(slot).push(name);
+    }
+    let chosen = [[]];
+    for (const names of slots.values())
+      chosen = chosen.flatMap((partial) => [partial, ...names.map((name) => [...partial, name])]);
+    return chosen;
+  }
+  function bound(character, band) {
+    if (!ns.parts || !ns.geometry) throw new Error('mascot: the Tessa adapter needs parts and geometry modules');
+    ns.geometry.checkWork({}, band); // validates the band name before anything is cached
+    if (character.id !== 'tessa') throw new Error('mascot: the provisional adapter supports only Tessa');
+    let perBand = bounds.get(character);
+    if (!perBand) {
+      perBand = new Map();
+      bounds.set(character, perBand);
+    }
+    if (perBand.has(band)) return perBand.get(band);
+    const total = {
+      active_parts: 0,
+      painted_items: 0,
+      paint_passes: 0,
+      path_numbers: 0,
+      glow_emitters: 0,
+      blur_design_units: 0,
+    };
+    for (const names of selections(character)) {
+      let selected;
+      try {
+        selected = ns.drawing.accessories(character, { accessory: names });
+      } catch {
+        continue; // an accessory the drawing would refuse (for example a missing anchor) is not a reachable scene
+      }
+      for (const tucked of [false, true]) {
+        const work = ns.geometry.bandBound(build(character, tucked, selected).compiled, band);
+        for (const key of Object.keys(total)) total[key] = Math.max(total[key], work[key]);
+      }
+    }
+    Object.freeze(total);
+    perBand.set(band, total);
+    return total;
+  }
+  // Throws budget at $ when any reachable scene of the character is over the band's caps. No painting.
+  function check(character, band) {
+    const work = bound(character, band); // the guards run here, before any geometry lookup
+    ns.geometry.checkWork(work, band);
+  }
+
   function draw(ctx, character, pose, colours, x, baseY, band = 'full') {
+    // E5b fix 2: the per-character bound is checked first (cached after the first call): a band that can be reached
+    // is refused before anything is built or painted.
+    check(character, band);
     // Build before painting: missing modules or unsupported characters leave the
     // caller's canvas state/pixels unchanged rather than half drawing a frame.
     const frame = scene(character, pose, colours, x, baseY, band);
-    // E5b: an over-budget band is refused before the first paint, so the canvas keeps its previous pixels.
-    ns.geometry.checkBudget(frame.compiled, band);
     const face = faceDefinition(character);
     const counts = { painted_items: 0, paint_passes: 0 };
     const add = (cost) => {
@@ -302,10 +362,5 @@
     layer((value) => value === 4);
     return { counts, state: frame.state };
   }
-  // E5b: the band budget alone, without painting (used before a band change so a refusal changes nothing).
-  function check(character, pose, colours, x, baseY, band) {
-    const frame = scene(character, pose, colours, x, baseY, band);
-    ns.geometry.checkBudget(frame.compiled, band);
-  }
-  ns.tessaAdapter = Object.freeze({ scene, draw, check });
+  ns.tessaAdapter = Object.freeze({ scene, draw, check, bound });
 })();

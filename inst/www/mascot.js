@@ -306,13 +306,12 @@
     const d = prepare(character, options);
     ns.drawing.character(ctx, character, d.x, d.baseY, d.p, d.colours, d.band);
   };
-  // E5b, internal: throws, without painting, when the adapter would refuse this band (the budget). A no-op on the
-  // legacy path, which has no band budget.
-  ns.checkBand = (character, options = {}) => {
-    const d = prepare(character, options);
+  // E5b, internal: throws budget at $, without painting, when any scene the character can reach is over the band's caps.
+  // A no-op on the legacy path, which has no band budget.
+  ns.checkCharacter = (character, band) => {
     if (ns.internal?.useCharacterAdapter === true) {
       if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
-      ns.tessaAdapter.check(character, d.p, d.colours, d.x, d.baseY, d.band);
+      ns.tessaAdapter.check(character, band);
     }
   };
 })();

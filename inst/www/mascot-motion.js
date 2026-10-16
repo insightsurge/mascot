@@ -732,6 +732,9 @@
     function drawFrame() {
       if (destroyed) return;
       const visible = sceneFrame(ch, state, frame);
+      // E5b fix 2: the band budget of the visible character is checked before the canvas is cleared, so a frame can
+      // never fail after clearRect. A no-op unless the internal adapter switch is on.
+      ns.checkCharacter(visible.character, band);
       ctx.save();
       try {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -841,25 +844,18 @@
        * the RAF loop and the gesture or mood in progress are unchanged, so a band change never replays motion. It is
        * atomic: when the new band is over budget it throws before anything changes, and the old band stays.
        * @param {string} name The band to draw with.
-       * @returns {void}
+       * @returns {boolean} true when it drew (a band change), false when the band was already set.
        */
       setBand(name) {
-        if (destroyed) return;
+        if (destroyed) return false;
         if (!bandNames.includes(name)) throw new Error("mascot: band: use 'full', 'small' or 'micro'.");
-        if (name === band) return;
-        // Atomic: the new band's budget is checked before anything changes; a refusal throws with the old band,
-        // canvas pixels and state untouched.
-        const visible = sceneFrame(ch, state, frame);
-        ns.checkBand(visible.character, {
-          x: options.x,
-          baseY: options.baseY,
-          colours: visible.colours,
-          pose: visible.pose,
-          frame,
-          band: name,
-        });
+        if (name === band) return false;
+        // Atomic: every scene of the visible character must fit the new band before anything changes. A refusal throws
+        // with the old band, canvas pixels and state untouched.
+        ns.checkCharacter(sceneFrame(ch, state, frame).character, name);
         band = name;
         drawFrame();
+        return true;
       },
       /**
        * Draw and move to a frame; it does not count as a new action.
@@ -897,6 +893,8 @@
           !same(next.messages, values.messages) ||
           reduced !== state.reduced;
         if (!changed) return;
+        // E5b fix 2: an incoming character (update or swap) must fit the current band before anything changes.
+        if (characterChanged) ns.checkCharacter(next.character, band);
         if (characterChanged) {
           const visible = sceneFrame(ch, state, frame);
           const outgoing = {

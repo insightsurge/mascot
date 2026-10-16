@@ -27,22 +27,28 @@ Full parity between the browser and R work counts follows in #304.
   the band, the key and the fix. Part `lod` lists must name bands.
 * `inst/www/mascot-geometry.js`: `bandBound(compiled, band)` gives an upper bound on the painted items, paint passes,
   path numbers, glow emitters and blur of the geometry of the parts (including `lod.hide`, part and item `lod`, and
-  glow passes). It keeps the largest candidate of each part's variants and is cached per compiled character and band.
+  glow passes). It keeps the largest candidate of each part's variants, is frozen and cached per compiled character and
+  band.
   Worn accessories are counted as parts. It does not yet count the face, the ground shadow, the effects, mood item
   paints or the reduced-motion items that R counts, nor clip applications, gradient uses or the glow area ratio. `checkBudget(compiled, band)` throws `budget` at `$` naming the
   metric and limit. `bandCaps` mirrors the counted metrics of `inst/format/policy-v1.json`.
-* `inst/www/mascot-tessa-adapter.js`: `draw()` takes a band, carries the character's `lod` into the compiled source,
-  checks the band budget before the first paint, and passes the band to `frame()`. `check()` runs the same check
-  without painting.
-* `inst/www/mascot.js`: `ns.draw` passes the band to the adapter branch only; `ns.checkBand()` runs the same
-  validation and the adapter's band check without painting.
-* `inst/www/mascot-motion.js`: `mount()` accepts `band`; `controller.setBand(name)` checks the new band first and throws
-  with the old band, canvas pixels and state unchanged when it is over budget. On success it draws the current frame once
-  without changing time, activity, the frame loop or change notices.
-* `inst/www/mascot-host.js`: `mount()` passes the band the canvas measures, so a small mascot never draws a full-band
-  frame first. `measure()` reads the untransformed CSS width and calls `setBand()` only when the band changes; a refused
-  band keeps the old one, measuring goes on, the refusal is reported once per band through `console.warn`, and nothing is
-  thrown out of `measure()`. A successful band change draws once, not twice. All of this runs only when
+* `inst/www/mascot-tessa-adapter.js`: `bound(character, band)` is the componentwise maximum of `bandBound()` over every
+  scene the character can reach: the feet tucked or not, times every selection of its declared accessories with at most
+  one per slot (a selection the drawing refuses is skipped). It is frozen and cached per character and band. `check()`
+  throws `budget` at `$` when that bound is over the band's caps, without painting. `draw()` checks first, then builds
+  and paints, so a refused band never paints; the carried `lod` and the band reach `frame()`.
+* `inst/www/mascot.js`: `ns.draw` passes the band to the adapter branch only; `ns.checkCharacter(character, band)` runs
+  the adapter's per-character check without painting (a no-op with the switch off).
+* `inst/www/mascot-motion.js`: `mount()` accepts `band`. `drawFrame()` checks the visible character before it clears the
+  canvas, so a refused frame keeps its pixels. `controller.setBand(name)` checks the visible character first and throws
+  with the old band, canvas pixels and state unchanged when the new band is over budget. It returns true when it drew and
+  false when the band was already set. `update()` checks an incoming character before any state changes.
+* `inst/www/mascot-host.js`: `mount()` checks the band the canvas measures and mounts at it, so a small mascot never
+  draws a full-band frame first; a band over budget mounts at `full` with one warning. A width that is not laid out (not
+  a pixel width, or a hidden container) mounts at `full` and decides the band on the first real measure. `measure()` calls
+  `setBand()` only when the band changes; a refused band keeps the old one, measuring goes on, the refusal is reported
+  once per band through `console.warn`, and nothing is thrown out of `measure()`. The canvas is redrawn once after a
+  resize: by `setBand()` when it drew, otherwise by `redraw()`. All of this runs only when
   `mascot.internal.useCharacterAdapter` is true.
 * `R/character-work.R`: `character_format_work()` refuses `lod.micro.glow: true` with code `budget` at root path `$`, the
   same diagnostic as the browser, so the R checker rejects it.

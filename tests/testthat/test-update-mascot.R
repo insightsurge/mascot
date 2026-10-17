@@ -45,7 +45,13 @@ describe("update_mascot()", {
       dev_mode = function() FALSE
     )
     session <- shiny::MockShinySession$new()
-    expect_snapshot(update_mascot("helper", character = "neer", mood = "hapy", status = "", session = session))
+    expect_snapshot(update_mascot(
+      "helper",
+      character = "unknown_character",
+      mood = "hapy",
+      status = "",
+      session = session
+    ))
     expect_snapshot(update_mascot("helper", mood = "ha!py", session = session))
     for (x in list(1, "", NA_character_, c("a", "b"))) {
       expect_warning(update_mascot("helper", character = x, session = session), "unchanged")

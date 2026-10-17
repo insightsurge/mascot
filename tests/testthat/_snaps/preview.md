@@ -13,7 +13,7 @@
       mascot_preview(character = "typo")
     Condition
       Error in `mascot_preview()`:
-      ! `character` must be one of "tessa", "sela", or "knurl".
+      ! `character` must be one of "tessa", "sela", "knurl", or "neer".
       x "typo" is not a character.
 
 ---

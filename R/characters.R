@@ -2,17 +2,17 @@
 #' @noRd
 builtin_characters <- function() {
   data.frame(
-    id = c("tessa", "sela", "knurl"),
-    name = c("Tessa", "Sela", "Knurl"),
-    file = c("tessa.json", "sela.json", "knurl.json"),
-    lifecycle = c("stable", "stable", "experimental")
+    id = c("tessa", "sela", "knurl", "neer"),
+    name = c("Tessa", "Sela", "Knurl", "Neer"),
+    file = c("tessa.json", "sela.json", "knurl.json", "neer.json"),
+    lifecycle = c("stable", "stable", "experimental", "experimental")
   )
 }
 
 #' Choose a mascot character
 #'
 #' The helper behind the `character` argument of [mascot()]. Tessa and Sela
-#' are stable built-in characters; Knurl is experimental.
+#' are stable built-in characters; Knurl and Neer are experimental.
 #'
 #' @param id A non-empty string naming a built-in character. Defaults to
 #'   `"tessa"`; `NULL` is not accepted.
@@ -21,9 +21,9 @@ builtin_characters <- function() {
 #' @details Tessa and Sela are stable: their ids, names, five shared moods,
 #'   gesture names, colour-role names and palette names stay the same in every
 #'   release. Their drawings, motion and exact palette colours may be polished.
-#'   Knurl is experimental: any part may change, and it will not be removed
-#'   without a warning in the release before its removal. The character file
-#'   format and character authoring functions are experimental too.
+#'   Knurl and Neer are experimental: any part may change, and neither will be
+#'   removed without a warning in the release before its removal. The character
+#'   file format and character authoring functions are experimental too.
 #' @family mascot helpers
 #' @seealso [mascot()]
 #' @export

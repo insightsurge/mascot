@@ -39,7 +39,7 @@
       mascot("a", character = "missing")
     Condition
       Error in `mascot()`:
-      ! `character` must be one of "tessa", "sela", or "knurl".
+      ! `character` must be one of "tessa", "sela", "knurl", or "neer".
       x "missing" is not a character.
 
 # mascot() size and placement / writes data attributes without inline layout styles and normalises shortcuts
@@ -65,7 +65,7 @@
       mascot("a", character = "typo")
     Condition
       Error in `mascot()`:
-      ! `character` must be one of "tessa", "sela", or "knurl".
+      ! `character` must be one of "tessa", "sela", "knurl", or "neer".
       x "typo" is not a character.
 
 # mascot() size and placement / silently disables inline defaults and informs about explicit list controls

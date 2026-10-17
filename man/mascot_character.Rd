@@ -16,15 +16,15 @@ The returned object's fields are internal; pass the object on rather than readin
 }
 \description{
 The helper behind the \code{character} argument of \code{\link[=mascot]{mascot()}}. Tessa and Sela
-are stable built-in characters; Knurl is experimental.
+are stable built-in characters; Knurl and Neer are experimental.
 }
 \details{
 Tessa and Sela are stable: their ids, names, five shared moods,
 gesture names, colour-role names and palette names stay the same in every
 release. Their drawings, motion and exact palette colours may be polished.
-Knurl is experimental: any part may change, and it will not be removed
-without a warning in the release before its removal. The character file
-format and character authoring functions are experimental too.
+Knurl and Neer are experimental: any part may change, and neither will be
+removed without a warning in the release before its removal. The character
+file format and character authoring functions are experimental too.
 }
 \examples{
 mascot_character()

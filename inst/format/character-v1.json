@@ -5,11 +5,11 @@
   "definitions": {
     "id": {
       "type": "string",
-      "pattern": "^[a-z][a-z0-9_]*$"
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
     },
     "role_ref": {
       "type": "string",
-      "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?\\.[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
     },
     "line_cap": {
       "type": "string",
@@ -82,7 +82,7 @@
     },
     "id_map": {
       "type": "map",
-      "key_pattern": "^[a-z][a-z0-9_]*$",
+      "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$",
       "values": {
         "ref": "id"
       }
@@ -107,7 +107,7 @@
         "type": "string",
         "pattern": "^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|rgba\\(\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*\\))$"
       },
-      "key_pattern": "^[a-z][a-z0-9_]*$"
+      "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
     },
     "outline_band": {
       "type": "object",
@@ -1655,7 +1655,7 @@
               "ref": "item"
             }
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "switch": {
           "type": "object",
@@ -1757,7 +1757,7 @@
           "values": {
             "ref": "anchor_variant"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "note": {
           "type": "string"
@@ -1860,7 +1860,7 @@
       "values": {
         "type": "scalar"
       },
-      "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+      "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?\\.[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
     },
     "face_controls": {
       "type": "object",
@@ -1971,7 +1971,7 @@
           "values": {
             "ref": "item_change"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?\\.[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "effects": {
           "type": "map",
@@ -1988,7 +1988,7 @@
               }
             ]
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "note": {
           "type": "string"
@@ -2027,7 +2027,7 @@
           "values": {
             "ref": "item_change"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?\\.[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "effects": {
           "type": "map",
@@ -2044,7 +2044,7 @@
               }
             ]
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "reduced": {
           "ref": "mood_reduced"
@@ -2121,7 +2121,7 @@
       "values": {
         "ref": "track"
       },
-      "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$",
+      "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?\\.[a-z][a-z0-9]*(_[a-z0-9]+)*_?$",
       "input_limit": "tracks_per_gesture"
     },
     "gesture": {
@@ -2856,28 +2856,28 @@
           "values": {
             "ref": "eye_style"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "brow_styles": {
           "type": "map",
           "values": {
             "ref": "brow_style"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "mouth_styles": {
           "type": "map",
           "values": {
             "ref": "mouth_style"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "effects": {
           "type": "map",
           "values": {
             "ref": "kit_effect"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "glow": {
           "type": "object",
@@ -3018,21 +3018,21 @@
               "values": {
                 "ref": "eye_style"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             },
             "brows": {
               "type": "map",
               "values": {
                 "ref": "brow_style"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             },
             "mouth": {
               "type": "map",
               "values": {
                 "ref": "mouth_style"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             }
           },
           "required": []
@@ -3270,7 +3270,7 @@
       "fields": {
         "part": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "at": {
           "type": "array",
@@ -3289,14 +3289,14 @@
         },
         "kit": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "kit_definition": {
           "ref": "kit"
         },
         "clip": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+          "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?\\.[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "eyes": {
           "type": "object",
@@ -3313,7 +3313,7 @@
             },
             "iris": {
               "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$",
+              "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$",
               "nullable": true
             }
           },
@@ -3367,9 +3367,9 @@
           "type": "map",
           "values": {
             "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
+            "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "tune": {
           "ref": "numeric_tree"
@@ -3382,21 +3382,21 @@
               "values": {
                 "ref": "eye_style"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             },
             "brows": {
               "type": "map",
               "values": {
                 "ref": "brow_style"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             },
             "mouth": {
               "type": "map",
               "values": {
                 "ref": "mouth_style"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             }
           },
           "required": []
@@ -3466,14 +3466,14 @@
               "values": {
                 "ref": "mood"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             },
             "gestures": {
               "type": "map",
               "values": {
                 "ref": "gesture"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             },
             "motion": {
               "ref": "motion"
@@ -3487,14 +3487,14 @@
                 "type": "string",
                 "min_chars": 1
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             },
             "follows": {
               "type": "map",
               "values": {
                 "ref": "follow"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             },
             "brand": {
               "type": "object",
@@ -3519,7 +3519,7 @@
               "values": {
                 "ref": "palette"
               },
-              "key_pattern": "^[a-z][a-z0-9_]*$"
+              "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
             }
           },
           "required": []
@@ -3542,7 +3542,8 @@
         },
         "id": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9_]{1,31}$"
+          "pattern": "^[a-z][a-z0-9_]{1,31}$",
+          "forbid": "__"
         },
         "name": {
           "type": "string",
@@ -3570,7 +3571,7 @@
               "family"
             ]
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "pronouns": {
           "type": "string"
@@ -3591,14 +3592,14 @@
             "type": "string",
             "min_chars": 1
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "follows": {
           "type": "map",
           "values": {
             "ref": "follow"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "brand": {
           "type": "object",
@@ -3641,21 +3642,21 @@
             "ref": "palette",
             "nullable": true
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "paints": {
           "type": "map",
           "values": {
             "ref": "paint"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "shapes": {
           "type": "map",
           "values": {
             "ref": "shape_definition"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "ground": {
           "ref": "ground"
@@ -3676,7 +3677,7 @@
           "values": {
             "ref": "anchor"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "face": {
           "ref": "face",
@@ -3687,14 +3688,14 @@
           "values": {
             "ref": "channels"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "moods": {
           "type": "map",
           "values": {
             "ref": "mood"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$",
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$",
           "input_limit": "moods"
         },
         "gestures": {
@@ -3702,7 +3703,7 @@
           "values": {
             "ref": "gesture"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$",
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$",
           "input_limit": "gestures"
         },
         "motion": {
@@ -3724,7 +3725,7 @@
               "anchor"
             ]
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "lod": {
           "type": "object",
@@ -3743,7 +3744,7 @@
           "values": {
             "ref": "accessory"
           },
-          "key_pattern": "^[a-z][a-z0-9_]*$"
+          "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
         },
         "wear": {
           "ref": "id_list"

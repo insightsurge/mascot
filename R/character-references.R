@@ -23,8 +23,8 @@ character_format_parts <- function(x) {
           choices = c("root", local_ids)
         )
       }
-      part$id <- paste0("wear_", id, "_", part$id)
-      part$parent <- if (parent == "root") "root" else paste0("wear_", id, "_", parent)
+      part$id <- paste0("wear__", id, "__", part$id)
+      part$parent <- if (parent == "root") "root" else paste0("wear__", id, "__", parent)
       attr(part, "accessory") <- id
       parts[[length(parts) + 1L]] <- part
       paths <- c(paths, path)

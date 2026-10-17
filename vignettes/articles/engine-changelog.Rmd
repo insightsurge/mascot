@@ -9,6 +9,18 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-17 — Accessory part ids can no longer collide (#312)
+
+**In brief:** A worn accessory's parts get ids of the form `wear__<accessory>__<part>`, and authored ids may not
+contain two underscores in a row. Before, the accessory `a_b` with part `c` and the accessory `a` with part `b_c`
+both became `wear_a_b_c`.
+
+**Technical:**
+
+* `R/character-references.R` and `inst/www/mascot-parts.js` build the same expanded ids; the schema
+  (`inst/format/character-v1.json`) and the browser check refuse `__` in authored ids at their path.
+* Tessa's `lod.micro.hide` names her bow and clip parts with the new ids.
+
 ## 2026-10-17 — The provisional Tessa bridge is removed (#313)
 
 **In brief:** Tessa has one drawing path now, the format-v1 engine. The temporary bridge that drew her old recipe

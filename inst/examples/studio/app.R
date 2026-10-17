@@ -53,7 +53,7 @@ studio_page <- function(character, fn) {
           class = "pg-inspector",
           id = "studio_inspector",
           panel_your_character(),
-          panel_look(character = character),
+          panel_look(),
           panel_messages(),
           panel_motion(),
           panel_layout(),
@@ -80,10 +80,7 @@ studio_page <- function(character, fn) {
         id = "studio_centre",
         `data-initial-function` = fn,
         `data-initial-character` = character,
-        div(
-          class = "pg-toolbar pg-card-head",
-          actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm")
-        ),
+        panel_character_bar(character = character),
         div(
           class = "pg-canvas",
           id = "studio_canvas",

@@ -448,8 +448,9 @@
       'tracks',
     ]);
     const checkId = (id, path) => {
-      if (typeof id !== 'string' || !id.split('.').every((segment) => /^(?!.*__)[a-z][a-z0-9_]*$/.test(segment))) {
-        problem('input_type', path, 'Use a snake_case id without consecutive underscores.');
+      // Only the reserved separator of expanded accessory part ids; the full spelling is the R checker's job.
+      if (typeof id === 'string' && id.includes('__')) {
+        problem('input_type', path, 'Use an id without consecutive underscores.');
       }
     };
     const visit = (value, path, field = '') => {

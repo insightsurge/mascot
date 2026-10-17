@@ -113,7 +113,7 @@ describe("independent R expanded drawing-work bounds", {
     }
     resting <- work(data)
     key <- paste0(data$parts[[1]]$id, ".", item$id)
-    data$moods[[1]]$items <- stats::setNames(list(list(stroke = names(data$colours)[[1]], width = 4)), key)
+    data$moods[[1]]$items <- stats::setNames(list(list(stroke = names(data$colours)[[1]])), key)
     stroked <- work(data)
     # One more pass for the stroke itself and one more for its glow.
     expect_equal(stroked[["paint_passes"]] - resting[["paint_passes"]], 2)

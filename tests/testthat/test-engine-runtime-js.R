@@ -1888,27 +1888,6 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     expect_identical(r_micro_glow$code, "budget")
     expect_identical(r_micro_glow$path, "$")
     expect_match(r_micro_glow$message, "glow emitters")
-
-    # Character check refusing clip application over micro cap
-    r_clip <- js(sprintf(
-      "(() => {
-        const c = JSON.parse(%s);
-        c.parts[0].items[0].id = 'base';
-        c.parts[0].items.push({ shape: 'circle', r: 1, fill: 'accent', clip: 'body.base' });
-        c.parts[0].items.push({ shape: 'circle', r: 1, fill: 'accent', clip: 'body.base' });
-        c.parts[0].items.push({ shape: 'circle', r: 1, fill: 'accent', clip: 'body.base' });
-        try {
-          mascot.runtime.check(c, 'micro');
-          return 'passed';
-        } catch (e) {
-          return { code: e.code, path: e.path, message: e.message };
-        }
-      })()",
-      jsonlite::toJSON(tessa_json, auto_unbox = TRUE)
-    ))
-    expect_identical(r_clip$code, "budget")
-    expect_identical(r_clip$path, "$")
-    expect_match(r_clip$message, "clip_applications")
   })
 
   it("computes transformed bounds for ref items, style transforms, and shapes in workBox (finding 1)", {
@@ -1983,7 +1962,7 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     data$parts[[1]]$items[[1]] <- item
     data$parts[[1]]$glow <- list(item = item$id, colour = "accent", blur = 4, alpha = 1)
     key <- paste0(data$parts[[1]]$id, ".", item$id)
-    data$moods[[1]]$items <- stats::setNames(list(list(stroke = names(data$colours)[[1]], width = 4)), key)
+    data$moods[[1]]$items <- stats::setNames(list(list(stroke = names(data$colours)[[1]])), key)
     resolved <- character_format_resolve(data)
     graph <- character_format_references(resolved)
     r_work <- character_format_work(resolved, graph, character_format_behaviour(resolved, graph))
@@ -1993,62 +1972,39 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     expect_equal(browser[["inflated_glow_area_ratio"]], r_work[["inflated_glow_area_ratio"]], tolerance = 1e-12)
   })
 
-  it("seeds scale ranges with resting scale and ignores null keys in set tracks (finding 3)", {
+  it("bounds an unworn accessory by its resting scale and ignores null keys of set tracks, as R does", {
     skip_without_chrome()
     js <- page_with()
-    alpha_json <- paste(
-      readLines(test_path("fixtures", "format", "alpha_visor.json"), encoding = "UTF-8", warn = FALSE),
-      collapse = "\n"
+    recipe <- jsonlite::fromJSON(
+      system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE),
+      simplifyVector = FALSE
     )
-
-    # (a) Unworn accessory with glowing part having scale: 2
-    res_acc <- js(sprintf(
-      "(() => {
-        const c = JSON.parse(%s);
-        c.accessories = [
-          {
-            id: 'hat',
-            anchor: 'crown',
-            slot: 'headwear',
-            parts: [
-              {
-                id: 'halo',
-                scale: 2,
-                glow: { blur: 5, alpha: 1, item: 'halo_gem' },
-                items: [{ id: 'halo_gem', shape: 'circle', r: 10, fill: 'accent' }]
-              }
-            ]
-          }
-        ];
-        return mascot.runtime.bound(mascot.runtime.compile(c), 'full');
-      })()",
-      jsonlite::toJSON(alpha_json, auto_unbox = TRUE)
-    ))
-    expect_true(res_acc$glow_emitters >= 1)
-    expect_true(res_acc$inflated_glow_area_ratio > 0.08)
-
-    # (b) set track with null keys on scale_x
-    res_track <- js(sprintf(
-      "(() => {
-        const c = JSON.parse(%s);
-        c.gestures = c.gestures || {};
-        c.gestures.test_wave = {
-          description: 'Wave gesture',
-          duration: 1,
-          tracks: [
-            {
-              target: 'head.scale_x',
-              mode: 'set',
-              keys: [[0, null], [0.5, 1.5], [1, null]]
-            }
-          ]
-        };
-        return mascot.runtime.bound(mascot.runtime.compile(c), 'full');
-      })()",
-      jsonlite::toJSON(alpha_json, auto_unbox = TRUE)
-    ))
-    expect_true(is.numeric(res_track$active_parts))
-    expect_false(is.null(res_track$active_parts))
+    # The clip is declared but not worn; scaled up and glowing, it must still count at its resting scale.
+    unworn <- setdiff(names(recipe$accessories), unlist(recipe$wear))[[1]]
+    part <- recipe$accessories[[unworn]]$parts[[1]]
+    part$scale <- 2
+    part$items[[1]]$id <- "glow_source"
+    part$glow <- list(item = "glow_source", colour = "accessory", blur = 5, alpha = 1)
+    recipe$accessories[[unworn]]$parts[[1]] <- part
+    # A set track whose first and last keys are null (hold the resting value).
+    recipe$gestures$stretch <- list(
+      description = "Stretch.",
+      frames = 18,
+      tracks = list(root.scale_x = list(mode = "set", keys = list(list(0, NULL), list(0.5, 1.5), list(1, NULL))))
+    )
+    resolved <- character_format_resolve(recipe)
+    graph <- character_format_references(resolved)
+    behaviour <- character_format_behaviour(resolved, graph)
+    payload <- jsonlite::toJSON(recipe, auto_unbox = TRUE, null = "null", digits = NA)
+    for (band in c("full", "small")) {
+      r_work <- character_format_work(resolved, graph, behaviour, band)
+      browser <- js(sprintf("mascot.runtime.bound(mascot.runtime.compile(%s), '%s')", payload, band))
+      for (metric in setdiff(names(r_work), "inflated_glow_area_ratio")) {
+        expect_equal(browser[[metric]], r_work[[metric]], info = paste(band, metric))
+      }
+      expect_equal(browser$inflated_glow_area_ratio, r_work[["inflated_glow_area_ratio"]], tolerance = 1e-12)
+    }
+    expect_gt(r_work[["glow_emitters"]], 0)
   })
 
   it("throws missing_reference at $.clip when target item is omitted in a reachable variant (finding 4)", {

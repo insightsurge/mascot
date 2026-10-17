@@ -55,6 +55,7 @@
     if (result.length !== 2) problem('input_type', path, 'Supply a scalar or two-vector.');
     return result.map((axis, index) => number(axis, `${path}[${index}]`, -16, 16));
   };
+  const accessoryPartId = (accessoryId, partId) => `wear__${accessoryId}__${partId}`;
 
   const root = (height, channels = {}, host = {}) => {
     number(height, '$.ground.centre_height', 0, 4096);
@@ -657,7 +658,6 @@
       slots.add(accessory.slot);
       const anchor = own(source.anchors, accessory.anchor);
       if (!anchor) problem('missing_reference', `$.accessories.${id}.anchor`, 'Name a declared anchor.');
-      const prefix = `wear__${id}__`;
       const local = new Set(accessory.parts.map((part) => part.id));
       accessory.parts.forEach((part, partIndex) => {
         const parent = part.parent ?? 'root';
@@ -669,7 +669,11 @@
           );
         }
         insert(
-          { ...part, id: prefix + part.id, parent: parent === 'root' ? 'root' : prefix + parent },
+          {
+            ...part,
+            id: accessoryPartId(id, part.id),
+            parent: parent === 'root' ? 'root' : accessoryPartId(id, parent),
+          },
           `$.accessories.${id}.parts[${partIndex}]`,
           parent === 'root' ? { id: accessory.anchor, lod: accessory.lod } : null,
         );
@@ -1024,5 +1028,6 @@
     swapMood,
     sweatProgress,
     sparklePulse,
+    accessoryPartId,
   });
 })();

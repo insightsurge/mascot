@@ -9,6 +9,41 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-17 — Drawing-work bound agreement with R across all detail bands (#304)
+
+**In brief:** The browser engine's drawing-work bound now accounts for every visual component across all nine
+counters defined in the format-v1 contract, reproducing R integer counts and conservative area bounds for every
+canonical fixture and Tessa recipe in all three detail bands (`full`, `small`, `micro`). In addition to main anatomy
+and exclusive accessory slots, the bound now counts the face kit (brows, eye primitives, eyelid, lashes, inset clip,
+mouth box expansion, blush, and kit glow), kit effects (both statically declared and gesture-triggered), ground
+shadows, mood and reduced item overrides, clip costs, and gradient uses.
+
+**Technical:**
+
+* `inst/www/mascot-geometry.js`: `bandCaps` holds the contract's complete 9-counter limits for `full`, `small`, and
+  `micro` from `policy-v1.json`. `workItem()` returns all nine counters with conservative paint passes (fill, stroke,
+  primary outline, secondary outline), gradient uses, path numbers, and zero-initialised secondary metrics. `compile()`
+  and `workBox()` compute conservative axis-aligned bounding boxes taking account of shape `ref` transforms and
+  `style.transform`, using circumradii for polygons and hexagons to match R's `character_geometry()`. `bandBound()`
+  delegates to `mascot.runtime.bound()` when available, with default glow alpha `1`.
+* `inst/www/mascot-parts.js`: accessory part identifiers are constructed through one shared helper function
+  `accessoryPartId()`, exported on `ns.parts`.
+* `inst/www/mascot-player.js`: `bound(entry, band)` computes the complete character drawing-work bound by the
+  contract's componentwise upper bound rule. It aggregates part bounds and accessory slot alternatives, active part
+  hierarchies via parent chains, face kit definitions (styles, lashes, eyelids, inset clips, scaled mouth items,
+  blush, and face glow), declared kit effects and gesture-triggered effects, and ground shadow geometry. `workGlow()`
+  inspects shapes-resolved styles so reusable shape definitions with stroke and fill emit two glow passes. Scale ranges
+  seed resting scale for all declared parts including unworn accessory templates, and ignore `null` keys on numeric
+  `set` tracks. Clip references throw `missing_reference` at `$.clip` when any reachable variant lacks the target item.
+  `checkEntry()` guards every capped counter against band limits before painting.
+* Tests: Added parity suite in `tests/testthat/test-engine-runtime-js.R` verifying that browser-calculated work bounds
+  match R `character_format_work()` at `1e-12` tolerance across all twelve fixture rows in `work-expected.json` and the
+  packaged `tessa.json` recipe for `full`, `small`, and `micro` bands. Component tests verify exact deltas for
+  face components, static vs gesture-triggered kit effects, ground shadow, mood and reduced item overrides, clip
+  references, and budget refusal across all nine counters as well as `lod.micro.glow = true`. Dedicated tests cover
+  glowing transformed ref shapes, resolved multi-pass glow, unworn accessory scale ranges, numeric `set` tracks with
+  `null` keys, and missing clip target variants.
+
 ## 2026-10-17 — Accessory part ids can no longer collide (#312)
 
 **In brief:** A worn accessory's parts get ids of the form `wear__<accessory>__<part>`, and authored ids may not

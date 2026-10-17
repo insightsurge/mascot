@@ -1242,7 +1242,7 @@
       "channels": {
         "chip_b.y": 13,
         "arm_l.rotate": 0,
-        "arm_r.rotate": 1.72,
+        "arm_r.rotate": 3.3,
         "root.rotate": 0.05,
         "root.lift": 0.12
       }
@@ -1279,8 +1279,8 @@
       },
       "channels": {
         "chip_b.y": 13,
-        "arm_l.rotate": -2.27,
-        "arm_r.rotate": 2.27,
+        "arm_l.rotate": -3.3,
+        "arm_r.rotate": 3.3,
         "root.rotate": 0,
         "root.lift": 1
       }
@@ -1288,21 +1288,47 @@
   },
   "gestures": {
     "nod": {
-      "description": "A reassuring nod movement.",
-      "frames": 24,
+      "description": "A short nod: the body dips twice.",
+      "frames": 18,
       "tracks": {
-        "root.rotate": [
+        "root.scale_y": [
           [
             0,
             0
           ],
           [
-            0.3,
-            0.04
+            0.25,
+            -0.04
           ],
           [
-            0.7,
-            -0.02
+            0.45,
+            0
+          ],
+          [
+            0.65,
+            -0.04
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "root.lift": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            -3
+          ],
+          [
+            0.45,
+            0
+          ],
+          [
+            0.65,
+            -3
           ],
           [
             1,
@@ -1312,21 +1338,50 @@
       }
     },
     "wave": {
-      "description": "A reassuring wave movement.",
-      "frames": 24,
+      "description": "A wave of the right hand; the body leans slightly.",
+      "frames": 30,
       "tracks": {
+        "arm_r.rotate": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.2,
+              3.5999999999999996
+            ],
+            [
+              0.4,
+              3.0
+            ],
+            [
+              0.6,
+              3.5999999999999996
+            ],
+            [
+              0.8,
+              3.0
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
         "root.rotate": [
           [
             0,
             0
           ],
           [
-            0.3,
-            0.03
+            0.2,
+            -0.025
           ],
           [
-            0.7,
-            -0.02
+            0.8,
+            -0.025
           ],
           [
             1,

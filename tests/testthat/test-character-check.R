@@ -1,4 +1,33 @@
 describe("character_format_check()", {
+  it("requires wave and nod tracks whose keyed values change", {
+    data <- format_recipe()
+    expect_s3_class(character_format_check(data), "mascot_character_data")
+
+    missing_wave <- unserialize(serialize(data, NULL))
+    missing_wave$gestures$wave <- NULL
+    error <- format_problem("missing_reference", "$.gestures.wave", character_format_check(missing_wave))
+    expect_match(conditionMessage(error), "required 'wave' gesture", fixed = TRUE)
+
+    missing_nod <- unserialize(serialize(data, NULL))
+    missing_nod$gestures$nod <- NULL
+    error <- format_problem("missing_reference", "$.gestures.nod", character_format_check(missing_nod))
+    expect_match(conditionMessage(error), "required 'nod' gesture", fixed = TRUE)
+
+    root_wave <- format_recipe("study_bot")
+    root_wave$gestures$wave$tracks <- list("root.rotate" = list(list(0, 0), list(0.5, 0.2), list(1, 0)))
+    error <- format_problem("invalid_channel", "$.gestures.wave.tracks", character_format_check(root_wave))
+    expect_match(conditionMessage(error), "wave' gesture must move at least one non-root part channel", fixed = TRUE)
+
+    static_nod <- unserialize(serialize(data, NULL))
+    static_nod$gestures$nod$tracks <- list("root.rotate" = list(list(0, 0), list(0.5, 0), list(1, 0)))
+    error <- format_problem("invalid_channel", "$.gestures.nod.tracks", character_format_check(static_nod))
+    expect_match(
+      conditionMessage(error),
+      "nod' gesture must move at least one track with changing keyed values",
+      fixed = TRUE
+    )
+  })
+
   it("promotes only complete checked reference recipes and records derived evidence", {
     for (id in c("tessa", "alpha_visor", "study_bot", "anchor_probe")) {
       checked <- character_format_check(format_recipe(id), builtin = id %in% c("tessa", "alpha_visor"))
@@ -139,6 +168,10 @@ describe("character_format_check()", {
         )
         is_under <- is_under | is_removal_exception
       }
+
+      # The anchor probe now has the required non-root wave track; invalid
+      # recipes based on it inherit that shared valid-track change.
+      is_under <- is_under | startsWith(diff_keys, "$.gestures.wave.tracks.panel.rotate")
 
       expect_true(
         all(is_under),

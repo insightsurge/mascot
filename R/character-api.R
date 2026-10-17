@@ -11,6 +11,8 @@
 #' @details Content problems inherit `mascot_error_character` and `mascot_error`,
 #'   with `code`, `path`, `value` and `fix`. Argument problems inherit
 #'   `mascot_error_argument` and `mascot_error`, with `argument`, `code` and `value`.
+#'   Every character must define changing `wave` and `nod` tracks. `wave` must
+#'   change a non-root part channel; `nod` may change any channel, including `root`.
 #'   Direct objects never enter the process registry. Format version, supported
 #'   capabilities and admission policy version are separate contracts. Built-in
 #'   character ids (including planned characters) are reserved and refused here;

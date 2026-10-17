@@ -45,6 +45,56 @@ character_format_capabilities <- function(x, graph, work) {
   invisible(unique(used))
 }
 
+#' Check the required greeting and acknowledgement movements
+#' @noRd
+character_check_gestures <- function(x, movement = TRUE) {
+  checkmate::assert_list(x, names = "unique")
+  checkmate::assert_flag(movement)
+  for (id in c("wave", "nod")) {
+    gesture <- x$gestures[[id]]
+    if (is.null(gesture)) {
+      character_format_abort(
+        "missing_reference",
+        paste0("$.gestures.", id),
+        NULL,
+        paste0("Every character must define the required '", id, "' gesture.")
+      )
+    }
+    if (!movement) {
+      next
+    }
+    moving_targets <- names(gesture$tracks)[vapply(
+      gesture$tracks,
+      function(track) {
+        keys <- if (is.null(names(track))) track else track$keys
+        values <- lapply(keys, `[[`, 2L)
+        length(values) > 1L && any(!vapply(values[-1L], identical, logical(1), values[[1L]]))
+      },
+      logical(1)
+    )]
+    part_ids <- sub("\\..*$", "", moving_targets)
+    valid <- if (id == "wave") {
+      any(nzchar(part_ids) & part_ids != "root")
+    } else {
+      length(moving_targets) > 0L
+    }
+    if (!valid) {
+      requirement <- if (id == "wave") {
+        "at least one non-root part channel"
+      } else {
+        "at least one track with changing keyed values"
+      }
+      character_format_abort(
+        "invalid_channel",
+        paste0("$.gestures.", id, ".tracks"),
+        names(gesture$tracks),
+        paste0("The required '", id, "' gesture must move ", requirement, ".")
+      )
+    }
+  }
+  invisible(NULL)
+}
+
 #' Build internal checked data only after every dependent stage succeeds
 #'
 #' The manifest is derived internal data, not part of the saved format. Neither
@@ -74,8 +124,10 @@ character_format_check <- function(
     )
   }
   resolved <- character_format_resolve(parsed, families, kits, parsed = TRUE)
+  character_check_gestures(resolved, movement = FALSE)
   graph <- character_format_references(resolved)
   behaviour <- character_format_behaviour(resolved, graph)
+  character_check_gestures(resolved)
   work <- stats::setNames(
     lapply(c("full", "small", "micro"), function(band) {
       character_format_work(resolved, graph, behaviour, band)

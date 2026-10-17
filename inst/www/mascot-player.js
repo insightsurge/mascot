@@ -53,6 +53,7 @@
     if (!isFormat(character)) throw new Error('mascot: expected a character with format_version 1');
     modules();
     const parts = ns.parts.compile(character);
+    ns.parts.requireGreetings(character);
     const faces = ns.faces.compile(character);
     const tracks = ns.motion.tracks.compile(character);
     const motion = ns.motion.tracks.settings(character);

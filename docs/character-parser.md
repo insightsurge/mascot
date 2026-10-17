@@ -10,6 +10,9 @@ Schema-driven normalisation preserves JSON {} versus [], nullable members and si
 
 Malformed descriptions raise mascot_error_character inheriting mascot_error, with code/path/value/fix fields. File failures raise mascot_error_file, retaining the supplied path, read operation and original cause. Internal argument assertion failures follow the existing checkmate convention.
 
+Semantic checking also requires `wave` and `nod`. Each needs at least one track with changing keyed values; wave
+must include a changing track on a non-root part, while nod may target any channel, including `root`.
+
 The format design is documented in [the engine proposal](https://github.com/insightsurge/mascot/blob/918893f2e900867d93154e9d50c2ecdf820a5a69/docs/engine-format-proposal.md) and [the core contract](https://github.com/insightsurge/mascot/blob/918893f2e900867d93154e9d50c2ecdf820a5a69/docs/character-format/contract.md). New engine, registry, public builder and Shiny queue work follow their own units; this reader does not approve Q1 or replace the current character path.
 
 ## Where the copied data comes from

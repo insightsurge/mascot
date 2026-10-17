@@ -408,6 +408,73 @@
   const valuesOf = (map, path, check) => {
     if (plainObject(map)) for (const [id, entry] of Object.entries(map)) check(entry, `${path}.${id}`);
   };
+  const checkIds = (source) => {
+    const idFields = new Set([
+      'id',
+      'family',
+      'parent',
+      'anchor',
+      'slot',
+      'part',
+      'target',
+      'role',
+      'fill',
+      'stroke',
+      'colour',
+      'shape',
+      'use',
+      'clip',
+      'paint',
+      'palette',
+    ]);
+    const idMaps = new Set([
+      'colours',
+      'colour_descriptions',
+      'follows',
+      'palettes',
+      'paints',
+      'shapes',
+      'anchors',
+      'poses',
+      'moods',
+      'gestures',
+      'effects',
+      'accessories',
+      'styles',
+      'eye_styles',
+      'brow_styles',
+      'mouth_styles',
+      'variants',
+      'tracks',
+    ]);
+    const checkId = (id, path) => {
+      if (typeof id !== 'string' || !id.split('.').every((segment) => /^(?!.*__)[a-z][a-z0-9_]*$/.test(segment))) {
+        problem('input_type', path, 'Use a snake_case id without consecutive underscores.');
+      }
+    };
+    const visit = (value, path, field = '') => {
+      if (Array.isArray(value)) {
+        value.forEach((entry, index) => {
+          visit(entry, `${path}[${index}]`, field);
+        });
+        return;
+      }
+      if (!plainObject(value)) {
+        if (idFields.has(field) && typeof value === 'string') checkId(value, path);
+        return;
+      }
+      if (idMaps.has(field)) {
+        for (const id of Object.keys(value)) checkId(id, `${path}.${id}`);
+      }
+      for (const [key, entry] of Object.entries(value)) visit(entry, `${path}.${key}`, key);
+    };
+    visit(source, '$');
+    if (Array.isArray(source.wear)) {
+      source.wear.forEach((id, index) => {
+        checkId(id, `$.wear[${index}]`);
+      });
+    }
+  };
   // Part (parts[], and accessory parts): its own keys, its switch and glow, and its base and variant item lists.
   const checkPart = (part, path) => {
     fixed(part, path);
@@ -557,6 +624,7 @@
     checkLod(character.lod);
     // Never retain mutable caller-owned templates. This stage is not the R checker.
     const source = JSON.parse(JSON.stringify(character));
+    checkIds(source);
     checkBands(source);
     const parts = [];
     const byId = new Map();
@@ -588,7 +656,7 @@
       slots.add(accessory.slot);
       const anchor = own(source.anchors, accessory.anchor);
       if (!anchor) problem('missing_reference', `$.accessories.${id}.anchor`, 'Name a declared anchor.');
-      const prefix = `wear_${id}_`;
+      const prefix = `wear__${id}__`;
       const local = new Set(accessory.parts.map((part) => part.id));
       accessory.parts.forEach((part, partIndex) => {
         const parent = part.parent ?? 'root';

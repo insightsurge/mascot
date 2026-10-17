@@ -276,8 +276,13 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     for (key in keys) {
       child <- paste0(path, ".", key)
       if (kind == "map") {
-        if (!grepl(rule$key_pattern, key)) {
-          character_format_abort("input_type", child, NULL, "Use a key with the documented spelling.")
+        if (!grepl(rule$key_pattern, key, perl = TRUE)) {
+          fix <- if (grepl("__", key, fixed = TRUE)) {
+            "Use an id without consecutive underscores."
+          } else {
+            "Use a key with the documented spelling."
+          }
+          character_format_abort("input_type", child, NULL, fix)
         }
         next_rule <- rule$values
       } else {
@@ -355,11 +360,19 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     fail(fix = "Choose one of the documented values.")
   }
   if (is.character(value)) {
+    if (!is.null(rule$forbid) && grepl(rule$forbid, value, fixed = TRUE)) {
+      fail(fix = "Use an id without consecutive underscores.")
+    }
     if (
       (!is.null(rule$min_chars) && nchar(value) < rule$min_chars) ||
-        (!is.null(rule$pattern) && !grepl(rule$pattern, value))
+        (!is.null(rule$pattern) && !grepl(rule$pattern, value, perl = TRUE))
     ) {
-      fail(fix = "Use the documented string spelling or format.")
+      fix <- if (grepl("__", value, fixed = TRUE)) {
+        "Use an id without consecutive underscores."
+      } else {
+        "Use the documented string spelling or format."
+      }
+      fail(fix = fix)
     }
   } else if (is.numeric(value)) {
     outside <- (!is.null(rule$min) && value < rule$min) ||

@@ -1462,8 +1462,8 @@
   "lod": {
     "micro": {
       "hide": [
-        "wear_bow_ornament",
-        "wear_clip_ornament"
+        "wear__bow__ornament",
+        "wear__clip__ornament"
       ],
       "face": {
         "lashes": false,

@@ -65,19 +65,19 @@ describe("character-format part transforms", {
     js(paste0("window.probe=mascot.parts.compile(", payload, ")"))
     state <- js("mascot.parts.frame(probe)")
     expect_equal(unlist(state$anchors$badge$matrix)[5:6], c(168, 198))
-    expect_equal(unlist(state$parts$wear_badge_disc$matrix)[5:6], c(168, 198))
-    expect_true(state$parts$wear_badge_disc$available)
+    expect_equal(unlist(state$parts$wear__badge__disc$matrix)[5:6], c(168, 198))
+    expect_true(state$parts$wear__badge__disc$available)
     state <- js("mascot.parts.frame(probe, {'panel.variant':'raised'})")
     expect_equal(unlist(state$anchors$badge$matrix)[5:6], c(170, 200))
     state <- js("mascot.parts.frame(probe, {'panel.visible':false})")
     expect_false(state$anchors$badge$available)
-    expect_false(state$parts$wear_badge_disc$available)
+    expect_false(state$parts$wear__badge__disc$available)
     expect_equal(unlist(state$anchors$badge$matrix)[5:6], c(168, 198))
     state <- js("mascot.parts.frame(probe, {}, 'micro')")
-    expect_false(state$parts$wear_badge_disc$available)
+    expect_false(state$parts$wear__badge__disc$available)
     state <- js("mascot.parts.frame(probe, {'root.scale_x':0})")
     expect_false(state$anchors$badge$available)
-    expect_false(state$parts$wear_badge_disc$available)
+    expect_false(state$parts$wear__badge__disc$available)
   })
 
   it("reads data-named keys as own properties, so a part may be called constructor", {
@@ -151,11 +151,38 @@ describe("prototype names in anchors and accessories", {
     expect_identical(bad_anchor$path, "$.accessories.badge.anchor")
     anchor <- run("ch.anchors={constructor:ch.anchors.badge};ch.accessories.badge.anchor='constructor'")
     expect_true(anchor$anchors$constructor$available)
-    expect_true(anchor$parts$wear_badge_disc$available)
+    expect_true(anchor$parts$wear__badge__disc$available)
     expect_equal(unlist(anchor$anchors$constructor$matrix)[5:6], c(168, 198))
     accessory <- run("ch.accessories={constructor:ch.accessories.badge};ch.wear=['constructor']")
-    expect_true(accessory$parts$wear_constructor_disc$available)
-    expect_equal(unlist(accessory$parts$wear_constructor_disc$matrix)[5:6], c(168, 198))
+    expect_true(accessory$parts$wear__constructor__disc$available)
+    expect_equal(unlist(accessory$parts$wear__constructor__disc$matrix)[5:6], c(168, 198))
+  })
+
+  it("uses distinct expanded ids for accessory and local names and rejects reserved separators", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    payload <- as.character(jsonlite::toJSON(format_recipe(), auto_unbox = TRUE, null = "null", digits = NA))
+    js(paste0("window.separatorSource=", payload))
+    result <- js(
+      paste0(
+        "(() => {const ch=JSON.parse(JSON.stringify(separatorSource));",
+        "const base=ch.accessories.badge;",
+        "ch.accessories={a_b:{...base,slot:'a_b',parts:[{...base.parts[0],id:'c'}]},",
+        "a:{...base,slot:'a',parts:[{...base.parts[0],id:'b_c'}]}};ch.wear=['a_b','a'];",
+        "try {const p=mascot.parts.compile(ch);return p.parts.map(x=>x.id).filter(x=>x.startsWith('wear__'));}",
+        "catch(e) {return {code:e.code,path:e.path};}})()"
+      )
+    )
+    expect_setequal(result, c("wear__a_b__c", "wear__a__b_c"))
+    invalid <- js(
+      paste0(
+        "(() => {const ch=JSON.parse(JSON.stringify(separatorSource));ch.parts[0].id='bad__id';",
+        "try {mascot.parts.compile(ch);return {code:'none'};} catch(e) {return {code:e.code,path:e.path,message:e.message};}})()"
+      )
+    )
+    expect_identical(invalid$code, "input_type")
+    expect_identical(invalid$path, "$.parts[0].id")
+    expect_match(invalid$message, "without consecutive underscores", fixed = TRUE)
   })
 })
 

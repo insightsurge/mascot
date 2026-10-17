@@ -360,6 +360,13 @@ describe("character_format_parse()", {
     data <- format_recipe()
     data$id <- "Invalid_ID_With_Caps"
     format_problem("input_type", "$.id", character_format_parse(data))
+    data$id <- "invalid__id"
+    error <- format_problem("input_type", "$.id", character_format_parse(data))
+    expect_match(error$fix, "without consecutive underscores", fixed = TRUE)
+    data <- format_recipe()
+    data$colours[["invalid__role"]] <- "#ffffff"
+    error <- format_problem("input_type", "$.colours.invalid__role", character_format_parse(data))
+    expect_match(error$fix, "without consecutive underscores", fixed = TRUE)
 
     # Numeric tree containing nested lists for tuning
     data <- format_recipe("study_bot")

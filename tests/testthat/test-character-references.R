@@ -28,12 +28,25 @@ describe("character_format_references()", {
 
   it("rejects expanded id collisions and two accessories in the same slot", {
     data <- character_format_resolve(format_recipe())
-    data$parts[[2]] <- list(id = "wear_badge_disc")
+    data$parts[[2]] <- list(id = "wear__badge__disc")
     format_problem("input_type", "$.accessories.badge.parts[0].id", character_format_references(data))
     data <- character_format_resolve(format_recipe())
     data$accessories$other <- data$accessories$badge
     data$wear <- list("badge", "other")
     format_problem("input_type", "$.wear", character_format_references(data))
+  })
+
+  it("expands ambiguous accessory names with distinct separators", {
+    recipe <- format_recipe()
+    template <- recipe$accessories$badge
+    template$parts[[1]]$id <- "c"
+    recipe$accessories <- list(a_b = template)
+    second <- template
+    second$parts[[1]]$id <- "b_c"
+    recipe$accessories$a <- second
+
+    expanded <- character_format_parts(recipe)$parts
+    expect_true(all(c("wear__a_b__c", "wear__a__b_c") %in% vapply(expanded, `[[`, character(1), "id")))
   })
 
   it("tunes existing numeric leaves and rejects new keys or altered operations", {

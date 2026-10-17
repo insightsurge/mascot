@@ -2590,7 +2590,7 @@
       measures: record.measures,
       revision: record.revision,
       snapshot: snapshot(record),
-      current: record.controller.current(),
+      current: record.controller ? record.controller.current() : null,
     };
   }
 

@@ -38,7 +38,7 @@ character_json <- function(id) {
   file <- builtin_characters()$file[match(id, builtin_characters()$id)]
   text <- paste(
     readLines(
-      system.file("characters", file, package = "mascot"),
+      system.file("format", "characters", file, package = "mascot", mustWork = TRUE),
       encoding = "UTF-8",
       warn = FALSE
     ),

@@ -95,8 +95,22 @@ local_host_page <- function(
 ) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
-  scripts <- file.path(www, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
+  all_scripts <- mascot_dependency()$script
+  pre_host <- file.path(www, all_scripts[all_scripts != "mascot-host.js"])
+  host_script <- file.path(www, "mascot-host.js")
   page <- file.path(dir, "host.html")
+  tessa_format_v1 <- paste(
+    readLines(system.file("format", "characters", "tessa.json", package = "mascot"), encoding = "UTF-8"),
+    collapse = "\n"
+  )
+  blob_v1 <- sub(
+    '"name": "Tessa"',
+    '"name": "Blob"',
+    sub('"id": "tessa"', '"id": "blob"', tessa_format_v1, fixed = TRUE),
+    fixed = TRUE
+  )
+  blob_v1 <- sub('    "rim": "#d9b35c",\n', "", blob_v1, fixed = TRUE)
+  blob_v1 <- gsub('"rim"', '"body"', blob_v1, fixed = TRUE)
   writeLines(
     c(
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>host</title>',
@@ -112,21 +126,29 @@ local_host_page <- function(
         click = click
       )),
       '<script type="application/json" data-mascot-character="blob">',
-      readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
+      blob_v1,
       '</script>',
-      sprintf('<script src="file://%s"></script>', normalizePath(scripts[1:3])),
+      sprintf('<script src="file://%s"></script>', normalizePath(pre_host)),
       if (record_colours) {
         paste0(
           '<script>window.themeDraws=[];const originalDraw=mascot.draw;',
           'mascot.draw=function(ctx,ch,options){themeDraws.push({character:ch.id,',
           'colours:{...ch.colours,...options.colours},overrides:{...options.colours}});',
-          'return originalDraw(ctx,ch,options);};</script>'
+          'return originalDraw(ctx,ch,options);};',
+          'if (mascot.geometry) { const origGeo = mascot.geometry.draw;',
+          'mascot.geometry = { ...mascot.geometry, draw: function(ctx, compiled, state, colours, options) {',
+          'if (compiled?.source?.parts?.[0]?.id !== "ground_shadow" && colours?.body) {',
+          'const overrides = { ...(options?.overrides ?? {}) };',
+          'const coloursWithAliases = { ...colours, bodyHighlight: colours.body_highlight, blushStrong: colours.blush_strong, accessoryDetail: colours.accessory_detail, sparkleOutline: colours.sparkle_outline, eyeWhite: colours.eye_white };',
+          'themeDraws.push({character: compiled?.source?.id || "tessa", colours: coloursWithAliases, overrides: overrides});',
+          '} return origGeo(ctx, compiled, state, colours, options); } }; }',
+          '</script>'
         )
       },
       if (shiny_menu) {
         '<script>window.menuEvents=[];window.Shiny={setInputValue:(...args)=>menuEvents.push(args)};</script>'
       },
-      sprintf('<script src="file://%s"></script>', normalizePath(scripts[4])),
+      sprintf('<script src="file://%s"></script>', normalizePath(host_script)),
       '</body></html>'
     ),
     page
@@ -187,7 +209,7 @@ host_motion_js <- function(code) {
   paste0(
     "(() => {const el=document.getElementById('a');mascot.host.unmount(el);
 ",
-    "const mount=mascot.mount,draw=mascot.draw,raf=window.requestAnimationFrame,cancel=window.cancelAnimationFrame;
+    "const mount=mascot.mount,draw=mascot.draw,origGeo=mascot.geometry?.draw,raf=window.requestAnimationFrame,cancel=window.cancelAnimationFrame;
 ",
     "const queued=new Map(),calls=[],players=[];let id=0;
 ",
@@ -195,7 +217,43 @@ host_motion_js <- function(code) {
 ",
     "mascot.draw=(ctx,ch,options)=>{calls.push({character:ch.id,...options});return draw(ctx,ch,options);};
 ",
-    "mascot.mount=(...args)=>{const p=mount(...args);players.push(p);return p;};
+    "if (mascot.geometry) { mascot.geometry = { ...mascot.geometry, draw: (ctx, compiled, state, colours, options) => {
+      const p = players[players.length - 1];
+      const cur = p?.current?.();
+      const chId = compiled?.source?.id || cur?.character || 'tessa';
+      if (compiled?.source?.parts?.[0]?.id !== 'ground_shadow') {
+        const poseObj = p?._lastPose || {};
+        const pose = {
+          ...poseObj,
+          look: poseObj['face.look_x'] !== undefined && poseObj['face.look_x'] !== null ? poseObj['face.look_x'] : (poseObj.look !== undefined ? poseObj.look : undefined),
+          lookY: poseObj['face.look_y'] !== undefined && poseObj['face.look_y'] !== null ? poseObj['face.look_y'] : (poseObj.lookY !== undefined ? poseObj.lookY : undefined)
+        };
+        calls.push({ character: chId, frame: options?.frame ?? 0, pose, colours: { ...colours } });
+      }
+      return origGeo(ctx, compiled, state, colours, options);
+    } }; }
+",
+    "mascot.mount=(...args)=>{
+      const p=mount(...args);
+      players.push(p);
+      p._lastPose = {};
+      const origUp = p.update;
+      if (origUp) {
+        p.update = (patch) => {
+          if (patch?.pose) {
+            p._lastPose = { ...patch.pose };
+            const pose = {
+              ...patch.pose,
+              look: patch.pose['face.look_x'] !== undefined && patch.pose['face.look_x'] !== null ? patch.pose['face.look_x'] : undefined,
+              lookY: patch.pose['face.look_y'] !== undefined && patch.pose['face.look_y'] !== null ? patch.pose['face.look_y'] : undefined
+            };
+            calls.push({ character: p.current()?.character || 'tessa', frame: 0, pose, colours: {} });
+          }
+          return origUp.call(p, patch);
+        };
+      }
+      return p;
+    };
 ",
     "const send=patch=>mascot.host.receive({id:'a',patch}),state=()=>mascot.host.state(el);
 ",
@@ -203,7 +261,7 @@ host_motion_js <- function(code) {
 ",
     "try{mascot.host.mount(el);const controller=players[0];",
     code,
-    "}finally{mascot.host.unmount(el);mascot.mount=mount;mascot.draw=draw;window.requestAnimationFrame=raf;window.cancelAnimationFrame=cancel;}})()"
+    "}finally{mascot.host.unmount(el);mascot.mount=mount;mascot.draw=draw;if (origGeo) mascot.geometry = { ...mascot.geometry, draw: origGeo };window.requestAnimationFrame=raf;window.cancelAnimationFrame=cancel;}})()"
   )
 }
 

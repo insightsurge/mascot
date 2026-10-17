@@ -10,6 +10,8 @@
 
 ## New features
 
+* Tessa is now drawn and animated by the same engine as every other character. She keeps her five moods, the wiggle on a mood change, her gestures, bow and clip, and every colour role name a theme can use; a few small face details are drawn slightly differently, and at the smallest sizes her bow and clip are hidden. The restore button now reads "Restore Tessa, <status>" instead of the mood's id.
+
 * Mascots work in nested Shiny modules, function-built user interfaces in `golem` and rhino-shaped view modules. Bundled `golem` and `rhino` examples each show two independent nested modules (#133).
 
 * Minimising and restoring a mascot sets `input$<id>_minimised` in its owning module (#133).

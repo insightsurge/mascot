@@ -309,7 +309,8 @@ describe("R-settled latest mascot state", {
     expect_identical(latest$state$theme$light$body_highlight, "#123456")
     expect_null(latest$state$theme$light$bodyHighlight)
     update_mascot("helper", character = "tessa", session = f$session)
-    expect_identical(protocol_flush(f)$state$theme$light$bodyHighlight, "#123456")
+    expect_identical(protocol_flush(f)$state$theme$light$body_highlight, "#123456")
+    expect_null(protocol_flush(f)$state$theme$light$bodyHighlight)
   })
 
   it("U1.5-6 progresses without outcomes, ignores old lifecycle, and coalesces explicit reconciliation", {

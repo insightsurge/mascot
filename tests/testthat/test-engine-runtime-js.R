@@ -103,7 +103,7 @@ describe("I1 format-v1 dispatch", {
     expect_equal(js("legacyCalls"), 0)
   })
 
-  it("keeps the default Tessa path unchanged when the format-v1 modules are loaded: same pixels, no format-v1 call", {
+  it("draws default Tessa through format-v1 runtime modules", {
     legacy <- local_host_page(size = 160)
     install_runtime_helpers(legacy)
     legacy("T.frames(3)")
@@ -119,23 +119,37 @@ describe("I1 format-v1 dispatch", {
       geometry: geometryCalls.length, faces: faceCalls.length, drawn: typeof mascot.drawing.character})"
     )
     expect_gt(expected$ink, 1000)
-    expect_equal(result$picture$ink, expected$ink)
-    expect_equal(result$picture$sum, expected$sum)
-    expect_equal(result$frames, 0)
-    expect_equal(result$geometry, 0)
-    expect_equal(result$faces, 0)
+    expect_gt(result$picture$ink, 1000)
+    expect_gt(result$frames, 0)
+    expect_gt(result$geometry, 0)
+    expect_gt(result$faces, 0)
   })
 
   it("rejects a format-v1 character in a legacy player, and a legacy character in a format-v1 player, before any change", {
+    blob_json <- paste(
+      readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
+      collapse = "\n"
+    )
     js <- page_with(
       tags = list(
         mascot("a", character = alpha, motion = FALSE, placement = "inline"),
-        mascot("t", motion = FALSE, placement = "inline")
+        shiny::tags$div(
+          id = "b",
+          `data-mascot` = "",
+          `data-character` = "blob",
+          shiny::tags$script(
+            type = "application/json",
+            `data-mascot-character` = "blob",
+            shiny::HTML(blob_json)
+          ),
+          shiny::tags$canvas(class = "mascot-canvas"),
+          shiny::tags$span(class = "mascot-status", "Idle")
+        )
       )
     )
     result <- js(
       "(() => {
-        const legacy = mascot.readCharacter('tessa', document.getElementById('t'));
+        const legacy = mascot.readCharacter('blob', document.getElementById('b'));
         const plain = mascot.mount(T.canvas(), legacy, { x: 150, baseY: 270, reduced: false });
         plain.pause();
         const v1 = T.player('alpha_two');
@@ -147,7 +161,7 @@ describe("I1 format-v1 dispatch", {
     )
     expect_match(result$errors$legacy, "format-v1 character cannot replace a legacy character")
     expect_match(result$errors$v1, "legacy character cannot replace a format-v1 character")
-    expect_identical(result$legacy$character, "tessa")
+    expect_identical(result$legacy$character, "blob")
     expect_false(result$legacy$swapping)
     expect_identical(result$v1$character, "alpha_two")
     expect_false(result$v1$swapping)
@@ -1500,19 +1514,31 @@ describe("I1 seeking before the action", {
 
 describe("I1 host replacement without a mood", {
   it("rejects a format-v1 character that replaces a legacy one with the controller's message, not a compile error", {
-    js <- page_with(tags = list(mascot("t", motion = FALSE, placement = "inline")))
+    blob_json <- paste(
+      readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
+      collapse = "\n"
+    )
+    tessa_json <- paste(
+      readLines(system.file("format", "characters", "tessa.json", package = "mascot")),
+      collapse = "\n"
+    )
+    m <- as.character(mascot("b", motion = FALSE, placement = "inline"))
+    m <- sub('data-character="tessa"', 'data-character="blob"', m, fixed = TRUE)
+    m <- sub('data-mascot-character="tessa"', 'data-mascot-character="blob"', m, fixed = TRUE)
+    m <- sub(tessa_json, blob_json, m, fixed = TRUE)
+    js <- page_with(tags = list(shiny::HTML(m)))
     r <- js(
       "(() => {
-        const el = document.getElementById('t'), warnings = [], original = console.warn;
+        const el = document.getElementById('b'), warnings = [], original = console.warn;
         console.warn = (...a) => warnings.push(a.join(' '));
         try {
-          mascot.host.receive({ id: 't', patch: { character: { id: 'alpha_two', name: 'Alpha Two', json: CHARACTERS.alpha_two.json } } });
+          mascot.host.receive({ id: 'b', patch: { character: { id: 'alpha_two', name: 'Alpha Two', json: CHARACTERS.alpha_two.json } } });
         } finally { console.warn = original; }
         return { warnings, character: mascot.host.state(el).character };
       })()"
     )
     expect_length(r$warnings, 1)
     expect_match(r$warnings[[1]], "a format-v1 character cannot replace a legacy character here")
-    expect_identical(r$character, "tessa")
+    expect_identical(r$character, "blob")
   })
 })

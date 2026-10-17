@@ -898,13 +898,14 @@ describe("bundled example apps", {
     )
     app$wait_for_js(paste0(state, ".colours.body?.toLowerCase() === '#1f6feb'"))
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('mascot_theme(light = list(body')")
-    # A followed highlight and an explicit highlight both use the engine's camelCase key.
+    # A followed highlight and an explicit highlight both use the engine's key: snake_case since Tessa moved to the
+    # format-v1 engine (M1); the studio maps either spelling to the public role name.
     highlight_swatch_matches <- paste0(
       "(() => {
       const swatch = document.querySelector('.pg-resolved[data-mode=light][data-role=body_highlight]');
       const expected = document.createElement('span'); expected.style.background = ",
       state,
-      ".colours.bodyHighlight;
+      ".colours.body_highlight;
       return !!swatch && swatch.style.background === expected.style.background && !swatch.classList.contains('is-idle');
     })()"
     )
@@ -914,7 +915,7 @@ describe("bundled example apps", {
       "(() => { const p = document.getElementById('light_body_highlight'); p.value = '#abcdef';
       p.dispatchEvent(new Event('input')); })()"
     )
-    app$wait_for_js(paste0(state, ".colours.bodyHighlight?.toLowerCase() === '#abcdef'"))
+    app$wait_for_js(paste0(state, ".colours.body_highlight?.toLowerCase() === '#abcdef'"))
     app$wait_for_js(highlight_swatch_matches)
     expect_true(app$get_js(highlight_swatch_matches))
     select_function("mascot_popup_menu")

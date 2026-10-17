@@ -9,6 +9,29 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-17 — Default character Tessa moves onto the format-v1 engine (#308)
+
+**In brief:** The default character Tessa is now drawn and animated through the format-v1 character engine
+(`inst/format/characters/tessa.json` played via `inst/www/mascot-player.js`) instead of the legacy drawing code.
+`mascot(character = "tessa")`, `update_mascot()`, `mascot_preview()` and the mascot studio mount Tessa on the
+format-v1 runtime, preserving all five moods, wiggle on mood change, gestures (nod, wave), anchors and accessories
+(bow, clip), blink, sizes, and detail-band level-of-detail hiding at micro size. Public colour role names and theme
+mappings continue to work without change.
+
+**Technical:**
+
+* `R/characters.R`: `character_json("tessa")` serves `inst/format/characters/tessa.json` (format version 1).
+  The host detects format version 1 and dispatches Tessa to `mascot.runtime.mount()`.
+* Public colour role mapping: all public colour role names (`body`, `rim`, `limb`, `sleeve`, `eyelid`, `blush`,
+  `accessory`, and related roles) are preserved in `mascot_colour_roles("tessa")`. Internal role mappings ensure theme overrides
+  map seamlessly onto the format-v1 recipe.
+* The restore button label for Tessa becomes "Restore Tessa, <shown status>" (e.g. "Restore Tessa, Idle"), matching
+  format-v1 character conventions.
+* `inst/www/mascot-player.js`: `ns.geometry.draw()` receives frame elapsed time and active colour overrides in options;
+  `inst/www/mascot-host.js` safely guards controller availability during initial snapshot and mount.
+* Legacy drawing code (`mascot-draw.js`), `inst/www/mascot-tessa-adapter.js` and the internal switch
+  `mascot.internal.useCharacterAdapter` remain in place and kept intact until final look approval.
+
 ## 2026-10-16 — Format-v1 characters mount and run in the real host (#307)
 
 **In brief:** A checked format-v1 character now mounts in the page host and runs end to end: it is drawn through the

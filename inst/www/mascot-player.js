@@ -224,6 +224,7 @@
   const view = { root: null, parts: null, anchors: null, layers: null, band: 'full', hidden: null };
   const controls = {};
   const noOptions = Object.freeze({});
+  const drawInfo = { frame: 0, overrides: null };
   // The held host look is in page terms; a mirrored body (root.flip -1 in the displayed frame) mirrors the pupils too,
   // so the horizontal look is flipped back here, from the frame actually shown (reduced bases and swaps included).
   function flipHeldLook(channels, held) {
@@ -280,7 +281,10 @@
     for (const segment of entry.segments) {
       if (segment.kind === 'parts') {
         view.layers = segment.ids;
-        ns.geometry.draw(ctx, entry.parts, view, colours);
+        // Diagnostic fields for page-level test hooks; one object reused, so a frame allocates nothing here.
+        drawInfo.frame = scene.elapsed;
+        drawInfo.overrides = scene.colours;
+        ns.geometry.draw(ctx, entry.parts, view, colours, drawInfo);
       } else if (segment.kind === 'face') {
         controls.eyes = channels['face.eyes'];
         controls.mouth = channels['face.mouth'];

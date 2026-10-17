@@ -150,7 +150,7 @@ describe("complete-state browser delivery", {
     js <- protocol_page()
     r <- js(
       "(() => {
-      const blob=mascot.readCharacter('blob');blob.moods.processing={...blob.moods.idle,status:'Scanning'};
+      const blob=mascot.readCharacter('blob');blob.moods.processing={...blob.moods.idle,status:'Scanning',fallback:'idle'};
       send(envelope(1,{character:{id:blob.id,name:'Blob',json:JSON.stringify(blob)},mood:'processing',
         status:{mode:'mood'},size:{size:96,small_screen:null},placement:{...base.placement,floating:false,minimise:false,drag:false},
         motion:{...base.motion,reduced:true}},{restore:true}));

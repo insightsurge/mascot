@@ -9,6 +9,11 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-17 — Browser validation requires moving wave and nod gestures (#328)
+
+The browser character validator now refuses a character without `wave` or `nod`, or with a gesture whose keyed values
+never change. A wave needs a changing track on a non-root part; a nod can change any channel, including `root`.
+
 ## 2026-10-17 — Outlines sit under the fill, slim as in the drawings (#325)
 
 **In brief:** Sela, Knurl and Neer looked heavier in the engine than in their drawings. The outline is now painted

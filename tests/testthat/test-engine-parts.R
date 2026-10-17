@@ -127,6 +127,32 @@ describe("character-format part transforms", {
     expect_identical(evaluate_error("mascot.parts.child([NaN,0,0,1,0,0],{id:'a'})")$code, "non_finite")
     expect_identical(evaluate_error("mascot.parts.compile({format_version:2,parts:[]})")$code, "version")
   })
+
+  it("requires changing wave and nod tracks in the browser validator", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    payload <- as.character(jsonlite::toJSON(format_recipe(), auto_unbox = TRUE, null = "null", digits = NA))
+    js(paste0("window.gestureSource=", payload))
+    run <- function(mutation) {
+      js(paste0(
+        "(() => {const ch=JSON.parse(JSON.stringify(gestureSource));",
+        mutation,
+        ";try {mascot.parts.compile(ch);mascot.parts.requireGreetings(ch);return null;}catch(e) {return {code:e.code,path:e.path,message:e.message};}})()"
+      ))
+    }
+    missing_wave <- run("delete ch.gestures.wave")
+    expect_identical(missing_wave$path, "$.gestures.wave")
+    expect_match(missing_wave$message, "required 'wave' gesture", fixed = TRUE)
+    missing_nod <- run("delete ch.gestures.nod")
+    expect_identical(missing_nod$path, "$.gestures.nod")
+    expect_match(missing_nod$message, "required 'nod' gesture", fixed = TRUE)
+    root_wave <- run("ch.gestures.wave.tracks={'root.rotate':[[0,0],[0.5,0.2],[1,0]]}")
+    expect_identical(root_wave$path, "$.gestures.wave.tracks")
+    expect_match(root_wave$message, "at least one non-root part channel", fixed = TRUE)
+    static_nod <- run("ch.gestures.nod.tracks={'root.rotate':[[0,0],[0.5,0],[1,0]]}")
+    expect_identical(static_nod$path, "$.gestures.nod.tracks")
+    expect_match(static_nod$message, "at least one track with changing keyed values", fixed = TRUE)
+  })
 })
 
 describe("prototype names in anchors and accessories", {

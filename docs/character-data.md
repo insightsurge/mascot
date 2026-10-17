@@ -49,3 +49,9 @@ The registry provides internal helpers (`@noRd`):
    `character_data_ids()`.
 
 Tests snapshot and restore the prior registry state. They do not clear another caller's entries at teardown. Character ids use the format v1 two-to-32-character rule.
+
+## Required gestures
+
+Every character must define `wave` and `nod`, and each gesture must have a track whose keyed values change. At least
+one changing `wave` track must target a part other than `root`; a character can use any part name, including a hand,
+fin or antenna. A changing `nod` track can target any channel, including `root`, so a root bob or squash counts.

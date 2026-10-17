@@ -24,6 +24,8 @@ then check it again: checked objects are opaque and edits are refused.
 Content problems inherit \code{mascot_error_character} and \code{mascot_error},
 with \code{code}, \code{path}, \code{value} and \code{fix}. Argument problems inherit
 \code{mascot_error_argument} and \code{mascot_error}, with \code{argument}, \code{code} and \code{value}.
+Every character must define changing \code{wave} and \code{nod} tracks. \code{wave} must
+change a non-root part channel; \code{nod} may change any channel, including \code{root}.
 Direct objects never enter the process registry. Format version, supported
 capabilities and admission policy version are separate contracts. Built-in
 character ids (including planned characters) are reserved and refused here;

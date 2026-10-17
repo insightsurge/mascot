@@ -614,6 +614,36 @@
     });
   };
 
+  // Every whole character needs a wave that moves a part other than root and a nod that moves something (#328).
+  // Not part of compile(): the engine also compiles kit effects and the ground shadow, which have no gestures.
+  const requireGreetings = (source) => {
+    for (const name of ['wave', 'nod']) {
+      const gesture = source.gestures?.[name];
+      if (!gesture)
+        problem(
+          'missing_reference',
+          `$.gestures.${name}`,
+          `Every character must define the required '${name}' gesture.`,
+        );
+      const movingTargets = Object.entries(gesture.tracks ?? {})
+        .filter(([, track]) => {
+          const keys = Array.isArray(track) ? track : track.keys;
+          return Array.isArray(keys) && keys.length > 1 && keys.slice(1).some((key) => !Object.is(key[1], keys[0][1]));
+        })
+        .map(([target]) => target.split('.')[0]);
+      const valid = name === 'wave' ? movingTargets.some((part) => part && part !== 'root') : movingTargets.length > 0;
+      if (!valid) {
+        const requirement =
+          name === 'wave' ? 'at least one non-root part channel' : 'at least one track with changing keyed values';
+        problem(
+          'invalid_channel',
+          `$.gestures.${name}.tracks`,
+          `The required '${name}' gesture must move ${requirement}.`,
+        );
+      }
+    }
+  };
+
   const compile = (character) => {
     if (!character || !Array.isArray(character.parts)) problem('input_type', '$.parts', 'Supply a part array.');
     if (character.format_version !== 1) problem('version', '$.format_version', 'Use character format 1.');
@@ -1020,6 +1050,7 @@
     root,
     child,
     compile,
+    requireGreetings,
     bandFor,
     frame,
     resolveChannels,

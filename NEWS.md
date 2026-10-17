@@ -33,7 +33,7 @@
 
 * `mascot_character()` chooses a character by id (#190).
 
-* Two more built-in characters: Sela, a second hexagon, and Knurl, a robot. `mascot_characters()` gains a `lifecycle` column. Tessa and Sela are stable: their id, name, five moods, gesture names, colour role names and palette names stay the same in every release, while their drawing, motion and exact colours may be polished. Knurl is experimental: anything about Knurl may change, and Knurl is never removed without a warning one release before. The character file format and the functions for making your own characters are experimental too (#317, #318, #319).
+* Three more built-in characters: Sela, a second hexagon; Knurl, a robot; and Neer, a water elemental. `mascot_characters()` gains a `lifecycle` column. Tessa and Sela are stable: their id, name, five moods, gesture names, colour role names and palette names stay the same in every release, while their drawing, motion and exact colours may be polished. Knurl and Neer are experimental: anything about them may change, and neither is removed without a warning one release before. The character file format and the functions for making your own characters are experimental too (#317, #318, #319, #26).
 
 * `mascot_colour_roles()` lists a character's colour roles with their colours, the leaders they follow and their shade (#202, #213).
   * It gains a `description` column and a `brand` column naming the `bslib` primary or secondary slot a role fills. The first four columns are unchanged (#296).

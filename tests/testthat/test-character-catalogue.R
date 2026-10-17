@@ -38,10 +38,10 @@ describe("character_catalogue_builtin()", {
 describe("character_catalogue_ids() and character_catalogue_get()", {
   it("lists shipped ids first and registered ids in registration order", {
     local_empty_registry()
-    expect_identical(character_catalogue_ids(), "tessa")
+    expect_identical(character_catalogue_ids(), c("tessa", "sela", "knurl"))
     character_data_register(character_format_check(format_recipe("anchor_probe")))
     character_data_register(character_format_check(format_recipe("study_bot")))
-    expect_identical(character_catalogue_ids(), c("tessa", "anchor_probe", "study_bot"))
+    expect_identical(character_catalogue_ids(), c("tessa", "sela", "knurl", "anchor_probe", "study_bot"))
     expect_identical(character_catalogue_get("study_bot")$id, "study_bot")
     expect_true(character_catalogue_is_builtin("tessa"))
     expect_false(character_catalogue_is_builtin("study_bot"))

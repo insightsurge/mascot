@@ -136,9 +136,14 @@ mascot_status("2 fields need attention")
 mascot_character("tessa")
 ```
 
-Only Tessa is built in at present. `mascot_character()` selects a character;
-it does not create a new one. The plain names `character = "tessa"` and
-`mood = "worried"` are shortcuts for their helpers.
+Tessa and Sela are stable built-in characters: their ids, names, five shared
+moods, gesture names, colour-role names and palette names stay the same in
+every release, while their drawings, motion and exact palette colours may be
+polished. Knurl is experimental: any part may change, and it will not be
+removed without a warning in the release before its removal. The character file
+format and authoring functions are experimental too. `mascot_character()`
+selects a character; it does not create a new one. The plain names
+`character = "tessa"` and `mood = "worried"` are shortcuts for their helpers.
 
 `mascot_characters()` lists the characters this R session knows, and
 `mascot_families()` their families. Give a character to a listing to see what

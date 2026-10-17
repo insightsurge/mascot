@@ -37,10 +37,18 @@ describe("mascot_theme()", {
     css <- as_theme_arg(mascot_theme(css = list(body_highlight = "--team-blue")), environment())
     expect_identical(css$css, list(body_highlight = "--team-blue"))
   })
+  it("suggests the closest colour role for a misspelt one, and nothing when no role is close", {
+    roles <- colour_role_registry()
+    expect_match(theme_map_problem(list(bdoy = "blue"), "light", roles), 'Did you mean "body"?', fixed = TRUE)
+    far <- theme_map_problem(list(zzzzzzzz = "blue"), "light", roles)
+    expect_no_match(far, "Did you mean", fixed = TRUE)
+    expect_match(far, "mascot_colour_roles()", fixed = TRUE)
+  })
+
   it("rejects malformed maps, reserved roles, colours and helper fields", {
     expect_snapshot(error = TRUE, mascot_theme(light = list(bdoy = "blue")))
     for (role in c("light", "dark", "default", "eyeWhite", "toString")) {
-      expect_error(mascot_theme(light = stats::setNames(list("blue"), role)), "Valid roles:.*body_highlight")
+      expect_error(mascot_theme(light = stats::setNames(list("blue"), role)), "unknown or reserved colour roles")
     }
     for (arg in c("light", "dark", "css")) {
       for (x in list(1, "blue", list("blue"), stats::setNames(list("red", "blue"), c("body", "body")))) {

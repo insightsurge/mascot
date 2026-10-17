@@ -17,13 +17,23 @@ A data frame with character columns \code{id} (the value you pass to
 \code{character}), \code{name} (the display name), \code{description} and \code{family} (the
 family \code{id}), and logical columns \code{is_default} (\code{TRUE} only for the
 character \code{\link[=mascot]{mascot()}} uses when you name none) and \code{built_in} (\code{TRUE} for
-characters shipped with the package).
+characters shipped with the package), and \code{lifecycle} (\code{"stable"} or
+\code{"experimental"} for built-in characters, or \code{NA} for a registered
+custom character).
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the value you pass to the matching function.
 }
 \description{
 Lists the characters shipped with the package. Pass an \code{id} to the \code{character} argument of \code{\link[=mascot]{mascot()}}, or to the
 other listings, such as \code{\link[=mascot_moods]{mascot_moods()}}.
+}
+\details{
+Stable built-ins keep their id, name, five shared moods, gesture
+names, colour-role names and palette names in every release; their drawing,
+motion and exact palette colours may be polished. Experimental built-ins
+may change in any way and are not removed without a warning in the release
+before removal. The character file format and authoring functions are
+experimental too.
 }
 \examples{
 mascot_characters()

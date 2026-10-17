@@ -13,7 +13,7 @@
       mascot_preview(character = "typo")
     Condition
       Error in `mascot_preview()`:
-      ! `character` must be one of "tessa".
+      ! `character` must be one of "tessa", "sela", or "knurl".
       x "typo" is not a character.
 
 ---
@@ -31,5 +31,5 @@
       mascot_preview(theme = list(eye_whit = "red"))
     Condition
       Error in `mascot_preview()`:
-      ! `theme` has unknown or reserved colour roles: "eye_whit". Valid roles: outline, feature, eye_white, shine, teeth, eyelid, tongue, body, body_highlight, rim, limb, sleeve, blush, blush_strong, accessory, accessory_detail, sparkle, sparkle_outline, sweat, shadow.
+      ! `theme` has unknown or reserved colour roles: "eye_whit". Did you mean "eye_white"? See `mascot_colour_roles()` for each character's roles.
 

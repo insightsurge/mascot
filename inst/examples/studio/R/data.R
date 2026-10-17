@@ -228,7 +228,9 @@ playground_controls <- list(
 studio_characters <- function() {
   listing <- mascot::mascot_characters()
   listing <- listing[listing$built_in, ]
-  stats::setNames(listing$id, listing$name)
+  # Only experimental characters carry a marker; stable ones show their plain name.
+  labels <- ifelse(listing$lifecycle %in% "experimental", paste0(listing$name, " (experimental)"), listing$name)
+  stats::setNames(listing$id, labels)
 }
 
 # The family filter's choices: every family, with "all characters" first.

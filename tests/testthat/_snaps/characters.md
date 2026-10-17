@@ -4,6 +4,6 @@
       mascot_character("neer")
     Condition
       Error in `mascot_character()`:
-      ! `id` must be one of "tessa".
+      ! `id` must be one of "tessa", "sela", or "knurl".
       x "neer" is not a character.
 

@@ -15,8 +15,16 @@ A \code{mascot_character} object with \code{id} and \code{name} elements.
 The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
-The helper behind the \code{character} argument of \code{\link[=mascot]{mascot()}}. Only Tessa is
-built in; custom characters come later.
+The helper behind the \code{character} argument of \code{\link[=mascot]{mascot()}}. Tessa and Sela
+are stable built-in characters; Knurl is experimental.
+}
+\details{
+Tessa and Sela are stable: their ids, names, five shared moods,
+gesture names, colour-role names and palette names stay the same in every
+release. Their drawings, motion and exact palette colours may be polished.
+Knurl is experimental: any part may change, and it will not be removed
+without a warning in the release before its removal. The character file
+format and character authoring functions are experimental too.
 }
 \examples{
 mascot_character()

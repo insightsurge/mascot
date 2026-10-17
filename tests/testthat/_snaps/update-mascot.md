@@ -6,7 +6,7 @@
     Condition
       Warning:
       `update_mascot()` left mascot "helper" unchanged.
-      x `character` must be one of "tessa". x "neer" is not a character.
+      x `character` must be one of "tessa", "sela", or "knurl". x "neer" is not a character.
       x `status` must be a non-empty string or a mascot_status() object; use mascot_status() to follow the mood.
 
 ---

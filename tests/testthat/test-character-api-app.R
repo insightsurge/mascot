@@ -1,4 +1,35 @@
 describe("R4a characters through real Shiny", {
+  it("mounts every built-in through mascot() and changes its mood", {
+    local_shiny_browser()
+    app <- app_driver(function() {
+      library(mascot)
+      ids <- c("tessa", "sela", "knurl")
+      ui <- shiny::fluidPage(shiny::tagList(lapply(ids, function(id) {
+        shiny::tagList(
+          mascot(id = id, character = id, motion = FALSE),
+          shiny::actionButton(paste0(id, "-happy"), "Happy")
+        )
+      })))
+      server <- function(input, output, session) {
+        for (id in ids) {
+          local({
+            current_id <- id
+            shiny::observeEvent(input[[paste0(current_id, "-happy")]], update_mascot(current_id, mood = "happy"))
+          })
+        }
+      }
+      shiny::shinyApp(ui, server)
+    })
+    withr::defer(app$stop())
+    for (id in c("tessa", "sela", "knurl")) {
+      app$wait_for_js(sprintf("mascot.host.state(document.getElementById('%s')) !== null", id))
+      expect_identical(app$get_js(sprintf("document.getElementById('%s').dataset.shownCharacter", id)), id)
+      app$click(paste0(id, "-happy"))
+      app$wait_for_js(sprintf("document.getElementById('%s').dataset.shownMood === 'happy'", id))
+      expect_identical(app$get_js(sprintf("mascot.host.state(document.getElementById('%s')).mood", id)), "happy")
+    }
+  })
+
   it("keeps registered and visitor objects separate in two modules and two sessions, and escapes character text", {
     local_shiny_browser()
     app <- app_driver(function() {
@@ -50,7 +81,7 @@ describe("R4a characters through real Shiny", {
       "<b>Visitor 1</b>"
     )
     expect_null(app$get_js("document.querySelector('#object-helper .mascot-status b')"))
-    expect_identical(app$get_js("document.getElementById('registry').textContent"), "tessa,study_bot")
+    expect_identical(app$get_js("document.getElementById('registry').textContent"), "tessa,sela,knurl,study_bot")
     for (id in c("registered-helper", "object-helper")) {
       expect_true(app$get_js(sprintf(
         "(() => { const c = document.querySelector('#%s canvas');
@@ -82,7 +113,7 @@ describe("R4a characters through real Shiny", {
     expect_null(result$exceptionDetails, info = paste(capture.output(str(result$exceptionDetails)), collapse = "\n"))
     expect_identical(
       unlist(result$result$value),
-      c("<b>Visitor 2</b>", "tessa,study_bot", "Visitor 2, <b>Visitor 2</b>")
+      c("<b>Visitor 2</b>", "tessa,sela,knurl,study_bot", "Visitor 2, <b>Visitor 2</b>")
     )
     # Two objects with the same character id still retain different content.
     expect_identical(
@@ -99,7 +130,7 @@ describe("R4a characters through real Shiny", {
       app$get_js("document.querySelector('#object-helper .mascot-status').textContent"),
       "Check the result"
     )
-    expect_identical(app$get_js("document.getElementById('registry').textContent"), "tessa,study_bot")
+    expect_identical(app$get_js("document.getElementById('registry').textContent"), "tessa,sela,knurl,study_bot")
     expect_identical(
       second$Runtime$evaluate(
         "document.querySelector('#object-helper .mascot-status').textContent",

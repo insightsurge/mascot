@@ -399,7 +399,7 @@ visual_mood <- function() {
       class = "pg-callout",
       tags$strong("The mood never speaks alone. "),
       "The status line under the mascot names the mood (or displays your custom text), providing clear meaning for
-      screen readers and anyone who cannot distinguish facial expressions. Try moods with the cards in Controls."
+      screen readers and anyone who cannot distinguish facial expressions. Try moods with the cards in the top bar."
     )
   )
 }

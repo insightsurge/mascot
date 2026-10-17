@@ -812,7 +812,7 @@ describe("bundled example apps", {
     app$run_js(
       "[...document.querySelectorAll('.dropdown-toggle')].find(el => el.textContent.includes('Links')).click()"
     )
-    # The mood cards are the inspector's only mood input.
+    # The mood cards are the studio's only mood input.
     expect_identical(app$get_js("document.querySelectorAll('#mood input[type=radio]').length"), 0L)
     app$run_js("document.querySelector('[data-event=try_mood][data-value=happy]').click()")
     wait_example_mood(app, "helper", "happy")
@@ -1728,7 +1728,7 @@ describe("studio round 8 help and copied apps", {
     expect_match(as.character(get("guide_help", env)("mascot")), 'vignette("mascot", package = "mascot")', fixed = TRUE)
     expect_match(
       as.character(get("function_visual", env)("mascot_mood")),
-      "Try moods with the cards in Controls",
+      "Try moods with the cards in the top bar",
       fixed = TRUE
     )
   })
@@ -1741,6 +1741,23 @@ studio_parts <- function() {
   page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
   list(env = environment(app$serverFuncSource()), page = as.character(page))
 }
+
+describe("studio character bar", {
+  it("holds the character picker and mood cards in the main area at 375 pixels", {
+    local_shiny_browser()
+    app <- example_driver("studio", width = 375)
+    withr::defer(app$stop())
+    app$wait_for_js(
+      "document.querySelector('#studio_centre #studio_character_bar #character') &&
+      document.querySelector('#studio_centre #studio_character_bar #mood')"
+    )
+    expect_true(app$get_js(
+      "document.querySelector('#studio_centre #studio_character_bar').contains(document.getElementById('character')) &&
+      document.querySelector('#studio_centre #studio_character_bar').contains(document.getElementById('mood'))"
+    ))
+    expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
+  })
+})
 
 # The value each control starts with on the page, by input id, as the browser first reports it to the server.
 studio_start_values <- function(page) {

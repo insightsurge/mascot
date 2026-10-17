@@ -70,7 +70,23 @@ role_pickers <- function(mode, roles, values = list(), name = mascot_character()
   )
 }
 
-panel_look <- function(moods = mascot_moods(), character = formals(mascot::mascot)$character) {
+panel_character_bar <- function(moods = mascot_moods(), character = formals(mascot::mascot)$character) {
+  checkmate::assert_data_frame(moods)
+  checkmate::assert_string(character)
+  div(
+    id = "studio_character_bar",
+    class = "pg-toolbar pg-card-head pg-character-bar",
+    div(
+      class = "d-flex flex-wrap align-items-end gap-2 w-100 pg-character-bar-controls",
+      selectInput("character", "Character", studio_characters(), selected = character),
+      mood_cards(moods),
+      if (!is.null(studio_character_hint())) div(class = "pg-hint", studio_character_hint())
+    ),
+    actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm")
+  )
+}
+
+panel_look <- function() {
   inspector_category(
     playground_categories$look$title,
     value = "look",
@@ -78,14 +94,15 @@ panel_look <- function(moods = mascot_moods(), character = formals(mascot::masco
     arg_field(
       "mascot_character",
       "id",
-      selectInput("character", "Character", studio_characters(), selected = character),
-      note = if (!is.null(studio_character_hint())) div(class = "pg-hint", studio_character_hint())
+      NULL,
+      note = div(class = "pg-note", "Choose the character in the top bar.")
     ),
     fn_heading("mascot_mood"),
     arg_field(
       "mascot_mood",
       "name",
-      mood_cards(moods)
+      NULL,
+      note = div(class = "pg-note", "Choose the mood in the top bar.")
     ),
     fn_heading("mascot_moods"),
     arg_field(

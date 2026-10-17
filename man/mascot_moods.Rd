@@ -2,33 +2,49 @@
 % Please edit documentation in R/moods.R
 \name{mascot_moods}
 \alias{mascot_moods}
-\title{List the built-in mascot moods}
+\title{List mascot moods}
 \usage{
-mascot_moods()
+mascot_moods(character = NULL)
+}
+\arguments{
+\item{character}{\code{NULL} (the default) for the shared moods, or a character:
+an id string such as \code{"tessa"} or a \code{\link[=mascot_character]{mascot_character()}} helper.}
 }
 \value{
-A data frame with character columns \code{name} and \code{description}.
+A data frame with character columns \code{name} (the value you pass to
+\code{\link[=mascot_mood]{mascot_mood()}}), \code{description}, \code{status} (the text shown beside the mascot
+for that mood), \code{fallback} (the mood used instead when this one is not
+available, or \code{NA}), and a logical column \code{shared} (\code{TRUE} for the five
+shared moods). Shared moods have no \code{fallback}.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the value you pass to the matching function.
 }
 \description{
-Every character uses these moods, in this order.
+Every character has the five shared moods, in this order, and may add more
+of its own. With no \code{character}, the list is the shared vocabulary; with one,
+it is what that character declares: the shared moods first, then its own in
+the order its author wrote them.
 }
 \examples{
 mascot_moods()
+mascot_moods("tessa")
 }
 \seealso{
 \code{\link[=mascot]{mascot()}}, \code{\link[=mascot_mood]{mascot_mood()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},
+\code{\link[=mascot_anchors]{mascot_anchors()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
+\code{\link[=mascot_characters]{mascot_characters()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
+\code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},
 \code{\link[=mascot_gestures]{mascot_gestures()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_motion_settings]{mascot_motion_settings()}},
+\code{\link[=mascot_palettes]{mascot_palettes()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},

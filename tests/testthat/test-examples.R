@@ -898,13 +898,14 @@ describe("bundled example apps", {
     )
     app$wait_for_js(paste0(state, ".colours.body?.toLowerCase() === '#1f6feb'"))
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('mascot_theme(light = list(body')")
-    # A followed highlight and an explicit highlight both use the engine's camelCase key.
+    # A followed highlight and an explicit highlight both use the engine's key: snake_case since Tessa moved to the
+    # format-v1 engine (M1); the studio maps either spelling to the public role name.
     highlight_swatch_matches <- paste0(
       "(() => {
       const swatch = document.querySelector('.pg-resolved[data-mode=light][data-role=body_highlight]');
       const expected = document.createElement('span'); expected.style.background = ",
       state,
-      ".colours.bodyHighlight;
+      ".colours.body_highlight;
       return !!swatch && swatch.style.background === expected.style.background && !swatch.classList.contains('is-idle');
     })()"
     )
@@ -914,7 +915,7 @@ describe("bundled example apps", {
       "(() => { const p = document.getElementById('light_body_highlight'); p.value = '#abcdef';
       p.dispatchEvent(new Event('input')); })()"
     )
-    app$wait_for_js(paste0(state, ".colours.bodyHighlight?.toLowerCase() === '#abcdef'"))
+    app$wait_for_js(paste0(state, ".colours.body_highlight?.toLowerCase() === '#abcdef'"))
     app$wait_for_js(highlight_swatch_matches)
     expect_true(app$get_js(highlight_swatch_matches))
     select_function("mascot_popup_menu")
@@ -1231,7 +1232,7 @@ describe("studio round 4 regression guards", {
     }
     expect_match(as.character(map("inline", FALSE, "Review character")), "Review character, inline")
     # The one-line hint is the first sentence of the argument's help text, so it cannot depend on the selection.
-    text <- hint("mascot_character", "name")
+    text <- hint("mascot_character", "id")
     expect_false(grepl("Selected:", text, fixed = TRUE))
     expect_match(text, "built-in character", fixed = TRUE)
   })
@@ -1276,6 +1277,15 @@ describe("studio round 4 regression guards", {
     expect_type(parse(text = env$menu_handler_code(items)), "expression")
   })
 })
+
+# Until the browser's mount snapshot makes the studio's helper live, calls are kept, not accepted or sent. This
+# snapshot is what the page sends on mount, so the studio's kept calls are accepted and the first state is sent.
+# Defined before its first use: describe() blocks run while this file is sourced.
+studio_go_live <- function(session) {
+  protocol_ready(list(session = session, id = session$ns("helper")))
+  session$flushReact()
+  invisible(NULL)
+}
 
 describe("studio state and built previews", {
   it("keeps programmatic changes and copied code in step without overlapping tasks", {
@@ -1401,11 +1411,15 @@ describe("studio state and built previews", {
       session$sendCustomMessage <- function(type, message) {
         custom_messages[[length(custom_messages) + 1L]] <<- list(type = type, message = message)
       }
+      # The mascot goes live (its mount arrives) so the update below is sent, not kept; the mount's own state is
+      # set aside before the character change is counted.
+      studio_go_live(session)
+      custom_messages <- list()
       session$setInputs(character = formals(mascot)$character)
-      patches <- Filter(function(x) identical(x$type, "mascot:update"), custom_messages)
-      expect_length(patches, 1)
-      expect_identical(patches[[1]]$message$patch$character$id, formals(mascot)$character)
-      expect_identical(patches[[1]]$message$patch$mood, "happy")
+      envelopes <- Filter(function(x) identical(x$type, "mascot:update"), custom_messages)
+      expect_length(envelopes, 1)
+      expect_identical(envelopes[[1]]$message$state$character$id, formals(mascot)$character)
+      expect_identical(envelopes[[1]]$message$state$mood, "happy")
       expect_identical(state$mood$short, "happy")
       expect_identical(messages$mood$value, "happy")
       expect_match(output$code_ui, 'mood = "happy"', fixed = TRUE)
@@ -2005,6 +2019,7 @@ describe("studio safeguards (#248)", {
       task_run = "demonstrates the session argument with a timed task",
       preview_width = "the width the preview page is shown at, not an argument",
       example_name = "the Examples view, not the mascot",
+      list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
       example_run = "the Examples view, not the mascot"
     )
     controls <- unlist(get("playground_controls", parts$env))
@@ -2019,7 +2034,12 @@ describe("studio safeguards (#248)", {
     for (name in names(rows)) {
       case <- rows[[name]]
       shiny::testServer(get("studio_server", parts$env), {
+        envelopes <- list()
+        session$sendCustomMessage <- function(type, message) {
+          if (identical(type, "mascot:update")) envelopes[[length(envelopes) + 1L]] <<- message
+        }
         do.call(session$setInputs, start)
+        studio_go_live(session)
         updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
         before <- updates()
         for (inputs in case$inputs) {
@@ -2028,13 +2048,23 @@ describe("studio safeguards (#248)", {
         if (case$wait) {
           session$elapse(case$wait)
         }
+        session$flushReact()
         after <- updates()
-        # The update sent: a new revision that carries this field with a new value.
+        # The update accepted: a new revision, and this argument set by a call with a new value. A gesture is
+        # a one-off: its accepted value is the pending gesture, not a stored argument.
         expect_false(is.null(after), info = name)
-        expect_gt(after$revision, if (is.null(before$revision)) 0L else before$revision)
-        expect_identical(after$fields[[case$field]], after$revision, info = name)
-        expect_false(identical(after$patch[[case$field]], before$patch[[case$field]]), info = name)
-        expect_true(case$sent(after$patch), info = name)
+        expect_gt(after$revision, before$revision)
+        if (identical(case$field, "gesture")) {
+          expect_false(identical(after$pending, before$pending), info = name)
+        } else {
+          expect_true(case$field %in% after$owned, info = name)
+          expect_false(identical(after$desired[[case$field]], before$desired[[case$field]]), info = name)
+        }
+        # The update sent: the newest envelope is that revision and carries this argument, with a gesture as
+        # the envelope's own gesture field.
+        envelope <- envelopes[[length(envelopes)]]
+        expect_identical(envelope$revision, after$revision, info = name)
+        expect_true(case$sent(c(envelope$state, list(gesture = envelope$gesture$name))), info = name)
         # The call the studio ran (its Last tab) and the generated UI code.
         expect_match(last_call(), case$code, fixed = TRUE, info = name)
         if (case$ui) {
@@ -2093,15 +2123,24 @@ describe("studio safeguards (#248)", {
     # mascot_theme() writes the neutral theme (mode "auto", no colours) where NULL writes none; the engine reads
     # both as the same automatic theme, so that one block is checked and then set aside.
     neutral <- '<script type="application/json" data-mascot-theme="">{"light":null,"dark":null,"mode":"auto","css":null,"brand":null}</script>'
+    # The recorded baseline and the mount token derived from it are protocol metadata. For the theme they differ
+    # only because mascot_theme() records mode "auto" where the default records null, which the engine reads alike.
+    protocol_metadata <- function(lines) {
+      lines <- lines[!grepl('data-mascot-baseline=""', lines, fixed = TRUE)]
+      sub(' data-mount-token="[^"]*"', "", lines)
+    }
     for (field in names(env$defaults)) {
       args <- stats::setNames(list(eval(env$defaults[[field]])), field)
       html <- as.character(do.call(mascot, c(list(id = "x"), args)))
+      reference <- as.character(mascot(id = "x"))
       if (field == "theme") {
         expect_match(html, neutral, fixed = TRUE)
         lines <- strsplit(html, "\n", fixed = TRUE)[[1]]
         html <- paste(lines[trimws(lines) != neutral], collapse = "\n")
+        html <- paste(protocol_metadata(strsplit(html, "\n", fixed = TRUE)[[1]]), collapse = "\n")
+        reference <- paste(protocol_metadata(strsplit(reference, "\n", fixed = TRUE)[[1]]), collapse = "\n")
       }
-      expect_identical(html, as.character(mascot(id = "x")), info = field)
+      expect_identical(html, reference, info = field)
     }
     # The code builders leave out an argument only when it has the helper's default value.
     defaults_of <- function(fn) formals(getExportedValue("mascot", fn))
@@ -2205,19 +2244,24 @@ describe("studio bubble controls (#249)", {
     start <- studio_start_values(parts$page)
     examples <- get("bubble_examples", parts$env)
     shiny::testServer(get("studio_server", parts$env), {
+      envelopes <- list()
+      session$sendCustomMessage <- function(type, message) {
+        if (identical(type, "mascot:update")) envelopes[[length(envelopes) + 1L]] <<- message
+      }
       do.call(session$setInputs, start)
+      studio_go_live(session)
       # Given an example chosen and Show clicked at once: the server has not yet heard the filled inputs.
       session$setInputs(bubble_example = "Checklist", bubble_show = 1)
       # Then the bubble sent is the example's, not the text still in the input.
       expect_identical(input$bubble_text, start$bubble_text)
-      sent <- session$userData$mascot_updates[[session$ns("helper")]]$patch$bubble
+      sent <- envelopes[[length(envelopes)]]$state$bubble
       expect_identical(sent$text, examples$Checklist$text)
       expect_true(sent$html)
       expect_match(last_call(), "Before you submit", fixed = TRUE)
       # When the visitor then types, Show sends what they typed.
       session$setInputs(bubble_text = "Typed by hand", bubble_html = FALSE)
       session$setInputs(bubble_show = 2)
-      sent <- session$userData$mascot_updates[[session$ns("helper")]]$patch$bubble
+      sent <- envelopes[[length(envelopes)]]$state$bubble
       expect_identical(sent$text, "Typed by hand")
       expect_false(sent$html)
     })
@@ -2250,6 +2294,7 @@ describe("studio engine behaviours", {
     expect_match(parts$page, 'id="click_last"', fixed = TRUE)
     shiny::testServer(get("studio_server", parts$env), {
       do.call(session$setInputs, start)
+      studio_go_live(session)
       expect_match(output$click_last, "Nothing yet", fixed = TRUE)
       updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
       # With the menu, a toggle is logged and gets no wave.
@@ -2260,8 +2305,8 @@ describe("studio engine behaviours", {
       # Turning the action on sends it, and the switches take turns.
       session$setInputs(action_on = TRUE)
       session$elapse(700)
-      expect_identical(updates()$patch$click$type, "action")
-      expect_identical(updates()$patch$click$label, "Open help")
+      expect_identical(updates()$desired$click$type, "action")
+      expect_identical(updates()$desired$click$label, "Open help")
       expect_match(output$code_app, "observeEvent(input$helper_click", fixed = TRUE)
       session$setInputs(helper_click = 2)
       expect_identical(output$click_last, "2 clicks")
@@ -2273,10 +2318,10 @@ describe("studio engine behaviours", {
       session$setInputs(action_label = " ")
       session$elapse(700)
       expect_match(output$code_ui, "^# Write a label")
-      expect_identical(updates()$patch$click$label, "Open help")
+      expect_identical(updates()$desired$click$label, "Open help")
       session$setInputs(action_on = FALSE, menu_on = FALSE)
       session$elapse(700)
-      expect_identical(updates()$patch$click, list(type = "none"))
+      expect_identical(updates()$desired$click, list(type = "none"))
       expect_match(last_call(), "click = mascot_action()", fixed = TRUE)
     })
   })
@@ -2414,5 +2459,52 @@ describe("framework examples", {
     app$wait_for_js("document.getElementById('second-review-choice').textContent === 'about'")
     expect_identical(app$get_value(output = "second-review-choice"), "about")
     expect_identical(app$get_js("document.getElementById('first-review-choice').textContent"), "")
+  })
+})
+
+describe("studio listings (character data)", {
+  it("reads brand slots, characters and families from the public listings", {
+    env <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
+    legacy <- jsonlite::fromJSON(system.file("characters", "tessa.json", package = "mascot", mustWork = TRUE))$brand
+    expect_identical(env$studio_brand("tessa")[c("primary", "secondary")], as.list(legacy)[c("primary", "secondary")])
+    expect_identical(env$studio_characters(), c(Tessa = "tessa"))
+    expect_identical(env$studio_families(), c(`All characters` = "", Hexonians = "hexonians"))
+    expect_error(env$studio_brand(1), "Assertion on 'character' failed")
+  })
+  it("leaves registered characters out of the choices, because mascot() cannot mount them yet", {
+    local_empty_registry()
+    character_data_register(character_format_check(format_recipe("study_bot")))
+    env <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
+    expect_identical(unname(env$studio_characters()), "tessa")
+  })
+})
+
+describe("the internal Your character studio panel", {
+  it("is off by default and maps all four authoring functions and arguments when enabled", {
+    withr::local_envvar(c(NOT_CRAN = "false"))
+    env <- new.env(parent = globalenv())
+    path <- system.file("examples", "studio", package = "mascot", mustWork = TRUE)
+    sys.source(file.path(path, "R", "data.R"), envir = env)
+    sys.source(file.path(path, "R", "panels.R"), envir = env)
+    withr::local_options(mascot.internal.character_panel = FALSE)
+    expect_null(env$panel_your_character())
+    options(mascot.internal.character_panel = TRUE)
+    html <- as.character(env$panel_your_character())
+    for (fn in names(env$studio_character_controls)) {
+      expect_setequal(
+        names(env$studio_character_controls[[fn]]),
+        names(formals(get(fn, envir = asNamespace("mascot"))))
+      )
+      for (control in env$studio_character_controls[[fn]]) {
+        if (is.character(control)) {
+          for (id in control) {
+            expect_match(html, id, fixed = TRUE)
+          }
+        }
+      }
+    }
+    expect_match(html, "never sent to another service", fixed = TRUE)
   })
 })

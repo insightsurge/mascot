@@ -3,9 +3,10 @@
     Code
       cat(html)
     Output
-      <div class="mascot" id="helper" tabindex="-1" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-small-screen="auto" data-floating="true" data-position="bottom-right" data-minimise="true" data-drag="false" data-reduced="auto" data-idle="true" data-mood-change="true" data-gestures="true" data-swap="true" data-minimising="true" data-restoring="true" data-messages="bubble,tooltip,menu" data-others="true">
+      <div class="mascot" id="helper" tabindex="-1" data-mount-token="[UI specification token]" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-small-screen="auto" data-floating="true" data-position="bottom-right" data-minimise="true" data-drag="false" data-reduced="auto" data-idle="true" data-mood-change="true" data-gestures="true" data-swap="true" data-minimising="true" data-restoring="true" data-messages="bubble,tooltip,menu" data-others="true">
         <script type="application/json" data-mascot-character="tessa">[character JSON]</script>
-        <canvas class="mascot-canvas" role="img" aria-label="Tessa, idle"></canvas>
+        <script type="application/json" data-mascot-baseline="">[UI baseline]</script>
+        <canvas class="mascot-canvas" role="img" aria-label="Tessa, Idle"></canvas>
         <div class="mascot-status" role="status">Idle</div>
         <div class="mascot-bubble-region" role="status" aria-live="polite" aria-atomic="true">
           <div class="mascot-panel mascot-bubble" hidden data-html="false" data-closable="true" data-duration="5">
@@ -22,6 +23,15 @@
       Error in `mascot()`:
       ! `mood` must be one of "idle", "thinking", "happy", "worried", or "celebrating".
       x "hapy" is not a mood.
+
+---
+
+    Code
+      mascot(id = "a", mood = "ha!py")
+    Condition
+      Error in `mascot()`:
+      ! `mood` must be one of "idle", "thinking", "happy", "worried", or "celebrating".
+      x "ha!py" is not a mood.
 
 ---
 

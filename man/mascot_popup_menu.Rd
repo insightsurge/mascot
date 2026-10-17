@@ -126,14 +126,18 @@ shiny::shinyApp(
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},
+\code{\link[=mascot_anchors]{mascot_anchors()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
+\code{\link[=mascot_characters]{mascot_characters()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
+\code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},
 \code{\link[=mascot_gestures]{mascot_gestures()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
 \code{\link[=mascot_motion_settings]{mascot_motion_settings()}},
+\code{\link[=mascot_palettes]{mascot_palettes()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_preview]{mascot_preview()}},
 \code{\link[=mascot_size]{mascot_size()}},

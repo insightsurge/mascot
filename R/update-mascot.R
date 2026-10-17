@@ -122,9 +122,13 @@
 #'
 #' **Queued updates.** Updates sent before a mascot appears are kept per session,
 #' including when the first mascot is created by [shiny::renderUI()] or
-#' [shiny::insertUI()]. Only the latest value of each argument and the latest early
-#' gesture are kept. A replacement with the same id receives the retained state;
-#' gestures play once.
+#' [shiny::insertUI()]. Once the character is known, R validates each whole call
+#' before accepting its latest values. Before that, a bounded buffer keeps whole
+#' calls for validation against the first known character. An invalid call never
+#' contributes its bubble, status or other fields. A replacement with the same id
+#' receives the latest accepted state; only the latest pending gesture can play,
+#' once. Dismissed bubbles stay dismissed through replacement; an explicit bubble
+#' update starts a new bubble, including when its text is unchanged.
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
 #' @seealso [mascot()], [mascot_motion_settings()] for a Shiny example that switches
@@ -217,13 +221,25 @@ update_mascot <- function(
   theme_result <- if (!is.null(theme)) {
     tryCatch(
       list(
-        value = as_theme_arg(
+        value = mascot_update_theme(
           theme,
           environment(),
-          if (is.null(character) || !is.null(arg_problem(character, "character"))) {
+          if (is.null(character)) {
+            owner <- session$userData$mascot_protocol
+            record <- if (!is.null(owner)) owner$states[[mascot_binding_id(session, id)]]
+            context <- record$context
+            if (is.null(context)) {
+              NULL
+            } else if (context$wire$id %in% builtin_characters()$id) {
+              context$wire$id
+            } else {
+              context$data
+            }
+          } else if (!is.null(arg_problem(character, "character"))) {
             NULL
           } else {
-            as_character_arg(character, environment())$id
+            converted <- as_character_arg(character, environment())
+            if (is.null(converted$data)) converted$id else converted$data
           }
         )
       ),
@@ -261,10 +277,10 @@ update_mascot <- function(
   patch <- list()
   if (!is.null(character)) {
     ch <- as_character_arg(character, environment())
-    patch$character <- list(id = ch$id, name = ch$name, json = character_json(ch$id))
+    patch$character <- list(id = ch$id, name = ch$name, json = if (is.null(ch$json)) character_json(ch$id) else ch$json)
   }
   if (!is.null(mood)) {
-    patch$mood <- as_mood_arg(mood, environment())$name
+    patch$mood <- if (inherits(mood, "mascot_mood")) mood$name else mood
   }
   if (!is.null(status)) {
     text <- as_status_arg(status, environment())$text
@@ -299,7 +315,7 @@ update_mascot <- function(
     patch$click <- as_click_arg(click, environment())
   }
   if (!is.null(gesture)) {
-    patch$gesture <- if (inherits(gesture, "mascot_gesture")) gesture$name else mascot_gesture(gesture)$name
+    patch$gesture <- if (inherits(gesture, "mascot_gesture")) gesture$name else gesture
   }
   if (length(patch)) {
     send_update(session, id, patch)
@@ -314,72 +330,51 @@ send_update <- function(session, id, patch, replay = FALSE) {
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   checkmate::assert_list(patch, names = "unique")
   checkmate::assert_flag(replay)
-  # Accept the local id and session$ns(id), including nested module sessions.
-  # Observe the local input so retained updates also replay after a remount.
-  prefix <- session$ns("")
-  if (nzchar(prefix) && startsWith(id, prefix)) {
-    id <- substring(id, nchar(prefix) + 1L)
+  key <- mascot_binding_id(session, id)
+  # Development overlays are diagnostics, not accepted desired state/actions.
+  if (identical(names(patch), "problem")) {
+    mascot_problem(session, key, patch$problem)
+    return(invisible(NULL))
   }
-  key <- session$ns(id)
-  if (is.null(session$userData$mascot_updates)) {
-    session$userData$mascot_updates <- new.env(parent = emptyenv())
-    session$onSessionEnded(function() {
-      session$userData$mascot_updates <- NULL
-    })
-  }
-  states <- session$userData$mascot_updates
-  if (is.null(states[[key]])) {
-    states[[key]] <- list(patch = list(), revision = 0L, gesture_revision = 0L, fields = list())
-    # The existing input binding reports each new mount, including the first
-    # dependency loaded through dynamic UI. Module input names stay local here.
-    shiny::observeEvent(
-      session$input[[id]],
-      {
-        mounted <- session$input[[id]]
-        latest <- states[[key]]
-        if (
-          is.list(mounted) &&
-            is.numeric(mounted$revision) &&
-            length(mounted$revision) == 1L &&
-            !is.na(mounted$revision) &&
-            mounted$revision < latest$revision
-        ) {
-          send_update(session, id, latest$patch, replay = TRUE)
+  record <- mascot_id_state(session, key, namespaced = TRUE)
+  next_record <- tryCatch(
+    {
+      mascot_wire_check(patch)
+      if (is.null(record$context) && is.null(patch$character)) {
+        mascot_state_buffer(record, patch)
+      } else {
+        startup <- is.null(record$context)
+        if (startup) {
+          # Validate the explicit anchor including all coupled fields BEFORE it
+          # can settle any earlier call or choose a startup context.
+          prepared <- mascot_state_prepare(record, patch)
+          record$context <- prepared$context
+          record$desired <- mascot_state_defaults(prepared$context$wire)
+          record <- mascot_state_settle(record)
         }
-      },
-      ignoreInit = FALSE,
-      domain = session
-    )
-  }
-  state <- states[[key]]
-  if (!replay) {
-    state$revision <- state$revision + 1L
-    state$patch <- merge_update_patch(state$patch, patch)
-    for (field in names(patch)) {
-      state$fields[[field]] <- state$revision
+        accepted <- mascot_state_accept(record, patch)
+        if (startup) {
+          accepted$owned <- union(accepted$owned, "mood")
+        }
+        accepted
+      }
+    },
+    error = function(error) {
+      mascot_update_warning(key, conditionMessage(error))
+      if (dev_mode()) {
+        send_update(session, id, list(problem = paste0("mascot: ", conditionMessage(error))))
+      }
+      NULL
     }
-    if (is.null(patch$problem)) {
-      state$fields$problem <- state$revision
-    }
-    if (!is.null(patch$character) && is.null(patch$mood)) {
-      state$fields$mood <- state$revision
-    }
-    if (!is.null(patch$gesture)) {
-      state$gesture_revision <- state$revision
-    }
-    states[[key]] <- state
-  }
-  session$sendCustomMessage(
-    "mascot:update",
-    list(
-      id = key,
-      patch = patch,
-      revision = state$revision,
-      gestureRevision = state$gesture_revision,
-      fields = state$fields,
-      replay = replay
-    )
   )
+  if (is.null(next_record)) {
+    return(invisible(NULL))
+  }
+  owner <- mascot_session(session)
+  owner$problems[[key]] <- NULL
+  owner$states[[key]] <- next_record
+  mascot_state_schedule(session, key)
+  invisible(NULL)
 }
 
 #' Merge the latest arguments using the browser queue's replacement rules

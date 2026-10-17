@@ -144,7 +144,8 @@ theme_map_problem <- function(x, arg, roles, css = FALSE) {
 
 #' Validate shortcuts and complete helper objects without changing anything
 #' @noRd
-theme_problem <- function(x) {
+theme_problem <- function(x, roles = colour_role_registry()) {
+  checkmate::assert_character(roles, any.missing = FALSE)
   # Union input uses the same non-throwing boundary as size and placement.
   if (is.null(x)) {
     return(NULL)
@@ -155,7 +156,6 @@ theme_problem <- function(x) {
     }
     return(NULL)
   }
-  roles <- colour_role_registry()
   if (!inherits(x, "mascot_theme")) {
     return(theme_map_problem(x, "theme", roles))
   }
@@ -259,8 +259,11 @@ theme_contrast <- function(colour, background) {
 #' @noRd
 as_theme_arg <- function(x, call, character = NULL) {
   checkmate::assert_environment(call)
-  checkmate::assert_choice(character, builtin_characters()$id, null.ok = TRUE)
-  check_arg(x, "theme", call)
+  character_catalogue_assert(character, nullable = TRUE)
+  problem <- theme_problem(x, colour_role_registry(character))
+  if (!is.null(problem)) {
+    cli::cli_abort("{problem}", call = call, class = "mascot_error")
+  }
   if (is.null(x)) {
     return(NULL)
   }
@@ -287,13 +290,14 @@ as_theme_arg <- function(x, call, character = NULL) {
     }
     x <- mascot_theme()
   } else if (!inherits(x, "mascot_theme")) {
-    x <- mascot_theme(light = x, dark = x)
+    x <- structure(list(light = x, dark = x, mode = "auto", css = NULL), class = "mascot_theme")
   }
   roles <- colour_role_registry(character)
-  engine <- unique(unlist(lapply(
-    if (is.null(character)) builtin_characters()$id else character,
-    function(id) names(character_colour_data(id)$colours)
-  )))
+  engine <- if (is.null(character)) {
+    unique(unlist(lapply(builtin_characters()$id, function(id) names(character_colour_data(id)$colours))))
+  } else {
+    names(character_colour_data(character)$colours)
+  }
   convert <- function(map, field) {
     checkmate::assert_list(map, null.ok = TRUE)
     checkmate::assert_string(field)

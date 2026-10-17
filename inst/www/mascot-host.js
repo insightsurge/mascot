@@ -1,8 +1,9 @@
 /**
  * Page host for mascot: one record and controller per element, with an idempotent lifecycle.
  * A Shiny input binding mounts for its initial value/subscribe and destroys on unsubscribe; static pages mount at DOM ready.
- * Custom messages carry { id, patch }; late state merges by id, including the latest one-off gesture.
- * At most 20 patches wait per id; beyond that the newest are kept and the server re-sends its retained state on mount.
+ * Shiny messages use versioned, generation-bound complete state settled by R.
+ * A connection-local ledger retains consumed gestures and bubble dismissal through DOM replacement.
+ * Browser-only/custom hosts retain the legacy { id, patch } path and its bounded early queue.
  * In Shiny development mode, updates waiting 2 s for "x" while "<namespace>-x" is mounted, or for "<namespace>-x" while
  * "x" is mounted, warn once with the likely namespace fix.
  * Patches are atomic: prepare descriptions/status, ask the engine to validate, then commit host state.
@@ -27,7 +28,9 @@
  * Missing/invalid CSS uses the character colour and warns; contrast below 3:1 warns without changing the colour.
  * One theme observer exists while auto is used; the shared scheme listener serves auto and floating bubbles.
  * CSS chooses the narrow-screen size. One ResizeObserver per element refreshes its backing canvas;
- * zero sizes retain the last usable drawing. Shared viewport/density and notification observers are reference-counted.
+ * zero sizes retain the last usable drawing. Shared viewport/density, intersection and notification observers are
+ * reference-counted; unrelated DOM mutations are ignored, relevant ones coalesce into one animation frame, and
+ * off-screen mascots pause drawing until they return to the viewport.
  * Floating elements move to body; a source marker preserves tab visibility, inherited text/theme and Shiny teardown.
  * Inline bubbles are clamped to viewport edges without changing their reserved height.
  * Floating bubbles point towards the page centre. Native buttons minimise/restore; messages pause while minimised.
@@ -61,6 +64,12 @@
  * Action controls use a separate strip: hover/focus reveals it, touch keeps it available, open menus hide it.
  * Restore stays reachable while minimised. Placement focus falls back to the visible menu toggle or image.
  * host.{mount,unmount,receive,state} exposes lifecycle and plain snapshots for integration tests.
+ * A character with format_version 1 is drawn and moved by mascot.runtime (mascot-player.js) through mascot.mount(); the
+ * host drives both players alike. For it the status of the shown mood and the accessible label come from the character's
+ * moods, the held look goes to face.look_x and face.look_y (flipped back by the runtime from the shown frame's
+ * root.flip; never sent to a faceless or no-gaze character), the detail band follows the canvas width with no switch, a
+ * swap without a mood follows the character's fallback chain, and the restore control is named with the shown status.
+ * The legacy Tessa path is unchanged.
  */
 (() => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: loaded with a <script> tag (a classic script, not a module)
@@ -73,6 +82,17 @@
   const records = new WeakMap();
   const pending = new Map();
   const playedGestures = new Map();
+  // Connection-local action/dismissal ledger survives DOM removal. Complete
+  // state revisions are generation-local; action watermarks never reset.
+  const ledgers = new Map();
+  const safeCounter = (x) => Number.isSafeInteger(x) && x >= 0;
+  const sameValue = (a, b) => {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b))
+      return false;
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length && keys.every((key) => has(b, key) && sameValue(a[key], b[key]));
+  };
   const queueLimit = 20;
   const warnedIds = new Set();
   const namespaceDelay = 2000;
@@ -116,34 +136,78 @@
   let notificationMutation = null;
   let notificationResize = null;
   let notificationPanel = null;
+  let viewportObserver = null;
+  let pageFrame = null;
   const has = (object, key) => Object.hasOwn(object, key);
   const label = (mood) => mood.charAt(0).toUpperCase() + mood.slice(1);
   const warn = (error) => console.warn(`mascot: ${String(error.message || error).replace(/^mascot: /, '')}`);
+  // I1: a character with format_version 1 is drawn and moved by mascot.runtime; the legacy Tessa path is untouched.
+  const isFormat = (description) => ns.runtime?.isFormat(description) === true;
+  // The detail bands follow the canvas width for a format-v1 character always, and for the legacy Tessa only behind the
+  // internal adapter switch (E5b), so the default path never reaches them.
+  const bandsApply = (description) =>
+    isFormat(description) || (ns.internal?.useCharacterAdapter === true && Boolean(ns.parts));
+  // The engine owns the vocabulary: a pure pose (legacy) or the runtime's checks (format v1) validate without changing
+  // a controller. request is {}, { mood } or { gesture }.
+  function engineValidate(description, request) {
+    if (isFormat(description)) ns.runtime.validate(description, request);
+    else ns.motion.pose(description, { ...request, reduced: true }, 0);
+  }
+  // E5b, internal: the untransformed CSS width of a canvas in px (a transform does not change it). 0 means not laid out
+  // (display: none, a hidden tab): such a width decides no band.
+  const cssWidth = (canvas) => {
+    const value = getComputedStyle(canvas).width;
+    return value.endsWith('px') ? parseFloat(value) : 0;
+  };
+  // E5b, internal: one diagnostic per band and canvas, through the host's warn() route.
+  function reportBand(record, band, error) {
+    record.reportedBands ??= new Set();
+    if (record.reportedBands.has(band)) return;
+    record.reportedBands.add(band);
+    warn(error);
+  }
 
   function show(record, snapshot) {
     if (updating.has(record)) return;
     record.el.dataset.shownCharacter = snapshot.character;
     record.el.dataset.shownMood = snapshot.mood;
     record.el.dataset.swapping = String(snapshot.swapping);
-    const accessibleLabel = `${record.names.get(snapshot.character)}, ${snapshot.mood}`;
+    const shownStatus =
+      record.problem ||
+      (record.status.mode === 'mood'
+        ? record.descriptions.get(snapshot.character)?.moods[snapshot.mood]?.status || label(snapshot.mood)
+        : record.status.text);
+    const accessibleLabel = `${record.names.get(snapshot.character)}, ${shownStatus}`;
     record.canvas.setAttribute('aria-label', accessibleLabel);
     if (record.button) {
       const name = record.click.label || `${record.names.get(snapshot.character)}, menu`;
       if (record.button.getAttribute('aria-label') !== name) record.button.setAttribute('aria-label', name);
     }
     if (record.restoreButton) {
+      const description = record.descriptions.get(snapshot.character);
+      // A format-v1 name never carries a raw mood id: it names the character and the shown status.
       record.restoreButton.setAttribute(
         'aria-label',
-        `Restore ${record.names.get(snapshot.character)}, ${snapshot.mood}`,
+        `Restore ${record.names.get(snapshot.character)}, ${isFormat(description) ? shownStatus : snapshot.mood}`,
       );
-      const colours = record.palettes.get(snapshot.character) || record.descriptions.get(snapshot.character).colours;
+      const colours = record.palettes.get(snapshot.character) || description.colours;
       const fallback = Object.values(colours)[0];
-      setProperty(record.el, '--_mascot-restore-bg', colours.body || fallback);
+      // The brand leaders name a format-v1 character's main and accent colour; the legacy roles stay as they were.
+      const leaders = isFormat(description) ? description.brand : undefined;
+      const main = (leaders && colours[leaders.primary]) || colours.body;
+      const accent = (leaders && colours[leaders.secondary]) || colours.rim;
+      setProperty(record.el, '--_mascot-restore-bg', main || fallback);
       setProperty(record.el, '--_mascot-restore-fg', colours.outline || fallback);
-      setProperty(record.el, '--_mascot-restore-glow', colours.rim || colours.body || fallback);
+      setProperty(record.el, '--_mascot-restore-glow', accent || main || fallback);
     }
-    const text = record.problem || (record.status.mode === 'mood' ? label(snapshot.mood) : record.status.text);
+    const text = shownStatus;
     if (record.statusEl.textContent !== text) record.statusEl.textContent = text;
+    for (const id of record.descriptions.keys())
+      if (id !== record.character && id !== snapshot.character) {
+        record.descriptions.delete(id);
+        record.names.delete(id);
+        record.palettes.delete(id);
+      }
   }
 
   // Bubble time is independent of the deterministic drawing engine, in seconds.
@@ -190,6 +254,11 @@
   }
 
   function clearBubble(record) {
+    if (record.bubble && record.ledger && !record.installing && record.ledger.bubble_watermark) {
+      record.ledger.dismissed_bubble_revision = record.ledger.bubble_watermark;
+      record.ledger.bubble = null;
+      publish(record, 'mounted');
+    }
     stopTimer(record);
     record.bubble = null;
     const focused = record.bubbleEl.contains(document.activeElement);
@@ -294,8 +363,7 @@
 
   function validateGesture(description, name) {
     if (typeof name !== 'string' || !name.length) throw new Error('gesture needs a non-empty name');
-    // The engine owns the vocabulary. Its pure pose path validates without changing a controller.
-    if (description) ns.motion.pose(description, { gesture: name, reduced: true }, 0);
+    if (description) engineValidate(description, { gesture: name });
   }
 
   const emptyTheme = () => ({ light: null, dark: null, mode: null, css: null, brand: null });
@@ -529,7 +597,7 @@
     }
     const auto = [...live].some((record) => themeMode(record.theme) === 'auto');
     if (auto && !modeMutation) {
-      modeMutation = new MutationObserver(refreshPage);
+      modeMutation = new MutationObserver(schedulePageRefresh);
       for (const el of [document.documentElement, document.body])
         modeMutation.observe(el, { attributes: true, attributeFilter: ['class', 'data-bs-theme'] });
     } else if (!auto) {
@@ -597,7 +665,9 @@
   }
 
   function setProperty(el, key, value) {
-    if (el.style.getPropertyValue(key) !== value) el.style.setProperty(key, value);
+    if (el.style.getPropertyValue(key) !== value) {
+      el.style.setProperty(key, value);
+    }
   }
 
   // Shiny registers after subscribe returns. Transfer its bound marker in the next microtask,
@@ -765,10 +835,25 @@
     return record.placement.floating && record.placement.position.startsWith('top') ? 'bottom' : 'top';
   }
 
+  // The held look with no side: only the look fields clear, whatever the mood.
+  function clearedGaze(description) {
+    if (!isFormat(description)) return { look: null, lookY: null };
+    return ns.runtime.compile(description).gaze ? { 'face.look_x': null, 'face.look_y': null } : {};
+  }
+
   // A held pose rather than motion, so it applies at once with or without reduced motion. A mirrored pose (flip)
   // mirrors the pupils too, so the horizontal look is flipped back to point at the same side of the page.
   function gazePose(record, side) {
     const description = record.descriptions.get(record.character);
+    if (isFormat(description)) {
+      // Held look goes to face.look_x and face.look_y in page terms; a faceless or no-gaze character gets no gaze
+      // channels. The runtime flips the horizontal look back from the root flip of the frame it shows (contract 3.16).
+      if (!ns.runtime.compile(description).gaze) return {};
+      return {
+        'face.look_x': side === 'left' ? -1 : side === 'right' ? 1 : null,
+        'face.look_y': side === 'top' ? -1 : side === 'bottom' ? 1 : null,
+      };
+    }
     const flip = Math.sign(ns.drawing.resolvePose(description, { mood: record.mood }).flip) || 1;
     return {
       look: side === 'left' ? -flip : side === 'right' ? flip : null,
@@ -1148,6 +1233,7 @@
   }
 
   function measure(record) {
+    record.measures += 1;
     // A free drop stays inside the window when the window or the mascot changes size.
     if (record.dropped && record.placement.floating && !record.dragState) placeAt(record, record.dropped);
     const size = record.placementAnimation
@@ -1185,8 +1271,27 @@
     }
     measureMenu(record);
     measureTooltip(record);
+    // E5b, internal only: the band follows the untransformed CSS width (not the transformed rectangle). setBand() is
+    // atomic: a band over budget throws before anything changes, so the old band stays, measuring goes on, and the
+    // refusal is reported once per band. It never throws out of measure(). The public default never gets here.
+    // setBand() reports whether it drew: a band that is already set draws nothing, so the redraw below still runs.
+    // A width of 0 decides nothing, so the band waits for the first real width.
+    let drawn = false;
+    const width = cssWidth(record.canvas);
+    if (record.controller && width > 0 && bandsApply(record.descriptions.get(record.character))) {
+      const band = ns.parts.bandFor(width);
+      if (band !== record.band) {
+        try {
+          drawn = record.controller.setBand(band);
+          record.band = band;
+        } catch (error) {
+          reportBand(record, band, error);
+        }
+      }
+    }
     record.renderedSize = size;
-    if (resized) record.controller.redraw();
+    // A successful band change has already drawn the current frame on the resized canvas: draw once, not twice.
+    if (resized && !drawn) record.controller.redraw();
   }
 
   function refreshViewport() {
@@ -1224,14 +1329,88 @@
     for (const record of live) {
       if (record.placement.floating && record.placement.position === 'bottom-right') {
         const value = `${offset}px`;
-        if (record.el.style.getPropertyValue('--_mascot-notification-offset') !== value)
+        if (record.el.style.getPropertyValue('--_mascot-notification-offset') !== value) {
           record.el.style.setProperty('--_mascot-notification-offset', value);
+        }
         measureMenu(record);
       }
     }
   }
 
+  function cancelPageRefresh() {
+    if (pageFrame !== null) {
+      window.cancelAnimationFrame(pageFrame);
+      pageFrame = null;
+    }
+  }
+
+  function schedulePageRefresh() {
+    if (!live.size || pageFrame !== null) return;
+    pageFrame = window.requestAnimationFrame(() => {
+      pageFrame = null;
+      refreshPage();
+    });
+  }
+
+  function affectsMascot(node) {
+    if (!(node instanceof Element)) return false;
+    for (const record of live) {
+      if (node.contains(record.el) || (record.anchor && node.contains(record.anchor))) return true;
+    }
+    return false;
+  }
+
+  function hasStyleNode(nodes) {
+    for (const node of nodes) {
+      if (!(node instanceof Element)) continue;
+      if (node.tagName === 'STYLE' || node.tagName === 'LINK' || node.querySelector?.('style, link[rel="stylesheet"]'))
+        return true;
+    }
+    return false;
+  }
+
+  function externalMutation(m, after) {
+    if (m.type !== 'attributes') return true;
+    if (m.oldValue === after) return false;
+    if (m.attributeName !== 'style' || !records.has(m.target)) return true;
+    // Compare each transition, not only the final style: application writes in the same
+    // task as host writes must survive. Only private host properties are ignored.
+    const publicStyle = (text) => {
+      const style = document.createElement('span').style;
+      style.cssText = text || '';
+      for (const key of [...style]) if (key.startsWith('--_mascot-')) style.removeProperty(key);
+      return style.cssText;
+    };
+    return publicStyle(m.oldValue) !== publicStyle(after);
+  }
+
+  function relevantMutation(m) {
+    for (const record of live) {
+      if (record.anchor && !record.anchor.isConnected) return true;
+    }
+    const panel = document.getElementById('shiny-notification-panel');
+    if (panel !== notificationPanel) return true;
+    if (panel && (m.target === panel || panel.contains(m.target))) return true;
+    if (m.type === 'attributes' && affectsMascot(m.target)) return true;
+    // A sibling's layout can move an inline bubble without resizing its mascot.
+    // Ignore mutations inside mascot UI; its own writes must not schedule another frame.
+    if (
+      ![...live].some((record) => record.el.contains(m.target)) &&
+      [...live].some((record) => !record.placement.floating && record.bubble && !record.hidden)
+    )
+      return true;
+    if (m.type === 'attributes') return false;
+    if (m.target instanceof Element && m.target.tagName === 'STYLE') return true;
+    if (document.head && (m.target === document.head || document.head.contains(m.target))) return true;
+    return (
+      hasStyleNode(m.addedNodes) ||
+      hasStyleNode(m.removedNodes) ||
+      [...m.addedNodes, ...m.removedNodes].some(affectsMascot)
+    );
+  }
+
   function refreshPage() {
+    cancelPageRefresh();
     for (const record of live) {
       if (record.anchor && !record.anchor.isConnected) unmount(record.el);
       else {
@@ -1247,18 +1426,37 @@
     // A shared page observer also catches inline messages moving near a viewport edge.
     const needed = live.size > 0;
     if (!needed) {
+      cancelPageRefresh();
       notificationMutation?.disconnect();
       notificationResize?.disconnect();
       notificationMutation = notificationResize = notificationPanel = null;
       return;
     }
     if (!notificationMutation) {
-      notificationMutation = new MutationObserver(refreshPage);
+      notificationMutation = new MutationObserver((mutations) => {
+        // MutationRecord has the old value only. Walk backwards to recover each new
+        // value even when application and host writes share the same delivery batch.
+        const values = new Map();
+        let relevant = false;
+        for (let i = mutations.length - 1; i >= 0; i--) {
+          const m = mutations[i];
+          let after;
+          if (m.type === 'attributes') {
+            if (!values.has(m.target)) values.set(m.target, new Map());
+            const attrs = values.get(m.target);
+            after = attrs.has(m.attributeName) ? attrs.get(m.attributeName) : m.target.getAttribute(m.attributeName);
+            attrs.set(m.attributeName, m.oldValue);
+          }
+          if (externalMutation(m, after) && relevantMutation(m)) relevant = true;
+        }
+        if (relevant) schedulePageRefresh();
+      });
       notificationMutation.observe(document.documentElement, {
         childList: true,
         subtree: true,
         attributes: true,
         attributeFilter: ['class', 'style', 'hidden', 'data-bs-theme'],
+        attributeOldValue: true,
       });
     }
     const needsPanel = [...live].some(
@@ -1273,6 +1471,26 @@
     refreshNotifications();
   }
 
+  function watchViewport() {
+    if (!live.size) {
+      viewportObserver?.disconnect();
+      viewportObserver = null;
+      return;
+    }
+    if (!viewportObserver && typeof window.IntersectionObserver === 'function') {
+      viewportObserver = new window.IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          const target = records.get(entry.target);
+          if (!target) continue;
+          const offscreen = !entry.isIntersecting && entry.intersectionRatio === 0;
+          if (offscreen === target.offscreen) continue;
+          target.offscreen = offscreen;
+          target.controller.holdVisibility(offscreen);
+        }
+      });
+    }
+  }
+
   function watch(record) {
     record.resize = new ResizeObserver(() => measure(record));
     record.resize.observe(record.el);
@@ -1281,18 +1499,22 @@
       window.addEventListener('resize', refreshViewport);
       densityChanged();
     }
+    watchViewport();
+    viewportObserver?.observe(record.el);
     watchNotifications();
     watchModes();
   }
 
   function unwatch(record) {
     record.resize?.disconnect();
+    viewportObserver?.unobserve(record.el);
     const registered = live.delete(record);
     if (registered && !live.size) {
       window.removeEventListener('resize', refreshViewport);
       densityMedia?.removeEventListener('change', densityChanged);
       densityMedia = null;
     }
+    watchViewport();
     watchNotifications();
     watchModes();
   }
@@ -1697,9 +1919,20 @@
   }
 
   function mount(el) {
-    if (records.has(el)) return;
+    if (records.has(el)) return true;
+    const authoritative = ledgers.get(el.id);
+    if (authoritative?.live) {
+      warn(`duplicate live mascot id "${el.id}"; the first binding remains authoritative`);
+      return false;
+    }
+    if (!Number.isSafeInteger(mountSerial + 1)) throw new Error('mascot mount generation exhausted');
     const id = el.dataset.character;
-    const description = ns.readCharacter(id, el);
+    // Rebinding the same DOM may follow an accepted character swap: its live
+    // data-character then names the last checked content, not the original UI
+    // script. Keep only that referenced descriptor per retained id.
+    const local = el.querySelector(`script[data-mascot-character="${id}"]`);
+    const cached = known.get(el.id);
+    const description = local || cached?.id !== id ? ns.readCharacter(id, el) : cached;
     const canvas = el.querySelector('.mascot-canvas');
     const statusEl = el.querySelector('.mascot-status');
     const bubbleEl = el.querySelector('.mascot-bubble');
@@ -1744,7 +1977,7 @@
       menuOpen: false,
       menuSide: null,
       ink: null,
-      gaze: JSON.stringify({ look: null, lookY: null }),
+      gaze: JSON.stringify(clearedGaze(description)),
       gazeSide: null,
       clicks: 0,
       button: null,
@@ -1787,6 +2020,8 @@
       themeWarnings: new Set(),
       minimised: false,
       hidden: true,
+      offscreen: false,
+      measures: 0,
       revision: 0,
       fields: new Map(),
       mountSerial: ++mountSerial,
@@ -1828,19 +2063,58 @@
       placementCopy: null,
       panelExits: new Set(),
     };
+    const previousLedger = ledgers.get(el.id);
+    record.ledger = {
+      generation: record.mountSerial,
+      mount_token: el.dataset.mountToken || '',
+      lifecycle: 'ready',
+      applied_revision: 0,
+      gesture_watermark: previousLedger?.gesture_watermark || 0,
+      bubble_watermark: previousLedger?.bubble_watermark || 0,
+      dismissed_bubble_revision: previousLedger?.dismissed_bubble_revision || 0,
+      bubble: previousLedger?.bubble || null,
+      live: true,
+      record,
+    };
+    ledgers.set(el.id, record.ledger);
+    // A Shiny baseline is installed only after R resolves ownership. In
+    // particular a dismissed UI bubble must not flash during remount.
+    if (window.Shiny?.InputBinding) {
+      record.bubble = null;
+      record.bubbleEl.hidden = true;
+    }
     records.set(el, record);
     try {
       layout(record);
       const resolved = resolveTheme(record.theme, description, record.anchor || el, true);
       commitPalette(record, description, resolved);
+      // E5b, internal only: mount at the band the canvas measures, so a small mascot never draws a full-band frame.
+      // A band over budget mounts at full with one warning. A width not laid out yet (0) mounts at full and leaves
+      // record.band undefined, so the first real measure decides.
+      let band = null;
+      if (bandsApply(description)) {
+        const width = cssWidth(canvas);
+        band = 'full';
+        if (width > 0) {
+          const measured = ns.parts.bandFor(width);
+          try {
+            ns.checkCharacter(description, measured);
+            band = measured;
+          } catch (error) {
+            reportBand(record, measured, error);
+          }
+        }
+      }
       record.controller = ns.mount(canvas, description, {
         x: 150,
         baseY: 270,
         mood: el.dataset.mood,
         colours: record.colours,
         ...record.motion,
+        ...(band ? { band } : {}),
         onChange: (snapshot) => show(record, snapshot),
       });
+      if (band && cssWidth(canvas) > 0) record.band = band;
       listenBubble(record);
       listenDrag(record);
       replaceClick(record, record.click);
@@ -1867,6 +2141,8 @@
       record.actions.remove();
       record.restoreButton.remove();
       records.delete(el);
+      record.ledger.live = false;
+      record.ledger.record = null;
       throw error;
     }
     resumeTimer(record);
@@ -1936,9 +2212,22 @@
     }
 
     const enginePatch = { ...prepared.enginePatch };
-    if (prepared.click && record.menuOpen) enginePatch.pose = { look: null, lookY: null };
+    if (prepared.click && record.menuOpen)
+      enginePatch.pose = clearedGaze(prepared.description || record.descriptions.get(record.character));
     try {
       if (!has(patch, 'mood') && record.problem && !prepared.changed) enginePatch.mood = record.problemMood;
+      // A format-v1 swap without a mood follows the contract's fallback chain; the legacy player starts at the first mood.
+      if (
+        prepared.changed &&
+        !has(enginePatch, 'mood') &&
+        isFormat(prepared.description) &&
+        isFormat(record.descriptions.get(record.character))
+      )
+        enginePatch.mood = ns.runtime.swapMood(
+          record.descriptions.get(record.character),
+          record.problem ? record.problemMood : record.mood,
+          prepared.description,
+        );
       // Synchronous engine notifications must not expose a partially committed host patch.
       updating.add(record);
       // Establish initial queued state before its gesture, without a mood transition or swap.
@@ -2059,16 +2348,21 @@
       const ch = patch.character;
       if (!ch || typeof ch.id !== 'string' || !ch.id || typeof ch.name !== 'string' || !ch.name)
         throw new Error('character needs an id and name');
-      description = descriptions.get(ch.id) || JSON.parse(ch.json);
+      const supplied = typeof ch.json === 'string' ? JSON.parse(ch.json) : null;
+      const cached = descriptions.get(ch.id);
+      if (cached && supplied && !sameValue(cached, supplied))
+        throw new Error('same character id has different content');
+      description = cached || supplied;
+      if (!description) throw new Error('character content cache miss');
       if (!description || description.id !== ch.id) throw new Error('character id does not match its description');
-      ns.motion.pose(description, { reduced: true }, 0);
+      engineValidate(description, {});
       enginePatch.character = description;
       changed = ch.id !== current?.id;
     }
-    const candidate = changed ? description : current;
+    const candidate = description || current;
     if (has(patch, 'mood')) {
       if (typeof patch.mood !== 'string' || !patch.mood.length) throw new Error('mood needs a non-empty name');
-      if (candidate) ns.motion.pose(candidate, { mood: patch.mood, reduced: true }, 0);
+      if (candidate) engineValidate(candidate, { mood: patch.mood });
       enginePatch.mood = patch.mood;
     }
     let status;
@@ -2183,6 +2477,14 @@
   }
 
   function receive(message) {
+    if (!message || typeof message !== 'object' || typeof message.id !== 'string') {
+      warn('update envelope needs an id');
+      return;
+    }
+    if (has(message, 'version')) return receiveState(message);
+    // The compatibility patch route belongs to custom hosts. Typed Shiny
+    // bindings accept versioned state/diagnostic envelopes only.
+    if (window.Shiny?.InputBinding) return;
     const targets = [...document.querySelectorAll('.mascot')].filter((el) => el.id === message.id && records.has(el));
     if (!message.patch || typeof message.patch !== 'object' || Array.isArray(message.patch)) {
       if (!targets.length) queue(message.id, message.patch, message.revision);
@@ -2233,8 +2535,14 @@
   function unmount(el) {
     const record = records.get(el);
     if (!record) return;
-    removeClick(record);
+    // Terminal notice is emitted while the binding/ledger still exist, before
+    // Shiny tears down the element. The explicit event route is repeatable.
     stopTimer(record);
+    record.ledger.bubble = record.bubble ? { ...record.bubble } : null;
+    record.ledger.live = false;
+    publish(record, 'unmounted');
+    record.ledger.record = null;
+    removeClick(record);
     unwatch(record);
     unlistenDrag(record);
     for (const [name, handler] of Object.entries(record.handlers))
@@ -2275,33 +2583,219 @@
       dropped: record.dropped ? { ...record.dropped } : null,
       dragging: Boolean(record.dragState?.moved),
       renderedSize: record.renderedSize,
+      band: record.band ?? null,
       bubble: record.bubble ? { ...record.bubble, remaining: remaining(record) } : null,
       hidden: record.hidden,
+      offscreen: record.offscreen,
+      measures: record.measures,
       revision: record.revision,
-      current: record.controller.current(),
+      snapshot: snapshot(record),
+      current: record.controller ? record.controller.current() : null,
     };
   }
 
-  ns.host = { mount, unmount, receive, state };
+  function snapshot(record, lifecycle = record.ledger.lifecycle) {
+    const ledger = record.ledger;
+    return {
+      version: 1,
+      generation: ledger.generation,
+      mount_token: ledger.mount_token,
+      lifecycle,
+      applied_revision: ledger.applied_revision,
+      gesture_watermark: ledger.gesture_watermark,
+      bubble_watermark: ledger.bubble_watermark,
+      dismissed_bubble_revision: ledger.dismissed_bubble_revision,
+    };
+  }
+
+  function publish(record, lifecycle) {
+    record.ledger.lifecycle = lifecycle;
+    if (record.ledger.mount_token)
+      window.Shiny?.setInputValue?.(`${record.el.id}:mascot.state`, snapshot(record), { priority: 'event' });
+  }
+
+  function receiveState(message) {
+    const ledger = ledgers.get(message.id),
+      record = ledger?.record;
+    if (
+      message.version !== 1 ||
+      !record ||
+      !ledger.live ||
+      message.generation !== ledger.generation ||
+      !safeCounter(message.revision)
+    )
+      return;
+    if (message.kind === 'template-needed' || message.kind === 'template-rejected') {
+      if (
+        message.mount_token !== ledger.mount_token ||
+        ledger.applied_revision !== 0 ||
+        typeof message.problem !== 'string' ||
+        !message.problem.length
+      )
+        return;
+      if (message.kind === 'template-needed' && record.recoverySent) return;
+      if (message.kind === 'template-needed') {
+        record.recoverySent = true;
+        try {
+          const script = record.el.querySelector('script[data-mascot-baseline]');
+          const baseline = JSON.parse(script.textContent);
+          const character = record.el.querySelector(`script[data-mascot-character="${baseline.character.id}"]`);
+          baseline.character.json = character.textContent;
+          window.Shiny?.setInputValue?.(
+            `${record.el.id}:mascot.state`,
+            { ...snapshot(record, 'ready'), baseline },
+            { priority: 'event' },
+          );
+          return;
+        } catch (error) {
+          warn(`cannot recover mascot UI baseline: ${error.message}`);
+        }
+      }
+      apply(record.el, { problem: message.problem });
+      warn(message.problem);
+      return;
+    }
+    if (message.kind === 'diagnostic') {
+      if (message.revision >= ledger.applied_revision && typeof message.problem === 'string' && message.problem.length)
+        apply(record.el, { problem: message.problem });
+      return;
+    }
+    // Unknown additive kinds are optional extensions, not state candidates.
+    if (message.kind != null && message.kind !== 'state') return;
+    if (message.revision <= ledger.applied_revision) return;
+    try {
+      if (
+        !safeCounter(message.bubble_revision) ||
+        !safeCounter(message.gesture_watermark) ||
+        message.gesture_watermark > message.revision ||
+        typeof message.restore !== 'boolean'
+      )
+        throw new Error('invalid complete-state counters');
+      if (message.problem != null && (typeof message.problem !== 'string' || !message.problem.length))
+        throw new Error('invalid development diagnostic');
+      const fields = ['character', 'mood', 'status', 'bubble', 'size', 'placement', 'theme', 'motion', 'click'];
+      if (
+        !message.state ||
+        Object.keys(message.state).length !== fields.length ||
+        fields.some((key) => !has(message.state, key))
+      )
+        throw new Error('incomplete state');
+      const gesture = message.gesture;
+      if (
+        gesture !== null &&
+        (!gesture ||
+          Object.keys(gesture).some((key) => !['name', 'revision'].includes(key)) ||
+          !safeCounter(gesture.revision) ||
+          gesture.revision === 0 ||
+          gesture.revision > message.revision)
+      )
+        throw new Error('invalid gesture revision');
+      const whole = { ...message.state };
+      if (gesture) whole.gesture = gesture.name;
+      // Pure preflight of the entire state against ONE incoming character.
+      const checkedState = prepare(
+        whole,
+        record.descriptions.get(record.character),
+        record.descriptions,
+        record.theme,
+        record.anchor || record.el,
+        true,
+        record.motion,
+      );
+      if (checkedState.description.name !== whole.character.name)
+        throw new Error('character display name disagrees with content');
+      const patch = {};
+      for (const field of fields) {
+        const previous = record.completeState?.[field] ?? record[field];
+        const unchanged =
+          field === 'character'
+            ? record.character === message.state.character.id
+            : field === 'status'
+              ? record.status.mode === message.state.status.mode &&
+                (record.status.mode === 'mood' || record.status.text === message.state.status.text)
+              : sameValue(message.state[field], previous);
+        if (field !== 'bubble' && !unchanged) patch[field] = message.state[field];
+      }
+      // Keep timer/visibility locally even when an acknowledgement was lost.
+      const newBubble = message.bubble_revision > ledger.bubble_watermark;
+      if (newBubble) patch.bubble = message.state.bubble;
+      else if (ledger.applied_revision === 0) {
+        patch.bubble =
+          ledger.dismissed_bubble_revision >= message.bubble_revision || !ledger.bubble
+            ? { clear: true }
+            : {
+                text: ledger.bubble.text,
+                html: ledger.bubble.html,
+                closable: ledger.bubble.closable,
+                duration: ledger.bubble.remaining,
+              };
+      }
+      // Consume before scheduling, even if motion/swap policy discards it.
+      ledger.gesture_watermark = Math.max(ledger.gesture_watermark, message.gesture_watermark);
+      if (gesture && gesture.revision > ledger.gesture_watermark) {
+        ledger.gesture_watermark = gesture.revision;
+        patch.gesture = gesture.name;
+      }
+      record.installing = true;
+      try {
+        if (!apply(record.el, patch, message.restore || ledger.applied_revision === 0))
+          throw new Error('complete-state installation failed');
+      } finally {
+        record.installing = false;
+      }
+      if (message.problem) apply(record.el, { problem: message.problem });
+      record.completeState = message.state;
+      ledger.applied_revision = message.revision;
+      record.revision = message.revision;
+      ledger.bubble_watermark = Math.max(ledger.bubble_watermark, message.bubble_revision);
+      ledger.bubble = record.bubble ? { ...record.bubble, remaining: remaining(record) } : null;
+      publish(record, 'mounted');
+    } catch (error) {
+      warn(`complete-state invariant failure: ${error.message}`);
+      publish(record, 'error');
+    }
+  }
+
+  ns.host = {
+    mount,
+    unmount,
+    receive,
+    state,
+    reconcile: (el) => {
+      const record = records.get(el);
+      if (record) publish(record, 'reconcile');
+    },
+  };
   if (window.Shiny?.InputBinding) {
     class MascotBinding extends window.Shiny.InputBinding {
       find(scope) {
         return window.jQuery(scope).find('.mascot, .mascot-source');
       }
+      getType() {
+        return 'mascot.state';
+      }
       getId(el) {
-        return sources.get(el)?.el.id || el.id || null;
+        const record = sources.get(el) || records.get(el),
+          id = record?.el.id || el.id;
+        const authoritative = ledgers.get(id);
+        if (authoritative?.live && record !== authoritative.record) {
+          warn(`duplicate live mascot id "${id}"; the first binding remains authoritative`);
+          return null;
+        }
+        return id || null;
       }
       getValue(el) {
         // Shiny bindInputs reads the initial value before subscribe.
         if (!sources.has(el)) mount(el);
         const record = sources.get(el) || records.get(el);
-        return record ? { mount: record.mountSerial, revision: record.revision } : null;
+        return record ? snapshot(record) : null;
       }
       subscribe(el) {
-        mount(el);
+        if (!mount(el)) return;
         const record = records.get(el);
         record.binding = this;
         syncBinding(record);
+        publish(record, 'ready');
       }
       unsubscribe(el) {
         unmount(sources.get(el)?.el || el);

@@ -1,0 +1,607 @@
+{
+  "adapter_comparison": {
+    "differences": [
+      {
+        "bounds_xyxy": [
+          26,
+          68,
+          33,
+          74
+        ],
+        "changed_percent": 0.03125,
+        "changed_pixels": 8,
+        "detail_picture": "tessa-celebrating-dark-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-celebrating-dark-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 3,
+        "mode": "dark",
+        "mood": "celebrating",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          26,
+          68,
+          33,
+          74
+        ],
+        "changed_percent": 0.02734375,
+        "changed_pixels": 7,
+        "detail_picture": "tessa-celebrating-light-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-celebrating-light-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 4,
+        "mode": "light",
+        "mood": "celebrating",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          51,
+          56,
+          58,
+          63
+        ],
+        "changed_percent": 0.0234375,
+        "changed_pixels": 6,
+        "detail_picture": "tessa-happy-dark-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-happy-dark-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "dark",
+        "mood": "happy",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          18,
+          10,
+          19,
+          11
+        ],
+        "changed_percent": 0.5208333333333334,
+        "changed_pixels": 3,
+        "detail_picture": "tessa-happy-dark-24-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-happy-dark-24-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "dark",
+        "mood": "happy",
+        "size": 24,
+        "total_pixels": 576
+      },
+      {
+        "bounds_xyxy": [
+          37,
+          21,
+          39,
+          23
+        ],
+        "changed_percent": 0.1736111111111111,
+        "changed_pixels": 4,
+        "detail_picture": "tessa-happy-dark-24-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-happy-dark-24-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 2,
+        "mode": "dark",
+        "mood": "happy",
+        "size": 24,
+        "total_pixels": 2304
+      },
+      {
+        "bounds_xyxy": [
+          74,
+          43,
+          79,
+          47
+        ],
+        "changed_percent": 0.10850694444444445,
+        "changed_pixels": 10,
+        "detail_picture": "tessa-happy-dark-96-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-happy-dark-96-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 2,
+        "mode": "dark",
+        "mood": "happy",
+        "size": 96,
+        "total_pixels": 9216
+      },
+      {
+        "bounds_xyxy": [
+          149,
+          87,
+          157,
+          94
+        ],
+        "changed_percent": 0.013563368055555556,
+        "changed_pixels": 5,
+        "detail_picture": "tessa-happy-dark-96-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-happy-dark-96-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "dark",
+        "mood": "happy",
+        "size": 96,
+        "total_pixels": 36864
+      },
+      {
+        "bounds_xyxy": [
+          51,
+          56,
+          58,
+          63
+        ],
+        "changed_percent": 0.0234375,
+        "changed_pixels": 6,
+        "detail_picture": "tessa-happy-light-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-happy-light-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "happy",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          18,
+          11,
+          19,
+          11
+        ],
+        "changed_percent": 0.3472222222222222,
+        "changed_pixels": 2,
+        "detail_picture": "tessa-happy-light-24-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-happy-light-24-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "happy",
+        "size": 24,
+        "total_pixels": 576
+      },
+      {
+        "bounds_xyxy": [
+          37,
+          21,
+          39,
+          23
+        ],
+        "changed_percent": 0.2170138888888889,
+        "changed_pixels": 5,
+        "detail_picture": "tessa-happy-light-24-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-happy-light-24-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "happy",
+        "size": 24,
+        "total_pixels": 2304
+      },
+      {
+        "bounds_xyxy": [
+          74,
+          43,
+          79,
+          47
+        ],
+        "changed_percent": 0.10850694444444445,
+        "changed_pixels": 10,
+        "detail_picture": "tessa-happy-light-96-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-happy-light-96-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 2,
+        "mode": "light",
+        "mood": "happy",
+        "size": 96,
+        "total_pixels": 9216
+      },
+      {
+        "bounds_xyxy": [
+          149,
+          88,
+          157,
+          91
+        ],
+        "changed_percent": 0.008138020833333334,
+        "changed_pixels": 3,
+        "detail_picture": "tessa-happy-light-96-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-happy-light-96-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "happy",
+        "size": 96,
+        "total_pixels": 36864
+      },
+      {
+        "bounds_xyxy": [
+          51,
+          56,
+          127,
+          116
+        ],
+        "changed_percent": 0.05078125,
+        "changed_pixels": 13,
+        "detail_picture": "tessa-idle-dark-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-idle-dark-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "dark",
+        "mood": "idle",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          51,
+          56,
+          127,
+          115
+        ],
+        "changed_percent": 0.05078125,
+        "changed_pixels": 13,
+        "detail_picture": "tessa-idle-light-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-idle-light-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "idle",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          245,
+          233,
+          245,
+          233
+        ],
+        "changed_percent": 0.0009765625,
+        "changed_pixels": 1,
+        "detail_picture": "tessa-idle-light-160-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-idle-light-160-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "idle",
+        "size": 160,
+        "total_pixels": 102400
+      },
+      {
+        "bounds_xyxy": [
+          51,
+          56,
+          58,
+          63
+        ],
+        "changed_percent": 0.0234375,
+        "changed_pixels": 6,
+        "detail_picture": "tessa-thinking-dark-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-thinking-dark-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "dark",
+        "mood": "thinking",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          3,
+          15,
+          4,
+          16
+        ],
+        "changed_percent": 0.5208333333333334,
+        "changed_pixels": 3,
+        "detail_picture": "tessa-thinking-dark-24-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-thinking-dark-24-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 2,
+        "mode": "dark",
+        "mood": "thinking",
+        "size": 24,
+        "total_pixels": 576
+      },
+      {
+        "bounds_xyxy": [
+          7,
+          31,
+          9,
+          33
+        ],
+        "changed_percent": 0.2170138888888889,
+        "changed_pixels": 5,
+        "detail_picture": "tessa-thinking-dark-24-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-thinking-dark-24-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 2,
+        "mode": "dark",
+        "mood": "thinking",
+        "size": 24,
+        "total_pixels": 2304
+      },
+      {
+        "bounds_xyxy": [
+          14,
+          62,
+          19,
+          66
+        ],
+        "changed_percent": 0.1193576388888889,
+        "changed_pixels": 11,
+        "detail_picture": "tessa-thinking-dark-96-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-thinking-dark-96-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 3,
+        "mode": "dark",
+        "mood": "thinking",
+        "size": 96,
+        "total_pixels": 9216
+      },
+      {
+        "bounds_xyxy": [
+          30,
+          94,
+          124,
+          132
+        ],
+        "changed_percent": 0.09223090277777778,
+        "changed_pixels": 34,
+        "detail_picture": "tessa-thinking-dark-96-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-thinking-dark-96-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 2,
+        "mode": "dark",
+        "mood": "thinking",
+        "size": 96,
+        "total_pixels": 36864
+      },
+      {
+        "bounds_xyxy": [
+          51,
+          56,
+          58,
+          63
+        ],
+        "changed_percent": 0.0234375,
+        "changed_pixels": 6,
+        "detail_picture": "tessa-thinking-light-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-thinking-light-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "thinking",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          3,
+          15,
+          4,
+          16
+        ],
+        "changed_percent": 0.5208333333333334,
+        "changed_pixels": 3,
+        "detail_picture": "tessa-thinking-light-24-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-thinking-light-24-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "thinking",
+        "size": 24,
+        "total_pixels": 576
+      },
+      {
+        "bounds_xyxy": [
+          7,
+          31,
+          9,
+          33
+        ],
+        "changed_percent": 0.2604166666666667,
+        "changed_pixels": 6,
+        "detail_picture": "tessa-thinking-light-24-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-thinking-light-24-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 2,
+        "mode": "light",
+        "mood": "thinking",
+        "size": 24,
+        "total_pixels": 2304
+      },
+      {
+        "bounds_xyxy": [
+          14,
+          62,
+          19,
+          66
+        ],
+        "changed_percent": 0.10850694444444445,
+        "changed_pixels": 10,
+        "detail_picture": "tessa-thinking-light-96-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-thinking-light-96-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "thinking",
+        "size": 96,
+        "total_pixels": 9216
+      },
+      {
+        "bounds_xyxy": [
+          30,
+          94,
+          124,
+          132
+        ],
+        "changed_percent": 0.09223090277777778,
+        "changed_pixels": 34,
+        "detail_picture": "tessa-thinking-light-96-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-thinking-light-96-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 2,
+        "mode": "light",
+        "mood": "thinking",
+        "size": 96,
+        "total_pixels": 36864
+      },
+      {
+        "bounds_xyxy": [
+          51,
+          56,
+          127,
+          116
+        ],
+        "changed_percent": 0.05078125,
+        "changed_pixels": 13,
+        "detail_picture": "tessa-worried-dark-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-worried-dark-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "dark",
+        "mood": "worried",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          116,
+          157,
+          207,
+          187
+        ],
+        "changed_percent": 0.0166015625,
+        "changed_pixels": 17,
+        "detail_picture": "tessa-worried-dark-160-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-worried-dark-160-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "dark",
+        "mood": "worried",
+        "size": 160,
+        "total_pixels": 102400
+      },
+      {
+        "bounds_xyxy": [
+          51,
+          56,
+          127,
+          115
+        ],
+        "changed_percent": 0.05078125,
+        "changed_pixels": 13,
+        "detail_picture": "tessa-worried-light-160-dpr1-detail.png",
+        "dpr": 1,
+        "file": "tessa-worried-light-160-dpr1.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "worried",
+        "size": 160,
+        "total_pixels": 25600
+      },
+      {
+        "bounds_xyxy": [
+          116,
+          157,
+          245,
+          233
+        ],
+        "changed_percent": 0.017578125,
+        "changed_pixels": 18,
+        "detail_picture": "tessa-worried-light-160-dpr2-detail.png",
+        "dpr": 2,
+        "file": "tessa-worried-light-160-dpr2.png",
+        "frame": 0,
+        "max_channel_delta": 1,
+        "mode": "light",
+        "mood": "worried",
+        "size": 160,
+        "total_pixels": 102400
+      }
+    ],
+    "different_frames": 29,
+    "exit_code": 1,
+    "frames": 60,
+    "tolerance": 0
+  },
+  "archives": {
+    "e1-290-default": {
+      "file": "dev/visual-baselines/9decf48ea038012fda76a81f697ce5636f203bbccf82e61bb5326fd2d573ed0c.tar.gz",
+      "sha256": "9decf48ea038012fda76a81f697ce5636f203bbccf82e61bb5326fd2d573ed0c"
+    },
+    "e1-290-final": {
+      "file": "dev/visual-baselines/03f93b31a0273602680992dff07dd367e78b190fcbfb71f1feec86592f2a7645.tar.gz",
+      "sha256": "03f93b31a0273602680992dff07dd367e78b190fcbfb71f1feec86592f2a7645"
+    },
+    "e1-290-report": {
+      "file": "dev/visual-baselines/d6d9636233024665ffa824ab63cbbe2ec16b934b298e232c8c16159f6cd3fbf3.tar.gz",
+      "sha256": "d6d9636233024665ffa824ab63cbbe2ec16b934b298e232c8c16159f6cd3fbf3"
+    }
+  },
+  "baseline_archive_sha256": "1c1b3f94f8d85744474fdd8c49ee12d4e52869a2e7443a0c9ba2e73782c10ed2",
+  "baseline_directory": "dev/visual-baselines/macos-old",
+  "baseline_source": "ace06f56cd4a5923c3d0edd6cf245206351b810b",
+  "candidate_directory": "dev/visual-baselines/e1-290-final",
+  "default_comparison": {
+    "different_frames": 0,
+    "frames": 60
+  },
+  "owner": "Harsh Verma",
+  "report_directory": "dev/visual-baselines/e1-290-report",
+  "retention": "Local immutable cache only; design-assets publication and canonical Ubuntu captures pending.",
+  "runtime": {
+    "chrome": "Chrome/155.0.8059.79",
+    "chrome_js": "15.5.35.23",
+    "chrome_sha256": "fbeec33e75ea8da7bdb6e48f987ed32f5089c49d86013046e87319f5df11c13f",
+    "chromote": "0.5.1",
+    "machine": "arm64",
+    "platform": "Darwin",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36"
+  },
+  "scope": "E1 root/feet/body/shadow/arms/attachments through parts/geometry; shared legacy faces/effects at computed matrices. Not full E3/E4/M1 migration.",
+  "source": "working-tree:2f75c1c7f8a7dc322c0efe61dff77bcadbb6770e",
+  "source_files": {
+    "inst/characters/tessa.json": "c3da06ef6aa3c556d4bb03f65cd1254d8263df5c4d1ccdbf3374cf9ffd39b753",
+    "inst/www/mascot-draw.js": "0e8c60de8921726ce3ebd1349f0e7604940254814d34c4ab00216eb22bbc1537",
+    "inst/www/mascot-geometry.js": "c517315874d5f3fcbd5d96ed3b44af4160a3c6bdb23a2cdd51a68cefc9e4a75e",
+    "inst/www/mascot-parts.js": "c14d9ca852372b5bd3e90d9934fc915f2e5eb79ca925c2dc58e71b4e69be0910",
+    "inst/www/mascot-tessa-adapter.js": "f27ef38d35a757d9364c2caff22f89fcfed21bf77fd93b68c2fbf31563592029",
+    "inst/www/mascot.js": "5d83aa9ee5445d87c8b4d377d6a60651ad1f0bb9abb3b05da9d87356b53eb7b2"
+  },
+  "source_note": "Working-tree label names the parent before commit; source_files pins exact engine bytes, verified against the final commit in the review card.",
+  "status": "provisional-darwin; differences require review; no canonical acceptance"
+}

@@ -49,7 +49,7 @@ claim about the package's status.
 | Nothing is downloaded at run time; internet use, if any, fails gracefully. `mascot` uses no network at all | CRAN | POL |
 | No `:::` into base packages and no `.Internal()`; avoid `:::` into any other package too | CRAN | POL |
 | Send no data about the user's session anywhere | CRAN | POL |
-| Every function, exported or internal, checks its arguments first with checkmate | house | - |
+| Every function checks its arguments first with checkmate; per-node/recursive helpers may reuse caller-checked inputs under the exception in `.claude/rules/r-code.md` (top-level helpers need a comment; inner closures may reuse the enclosing checked inputs) | house | - |
 | Other messages, warnings and errors use cli | house | - |
 | Every top-level `mascot()` argument takes a plain shortcut or a `mascot_*()` helper (bslib style); every helper and listing function uses `mascot_` for autocomplete and to avoid clashes. Check new exports against base R, shiny, bslib and ggplot2 | house | - |
 
@@ -212,7 +212,8 @@ The docs say "mascot adds no inline script of its own". They do not say it works
 itself still uses inline scripts.
 
 **Keep JS small**: decisions live in R, where they can be unit-tested. JS is tested through shinytest2 and the
-widget's rendered output (section 6).
+widget's rendered output (section 6). Every change in `inst/www/` adds an entry to
+`vignettes/articles/engine-changelog.Rmd`.
 
 ## 4. Bundled files and licences
 

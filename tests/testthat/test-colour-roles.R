@@ -3,7 +3,7 @@ describe("mascot_colour_roles()", {
     value <- mascot_colour_roles()
     expect_identical(value, mascot_colour_roles("tessa"))
     expect_s3_class(value, "data.frame")
-    expect_named(value, c("role", "colour", "follows", "shade"))
+    expect_named(value, c("role", "colour", "follows", "shade", "description", "brand"))
     expect_equal(nrow(value), 20)
     expect_identical(value$role[3], "eye_white")
     expect_identical(value$role[9], "body_highlight")
@@ -18,14 +18,32 @@ describe("mascot_colour_roles()", {
     expect_identical(colour_role_registry(), colour_role_registry("tessa"))
     expect_identical(colour_role_registry(), value$role)
   })
+  it("returns the same first four columns as the legacy reader of the shipped description", {
+    # The checked recipe replaced the old file as the source; the output a user sees must not change.
+    legacy <- character_colour_data("tessa")
+    engine <- names(legacy$colours)
+    follows <- shade <- rep(NA_character_, length(engine))
+    for (role in names(legacy$follows)) {
+      rule <- legacy$follows[[role]]
+      follows[engine == role] <- paste(colour_role_names(unlist(rule$from)), collapse = ", ")
+      shade[engine == role] <- if (is.null(rule$shade)) "same" else rule$shade
+    }
+    expected <- data.frame(
+      role = colour_role_names(engine),
+      colour = unname(unlist(legacy$colours)),
+      follows = follows,
+      shade = shade
+    )
+    expect_identical(mascot_colour_roles()[1:4], expected)
+  })
   it("names unknown characters and checks internal contracts", {
     expect_snapshot(error = TRUE, mascot_colour_roles("missing"))
     for (x in list(NULL, 1, "", NA_character_, c("tessa", "tessa"))) {
       expect_error(mascot_colour_roles(x), "Assertion on 'character' failed")
     }
-    expect_error(character_colour_data("missing"), "'id'")
+    expect_error(character_colour_data("missing"), "must be one of", class = "mascot_error_choice")
     expect_error(colour_role_names(NA_character_), "'names'")
-    expect_error(colour_role_registry("missing"), "'character'")
+    expect_error(colour_role_registry("missing"), "must be one of", class = "mascot_error_choice")
     expect_identical(colour_role_names(character()), character())
   })
 })

@@ -292,13 +292,29 @@
   }
 
   /** draw(ctx, character, { x, baseY, pose, frame, colours }): one deterministic frame. */
-  ns.draw = (ctx, character, { x = 0, baseY = 0, pose = {}, frame = 0, colours } = {}) => {
+  // The validation and pose resolution of ns.draw, without painting. Shared with the internal band check.
+  const prepare = (character, { x = 0, baseY = 0, pose = {}, frame = 0, colours, band = 'full' } = {}) => {
     const errors = ns.validateCharacter(character);
     if (errors.length) throw new Error(`mascot: ${errors[0]}`);
     const p = ns.drawing.resolvePose(character, pose, frame);
     for (const role of Object.keys(colours || {})) {
       if (!Object.hasOwn(character.colours, role)) throw new Error(`mascot: colours: unknown role '${role}'`);
     }
-    ns.drawing.character(ctx, character, x, baseY, p, { ...character.colours, ...colours });
+    return { x, baseY, p, colours: { ...character.colours, ...colours }, band };
+  };
+  ns.draw = (ctx, character, options = {}) => {
+    const d = prepare(character, options);
+    ns.drawing.character(ctx, character, d.x, d.baseY, d.p, d.colours, d.band);
+  };
+  // E5b, internal: throws budget at $, without painting, when any scene the character can reach is over the band's caps.
+  // A no-op on the legacy path, which has no band budget.
+  // A format-v1 character (I1) is checked by its own runtime whatever the switch says; the legacy Tessa path is unchanged.
+  ns.checkCharacter = (character, band) => {
+    if (ns.runtime?.isFormat(character)) {
+      ns.runtime.check(character, band);
+    } else if (ns.internal?.useCharacterAdapter === true) {
+      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
+      ns.tessaAdapter.check(character, band);
+    }
   };
 })();

@@ -45,3 +45,13 @@ Reasons and sources: `docs/standards.md`.
   seconds): it works on copies in `tempdir()` and must end with "All probes behaved as expected".
 - PRs that only touch `.claude/` skip the lint and R jobs (`paths-ignore`). A change to the gate (`tools/`) runs
   them, plus `gate-self-test.yaml`, whose clean-copy probe runs the gate on the package.
+
+## Character visual harness (#284)
+- `engine-visual.yml` is mascot-specific and separate from the generic CRAN gate.
+- Founder decision (2026-10-15): manual `workflow_dispatch` only while private (#113), on `ubuntu-24.04`,
+  with a pre-provisioned Ubuntu 24.04 x86_64 image pinned by digest. This is an explicit exception to the usual
+  `ubuntu-26.04` host. Do not trigger it until the founder authorises spending minutes.
+- Missing/uncommitted/different canonical profile or baselines fail; no automatic regeneration or promotion.
+- Job artifacts are review transport only: retain approved content-addressed archives on `design-assets`.
+- Before public release (#115), add the reviewed engine/character PR path triggers and required visual policy.
+  Existing checks are never weakened. Provisional macOS evidence cannot satisfy canonical acceptance.

@@ -74,7 +74,11 @@ mascot_preview <- function(
 ) {
   # These union arguments share mascot()'s converters and checkmate boundaries.
   character <- as_character_arg(character, environment())
-  moods <- if (is.null(mood)) mascot_moods()$name else as_mood_arg(mood, environment())$name
+  known_moods <- mascot_moods(if (is.null(character$data)) character$id else character$data)$name
+  moods <- if (is.null(mood)) known_moods else as_mood_arg(mood, environment())$name
+  if (!is.null(mood) && !moods %in% known_moods) {
+    abort_choice(moods, known_moods, "mood", "mood", environment())
+  }
   status <- as_status_arg(status, environment())
   bubble <- as_bubble_arg(bubble, environment())
   size <- as_size_arg(size, environment())
@@ -83,7 +87,7 @@ mascot_preview <- function(
   click <- as_click_arg(click, environment())
   # Resolve once. Replace only slice 4's per-role contrast warnings with one list.
   resolved <- withCallingHandlers(
-    as_theme_arg(theme, environment(), character$id),
+    mascot_update_theme(theme, environment(), if (is.null(character$data)) character$id else character$data),
     warning = function(warning) {
       checkmate::assert_class(warning, "warning")
       if (inherits(warning, "mascot_contrast")) {
@@ -298,7 +302,10 @@ preview_panel <- function(character, moods, status, bubble, sizes, labels, theme
         )
       )
     })
-    htmltools::tags$tr(htmltools::tags$th(scope = "row", mood_label(moods[[row]])), cells)
+    htmltools::tags$tr(
+      htmltools::tags$th(scope = "row", tools::toTitleCase(gsub("_", " ", moods[[row]], fixed = TRUE))),
+      cells
+    )
   })
   heading <- paste0(prefix, "-", mode)
   htmltools::tags$section(

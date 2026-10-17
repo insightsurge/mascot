@@ -47,9 +47,12 @@ guide_entry <- function(category, vignette, args = character(), try = list()) {
 }
 
 playground_guide <- list(
-  mascot_character = guide_entry("look", "Your first app", "name"),
+  mascot_character = guide_entry("look", "Your first app", "id"),
   mascot_mood = guide_entry("look", "Moods and status", "name"),
-  mascot_moods = guide_entry("look", "Moods and status"),
+  mascot_moods = guide_entry("look", "Moods and status", "character"),
+  mascot_characters = guide_entry("look", "Your first app", c("...", "family")),
+  mascot_families = guide_entry("look", "Your first app"),
+  mascot_anchors = guide_entry("look", "Your first app", "character"),
   mascot_status = guide_entry("messages", "Moods and status", "text"),
   mascot_bubble = guide_entry("messages", "Message bubbles", c("text", "...", "duration", "closable")),
   mascot_motion_settings = guide_entry(
@@ -58,10 +61,11 @@ playground_guide <- list(
     c("...", "idle", "mood_change", "gestures", "swap", "minimising", "restoring", "messages", "others")
   ),
   mascot_gesture = guide_entry("motion", "One-off gestures", c("name", "...")),
-  mascot_gestures = guide_entry("motion", "One-off gestures"),
+  mascot_gestures = guide_entry("motion", "One-off gestures", "character"),
   mascot_size = guide_entry("layout", "Size and placement", c("size", "...", "small_screen")),
   mascot_placement = guide_entry("layout", "Size and placement", c("position", "...", "minimise", "drag")),
   mascot_colour_roles = guide_entry("colours", "Theme and light/dark mode", "character"),
+  mascot_palettes = guide_entry("colours", "Theme and light/dark mode", "character"),
   mascot_theme = guide_entry("colours", "Theme and light/dark mode", c("...", "light", "dark", "mode", "css")),
   mascot_action = guide_entry("messages", "Clicks and menus", c("label", "...", "tooltip", "disabled")),
   mascot_popup_menu = guide_entry("messages", "Clicks and menus", c("items", "...", "direction", "label", "tooltip")),

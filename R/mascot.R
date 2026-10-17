@@ -183,11 +183,15 @@ mascot <- function(
   })
   character <- as_character_arg(character, environment())
   mood <- as_mood_arg(mood, environment())
+  known_moods <- mascot_moods(if (is.null(character$data)) character$id else character$data)$name
+  if (!mood$name %in% known_moods) {
+    abort_choice(mood$name, known_moods, "mood", "mood", environment())
+  }
   status <- as_status_arg(status, environment())
   bubble <- as_bubble_arg(bubble, environment())
   size <- as_size_arg(size, environment())
   placement <- as_placement_arg(placement, environment())
-  theme <- as_theme_arg(theme, environment(), character$id)
+  theme <- mascot_update_theme(theme, environment(), if (is.null(character$data)) character$id else character$data)
   motion <- as_motion_arg(motion, environment())
   click <- as_click_arg(click, environment())
   if (...length() > 0L) {
@@ -200,10 +204,50 @@ mascot <- function(
   }
   mode <- if (is.null(status$text)) "mood" else "custom"
   placement_fields <- placement_wire(placement)
+  wire_character <- list(
+    id = character$id,
+    name = character$name,
+    json = if (is.null(character$json)) character_json(character$id) else character$json
+  )
+  baseline <- list(
+    character = wire_character,
+    mood = mood$name,
+    status = if (mode == "mood") list(mode = "mood") else list(mode = "custom", text = status$text),
+    bubble = if (is.null(bubble$text)) {
+      list(clear = TRUE)
+    } else {
+      list(
+        text = bubble$text,
+        html = bubble$html,
+        closable = bubble$closable,
+        duration = if (is.finite(bubble$duration)) bubble$duration else NULL
+      )
+    },
+    size = unclass(size),
+    placement = placement_fields,
+    theme = if (is.null(theme)) mascot_empty_theme() else theme,
+    motion = motion,
+    click = if (is.null(click)) list(type = "none") else click
+  )
+  # UI mistakes fail during construction; only a validated ready establishes
+  # this emitted specification as the session's baseline.
+  public_call <- environment()
+  prepared <- tryCatch(
+    {
+      mascot_wire_check(baseline)
+      mascot_state_prepare(list(desired = list(), context = NULL), baseline)
+    },
+    error = function(error) {
+      cli::cli_abort("{conditionMessage(error)}", class = "mascot_error", call = public_call)
+    }
+  )
+  token <- mascot_mount_token(id, prepared$desired)
+  shown_status <- if (mode == "mood") character_catalogue_status(prepared$context$data, mood$name) else status$text
   tag <- htmltools::tags$div(
     class = "mascot",
     id = id,
     tabindex = "-1",
+    `data-mount-token` = token,
     `data-character` = character$id,
     `data-mood` = mood$name,
     `data-status` = mode,
@@ -225,20 +269,21 @@ mascot <- function(
     htmltools::tags$script(
       type = "application/json",
       `data-mascot-character` = character$id,
-      htmltools::HTML(character_json(character$id))
+      htmltools::HTML(gsub("</", "<\\/", wire_character$json, fixed = TRUE))
     ),
+    mascot_baseline_tag(prepared$desired, token),
     theme_tag(theme),
     click_tag(click),
     # A picture until a click makes it a button; the browser then wraps it in one.
     htmltools::tags$canvas(
       class = "mascot-canvas",
       role = "img",
-      `aria-label` = paste0(character$name, ", ", mood$name)
+      `aria-label` = paste0(character$name, ", ", shown_status)
     ),
     htmltools::tags$div(
       class = "mascot-status",
       role = "status",
-      if (mode == "mood") mood_label(mood$name) else status$text
+      shown_status
     ),
     bubble_tag(bubble)
   )
@@ -277,9 +322,15 @@ with_mascot_asserts <- function(code, call = parent.frame()) {
 #' @noRd
 as_character_arg <- function(x, call) {
   checkmate::assert_environment(call)
-  # Union arguments use the shared non-throwing checks so updates can warn instead.
-  check_arg(x, "character", call)
-  if (inherits(x, "mascot_character")) x else mascot_character(x)
+  with_mascot_asserts(character_catalogue_assert(x), call = call)
+  data <- character_catalogue_resolve(if (inherits(x, "mascot_character") && !is.null(x$data)) x$data else x, call)
+  if (character_catalogue_is_builtin(data$id)) {
+    return(structure(list(id = data$id, name = data$name), class = "mascot_character"))
+  }
+  structure(
+    list(id = data$id, name = data$name, data = data, json = character_json_write(data)),
+    class = "mascot_character"
+  )
 }
 
 #' Accept a mood shortcut or helper
@@ -332,7 +383,8 @@ abort_dots <- function(extras, n, valid, call) {
   cli::cli_abort(
     c("Unexpected arguments: {.val {extras}}.", "i" = "Name the optional arguments: {.arg {valid}}."),
     call = call,
-    class = "mascot_error"
+    class = c("mascot_error_dots", "mascot_error"),
+    names = extras
   )
 }
 
@@ -359,6 +411,25 @@ arg_problem <- function(x, arg) {
   if (arg == "placement") {
     return(placement_problem(x))
   }
+  if (arg == "character") {
+    return(tryCatch(
+      {
+        as_character_arg(x, environment())
+        NULL
+      },
+      error = function(error) conditionMessage(error)
+    ))
+  }
+  if (arg %in% c("mood", "gesture")) {
+    value <- if (inherits(x, paste0("mascot_", arg))) x$name else x
+    if (isTRUE(checkmate::check_string(value, pattern = "^[a-z][a-z0-9_]*$"))) {
+      return(NULL)
+    }
+    if (!isTRUE(checkmate::check_string(value, min.chars = 1))) {
+      return(paste0("`", arg, "` must be a non-empty string or a mascot_", arg, "() object."))
+    }
+    return(paste0("`", arg, "` must be a lowercase id; ", encodeString(value, quote = '"'), " is not a ", arg, "."))
+  }
   helper <- paste0("mascot_", arg)
   if (inherits(x, "mascot_bubble") && arg == "bubble") {
     if (
@@ -372,16 +443,6 @@ arg_problem <- function(x, arg) {
         !isTRUE(checkmate::check_flag(x$closable))
     ) {
       return("`bubble` must be a mascot_bubble() object with valid text, html, duration and closable fields.")
-    }
-    return(NULL)
-  }
-  if (inherits(x, "mascot_gesture") && arg == "gesture") {
-    if (!is.list(x) || !isTRUE(checkmate::check_choice(x$name, gesture_table()$name))) {
-      return(paste0(
-        "`gesture` must name one of ",
-        paste(encodeString(gesture_table()$name, quote = '"'), collapse = ", "),
-        "; use mascot_gesture()."
-      ))
     }
     return(NULL)
   }
@@ -435,7 +496,16 @@ mascot_dependency <- function() {
     version = getNamespaceVersion("mascot")[[1]],
     src = "www",
     package = "mascot",
-    script = c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"),
+    script = c(
+      "mascot.js",
+      "mascot-draw.js",
+      "mascot-parts.js",
+      "mascot-geometry.js",
+      "mascot-faces.js",
+      "mascot-motion.js",
+      "mascot-player.js",
+      "mascot-host.js"
+    ),
     stylesheet = "mascot.css",
     all_files = FALSE
   )

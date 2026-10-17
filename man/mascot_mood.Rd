@@ -7,8 +7,9 @@
 mascot_mood(name = "idle")
 }
 \arguments{
-\item{name}{A non-empty string naming a mood from \code{\link[=mascot_moods]{mascot_moods()}}. Defaults
-to \code{"idle"}; \code{NULL} is not accepted.}
+\item{name}{A non-empty mood id: a lowercase letter followed by lowercase
+letters, digits or underscores. Defaults to \code{"idle"}; \code{NULL} is not accepted.
+See \code{\link[=mascot_moods]{mascot_moods()}} for the available moods.}
 }
 \value{
 A \code{mascot_mood} object with a \code{name} element.
@@ -17,6 +18,11 @@ The returned object's fields are internal; pass the object on rather than readin
 \description{
 Set how the mascot feels and looks. You can use this helper or a plain mood
 name in \code{\link[=mascot]{mascot()}} and \code{\link[=update_mascot]{update_mascot()}}.
+}
+\details{
+This helper checks only the form of the id. \code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}
+and \code{\link[=mascot_preview]{mascot_preview()}} check whether the chosen character declares that mood.
+If it does not, their diagnostic lists that character's available moods.
 }
 \examples{
 mascot_mood()
@@ -27,13 +33,17 @@ mascot_mood("happy")
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},
+\code{\link[=mascot_anchors]{mascot_anchors()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
+\code{\link[=mascot_characters]{mascot_characters()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
+\code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},
 \code{\link[=mascot_gestures]{mascot_gestures()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
 \code{\link[=mascot_motion_settings]{mascot_motion_settings()}},
+\code{\link[=mascot_palettes]{mascot_palettes()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},

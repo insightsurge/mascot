@@ -46,6 +46,7 @@ describe("update_mascot()", {
     )
     session <- shiny::MockShinySession$new()
     expect_snapshot(update_mascot("helper", character = "neer", mood = "hapy", status = "", session = session))
+    expect_snapshot(update_mascot("helper", mood = "ha!py", session = session))
     for (x in list(1, "", NA_character_, c("a", "b"))) {
       expect_warning(update_mascot("helper", character = x, session = session), "unchanged")
       expect_warning(update_mascot("helper", mood = x, session = session), "unchanged")
@@ -54,10 +55,17 @@ describe("update_mascot()", {
     expect_warning(update_mascot("{helper", mood = "{oops", status = "Saved", session = session), "not a mood")
     expect_length(calls$patches, 0)
     local_mocked_bindings(dev_mode = function() TRUE)
-    expect_warning(update_mascot("helper", mood = "hapy", status = "Saved", session = session), "unchanged")
+    expect_warning(update_mascot("helper", mood = "ha!py", status = "Saved", session = session), "unchanged")
     expect_length(calls$patches, 1)
     expect_named(calls$patches[[1]], "problem")
-    expect_match(calls$patches[[1]]$problem, "^mascot: .*hapy")
+    expect_match(calls$patches[[1]]$problem, "^mascot: .*ha!py")
+  })
+  it("lists Tessa's gestures when a well-formed id is not available", {
+    session <- shiny::MockShinySession$new()
+    withr::defer(session$close())
+    local_mocked_bindings(dev_mode = function() FALSE)
+    update_mascot("a", character = "tessa", session = session)
+    expect_snapshot(update_mascot("a", gesture = mascot_gesture("waev"), session = session))
   })
   it("errors on code mistakes before inspecting runtime values", {
     session <- shiny::MockShinySession$new()
@@ -80,19 +88,19 @@ describe("send_update()", {
       captured$type <- type
       captured$message <- message
     }
+    withr::defer(session$close())
     send_update(session, "helper", list(mood = "happy"))
+    expect_null(captured$message) # no known/live mount yet
+    state <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
+    token <- mascot_mount_token(session$ns("helper"), state, session)
+    mascot_snapshot(protocol_snapshot(token), session, session$ns("helper"))
+    session$flushReact()
     expect_identical(captured$type, "mascot:update")
-    expect_identical(
-      captured$message,
-      list(
-        id = session$ns("helper"),
-        patch = list(mood = "happy"),
-        revision = 1L,
-        gestureRevision = 0L,
-        fields = list(mood = 1L, problem = 1L),
-        replay = FALSE
-      )
-    )
+    expect_identical(captured$message$id, session$ns("helper"))
+    expect_identical(captured$message$state$mood, "happy")
+    expect_identical(captured$message$version, 1L)
+    expect_identical(captured$message$generation, 1)
+    expect_true(captured$message$restore)
     expect_error(send_update(NULL, "helper", list()), "'session'")
     expect_error(send_update(session, "has space", list()), "'id'")
     expect_error(send_update(session, "helper", 1), "'patch'")
@@ -141,7 +149,7 @@ describe("update_mascot() in a browser", {
     )
     app$click("reset")
     app$wait_for_js("document.querySelector('#helper .mascot-status').textContent === 'Happy'")
-    expect_identical(app$get_js("document.querySelector('#helper canvas').getAttribute('aria-label')"), "Tessa, happy")
+    expect_identical(app$get_js("document.querySelector('#helper canvas').getAttribute('aria-label')"), "Tessa, Happy")
   })
   it("updates a module mascot using its local server id", {
     local_shiny_browser()
@@ -254,7 +262,7 @@ describe("update_mascot() bubbles and gestures", {
       expect_warning(update_mascot("a", mood = "happy", bubble = x, session = session), "bubble")
       expect_warning(update_mascot("a", status = "Ready", gesture = x, session = session), "gesture")
     }
-    expect_warning(update_mascot("a", bubble = "Ready", gesture = "jump", session = session), "not a gesture")
+    expect_warning(update_mascot("a", bubble = "Ready", gesture = "jump!", session = session), "not a gesture")
     bad <- mascot_bubble("Ready")
     for (field in c("text", "html", "duration", "closable")) {
       value <- bad
@@ -263,7 +271,7 @@ describe("update_mascot() bubbles and gestures", {
     }
     expect_length(calls$patches, 0)
     local_mocked_bindings(dev_mode = function() TRUE)
-    expect_warning(update_mascot("a", mood = "happy", bubble = "", gesture = "jump", session = session), "unchanged")
+    expect_warning(update_mascot("a", mood = "happy", bubble = "", gesture = "jump!", session = session), "unchanged")
     expect_named(calls$patches[[1]], "problem")
     expect_match(calls$patches[[1]]$problem, "bubble.*gesture")
   })
@@ -789,7 +797,7 @@ describe("theme in a Shiny browser", {
     app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper'))?.colours.body === '#1F6FEB'")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).mode"), "light")
     app$run_js(
-      "window.drawnBodies=[];const draw=mascot.draw;mascot.draw=(ctx,ch,options)=>{drawnBodies.push(options.colours.body || ch.colours.body);return draw(ctx,ch,options)}"
+      "window.drawnBodies=[];if (mascot.geometry) { const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{if (colours?.body) drawnBodies.push(colours.body); return origGeo(ctx,c,s,colours,o);}}; } const draw=mascot.draw;mascot.draw=(ctx,ch,options)=>{drawnBodies.push(options.colours.body || ch.colours.body);return draw(ctx,ch,options)}"
     )
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === '#9EC5FE'")
@@ -1049,33 +1057,30 @@ describe("retained mascot updates", {
     expect_error(merge_update_patch(1, list()), "'previous'")
     expect_error(merge_update_patch(list(), 1), "'patch'")
   })
-  it("re-sends module state on mount without adding its namespace twice and clears it on session end", {
-    captured <- new.env(parent = emptyenv())
-    captured$messages <- list()
-    # A module's session proxy cannot be assigned to; capture on the root mock session instead.
+  it("coalesces complete module state on ready and releases it on session end", {
     root <- shiny::MockShinySession$new()
+    withr::defer(root$close())
+    messages <- list()
     unlockBinding("sendCustomMessage", root)
-    root$sendCustomMessage <- function(type, message) {
-      captured$messages[[length(captured$messages) + 1L]] <- message
-    }
+    root$sendCustomMessage <- function(type, message) messages[[length(messages) + 1L]] <<- message
     session <- root$makeScope("proxy1")
     shiny::withReactiveDomain(session, {
       update_mascot("helper", mood = "thinking", gesture = "nod")
       update_mascot("helper", mood = "happy", status = "Ready", gesture = "wave")
     })
-    root$setInputs(`proxy1-helper` = list(mount = 1, revision = 0))
-    expect_length(captured$messages, 3)
-    replay <- captured$messages[[3]]
-    expect_identical(replay$id, "proxy1-helper")
-    expect_true(replay$replay)
-    expect_identical(
-      replay$patch,
-      list(mood = "happy", gesture = "wave", status = list(mode = "custom", text = "Ready"))
-    )
-    expect_identical(replay$revision, 2L)
-    expect_identical(replay$gestureRevision, 2L)
-    root$setInputs(`proxy1-helper` = list(mount = 2, revision = 2))
-    expect_length(captured$messages, 3)
+    expect_length(messages, 0)
+    state <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
+    token <- mascot_mount_token(session$ns("helper"), state, session)
+    root$setInputs(`proxy1-helper` = protocol_snapshot(token))
+    expect_length(messages, 1)
+    latest <- messages[[1]]
+    expect_identical(latest$id, "proxy1-helper")
+    expect_identical(latest$state$mood, "happy")
+    expect_identical(latest$state$status$text, "Ready")
+    expect_identical(latest$gesture$name, "wave")
+    root$setInputs(`proxy1-helper` = protocol_snapshot(token, 2))
+    expect_length(messages, 2)
+    expect_identical(messages[[2]]$revision, latest$revision)
     root$close()
     expect_null(root$userData$mascot_updates)
   })
@@ -1178,27 +1183,22 @@ describe("bubble visibility in Shiny tabs", {
   })
 })
 
-describe("retained development problems", {
-  it("keeps the last good state with a problem overlay and clears the overlay on recovery", {
+describe("development problems and desired state", {
+  it("does not let an ignored call overwrite the last good state", {
     local_mocked_bindings(dev_mode = function() TRUE)
-    captured <- new.env(parent = emptyenv())
-    captured$messages <- list()
-    shiny::testServer(function(input, output, session) {}, {
-      session$sendCustomMessage <- function(type, message) {
-        captured$messages[[length(captured$messages) + 1L]] <- message
-      }
-      update_mascot("helper", mood = "happy", status = "Kept", session = session)
-      expect_warning(update_mascot("helper", mood = "missing", status = "Wrong", session = session), "unchanged")
-      session$setInputs(helper = list(mount = 1, revision = 0))
-      patch <- captured$messages[[3]]$patch
-      expect_identical(patch$mood, "happy")
-      expect_identical(patch$status$text, "Kept")
-      expect_match(patch$problem, "missing")
-      update_mascot("helper", mood = "thinking", session = session)
-      session$setInputs(helper = list(mount = 2, revision = 0))
-      expect_null(captured$messages[[5]]$patch$problem)
-      expect_identical(captured$messages[[5]]$patch$mood, "thinking")
-    })
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    protocol_ready(f)
+    protocol_flush(f)
+    update_mascot("helper", mood = "happy", status = "Kept", session = f$session)
+    before <- protocol_record(f)
+    expect_warning(update_mascot("helper", mood = "missing", status = "Wrong", session = f$session), "unchanged")
+    expect_identical(protocol_record(f), before)
+    latest <- protocol_flush(f)
+    expect_identical(latest$state$mood, "happy")
+    expect_identical(latest$state$status$text, "Kept")
+    update_mascot("helper", mood = "thinking", session = f$session)
+    expect_identical(protocol_flush(f)$state$mood, "thinking")
   })
 })
 
@@ -1246,7 +1246,7 @@ describe("update conditions", {
     )
     session <- shiny::MockShinySession$new()
     withr::defer(session$close())
-    expect_warning(update_mascot("helper", mood = "sleepy", session = session), class = "mascot_update_ignored")
+    expect_warning(update_mascot("helper", mood = "sleepy!", session = session), class = "mascot_update_ignored")
     expect_warning(
       update_mascot("helper", placement = "floating", session = session),
       "bottom-right",
@@ -1333,20 +1333,15 @@ describe("nested module ids", {
       update_mascot("helper", status = "Complete")
     })
     update_mascot("helper", mood = "thinking", session = other)
-    expect_identical(
-      vapply(messages, `[[`, character(1), "id"),
-      c("first-review-helper", "first-review-helper", "second-review-helper")
-    )
+    expect_length(messages, 0)
     expect_setequal(ls(root$userData$mascot_updates), c("first-review-helper", "second-review-helper"))
-    expect_identical(
-      root$userData$mascot_updates[["first-review-helper"]]$patch,
-      list(mood = "happy", status = list(mode = "custom", text = "Complete"))
-    )
-    root$setInputs(`first-review-helper` = list(mount = 1, revision = 0))
+    state <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
+    token <- mascot_mount_token(nested$ns("helper"), state, nested)
+    root$setInputs(`first-review-helper` = protocol_snapshot(token))
     root$flushReact()
     expect_identical(tail(messages, 1)[[1]]$id, "first-review-helper")
-    expect_true(tail(messages, 1)[[1]]$replay)
-    expect_identical(tail(messages, 1)[[1]]$patch$status$text, "Complete")
+    expect_true(tail(messages, 1)[[1]]$restore)
+    expect_identical(tail(messages, 1)[[1]]$state$status$text, "Complete")
   })
 })
 

@@ -4,32 +4,50 @@
 \alias{mascot_gestures}
 \title{List the mascot gestures}
 \usage{
-mascot_gestures()
+mascot_gestures(character = NULL)
+}
+\arguments{
+\item{character}{\code{NULL} (the default) for the shared gestures, or a
+character: an id string such as \code{"tessa"} or a \code{\link[=mascot_character]{mascot_character()}} helper.}
 }
 \value{
-A data frame with character columns \code{name} and \code{description}.
+A data frame with character columns \code{name} (the value you pass to
+\code{\link[=mascot_gesture]{mascot_gesture()}}), \code{description} and \code{fallback} (the gesture declared as
+the next choice when this one cannot play, or \code{NA}), and an integer column
+\code{frames}. Without a \code{character}, \code{frames} is the nominal length (18 for
+\code{"nod"}, 30 for \code{"wave"}) and \code{fallback} is \code{NA}. For a character, \code{frames}
+is the length of the movement that actually plays: a \code{"wave"} that falls
+back to a rock reports the length of the rock. Frames run at 30 per second.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the value you pass to the matching function.
 }
 \description{
 Gestures play a quick movement once, without changing the mascot's mood.
-They are available only in \code{\link[=update_mascot]{update_mascot()}}.
+They are available only in \code{\link[=update_mascot]{update_mascot()}}. With no \code{character}, the list
+is the shared vocabulary with its nominal lengths; with one, it is what that
+character declares: \code{"nod"} and \code{"wave"} first, then its own gestures in the
+order its author wrote them.
 }
 \examples{
 mascot_gestures()
+mascot_gestures("tessa")
 }
 \seealso{
 \code{\link[=mascot_gesture]{mascot_gesture()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},
+\code{\link[=mascot_anchors]{mascot_anchors()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
+\code{\link[=mascot_characters]{mascot_characters()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
+\code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
 \code{\link[=mascot_motion_settings]{mascot_motion_settings()}},
+\code{\link[=mascot_palettes]{mascot_palettes()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},

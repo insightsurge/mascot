@@ -359,6 +359,50 @@ describe("mascot_preview() in Chrome", {
   })
 })
 
+describe("mascot_preview() of a format-v1 character in Chrome", {
+  it("I1 draws every mood at 160, 48, 32 and 24 px offline, each in the detail band its width asks for", {
+    skip_without_chrome()
+    character <- runtime_character(runtime_data(edit = function(recipe) {
+      recipe$moods$thinking$status <- "Reading the logs"
+      recipe
+    }))
+    page <- mascot_preview(character = character)
+    expect_false(grepl("https?://", as.character(page)))
+    js <- local_preview_page(page)
+    expect_identical(js("document.querySelectorAll('.mascot canvas').length"), 48L)
+    expect_identical(js("typeof window.Shiny"), "undefined")
+    expect_identical(
+      unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE),
+      rep(c(160L, 48L, 32L, 24L), 12)
+    )
+    # 160 px is the full band, 48 px the small one, and 32 and 24 px the micro one.
+    expect_identical(
+      unlist(
+        js("Array.from(document.querySelectorAll('.mascot')).map(el=>mascot.host.state(el).band)"),
+        use.names = FALSE
+      ),
+      rep(c("full", "small", "micro", "micro"), 12)
+    )
+    # The status and the accessible name come from the character's own moods.
+    expect_identical(
+      unlist(js("Array.from(document.querySelectorAll('.mascot-status')).map(el=>el.textContent)"), use.names = FALSE),
+      rep(rep(c("Idle", "Reading the logs", "Happy", "Worried", "Celebrating", "Processing"), each = 4), 2)
+    )
+    expect_identical(
+      js("document.querySelector('.mascot[data-mood=happy] canvas').getAttribute('aria-label')"),
+      "Alpha Two, Happy"
+    )
+    expect_true(js(
+      "Array.from(document.querySelectorAll('.mascot canvas')).every(canvas=>{
+        const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+        return data.some((value,index)=>index%4===3&&value>0);})"
+    ))
+    expect_true(js(
+      "Array.from(document.querySelectorAll('.mascot')).every(el=>mascot.host.state(el).motion.reduced===true)"
+    ))
+  })
+})
+
 describe("mascot_preview() bubbles in Chrome", {
   it("P4 keeps every bubble inside its own cell at each size, in light and dark, wide or narrow and scrolled", {
     skip_without_chrome()

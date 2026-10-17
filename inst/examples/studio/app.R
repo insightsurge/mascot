@@ -52,6 +52,7 @@ studio_page <- function(character, fn) {
         div(
           class = "pg-inspector",
           id = "studio_inspector",
+          panel_your_character(),
           panel_look(character = character),
           panel_messages(),
           panel_motion(),
@@ -348,6 +349,126 @@ studio_server <- function(input, output, session) {
   last_call <- reactiveVal("No update yet. Change a setting in Controls.")
   log <- reactiveVal(list())
   selected_function <- reactiveVal("mascot_mood")
+  # R4a authoring stays session-local; this panel never registers visitor data.
+  uploaded_character <- reactiveVal(NULL)
+  uploaded_filename <- reactiveVal("study_bot.json")
+  mascot_read_character <- function(path) {
+    checkmate::assert_string(path)
+    if (identical(path, uploaded_filename()) && !is.null(uploaded_character())) {
+      return(uploaded_character())
+    }
+    mascot:::mascot_read_character(path)
+  }
+  if (isTRUE(getOption("mascot.internal.character_panel", FALSE))) {
+    your_character <- uploaded_character
+    your_filename <- uploaded_filename
+    your_revision <- reactiveVal(0L)
+    your_live_id <- reactive(paste0("your_character_live_mascot_", your_revision()))
+    your_problem <- reactiveVal("Choose a JSON file or load the example.")
+    load_your_character <- function(path, name) {
+      checkmate::assert_string(path)
+      checkmate::assert_string(name)
+      result <- tryCatch(mascot:::mascot_read_character(path), error = identity)
+      if (inherits(result, "error")) {
+        your_character(NULL)
+        your_problem(cli::ansi_strip(conditionMessage(result)))
+        return(invisible(NULL))
+      }
+      your_revision(isolate(your_revision()) + 1L)
+      your_character(result)
+      your_filename(basename(name))
+      your_problem(paste("Checked:", result$name))
+      updateSelectInput(session, "your_character_mood", choices = c("Every mood" = "", names(result$moods)))
+      updateSelectInput(session, "your_character_gesture", choices = names(result$gestures))
+      updateSelectInput(
+        session,
+        "preview_mood",
+        choices = c("Every mood (NULL)" = "", names(result$moods)),
+        selected = ""
+      )
+      last_preview_attempt(NULL)
+      if (isolate(preview_selected())) build_preview()
+    }
+    observeEvent(input$your_character_file, {
+      load_your_character(input$your_character_file$datapath, input$your_character_file$name)
+    })
+    observeEvent(input$your_character_example, {
+      load_your_character(system.file("examples", "characters", "study_bot.json", package = "mascot"), "study_bot.json")
+    })
+    output$your_character_check <- renderText(your_problem())
+    output$your_character_code <- renderText({
+      req(your_character())
+      file_name <- encodeString(your_filename(), quote = '"')
+      paste0(
+        "bot <- mascot_read_character(",
+        file_name,
+        ")\n",
+        "bot <- mascot_check_character(bot)\nmascot_preview(bot)\n",
+        "# Alternative check inputs: a parsed list or JSON text\n",
+        "mascot_check_character(jsonlite::read_json(",
+        file_name,
+        "))\n",
+        "mascot_check_character(paste(readLines(",
+        file_name,
+        "), collapse = \"\\n\"))\n",
+        "# At app start-up only: mascot_register_character(bot)\n",
+        "# Save to your chosen path: mascot_save_character(bot, \"resolved.json\")"
+      )
+    })
+    output$your_character_live <- renderUI({
+      req(your_character())
+      mascot(
+        your_live_id(),
+        character = your_character(),
+        motion = TRUE,
+        mood = if (is.null(input$your_character_mood) || !nzchar(input$your_character_mood)) {
+          "idle"
+        } else {
+          input$your_character_mood
+        },
+        size = input$your_character_size %||% 160
+      )
+    })
+    observeEvent(input$your_character_play, {
+      req(your_character(), input$your_character_gesture)
+      update_mascot(your_live_id(), gesture = input$your_character_gesture)
+    })
+    output$your_character_grid <- renderUI({
+      req(your_character())
+      page <- mascot_preview(
+        your_character(),
+        mood = if (is.null(input$your_character_mood) || !nzchar(input$your_character_mood)) {
+          NULL
+        } else {
+          input$your_character_mood
+        },
+        size = input$your_character_size %||% 160
+      )
+      # Reuse the preview grid; select a mode without changing the file's colours.
+      mode <- input$your_character_mode %||% "both"
+      if (mode != "both") {
+        page <- htmltools::tagAppendChild(
+          page,
+          tags$style(paste0(
+            "#",
+            page[[1]]$attribs$id,
+            " .mascot-preview-mode[data-bs-theme=",
+            if (mode == "light") "dark" else "light",
+            "]{display:none}"
+          ))
+        )
+      }
+      page
+    })
+    output$your_character_save <- downloadHandler(
+      filename = function() paste0(tools::file_path_sans_ext(your_filename()), "-resolved.json"),
+      content = function(file) {
+        checkmate::assert_string(file)
+        req(your_character())
+        mascot:::mascot_save_character(your_character(), file, overwrite = TRUE)
+      }
+    )
+  }
   current_character <- reactive(input$character %||% defaults$character)
   character_name <- reactive(mascot_character(current_character())$name)
   roles <- reactive(mascot_colour_roles(current_character()))
@@ -1008,11 +1129,16 @@ studio_server <- function(input, output, session) {
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
   # rebuilds the page after a short pause, with a "Building..." badge until it is shown.
   preview_selected <- reactive(identical(selected_function(), "mascot_preview"))
+  preview_roles <- reactive(mascot_colour_roles(uploaded_character() %||% current_character()))
   output$preview_pickers <- renderUI({
-    tagList(lapply(roles()$role, function(role) {
+    tagList(lapply(preview_roles()$role, function(role) {
       div(
         class = "pg-css",
-        colour_input(paste0("preview_", role), roles()$colour[match(role, roles()$role)], paste("Preview", role)),
+        colour_input(
+          paste0("preview_", role),
+          preview_roles()$colour[match(role, preview_roles()$role)],
+          paste("Preview", role)
+        ),
         tags$code(role)
       )
     }))
@@ -1020,13 +1146,13 @@ studio_server <- function(input, output, session) {
   outputOptions(output, "preview_pickers", suspendWhenHidden = FALSE)
   preview_colours <- reactive({
     values <- vapply(
-      roles()$role,
-      function(role) input[[paste0("preview_", role)]] %||% roles()$colour[match(role, roles()$role)],
+      preview_roles()$role,
+      function(role) input[[paste0("preview_", role)]] %||% preview_roles()$colour[match(role, preview_roles()$role)],
       character(1)
     )
     # Only the parts changed from the character's own colours go into the code.
-    changed <- tolower(values) != tolower(roles()$colour)
-    stats::setNames(values[changed], roles()$role[changed])
+    changed <- tolower(values) != tolower(preview_roles()$colour)
+    stats::setNames(values[changed], preview_roles()$role[changed])
   })
   preview_args <- reactive({
     own <- formals(mascot::mascot_preview)
@@ -1040,7 +1166,11 @@ studio_server <- function(input, output, session) {
     size <- input$preview_size %||% own$size
     placement <- input$preview_placement %||% own$placement
     args <- list(
-      character = if (current_character() != own$character) current_character(),
+      character = if (!is.null(uploaded_character())) {
+        helper_call("mascot_read_character", uploaded_filename())
+      } else if (current_character() != own$character) {
+        current_character()
+      },
       mood = if (nzchar(mood)) mood,
       status = if (nzchar(trimws(status))) status,
       bubble = if (nzchar(trimws(bubble))) bubble,
@@ -1327,6 +1457,14 @@ studio_server <- function(input, output, session) {
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
       update_mascot = format_call("update_mascot", server_args(reactiveValuesToList(state), style())),
       mascot_colour_roles = format_call(fn, list(character = current_character())),
+      mascot_moods = format_call(fn, list(character = current_character())),
+      mascot_gestures = format_call(fn, list(character = current_character())),
+      mascot_anchors = format_call(fn, list(character = current_character())),
+      mascot_palettes = format_call(fn, list(character = current_character())),
+      mascot_characters = format_call(
+        fn,
+        if (nzchar(input$list_family %||% "")) list(family = input$list_family) else list()
+      ),
       mascot_example = format_call(fn, list(name = examples$name[1], run = FALSE)),
       mascot_studio = format_call(fn, list(fn = "mascot_theme")),
       format_call(fn, list())

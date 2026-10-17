@@ -77,7 +77,7 @@ panel_look <- function(moods = mascot_moods(), character = formals(mascot::masco
     fn_heading("mascot_character"),
     arg_field(
       "mascot_character",
-      "name",
+      "id",
       selectInput("character", "Character", studio_characters(), selected = character),
       note = if (!is.null(studio_character_hint())) div(class = "pg-hint", studio_character_hint())
     ),
@@ -88,9 +88,33 @@ panel_look <- function(moods = mascot_moods(), character = formals(mascot::masco
       mood_cards(moods)
     ),
     fn_heading("mascot_moods"),
-    div(
-      class = "pg-hint",
-      "No arguments. See its table in the Guide, or choose mascot_mood() in the function index to try a mood."
+    arg_field(
+      "mascot_moods",
+      "character",
+      div(
+        class = "pg-note",
+        "Uses the character chosen under mascot_character(). Its table, with the status text of each mood,
+        appears in the Guide."
+      )
+    ),
+    fn_heading("mascot_characters"),
+    arg_field("mascot_characters", "...", NULL),
+    arg_field(
+      "mascot_characters",
+      "family",
+      selectInput("list_family", "Family", studio_families()),
+      note = div(class = "pg-hint", "The table of characters appears in the Guide.")
+    ),
+    fn_heading("mascot_families"),
+    div(class = "pg-hint", "No arguments. See its table in the Guide."),
+    fn_heading("mascot_anchors"),
+    arg_field(
+      "mascot_anchors",
+      "character",
+      div(
+        class = "pg-note",
+        "Uses the character chosen under mascot_character(). Its anchors appear in the Guide."
+      )
     )
   )
 }
@@ -279,7 +303,14 @@ panel_motion <- function(gestures = mascot_gestures()) {
       "One-off gestures appear in the Last tab of the Code tray, not in UI, Server, or App."
     ),
     fn_heading("mascot_gestures"),
-    div(class = "pg-hint", "No arguments. See the gesture cards in the Guide.")
+    arg_field(
+      "mascot_gestures",
+      "character",
+      div(
+        class = "pg-note",
+        "Uses the character chosen under mascot_character(). Its gestures, with the length that plays, appear in the Guide."
+      )
+    )
   )
 }
 
@@ -435,6 +466,17 @@ panel_colours <- function() {
         div(
           class = "pg-note",
           "Uses the character chosen under mascot_character(). Its colour parts appear in the Guide."
+        )
+      )
+    ),
+    inspector_function(
+      "mascot_palettes",
+      arg_field(
+        "mascot_palettes",
+        "character",
+        div(
+          class = "pg-note",
+          "Uses the character chosen under mascot_character(). Its palettes appear in the Guide."
         )
       )
     )
@@ -608,5 +650,39 @@ reconcile_colour_values <- function(old_roles, roles, values) {
       if (tolower(value) == tolower(old)) NULL else value
     }),
     roles$role
+  )
+}
+
+# Internal R4a review panel, omitted unless explicitly enabled before launch.
+panel_your_character <- function() {
+  if (!isTRUE(getOption("mascot.internal.character_panel", FALSE))) {
+    return(NULL)
+  }
+  tags$details(
+    tags$summary("Your character"),
+    div(
+      class = "pg-note",
+      "The browser uploads the file to this studio's R session. Locally it stays on this computer; ",
+      "when hosted it reaches that server. It is never sent to another service."
+    ),
+    fileInput("your_character_file", "Character JSON", accept = ".json"),
+    actionButton("your_character_example", "Load Study Bot example"),
+    textOutput("your_character_check"),
+    tags$button(
+      type = "button",
+      class = "btn btn-outline-primary btn-sm",
+      `data-event` = "select_function",
+      `data-value` = "mascot_preview",
+      "Open in the preview controls"
+    ),
+    selectInput("your_character_mood", "Mood", c("Every mood" = "")),
+    selectInput("your_character_gesture", "Gesture", character()),
+    actionButton("your_character_play", "Play gesture"),
+    sliderInput("your_character_size", "Size in pixels", min = 24, max = 240, value = 160),
+    selectInput("your_character_mode", "Mode", c("Both modes" = "both", Light = "light", Dark = "dark")),
+    downloadButton("your_character_save", "Save resolved JSON"),
+    verbatimTextOutput("your_character_code"),
+    uiOutput("your_character_live"),
+    uiOutput("your_character_grid")
   )
 }

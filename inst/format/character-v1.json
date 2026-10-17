@@ -1,0 +1,3769 @@
+{
+  "schema_version": 1,
+  "format_version": 1,
+  "policy_file": "policy-v1.json",
+  "definitions": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "role_ref": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+    },
+    "line_cap": {
+      "type": "string",
+      "choices": [
+        "butt",
+        "round",
+        "square"
+      ]
+    },
+    "line_join": {
+      "type": "string",
+      "choices": [
+        "miter",
+        "round",
+        "bevel"
+      ]
+    },
+    "vec2": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "min_length": 2,
+      "max_length": 2
+    },
+    "vec3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "min_length": 3,
+      "max_length": 3
+    },
+    "lod_choice": {
+      "type": "string",
+      "choices": [
+        "full",
+        "small",
+        "micro"
+      ]
+    },
+    "item_lods": {
+      "type": "array",
+      "items": {
+        "ref": "lod_choice"
+      },
+      "unique": true
+    },
+    "paint_ref": {
+      "type": "object",
+      "fields": {
+        "paint": {
+          "ref": "id"
+        }
+      },
+      "required": [
+        "paint"
+      ]
+    },
+    "fill_style": {
+      "type": "union",
+      "alternatives": [
+        {
+          "ref": "id"
+        },
+        {
+          "ref": "paint_ref"
+        }
+      ]
+    },
+    "id_map": {
+      "type": "map",
+      "key_pattern": "^[a-z][a-z0-9_]*$",
+      "values": {
+        "ref": "id"
+      }
+    },
+    "id_list": {
+      "type": "array",
+      "items": {
+        "ref": "id"
+      },
+      "unique": true
+    },
+    "vec2_list": {
+      "type": "array",
+      "items": {
+        "ref": "vec2"
+      },
+      "min_length": 2
+    },
+    "colour_map": {
+      "type": "map",
+      "values": {
+        "type": "string",
+        "pattern": "^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|rgba\\(\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*,\\s*[0-9.]+\\s*\\))$"
+      },
+      "key_pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "outline_band": {
+      "type": "object",
+      "fields": {
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "second": {
+          "ref": "outline_second",
+          "nullable": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "outline_second": {
+      "type": "object",
+      "fields": {
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "colour": {
+          "ref": "id"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "width",
+        "colour"
+      ]
+    },
+    "outline": {
+      "type": "object",
+      "fields": {
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "colour": {
+          "ref": "id"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "second": {
+          "ref": "outline_second",
+          "nullable": true
+        },
+        "lod": {
+          "type": "map",
+          "values": {
+            "ref": "outline_band"
+          },
+          "key_pattern": "^(full|small|micro)$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "item_polygon": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polygon"
+          ]
+        },
+        "sides": {
+          "type": "integer",
+          "min": 3,
+          "max": 12
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "corner": {
+          "type": "number",
+          "min": 0
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "sides",
+        "r"
+      ]
+    },
+    "item_hexagon": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "hexagon"
+          ]
+        },
+        "sides": {
+          "type": "integer",
+          "choices": [
+            6
+          ]
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "corner": {
+          "type": "number",
+          "min": 0
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r"
+      ]
+    },
+    "item_circle": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "circle"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r"
+      ]
+    },
+    "item_ellipse": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "ellipse"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rx": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "ry": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "rx",
+        "ry"
+      ]
+    },
+    "item_rect": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "rect"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "w",
+        "h"
+      ]
+    },
+    "item_round_rect": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "round_rect"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "r": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number",
+              "min": 0
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "min": 0
+              },
+              "min_length": 4,
+              "max_length": 4
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "w",
+        "h",
+        "r"
+      ]
+    },
+    "item_path": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "d"
+      ]
+    },
+    "item_polyline": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polyline"
+          ]
+        },
+        "points": {
+          "ref": "vec2_list"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "points"
+      ]
+    },
+    "item_arc": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "arc"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "start": {
+          "type": "number"
+        },
+        "end": {
+          "type": "number"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r",
+        "start",
+        "end"
+      ]
+    },
+    "item_ref": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "ref"
+          ]
+        },
+        "use": {
+          "ref": "id"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number"
+            },
+            {
+              "ref": "vec2"
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "use"
+      ]
+    },
+    "item": {
+      "type": "discriminator",
+      "field": "shape",
+      "variants": {
+        "polygon": "item_polygon",
+        "hexagon": "item_hexagon",
+        "circle": "item_circle",
+        "ellipse": "item_ellipse",
+        "rect": "item_rect",
+        "round_rect": "item_round_rect",
+        "path": "item_path",
+        "polyline": "item_polyline",
+        "arc": "item_arc",
+        "ref": "item_ref"
+      }
+    },
+    "shape_definition": {
+      "type": "discriminator",
+      "field": "shape",
+      "variants": {
+        "polygon": "named_polygon",
+        "hexagon": "named_hexagon",
+        "circle": "named_circle",
+        "ellipse": "named_ellipse",
+        "rect": "named_rect",
+        "round_rect": "named_round_rect",
+        "path": "named_path",
+        "polyline": "named_polyline",
+        "arc": "named_arc"
+      }
+    },
+    "named_polygon": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polygon"
+          ]
+        },
+        "sides": {
+          "type": "integer",
+          "min": 3,
+          "max": 12
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "corner": {
+          "type": "number",
+          "min": 0
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "sides",
+        "r"
+      ]
+    },
+    "named_hexagon": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "hexagon"
+          ]
+        },
+        "sides": {
+          "type": "integer",
+          "choices": [
+            6
+          ]
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "corner": {
+          "type": "number",
+          "min": 0
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r"
+      ]
+    },
+    "named_circle": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "circle"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r"
+      ]
+    },
+    "named_ellipse": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "ellipse"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rx": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "ry": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "rx",
+        "ry"
+      ]
+    },
+    "named_rect": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "rect"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "w",
+        "h"
+      ]
+    },
+    "named_round_rect": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "round_rect"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "h": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "r": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number",
+              "min": 0
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "min": 0
+              },
+              "min_length": 4,
+              "max_length": 4
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "w",
+        "h",
+        "r"
+      ]
+    },
+    "named_path": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "d"
+      ]
+    },
+    "named_polyline": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polyline"
+          ]
+        },
+        "points": {
+          "ref": "vec2_list"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "points"
+      ]
+    },
+    "named_arc": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "transform": {
+          "ref": "vec3"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "arc"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "start": {
+          "type": "number"
+        },
+        "end": {
+          "type": "number"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "r",
+        "start",
+        "end"
+      ]
+    },
+    "paint_stop": {
+      "type": "tuple",
+      "elements": [
+        {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "ref": "id"
+        },
+        {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "min_length": 2,
+      "max_length": 3
+    },
+    "paint_linear": {
+      "type": "object",
+      "fields": {
+        "type": {
+          "type": "string",
+          "choices": [
+            "linear"
+          ]
+        },
+        "from": {
+          "ref": "vec2"
+        },
+        "to": {
+          "ref": "vec2"
+        },
+        "stops": {
+          "type": "array",
+          "items": {
+            "ref": "paint_stop"
+          },
+          "min_length": 2,
+          "max_length": 6
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "from",
+        "to",
+        "stops"
+      ]
+    },
+    "paint_radial": {
+      "type": "object",
+      "fields": {
+        "type": {
+          "type": "string",
+          "choices": [
+            "radial"
+          ]
+        },
+        "centre": {
+          "ref": "vec2"
+        },
+        "r0": {
+          "type": "number",
+          "min": 0
+        },
+        "r1": {
+          "type": "number",
+          "min": 0
+        },
+        "focus": {
+          "ref": "vec2"
+        },
+        "stops": {
+          "type": "array",
+          "items": {
+            "ref": "paint_stop"
+          },
+          "min_length": 2,
+          "max_length": 6
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "centre",
+        "r1",
+        "stops"
+      ]
+    },
+    "paint": {
+      "type": "discriminator",
+      "field": "type",
+      "variants": {
+        "linear": "paint_linear",
+        "radial": "paint_radial"
+      }
+    },
+    "glow": {
+      "type": "object",
+      "fields": {
+        "item": {
+          "ref": "id"
+        },
+        "colour": {
+          "ref": "id"
+        },
+        "blur": {
+          "type": "number",
+          "min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1,
+          "default": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "item",
+        "colour",
+        "blur"
+      ]
+    },
+    "part": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "parent": {
+          "ref": "id"
+        },
+        "at": {
+          "ref": "vec2"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number"
+            },
+            {
+              "ref": "vec2"
+            }
+          ]
+        },
+        "layer": {
+          "type": "number"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "ref": "item"
+          }
+        },
+        "variants": {
+          "type": "map",
+          "values": {
+            "type": "array",
+            "items": {
+              "ref": "item"
+            }
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "switch": {
+          "type": "object",
+          "fields": {
+            "channel": {
+              "type": "string",
+              "min_chars": 1
+            },
+            "above": {
+              "type": "number"
+            },
+            "variant": {
+              "ref": "id"
+            }
+          },
+          "required": [
+            "channel",
+            "above",
+            "variant"
+          ]
+        },
+        "opacity": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "glow": {
+          "ref": "glow",
+          "nullable": true
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "keep_upright": {
+          "type": "boolean"
+        },
+        "no_flip": {
+          "type": "boolean"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "anchor_variant": {
+      "type": "object",
+      "fields": {
+        "at": {
+          "ref": "vec2"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "anchor": {
+      "type": "object",
+      "fields": {
+        "part": {
+          "ref": "id"
+        },
+        "at": {
+          "ref": "vec2"
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "side": {
+          "type": "string",
+          "choices": [
+            "l",
+            "r"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "variants": {
+          "type": "map",
+          "values": {
+            "ref": "anchor_variant"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "part",
+        "description"
+      ]
+    },
+    "follow": {
+      "type": "object",
+      "fields": {
+        "from": {
+          "type": "array",
+          "items": {
+            "ref": "id"
+          },
+          "min_length": 1
+        },
+        "shade": {
+          "type": "string",
+          "choices": [
+            "same",
+            "lighter",
+            "darker"
+          ]
+        },
+        "amount": {
+          "type": "number",
+          "min": -1,
+          "max": 1
+        },
+        "saturation": {
+          "type": "number",
+          "min": -1,
+          "max": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from"
+      ]
+    },
+    "contrast": {
+      "type": "object",
+      "fields": {
+        "fg": {
+          "ref": "id"
+        },
+        "bg": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "bg_paint": {
+          "ref": "id"
+        },
+        "min": {
+          "type": "number",
+          "min": 3
+        },
+        "where": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "fg",
+        "bg"
+      ]
+    },
+    "palette": {
+      "type": "object",
+      "fields": {
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "light": {
+          "ref": "colour_map"
+        },
+        "dark": {
+          "ref": "colour_map"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "light"
+      ]
+    },
+    "channels": {
+      "type": "map",
+      "values": {
+        "type": "scalar"
+      },
+      "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+    },
+    "face_controls": {
+      "type": "object",
+      "fields": {
+        "look_x": {
+          "type": "number",
+          "min": -1,
+          "max": 1
+        },
+        "look_y": {
+          "type": "number",
+          "min": -1,
+          "max": 1
+        },
+        "blink": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "eyes": {
+          "type": "union",
+          "alternatives": [
+            {
+              "ref": "id"
+            },
+            {
+              "type": "array",
+              "items": {
+                "ref": "id"
+              },
+              "min_length": 2,
+              "max_length": 2
+            }
+          ]
+        },
+        "mouth": {
+          "ref": "id"
+        },
+        "brows": {
+          "ref": "id"
+        },
+        "open": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "lid": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "blush": {
+          "type": "union",
+          "alternatives": [
+            {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            {
+              "type": "string",
+              "choices": [
+                "strong"
+              ]
+            }
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "item_change": {
+      "type": "object",
+      "fields": {
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "mood_reduced": {
+      "type": "object",
+      "fields": {
+        "channels": {
+          "ref": "channels"
+        },
+        "face": {
+          "ref": "face_controls"
+        },
+        "recolour": {
+          "ref": "id_map"
+        },
+        "items": {
+          "type": "map",
+          "values": {
+            "ref": "item_change"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "effects": {
+          "type": "map",
+          "values": {
+            "type": "union",
+            "alternatives": [
+              {
+                "type": "number",
+                "min": 0,
+                "max": 1
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "mood": {
+      "type": "object",
+      "fields": {
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "status": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "fallback": {
+          "ref": "id"
+        },
+        "pose": {
+          "ref": "id"
+        },
+        "channels": {
+          "ref": "channels"
+        },
+        "face": {
+          "ref": "face_controls"
+        },
+        "recolour": {
+          "ref": "id_map"
+        },
+        "items": {
+          "type": "map",
+          "values": {
+            "ref": "item_change"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "effects": {
+          "type": "map",
+          "values": {
+            "type": "union",
+            "alternatives": [
+              {
+                "type": "number",
+                "min": 0,
+                "max": 1
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "reduced": {
+          "ref": "mood_reduced"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "track_key": {
+      "type": "tuple",
+      "elements": [
+        {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "type": "scalar",
+          "nullable": true
+        },
+        {
+          "type": "string",
+          "choices": [
+            "linear",
+            "ease_in",
+            "ease_out",
+            "ease_in_out",
+            "step"
+          ]
+        }
+      ],
+      "min_length": 2,
+      "max_length": 3
+    },
+    "track_keys": {
+      "type": "array",
+      "items": {
+        "ref": "track_key"
+      },
+      "min_length": 2,
+      "input_limit": "keys_per_track",
+      "length_code": "budget"
+    },
+    "track": {
+      "type": "union",
+      "alternatives": [
+        {
+          "ref": "track_keys"
+        },
+        {
+          "type": "object",
+          "fields": {
+            "mode": {
+              "type": "string",
+              "choices": [
+                "add",
+                "set"
+              ]
+            },
+            "keys": {
+              "ref": "track_keys"
+            }
+          },
+          "required": [
+            "keys"
+          ]
+        }
+      ]
+    },
+    "tracks": {
+      "type": "map",
+      "values": {
+        "ref": "track"
+      },
+      "key_pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$",
+      "input_limit": "tracks_per_gesture"
+    },
+    "gesture": {
+      "type": "object",
+      "fields": {
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "frames": {
+          "type": "integer",
+          "min": 1,
+          "max": 150,
+          "range_code": "budget"
+        },
+        "needs": {
+          "ref": "id_list"
+        },
+        "fallback": {
+          "ref": "id",
+          "nullable": true
+        },
+        "tracks": {
+          "ref": "tracks"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "at": {
+                "type": "number",
+                "min": 0,
+                "max": 1
+              },
+              "effect": {
+                "ref": "id"
+              },
+              "anchor": {
+                "ref": "id"
+              }
+            },
+            "required": [
+              "at",
+              "effect",
+              "anchor"
+            ]
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "frames",
+        "tracks"
+      ]
+    },
+    "mouth_item": {
+      "type": "discriminator",
+      "field": "shape",
+      "variants": {
+        "path": "mouth_path",
+        "ellipse": "mouth_ellipse",
+        "polyline": "mouth_polyline"
+      }
+    },
+    "mouth_path": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "d"
+      ]
+    },
+    "mouth_ellipse": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "ellipse"
+          ]
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "rx": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "ry": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "rotate": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "rx",
+        "ry"
+      ]
+    },
+    "mouth_polyline": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "fill": {
+          "ref": "fill_style"
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "width": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "alpha": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "outline": {
+          "type": "boolean"
+        },
+        "cap": {
+          "ref": "line_cap"
+        },
+        "join": {
+          "ref": "line_join"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "shape": {
+          "type": "string",
+          "choices": [
+            "polyline"
+          ]
+        },
+        "points": {
+          "ref": "vec2_list"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "shape",
+        "points"
+      ]
+    },
+    "glint": {
+      "type": "object",
+      "fields": {
+        "at": {
+          "ref": "vec2"
+        },
+        "r": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "at",
+        "r"
+      ]
+    },
+    "pupil": {
+      "type": "object",
+      "fields": {
+        "r": {
+          "type": "number",
+          "min": 0
+        },
+        "look_range": {
+          "ref": "vec2"
+        },
+        "glints": {
+          "type": "array",
+          "items": {
+            "ref": "glint"
+          }
+        },
+        "at": {
+          "ref": "vec2"
+        },
+        "mirror_glints": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "r"
+      ]
+    },
+    "lashes": {
+      "type": "object",
+      "fields": {
+        "angles": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "length": {
+          "type": "number",
+          "min": 0
+        },
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "radii": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusive_min": 0
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "at": {
+          "ref": "vec2"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "eye_ellipse": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "eye_ellipse"
+          ]
+        },
+        "rx": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "ry": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "pupil": {
+          "ref": "pupil"
+        },
+        "lid": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "slant": {
+          "type": "number"
+        },
+        "fill": {
+          "ref": "id"
+        },
+        "outline": {
+          "type": "object",
+          "fields": {
+            "colour": {
+              "ref": "id"
+            },
+            "width": {
+              "type": "number",
+              "min": 0
+            }
+          },
+          "required": [
+            "colour",
+            "width"
+          ]
+        },
+        "lid_edge": {
+          "type": "object",
+          "fields": {
+            "colour": {
+              "ref": "id"
+            },
+            "width": {
+              "type": "number",
+              "min": 0
+            }
+          },
+          "required": [
+            "colour",
+            "width"
+          ]
+        },
+        "lashes": {
+          "ref": "lashes"
+        },
+        "hide_brows": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "rx",
+        "ry",
+        "pupil"
+      ]
+    },
+    "eye_arc": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "eye_arc"
+          ]
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "start": {
+          "type": "number"
+        },
+        "end": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "fill": {
+          "ref": "id",
+          "nullable": true
+        },
+        "stroke": {
+          "ref": "id",
+          "nullable": true
+        },
+        "lashes": {
+          "ref": "lashes"
+        },
+        "hide_brows": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "r",
+        "start",
+        "end"
+      ]
+    },
+    "eye_path": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "eye_path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "fill": {
+          "ref": "id",
+          "nullable": true
+        },
+        "stroke": {
+          "ref": "id",
+          "nullable": true
+        },
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "hide_brows": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "d"
+      ]
+    },
+    "eye_dots": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "eye_dots"
+          ]
+        },
+        "centres": {
+          "type": "array",
+          "items": {
+            "ref": "vec2"
+          },
+          "min_length": 1
+        },
+        "r": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "fill": {
+          "ref": "id"
+        },
+        "hide_brows": {
+          "type": "boolean"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "centres",
+        "r"
+      ]
+    },
+    "eye_style": {
+      "type": "discriminator",
+      "field": "op",
+      "variants": {
+        "eye_ellipse": "eye_ellipse",
+        "eye_arc": "eye_arc",
+        "eye_path": "eye_path",
+        "eye_dots": "eye_dots"
+      }
+    },
+    "brow_style": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "brow_path"
+          ]
+        },
+        "d": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "width": {
+          "type": "number",
+          "min": 0
+        },
+        "stroke": {
+          "ref": "id"
+        },
+        "y": {
+          "type": "number"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "d"
+      ]
+    },
+    "mouth_style": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "mouth_path"
+          ]
+        },
+        "box": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusive_min": 0
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "ref": "mouth_item"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "items"
+      ]
+    },
+    "kit_effect": {
+      "type": "object",
+      "fields": {
+        "op": {
+          "type": "string",
+          "choices": [
+            "sweat_drop",
+            "sparkle_star"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "choices": [
+            "progress",
+            "pulse",
+            "track"
+          ]
+        },
+        "at": {
+          "ref": "vec2"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "ref": "item"
+          }
+        },
+        "reduced_items": {
+          "type": "array",
+          "items": {
+            "ref": "item"
+          }
+        },
+        "travel": {
+          "type": "number"
+        },
+        "sway": {
+          "type": "number"
+        },
+        "sway_rate": {
+          "type": "number"
+        },
+        "fade_at": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "amplitude": {
+          "type": "number",
+          "min": 0,
+          "max": 0.5
+        },
+        "rate": {
+          "type": "number",
+          "exclusive_min": 0,
+          "max": 30
+        },
+        "frames": {
+          "type": "integer",
+          "min": 1,
+          "max": 150,
+          "range_code": "budget"
+        },
+        "tracks": {
+          "type": "map",
+          "values": {
+            "ref": "track"
+          },
+          "key_pattern": "^(x|y|scale_x|scale_y|opacity)$",
+          "max_length": 256
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "mode",
+        "items"
+      ]
+    },
+    "kit": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "roles": {
+          "ref": "id_list"
+        },
+        "defaults": {
+          "type": "object",
+          "fields": {
+            "eyes": {
+              "ref": "id"
+            },
+            "mouth": {
+              "ref": "id"
+            },
+            "brows": {
+              "ref": "id"
+            },
+            "blush": {
+              "type": "union",
+              "alternatives": [
+                {
+                  "type": "number",
+                  "min": 0,
+                  "max": 1
+                },
+                {
+                  "type": "string",
+                  "choices": [
+                    "strong"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "eyes",
+            "mouth",
+            "brows"
+          ]
+        },
+        "eye_styles": {
+          "type": "map",
+          "values": {
+            "ref": "eye_style"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "brow_styles": {
+          "type": "map",
+          "values": {
+            "ref": "brow_style"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "mouth_styles": {
+          "type": "map",
+          "values": {
+            "ref": "mouth_style"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "effects": {
+          "type": "map",
+          "values": {
+            "ref": "kit_effect"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "glow": {
+          "type": "object",
+          "fields": {
+            "blur": {
+              "type": "number",
+              "min": 0
+            },
+            "alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1,
+              "default": 1
+            }
+          },
+          "required": [
+            "blur"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "roles",
+        "defaults",
+        "eye_styles",
+        "brow_styles",
+        "mouth_styles",
+        "effects"
+      ]
+    },
+    "numeric_tree": {
+      "type": "numeric_tree"
+    },
+    "face": {
+      "type": "object",
+      "fields": {
+        "part": {
+          "ref": "id"
+        },
+        "at": {
+          "ref": "vec2"
+        },
+        "scale": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "layer": {
+          "type": "number"
+        },
+        "kit": {
+          "ref": "id"
+        },
+        "kit_definition": {
+          "ref": "kit"
+        },
+        "clip": {
+          "ref": "role_ref"
+        },
+        "eyes": {
+          "type": "object",
+          "fields": {
+            "y": {
+              "type": "number"
+            },
+            "spacing": {
+              "type": "number",
+              "min": 0
+            },
+            "lashes": {
+              "type": "boolean"
+            },
+            "iris": {
+              "ref": "id",
+              "nullable": true
+            }
+          },
+          "required": []
+        },
+        "mouth": {
+          "type": "object",
+          "fields": {
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": []
+        },
+        "blush": {
+          "type": "object",
+          "fields": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "rx": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "ry": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            "strong_alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "rx",
+            "ry"
+          ]
+        },
+        "colours": {
+          "ref": "id_map"
+        },
+        "tune": {
+          "ref": "numeric_tree"
+        },
+        "styles": {
+          "type": "object",
+          "fields": {
+            "eyes": {
+              "type": "map",
+              "values": {
+                "ref": "eye_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "brows": {
+              "type": "map",
+              "values": {
+                "ref": "brow_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "mouth": {
+              "type": "map",
+              "values": {
+                "ref": "mouth_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": []
+        },
+        "caps": {
+          "type": "object",
+          "fields": {
+            "left": {
+              "ref": "line_cap"
+            },
+            "right": {
+              "ref": "line_cap"
+            },
+            "join": {
+              "ref": "line_join"
+            }
+          },
+          "required": []
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "part"
+      ]
+    },
+    "motion": {
+      "type": "object",
+      "fields": {
+        "change": {
+          "type": "object",
+          "fields": {
+            "style": {
+              "type": "string",
+              "choices": [
+                "wiggle",
+                "hop",
+                "gesture"
+              ]
+            },
+            "frames": {
+              "type": "integer",
+              "min": 1,
+              "max": 150,
+              "range_code": "budget"
+            },
+            "angle": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            },
+            "swap_at": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            "gesture": {
+              "ref": "id"
+            }
+          },
+          "required": []
+        },
+        "idle": {
+          "type": "object",
+          "fields": {
+            "frames": {
+              "type": "integer",
+              "min": 1,
+              "max": 150,
+              "range_code": "budget"
+            },
+            "blink_every": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "blink_jitter": {
+              "type": "number",
+              "min": 0
+            },
+            "blink_frames": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "breathe": {
+              "type": "number",
+              "min": 0,
+              "max": 0.1
+            },
+            "breathe_period": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "breathe_part": {
+              "ref": "id"
+            },
+            "extra": {
+              "ref": "id",
+              "nullable": true
+            }
+          },
+          "required": []
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "lod_band": {
+      "type": "object",
+      "fields": {
+        "hide": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "min_chars": 1
+          },
+          "unique": true
+        },
+        "outline": {
+          "ref": "outline"
+        },
+        "face": {
+          "type": "object",
+          "fields": {
+            "scale": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "lashes": {
+              "type": "boolean"
+            },
+            "brows": {
+              "type": "boolean"
+            },
+            "iris": {
+              "type": "boolean"
+            }
+          },
+          "required": []
+        },
+        "glow": {
+          "type": "boolean"
+        },
+        "variants": {
+          "ref": "id_map"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "accessory": {
+      "type": "object",
+      "fields": {
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "slot": {
+          "ref": "id"
+        },
+        "anchor": {
+          "ref": "id"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "ref": "part"
+          }
+        },
+        "colours": {
+          "ref": "colour_map"
+        },
+        "lod": {
+          "ref": "item_lods"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "slot",
+        "anchor",
+        "parts"
+      ]
+    },
+    "ground": {
+      "type": "object",
+      "fields": {
+        "centre_height": {
+          "type": "number",
+          "min": 0
+        },
+        "shadow": {
+          "type": "object",
+          "fields": {
+            "rx": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "ry": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            "colour": {
+              "ref": "id"
+            }
+          },
+          "required": [
+            "rx",
+            "ry"
+          ],
+          "nullable": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "centre_height"
+      ]
+    },
+    "face_defaults": {
+      "type": "object",
+      "fields": {
+        "part": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "min_length": 2,
+          "max_length": 2
+        },
+        "scale": {
+          "type": "number",
+          "exclusive_min": 0
+        },
+        "layer": {
+          "type": "number"
+        },
+        "kit": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "kit_definition": {
+          "ref": "kit"
+        },
+        "clip": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_]*$"
+        },
+        "eyes": {
+          "type": "object",
+          "fields": {
+            "y": {
+              "type": "number"
+            },
+            "spacing": {
+              "type": "number",
+              "min": 0
+            },
+            "lashes": {
+              "type": "boolean"
+            },
+            "iris": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "nullable": true
+            }
+          },
+          "required": []
+        },
+        "mouth": {
+          "type": "object",
+          "fields": {
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": []
+        },
+        "blush": {
+          "type": "object",
+          "fields": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "rx": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "ry": {
+              "type": "number",
+              "exclusive_min": 0
+            },
+            "alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            },
+            "strong_alpha": {
+              "type": "number",
+              "min": 0,
+              "max": 1
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "rx",
+            "ry"
+          ]
+        },
+        "colours": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "tune": {
+          "ref": "numeric_tree"
+        },
+        "styles": {
+          "type": "object",
+          "fields": {
+            "eyes": {
+              "type": "map",
+              "values": {
+                "ref": "eye_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "brows": {
+              "type": "map",
+              "values": {
+                "ref": "brow_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "mouth": {
+              "type": "map",
+              "values": {
+                "ref": "mouth_style"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": []
+        },
+        "caps": {
+          "type": "object",
+          "fields": {
+            "left": {
+              "type": "string",
+              "choices": [
+                "butt",
+                "round",
+                "square"
+              ]
+            },
+            "right": {
+              "type": "string",
+              "choices": [
+                "butt",
+                "round",
+                "square"
+              ]
+            },
+            "join": {
+              "type": "string",
+              "choices": [
+                "miter",
+                "round",
+                "bevel"
+              ]
+            }
+          },
+          "required": []
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": []
+    },
+    "family": {
+      "type": "object",
+      "fields": {
+        "id": {
+          "ref": "id"
+        },
+        "name": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "defaults": {
+          "type": "object",
+          "fields": {
+            "outline": {
+              "ref": "outline"
+            },
+            "face": {
+              "ref": "face_defaults",
+              "nullable": true
+            },
+            "moods": {
+              "type": "map",
+              "values": {
+                "ref": "mood"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "gestures": {
+              "type": "map",
+              "values": {
+                "ref": "gesture"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "motion": {
+              "ref": "motion"
+            },
+            "colours": {
+              "ref": "colour_map"
+            },
+            "colour_descriptions": {
+              "type": "map",
+              "values": {
+                "type": "string",
+                "min_chars": 1
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "follows": {
+              "type": "map",
+              "values": {
+                "ref": "follow"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "brand": {
+              "type": "object",
+              "fields": {
+                "primary": {
+                  "ref": "id"
+                },
+                "secondary": {
+                  "ref": "id"
+                }
+              },
+              "required": []
+            },
+            "contrast": {
+              "type": "array",
+              "items": {
+                "ref": "contrast"
+              }
+            },
+            "palettes": {
+              "type": "map",
+              "values": {
+                "ref": "palette"
+              },
+              "key_pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": []
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "character": {
+      "type": "object",
+      "fields": {
+        "format_version": {
+          "type": "integer"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,31}$"
+        },
+        "name": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "family": {
+          "ref": "id"
+        },
+        "description": {
+          "type": "string",
+          "min_chars": 1
+        },
+        "resolved": {
+          "type": "boolean"
+        },
+        "family_definition": {
+          "ref": "family"
+        },
+        "palette_sources": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "choices": [
+              "character",
+              "family"
+            ]
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "pronouns": {
+          "type": "string"
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "unique": true
+        },
+        "colours": {
+          "ref": "colour_map"
+        },
+        "colour_descriptions": {
+          "type": "map",
+          "values": {
+            "type": "string",
+            "min_chars": 1
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "follows": {
+          "type": "map",
+          "values": {
+            "ref": "follow"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "brand": {
+          "type": "object",
+          "fields": {
+            "primary": {
+              "ref": "id"
+            },
+            "secondary": {
+              "ref": "id"
+            }
+          },
+          "required": []
+        },
+        "contrast": {
+          "type": "array",
+          "items": {
+            "ref": "contrast"
+          }
+        },
+        "modes": {
+          "type": "object",
+          "fields": {
+            "dark": {
+              "type": "object",
+              "fields": {
+                "colours": {
+                  "ref": "colour_map"
+                }
+              },
+              "required": [
+                "colours"
+              ]
+            }
+          },
+          "required": []
+        },
+        "palettes": {
+          "type": "map",
+          "values": {
+            "ref": "palette",
+            "nullable": true
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "paints": {
+          "type": "map",
+          "values": {
+            "ref": "paint"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "shapes": {
+          "type": "map",
+          "values": {
+            "ref": "shape_definition"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "ground": {
+          "ref": "ground"
+        },
+        "outline": {
+          "ref": "outline"
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "ref": "part"
+          },
+          "length_code": "budget",
+          "input_limit": "declared_parts"
+        },
+        "anchors": {
+          "type": "map",
+          "values": {
+            "ref": "anchor"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "face": {
+          "ref": "face",
+          "nullable": true
+        },
+        "poses": {
+          "type": "map",
+          "values": {
+            "ref": "channels"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "moods": {
+          "type": "map",
+          "values": {
+            "ref": "mood"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$",
+          "input_limit": "moods"
+        },
+        "gestures": {
+          "type": "map",
+          "values": {
+            "ref": "gesture"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$",
+          "input_limit": "gestures"
+        },
+        "motion": {
+          "ref": "motion"
+        },
+        "effects": {
+          "type": "map",
+          "values": {
+            "type": "object",
+            "fields": {
+              "anchor": {
+                "ref": "id"
+              },
+              "layer": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "anchor"
+            ]
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "lod": {
+          "type": "object",
+          "fields": {
+            "small": {
+              "ref": "lod_band"
+            },
+            "micro": {
+              "ref": "lod_band"
+            }
+          },
+          "required": []
+        },
+        "accessories": {
+          "type": "map",
+          "values": {
+            "ref": "accessory"
+          },
+          "key_pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "wear": {
+          "ref": "id_list"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "format_version",
+        "id",
+        "name",
+        "family",
+        "description",
+        "requires",
+        "colours",
+        "ground",
+        "parts",
+        "moods"
+      ]
+    }
+  }
+}

@@ -7,7 +7,8 @@
 mascot_gesture(name, ...)
 }
 \arguments{
-\item{name}{A required non-empty string: \code{"nod"} acknowledges an action;
+\item{name}{A required non-empty gesture id: a lowercase letter followed by
+lowercase letters, digits or underscores. \code{"nod"} acknowledges an action;
 \code{"wave"} greets (characters without arms rock instead). See
 \code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions. There is no default; \code{NULL} is not
 accepted.}
@@ -28,6 +29,10 @@ During a character swap the gesture is skipped: the wave within the swap
 replaces it. Reduced motion skips the movement. A gesture sent before the
 mascot appears is kept until it appears; only the latest early gesture plays,
 once, after the queued character and mood are applied.
+
+This helper checks only the form of the id. \code{\link[=update_mascot]{update_mascot()}} checks whether
+the chosen character declares that gesture. If it does not, the warning lists
+that character's available gestures and leaves the mascot unchanged.
 }
 \examples{
 mascot_gesture("nod")
@@ -38,13 +43,17 @@ mascot_gesture("wave")
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},
+\code{\link[=mascot_anchors]{mascot_anchors()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
+\code{\link[=mascot_characters]{mascot_characters()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
+\code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gestures]{mascot_gestures()}},
 \code{\link[=mascot_mood]{mascot_mood()}},
 \code{\link[=mascot_moods]{mascot_moods()}},
 \code{\link[=mascot_motion_settings]{mascot_motion_settings()}},
+\code{\link[=mascot_palettes]{mascot_palettes()}},
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},

@@ -36,3 +36,54 @@ inst/examples/studio/www/studio.js
 inst/preview/preview.css
     Source: static mascot comparison layout, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/format/character-v1.json
+    Source: version 1 character format structural grammar, written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+tests/testthat/fixtures/format/*.json
+    Source: character-format reference recipes written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/www/mascot-parts.js
+    Source: character-format v1 affine parts and anchor implementation written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/www/mascot-geometry.js
+    Source: character-format v1 canvas geometry, paints, outlines and world clips written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/format/characters/tessa.json
+    Source: Tessa's complete resolved version 1 character data (the migration of inst/characters/tessa.json), written for this
+    package. Read only for listings until the engine draws from it.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/format/kits/classic.json
+inst/format/kits/screen.json
+    Source: complete version 1 face-kit authoring snapshots written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/format/policy-v1.json
+    Source: shared version 1 character input, geometry, motion and resource policy written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+tests/testthat/fixtures/format/invalid/*.json
+    Source: deliberately malformed character-format reference inputs written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/www/mascot-tessa-adapter.js
+    Source: provisional legacy Tessa bridge to format-v1 parts and geometry written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/www/mascot-faces.js
+    Source: generic character-format face-kit and effect operations written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/www/mascot-player.js
+    Source: character-format v1 runtime (compile once, draw through the format-v1 modules, per-canvas player) written for
+    this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+inst/examples/characters/study_bot.json
+    Source: complete small Study Bot format-v1 example written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.

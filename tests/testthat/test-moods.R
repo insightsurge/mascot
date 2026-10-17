@@ -2,9 +2,12 @@ describe("mascot_moods()", {
   it("lists five moods with plain descriptions in the specified order", {
     moods <- mascot_moods()
     expect_s3_class(moods, "data.frame")
-    expect_named(moods, c("name", "description"))
+    expect_named(moods, c("name", "description", "status", "shared", "fallback"))
     expect_equal(nrow(moods), 5)
-    expect_true(all(vapply(moods, is.character, logical(1))))
+    expect_identical(
+      unname(vapply(moods, typeof, character(1))),
+      c("character", "character", "character", "logical", "character")
+    )
     expect_identical(moods$name, c("idle", "thinking", "happy", "worried", "celebrating"))
     expect_identical(
       moods$description,
@@ -27,7 +30,8 @@ describe("mascot_mood()", {
     }
   })
   it("names unknown moods and rejects invalid strings", {
-    expect_snapshot(error = TRUE, mascot_mood("hapy"))
+    expect_identical(mascot_mood("hapy")$name, "hapy")
+    expect_error(mascot_mood("Bad Mood"), "name")
     for (x in list(1, NULL, NA_character_, character(), c("idle", "happy"), "")) {
       expect_error(mascot_mood(x), "Assertion on 'name' failed")
     }

@@ -1,0 +1,2109 @@
+{
+  "accounting_version": 1,
+  "status": "reference_counts_and_conservative_authored_glow_bounds_not_validator_or_runtime_evidence",
+  "limits": "limits.json",
+  "operations": "operations.json",
+  "rows": [
+    {
+      "character": "tessa",
+      "file": "characters/tessa.json",
+      "band": "full",
+      "maxima": {
+        "active_parts": 6,
+        "painted_items": 42,
+        "paint_passes": 57,
+        "path_numbers": 357,
+        "clip_applications": 2,
+        "gradient_uses": 0,
+        "glow_emitters": 0,
+        "blur_design_units": 0,
+        "inflated_glow_area_ratio": 0.0
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [
+              "bow"
+            ],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [
+              "bow"
+            ],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "neutral",
+            "mouth": "proud",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [
+              "bow"
+            ],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "neutral",
+            "mouth": "grin",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [
+              "bow"
+            ],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "neutral",
+            "mouth": "grin",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        }
+      },
+      "body_choice_count": 12,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "tessa",
+      "file": "characters/tessa.json",
+      "band": "small",
+      "maxima": {
+        "active_parts": 6,
+        "painted_items": 42,
+        "paint_passes": 57,
+        "path_numbers": 357,
+        "clip_applications": 2,
+        "gradient_uses": 0,
+        "glow_emitters": 0,
+        "blur_design_units": 0,
+        "inflated_glow_area_ratio": 0.0
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [
+              "bow"
+            ],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [
+              "bow"
+            ],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "neutral",
+            "mouth": "proud",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [
+              "bow"
+            ],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "neutral",
+            "mouth": "grin",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [
+              "bow"
+            ],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "neutral",
+            "mouth": "grin",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        }
+      },
+      "body_choice_count": 12,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "tessa",
+      "file": "characters/tessa.json",
+      "band": "micro",
+      "maxima": {
+        "active_parts": 5,
+        "painted_items": 29,
+        "paint_passes": 41,
+        "path_numbers": 272,
+        "clip_applications": 2,
+        "gradient_uses": 0,
+        "glow_emitters": 0,
+        "blur_design_units": 0,
+        "inflated_glow_area_ratio": 0.0
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "proud",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "grin",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "grin",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sparkle",
+              "sweat"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "open",
+              "open"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": true
+          }
+        }
+      },
+      "body_choice_count": 12,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "alpha_visor",
+      "file": "characters/alpha_visor.json",
+      "band": "full",
+      "maxima": {
+        "active_parts": 17,
+        "painted_items": 37,
+        "paint_passes": 78,
+        "path_numbers": 329,
+        "clip_applications": 2,
+        "gradient_uses": 3,
+        "glow_emitters": 4,
+        "blur_design_units": 10,
+        "inflated_glow_area_ratio": 0.15118087846
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "star",
+              "star"
+            ],
+            "brows": "none",
+            "mouth": "wavy",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "arc",
+              "arc"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        }
+      },
+      "body_choice_count": 1,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "alpha_visor",
+      "file": "characters/alpha_visor.json",
+      "band": "small",
+      "maxima": {
+        "active_parts": 17,
+        "painted_items": 35,
+        "paint_passes": 76,
+        "path_numbers": 288,
+        "clip_applications": 1,
+        "gradient_uses": 2,
+        "glow_emitters": 4,
+        "blur_design_units": 10,
+        "inflated_glow_area_ratio": 0.15118087846
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "star",
+              "star"
+            ],
+            "brows": "none",
+            "mouth": "wavy",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "arc",
+              "arc"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        }
+      },
+      "body_choice_count": 1,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "alpha_visor",
+      "file": "characters/alpha_visor.json",
+      "band": "micro",
+      "maxima": {
+        "active_parts": 5,
+        "painted_items": 16,
+        "paint_passes": 24,
+        "path_numbers": 164,
+        "clip_applications": 1,
+        "gradient_uses": 2,
+        "glow_emitters": 0,
+        "blur_design_units": 0,
+        "inflated_glow_area_ratio": 0.0
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "star",
+              "star"
+            ],
+            "brows": "none",
+            "mouth": "wavy",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": [
+              "sweat",
+              "sparkle"
+            ]
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        }
+      },
+      "body_choice_count": 1,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "study_bot",
+      "file": "expected/study_bot.json",
+      "band": "full",
+      "maxima": {
+        "active_parts": 2,
+        "painted_items": 8,
+        "paint_passes": 16,
+        "path_numbers": 71,
+        "clip_applications": 1,
+        "gradient_uses": 0,
+        "glow_emitters": 3,
+        "blur_design_units": 3,
+        "inflated_glow_area_ratio": 0.06704074486
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "star",
+              "star"
+            ],
+            "brows": "none",
+            "mouth": "wavy",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "arc",
+              "arc"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        }
+      },
+      "body_choice_count": 1,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "study_bot",
+      "file": "expected/study_bot.json",
+      "band": "small",
+      "maxima": {
+        "active_parts": 2,
+        "painted_items": 8,
+        "paint_passes": 16,
+        "path_numbers": 71,
+        "clip_applications": 1,
+        "gradient_uses": 0,
+        "glow_emitters": 3,
+        "blur_design_units": 3,
+        "inflated_glow_area_ratio": 0.06704074486
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "star",
+              "star"
+            ],
+            "brows": "none",
+            "mouth": "wavy",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "arc",
+              "arc"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        }
+      },
+      "body_choice_count": 1,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "study_bot",
+      "file": "expected/study_bot.json",
+      "band": "micro",
+      "maxima": {
+        "active_parts": 1,
+        "painted_items": 7,
+        "paint_passes": 9,
+        "path_numbers": 66,
+        "clip_applications": 1,
+        "gradient_uses": 0,
+        "glow_emitters": 0,
+        "blur_design_units": 0,
+        "inflated_glow_area_ratio": 0.0
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "painted_items": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "scan",
+              "scan"
+            ],
+            "brows": "none",
+            "mouth": "wide",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "star",
+              "star"
+            ],
+            "brows": "none",
+            "mouth": "wavy",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {
+            "eyes": [
+              "dot",
+              "dot"
+            ],
+            "brows": "none",
+            "mouth": "smile",
+            "positive_lid": true,
+            "positive_blush": false
+          }
+        }
+      },
+      "body_choice_count": 1,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "anchor_probe",
+      "file": "characters/anchor_probe.json",
+      "band": "full",
+      "maxima": {
+        "active_parts": 2,
+        "painted_items": 2,
+        "paint_passes": 3,
+        "path_numbers": 9,
+        "clip_applications": 0,
+        "gradient_uses": 0,
+        "glow_emitters": 0,
+        "blur_design_units": 0,
+        "inflated_glow_area_ratio": 0.0
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [
+              "badge"
+            ],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "painted_items": {
+          "body": {
+            "wear": [
+              "badge"
+            ],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [
+              "badge"
+            ],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [
+              "badge"
+            ],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        }
+      },
+      "body_choice_count": 4,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "anchor_probe",
+      "file": "characters/anchor_probe.json",
+      "band": "small",
+      "maxima": {
+        "active_parts": 2,
+        "painted_items": 2,
+        "paint_passes": 3,
+        "path_numbers": 9,
+        "clip_applications": 0,
+        "gradient_uses": 0,
+        "glow_emitters": 0,
+        "blur_design_units": 0,
+        "inflated_glow_area_ratio": 0.0
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [
+              "badge"
+            ],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "painted_items": {
+          "body": {
+            "wear": [
+              "badge"
+            ],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [
+              "badge"
+            ],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [
+              "badge"
+            ],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        }
+      },
+      "body_choice_count": 4,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    },
+    {
+      "character": "anchor_probe",
+      "file": "characters/anchor_probe.json",
+      "band": "micro",
+      "maxima": {
+        "active_parts": 0,
+        "painted_items": 0,
+        "paint_passes": 0,
+        "path_numbers": 0,
+        "clip_applications": 0,
+        "gradient_uses": 0,
+        "glow_emitters": 0,
+        "blur_design_units": 0,
+        "inflated_glow_area_ratio": 0.0
+      },
+      "witnesses": {
+        "active_parts": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "painted_items": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "paint_passes": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "path_numbers": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "clip_applications": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "gradient_uses": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "glow_emitters": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "blur_design_units": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        },
+        "inflated_glow_area_ratio": {
+          "body": {
+            "wear": [],
+            "variants": {},
+            "effects": []
+          },
+          "face": {}
+        }
+      },
+      "body_choice_count": 4,
+      "exceeded": [],
+      "structural_counts_exact_for_reference_profile": true,
+      "glow_area": "conservative_authored_upper_bound",
+      "semantic_visual_runtime_acceptance": "not_run"
+    }
+  ],
+  "runtime_scale_stress": [
+    {
+      "character": "tessa",
+      "band": "small",
+      "external_root_scale": 16,
+      "glow_area_upper_bound": 0.0,
+      "limit": 0.5,
+      "bound_exceeds_limit": false,
+      "interpretation": "reject_or_tighten_proof_before_acceptance_when_bound_exceeds; this is not a runtime execution"
+    },
+    {
+      "character": "alpha_visor",
+      "band": "small",
+      "external_root_scale": 16,
+      "glow_area_upper_bound": 9.370606833552,
+      "limit": 0.5,
+      "bound_exceeds_limit": true,
+      "interpretation": "reject_or_tighten_proof_before_acceptance_when_bound_exceeds; this is not a runtime execution"
+    },
+    {
+      "character": "study_bot",
+      "band": "small",
+      "external_root_scale": 16,
+      "glow_area_upper_bound": 6.67737464245,
+      "limit": 0.5,
+      "bound_exceeds_limit": true,
+      "interpretation": "reject_or_tighten_proof_before_acceptance_when_bound_exceeds; this is not a runtime execution"
+    },
+    {
+      "character": "anchor_probe",
+      "band": "small",
+      "external_root_scale": 16,
+      "glow_area_upper_bound": 0.0,
+      "limit": 0.5,
+      "bound_exceeds_limit": false,
+      "interpretation": "reject_or_tighten_proof_before_acceptance_when_bound_exceeds; this is not a runtime execution"
+    }
+  ]
+}

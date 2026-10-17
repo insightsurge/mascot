@@ -670,14 +670,37 @@
     return result;
   }
 
+  function drawFace(g, ch, p, face, placed = false) {
+    const c = face.c;
+    const at = Object.hasOwn(ch.anchors || {}, 'face') ? ch.anchors.face : {};
+    const faceScale = at.scale === undefined ? 1 : at.scale;
+    const framed = !placed && ((at.x || 0) !== 0 || (at.y || 0) !== 0 || (at.rotate || 0) !== 0 || faceScale !== 1);
+    g.save();
+    if (framed) {
+      g.translate(at.x || 0, at.y || 0);
+      if (at.rotate) g.rotate(at.rotate);
+      g.scale(faceScale, faceScale);
+    }
+    if (p.blush && ch.face.blush) drawBlush(g, c, ch.face.blush, p.blush);
+    drawEyes(g, face, p);
+    drawMouth(g, face, p);
+    g.restore();
+  }
+
   /**
    * character(ctx, ch, x, baseY, p): draws the character described by `ch` with its feet on baseY, in pose `p`
    * (already merged with the defaults, the character's pose and its mood).
    */
-  function character(ctx, ch, x, baseY, p, colours) {
+  function character(ctx, ch, x, baseY, p, colours, band = 'full') {
     const g = ctx;
     const c = colours || ch.colours;
     const sc = p.scale;
+    // Internal opt-in only; the public host does not load these modules. The band is read only on this branch.
+    if (ns.internal?.useCharacterAdapter === true) {
+      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
+      ns.tessaAdapter.draw(g, ch, p, c, x, baseY, band);
+      return;
+    }
     if (!styles.has(ch))
       styles.set(ch, {
         style: faceStyle(ch.face.style),
@@ -743,20 +766,7 @@
     for (const part of ch.body) drawPart(g, c, part);
 
     // C. face
-    const at = Object.hasOwn(ch.anchors || {}, 'face') ? ch.anchors.face : {};
-    const faceScale = at.scale === undefined ? 1 : at.scale;
-    const framed = (at.x || 0) !== 0 || (at.y || 0) !== 0 || (at.rotate || 0) !== 0 || faceScale !== 1;
-    g.save();
-    if (framed) {
-      g.translate(at.x || 0, at.y || 0);
-      if (at.rotate) g.rotate(at.rotate);
-      g.scale(faceScale, faceScale);
-    }
-    if (p.blush && ch.face.blush) drawBlush(g, c, ch.face.blush, p.blush);
-    drawEyes(g, face, p);
-    drawMouth(g, face, p);
-    g.restore();
-
+    drawFace(g, ch, p, face);
     // D. accessory, sparkle, sweat
     for (const item of accessories(ch, p)) {
       const anchor = item.anchor || 'hair';
@@ -820,6 +830,8 @@
     faceStyle: FACE_STYLE,
     resolvePose,
     anchors,
+    armAngles,
+    accessories,
     hexPath,
     svgPath,
   };

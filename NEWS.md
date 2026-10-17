@@ -2,11 +2,17 @@
 
 ## Breaking changes
 
+* `mascot_character(id = "tessa")` names its argument `id`, as every other function that addresses a character does; `name =` is no longer accepted and has no alias. Pass the id positionally or as `id =` (#296).
+
 * `mascot_motion_settings()` replaces `mascot_motion()` without an alias; all settings must be named and `animate` is removed. Use `motion = FALSE` to stop everything (#239).
 
 * The pre-CRAN API puts `id` first in `mascot()`, names the server function `update_mascot()` without an alias, and requires arguments after `...` to be named. Dragging uses `"none"`, `"snap"` or `"free"`; untimed bubbles use `duration = Inf`, and floating placement uses a corner such as `"bottom-right"`. These choices settle the small API now: adding later is cheap, removing is costly (#259).
 
 ## New features
+
+* `mascot_mood()` and `mascot_gesture()` now check only the form of an id (lowercase letters, digits and underscores). `mascot()`, `update_mascot()` and `mascot_preview()` check it against the chosen character and list that character's moods or gestures when it is wrong, so `mascot_mood("hapy")` alone no longer errors but `mascot("helper", mood = "hapy")` does (#309).
+
+* Tessa is now drawn and animated by the same engine as every other character. She keeps her five moods, the wiggle on a mood change, her gestures, bow and clip, and every colour role name a theme can use; a few small face details are drawn slightly differently, and at the smallest sizes her bow and clip are hidden. The restore button now reads "Restore Tessa, <status>" instead of the mood's id (#308).
 
 * Mascots work in nested Shiny modules, function-built user interfaces in `golem` and rhino-shaped view modules. Bundled `golem` and `rhino` examples each show two independent nested modules (#133).
 
@@ -25,9 +31,13 @@
   * Space is reserved above the mascot, so a bubble never moves the page (#196).
   * While a bubble shows, the mascot looks towards it: up when it is above, down when it is below a top-corner mascot. Only the pupils move, at once and without animation, so eyes without visible pupils keep their look (#241).
 
-* `mascot_character()` chooses a character by name. Only Tessa is built in (#190).
+* `mascot_character()` chooses a character by id. Only Tessa is built in (#190).
 
 * `mascot_colour_roles()` lists a character's colour roles with their colours, the leaders they follow and their shade (#202, #213).
+  * It gains a `description` column and a `brand` column naming the `bslib` primary or secondary slot a role fills. The first four columns are unchanged (#296).
+  * `character` also accepts a `mascot_character()` helper.
+
+* `mascot_characters(..., family = NULL)`, `mascot_families()`, `mascot_anchors(character = "tessa")` and `mascot_palettes(character = "tessa")` list the characters this R session knows, their families, a character's attachment points and its colour palettes. Every listing is a base data frame whose first column is the value you pass on, and later versions only add columns at the end. (#296).
 
 * `mascot_example(name, ..., run = TRUE)` requires `run` to be named. It runs one bundled example app, or with `run = FALSE` returns the path to its `app.R` without copying any file (#178).
 
@@ -35,11 +45,11 @@
 
 * `mascot_gesture(name, ...)` rejects extra arguments. It plays one movement once, without changing the mood: `"nod"` acknowledges an action and `"wave"` greets. Use it on its own or pass a plain name to `update_mascot()` (#196).
 
-* `mascot_gestures()` lists the gestures, with a description of each (#196).
+* `mascot_gestures(character = NULL)` lists the gestures, with a description of each (#196). It gains `fallback` and `frames` columns; with a `character`, `frames` is the length of the movement that plays, so a wave that falls back to a rock reports the rock's length. (#296).
 
 * `mascot_mood()` chooses a mood for `mascot()` and `update_mascot()`; `"idle"` is the default (#190).
 
-* `mascot_moods()` lists the built-in moods and what each means. Every character uses the same moods (#190).
+* `mascot_moods(character = NULL)` lists the built-in moods and what each means (#190). It gains `status`, `shared` and `fallback` columns; with a `character`, it lists that character's moods, the five shared ones first. (#296).
 
 * `mascot_motion_settings()` independently controls `idle`, `mood_change`, `gestures`, `swap`, `minimising`, `restoring` and `messages`. Unnamed switches, including future ones, follow `others`; named switches win. Messages can move for selected panels, and minimise/restore gain short transitions. The visitor's reduced-motion preference always wins (#239).
 
@@ -88,6 +98,10 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* `update_mascot()` changes survive a mascot being re-rendered: a replaced mascot comes back as the server last set it, a gesture plays only once and a dismissed bubble stays dismissed, also in Quarto and R Markdown documents that run Shiny (#305).
+
+* Mascot layout reads batch into one animation frame per burst of page changes; unrelated changes are ignored unless an inline bubble needs refitting. Animating mascots pause drawing while scrolled outside the viewport; see the engine changelog on the package website (#295).
 
 * Minimised mascots restore sharp without interaction: the canvas backing size matches its displayed size times the device pixel ratio, and the character is redrawn on restore, including when animated, with `restoring = FALSE` and under reduced motion (#275).
 

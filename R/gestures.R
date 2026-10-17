@@ -13,8 +13,19 @@ gesture_table <- function() {
 #' List the mascot gestures
 #'
 #' Gestures play a quick movement once, without changing the mascot's mood.
-#' They are available only in [update_mascot()].
-#' @returns A data frame with character columns `name` and `description`.
+#' They are available only in [update_mascot()]. With no `character`, the list
+#' is the shared vocabulary with its nominal lengths; with one, it is what that
+#' character declares: `"nod"` and `"wave"` first, then its own gestures in the
+#' order its author wrote them.
+#' @param character `NULL` (the default) for the shared gestures, or a
+#'   character: an id string such as `"tessa"` or a [mascot_character()] helper.
+#' @returns A data frame with character columns `name` (the value you pass to
+#'   [mascot_gesture()]), `description` and `fallback` (the gesture declared as
+#'   the next choice when this one cannot play, or `NA`), and an integer column
+#'   `frames`. Without a `character`, `frames` is the nominal length (18 for
+#'   `"nod"`, 30 for `"wave"`) and `fallback` is `NA`. For a character, `frames`
+#'   is the length of the movement that actually plays: a `"wave"` that falls
+#'   back to a rock reports the length of the rock. Frames run at 30 per second.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers
@@ -22,8 +33,40 @@ gesture_table <- function() {
 #' @export
 #' @examples
 #' mascot_gestures()
-mascot_gestures <- function() {
-  gesture_table()
+#' mascot_gestures("tessa")
+mascot_gestures <- function(character = NULL) {
+  with_mascot_asserts({
+    character_catalogue_assert(character, nullable = TRUE)
+  })
+  if (is.null(character)) {
+    table <- gesture_table()
+    return(data.frame(
+      name = table$name,
+      description = table$description,
+      fallback = rep(NA_character_, nrow(table)),
+      frames = c(18L, 30L)
+    ))
+  }
+  data <- character_catalogue_resolve(character, environment())
+  declared <- names(data$gestures)
+  ids <- c(intersect(gesture_table()$name, declared), setdiff(declared, gesture_table()$name))
+  playable <- attr(data, "mascot_manifest")$playable
+  data.frame(
+    name = ids,
+    description = vapply(ids, function(id) data$gestures[[id]]$description, character(1), USE.NAMES = FALSE),
+    fallback = vapply(
+      ids,
+      function(id) if (is.null(data$gestures[[id]]$fallback)) NA_character_ else data$gestures[[id]]$fallback,
+      character(1),
+      USE.NAMES = FALSE
+    ),
+    frames = vapply(
+      ids,
+      function(id) as.integer(data$gestures[[playable[[id]]]]$frames),
+      integer(1),
+      USE.NAMES = FALSE
+    )
+  )
 }
 
 #' Choose a one-off mascot gesture
@@ -36,13 +79,18 @@ mascot_gestures <- function() {
 #' replaces it. Reduced motion skips the movement. A gesture sent before the
 #' mascot appears is kept until it appears; only the latest early gesture plays,
 #' once, after the queued character and mood are applied.
-#' @param name A required non-empty string: `"nod"` acknowledges an action;
+#' @param name A required non-empty gesture id: a lowercase letter followed by
+#'   lowercase letters, digits or underscores. `"nod"` acknowledges an action;
 #'   `"wave"` greets (characters without arms rock instead). See
 #'   [mascot_gestures()] for descriptions. There is no default; `NULL` is not
 #'   accepted.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_gesture` object with a `name` element.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @details
+#' This helper checks only the form of the id. [update_mascot()] checks whether
+#' the chosen character declares that gesture. If it does not, the warning lists
+#' that character's available gestures and leaves the mascot unchanged.
 #' @family mascot helpers
 #' @seealso [update_mascot()]
 #' @export
@@ -51,13 +99,10 @@ mascot_gestures <- function() {
 #' mascot_gesture("wave")
 mascot_gesture <- function(name, ...) {
   with_mascot_asserts({
-    checkmate::assert_string(name, min.chars = 1)
+    checkmate::assert_string(name, min.chars = 1, pattern = "^[a-z][a-z0-9_]*$")
   })
   if (...length() > 0L) {
     abort_dots(names(substitute(list(...)))[-1L], ...length(), c("name"), environment())
-  }
-  if (!name %in% gesture_table()$name) {
-    abort_choice(name, gesture_table()$name, "name", "gesture", environment())
   }
   structure(list(name = name), class = "mascot_gesture")
 }

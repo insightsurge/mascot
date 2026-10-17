@@ -1,0 +1,349 @@
+{
+  "format_version": 1,
+  "id": "study_bot",
+  "name": "Study Bot",
+  "family": "visorfolk",
+  "description": "A small screen-faced study helper.",
+  "family_definition": {
+    "id": "visorfolk",
+    "name": "Visorfolk",
+    "description": "Characters with screen faces.",
+    "defaults": {
+      "gestures": {
+        "rock": {
+          "description": "A brief whole-character tilt.",
+          "frames": 18,
+          "tracks": {
+            "root.rotate": {
+              "mode": "add",
+              "keys": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0.3,
+                  0.08
+                ],
+                [
+                  1,
+                  0
+                ]
+              ]
+            }
+          }
+        },
+        "nod": {
+          "description": "A brief whole-character acknowledgement tilt.",
+          "frames": 18,
+          "tracks": {
+            "root.rotate": {
+              "mode": "add",
+              "keys": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0.3,
+                  0.08
+                ],
+                [
+                  1,
+                  0
+                ]
+              ]
+            }
+          }
+        },
+        "wave": {
+          "description": "A brief whole-character greeting tilt.",
+          "frames": 30,
+          "tracks": {
+            "root.rotate": {
+              "mode": "add",
+              "keys": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  0.3,
+                  0.08
+                ],
+                [
+                  1,
+                  0
+                ]
+              ]
+            }
+          }
+        }
+      },
+      "palettes": {
+        "sea_glass": {
+          "description": "A cool screen.",
+          "light": {
+            "screen": "#06232a"
+          }
+        },
+        "night_screen": {
+          "description": "A deeper screen.",
+          "light": {
+            "screen": "#03151a"
+          }
+        }
+      }
+    }
+  },
+  "requires": [
+    "parts",
+    "outline",
+    "clip",
+    "face_kit",
+    "glow",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "body": "#3f82ff",
+    "outline": "#1b1230",
+    "screen": "#06232a",
+    "feature": "#7cffe0",
+    "accent": "#ffc400"
+  },
+  "ground": {
+    "centre_height": 60
+  },
+  "outline": {
+    "width": 2.5,
+    "colour": "outline"
+  },
+  "parts": [
+    {
+      "id": "head",
+      "at": [
+        0,
+        -60
+      ],
+      "layer": 10,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": -45,
+          "y": -40,
+          "w": 90,
+          "h": 80,
+          "r": 12,
+          "id": "shell",
+          "fill": "body",
+          "outline": true
+        },
+        {
+          "shape": "round_rect",
+          "x": -32,
+          "y": -25,
+          "w": 64,
+          "h": 36,
+          "r": 8,
+          "id": "visor",
+          "fill": "screen"
+        }
+      ]
+    },
+    {
+      "id": "badge_disc",
+      "parent": "head",
+      "at": [
+        25,
+        24
+      ],
+      "layer": 11,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 5,
+          "fill": "accent"
+        }
+      ]
+    }
+  ],
+  "anchors": {
+    "badge": {
+      "part": "head",
+      "at": [
+        25,
+        24
+      ],
+      "description": "Attachment point for a small badge."
+    }
+  },
+  "face": {
+    "kit": "screen",
+    "part": "head",
+    "at": [
+      0,
+      -7
+    ],
+    "clip": "head.visor",
+    "eyes": {
+      "y": -4,
+      "spacing": 13
+    },
+    "mouth": {
+      "y": 8
+    }
+  },
+  "moods": {
+    "idle": {
+      "description": "At rest.",
+      "status": "Ready",
+      "face": {
+        "eyes": "dot",
+        "mouth": "smile"
+      }
+    },
+    "thinking": {
+      "description": "Working on a task.",
+      "status": "Working",
+      "face": {
+        "eyes": "scan",
+        "mouth": "flat"
+      }
+    },
+    "happy": {
+      "description": "A task went well.",
+      "status": "Done",
+      "face": {
+        "eyes": "arc",
+        "mouth": "wide"
+      }
+    },
+    "worried": {
+      "description": "Something needs attention.",
+      "status": "Check the result",
+      "face": {
+        "eyes": "slant",
+        "mouth": "wavy"
+      }
+    },
+    "celebrating": {
+      "description": "A large task finished.",
+      "status": "Finished",
+      "face": {
+        "eyes": "star",
+        "mouth": "wide"
+      }
+    }
+  },
+  "gestures": {
+    "nod": {
+      "description": "A head-joint acknowledgement, or safe tilt.",
+      "frames": 18,
+      "needs": [
+        "nod_joint"
+      ],
+      "fallback": "rock",
+      "tracks": {
+        "nod_joint.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.08
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "wave": {
+      "description": "A hand greeting, or safe tilt.",
+      "frames": 30,
+      "needs": [
+        "hand_r"
+      ],
+      "fallback": "rock",
+      "tracks": {
+        "hand_r.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.25
+            ],
+            [
+              0.6,
+              -0.25
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "greet": {
+      "description": "A brief greeting tilt.",
+      "frames": 18,
+      "tracks": {
+        "head.rotate": {
+          "mode": "add",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.3,
+              0.08
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "palettes": {
+    "sea_glass": {
+      "description": "My darker screen.",
+      "light": {
+        "screen": "#051b20"
+      },
+      "vividness": 0.8
+    }
+  },
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "screen",
+      "min": 3,
+      "where": "screen face"
+    }
+  ],
+  "lod": {
+    "micro": {
+      "hide": [
+        "badge_disc"
+      ],
+      "glow": false
+    }
+  }
+}

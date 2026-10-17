@@ -1,10 +1,23 @@
+# The engine files, in load order: the legacy drawing and motion files, the format-v1 modules (parts, geometry and faces
+# before the player that uses them), the format-v1 player, then the host that mounts either.
+engine_scripts <- c(
+  "mascot.js",
+  "mascot-draw.js",
+  "mascot-parts.js",
+  "mascot-geometry.js",
+  "mascot-faces.js",
+  "mascot-motion.js",
+  "mascot-player.js",
+  "mascot-host.js"
+)
+
 describe("mascot()", {
   it("returns the accessible tag structure and a runtime dependency", {
     tag <- mascot(id = "helper")
     expect_s3_class(tag, "shiny.tag")
     expect_identical(tag$name, "div")
     expect_identical(
-      tag$attribs,
+      tag$attribs[names(tag$attribs) != "data-mount-token"],
       list(
         class = "mascot",
         id = "helper",
@@ -30,11 +43,15 @@ describe("mascot()", {
       )
     )
     html <- sub('(?s)(<script[^>]*>).*?(</script>)', '\\1[character JSON]\\2', as.character(tag), perl = TRUE)
+    html <- sub('(?s)(<script[^>]*data-mascot-baseline[^>]*>).*?(</script>)', '\\1[UI baseline]\\2', html, perl = TRUE)
+    html <- sub('data-mount-token="[^"]+"', 'data-mount-token="[UI specification token]"', html)
     expect_snapshot(cat(html))
     dep <- htmltools::findDependencies(tag)[[1]]
     expect_identical(dep$name, "mascot")
     expect_identical(dep$version, as.character(utils::packageVersion("mascot")))
-    expect_identical(dep$script, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
+    expect_identical(dep$script, engine_scripts)
+    # Every listed file ships with the package, so a page works offline.
+    expect_true(all(file.exists(file.path(system.file("www", package = "mascot"), dep$script))))
     expect_identical(dep$stylesheet, "mascot.css")
     expect_identical(dep$package, "mascot")
     expect_false(dep$all_files)
@@ -55,15 +72,20 @@ describe("mascot()", {
     expect_match(html, "&lt;b&gt;Saved&lt;/b&gt;", fixed = TRUE)
     expect_match(as.character(mascot(id = "a", mood = "thinking")), '>Thinking</div>', fixed = TRUE)
   })
+  it("bounds UI payloads before retaining a template", {
+    expect_error(mascot("bounded", status = strrep("x", 262145)), "capacity", class = "mascot_error")
+    expect_error(mascot("bounded", bubble = strrep("x", 262145)), "capacity", class = "mascot_error")
+  })
   it("attributes choice errors to mascot and rejects every invalid argument", {
     expect_snapshot(error = TRUE, mascot(id = "a", mood = "hapy"))
+    expect_snapshot(error = TRUE, mascot(id = "a", mood = "ha!py"))
     expect_snapshot(error = TRUE, mascot("a", character = "missing"))
     expect_error(mascot(), "missing", class = "mascot_error")
     for (id in list("", "has space", "a\nb", 1, NA_character_)) {
       expect_error(mascot(id = id), "Assertion on 'id' failed")
     }
     for (x in list(NULL, 1, "", NA_character_, c("a", "b"))) {
-      expect_error(mascot("a", character = x), "character.*non-empty string")
+      expect_error(mascot("a", character = x), "Assertion on 'character' failed")
       expect_error(mascot(id = "a", mood = x), "mood.*non-empty string")
     }
     for (x in list(1, "", NA_character_, c("a", "b"))) {
@@ -242,7 +264,12 @@ describe("mascot() themes", {
   it("embeds both palettes with auto by default and preserves explicit modes", {
     theme <- mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"))
     tag <- mascot(id = "themed", theme = theme)
-    scripts <- Filter(function(x) inherits(x, "shiny.tag") && identical(x$name, "script"), tag$children)
+    scripts <- Filter(
+      function(x) {
+        inherits(x, "shiny.tag") && identical(x$name, "script") && !"data-mascot-baseline" %in% names(x$attribs)
+      },
+      tag$children
+    )
     expect_length(scripts, 2)
     wire <- jsonlite::fromJSON(as.character(scripts[[2]]$children[[1]]), simplifyVector = FALSE)
     expect_identical(wire$light, list(body = "#1F6FEB"))
@@ -269,7 +296,10 @@ describe("mascot() motion", {
     )
     off <- mascot(id = "a", motion = FALSE)$attribs
     still <- mascot(id = "a", motion = mascot_motion_settings(others = FALSE))$attribs
-    expect_identical(off[names(off) != "data-reduced"], still[names(still) != "data-reduced"])
+    expect_identical(
+      off[!names(off) %in% c("data-reduced", "data-mount-token")],
+      still[!names(still) %in% c("data-reduced", "data-mount-token")]
+    )
     expect_error(mascot(id = "a", motion = "auto"), 'motion.*got "auto"')
     expect_error(mascot(id = "a", motion = NULL), 'motion.*got NULL')
     expect_identical(tail(names(formals(mascot)), 3), c("theme", "motion", "click"))
@@ -280,7 +310,7 @@ describe("mascot() click", {
   it("is a picture without a click: an image that is no keyboard stop", {
     html <- as.character(mascot(id = "a"))
     expect_false(grepl("data-mascot-click", html, fixed = TRUE))
-    expect_match(html, '<canvas class="mascot-canvas" role="img" aria-label="Tessa, idle"></canvas>', fixed = TRUE)
+    expect_match(html, '<canvas class="mascot-canvas" role="img" aria-label="Tessa, Idle"></canvas>', fixed = TRUE)
     expect_identical(html, as.character(mascot(id = "a", click = NULL)))
   })
   it("embeds an action or a menu as inert configuration", {
@@ -462,9 +492,23 @@ describe("mascot resources in modules", {
     dependencies <- htmltools::renderTags(ui())$dependencies
     engine <- Filter(function(dep) dep$name == "mascot", dependencies)
     expect_length(engine, 1)
-    expect_identical(engine[[1]]$script, c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js"))
+    expect_identical(engine[[1]]$script, engine_scripts)
     expect_identical(engine[[1]]$stylesheet, "mascot.css")
     expect_identical(engine[[1]]$src$file, system.file("www", package = "mascot"))
     expect_false(grepl("https?://", engine[[1]]$src$file))
+  })
+})
+
+describe("internal R4a character argument forms", {
+  it("accepts checked data while leaving the preset shortcut outside this unit", {
+    checked <- character_format_check(protocol_character()$json, from = "text")
+    expect_no_error(mascot("helper", character = checked))
+    expect_error(mascot("helper", mood = "processing"), "must be one of", class = "mascot_error")
+    expect_error(mascot("helper", theme = "sea"), class = "mascot_error")
+    session <- shiny::MockShinySession$new()
+    withr::defer(session$close())
+    update_mascot("helper", character = checked, session = session)
+    expect_identical(mascot_id_state(session, "helper")$context$data$id, checked$id)
+    expect_warning(update_mascot("helper", theme = "sea", session = session), "unchanged")
   })
 })

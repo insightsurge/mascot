@@ -1,0 +1,215 @@
+#' Check a character description
+#'
+#' Checks format version 1 using the package's input, drawing and capability
+#' policy. Never repairs or recolours data. Edit the JSON or plain source list,
+#' then check it again: checked objects are opaque and edits are refused.
+#' @param x A JSON string, a parsed plain list, or checked
+#'   `mascot_character_data`. A string always means JSON, never a path or id.
+#'   `NULL` is not accepted.
+#' @returns A checked, resolved, self-contained `mascot_character_data` object,
+#'   visibly. Its fields are internal implementation details.
+#' @details Content problems inherit `mascot_error_character` and `mascot_error`,
+#'   with `code`, `path`, `value` and `fix`. Argument problems inherit
+#'   `mascot_error_argument` and `mascot_error`, with `argument`, `code` and `value`.
+#'   Direct objects never enter the process registry. Format version, supported
+#'   capabilities and admission policy version are separate contracts. Built-in
+#'   character ids (including planned characters) are reserved and refused here;
+#'   give your character its own id before checking it.
+#' @seealso [mascot_character_format]
+#' @keywords internal
+#' @examples
+#' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+#' source <- jsonlite::read_json(path)
+#' bot <- mascot:::mascot_check_character(source)
+mascot_check_character <- function(x) {
+  character_api_asserts(
+    {
+      checkmate::assert(checkmate::check_list(x), checkmate::check_string(x), .var.name = "x")
+    },
+    "x",
+    x
+  )
+  if (
+    is.character(x) &&
+      (grepl("\\.json$", x, ignore.case = TRUE) || (nchar(x, type = "bytes") <= 4096L && file.exists(x)))
+  ) {
+    character_format_abort(
+      "input_type",
+      "$",
+      x,
+      paste0(
+        "To check a character file, use mascot_read_character(path). ",
+        "mascot_check_character() expects JSON text or a parsed list."
+      )
+    )
+  }
+  checked <- if (inherits(x, "mascot_character_data")) {
+    character_data_verify(x)
+  } else {
+    character_format_check(x, from = if (is.character(x)) "text" else "list")
+  }
+  attr(checked, "mascot_origin") <- if (inherits(x, "mascot_character_data")) attr(x, "mascot_origin") else "object"
+  checked
+}
+
+#' Read a local character file
+#'
+#' Reads exactly one caller-named local JSON file, bounded by the format's input
+#' policy. URLs and wildcards are not expanded. The checked result embeds its
+#' family and face kits; keep the source too if you want to edit it later.
+#' @param path A non-empty string naming one local JSON file. `NULL` is not accepted.
+#' @returns A checked `mascot_character_data` object, visibly.
+#' @details File problems inherit `mascot_error_file` and `mascot_error`, with
+#'   the exact supplied `path`, `operation = "read"` and a stable `code`.
+#'   Content and argument diagnostics are described in [mascot_check_character()].
+#' @seealso [mascot_character_format]
+#' @keywords internal
+#' @examples
+#' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+#' bot <- mascot:::mascot_read_character(path)
+mascot_read_character <- function(path) {
+  character_api_asserts(checkmate::assert_string(path, min.chars = 1), "path", path)
+  checked <- character_format_check(path, from = "file")
+  attr(checked, "mascot_origin") <- path
+  checked
+}
+
+#' Register a checked character for this R process
+#'
+#' Register during app start-up or development. Inside a Shiny reactive domain,
+#' pass the checked object directly instead; visitor objects must stay private.
+#' Registering identical content again does nothing. Built-in ids and different
+#' content under an existing id are refused with `mascot_error_character`.
+#' Identity uses canonical resolved content, independent of key order or origin.
+#' @param x A checked `mascot_character_data` object. `NULL` is not accepted.
+#' @returns The character id, invisibly.
+#' @seealso [mascot_check_character()], [mascot_characters()]
+#' @keywords internal
+#' @examples
+#' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+#' bot <- mascot:::mascot_read_character(path)
+#' mascot:::mascot_register_character(bot)
+mascot_register_character <- function(x) {
+  character_api_asserts(checkmate::assert_class(x, "mascot_character_data"), "x", x)
+  attr(x, "mascot_origin") <- "registry"
+  checked <- character_data_register(x)
+  invisible(checked$id)
+}
+
+#' Save a checked character as resolved JSON
+#'
+#' Saves the portable, self-contained recipe, including family metadata, palette
+#' sources and face kits. Validates serialised content before writing a temporary
+#' file beside the destination, then renames it into place. Failure removes the
+#' temporary file and leaves an existing destination untouched. No other folder
+#' is written. A mounted mascot cannot change content under the same id: give an
+#' edited character a new id before using it in a running app.
+#' @param x A checked `mascot_character_data` object. `NULL` is not accepted.
+#' @param path A non-empty string naming the output file in an existing directory.
+#'   `NULL` is not accepted.
+#' @param ... Must be empty. Forces `overwrite` to be named.
+#' @param overwrite A logical flag. `FALSE` (the default) refuses an existing file;
+#'   `TRUE` replaces it atomically. `NULL` is not accepted.
+#' @returns The exact supplied path, invisibly.
+#' @details File problems inherit `mascot_error_file` and `mascot_error`, with
+#'   `path`, `operation = "save"` and `code` (including `"exists"`). Unexpected
+#'   dots inherit `mascot_error_dots` with `names`; content and argument problems
+#'   are described in [mascot_check_character()].
+#' @seealso [mascot_read_character()], [mascot_character_format]
+#' @keywords internal
+#' @examples
+#' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+#' bot <- mascot:::mascot_read_character(path)
+#' out <- tempfile("study-bot-", tmpdir = tempdir(), fileext = ".json")
+#' mascot:::mascot_save_character(bot, out)
+#' unlink(out)
+mascot_save_character <- function(x, path, ..., overwrite = FALSE) {
+  character_api_asserts(checkmate::assert_class(x, "mascot_character_data"), "x", x)
+  character_api_asserts(checkmate::assert_string(path, min.chars = 1), "path", path)
+  character_api_asserts(checkmate::assert_flag(overwrite), "overwrite", overwrite)
+  if (...length() > 0L) {
+    extras <- names(substitute(list(...)))[-1L]
+    if (is.null(extras) || any(!nzchar(extras))) {
+      extras <- if (is.null(extras)) rep("unnamed", ...length()) else replace(extras, !nzchar(extras), "unnamed")
+      cli::cli_abort(
+        "Options after {.code ...} must be named; use {.code overwrite = TRUE} to replace a file.",
+        class = c("mascot_error_dots", "mascot_error"),
+        names = extras
+      )
+    }
+    abort_dots(extras, ...length(), "overwrite", environment())
+  }
+  character_save(x, path, overwrite = overwrite)
+}
+
+#' Add the authoring argument diagnostic to checkmate failures
+#' @noRd
+character_api_asserts <- function(code, argument, value) {
+  checkmate::assert_string(argument)
+  # code is a promise containing assertions; value can be any invalid caller input.
+  tryCatch(force(code), error = function(error) {
+    checkmate::assert_class(error, "error")
+    supplied <- tryCatch(value, error = function(error) {
+      checkmate::assert_class(error, "error")
+      NULL
+    })
+    cli::cli_abort(
+      "Invalid {.arg {argument}}: {conditionMessage(error)}",
+      class = c("mascot_error_argument", "mascot_error"),
+      argument = argument,
+      code = "argument",
+      value = supplied,
+      parent = error
+    )
+  })
+}
+
+#' Compact display of checked character data
+#' @method print mascot_character_data
+#' @exportS3Method print mascot_character_data
+#' @noRd
+print.mascot_character_data <- function(x, ...) {
+  checkmate::assert_class(x, "mascot_character_data")
+  character_build_dots(..., .path = "$")
+  checked <- character_data_verify(x)
+  origin <- attr(x, "mascot_origin")
+  if (is.null(origin)) {
+    origin <- "object"
+  }
+  cli::cat_line(paste0(checked$id, ": ", checked$name, " (", checked$family, ")"))
+  cli::cat_line(paste("Moods:", paste(names(checked$moods), collapse = ", ")))
+  cli::cat_line(paste("Gestures:", paste(names(checked$gestures), collapse = ", ")))
+  bands <- names(checked$lod)
+  cli::cat_line(paste("Detail overrides:", if (length(bands)) paste(bands, collapse = ", ") else "none"))
+  cli::cat_line(paste("From:", origin))
+  invisible(x)
+}
+
+#' Character format version 1
+#'
+#' An offline guide to the internal character authoring route. Descriptions are
+#' JSON objects with `format_version = 1`, `requires`, `id`, `name`, `description`,
+#' a `family`, colours, ground, parts and five shared moods (`idle`, `thinking`,
+#' `happy`, `worried`, `celebrating`). Optional anchors, palettes, face kits and
+#' gestures describe their own supported names. Small sizes may hide details
+#' the character marks for small sizes. Text is displayed as text, never HTML.
+#'
+#' Start from `system.file("examples", "characters", "study_bot.json", package = "mascot")`.
+#' Edit a plain list or JSON source and check it again. A checked object is opaque.
+#' Source files can use current family defaults; saved resolved files embed
+#' defaults and kits for deployment and archiving. Registered family snapshots
+#' are metadata and never become defaults for other source files.
+#'
+#' Checks stop at the first problem, giving a diagnostic code, JSON path, value
+#' and repair instruction. Input byte, depth and node limits and drawing budgets
+#' are enforced for all input forms. Unsupported and reserved capabilities are
+#' refused. Format version, capability set and admission policy version are
+#' distinct. A documented security or resource-safety correction may reject an
+#' older file with a diagnostic and migration guidance.
+#'
+#' The installed grammar and policy live in `system.file("format", package = "mascot")`.
+#' @name mascot_character_format
+#' @seealso [mascot_check_character()], [mascot_read_character()],
+#'   [mascot_register_character()], [mascot_save_character()]
+#' @keywords internal
+NULL

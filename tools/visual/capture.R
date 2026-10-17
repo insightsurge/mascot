@@ -8,6 +8,16 @@ capture_visuals <- function(config_path) {
   config <- jsonlite::fromJSON(config_path, simplifyVector = FALSE)
   checkmate::assert_directory_exists(config$source)
   checkmate::assert_directory_exists(config$output)
+  character_id <- if (!is.null(config$character_id)) config$character_id else "tessa"
+  character_file <- if (!is.null(config$character_file)) config$character_file else "tessa.json"
+  modes <- if (!is.null(config$modes)) unlist(config$modes) else c("light", "dark")
+  backdrop <- function(mode) {
+    checkmate::assert_string(mode)
+    if (!is.null(config$backdrops[[mode]])) {
+      return(config$backdrops[[mode]])
+    }
+    if (mode == "dark") "#212529" else "#ffffff"
+  }
   chrome <- chromote::find_chrome()
   checkmate::assert_file_exists(chrome)
   browser <- chromote::Chromote$new(browser = chromote::Chrome$new(path = chrome, args = unlist(config$flags)))
@@ -35,10 +45,10 @@ capture_visuals <- function(config_path) {
   )
   writeLines(
     c(
-      '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Tessa capture</title>',
+      sprintf('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>%s capture</title>', character_id),
       "<style>html,body{margin:0}canvas{display:block}</style></head><body>",
-      '<script type="application/json" data-mascot-character="tessa">',
-      readLines(file.path(config$source, "tessa.json"), warn = FALSE),
+      sprintf('<script type="application/json" data-mascot-character="%s">', character_id),
+      readLines(file.path(config$source, character_file), warn = FALSE),
       "</script>",
       if (file.exists(file.path(config$source, "classic.json"))) {
         unlist(lapply(c("classic", "screen"), function(id) {
@@ -83,9 +93,10 @@ capture_visuals <- function(config_path) {
     cli::cli_abort("chromote differs from the profile lock.")
   }
   cases <- list()
-  for (dpr in c(1L, 2L)) {
+  dprs <- if (!is.null(config$dprs)) as.integer(unlist(config$dprs)) else c(1L, 2L)
+  for (dpr in dprs) {
     session$Emulation$setDeviceMetricsOverride(width = 1280L, height = 960L, deviceScaleFactor = dpr, mobile = FALSE)
-    for (mode in c("light", "dark")) {
+    for (mode in modes) {
       session$Emulation$setEmulatedMedia(
         features = list(
           list(name = "prefers-reduced-motion", value = "reduce"),
@@ -94,7 +105,7 @@ capture_visuals <- function(config_path) {
       )
       for (size in c(160L, 96L, 24L)) {
         for (mood in c("idle", "thinking", "happy", "worried", "celebrating")) {
-          name <- sprintf("tessa-%s-%s-%d-dpr%d.png", mood, mode, size, dpr)
+          name <- sprintf("%s-%s-%s-%d-dpr%d.png", character_id, mood, mode, size, dpr)
           # Same native palette in both modes (old-main has no native dark override).
           # The backdrop is explicit and part of the comparison, as in the host defaults.
           result <- evaluate(sprintf(
@@ -104,7 +115,7 @@ capture_visuals <- function(config_path) {
               "const g=c.getContext('2d',{colorSpace:'srgb'});g.fillStyle='%s';g.fillRect(0,0,c.width,c.height);",
               "const o=document.createElement('canvas');o.width=c.width;o.height=c.height;",
               "const og=o.getContext('2d',{colorSpace:'srgb'});og.setTransform(%f,0,0,%f,0,0);",
-              "const ch=JSON.parse(document.querySelector('script[data-mascot-character=tessa]').textContent);",
+              "const ch=JSON.parse(document.querySelector('script[data-mascot-character]').textContent);",
               "const p=mascot.mount(o,ch,{x:150,baseY:270,mood:'%s',band:",
               # The page picks the band from the CSS width: micro below 48, small below 128, full from 128.
               sprintf(
@@ -124,7 +135,7 @@ capture_visuals <- function(config_path) {
             size * dpr,
             size,
             size,
-            if (mode == "dark") "#212529" else "#ffffff",
+            backdrop(mode),
             size * dpr / 300,
             size * dpr / 300,
             mood

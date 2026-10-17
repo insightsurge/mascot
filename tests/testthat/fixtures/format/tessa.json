@@ -1124,7 +1124,7 @@
   "moods": {
     "idle": {
       "description": "Idle state.",
-      "status": "Idle",
+      "status": "Resting, ready for the next piece.",
       "pose": "idle",
       "face": {
         "eyes": "open",
@@ -1134,7 +1134,7 @@
     },
     "thinking": {
       "description": "Thinking state.",
-      "status": "Thinking",
+      "status": "Working out how the parts fit.",
       "pose": "hips",
       "face": {
         "eyes": "focused",
@@ -1146,7 +1146,7 @@
     },
     "happy": {
       "description": "Happy state.",
-      "status": "Happy",
+      "status": "That came together nicely.",
       "pose": "wave",
       "face": {
         "eyes": "happy",
@@ -1156,7 +1156,7 @@
     },
     "worried": {
       "description": "Worried state.",
-      "status": "Worried",
+      "status": "One part needs a closer look.",
       "pose": "idle",
       "face": {
         "eyes": "worried",
@@ -1169,7 +1169,7 @@
     },
     "celebrating": {
       "description": "Celebrating state.",
-      "status": "Celebrating",
+      "status": "Finished, and built to last.",
       "pose": "up",
       "face": {
         "eyes": "happy",

@@ -122,8 +122,14 @@ describe("latest state over real Shiny transport", {
     app$click("follow")
     app$click("happy")
     app$wait_for_js("helper().dataset.shownMood==='happy'")
-    expect_identical(app$get_js("helper().querySelector('.mascot-status').textContent"), "Happy")
-    expect_identical(app$get_js("helper().querySelector('canvas').getAttribute('aria-label')"), "Tessa, Happy")
+    expect_identical(
+      app$get_js("helper().querySelector('.mascot-status').textContent"),
+      "That came together nicely."
+    )
+    expect_identical(
+      app$get_js("helper().querySelector('canvas').getAttribute('aria-label')"),
+      "Tessa, That came together nicely."
+    )
     revision <- app$get_js("read().snapshot.applied_revision")
     app$click("invalid")
     app$wait_for_js("read().problem?.includes('missing')")

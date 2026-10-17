@@ -144,7 +144,10 @@ describe("update_mascot() in a browser", {
     app$wait_for_js("document.querySelector('#helper').dataset.shownMood === 'idle'")
     app$click("think")
     app$wait_for_js("document.querySelector('#helper').dataset.shownMood === 'thinking'")
-    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Thinking")
+    expect_identical(
+      app$get_js("document.querySelector('#helper .mascot-status').textContent"),
+      "Working out how the parts fit."
+    )
     app$click("save")
     app$wait_for_js("document.querySelector('#helper .mascot-status').textContent === '<b>Saved</b>'")
     app$click("happy")
@@ -154,8 +157,11 @@ describe("update_mascot() in a browser", {
       "&lt;b&gt;Saved&lt;/b&gt;"
     )
     app$click("reset")
-    app$wait_for_js("document.querySelector('#helper .mascot-status').textContent === 'Happy'")
-    expect_identical(app$get_js("document.querySelector('#helper canvas').getAttribute('aria-label')"), "Tessa, Happy")
+    app$wait_for_js("document.querySelector('#helper .mascot-status').textContent === 'That came together nicely.'")
+    expect_identical(
+      app$get_js("document.querySelector('#helper canvas').getAttribute('aria-label')"),
+      "Tessa, That came together nicely."
+    )
   })
   it("updates a module mascot using its local server id", {
     local_shiny_browser()
@@ -175,7 +181,10 @@ describe("update_mascot() in a browser", {
     withr::defer(app$stop())
     app$click("mod-go")
     app$wait_for_js("document.querySelector('#mod-helper').dataset.shownMood === 'happy'")
-    expect_identical(app$get_js("document.querySelector('#mod-helper .mascot-status').textContent"), "Happy")
+    expect_identical(
+      app$get_js("document.querySelector('#mod-helper .mascot-status').textContent"),
+      "That came together nicely."
+    )
   })
   it("keeps updates before renderUI and destroys the replaced element's record", {
     local_shiny_browser()
@@ -306,7 +315,10 @@ describe("server bubbles and gestures in a browser", {
     app$wait_for_js("document.querySelector('#helper .mascot-bubble-text').textContent === 'Ready'")
     expect_length(app$get_js("window.mascotErrors"), 0)
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.text"), "Ready")
-    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Idle")
+    expect_identical(
+      app$get_js("document.querySelector('#helper .mascot-status').textContent"),
+      "Resting, ready for the next piece."
+    )
     app$run_js("document.querySelector('#helper .mascot-bubble-close').click()")
     app$wait_for_js("document.querySelector('#helper .mascot-bubble').hidden")
     expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).bubble"))
@@ -600,7 +612,10 @@ describe("size and placement in a Shiny browser", {
     app$wait_for_js("document.querySelector('#helper canvas').width === 64 * devicePixelRatio")
     expect_identical(app$get_js("document.querySelector('#helper').dataset.position"), "top-left")
     app$wait_for_js("document.querySelector('#helper').dataset.shownMood === 'happy'")
-    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Happy")
+    expect_identical(
+      app$get_js("document.querySelector('#helper .mascot-status').textContent"),
+      "That came together nicely."
+    )
     # Native button activation must work for both keyboard keys, not just synthetic click events.
     browser <- app$get_chromote_session()
     for (key in c("Enter", " ")) {
@@ -813,7 +828,10 @@ describe("theme in a Shiny browser", {
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === '#1F6FEB'")
     app$click("reset")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === null")
-    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Idle")
+    expect_identical(
+      app$get_js("document.querySelector('#helper .mascot-status').textContent"),
+      "Resting, ready for the next piece."
+    )
   })
 })
 
@@ -896,7 +914,10 @@ describe("motion in a Shiny browser", {
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).motion.reduced === true")
     app$click("happy")
     app$wait_for_js("document.getElementById('helper').dataset.shownMood === 'happy'")
-    expect_identical(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Happy")
+    expect_identical(
+      app$get_js("document.querySelector('#helper .mascot-status').textContent"),
+      "That came together nicely."
+    )
     expect_true(app$get_js("document.querySelector('#helper canvas') === originalCanvas"))
     app$set_inputs(animate = TRUE)
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).motion.reduced === null")

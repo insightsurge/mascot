@@ -26,10 +26,17 @@ describe("character_catalogue_builtin()", {
       unname(unlist(character_catalogue_builtin("tessa")$brand))
     )
   })
-  it("keeps the shipped mood statuses equal to the shared status labels", {
+  it("keeps the shared mood descriptions and gives Tessa her own status lines", {
     tessa <- character_catalogue_builtin("tessa")
+    voice <- c(
+      idle = "Resting, ready for the next piece.",
+      thinking = "Working out how the parts fit.",
+      happy = "That came together nicely.",
+      worried = "One part needs a closer look.",
+      celebrating = "Finished, and built to last."
+    )
     for (mood in mood_table()$name) {
-      expect_identical(character_catalogue_status(tessa, mood), mood_label(mood))
+      expect_identical(character_catalogue_status(tessa, mood), voice[[mood]])
       expect_identical(tessa$moods[[mood]]$description, mood_table()$description[mood_table()$name == mood])
     }
   })

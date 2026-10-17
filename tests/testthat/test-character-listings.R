@@ -197,10 +197,21 @@ describe("mascot_moods(character =)", {
     value <- mascot_moods(character_format_check(recipe))
     expect_identical(value$name, c("idle", "thinking", "happy", "worried", "celebrating", "processing"))
   })
-  it("reports Tessa's moods with the same names as the shared vocabulary", {
+  it("reports Tessa's moods with the shared names and her own status lines", {
     value <- mascot_moods("tessa")
     expect_identical(value[c("name", "description")], mascot_moods()[c("name", "description")])
-    expect_identical(value$status, mascot_moods()$status)
+    # Tessa's voice (#142); the shared vocabulary keeps the plain labels.
+    expect_identical(
+      value$status,
+      c(
+        "Resting, ready for the next piece.",
+        "Working out how the parts fit.",
+        "That came together nicely.",
+        "One part needs a closer look.",
+        "Finished, and built to last."
+      )
+    )
+    expect_identical(mascot_moods()$status, c("Idle", "Thinking", "Happy", "Worried", "Celebrating"))
     expect_identical(value, mascot_moods(mascot_character("tessa")))
   })
   it("names unknown characters and rejects other types", {

@@ -70,7 +70,11 @@ describe("mascot()", {
     html <- as.character(mascot(id = "a", status = htmltools::HTML("<b>Saved</b>")))
     expect_match(html, 'data-status="custom"', fixed = TRUE)
     expect_match(html, "&lt;b&gt;Saved&lt;/b&gt;", fixed = TRUE)
-    expect_match(as.character(mascot(id = "a", mood = "thinking")), '>Thinking</div>', fixed = TRUE)
+    expect_match(
+      as.character(mascot(id = "a", mood = "thinking")),
+      '>Working out how the parts fit.</div>',
+      fixed = TRUE
+    )
   })
   it("bounds UI payloads before retaining a template", {
     expect_error(mascot("bounded", status = strrep("x", 262145)), "capacity", class = "mascot_error")
@@ -310,7 +314,11 @@ describe("mascot() click", {
   it("is a picture without a click: an image that is no keyboard stop", {
     html <- as.character(mascot(id = "a"))
     expect_false(grepl("data-mascot-click", html, fixed = TRUE))
-    expect_match(html, '<canvas class="mascot-canvas" role="img" aria-label="Tessa, Idle"></canvas>', fixed = TRUE)
+    expect_match(
+      html,
+      '<canvas class="mascot-canvas" role="img" aria-label="Tessa, Resting, ready for the next piece."></canvas>',
+      fixed = TRUE
+    )
     expect_identical(html, as.character(mascot(id = "a", click = NULL)))
   })
   it("embeds an action or a menu as inert configuration", {

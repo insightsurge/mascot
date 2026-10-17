@@ -278,7 +278,19 @@ describe("mascot_preview() in Chrome", {
     )
     expect_identical(
       unlist(js("Array.from(document.querySelectorAll('.mascot-status')).map(el=>el.textContent)"), use.names = FALSE),
-      rep(rep(c("Idle", "Thinking", "Happy", "Worried", "Celebrating"), each = 4), 2)
+      rep(
+        rep(
+          c(
+            "Resting, ready for the next piece.",
+            "Working out how the parts fit.",
+            "That came together nicely.",
+            "One part needs a closer look.",
+            "Finished, and built to last."
+          ),
+          each = 4
+        ),
+        2
+      )
     )
     expect_identical(
       unlist(

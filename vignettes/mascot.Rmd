@@ -156,8 +156,9 @@ mascot_characters()
 mascot_gestures("tessa")
 ```
 
-Without custom status, the line follows the mood: **Thinking**, **Happy**,
-and so on. Custom status stays until replaced or reset.
+Without custom status, Tessa's line follows the mood: **Working out how the
+parts fit.**, **That came together nicely.**, and so on. Custom status stays
+until replaced or reset.
 
 ```{r status-update, eval=FALSE}
 update_mascot("helper", mood = mascot_mood("worried"),

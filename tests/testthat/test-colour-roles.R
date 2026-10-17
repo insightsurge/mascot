@@ -39,6 +39,13 @@ describe("mascot_colour_roles()", {
     )
     expect_identical(mascot_colour_roles()[1:4], expected)
   })
+  it("gives no built-in character a role named like a theme mode, so every role can be themed", {
+    for (id in builtin_characters()$id) {
+      expect_false(any(colour_role_registry(id) %in% c("light", "dark", "default")), info = id)
+    }
+    expect_true("lamp" %in% mascot_colour_roles("knurl")$role)
+    expect_no_error(mascot_theme(light = list(lamp = "#ff0000"), dark = list(lamp_happy = "#00ff00")))
+  })
   it("names unknown characters and checks internal contracts", {
     expect_snapshot(error = TRUE, mascot_colour_roles("missing"))
     for (x in list(NULL, 1, "", NA_character_, c("tessa", "tessa"))) {

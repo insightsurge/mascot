@@ -41,11 +41,11 @@
     "spanner_head": "#E3EBF5",
     "clamp_base": "#1F6F7A",
     "antenna": "#9FB4C0",
-    "light": "#00E5FF",
-    "light_thinking": "#FF8A3D",
-    "light_happy": "#26A065",
-    "light_worried": "#F03A55",
-    "light_celebrating": "#E64A9B",
+    "lamp": "#00E5FF",
+    "lamp_thinking": "#FF8A3D",
+    "lamp_happy": "#26A065",
+    "lamp_worried": "#F03A55",
+    "lamp_celebrating": "#E64A9B",
     "sweat": "#9DC3E6",
     "sparkle": "#FFFFFF",
     "sparkle_outline": "#FF8A3D",
@@ -82,7 +82,7 @@
       "shade": "lighter",
       "amount": 0.2
     },
-    "light": {
+    "lamp": {
       "from": [
         "feature"
       ]
@@ -562,7 +562,7 @@
           "x": 185,
           "y": 230,
           "r": 12,
-          "fill": "light",
+          "fill": "lamp",
           "lod": [
             "full",
             "small"
@@ -600,7 +600,7 @@
             "x": 185,
             "y": 230,
             "r": 12,
-            "fill": "light",
+            "fill": "lamp",
             "lod": [
               "full",
               "small"
@@ -610,7 +610,7 @@
       },
       "glow": {
         "item": "led_lamp",
-        "colour": "light",
+        "colour": "lamp",
         "blur": 8,
         "alpha": 1
       }
@@ -691,7 +691,7 @@
           "x": 40,
           "y": -166,
           "r": 6.4,
-          "fill": "light",
+          "fill": "lamp",
           "lod": [
             "full",
             "small"
@@ -1443,7 +1443,7 @@
         "look_y": -0.7
       },
       "recolour": {
-        "light": "light_thinking"
+        "lamp": "lamp_thinking"
       },
       "description": "Analysing and diagnosing a task error."
     },
@@ -1460,7 +1460,7 @@
         "eye_glints.variant": "hidden"
       },
       "recolour": {
-        "light": "light_happy"
+        "lamp": "lamp_happy"
       },
       "description": "Repair complete and verified."
     },
@@ -1475,7 +1475,7 @@
         "look_y": 0.1
       },
       "recolour": {
-        "light": "light_worried"
+        "lamp": "lamp_worried"
       },
       "effects": {
         "sweat": 0.35
@@ -1495,7 +1495,7 @@
         "eye_glints.variant": "hidden"
       },
       "recolour": {
-        "light": "light_celebrating"
+        "lamp": "lamp_celebrating"
       },
       "effects": {
         "sparkle": true

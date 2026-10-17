@@ -100,6 +100,21 @@ describe("character-format geometry and painting", {
     expect_gt(alpha, 100)
   })
 
+  it("paints outlines under the fill, so only their outer half shows, and detail strokes on top", {
+    skip_without_chrome()
+    js <- local_character_engine()
+    # A disc of radius 40 at (150, 170): outline 10 wide (radius 35-45), second outline 20 wide (radius 30-50) and a
+    # detail stroke 2 wide (radius 39-41).
+    pixels <- js(
+      "(() => {const canvas=document.createElement('canvas');canvas.width=300;canvas.height=300;const ctx=canvas.getContext('2d');const ch={format_version:1,ground:{centre_height:0},outline:{width:10,colour:'ink',second:{width:20,colour:'paper'}},shapes:{disc:{shape:'circle',r:40,fill:'leaf',outline:true}},parts:[{id:'disc',at:[0,-100],items:[{shape:'ref',use:'disc'},{shape:'circle',r:40,x:0,y:0,stroke:'red',width:2}]}]};const p=mascot.parts.compile(ch);mascot.geometry.draw(ctx,p,mascot.parts.frame(p),{leaf:'#00ff00',ink:'#000000',paper:'#ffffff',red:'#ff0000'});const at=(x)=>[...ctx.getImageData(x,170,1,1).data].slice(0,3);return {inside:at(186),edge:at(190),outline:at(193),second:at(198),outer:at(203)};})()"
+    )
+    expect_identical(unlist(pixels$inside), c(0L, 255L, 0L))
+    expect_identical(unlist(pixels$edge), c(255L, 0L, 0L))
+    expect_identical(unlist(pixels$outline), c(0L, 0L, 0L))
+    expect_identical(unlist(pixels$second), c(255L, 255L, 255L))
+    expect_identical(unlist(pixels$outer), c(0L, 0L, 0L))
+  })
+
   it("draws a radial paint offline with stop alpha and restores context on error", {
     skip_without_chrome()
     js <- local_character_engine()

@@ -632,13 +632,17 @@
         }
         const style = itemOverride ? { ...geometry.style, ...itemOverride } : geometry.style;
         const alpha = finite(style.alpha ?? 1, '$.item.alpha', 0, 1) * owner.opacity;
-        const strokes = [];
+        // Outlines go under the fill, as in the drawings they come from: only their outer half shows, a slim line
+        // with the second (light) line outside it. A detail stroke stays on top of the fill.
+        const under = [];
         if (style.outline) {
-          if ((outline.second?.width ?? 0) > 0) strokes.push(outline.second);
-          if ((outline.width ?? 0) > 0) strokes.push(outline);
+          if ((outline.second?.width ?? 0) > 0) under.push(outline.second);
+          if ((outline.width ?? 0) > 0) under.push(outline);
         }
+        const over = [];
         if (style.stroke && (style.width ?? 2.5) > 0)
-          strokes.push({ width: style.width ?? 2.5, colour: style.stroke, cap: style.cap, join: style.join });
+          over.push({ width: style.width ?? 2.5, colour: style.stroke, cap: style.cap, join: style.join });
+        const strokes = [...under, ...over];
         const hasPaint = (style.fill || strokes.length > 0) && alpha > 0;
         if (!hasPaint && !isEmitter) continue;
 
@@ -727,20 +731,24 @@
             ctx.setTransform(...itemTransform);
             ctx.globalAlpha *= alpha;
             ctx.miterLimit = 10;
+            const strokeAll = (list) => {
+              for (const stroke of list) {
+                ctx.lineWidth = finite(stroke.width, '$.item.width', 0);
+                ctx.strokeStyle = role(colours, stroke.colour, '$.item.stroke');
+                ctx.lineCap = stroke.cap ?? 'round';
+                ctx.lineJoin = stroke.join ?? 'round';
+                ctx.stroke(geometry.paint_path);
+                counts.paint_passes += 1;
+              }
+            };
+            strokeAll(under);
             if (style.fill) {
               ctx.fillStyle = paint(ctx, style.fill, character, colours, '$.item.fill');
               ctx.fill(geometry.paint_path);
               counts.paint_passes += 1;
               if (typeof style.fill === 'object') counts.gradient_uses += 1;
             }
-            for (const stroke of strokes) {
-              ctx.lineWidth = finite(stroke.width, '$.item.width', 0);
-              ctx.strokeStyle = role(colours, stroke.colour, '$.item.stroke');
-              ctx.lineCap = stroke.cap ?? 'round';
-              ctx.lineJoin = stroke.join ?? 'round';
-              ctx.stroke(geometry.paint_path);
-              counts.paint_passes += 1;
-            }
+            strokeAll(over);
           } finally {
             ctx.restore();
           }

@@ -1,4 +1,4 @@
-# mascot: scope (draft, updated 2026-10-02)
+# mascot: scope (draft, updated 2026-10-17)
 
 An R package for **live, mood-driven mascots** in Shiny apps and Quarto sites. A character drawn in code shows a
 mood and animates when the mood changes: a short wiggle, then the new face. It works out of the box, with no AI.
@@ -9,13 +9,18 @@ The idea and the engine come from the R Engineering Playbook site, where the cha
 trailers. That site is the package's first user (`docs/consumers.md`).
 
 ## The characters
-Two built-in characters in the first release (Tessa, the default, and Neer), then more in later releases, each with
-its own shape, colours, personality and voice, all drawn on one multi-character engine. Moods, light and dark mode and (from 0.2.0) a shared wardrobe work for every character.
+Four built-in characters in the first release, then more in later releases, each with its own shape, colours,
+personality and voice, all drawn on one multi-character engine. Tessa (the default) and Sela are stable: their id,
+name, moods, gesture names and colour role names stay the same in every release. Knurl and Neer are experimental and
+may still change. Moods, a wave and a nod, light and dark mode and (from 0.2.0) a shared wardrobe work for every
+character.
 
 | Character | Meaning | Nature | Look (picks for now) | Release |
 |---|---|---|---|---|
-| **Neer** (नीर), she/her | water | calm, observant, clear, welcoming; says in few words what changed | a wave crest with small arms and feet, water blues | 0.1.0 |
-| **Tessa**, she/her | from tessellation | calm, hardworking, always learning; the maker | the R hex sticker in forest green with an ochre rim (decided: the playbook's character) | 0.1.0, the default |
+| **Tessa**, she/her | from tessellation | calm, hardworking, always learning; the maker | the R hex sticker in forest green with an ochre rim (decided: the playbook's character) | 0.1.0, the default, stable |
+| **Sela**, she/her | a second hexagon | the organiser | a pointy-top hex with a sweeping bob | 0.1.0, stable |
+| **Knurl**, it/its | a robot | the repair bot | a wheeled chassis with a visor and a clamp arm holding a wrench | 0.1.0, experimental |
+| **Neer** (नीर), she/her | water | calm, observant, clear, welcoming; says in few words what changed | a wave crest with small arms and feet, water blues | 0.1.0, experimental |
 | **Ojas** (ओजस्), he/him | vitality, radiance | shiny, forgiving, bright, wise; says a mistake can be mended | sunrise gold with arms and feet; shape still open | 0.3.0 |
 
 The full design of each character (options, colour themes with contrast, moods, accessories, motion, voices,
@@ -36,16 +41,17 @@ risks) is in the character design records, kept on the `design-assets` branch (`
 | Low | R user groups and conferences | Event mascots |
 
 ## Works without AI (0.1.0)
-Neer and Tessa with the five moods (idle, thinking, happy, worried, celebrating) with smooth transitions; a busy mood driven
+Tessa, Sela, Knurl and Neer with the five moods (idle, thinking, happy, worried, celebrating) with smooth transitions; a busy mood driven
 by Shiny's own busy events; reacting to a `shinyvalidate` validator; message bubbles; light and dark mode following
 bslib's `input_dark_mode()`, Quarto's toggle or the system setting; themes from `_brand.yml`, a `bs_theme()` or CSS;
 a floating, fixed, inline or dismissible card that never covers Shiny's own messages; a gallery app with a character
-chooser. The Quarto shortcode follows in 0.2.0.
+chooser; palette presets for each character; a studio that shows every function and argument. The Quarto shortcode
+follows in 0.2.0.
 
 ## Releases (draft)
 | Release | Theme | Contents |
 |---|---|---|
-| 0.1.0 | Live mascot | Neer and Tessa on a multi-character engine; moods with wiggle-then-change; light/dark; themes; the Shiny widget, `update_mascot()`, validator binding, busy mood, message bubble, placement; the gallery; groundwork for hints. The first CRAN release: the R interface comes first, because the Quarto shortcode and the AI skills build on it |
+| 0.1.0 | Live mascot | Tessa and Sela (stable), Knurl and Neer (experimental) on a multi-character engine; moods with wiggle-then-change; a wave and a nod for every character; light/dark; themes and palette presets; the Shiny widget, `update_mascot()`, validator binding, busy mood, message bubble, click menu, placement; the gallery and the studio; an experimental route for making your own character from a file; groundwork for hints. The first CRAN release: the R interface comes first, because the Quarto shortcode and the AI skills build on it |
 | 0.2.0 | Quarto, static assets and pharma | The Quarto extension and shortcode (the playbook site's first use); AI skills for Claude, Codex and Gemini; a shared wardrobe (outfits, accessories, held items any character can wear); avatars (PNG/SVG); hex stickers; the pharma theme pack, if 0.1.0 is received well |
 | 0.3.0 | Ojas and the builder | Ojas; a visual character builder; more shapes; SVG and Lottie export |
 | Later | Hints and app events | A quiet hint giver, off by default: a help list in the bubble, a "what's this?" mode, hints when validation fails, dragging the mascot onto an element; reactions to custom app events |

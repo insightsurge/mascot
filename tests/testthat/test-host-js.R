@@ -1,5 +1,56 @@
 # The host is JavaScript, so it has its own browser test file, like the engine.
 describe("mascot.host", {
+  it("shows the worried mood and connection status immediately on disconnect", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => { const el=document.getElementById('a');
+      document.dispatchEvent(new Event('shiny:disconnected'));
+      return {mood:el.dataset.shownMood,status:el.querySelector('.mascot-status').textContent,
+        aria:el.querySelector('canvas').getAttribute('aria-label'),z:getComputedStyle(el).zIndex,
+        opacity:getComputedStyle(el).opacity}; })()"
+    )
+    expect_identical(result$mood, "worried")
+    expect_identical(result$status, "Connection lost. Reload the page to continue.")
+    expect_match(result$aria, "Connection lost")
+    expect_identical(result$z, "99999")
+    expect_identical(result$opacity, "1")
+  })
+  it("keeps the worried mood over late updates and restores the latest state on reconnect", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => { const el=document.getElementById('a');
+      document.dispatchEvent(new Event('shiny:disconnected'));
+      mascot.host.receive({id:'a',patch:{mood:'happy',gesture:'wave',status:{mode:'custom',text:'Saved just now'}}});
+      const held={shown:el.dataset.shownMood,status:el.querySelector('.mascot-status').textContent,
+        desired:mascot.host.state(el).mood};
+      document.dispatchEvent(new Event('shiny:connected'));
+      return {...held,restored:el.dataset.shownMood,statusAfter:el.querySelector('.mascot-status').textContent}; })()"
+    )
+    expect_identical(result$shown, "worried")
+    expect_identical(result$status, "Connection lost. Reload the page to continue.")
+    expect_identical(result$desired, "happy")
+    expect_identical(result$restored, "happy")
+    expect_identical(result$statusAfter, "Saved just now")
+  })
+  it("shows the connection state on every mascot and tolerates a page without mascots", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => { const first=document.getElementById('a'), second=first.cloneNode(true); second.id='b';
+      document.body.append(second); mascot.host.mount(second);
+      document.dispatchEvent(new Event('shiny:disconnected'));
+      const moods=[first.dataset.shownMood,second.dataset.shownMood];
+      const status=second.querySelector('.mascot-status').textContent;
+      mascot.host.unmount(first); mascot.host.unmount(second); first.remove(); second.remove();
+      document.dispatchEvent(new Event('shiny:connected'));
+      return {moods,status,remaining:document.querySelectorAll('.mascot').length}; })()"
+    )
+    expect_identical(unlist(result$moods), c("worried", "worried"))
+    expect_identical(result$status, "Connection lost. Reload the page to continue.")
+    expect_identical(result$remaining, 0L)
+  })
   it("mounts static markup at the CSS size and is idempotent", {
     skip_without_chrome()
     js <- local_host_page()

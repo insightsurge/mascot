@@ -24,6 +24,17 @@ body.quarto-dark {
   align-items: center;
 }
 
+/* Keep the connection message legible above the Shiny disconnect overlay (z-index 99998). */
+.mascot[data-disconnected] {
+  position: relative;
+  z-index: 99999;
+  opacity: 1;
+}
+
+.mascot[data-disconnected][data-floating="true"] {
+  z-index: 99999;
+}
+
 .mascot-canvas {
   display: block;
   width: 100%;

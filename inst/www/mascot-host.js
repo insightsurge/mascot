@@ -100,6 +100,8 @@
   const known = new Map();
   const updating = new WeakSet();
   const live = new Set();
+  let disconnected = false;
+  const disconnectStatus = 'Connection lost. Reload the page to continue.';
   const sources = new WeakMap();
   const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
   const drags = [false, 'snap', 'free'];
@@ -170,11 +172,12 @@
     record.el.dataset.shownCharacter = snapshot.character;
     record.el.dataset.shownMood = snapshot.mood;
     record.el.dataset.swapping = String(snapshot.swapping);
-    const shownStatus =
-      record.problem ||
-      (record.status.mode === 'mood'
-        ? record.descriptions.get(snapshot.character)?.moods[snapshot.mood]?.status || label(snapshot.mood)
-        : record.status.text);
+    const shownStatus = disconnected
+      ? disconnectStatus
+      : record.problem ||
+        (record.status.mode === 'mood'
+          ? record.descriptions.get(snapshot.character)?.moods[snapshot.mood]?.status || label(snapshot.mood)
+          : record.status.text);
     const accessibleLabel = `${record.names.get(snapshot.character)}, ${shownStatus}`;
     record.canvas.setAttribute('aria-label', accessibleLabel);
     if (record.button) {
@@ -206,6 +209,40 @@
         record.names.delete(id);
         record.palettes.delete(id);
       }
+  }
+
+  function setDisconnected(value) {
+    if (disconnected === value) return;
+    disconnected = value;
+    for (const record of live) {
+      record.el.toggleAttribute('data-disconnected', value);
+      if (value) {
+        forceConnectionMood(record);
+      } else {
+        record.controller.update({ mood: record.mood, reduced: true, swap: false });
+      }
+      show(record, record.controller.current());
+    }
+  }
+
+  function disconnectMood(record) {
+    const description = record.descriptions.get(record.character);
+    return ns.runtime.swapMood(description, 'worried', description);
+  }
+
+  function forceConnectionMood(record) {
+    // Turning gestures off clears an already running gesture, even when worried is already the current mood.
+    record.controller.update({ mood: disconnectMood(record), gestures: false, reduced: true, swap: false });
+    if (record.motion.gestures) record.controller.update({ gestures: true });
+  }
+
+  const disconnectedHandler = () => setDisconnected(true);
+  const connectedHandler = () => setDisconnected(false);
+  document.addEventListener('shiny:disconnected', disconnectedHandler);
+  document.addEventListener('shiny:connected', connectedHandler);
+  if (typeof window.jQuery === 'function') {
+    window.jQuery(document).on('shiny:disconnected.mascot-host', disconnectedHandler);
+    window.jQuery(document).on('shiny:connected.mascot-host', connectedHandler);
   }
 
   // Bubble time is independent of the deterministic drawing engine, in seconds.
@@ -2112,6 +2149,11 @@
         ...(band ? { band } : {}),
         onChange: (snapshot) => show(record, snapshot),
       });
+      if (disconnected) {
+        el.setAttribute('data-disconnected', '');
+        forceConnectionMood(record);
+        show(record, record.controller.current());
+      }
       if (band && cssWidth(canvas) > 0) record.band = band;
       listenBubble(record);
       listenDrag(record);
@@ -2301,6 +2343,10 @@
           );
         }
       } else record.controller.gesture(patch.gesture);
+    }
+    if (disconnected) {
+      forceConnectionMood(record);
+      show(record, record.controller.current());
     }
     return true;
   }

@@ -9,6 +9,16 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-17 — Mascots show connection loss in Shiny (#70)
+
+**In brief:** When Shiny loses its connection, every mounted mascot switches straight to its worried mood and announces
+"Connection lost. Reload the page to continue." above the disconnect overlay. Updates received during the outage are
+retained as the state to restore when Shiny reconnects.
+
+**Technical:** `mascot-host.js` listens to Shiny `shiny:disconnected` and `shiny:connected` document events, keeps
+the disconnect mood authoritative across updates and remounts, and restores the latest host state on reconnect.
+`mascot.css` raises each mascot above the Shiny disconnect overlay.
+
 ## 2026-10-17 — Browser validation requires moving wave and nod gestures (#328)
 
 The browser character validator now refuses a character without `wave` or `nod`, or with a gesture whose keyed values

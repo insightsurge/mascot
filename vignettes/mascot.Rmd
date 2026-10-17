@@ -21,6 +21,9 @@ The package works offline. It is built for `GxP` work: the app supplies the
 state and the words, and no AI service is involved. A mascot complements
 field errors and results; it does not replace them.
 
+If the Shiny connection drops, the mascot shows its worried face and a
+connection message until the app reconnects.
+
 ## Your first app
 
 Put this code in an `app.R` file and run it from an interactive R session.

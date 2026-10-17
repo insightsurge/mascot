@@ -9,9 +9,17 @@
 #'   `character`), `name` (the display name), `description` and `family` (the
 #'   family `id`), and logical columns `is_default` (`TRUE` only for the
 #'   character [mascot()] uses when you name none) and `built_in` (`TRUE` for
-#'   characters shipped with the package).
+#'   characters shipped with the package), and `lifecycle` (`"stable"` or
+#'   `"experimental"` for built-in characters, or `NA` for a registered
+#'   custom character).
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
+#' @details Stable built-ins keep their id, name, five shared moods, gesture
+#'   names, colour-role names and palette names in every release; their drawing,
+#'   motion and exact palette colours may be polished. Experimental built-ins
+#'   may change in any way and are not removed without a warning in the release
+#'   before removal. The character file format and authoring functions are
+#'   experimental too.
 #' @family mascot helpers
 #' @seealso [mascot_character()], [mascot_families()]
 #' @export
@@ -36,13 +44,23 @@ mascot_characters <- function(..., family = NULL) {
     items <- items[families == family]
   }
   default <- formals(mascot)$character
+  builtins <- builtin_characters()
   data.frame(
     id = ids,
     name = vapply(items, function(item) item$name, character(1)),
     description = vapply(items, function(item) item$description, character(1)),
     family = vapply(items, function(item) item$family, character(1)),
     is_default = ids == default,
-    built_in = vapply(ids, character_catalogue_is_builtin, logical(1), USE.NAMES = FALSE)
+    built_in = vapply(ids, character_catalogue_is_builtin, logical(1), USE.NAMES = FALSE),
+    lifecycle = vapply(
+      ids,
+      function(id) {
+        index <- match(id, builtins$id)
+        if (is.na(index)) NA_character_ else builtins$lifecycle[[index]]
+      },
+      character(1),
+      USE.NAMES = FALSE
+    )
   )
 }
 

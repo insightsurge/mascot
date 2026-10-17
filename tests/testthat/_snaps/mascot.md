@@ -39,7 +39,7 @@
       mascot("a", character = "missing")
     Condition
       Error in `mascot()`:
-      ! `character` must be one of "tessa".
+      ! `character` must be one of "tessa", "sela", or "knurl".
       x "missing" is not a character.
 
 # mascot() size and placement / writes data attributes without inline layout styles and normalises shortcuts
@@ -65,7 +65,7 @@
       mascot("a", character = "typo")
     Condition
       Error in `mascot()`:
-      ! `character` must be one of "tessa".
+      ! `character` must be one of "tessa", "sela", or "knurl".
       x "typo" is not a character.
 
 # mascot() size and placement / silently disables inline defaults and informs about explicit list controls
@@ -102,7 +102,7 @@
       mascot(id = "bad", theme = list(bdoy = "blue"))
     Condition
       Error in `mascot()`:
-      ! `theme` has unknown or reserved colour roles: "bdoy". Valid roles: outline, feature, eye_white, shine, teeth, eyelid, tongue, body, body_highlight, rim, limb, sleeve, blush, blush_strong, accessory, accessory_detail, sparkle, sparkle_outline, sweat, shadow.
+      ! `theme` has unknown or reserved colour roles: "bdoy". Did you mean "body"? See `mascot_colour_roles()` for each character's roles.
 
 # with_mascot_asserts() / keeps the original assertion message once and adds mascot_error
 

@@ -6,20 +6,21 @@ is_listing <- function(x, columns, types) {
 }
 
 describe("mascot_characters()", {
-  it("lists Tessa as the only shipped character, built in and the default", {
+  it("lists all shipped characters with lifecycle and keeps Tessa as the default", {
     local_empty_registry()
     value <- mascot_characters()
     is_listing(
       value,
-      c("id", "name", "description", "family", "is_default", "built_in"),
-      c("character", "character", "character", "character", "logical", "logical")
+      c("id", "name", "description", "family", "is_default", "built_in", "lifecycle"),
+      c("character", "character", "character", "character", "logical", "logical", "character")
     )
-    expect_identical(value$id, "tessa")
-    expect_identical(value$name, "Tessa")
-    expect_identical(value$family, "hexonians")
-    expect_true(nzchar(value$description))
-    expect_identical(value$is_default, TRUE)
-    expect_identical(value$built_in, TRUE)
+    expect_identical(value$id, c("tessa", "sela", "knurl"))
+    expect_identical(value$name, c("Tessa", "Sela", "Knurl"))
+    expect_identical(value$family, c("hexonians", "hexonians", "visorfolk"))
+    expect_true(all(nzchar(value$description)))
+    expect_identical(value$is_default, c(TRUE, FALSE, FALSE))
+    expect_identical(value$built_in, c(TRUE, TRUE, TRUE))
+    expect_identical(value$lifecycle, c("stable", "stable", "experimental"))
     expect_identical(value$id[1], formals(mascot)$character)
   })
   it("adds registered characters after the shipped ones, as not built in and not default", {
@@ -27,16 +28,17 @@ describe("mascot_characters()", {
     character_data_register(character_format_check(format_recipe("study_bot")))
     character_data_register(character_format_check(format_recipe("anchor_probe")))
     value <- mascot_characters()
-    expect_identical(value$id, c("tessa", "study_bot", "anchor_probe"))
-    expect_identical(value$is_default, c(TRUE, FALSE, FALSE))
-    expect_identical(value$built_in, c(TRUE, FALSE, FALSE))
-    expect_identical(value$family, c("hexonians", "visorfolk", "test_helpers"))
+    expect_identical(value$id, c("tessa", "sela", "knurl", "study_bot", "anchor_probe"))
+    expect_identical(value$is_default, c(TRUE, FALSE, FALSE, FALSE, FALSE))
+    expect_identical(value$built_in, c(TRUE, TRUE, TRUE, FALSE, FALSE))
+    expect_identical(value$lifecycle, c("stable", "stable", "experimental", NA_character_, NA_character_))
+    expect_identical(value$family, c("hexonians", "hexonians", "visorfolk", "visorfolk", "test_helpers"))
   })
   it("filters by family and keeps the order and the column types", {
     local_empty_registry()
     character_data_register(character_format_check(format_recipe("study_bot")))
-    expect_identical(mascot_characters(family = "visorfolk")$id, "study_bot")
-    expect_identical(mascot_characters(family = "hexonians")$id, "tessa")
+    expect_identical(mascot_characters(family = "visorfolk")$id, c("knurl", "study_bot"))
+    expect_identical(mascot_characters(family = "hexonians")$id, c("tessa", "sela"))
     expect_identical(names(mascot_characters(family = "visorfolk")), names(mascot_characters()))
   })
   it("names unknown families and rejects bad arguments", {
@@ -58,8 +60,8 @@ describe("mascot_families()", {
     local_empty_registry()
     value <- mascot_families()
     is_listing(value, c("id", "name", "description", "character"), rep("character", 4))
-    expect_identical(value$id, "hexonians")
-    expect_identical(value$name, "Hexonians")
+    expect_identical(value$id, c("hexonians", "visorfolk"))
+    expect_identical(value$name, c("Hexonians", "Visorfolk"))
   })
   it("lists each registered family snapshot with its character, preserving built-in labels", {
     local_empty_registry()
@@ -70,10 +72,10 @@ describe("mascot_families()", {
     other$family_definition$name <- "Another name"
     character_data_register(character_format_check(other))
     value <- mascot_families()
-    expect_identical(value$id, c("hexonians", "test_helpers", "visorfolk", "visorfolk"))
-    expect_identical(value$name[3:4], c("Visorfolk", "Another name"))
-    expect_identical(value$character, c(NA_character_, "anchor_probe", "study_bot", "study_two"))
-    expect_identical(mascot_characters(family = "visorfolk")$id, c("study_bot", "study_two"))
+    expect_identical(value$id, c("hexonians", "visorfolk", "test_helpers", "visorfolk", "visorfolk"))
+    expect_identical(value$name[2:5], c("Visorfolk", "Test Helpers", "Visorfolk", "Another name"))
+    expect_identical(value$character, c(NA_character_, NA_character_, "anchor_probe", "study_bot", "study_two"))
+    expect_identical(mascot_characters(family = "visorfolk")$id, c("knurl", "study_bot", "study_two"))
   })
   it("takes no arguments", {
     expect_length(formals(mascot_families), 0L)
@@ -113,6 +115,21 @@ describe("mascot_anchors()", {
     expect_error(mascot_anchors("missing"), "must be one of", class = "mascot_error")
     for (x in list(NULL, 1, "", NA_character_, c("tessa", "tessa"))) {
       expect_error(mascot_anchors(x), "Assertion on 'character' failed", class = "mascot_error")
+    }
+  })
+})
+
+describe("built-in character listings", {
+  it("resolves every built-in through the helper and all character listings", {
+    local_empty_registry()
+    for (id in builtin_characters()$id) {
+      character <- mascot_character(id)
+      expect_identical(character$id, id)
+      expect_true(nrow(mascot_moods(id)) >= 5L)
+      expect_true(nrow(mascot_gestures(id)) > 0L)
+      expect_true(nrow(mascot_colour_roles(id)) > 0L)
+      expect_true(nrow(mascot_anchors(id)) > 0L)
+      expect_true(nrow(mascot_palettes(id)) > 0L)
     }
   })
 })

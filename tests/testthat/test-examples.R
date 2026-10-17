@@ -1243,8 +1243,8 @@ describe("studio round 4 regression guards", {
     }
     env <- new.env()
     sys.source(file.path(dir, "R", "data.R"), env)
-    expect_identical(unname(env$studio_characters()), formals(mascot)$character)
-    expect_identical(names(env$studio_characters()), mascot_character(formals(mascot)$character)$name)
+    expect_identical(unname(env$studio_characters())[[1L]], formals(mascot)$character)
+    expect_identical(names(env$studio_characters()), c("Tessa", "Sela", "Knurl (experimental)"))
   })
   it("omits empty colour groups and groups unfamiliar parts", {
     env <- new.env()
@@ -1676,16 +1676,15 @@ describe("studio round 8 help and copied apps", {
       }
     }
   })
-  it("hides the single-character hint when more character files are shipped", {
+  it("shows the single-character hint only when one character file is shipped", {
     env <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
-    expect_identical(
-      env$studio_character_hint(),
-      paste(mascot_character()$name, "is the only built-in character so far.")
-    )
     directory <- withr::local_tempdir()
+    file.create(file.path(directory, "tessa.json"))
+    expect_identical(env$studio_character_hint(directory), "Tessa is the only built-in character so far.")
     file.create(file.path(directory, c("one.json", "two.json")))
     expect_null(env$studio_character_hint(directory))
+    expect_null(env$studio_character_hint())
   })
   it("removes unused initialisation and presentation helpers", {
     dir <- dirname(mascot_example("studio", run = FALSE))
@@ -1725,11 +1724,7 @@ describe("studio round 8 help and copied apps", {
     }
     expect_false(grepl("inspector", get("html_text", env)(page), ignore.case = TRUE))
     expect_match(page, "Click or tap the mascot to open its menu", fixed = TRUE)
-    expect_match(
-      page,
-      paste(names(get("studio_characters", env)()), "is the only built-in character so far"),
-      fixed = TRUE
-    )
+    expect_false(grepl("is the only built-in character so far", get("html_text", env)(page), fixed = TRUE))
     expect_match(as.character(get("guide_help", env)("mascot")), 'vignette("mascot", package = "mascot")', fixed = TRUE)
     expect_match(
       as.character(get("function_visual", env)("mascot_mood")),
@@ -2009,10 +2004,7 @@ describe("studio safeguards (#248)", {
     )
     # Controls without a row, and why. Anything else in the control map needs a row above.
     exempt <- c(
-      # TODO(#162): with one built-in character, the selector cannot change. When mascot_characters() lands, add a
-      # row that swaps to a second character, compare the selector with the full list, and use a fixture
-      # character with different colour roles for a real swap.
-      character = "one built-in character",
+      character = "selector choices are checked against every shipped character",
       bubble_example = "fills the bubble controls; tested with Show bubble (#249)",
       mistake = "demonstrates invalid calls, which change nothing",
       mistake_run = "demonstrates invalid calls, which change nothing",
@@ -2469,8 +2461,14 @@ describe("studio listings (character data)", {
     recipe <- system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE)
     brand <- jsonlite::fromJSON(recipe)$brand
     expect_identical(env$studio_brand("tessa")[c("primary", "secondary")], as.list(brand)[c("primary", "secondary")])
-    expect_identical(env$studio_characters(), c(Tessa = "tessa"))
-    expect_identical(env$studio_families(), c(`All characters` = "", Hexonians = "hexonians"))
+    expect_identical(
+      env$studio_characters(),
+      c(Tessa = "tessa", Sela = "sela", `Knurl (experimental)` = "knurl")
+    )
+    expect_identical(
+      env$studio_families(),
+      c(`All characters` = "", Hexonians = "hexonians", Visorfolk = "visorfolk")
+    )
     expect_error(env$studio_brand(1), "Assertion on 'character' failed")
   })
   it("leaves registered characters out of the choices, because mascot() cannot mount them yet", {
@@ -2478,7 +2476,7 @@ describe("studio listings (character data)", {
     character_data_register(character_format_check(format_recipe("study_bot")))
     env <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
-    expect_identical(unname(env$studio_characters()), "tessa")
+    expect_identical(unname(env$studio_characters()), c("tessa", "sela", "knurl"))
   })
 })
 

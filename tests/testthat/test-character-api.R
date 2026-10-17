@@ -218,8 +218,8 @@ describe("mascot_register_character()", {
     expect_identical(registered$value, "study_bot")
     mascot_register_character(mascot_check_character(plain[rev(names(plain))]))
     expect_identical(character_data_ids(), "study_bot")
-    expect_identical(mascot_characters()$id, c("tessa", "study_bot"))
-    expect_identical(mascot_characters()$built_in, c(TRUE, FALSE))
+    expect_identical(mascot_characters()$id, c("tessa", "sela", "knurl", "study_bot"))
+    expect_identical(mascot_characters()$built_in, c(TRUE, TRUE, TRUE, FALSE))
     plain$name <- "Other content"
     expect_error(mascot_register_character(mascot_check_character(plain)), class = "mascot_error_character")
     expect_error(mascot_register_character(character_catalogue_builtin("tessa")), class = "mascot_error_character")
@@ -228,8 +228,8 @@ describe("mascot_register_character()", {
     mascot_register_character(mascot_check_character(plain))
     listing <- mascot_families()
     rows <- listing[listing$id == "visorfolk", ]
-    expect_identical(rows$name, c("Visorfolk", "Second snapshot label"))
-    expect_identical(rows$character, c("study_bot", "study_two"))
+    expect_identical(rows$name, c("Visorfolk", "Visorfolk", "Second snapshot label"))
+    expect_identical(rows$character, c(NA_character_, "study_bot", "study_two"))
     embedded <- format_recipe("study_bot")
     embedded$id <- "study_hex"
     embedded$family <- "hexonians"
@@ -367,7 +367,7 @@ describe("one character resolver at all authoring consumers", {
     expect_s3_class(unknown, "mascot_error_choice")
     expect_s3_class(unknown, "mascot_error")
     expect_identical(unknown$argument, "character")
-    expect_identical(unknown$choices, c("tessa", "study_bot"))
+    expect_identical(unknown$choices, c("tessa", "sela", "knurl", "study_bot"))
     expect_identical(unknown$value, "missing_character")
     session <- shiny::MockShinySession$new()
     withr::defer(session$close())

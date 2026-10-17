@@ -15,8 +15,11 @@ describe("mascot_colour_roles()", {
     expect_true(all(is.na(value$follows[value$role %in% c("body", "rim", "outline")])))
     description <- character_colour_data("tessa")
     expect_identical(unname(unlist(description$colours)), value$colour)
-    expect_identical(colour_role_registry(), colour_role_registry("tessa"))
-    expect_identical(colour_role_registry(), value$role)
+    expect_identical(colour_role_registry("tessa"), value$role)
+    # With no character, the registry is every built-in's roles: Tessa's first, then the others' new ones.
+    every <- unique(unlist(lapply(builtin_characters()$id, colour_role_registry)))
+    expect_identical(colour_role_registry(), every)
+    expect_identical(colour_role_registry()[seq_along(value$role)], value$role)
   })
   it("returns the same first four columns as the legacy reader of the shipped description", {
     # The checked recipe replaced the old file as the source; the output a user sees must not change.

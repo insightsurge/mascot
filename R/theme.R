@@ -118,9 +118,9 @@ theme_map_problem <- function(x, arg, roles, css = FALSE) {
       arg,
       "` has unknown or reserved colour roles: ",
       paste(encodeString(wrong, quote = '"'), collapse = ", "),
-      ". Valid roles: ",
-      paste(roles, collapse = ", "),
-      "."
+      ".",
+      theme_role_hint(wrong, roles),
+      " See `mascot_colour_roles()` for each character's roles."
     ))
   }
   for (role in names(x)) {
@@ -140,6 +140,30 @@ theme_map_problem <- function(x, arg, roles, css = FALSE) {
     }
   }
   NULL
+}
+
+# A "did you mean" for misspelt theme roles: the closest known role for each wrong name, when one is close.
+# Per-node helper: theme_map_problem() checked both inputs (house exception, r-code.md).
+theme_role_hint <- function(wrong, roles) {
+  reserved <- c("light", "dark", "default")
+  roles <- setdiff(roles, reserved)
+  wrong <- setdiff(wrong, reserved)
+  if (!length(wrong) || !length(roles)) {
+    return("")
+  }
+  close <- vapply(
+    wrong,
+    function(name) {
+      distance <- utils::adist(name, roles)[1L, ]
+      if (min(distance) <= 2L) roles[[which.min(distance)]] else NA_character_
+    },
+    character(1)
+  )
+  close <- unique(close[!is.na(close)])
+  if (!length(close)) {
+    return("")
+  }
+  paste0(" Did you mean ", paste(encodeString(close, quote = '"'), collapse = ", "), "?")
 }
 
 #' Validate shortcuts and complete helper objects without changing anything

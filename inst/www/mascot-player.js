@@ -627,7 +627,8 @@
               requirePart(item.clip.split('.')[0]);
             }
             if (emitting) {
-              cost = sumWork(cost, workGlow([item], part.glow, id, 1));
+              // A mood may add a stroke to a fill-only glowing item: count the largest glow over every alternative.
+              cost = sumWork(cost, maxWork(alternatives.map((alt) => workGlow([alt], part.glow, id, 1))));
             }
           }
           costs.push(cost);

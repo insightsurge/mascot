@@ -101,6 +101,24 @@ describe("independent R expanded drawing-work bounds", {
     expect_equal(work[["blur_design_units"]], 0)
   })
 
+  it("counts a glow stroke that only a mood adds to a fill-only glowing item", {
+    data <- character_format_resolve(format_recipe())
+    item <- data$parts[[1]]$items[[1]]
+    item$stroke <- NULL
+    data$parts[[1]]$items[[1]] <- item
+    data$parts[[1]]$glow <- list(item = item$id, colour = "accent", blur = 4, alpha = 1)
+    work <- function(data) {
+      graph <- character_format_references(data)
+      character_format_work(data, graph, character_format_behaviour(data, graph))
+    }
+    resting <- work(data)
+    key <- paste0(data$parts[[1]]$id, ".", item$id)
+    data$moods[[1]]$items <- stats::setNames(list(list(stroke = names(data$colours)[[1]], width = 4)), key)
+    stroked <- work(data)
+    # One more pass for the stroke itself and one more for its glow.
+    expect_equal(stroked[["paint_passes"]] - resting[["paint_passes"]], 2)
+  })
+
   it("does not increment gradient uses for solid glow emission", {
     data <- character_format_resolve(format_recipe())
     data$paints <- list(

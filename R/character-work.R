@@ -399,10 +399,11 @@ character_format_work <- function(x, graph, behaviour, band = "full") {
             needed <- union(needed, require_part(strsplit(item$clip, ".", fixed = TRUE)[[1L]][[1L]]))
           }
           if (!is.null(part$glow) && identical(item$id, part$glow$item)) {
-            cost <- character_work_sum(list(
-              cost,
-              character_work_glow(list(character_shape(item, shapes)), part$glow, id, x, graph, behaviour, band)
-            ))
+            # A mood may add a stroke to a fill-only glowing item: count the largest glow over every alternative.
+            glows <- lapply(alternatives, function(alternative) {
+              character_work_glow(list(character_shape(alternative, shapes)), part$glow, id, x, graph, behaviour, band)
+            })
+            cost <- character_work_sum(list(cost, character_work_max(glows)))
           }
         }
         costs[[length(costs) + 1L]] <- cost

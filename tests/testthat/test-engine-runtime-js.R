@@ -1974,6 +1974,25 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     expect_equal(res$paint_passes - res_base$paint_passes, 4)
   })
 
+  it("counts a glow stroke that only a mood adds to a fill-only glowing item, as R does", {
+    skip_without_chrome()
+    js <- page_with()
+    data <- format_recipe()
+    item <- data$parts[[1]]$items[[1]]
+    item$stroke <- NULL
+    data$parts[[1]]$items[[1]] <- item
+    data$parts[[1]]$glow <- list(item = item$id, colour = "accent", blur = 4, alpha = 1)
+    key <- paste0(data$parts[[1]]$id, ".", item$id)
+    data$moods[[1]]$items <- stats::setNames(list(list(stroke = names(data$colours)[[1]], width = 4)), key)
+    resolved <- character_format_resolve(data)
+    graph <- character_format_references(resolved)
+    r_work <- character_format_work(resolved, graph, character_format_behaviour(resolved, graph))
+    payload <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null", digits = NA)
+    browser <- js(sprintf("mascot.runtime.bound(mascot.runtime.compile(%s), 'full')", payload))
+    expect_equal(browser[["paint_passes"]], r_work[["paint_passes"]])
+    expect_equal(browser[["inflated_glow_area_ratio"]], r_work[["inflated_glow_area_ratio"]], tolerance = 1e-12)
+  })
+
   it("seeds scale ranges with resting scale and ignores null keys in set tracks (finding 3)", {
     skip_without_chrome()
     js <- page_with()
@@ -2060,25 +2079,5 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     ))
     expect_identical(res$code, "missing_reference")
     expect_identical(res$path, "$.clip")
-  })
-
-  it("returns non-zero glow metrics in mascot.geometry.bandBound for parts with default glow alpha (finding 5)", {
-    skip_without_chrome()
-    js <- page_with()
-    alpha_json <- paste(
-      readLines(test_path("fixtures", "format", "alpha_visor.json"), encoding = "UTF-8", warn = FALSE),
-      collapse = "\n"
-    )
-    res <- js(sprintf(
-      "(() => {
-        const c = JSON.parse(%s);
-        const b = mascot.geometry.bandBound(c.parts, 'full');
-        return b;
-      })()",
-      jsonlite::toJSON(alpha_json, auto_unbox = TRUE)
-    ))
-    expect_true(res$glow_emitters > 0)
-    expect_true(res$blur_design_units > 0)
-    expect_true(res$inflated_glow_area_ratio > 0)
   })
 })

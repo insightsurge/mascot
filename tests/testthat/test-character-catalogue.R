@@ -38,10 +38,10 @@ describe("character_catalogue_builtin()", {
 describe("character_catalogue_ids() and character_catalogue_get()", {
   it("lists shipped ids first and registered ids in registration order", {
     local_empty_registry()
-    expect_identical(character_catalogue_ids(), c("tessa", "sela", "knurl"))
+    expect_identical(character_catalogue_ids(), c("tessa", "sela", "knurl", "neer"))
     character_data_register(character_format_check(format_recipe("anchor_probe")))
     character_data_register(character_format_check(format_recipe("study_bot")))
-    expect_identical(character_catalogue_ids(), c("tessa", "sela", "knurl", "anchor_probe", "study_bot"))
+    expect_identical(character_catalogue_ids(), c("tessa", "sela", "knurl", "neer", "anchor_probe", "study_bot"))
     expect_identical(character_catalogue_get("study_bot")$id, "study_bot")
     expect_true(character_catalogue_is_builtin("tessa"))
     expect_false(character_catalogue_is_builtin("study_bot"))
@@ -69,7 +69,7 @@ describe("character_catalogue_resolve()", {
   })
   it("names unknown ids at the caller and rejects other types", {
     expect_error(
-      character_catalogue_resolve("neer", environment()),
+      character_catalogue_resolve("unknown_character", environment()),
       "must be one of",
       class = "mascot_error"
     )

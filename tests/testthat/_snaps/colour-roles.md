@@ -4,6 +4,6 @@
       mascot_colour_roles("missing")
     Condition
       Error in `mascot_colour_roles()`:
-      ! `character` must be one of "tessa", "sela", or "knurl".
+      ! `character` must be one of "tessa", "sela", "knurl", or "neer".
       x "missing" is not a character.
 

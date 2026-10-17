@@ -1244,7 +1244,7 @@ describe("studio round 4 regression guards", {
     env <- new.env()
     sys.source(file.path(dir, "R", "data.R"), env)
     expect_identical(unname(env$studio_characters())[[1L]], formals(mascot)$character)
-    expect_identical(names(env$studio_characters()), c("Tessa", "Sela", "Knurl (experimental)"))
+    expect_identical(names(env$studio_characters()), c("Tessa", "Sela", "Knurl (experimental)", "Neer (experimental)"))
   })
   it("omits empty colour groups and groups unfamiliar parts", {
     env <- new.env()
@@ -2463,11 +2463,11 @@ describe("studio listings (character data)", {
     expect_identical(env$studio_brand("tessa")[c("primary", "secondary")], as.list(brand)[c("primary", "secondary")])
     expect_identical(
       env$studio_characters(),
-      c(Tessa = "tessa", Sela = "sela", `Knurl (experimental)` = "knurl")
+      c(Tessa = "tessa", Sela = "sela", `Knurl (experimental)` = "knurl", `Neer (experimental)` = "neer")
     )
     expect_identical(
       env$studio_families(),
-      c(`All characters` = "", Hexonians = "hexonians", Visorfolk = "visorfolk")
+      c(`All characters` = "", Hexonians = "hexonians", Visorfolk = "visorfolk", Elementals = "elementals")
     )
     expect_error(env$studio_brand(1), "Assertion on 'character' failed")
   })
@@ -2476,7 +2476,7 @@ describe("studio listings (character data)", {
     character_data_register(character_format_check(format_recipe("study_bot")))
     env <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
-    expect_identical(unname(env$studio_characters()), c("tessa", "sela", "knurl"))
+    expect_identical(unname(env$studio_characters()), c("tessa", "sela", "knurl", "neer"))
   })
 })
 

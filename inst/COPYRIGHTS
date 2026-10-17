@@ -60,6 +60,10 @@ inst/format/characters/knurl.json
     Source: Knurl's complete version 1 character data, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
+inst/format/characters/neer.json
+    Source: Neer's complete version 1 character data, written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
 inst/format/kits/classic.json
 inst/format/kits/screen.json
     Source: complete version 1 face-kit authoring snapshots written for this package.

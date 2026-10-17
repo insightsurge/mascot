@@ -14,6 +14,10 @@
 #' Use a bubble for a message about something that happened; it may time out.
 #' Use `duration = Inf` for a message the user must act on, such as an invalid form,
 #' because a timed message can vanish before it is read.
+#'
+#' **Bubble or menu?** A bubble is a message the app shows; the server supplies or
+#' updates it with `update_mascot(id, bubble = ...)`. For an action the visitor
+#' chooses, use [mascot_popup_menu()] with `click =` instead.
 #' @param text A non-empty string, optionally marked with [htmltools::HTML()],
 #'   or an `htmltools` tag or tag list. HTML-marked strings and tags are shown as
 #'   HTML. Tags with dependencies or head content are not supported and give an
@@ -29,7 +33,7 @@
 #'   `closable` elements. `text` is a plain string or `NULL`; `html` is a flag.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot()], [update_mascot()]
+#' @seealso [mascot()], [update_mascot()], [mascot_popup_menu()]
 #' @export
 #' @examples
 #' mascot_bubble("3 rows skipped")

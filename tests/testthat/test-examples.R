@@ -1759,6 +1759,32 @@ describe("studio character bar", {
   })
 })
 
+describe("studio narrow layout (#341)", {
+  it("shows the canvas and the mascot at phone and tablet widths without horizontal scrolling", {
+    local_shiny_browser()
+    check_width <- function(width) {
+      checkmate::assert_number(width, lower = 1)
+      app <- example_driver("studio", width = width)
+      on.exit(app$stop())
+      wait_example_mood(app, "helper", "idle")
+      # The bug collapsed the canvas to zero height while its width stayed normal.
+      sizes <- app$get_js(
+        "(() => {
+          const centre = document.querySelector('.pg-centre').getBoundingClientRect();
+          const mascot = document.querySelector('#helper .mascot-canvas').getBoundingClientRect();
+          return {centre: centre.height, mascot: mascot.height};
+        })()"
+      )
+      expect_gt(sizes$centre, 200, label = paste("canvas height at", width, "px"))
+      expect_gt(sizes$mascot, 0, label = paste("mascot height at", width, "px"))
+      expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"), info = paste("width", width))
+    }
+    for (width in c(375, 560, 768)) {
+      check_width(width)
+    }
+  })
+})
+
 # The value each control starts with on the page, by input id, as the browser first reports it to the server.
 studio_start_values <- function(page) {
   checkmate::assert_string(page)

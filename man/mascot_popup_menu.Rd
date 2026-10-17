@@ -50,6 +50,10 @@ selected item in your Shiny server. For a single action, use
 \code{\link[=mascot_action]{mascot_action()}} instead.
 }
 \details{
+\strong{Bubble or menu?} A menu lets the visitor ask the app to do something: attach
+it with \verb{click =} and read the choice from \verb{input$<id>_menu}. For a message the
+app sends to the visitor, use \code{\link[=mascot_bubble]{mascot_bubble()}} and \code{update_mascot(id, bubble = ...)}.
+
 \strong{Where the menu opens.} The menu must fit in the space where it can show. For
 an inline mascot, that space is bounded by the nearest container that scrolls
 or clips (such as a \code{bslib::card()} body or a sidebar), not the whole window.
@@ -122,7 +126,7 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}, \code{\link[=mascot_action]{mascot_action()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}, \code{\link[=mascot_action]{mascot_action()}}, \code{\link[=mascot_bubble]{mascot_bubble()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},

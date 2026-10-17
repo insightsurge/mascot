@@ -103,6 +103,8 @@
 
 ## Minor improvements and fixes
 
+* `mascot_studio()` shows its canvas and mascot on narrow screens again; on screens narrower than 576 pixels the main area was empty (#341).
+
 * `update_mascot()` changes survive a mascot being re-rendered: a replaced mascot comes back as the server last set it, a gesture plays only once and a dismissed bubble stays dismissed, also in Quarto and R Markdown documents that run Shiny (#305).
 
 * Mascot layout reads batch into one animation frame per burst of page changes; unrelated changes are ignored unless an inline bubble needs refitting. Animating mascots pause drawing while scrolled outside the viewport; see the engine changelog on the package website (#295).

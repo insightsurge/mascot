@@ -26,18 +26,11 @@ capture_visuals <- function(config_path) {
     config$source,
     c(
       "mascot.js",
-      "mascot-draw.js",
-      if (isTRUE(config$runtime)) {
-        c("mascot-parts.js", "mascot-geometry.js", "mascot-faces.js", "mascot-motion.js", "mascot-player.js")
-      },
-      if (isTRUE(config$adapter)) {
-        c(
-          "mascot-parts.js",
-          "mascot-geometry.js",
-          if (file.exists(file.path(config$source, "mascot-faces.js"))) "mascot-faces.js",
-          "mascot-tessa-adapter.js"
-        )
-      }
+      "mascot-parts.js",
+      "mascot-geometry.js",
+      "mascot-faces.js",
+      "mascot-motion.js",
+      "mascot-player.js"
     )
   )
   writeLines(
@@ -71,9 +64,6 @@ capture_visuals <- function(config_path) {
       cli::cli_abort("Capture JS failed: {response$exceptionDetails$exception$description}")
     }
     response$result$value
-  }
-  if (isTRUE(config$adapter)) {
-    evaluate("mascot.internal = {useCharacterAdapter: true}")
   }
   version <- session$Browser$getVersion()
   runtime <- list(
@@ -112,32 +102,22 @@ capture_visuals <- function(config_path) {
               "(() => {document.querySelector('canvas')?.remove();const c=document.createElement('canvas');",
               "c.width=%d;c.height=%d;c.style.width='%dpx';c.style.height='%dpx';document.body.append(c);",
               "const g=c.getContext('2d',{colorSpace:'srgb'});g.fillStyle='%s';g.fillRect(0,0,c.width,c.height);",
-              if (isTRUE(config$runtime)) {
-                # The runtime player clears its own canvas, so it draws offscreen and is composited over the backdrop.
-                paste0(
-                  "const o=document.createElement('canvas');o.width=c.width;o.height=c.height;",
-                  "const og=o.getContext('2d',{colorSpace:'srgb'});og.setTransform(%f,0,0,%f,0,0);",
-                  "const ch=JSON.parse(document.querySelector('script[data-mascot-character=tessa]').textContent);",
-                  "const p=mascot.mount(o,ch,{x:150,baseY:270,mood:'%s',band:",
-                  # The page picks the band from the CSS width: micro below 48, small below 128, full from 128.
-                  sprintf(
-                    "'%s'",
-                    if (size < 48L) {
-                      "micro"
-                    } else if (size < 128L) {
-                      "small"
-                    } else {
-                      "full"
-                    }
-                  ),
-                  "});g.drawImage(o,0,0);p.destroy();"
-                )
-              } else {
-                paste0(
-                  "g.setTransform(%f,0,0,%f,0,0);const ch=mascot.readCharacter('tessa');",
-                  "mascot.draw(g,ch,{x:150,baseY:270,pose:{mood:'%s'},frame:0});"
-                )
-              },
+              "const o=document.createElement('canvas');o.width=c.width;o.height=c.height;",
+              "const og=o.getContext('2d',{colorSpace:'srgb'});og.setTransform(%f,0,0,%f,0,0);",
+              "const ch=JSON.parse(document.querySelector('script[data-mascot-character=tessa]').textContent);",
+              "const p=mascot.mount(o,ch,{x:150,baseY:270,mood:'%s',band:",
+              # The page picks the band from the CSS width: micro below 48, small below 128, full from 128.
+              sprintf(
+                "'%s'",
+                if (size < 48L) {
+                  "micro"
+                } else if (size < 128L) {
+                  "small"
+                } else {
+                  "full"
+                }
+              ),
+              "});g.drawImage(o,0,0);p.destroy();",
               "return {png:c.toDataURL('image/png'),dpr:devicePixelRatio,width:innerWidth,height:innerHeight};})()"
             ),
             size * dpr,

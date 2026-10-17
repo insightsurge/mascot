@@ -19,11 +19,10 @@ local_engine_page <- function(env = parent.frame()) {
       "mascot-motion.js",
       "mascot-parts.js",
       "mascot-geometry.js",
-      "mascot-faces.js",
-      "mascot-tessa-adapter.js"
+      "mascot-faces.js"
     )
   )
-  tessa <- system.file("characters", "tessa.json", package = "mascot")
+  tessa <- testthat::test_path("fixtures", "characters", "tessa.json")
   blob <- testthat::test_path("fixtures", "characters", "blob.json")
   page <- file.path(dir, "page.html")
   writeLines(

@@ -16,8 +16,17 @@ import zlib
 
 ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE = Path(__file__).with_name('profile-template.json')
-FILES = {'mascot.js': 'inst/www/mascot.js', 'mascot-draw.js': 'inst/www/mascot-draw.js',
-         'tessa.json': 'inst/characters/tessa.json'}
+FILES = {
+    'mascot.js': 'inst/www/mascot.js',
+    'mascot-parts.js': 'inst/www/mascot-parts.js',
+    'mascot-geometry.js': 'inst/www/mascot-geometry.js',
+    'mascot-faces.js': 'inst/www/mascot-faces.js',
+    'mascot-motion.js': 'inst/www/mascot-motion.js',
+    'mascot-player.js': 'inst/www/mascot-player.js',
+    'tessa.json': 'inst/format/characters/tessa.json',
+    'classic.json': 'inst/format/kits/classic.json',
+    'screen.json': 'inst/format/kits/screen.json',
+}
 
 
 def sha(data):
@@ -138,7 +147,7 @@ def profile_check(path):
     return profile
 
 
-def capture(output, source, lock=None, provisional=False, defect=False, adapter=False, runtime=False):
+def capture(output, source, lock=None, provisional=False, defect=False):
     profile = read_json(TEMPLATE) if provisional else profile_check(lock)
     output = Path(output).resolve()
     if output.exists():
@@ -150,32 +159,18 @@ def capture(output, source, lock=None, provisional=False, defect=False, adapter=
         work = Path(work)
         hashes = {}
         files = dict(FILES)
-        if adapter:
-            files.update({name: 'inst/www/' + name for name in ('mascot-parts.js', 'mascot-geometry.js', 'mascot-tessa-adapter.js')})
-        has_faces = (ROOT / 'inst/www/mascot-faces.js').is_file() if source == 'working-tree' else subprocess.run(
-            ['git', '-C', str(ROOT), 'cat-file', '-e', f'{source_sha}:inst/www/mascot-faces.js'],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
-        if runtime:
-            # The public path since M1: Tessa's format-v1 recipe drawn by the format-v1 runtime (mascot-player.js).
-            files.update({name: 'inst/www/' + name for name in (
-                'mascot-parts.js', 'mascot-geometry.js', 'mascot-faces.js', 'mascot-motion.js', 'mascot-player.js')})
-            files['tessa.json'] = 'inst/format/characters/tessa.json'
-        if (adapter or runtime) and has_faces:
-            files.update({'mascot-faces.js': 'inst/www/mascot-faces.js',
-                          'classic.json': 'inst/format/kits/classic.json', 'screen.json': 'inst/format/kits/screen.json'})
         for name, file in files.items():
             data = (ROOT / file).read_bytes() if source == 'working-tree' else git('show', f'{source_sha}:{file}')
             hashes[file] = sha(data)
-            if defect and name == 'mascot-draw.js':
-                needle = b'drawEyes(g, face, p);'
+            if defect and name == 'mascot-faces.js':
+                needle = b'glyphs.push(eye(entry, face, index, value, flags));'
                 if data.count(needle) != 1:
                     raise ValueError('Missing-eye probe insertion point changed')
                 data = data.replace(needle, b'/* planted defect: eyes omitted */')
             (work / name).write_bytes(data)
         config = {'source': str(work), 'output': str(output), 'flags': profile['flags'],
                   'chrome': None if provisional else profile['chrome'],
-                  'chromote': None if provisional else profile['chromote'], 'adapter': adapter,
-                  'runtime': runtime}
+                  'chromote': None if provisional else profile['chromote']}
         write_json(work / 'config.json', config)
         env = dict(os.environ, RENV_CONFIG_AUTOLOADER_ENABLED='FALSE')
         subprocess.run(['Rscript', str(Path(__file__).with_name('capture.R')), str(work / 'config.json')],
@@ -183,7 +178,7 @@ def capture(output, source, lock=None, provisional=False, defect=False, adapter=
     record = read_json(output / 'capture.json')
     record['runtime']['chrome_sha256'] = sha(Path(record['runtime'].pop('chrome_path')).read_bytes())
     manifest = {'status': 'provisional-macos' if provisional else 'canonical',
-                'source': source_label, 'source_files': hashes, 'adapter': adapter, 'runtime': runtime, 'defect': 'missing-eyes' if defect else None,
+                'source': source_label, 'source_files': hashes, 'defect': 'missing-eyes' if defect else None,
                 'profile': profile, 'profile_sha256': None if provisional else sha(Path(lock).read_bytes()),
                 **record, 'files': {}}
     if provisional:
@@ -286,8 +281,7 @@ def main():
     parser.add_argument('--source', default='ace06f5')
     parser.add_argument('--profile')
     parser.add_argument('--provisional', action='store_true')
-    parser.add_argument('--adapter', action='store_true')
-    parser.add_argument('--runtime', action='store_true', help='Draw Tessa with the format-v1 runtime (public path)')
+    parser.add_argument('--runtime', action='store_true', default=True, help=argparse.SUPPRESS)
     parser.add_argument('--strict', action='store_true')
     parser.add_argument('--baseline')
     parser.add_argument('--candidate')
@@ -300,7 +294,7 @@ def main():
     if args.action == 'capture':
         if not args.output or not (args.strict or args.provisional):
             parser.error('capture needs --output and exactly one of --strict/--provisional')
-        capture(args.output, args.source, args.profile, args.provisional, adapter=args.adapter, runtime=args.runtime)
+        capture(args.output, args.source, args.profile, args.provisional)
     elif args.action == 'compare':
         if not args.baseline or not args.candidate:
             parser.error('compare needs --baseline and --candidate')

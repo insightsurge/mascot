@@ -143,10 +143,8 @@
   const warn = (error) => console.warn(`mascot: ${String(error.message || error).replace(/^mascot: /, '')}`);
   // I1: a character with format_version 1 is drawn and moved by mascot.runtime; the legacy Tessa path is untouched.
   const isFormat = (description) => ns.runtime?.isFormat(description) === true;
-  // The detail bands follow the canvas width for a format-v1 character always, and for the legacy Tessa only behind the
-  // internal adapter switch (E5b), so the default path never reaches them.
-  const bandsApply = (description) =>
-    isFormat(description) || (ns.internal?.useCharacterAdapter === true && Boolean(ns.parts));
+  // The detail bands follow the canvas width for a format-v1 character.
+  const bandsApply = (description) => isFormat(description);
   // The engine owns the vocabulary: a pure pose (legacy) or the runtime's checks (format v1) validate without changing
   // a controller. request is {}, { mood } or { gesture }.
   function engineValidate(description, request) {

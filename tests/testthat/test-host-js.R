@@ -3870,304 +3870,43 @@ describe("mascot.host speed budgets (#295)", {
   })
 })
 
-# Loads the engine modules the adapter needs into a host page; the host page itself only loads the public modules.
-inject_adapter_modules <- function(js) {
-  www <- system.file("www", package = "mascot")
-  for (id in c("classic", "screen")) {
-    kit_text <- paste(
-      readLines(system.file("format", "kits", paste0(id, ".json"), package = "mascot"), encoding = "UTF-8"),
-      collapse = "\n"
-    )
-    js(sprintf(
-      "(() => {const s=document.createElement('script');s.type='application/json';s.dataset.mascotKit=%s;s.textContent=%s;document.head.append(s);})()",
-      jsonlite::toJSON(id, auto_unbox = TRUE),
-      jsonlite::toJSON(kit_text, auto_unbox = TRUE)
-    ))
-  }
-  for (file in c("mascot-parts.js", "mascot-geometry.js", "mascot-faces.js", "mascot-tessa-adapter.js")) {
-    source_text <- paste(readLines(file.path(www, file), encoding = "UTF-8"), collapse = "\n")
-    js(sprintf(
-      "(() => {const s=document.createElement('script');s.textContent=%s;document.head.append(s);})()",
-      jsonlite::toJSON(source_text, auto_unbox = TRUE)
-    ))
-  }
-  legacy_tessa <- paste(
-    readLines(system.file("characters", "tessa.json", package = "mascot"), encoding = "UTF-8"),
-    collapse = "\n"
-  )
-  js(sprintf(
-    "(() => {
-      let s = document.querySelector('script[data-mascot-character=\"tessa\"]');
-      if (!s) {
-        s = document.createElement('script');
-        s.type = 'application/json';
-        s.dataset.mascotCharacter = 'tessa';
-        document.head.append(s);
-      }
-      s.textContent = %s;
-      const el = document.getElementById('a');
-      if (el) {
-        mascot.host.unmount(el);
-        mascot.host.mount(el);
-      }
-    })()",
-    jsonlite::toJSON(legacy_tessa, auto_unbox = TRUE)
-  ))
-  invisible(js)
-}
-
-describe("E5b host band follows the untransformed CSS width", {
-  it("switches band at 128 and 48 CSS px, ignores transforms and redraws through setBand", {
-    skip_without_chrome()
-    js <- local_host_page(size = "20%")
-    inject_adapter_modules(js)
-    js(paste0(
-      "(() => {window.bandLog=[];const adapter=mascot.tessaAdapter,origGeo=mascot.geometry?.draw;",
-      "window._origGeo=origGeo;",
-      "if (adapter) mascot.tessaAdapter={...adapter,draw:(...a)=>{bandLog.push(a[6]);return adapter.draw(...a);}};",
-      "if (mascot.geometry) mascot.geometry={...mascot.geometry,draw:(...a)=>{if (a[1]?.source?.parts?.[0]?.id !== 'ground_shadow') bandLog.push(a[2]?.band || 'full');return origGeo(...a);}};",
-      "mascot.internal={useCharacterAdapter:true};",
-      "window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
-      "parentBox.style.cssText='width:1000px';el.before(parentBox);parentBox.append(el);return true;})()"
-    ))
-    transitions <- paste0(
-      "(() => bandLog.filter((band, index) => index === 0 || band !== bandLog[index - 1]))()"
-    )
-    # The first entry is the redraw of the 1000 px canvas (full) after the switch-on resize; it is awaited first so the
-    # later steps do not depend on when the resize observer fires.
-    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), "full")
-    js("parentBox.style.width = '500px'")
-    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), c("full", "small"))
-    js("parentBox.style.width = '200px'")
-    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), c("full", "small", "micro"))
-    # A scaled canvas measures smaller on screen; the band still follows the untransformed 200 px (full).
-    js("el.querySelector('canvas').style.transform = 'scale(0.5)'; parentBox.style.width = '1000px'")
-    expect_identical(unlist(host_layout(js, paste0("return ", transitions, ";"))), c("full", "small", "micro", "full"))
-    js(
-      "delete mascot.internal; if (window._origGeo) mascot.geometry = { ...mascot.geometry, draw: window._origGeo }; delete window._origGeo;"
-    )
-  })
-})
-
-# Switch on, a spy on every adapter draw (band, mood, t), a 500 px parent (20% = 100 px, small), and optionally a
-# Tessa with 40 small circles in the same fill: within budget at small (51 of 90 items, 240 of 900 path numbers), over budget at micro (51 of 30).
-host_band_setup <- function(js, planted = FALSE) {
-  js(paste0(
-    "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
-    "parentBox.style.cssText='width:500px';el.before(parentBox);parentBox.append(el);",
-    "window.drawLog=[];const adapter=mascot.tessaAdapter;",
-    "mascot.tessaAdapter={...adapter,draw:(...a)=>{drawLog.push({band:a[6],mood:a[2].mood,t:a[2].t});return adapter.draw(...a);}};",
-    "window.warnings=[];console.warn=(...a)=>warnings.push(a.join(' '));",
-    "mascot.internal={useCharacterAdapter:true};",
-    if (planted) {
-      paste0(
-        "const base=mascot.readCharacter('tessa',el),painting=base.body.find(item=>item.fill);",
-        "const planted={...base,body:Array.from({length:40},()=>({shape:'circle',x:0,y:-20,r:4,fill:painting.fill}))};",
-        "const holder=document.createElement('script');holder.type='application/json';",
-        "holder.dataset.mascotCharacter='planted';holder.textContent=JSON.stringify(planted);",
-        "mascot.host.unmount(el);el.append(holder);el.dataset.character='planted';mascot.host.mount(el);"
-      )
-    } else {
-      ""
-    },
-    "return true;})()"
-  ))
-}
-
-describe("E5b host band atomicity, one draw and mount band", {
-  it("keeps the old band when the new one is over budget, updates renderedSize, reports once and never throws", {
-    skip_without_chrome()
-    js <- local_host_page(size = "20%")
-    inject_adapter_modules(js)
-    host_band_setup(js, planted = TRUE)
-    host_layout(js, "return true;")
-    expect_identical(host_layout(js, "return drawLog[drawLog.length-1].band;"), "small")
-    js("parentBox.style.width = '200px'")
-    result <- host_layout(
-      js,
-      "return {rendered: mascot.host.state(el).renderedSize, warnings: warnings.slice(), band: drawLog[drawLog.length-1].band};"
-    )
-    expect_equal(result$rendered, 40)
-    expect_identical(unlist(result$band), "small")
-    expect_length(result$warnings, 1)
-    expect_match(unlist(result$warnings), "micro band")
-    js("parentBox.style.width = '190px'")
-    again <- host_layout(js, "return {warnings: warnings.length, band: drawLog[drawLog.length-1].band};")
-    expect_equal(again$warnings, 1)
-    expect_identical(unlist(again$band), "small")
-  })
-
-  it("draws once for a band change with a backing resize, and once for a resize that keeps the band", {
-    skip_without_chrome()
-    js <- local_host_page(size = "20%")
-    inject_adapter_modules(js)
-    host_band_setup(js)
-    # Read the draw count synchronously before each change, then let the resize observer and two frames run.
-    step <- function(width) {
-      start <- js("drawLog.length")
-      if (!is.null(width)) {
-        js(sprintf("parentBox.style.width = '%s'", width))
-      }
-      host_layout(js, "return true;")
-      js("drawLog.length") - start
-    }
-    expect_equal(step(NULL), 1) # first measure: undefined -> small, a band change, one draw
-    expect_equal(step("200px"), 1) # small -> micro, backing resize: one draw, not setBand plus redraw
-    expect_equal(step("300px"), 1) # micro -> small, backing resize: one draw
-    expect_equal(step("320px"), 1) # same band, backing resize: the ordinary redraw
-  })
-
-  it("mounts with the band the canvas measures, so a small mascot never draws a full-band frame first", {
-    skip_without_chrome()
-    js <- local_host_page(size = "20%")
-    inject_adapter_modules(js)
-    host_band_setup(js, planted = TRUE)
-    host_layout(js, "return true;")
-    result <- host_layout(js, "return drawLog.map(entry => entry.band);")
-    expect_gt(length(result), 0)
-    expect_true(all(unlist(result) == "small"))
-  })
-
-  it("never calls setBand and draws the same pixels for every band while the switch is off", {
-    skip_without_chrome()
-    js <- local_host_page(size = "20%")
-    inject_adapter_modules(js)
-    js(paste0(
-      "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
-      "parentBox.style.cssText='width:500px';el.before(parentBox);parentBox.append(el);",
-      "window.setBandCalls=0;const mount=mascot.mount;",
-      "mascot.mount=(...a)=>{const c=mount(...a),set=c.setBand;c.setBand=(...x)=>{setBandCalls++;return set(...x);};return c;};",
-      "mascot.host.unmount(el);mascot.host.mount(el);mascot.mount=mount;return true;})()"
-    ))
-    host_layout(js, "return true;")
-    js("parentBox.style.width = '200px'")
-    host_layout(js, "return true;")
-    js("parentBox.style.width = '1000px'")
-    result <- host_layout(
-      js,
-      paste0(
-        "const ch=mascot.readCharacter('tessa',el),pixels=band=>{const c=document.createElement('canvas');",
-        "c.width=c.height=300;const g=c.getContext('2d');mascot.draw(g,ch,{x:150,baseY:270,pose:{mood:'idle'},frame:0,band});",
-        "return c.toDataURL();};return {calls:setBandCalls,same:pixels('micro')===pixels('full')&&pixels('small')===pixels('full')};"
-      )
-    )
-    expect_equal(result$calls, 0)
-    expect_true(result$same)
-    js("delete mascot.internal")
-  })
-
+describe("detail bands on the host", {
   it("does not replay the mood change or a gesture when the band changes on resize", {
     skip_without_chrome()
     js <- local_host_page(size = "20%", reduced = FALSE)
-    inject_adapter_modules(js)
-    host_band_setup(js)
+    js(paste0(
+      "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
+      "parentBox.style.cssText='width:500px';el.before(parentBox);parentBox.append(el);return true;})()"
+    ))
     host_layout(js, "return true;")
     js("mascot.host.receive({id:'a', patch:{mood:'happy'}})")
     host_layout(js, "return true;")
     js("mascot.host.receive({id:'a', patch:{gesture:'nod'}})")
     host_layout(js, "return true;")
-    before <- host_layout(js, "return {last: drawLog[drawLog.length-1], index: drawLog.length};")
+    before_state <- host_layout(js, "return {band: mascot.host.state(el).band, mood: mascot.host.state(el).mood};")
+    expect_identical(before_state$band, "small")
     js("parentBox.style.width = '1000px'")
-    after <- host_layout(
+    after_state <- host_layout(
       js,
-      sprintf(
-        "const drawn=drawLog.slice(%d);return {entry: drawn.find(entry => entry.band === 'full') || null, mood: mascot.host.state(el).mood};",
-        before$index
-      )
+      "return {band: mascot.host.state(el).band, mood: mascot.host.state(el).mood};"
     )
-    expect_identical(before$last$band, "small")
-    expect_identical(unlist(after$entry$band), "full")
-    expect_identical(unlist(after$entry$mood), before$last$mood)
-    expect_gte(after$entry$t, before$last$t)
-    expect_identical(after$mood, "happy")
-    js("delete mascot.internal")
+    expect_identical(after_state$band, "full")
+    expect_identical(after_state$mood, "happy")
   })
-})
 
-# Planted Tessa with 100 small circles: over the small caps (114 items of 90), within the full caps (160).
-host_planted_js <- paste0(
-  "const base=mascot.readCharacter('tessa',el),painting=base.body.find(item=>item.fill);",
-  "const planted={...base,body:Array.from({length:100},()=>({shape:'circle',x:0,y:-20,r:4,fill:painting.fill}))};",
-  "const holder=document.createElement('script');holder.type='application/json';",
-  "holder.dataset.mascotCharacter='planted';holder.textContent=JSON.stringify(planted);",
-  "mascot.host.unmount(el);el.append(holder);el.dataset.character='planted';mascot.host.mount(el);"
-)
-
-describe("E5b fix 2 host: mount band, zero width and drawn state", {
   it("mounts a hidden container at full, and switches to the band of its first real width", {
     skip_without_chrome()
     js <- local_host_page(size = 40)
-    inject_adapter_modules(js)
     js(paste0(
       "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
       "parentBox.style.cssText='width:500px;display:none';el.before(parentBox);parentBox.append(el);",
-      "window.drawLog=[];const adapter=mascot.tessaAdapter;",
-      "mascot.tessaAdapter={...adapter,draw:(...a)=>{drawLog.push({band:a[6]});return adapter.draw(...a);}};",
-      "mascot.internal={useCharacterAdapter:true};mascot.host.unmount(el);mascot.host.mount(el);return true;})()"
+      "mascot.host.unmount(el);mascot.host.mount(el);return true;})()"
     ))
-    hidden <- js("({bands: drawLog.map(e => e.band), css: getComputedStyle(el.querySelector('canvas')).width})")
-    # A fixed 40 px canvas keeps its px width while its container is hidden; only the layout width (0) says so.
-    expect_gt(length(hidden$bands), 0)
-    expect_true(all(unlist(hidden$bands) == "full"))
+    hidden <- js("({band: mascot.host.state(el).band, css: getComputedStyle(el.querySelector('canvas')).width})")
+    expect_null(hidden$band)
     js("parentBox.style.display = 'block'")
-    shown <- host_layout(js, "return {bands: drawLog.map(e => e.band), rendered: mascot.host.state(el).renderedSize};")
-    expect_identical(unlist(shown$bands)[length(shown$bands)], "micro")
+    shown <- host_layout(js, "return {band: mascot.host.state(el).band, rendered: mascot.host.state(el).renderedSize};")
+    expect_identical(shown$band, "micro")
     expect_equal(shown$rendered, 40)
-  })
-
-  it("mounts at full with one warning when the measured band is over budget, and keeps going", {
-    skip_without_chrome()
-    js <- local_host_page(size = "20%")
-    inject_adapter_modules(js)
-    js(paste0(
-      "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
-      "parentBox.style.cssText='width:500px';el.before(parentBox);parentBox.append(el);",
-      "window.drawLog=[];const adapter=mascot.tessaAdapter;",
-      "mascot.tessaAdapter={...adapter,draw:(...a)=>{drawLog.push({band:a[6]});return adapter.draw(...a);}};",
-      "window.warnings=[];console.warn=(...a)=>warnings.push(a.join(' '));",
-      "mascot.internal={useCharacterAdapter:true};",
-      host_planted_js,
-      "return true;})()"
-    ))
-    mounted <- host_layout(
-      js,
-      "return {bands: drawLog.map(e => e.band), warnings: warnings.slice(), rendered: mascot.host.state(el).renderedSize};"
-    )
-    expect_gt(length(mounted$bands), 0)
-    expect_true(all(unlist(mounted$bands) == "full"))
-    expect_length(mounted$warnings, 1)
-    expect_match(unlist(mounted$warnings), "small band")
-    expect_equal(mounted$rendered, 100)
-    js("parentBox.style.width = '480px'")
-    again <- host_layout(
-      js,
-      "return {warnings: warnings.length, band: drawLog[drawLog.length-1].band, rendered: mascot.host.state(el).renderedSize};"
-    )
-    expect_equal(again$warnings, 1)
-    expect_identical(unlist(again$band), "full")
-    expect_equal(again$rendered, 96)
-  })
-
-  it("redraws once when the band is unchanged and the canvas was resized after a switch-off mount", {
-    skip_without_chrome()
-    js <- local_host_page(size = "20%")
-    js(paste0(
-      "(() => {window.el=document.getElementById('a');window.parentBox=document.createElement('div');",
-      "parentBox.style.cssText='width:1000px';el.before(parentBox);parentBox.append(el);return true;})()"
-    ))
-    host_layout(js, "return true;")
-    inject_adapter_modules(js)
-    js(paste0(
-      "(() => {window.drawLog=[];const adapter=mascot.tessaAdapter;",
-      "mascot.tessaAdapter={...adapter,draw:(...a)=>{drawLog.push({band:a[6]});return adapter.draw(...a);}};",
-      "mascot.internal={useCharacterAdapter:true};return true;})()"
-    ))
-    start <- js("drawLog.length")
-    js("parentBox.style.width = '1100px'")
-    host_layout(js, "return true;")
-    # The record's band is undefined (the switch was off at mount), so measure asks for full, which draws nothing;
-    # the resized canvas must still be redrawn once.
-    expect_equal(js("drawLog.length") - start, 1)
-    expect_identical(js("drawLog[drawLog.length-1].band"), "full")
   })
 })

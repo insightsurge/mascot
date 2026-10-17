@@ -83,9 +83,7 @@
  *
  * Internal, E4a: mascot.motion.tracks evaluates character-format v1 gestures (tracks, needs/fallback, the five
  * easings, interruption, reduction and absolute activity deadlines) as pure functions: compile() checks a v1
- * character, frameAt() returns channel values for one absolute frame. pose() uses them only while
- * mascot.internal.useCharacterAdapter is true and mascot.internal.tracks[id] = { compiled, settings } is
- * registered for the character; otherwise the legacy path above runs unchanged.
+ * character, frameAt() returns channel values for one absolute frame.
  */
 /**
  * Character data; only top-level fields are described here. Immutable after first use.
@@ -364,9 +362,7 @@
     const activeUntil = state.activeUntil === undefined ? activeAt + idle.frames : state.activeUntil;
     const target = named(state.mood === undefined ? Object.keys(ch.moods)[0] : state.mood, ch.moods, 'mood');
     const mood = shownMood(ch, state, frame, change);
-    const bridge = ns.internal?.useCharacterAdapter === true ? ns.internal.tracks?.[ch.id] : undefined;
-    if (!bridge && (state.reduced || activeAt === null || frame >= activeUntil)) return { mood: target, ...state.pose };
-    if (bridge && activeAt === null) return { mood: target, ...state.pose };
+    if (state.reduced || activeAt === null || frame >= activeUntil) return { mood: target, ...state.pose };
     if (elapsedIdle < 0) return { mood, ...state.pose };
     const base = ns.drawing.resolvePose(ch, { mood });
     let p = { ...base, mood };
@@ -374,20 +370,7 @@
     const elapsed = frame - state.gestureAt;
     const gesture = gestures[state.gesture];
     const newerChange = state.changedAt !== undefined && frame >= state.changedAt && state.changedAt > state.gestureAt;
-    if (bridge) {
-      // Internal adapter switch: v1 tracks replace the legacy change, gesture and idle layers.
-      const reduced = Boolean(state.reduced);
-      const idleState = state.idle !== false;
-      const result = tracks.frameAt(
-        bridge.compiled,
-        { ...state, mood: target, idle: idleState, reduced, activeAt, activeUntil, held: {} },
-        frame,
-        { settings: bridge.settings, rest: () => bridgeRest(ch, p) },
-      );
-      p = bridgePose(ch, p, result.channels);
-      if (result.blink !== undefined) p.blink = Math.max(p.blink ?? 0, result.blink);
-      return heldPose(ch, p, state.pose);
-    } else if (state.gestures !== false && gesture && !newerChange && elapsed >= 0 && elapsed < gesture.frames) {
+    if (state.gestures !== false && gesture && !newerChange && elapsed >= 0 && elapsed < gesture.frames) {
       p = gesturePose(ch, p, gesture, elapsed / gesture.frames);
     } else {
       const elapsed = frame - state.changedAt;
@@ -1086,8 +1069,7 @@
 
   // ---- Format-v1 tracks (internal, E4a) -------------------------------------------------------------
   // Pure functions over a checked character-format v1 description; nothing here draws, reads a clock or
-  // touches the DOM. Only the internal adapter switch (ns.internal.useCharacterAdapter with a registered
-  // ns.internal.tracks[id]) lets pose() use them; the default player never does.
+  // touches the DOM.
   const tracks = (() => {
     const problem = (code, path, message) => {
       throw Object.assign(new Error(`${path}: ${message}`), { code, path });
@@ -1489,38 +1471,6 @@
 
     return Object.freeze({ easings, normalise, sample, compile, settings, fit, frameAt, drawn });
   })();
-
-  // Internal bridge for the provisional adapter: the legacy pose fields, with the v1 tracks of the
-  // character registered in ns.internal.tracks[id]. Off unless the adapter switch is on.
-  function bridgeRest(ch, p) {
-    const arms = ch.arms ? ns.drawing.armAngles(ch, { ...p, t: 0, armJitter: 0 }) : null;
-    const rest = {
-      'root.lift': p.lift,
-      'root.rotate': p.rot,
-      'root.scale_x': p.scale * p.sx,
-      'root.scale_y': p.scale * p.sy,
-    };
-    if (arms) {
-      rest['arm_l.rotate'] = arms.L;
-      rest['arm_r.rotate'] = arms.R;
-    }
-    return rest;
-  }
-
-  function bridgePose(ch, p, channels) {
-    const next = { ...p };
-    if (Object.hasOwn(channels, 'root.lift')) next.lift = channels['root.lift'];
-    if (Object.hasOwn(channels, 'root.rotate')) next.rot = channels['root.rotate'];
-    if (p.scale !== 0) {
-      if (Object.hasOwn(channels, 'root.scale_x')) next.sx = channels['root.scale_x'] / p.scale;
-      if (Object.hasOwn(channels, 'root.scale_y')) next.sy = channels['root.scale_y'] / p.scale;
-    }
-    if (ch.arms) {
-      if (Object.hasOwn(channels, 'arm_l.rotate')) next.armL = channels['arm_l.rotate'];
-      if (Object.hasOwn(channels, 'arm_r.rotate')) next.armR = channels['arm_r.rotate'];
-    }
-    return next;
-  }
 
   // Internal, I1: the guards and helpers the format-v1 player (mascot.runtime) shares with this one, so each rule has
   // one copy. patchFields are the update() keys both players accept.

@@ -304,17 +304,13 @@
   };
   ns.draw = (ctx, character, options = {}) => {
     const d = prepare(character, options);
-    ns.drawing.character(ctx, character, d.x, d.baseY, d.p, d.colours, d.band);
+    ns.drawing.character(ctx, character, d.x, d.baseY, d.p, d.colours);
   };
-  // E5b, internal: throws budget at $, without painting, when any scene the character can reach is over the band's caps.
-  // A no-op on the legacy path, which has no band budget.
-  // A format-v1 character (I1) is checked by its own runtime whatever the switch says; the legacy Tessa path is unchanged.
+  // Throws budget at $, without painting, when any scene the character can reach is over the band's caps.
+  // A no-op on the legacy path, which has no band budget. A format-v1 character is checked by its runtime.
   ns.checkCharacter = (character, band) => {
     if (ns.runtime?.isFormat(character)) {
       ns.runtime.check(character, band);
-    } else if (ns.internal?.useCharacterAdapter === true) {
-      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
-      ns.tessaAdapter.check(character, band);
     }
   };
 })();

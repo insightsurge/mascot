@@ -50,7 +50,7 @@ jobs:
       matrix:
         # Ubuntu is pinned like the repo's other workflows: moved deliberately, not by the ubuntu-latest rollout.
         # One long line on purpose: the expression must stay a single scalar.
-        config: ${{ fromJSON(github.event_name == 'pull_request' && '[{"os":"ubuntu-26.04","r":"release"}]' || '[{"os":"macos-latest","r":"release"},{"os":"windows-latest","r":"release"},{"os":"ubuntu-26.04","r":"devel","http-user-agent":"release"},{"os":"ubuntu-26.04","r":"release"},{"os":"ubuntu-26.04","r":"oldrel-1"}]') }}
+        config: ${{ fromJSON(github.event_name == 'pull_request' && '[{"os":"ubuntu-26.04","r":"release"}]' || '[{"os":"macos-latest","r":"release"},{"os":"windows-latest","r":"release"},{"os":"ubuntu-26.04","r":"devel","http-user-agent":"release"},{"os":"ubuntu-26.04","r":"release"},{"os":"ubuntu-26.04","r":"oldrel-1"},{"os":"ubuntu-26.04","r":"4.1"}]') }}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

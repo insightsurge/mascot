@@ -1077,7 +1077,9 @@ body.is-resizing {
   .bslib-sidebar-layout > aside.sidebar.bslib-sidebar-input {
     background-color: var(--bs-body-bg);
   }
+  /* bslib stops filling the page below 576px; a zero flex basis would collapse the canvas to nothing (#341). */
   .pg-centre {
+    flex: 0 0 auto;
     height: 52rem;
   }
   .pg-toolbar,

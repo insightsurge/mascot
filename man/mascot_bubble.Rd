@@ -43,6 +43,10 @@ Use the always visible status line for a short description of the current state.
 Use a bubble for a message about something that happened; it may time out.
 Use \code{duration = Inf} for a message the user must act on, such as an invalid form,
 because a timed message can vanish before it is read.
+
+\strong{Bubble or menu?} A bubble is a message the app shows; the server supplies or
+updates it with \code{update_mascot(id, bubble = ...)}. For an action the visitor
+chooses, use \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} with \verb{click =} instead.
 }
 \examples{
 mascot_bubble("3 rows skipped")
@@ -51,7 +55,7 @@ mascot_bubble(htmltools::HTML("<strong>Ready</strong>"))
 mascot_bubble()
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=update_mascot]{update_mascot()}}, \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}
 
 Other mascot helpers:
 \code{\link[=mascot_action]{mascot_action()}},

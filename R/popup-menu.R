@@ -7,6 +7,10 @@
 #' "Where the menu opens" below). You provide the menu choices and handle the
 #' selected item in your Shiny server. For a single action, use
 #' [mascot_action()] instead.
+#'
+#' **Bubble or menu?** A menu lets the visitor ask the app to do something: attach
+#' it with `click =` and read the choice from `input$<id>_menu`. For a message the
+#' app sends to the visitor, use [mascot_bubble()] and `update_mascot(id, bubble = ...)`.
 #' @param items A named character vector of plain-text labels. Names are unique,
 #'   non-empty item IDs without whitespace (for example `c(about = "About", help = "Help")`).
 #'   Defaults to `NULL`, an empty helper: in [update_mascot()], it removes the
@@ -28,7 +32,7 @@
 #'   `tooltip` elements.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
-#' @seealso [mascot()], [update_mascot()], [mascot_action()]
+#' @seealso [mascot()], [update_mascot()], [mascot_action()], [mascot_bubble()]
 #' @details
 #' **Where the menu opens.** The menu must fit in the space where it can show. For
 #' an inline mascot, that space is bounded by the nearest container that scrolls

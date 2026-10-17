@@ -93,7 +93,7 @@ mappings continue to work without change.
 * Public colour role mapping: all public colour role names (`body`, `rim`, `limb`, `sleeve`, `eyelid`, `blush`,
   `accessory`, and related roles) are preserved in `mascot_colour_roles("tessa")`. Internal role mappings ensure theme overrides
   map seamlessly onto the format-v1 recipe.
-* The restore button label for Tessa becomes "Restore Tessa, <shown status>" (e.g. "Restore Tessa, Idle"), matching
+* The restore button label for Tessa becomes "Restore Tessa, <shown status>" (e.g. "Restore Tessa, Resting, ready for the next piece."), matching
   format-v1 character conventions.
 * `inst/www/mascot-player.js`: `ns.geometry.draw()` receives frame elapsed time and active colour overrides in options;
   `inst/www/mascot-host.js` safely guards controller availability during initial snapshot and mount.

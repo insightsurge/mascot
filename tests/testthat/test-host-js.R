@@ -17,8 +17,8 @@ describe("mascot.host", {
     expect_identical(result$mood, "idle")
     expect_identical(result$character, "tessa")
     expect_identical(result$swapping, "false")
-    expect_identical(result$status, "Idle")
-    expect_identical(result$aria, "Tessa, Idle")
+    expect_identical(result$status, "Resting, ready for the next piece.")
+    expect_identical(result$aria, "Tessa, Resting, ready for the next piece.")
     expect_equal(result$width, round(160 * result$ratio))
     expect_equal(result$height, result$width)
     expect_equal(result$transform, result$width / 300, tolerance = 1e-6)
@@ -37,12 +37,12 @@ describe("mascot.host", {
       return {happy, custom, markup, thinking:text(), mood:el.dataset.shownMood, aria:el.querySelector('canvas').getAttribute('aria-label')};
     })()"
     )
-    expect_identical(result$happy, "Happy")
+    expect_identical(result$happy, "That came together nicely.")
     expect_identical(result$custom, "<b>Saved</b>")
     expect_identical(result$markup, "&lt;b&gt;Saved&lt;/b&gt;")
-    expect_identical(result$thinking, "Thinking")
+    expect_identical(result$thinking, "Working out how the parts fit.")
     expect_identical(result$mood, "thinking")
-    expect_identical(result$aria, "Tessa, Thinking")
+    expect_identical(result$aria, "Tessa, Working out how the parts fit.")
   })
   it("swaps to the fixture's first mood while keeping custom text", {
     skip_without_chrome()
@@ -205,7 +205,7 @@ describe("mascot.host", {
     expect_identical(result$problem$current$mood, "worried")
     expect_identical(result$problemText, "mascot: invalid mood")
     expect_identical(result$recovered$current$mood, "happy")
-    expect_identical(result$recoveredText, "Happy")
+    expect_identical(result$recoveredText, "That came together nicely.")
     expect_null(result$recovered$problem)
     expect_identical(result$last$current$mood, "thinking")
     expect_identical(
@@ -271,7 +271,7 @@ describe("mascot.host bubbles", {
     )
     expect_identical(result$initial$bubble$text, "Initial")
     expect_equal(result$initial$bubble$remaining, 5)
-    expect_identical(result$initial$status, "Idle")
+    expect_identical(result$initial$status, "Resting, ready for the next piece.")
     expect_identical(result$initial$role, "status")
     expect_identical(result$initial$live, "polite")
     expect_identical(result$initial$name, "Close message")
@@ -982,8 +982,8 @@ describe("mascot.host floating placement", {
     expect_identical(result$bubble, "While minimised")
     expect_equal(result$remaining, 0.01)
     expect_identical(result$current, "happy")
-    expect_match(result$label, "Restore Tessa, Happy", fixed = TRUE)
-    expect_identical(result$status, "Happy")
+    expect_match(result$label, "Restore Tessa, That came together nicely.", fixed = TRUE)
+    expect_identical(result$status, "That came together nicely.")
     expect_identical(result$colour, "rgb(63, 138, 102)")
     js("el.querySelector('.mascot-restore').click()")
     result <- host_layout(
@@ -2014,6 +2014,9 @@ describe("mascot.host popup menu", {
       placement = mascot_placement("bottom-left", minimise = FALSE),
       viewport = c(800, 600)
     )
+    # A one-line status keeps the mascot low enough that the requested side has no room, whatever the
+    # character's default status says.
+    js_bottom("mascot.host.receive({id:'a',patch:{status:{mode:'custom',text:'Ready'}}})")
     res_bottom <- js_bottom(
       "(() => {
       const el = document.getElementById('a'), canvas = el.querySelector('canvas');

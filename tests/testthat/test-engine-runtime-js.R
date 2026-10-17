@@ -1542,3 +1542,498 @@ describe("I1 host replacement without a mood", {
     expect_identical(r$character, "blob")
   })
 })
+
+describe("drawing-work bound parity and newly counted components (#304)", {
+  it("reproduces R's drawing-work bounds for every canonical fixture and Tessa recipe in all bands", {
+    skip_without_chrome()
+    js <- page_with()
+    expected <- jsonlite::fromJSON(test_path("fixtures", "format", "work-expected.json"), simplifyVector = FALSE)
+
+    for (row in expected$rows) {
+      fixture_name <- if (row$character == "study_bot") "study_bot-resolved" else row$character
+      json_text <- readLines(
+        test_path("fixtures", "format", paste0(fixture_name, ".json")),
+        encoding = "UTF-8",
+        warn = FALSE
+      )
+      json_str <- paste(json_text, collapse = "\n")
+
+      browser_bound <- js(sprintf(
+        "(() => {
+          const character = JSON.parse(%s);
+          const entry = mascot.runtime.compile(character);
+          return mascot.runtime.bound(entry, '%s');
+        })()",
+        jsonlite::toJSON(json_str, auto_unbox = TRUE),
+        row$band
+      ))
+
+      for (metric in setdiff(names(row$maxima), "inflated_glow_area_ratio")) {
+        expect_equal(
+          browser_bound[[metric]],
+          row$maxima[[metric]],
+          info = paste(row$character, row$band, metric)
+        )
+      }
+      expect_equal(
+        browser_bound[["inflated_glow_area_ratio"]],
+        row$maxima[["inflated_glow_area_ratio"]],
+        tolerance = 1e-12,
+        info = paste(row$character, row$band, "inflated_glow_area_ratio")
+      )
+    }
+
+    tessa_recipe_path <- system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE)
+    tessa_raw <- jsonlite::fromJSON(tessa_recipe_path, simplifyVector = FALSE)
+    tessa_data <- character_format_resolve(tessa_raw)
+    tessa_graph <- character_format_references(tessa_data)
+    tessa_beh <- character_format_behaviour(tessa_data, tessa_graph)
+    tessa_json_str <- paste(readLines(tessa_recipe_path, encoding = "UTF-8", warn = FALSE), collapse = "\n")
+
+    for (band in c("full", "small", "micro")) {
+      r_work <- character_format_work(tessa_data, tessa_graph, tessa_beh, band)
+      browser_bound <- js(sprintf(
+        "(() => {
+          const character = JSON.parse(%s);
+          const entry = mascot.runtime.compile(character);
+          return mascot.runtime.bound(entry, '%s');
+        })()",
+        jsonlite::toJSON(tessa_json_str, auto_unbox = TRUE),
+        band
+      ))
+
+      for (metric in names(r_work)) {
+        if (metric == "inflated_glow_area_ratio") {
+          expect_equal(
+            browser_bound[[metric]],
+            r_work[[metric]],
+            tolerance = 1e-12,
+            info = paste("tessa.json", band, metric)
+          )
+        } else {
+          expect_equal(browser_bound[[metric]], unname(r_work[[metric]]), info = paste("tessa.json", band, metric))
+        }
+      }
+    }
+  })
+
+  it("counts face components including brows, eye primitives, lashes, eyelid, inset clip, mouth, blush and glow", {
+    skip_without_chrome()
+    js <- page_with()
+    tessa_json <- paste(
+      readLines(test_path("fixtures", "format", "tessa.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+
+    r <- js(sprintf(
+      "(() => {
+        const full = JSON.parse(%s);
+        const withoutFace = structuredClone(full);
+        delete withoutFace.face;
+        delete withoutFace.effects;
+        for (const m of Object.values(withoutFace.moods ?? {})) {
+          delete m.face;
+          delete m.effects;
+        }
+        const entryFull = mascot.runtime.compile(full);
+        const entryWithout = mascot.runtime.compile(withoutFace);
+        const bFull = mascot.runtime.bound(entryFull, 'full');
+        const bWithout = mascot.runtime.bound(entryWithout, 'full');
+        return {
+          paintedDiff: bFull.painted_items - bWithout.painted_items,
+          passesDiff: bFull.paint_passes - bWithout.paint_passes,
+          clipsDiff: bFull.clip_applications - bWithout.clip_applications,
+          numbersDiff: bFull.path_numbers - bWithout.path_numbers
+        };
+      })()",
+      jsonlite::toJSON(tessa_json, auto_unbox = TRUE)
+    ))
+
+    expect_equal(r$paintedDiff, 27)
+    expect_equal(r$passesDiff, 32)
+    expect_equal(r$clipsDiff, 2)
+    expect_equal(r$numbersDiff, 181)
+  })
+
+  it("counts statically declared kit effects and gesture-triggered effects separately", {
+    skip_without_chrome()
+    js <- page_with()
+    visor_json <- paste(
+      readLines(test_path("fixtures", "format", "alpha_visor.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+
+    r_static <- js(sprintf(
+      "(() => {
+        const full = JSON.parse(%s);
+        const withoutStatic = structuredClone(full);
+        withoutStatic.effects = {};
+        for (const m of Object.values(withoutStatic.moods ?? {})) {
+          delete m.effects;
+        }
+        const bFull = mascot.runtime.bound(mascot.runtime.compile(full), 'full');
+        const bWithout = mascot.runtime.bound(mascot.runtime.compile(withoutStatic), 'full');
+        return {
+          paintedDiff: bFull.painted_items - bWithout.painted_items,
+          passesDiff: bFull.paint_passes - bWithout.paint_passes,
+          numbersDiff: bFull.path_numbers - bWithout.path_numbers
+        };
+      })()",
+      jsonlite::toJSON(visor_json, auto_unbox = TRUE)
+    ))
+
+    expect_equal(r_static$paintedDiff, 2)
+    expect_equal(r_static$passesDiff, 3)
+    expect_equal(r_static$numbersDiff, 26)
+
+    r_triggered <- js(sprintf(
+      "(() => {
+        const full = JSON.parse(%s);
+        const withTriggered = structuredClone(full);
+        withTriggered.gestures.nod.effects = [{ at: 0.5, effect: 'sweat', anchor: 'sweat' }];
+        const bFull = mascot.runtime.bound(mascot.runtime.compile(full), 'full');
+        const bWith = mascot.runtime.bound(mascot.runtime.compile(withTriggered), 'full');
+        return {
+          paintedDiff: bWith.painted_items - bFull.painted_items,
+          passesDiff: bWith.paint_passes - bFull.paint_passes,
+          numbersDiff: bWith.path_numbers - bFull.path_numbers
+        };
+      })()",
+      jsonlite::toJSON(visor_json, auto_unbox = TRUE)
+    ))
+
+    expect_equal(r_triggered$paintedDiff, 1)
+    expect_equal(r_triggered$passesDiff, 1)
+    expect_equal(r_triggered$numbersDiff, 10)
+  })
+
+  it("counts ground shadow when declared", {
+    skip_without_chrome()
+    js <- page_with()
+    tessa_json <- paste(
+      readLines(test_path("fixtures", "format", "tessa.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+
+    r <- js(sprintf(
+      "(() => {
+        const full = JSON.parse(%s);
+        const withoutShadow = structuredClone(full);
+        delete withoutShadow.ground.shadow;
+        const bFull = mascot.runtime.bound(mascot.runtime.compile(full), 'full');
+        const bWithout = mascot.runtime.bound(mascot.runtime.compile(withoutShadow), 'full');
+        return {
+          paintedDiff: bFull.painted_items - bWithout.painted_items,
+          passesDiff: bFull.paint_passes - bWithout.paint_passes,
+          numbersDiff: bFull.path_numbers - bWithout.path_numbers
+        };
+      })()",
+      jsonlite::toJSON(tessa_json, auto_unbox = TRUE)
+    ))
+
+    expect_equal(r$paintedDiff, 1)
+    expect_equal(r$passesDiff, 1)
+    expect_equal(r$numbersDiff, 7)
+  })
+
+  it("counts mood item overrides and reduced item alternatives", {
+    skip_without_chrome()
+    js <- page_with()
+    visor_json <- paste(
+      readLines(test_path("fixtures", "format", "alpha_visor.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+
+    r <- js(sprintf(
+      "(() => {
+        const base = JSON.parse(%s);
+        const withMoodItems = structuredClone(base);
+        withMoodItems.moods.thinking.items = {
+          'head.helmet': { stroke: 'outline', width: 2 }
+        };
+        const withReducedItems = structuredClone(base);
+        withReducedItems.moods.thinking.reduced = {
+          items: {
+            'head.helmet': { stroke: 'outline', width: 2 }
+          }
+        };
+        const bBase = mascot.runtime.bound(mascot.runtime.compile(base), 'full');
+        const bMood = mascot.runtime.bound(mascot.runtime.compile(withMoodItems), 'full');
+        const bReduced = mascot.runtime.bound(mascot.runtime.compile(withReducedItems), 'full');
+        return {
+          moodPassesDiff: bMood.paint_passes - bBase.paint_passes,
+          reducedPassesDiff: bReduced.paint_passes - bBase.paint_passes
+        };
+      })()",
+      jsonlite::toJSON(visor_json, auto_unbox = TRUE)
+    ))
+
+    expect_equal(r$moodPassesDiff, 1)
+    expect_equal(r$reducedPassesDiff, 1)
+  })
+
+  it("counts clip applications and gradient uses", {
+    skip_without_chrome()
+    js <- page_with()
+    visor_json <- paste(
+      readLines(test_path("fixtures", "format", "alpha_visor.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+
+    r <- js(sprintf(
+      "(() => {
+        const full = JSON.parse(%s);
+        const bFull = mascot.runtime.bound(mascot.runtime.compile(full), 'full');
+        return {
+          clips: bFull.clip_applications,
+          gradients: bFull.gradient_uses
+        };
+      })()",
+      jsonlite::toJSON(visor_json, auto_unbox = TRUE)
+    ))
+
+    expect_equal(r$clips, 2)
+    expect_equal(r$gradients, 3)
+  })
+
+  it("resolves active parts through the needed ancestor tree", {
+    skip_without_chrome()
+    js <- page_with()
+    probe_json <- paste(
+      readLines(test_path("fixtures", "format", "anchor_probe.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+
+    r <- js(sprintf(
+      "(() => {
+        const full = JSON.parse(%s);
+        const bMicro = mascot.runtime.bound(mascot.runtime.compile(full), 'micro');
+        const bFull = mascot.runtime.bound(mascot.runtime.compile(full), 'full');
+        return {
+          activeMicro: bMicro.active_parts,
+          activeFull: bFull.active_parts
+        };
+      })()",
+      jsonlite::toJSON(probe_json, auto_unbox = TRUE)
+    ))
+
+    expect_equal(r$activeMicro, 0)
+    expect_equal(r$activeFull, 2)
+  })
+
+  it("enforces band budget limits for every capped counter", {
+    skip_without_chrome()
+    js <- page_with()
+    tessa_json <- paste(
+      readLines(test_path("fixtures", "format", "tessa.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+    alpha_json <- paste(
+      readLines(test_path("fixtures", "format", "alpha_visor.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+
+    caps <- list(
+      active_parts = 17,
+      painted_items = 31,
+      paint_passes = 61,
+      path_numbers = 301,
+      clip_applications = 3,
+      gradient_uses = 3,
+      glow_emitters = 1,
+      blur_design_units = 1,
+      inflated_glow_area_ratio = 0.1
+    )
+    for (metric in names(caps)) {
+      code <- sprintf(
+        "(() => {
+          const work = {
+            active_parts: 0, painted_items: 0, paint_passes: 0, path_numbers: 0,
+            clip_applications: 0, gradient_uses: 0, glow_emitters: 0,
+            blur_design_units: 0, inflated_glow_area_ratio: 0
+          };
+          work['%s'] = %s;
+          try {
+            mascot.geometry.checkWork(work, 'micro');
+            return 'passed';
+          } catch (e) {
+            return { code: e.code, path: e.path, message: e.message };
+          }
+        })()",
+        metric,
+        caps[[metric]]
+      )
+      res <- js(code)
+      expect_identical(res$code, "budget", info = metric)
+      expect_identical(res$path, "$", info = metric)
+      expect_match(res$message, metric, fixed = TRUE, info = metric)
+    }
+
+    # Micro glow budget refusal on alpha_visor
+    r_micro_glow <- js(sprintf(
+      "(() => {
+        const c = JSON.parse(%s);
+        c.lod = c.lod || {};
+        c.lod.micro = c.lod.micro || {};
+        c.lod.micro.glow = true;
+        try {
+          mascot.runtime.check(c, 'micro');
+          return 'passed';
+        } catch (e) {
+          return { code: e.code, path: e.path, message: e.message };
+        }
+      })()",
+      jsonlite::toJSON(alpha_json, auto_unbox = TRUE)
+    ))
+    expect_identical(r_micro_glow$code, "budget")
+    expect_identical(r_micro_glow$path, "$")
+    expect_match(r_micro_glow$message, "glow emitters")
+  })
+
+  it("computes transformed bounds for ref items, style transforms, and shapes in workBox (finding 1)", {
+    skip_without_chrome()
+    js <- page_with()
+
+    # 1. Ref item with scale: 3 on circle r: 10 -> box is [-30, -30, 30, 30]
+    box_ref <- js(
+      "(() => {
+      const it = { id: 'orb', shape: 'ref', use: 'dot', scale: 3 };
+      const shapes = { dot: { shape: 'circle', r: 10, fill: 'accent' } };
+      return mascot.geometry.workBox(it, shapes);
+    })()"
+    )
+    expect_equal(unlist(box_ref), c(-30, -30, 30, 30))
+
+    # 2. Rect with style transform [5, 10, 0]
+    box_rect <- js(
+      "(() => {
+      const it = { shape: 'rect', x: -10, y: -5, w: 20, h: 10, transform: [5, 10, 0] };
+      return mascot.geometry.workBox(it);
+    })()"
+    )
+    expect_equal(unlist(box_rect), c(-5, 5, 15, 15))
+
+    # 3. Hexagon circumradius bounds
+    box_hex <- js(
+      "(() => {
+      const it = { shape: 'hexagon', r: 12, corner: 2 };
+      return mascot.geometry.workBox(it);
+    })()"
+    )
+    expect_equal(unlist(box_hex), c(-12, -12, 12, 12))
+  })
+
+  it("resolves shapes style in workGlow for ref items with fill and stroke (finding 2)", {
+    skip_without_chrome()
+    js <- page_with()
+    alpha_json <- paste(
+      readLines(test_path("fixtures", "format", "alpha_visor.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+    res <- js(sprintf(
+      "(() => {
+        const c = JSON.parse(%s);
+        c.shapes = c.shapes || {};
+        c.shapes.badge = { shape: 'circle', r: 10, fill: 'accent', stroke: 'outline', width: 2 };
+        c.parts[0].glow = { blur: 4, alpha: 1, item: 'gem' };
+        c.parts[0].items.push({ id: 'gem', shape: 'ref', use: 'badge' });
+        const b = mascot.runtime.bound(mascot.runtime.compile(c), 'full');
+        return b;
+      })()",
+      jsonlite::toJSON(alpha_json, auto_unbox = TRUE)
+    ))
+    res_base <- js(sprintf(
+      "(() => {
+        const c = JSON.parse(%s);
+        return mascot.runtime.bound(mascot.runtime.compile(c), 'full');
+      })()",
+      jsonlite::toJSON(alpha_json, auto_unbox = TRUE)
+    ))
+    expect_true(res$glow_emitters >= 1)
+    expect_equal(res$paint_passes - res_base$paint_passes, 4)
+  })
+
+  it("counts a glow stroke that only a mood adds to a fill-only glowing item, as R does", {
+    skip_without_chrome()
+    js <- page_with()
+    data <- format_recipe()
+    item <- data$parts[[1]]$items[[1]]
+    item$stroke <- NULL
+    data$parts[[1]]$items[[1]] <- item
+    data$parts[[1]]$glow <- list(item = item$id, colour = "accent", blur = 4, alpha = 1)
+    key <- paste0(data$parts[[1]]$id, ".", item$id)
+    data$moods[[1]]$items <- stats::setNames(list(list(stroke = names(data$colours)[[1]])), key)
+    resolved <- character_format_resolve(data)
+    graph <- character_format_references(resolved)
+    r_work <- character_format_work(resolved, graph, character_format_behaviour(resolved, graph))
+    payload <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null", digits = NA)
+    browser <- js(sprintf("mascot.runtime.bound(mascot.runtime.compile(%s), 'full')", payload))
+    expect_equal(browser[["paint_passes"]], r_work[["paint_passes"]])
+    expect_equal(browser[["inflated_glow_area_ratio"]], r_work[["inflated_glow_area_ratio"]], tolerance = 1e-12)
+  })
+
+  it("bounds an unworn accessory by its resting scale and ignores null keys of set tracks, as R does", {
+    skip_without_chrome()
+    js <- page_with()
+    recipe <- jsonlite::fromJSON(
+      system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE),
+      simplifyVector = FALSE
+    )
+    # The clip is declared but not worn; scaled up and glowing, it must still count at its resting scale.
+    unworn <- setdiff(names(recipe$accessories), unlist(recipe$wear))[[1]]
+    part <- recipe$accessories[[unworn]]$parts[[1]]
+    part$scale <- 2
+    part$items[[1]]$id <- "glow_source"
+    part$glow <- list(item = "glow_source", colour = "accessory", blur = 5, alpha = 1)
+    recipe$accessories[[unworn]]$parts[[1]] <- part
+    # A set track whose first and last keys are null (hold the resting value).
+    recipe$gestures$stretch <- list(
+      description = "Stretch.",
+      frames = 18,
+      tracks = list(root.scale_x = list(mode = "set", keys = list(list(0, NULL), list(0.5, 1.5), list(1, NULL))))
+    )
+    resolved <- character_format_resolve(recipe)
+    graph <- character_format_references(resolved)
+    behaviour <- character_format_behaviour(resolved, graph)
+    payload <- jsonlite::toJSON(recipe, auto_unbox = TRUE, null = "null", digits = NA)
+    for (band in c("full", "small")) {
+      r_work <- character_format_work(resolved, graph, behaviour, band)
+      browser <- js(sprintf("mascot.runtime.bound(mascot.runtime.compile(%s), '%s')", payload, band))
+      for (metric in setdiff(names(r_work), "inflated_glow_area_ratio")) {
+        expect_equal(browser[[metric]], r_work[[metric]], info = paste(band, metric))
+      }
+      expect_equal(browser$inflated_glow_area_ratio, r_work[["inflated_glow_area_ratio"]], tolerance = 1e-12)
+    }
+    expect_gt(r_work[["glow_emitters"]], 0)
+  })
+
+  it("throws missing_reference at $.clip when target item is omitted in a reachable variant (finding 4)", {
+    skip_without_chrome()
+    js <- page_with()
+    alpha_json <- paste(
+      readLines(test_path("fixtures", "format", "alpha_visor.json"), encoding = "UTF-8", warn = FALSE),
+      collapse = "\n"
+    )
+    res <- js(sprintf(
+      "(() => {
+        const c = JSON.parse(%s);
+        const headPart = c.parts.find(p => p.id === 'head');
+        headPart.items.push({ id: 'target_item', shape: 'circle', r: 10, fill: 'accent' });
+        headPart.items.push({ id: 'clipped_item', shape: 'circle', r: 5, fill: 'accent', clip: 'head.target_item' });
+        headPart.variants = headPart.variants || {};
+        headPart.variants.alt = [
+          { id: 'clipped_item', shape: 'circle', r: 5, fill: 'accent', clip: 'head.target_item' }
+        ];
+        try {
+          mascot.runtime.check(c, 'full');
+          return 'passed';
+        } catch (e) {
+          return { code: e.code, path: e.path, message: e.message };
+        }
+      })()",
+      jsonlite::toJSON(alpha_json, auto_unbox = TRUE)
+    ))
+    expect_identical(res$code, "missing_reference")
+    expect_identical(res$path, "$.clip")
+  })
+})

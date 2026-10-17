@@ -9,6 +9,27 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-17 — The browser counts drawing work the way R does (#304)
+
+**In brief:** Before a character is drawn, the browser works out the most drawing work it can ever need in each detail
+band and refuses a band that is over its limits. It now counts everything R counts, with the same rules, so a
+character that R accepts is accepted in the browser and the other way round.
+
+**Technical:**
+
+* `mascot.runtime.bound()` (`mascot-player.js`) counts all nine limits of the format: parts and one accessory per slot,
+  the face kit (brows, eyes, eyelids, lashes, clips, mouth, blush, glow), kit effects, both declared and started by a
+  gesture, the ground shadow, mood and reduced-motion item changes, clips and gradients.
+* Glow is counted on the box a shape really covers (after `ref` and `transform` moves, rotation and scale), on the
+  style a shared shape resolves to, and on the largest of an item's mood alternatives. R gained the last rule too
+  (`R/character-work.R`): a mood that adds a stroke to a glowing item was counted too low on both sides.
+* Scale ranges start from every part's resting scale, worn or not; `null` keys of `set` tracks are ignored. A clip
+  whose target item is missing in a reachable variant throws `missing_reference` at `$.clip`, as in R.
+* `mascot.geometry.bandBound()` and `checkBudget()` are removed: their only user was the Tessa bridge (#313), and
+  they had drifted from the count in the runtime. `mascot.geometry.checkWork()` stays.
+* Accessory part ids are built in one place, `mascot.parts.accessoryPartId()`.
+* Tests compare the browser with R at 1e-12 for every reference character and Tessa in all three bands.
+
 ## 2026-10-17 — Accessory part ids can no longer collide (#312)
 
 **In brief:** A worn accessory's parts get ids of the form `wear__<accessory>__<part>`, and authored ids may not

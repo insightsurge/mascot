@@ -81,6 +81,32 @@
     result.addPath(path, new DOMMatrix(matrix));
     return result;
   };
+  const transformBox = (box, at = [0, 0], angle = 0, scale = [1, 1]) => {
+    const [minX, minY, maxX, maxY] = box;
+    const [sx, sy] = Array.isArray(scale) ? scale : [scale, scale];
+    const [ax, ay] = at;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const corners = [
+      [minX * sx, minY * sy],
+      [maxX * sx, minY * sy],
+      [minX * sx, maxY * sy],
+      [maxX * sx, maxY * sy],
+    ];
+    let tMinX = Infinity;
+    let tMinY = Infinity;
+    let tMaxX = -Infinity;
+    let tMaxY = -Infinity;
+    for (const [cx, cy] of corners) {
+      const tx = ax + cos * cx - sin * cy;
+      const ty = ay + sin * cx + cos * cy;
+      if (tx < tMinX) tMinX = tx;
+      if (ty < tMinY) tMinY = ty;
+      if (tx > tMaxX) tMaxX = tx;
+      if (ty > tMaxY) tMaxY = ty;
+    }
+    return [tMinX, tMinY, tMaxX, tMaxY];
+  };
   const compile = (item, shapes = {}, path = '$.item') => {
     if (!item || typeof item !== 'object') fail('input_type', path, 'Supply shape data.');
     let style = item;
@@ -225,6 +251,7 @@
       if (style.fill || style.outline) fail('input_type', path, 'Open arcs and polylines use a detail stroke only.');
     }
     const geometry = buildPath(entries);
+    let box = [...bounds];
     if (style.transform) {
       if (!Array.isArray(style.transform) || style.transform.length !== 3)
         fail('input_type', `${path}.transform`, 'Supply x/y/rotate.');
@@ -235,8 +262,32 @@
         finite(angle, `${path}.transform[2]`, -Infinity, Infinity),
       );
       transform = ns.parts.multiply(transform, local);
+      box = transformBox(
+        box,
+        [finite(tx, `${path}.transform[0]`), finite(ty, `${path}.transform[1]`)],
+        finite(angle, `${path}.transform[2]`, -Infinity, Infinity),
+        [1, 1],
+      );
     }
-    return { path: transformed(geometry, transform), paint_path: geometry, transform, style, numbers, entries, bounds };
+    if (item.shape === 'ref') {
+      const scale = Array.isArray(item.scale) ? item.scale : [item.scale ?? 1, item.scale ?? 1];
+      box = transformBox(
+        box,
+        [finite(item.x ?? 0, `${path}.x`), finite(item.y ?? 0, `${path}.y`)],
+        finite(item.rotate ?? 0, `${path}.rotate`, -Infinity, Infinity),
+        scale.map((axis) => finite(axis, `${path}.scale`, -16, 16)),
+      );
+    }
+    return {
+      path: transformed(geometry, transform),
+      paint_path: geometry,
+      transform,
+      style,
+      numbers,
+      entries,
+      bounds,
+      box,
+    };
   };
 
   const role = (colours, id, path) => {
@@ -705,109 +756,107 @@
     return counts;
   };
   // E5b policy caps per detail band: the metrics this engine counts, mirroring inst/format/policy-v1.json (a test
-  // compares them). Clip applications and gradient uses are not bounded here yet.
+  // compares them).
   const bandCaps = Object.freeze({
     full: Object.freeze({
       active_parts: 64,
       painted_items: 160,
       paint_passes: 320,
       path_numbers: 1500,
+      clip_applications: 12,
+      gradient_uses: 16,
       glow_emitters: 8,
       blur_design_units: 16,
+      inflated_glow_area_ratio: 1.0,
     }),
     small: Object.freeze({
       active_parts: 40,
       painted_items: 90,
       paint_passes: 180,
       path_numbers: 900,
+      clip_applications: 6,
+      gradient_uses: 8,
       glow_emitters: 4,
       blur_design_units: 10,
+      inflated_glow_area_ratio: 0.5,
     }),
     micro: Object.freeze({
       active_parts: 16,
       painted_items: 30,
       paint_passes: 60,
       path_numbers: 300,
+      clip_applications: 2,
+      gradient_uses: 2,
       glow_emitters: 0,
       blur_design_units: 0,
+      inflated_glow_area_ratio: 0,
     }),
   });
-  const boundCache = new WeakMap();
-  // An upper bound on the work one band can paint. Part lod, attachment lod, lod.hide and item lod are applied as
-  // draw() applies them; every candidate variant of a part is counted and the largest one kept, because only one
-  // variant of a part is shown at a time. Glow passes count as draw() counts them. Computed once per compiled
-  // character and band, never per frame.
-  const bandBound = (compiled, band) => {
-    let perBand = boundCache.get(compiled);
-    if (!perBand) {
-      perBand = new Map();
-      boundCache.set(compiled, perBand);
-    }
-    if (perBand.has(band)) return perBand.get(band);
-    const source = compiled.source;
-    const lod = source.lod?.[band] ?? {};
-    const hidden = new Set(lod.hide ?? []);
-    const outline = { ...(source.outline ?? {}), ...source.outline?.lod?.[band], ...lod.outline };
-    const glowOn = band !== 'micro' && (lod.glow ?? true);
-    const total = {
+
+  const workItem = (item, shapes = {}, outline = null) => {
+    const geometry = compile(item, shapes);
+    const style = geometry.style;
+    const result = {
       active_parts: 0,
       painted_items: 0,
       paint_passes: 0,
       path_numbers: 0,
+      clip_applications: 0,
+      gradient_uses: 0,
       glow_emitters: 0,
       blur_design_units: 0,
+      inflated_glow_area_ratio: 0,
     };
-    for (const part of compiled.parts) {
-      if (part.lod && !part.lod.includes(band)) continue;
-      if (part.attachment?.lod && !part.attachment.lod.includes(band)) continue;
-      if (hidden.has(part.id)) continue;
-      total.active_parts += 1;
-      const glow = glowOn && part.glow && part.glow.blur > 0 && part.glow.alpha > 0 ? part.glow : null;
-      const selected = lod.variants?.[part.id];
-      const choices = selected !== undefined ? [selected] : ['default', ...Object.keys(part.variants ?? {})];
-      const largest = { painted_items: 0, paint_passes: 0, path_numbers: 0, glow_emitters: 0, blur_design_units: 0 };
-      for (const choice of choices) {
-        const items = choice === 'default' ? (part.items ?? []) : (part.variants?.[choice] ?? []);
-        const work = { painted_items: 0, paint_passes: 0, path_numbers: 0, glow_emitters: 0, blur_design_units: 0 };
-        items.forEach((item, index) => {
-          if (item.lod && !item.lod.includes(band)) return;
-          if (hidden.has(`${part.id}.${item.id}`)) return;
-          const geometry = compile(item, source.shapes, `${part.path}.items[${index}]`);
-          const style = geometry.style;
-          const strokes = [];
-          if (style.outline) {
-            if ((outline.second?.width ?? 0) > 0) strokes.push(outline.second);
-            if ((outline.width ?? 0) > 0) strokes.push(outline);
-          }
-          if (style.stroke && (style.width ?? 2.5) > 0) strokes.push(style.stroke);
-          const emitter = glow !== null && item.id === glow.item;
-          if (!(style.fill || strokes.length > 0) && !emitter) return;
-          let passes = (style.fill ? 1 : 0) + strokes.length;
-          if (emitter) {
-            passes += (style.fill || strokes.length === 0 ? 1 : 0) + (strokes.length > 0 ? 1 : 0);
-            work.glow_emitters += 1;
-            work.blur_design_units = Math.max(work.blur_design_units, glow.blur);
-          }
-          work.painted_items += 1;
-          work.paint_passes += passes;
-          work.path_numbers += geometry.numbers;
-        });
-        for (const key of Object.keys(largest)) largest[key] = Math.max(largest[key], work[key]);
-      }
-      total.painted_items += largest.painted_items;
-      total.paint_passes += largest.paint_passes;
-      total.path_numbers += largest.path_numbers;
-      total.glow_emitters += largest.glow_emitters;
-      total.blur_design_units = Math.max(total.blur_design_units, largest.blur_design_units);
+    if (style.alpha !== undefined && style.alpha !== null && style.alpha <= 0) {
+      return result;
     }
-    // Frozen before it is cached: callers share one object per compiled character and band.
-    Object.freeze(total);
-    perBand.set(band, total);
-    return total;
+    const fill = style.fill !== undefined && style.fill !== null;
+    const stroke =
+      style.stroke !== undefined &&
+      style.stroke !== null &&
+      (style.width === undefined || style.width === null || style.width > 0);
+    const primary =
+      style.outline === true && outline?.width !== undefined && outline.width !== null && outline.width > 0;
+    const second =
+      style.outline === true &&
+      outline?.second?.width !== undefined &&
+      outline.second.width !== null &&
+      outline.second.width > 0;
+    const passes = (fill ? 1 : 0) + (stroke ? 1 : 0) + (primary ? 1 : 0) + (second ? 1 : 0);
+    if (passes === 0) {
+      return result;
+    }
+    result.painted_items = 1;
+    result.paint_passes = passes;
+    result.path_numbers = geometry.numbers;
+    result.gradient_uses = fill && typeof style.fill === 'object' && style.fill !== null ? 1 : 0;
+    return result;
   };
-  // Refuses an over-budget band before anything is painted; the message names the metric and the limit.
-  // Compares a work bound with the band's caps; throws budget at $ naming the metric. Used for any bound, per scene or
-  // per character.
+
+  const workBox = (item, shapes = {}, outline = null) => {
+    const geometry = compile(item, shapes);
+    const style = geometry.style;
+    const widths = [0];
+    if (style.stroke !== undefined && style.stroke !== null) {
+      widths.push(style.width ?? 2.5);
+    }
+    if (style.outline === true && outline) {
+      if (outline.width !== undefined && outline.width !== null) widths.push(outline.width);
+      if (outline.second?.width !== undefined && outline.second.width !== null) widths.push(outline.second.width);
+    }
+    let width = Math.max(...widths);
+    if (item.shape === 'ref' && item.scale !== undefined) {
+      const s = Array.isArray(item.scale) ? item.scale : [item.scale, item.scale];
+      width *= Math.max(Math.abs(s[0]), Math.abs(s[1]));
+    }
+    const miter = style.join === 'miter' || (style.outline === true && outline?.join === 'miter');
+    const pad = width * (miter ? 5 : 0.5);
+    const b = geometry.box;
+    return [b[0] - pad, b[1] - pad, b[2] + pad, b[3] + pad];
+  };
+
+  // Compares a work bound (mascot.runtime's bound() for a character) with the band's caps; throws budget at $ naming the
+  // metric and the limit, before anything is painted.
   const checkWork = (work, band) => {
     if (!Object.hasOwn(bandCaps, band)) fail('input_type', '$.band', "Use 'full', 'small' or 'micro'.");
     for (const [metric, limit] of Object.entries(bandCaps[band])) {
@@ -816,13 +865,12 @@
     }
     return work;
   };
-  const checkBudget = (compiled, band) => checkWork(bandBound(compiled, band), band);
 
   ns.geometry = Object.freeze({
     bandCaps,
-    bandBound,
-    checkBudget,
     checkWork,
+    workItem,
+    workBox,
     commands,
     compile,
     paint,

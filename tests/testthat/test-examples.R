@@ -2466,8 +2466,9 @@ describe("studio listings (character data)", {
   it("reads brand slots, characters and families from the public listings", {
     env <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
-    legacy <- jsonlite::fromJSON(system.file("characters", "tessa.json", package = "mascot", mustWork = TRUE))$brand
-    expect_identical(env$studio_brand("tessa")[c("primary", "secondary")], as.list(legacy)[c("primary", "secondary")])
+    recipe <- system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE)
+    brand <- jsonlite::fromJSON(recipe)$brand
+    expect_identical(env$studio_brand("tessa")[c("primary", "secondary")], as.list(brand)[c("primary", "secondary")])
     expect_identical(env$studio_characters(), c(Tessa = "tessa"))
     expect_identical(env$studio_families(), c(`All characters` = "", Hexonians = "hexonians"))
     expect_error(env$studio_brand(1), "Assertion on 'character' failed")

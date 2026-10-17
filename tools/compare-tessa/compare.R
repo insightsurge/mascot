@@ -6,16 +6,17 @@
 # Run it from the package root. Defaults: ../r-engineering-playbook/tools/animate/engine.js and a new folder in
 # tempdir(). One headless Chrome page (chromote) loads the playbook's engine.js from its own folder (read only) and the
 # package's inst/www/ files, draws every case of compare-page.js with both on canvases of the same size, and counts
-# the differing pixels. The package draws Tessa from her description, inst/characters/tessa.json. Writes summary.csv
-# and sheet.png (playbook | package | differences) to the output folder and exits 1 if any case differs. It also
-# checks that the playbook's engine.js is the same file before and after.
+# the differing pixels. The package draws Tessa from her legacy description,
+# tests/testthat/fixtures/characters/tessa.json. Writes summary.csv and sheet.png (playbook | package | differences)
+# to the output folder and exits 1 if any case differs. It also checks that the playbook's engine.js is the same file
+# before and after.
 #
 # Needs the R packages checkmate, cli, chromote and jsonlite, and Chrome or Chromium. Not part of the built package.
 
 engine_default <- "../r-engineering-playbook/tools/animate/engine.js"
 package_js <- c("inst/www/mascot.js", "inst/www/mascot-draw.js")
 page_js <- "tools/compare-tessa/compare-page.js"
-character_json <- "inst/characters/tessa.json"
+character_json <- "tests/testthat/fixtures/characters/tessa.json"
 
 file_url <- function(path) {
   checkmate::assert_file_exists(path)

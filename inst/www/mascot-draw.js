@@ -2,8 +2,8 @@
  * mascot drawing code (canvas 2D, no dependencies).
  *
  * First written for the R Engineering Playbook's trailer engine (tools/animate/engine.js, commit bf1aa9a). Here
- * the drawing is generic: a character is data (inst/characters/<id>.json: colours, body parts, anchors, arms,
- * accessories, moods), and these functions draw any character from it. The calls and their order are kept from
+ * the drawing is generic: a character is data (colours, body parts, anchors, arms, accessories, moods; the legacy
+ * descriptions are now test fixtures only), and these functions draw any character from it. The calls and their order are kept from
  * the playbook, so Tessa's data draws her pixel for pixel like the playbook does.
  *
  * Every function is a pure function of its arguments: no clock, no randomness. Time enters only as `pose.t`
@@ -691,16 +691,10 @@
    * character(ctx, ch, x, baseY, p): draws the character described by `ch` with its feet on baseY, in pose `p`
    * (already merged with the defaults, the character's pose and its mood).
    */
-  function character(ctx, ch, x, baseY, p, colours, band = 'full') {
+  function character(ctx, ch, x, baseY, p, colours) {
     const g = ctx;
     const c = colours || ch.colours;
     const sc = p.scale;
-    // Internal opt-in only; the public host does not load these modules. The band is read only on this branch.
-    if (ns.internal?.useCharacterAdapter === true) {
-      if (!ns.tessaAdapter) throw new Error('mascot: load the provisional Tessa adapter before enabling it');
-      ns.tessaAdapter.draw(g, ch, p, c, x, baseY, band);
-      return;
-    }
     if (!styles.has(ch))
       styles.set(ch, {
         style: faceStyle(ch.face.style),

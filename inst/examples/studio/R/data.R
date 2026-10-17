@@ -238,7 +238,9 @@ studio_families <- function() {
 }
 
 # Count shipped characters rather than the selector's current discovery adapter.
-studio_character_hint <- function(directory = system.file("characters", package = "mascot", mustWork = TRUE)) {
+studio_character_hint <- function(
+  directory = system.file("format", "characters", package = "mascot", mustWork = TRUE)
+) {
   checkmate::assert_directory_exists(directory)
   files <- list.files(directory, pattern = "[.]json$")
   if (length(files) != 1) {

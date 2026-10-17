@@ -14,11 +14,6 @@ inst/www/mascot-motion.js
     Source: motion and canvas player written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
-inst/characters/tessa.json
-    Source: Tessa's design (shape, colours, face, arms, bow and clip, mood poses), first drawn by Harsh Verma in
-    the same playbook engine (drawTessa(), commit bf1aa9a) and written here as data.
-    Copyright (c) Harsh Verma. Licence: MIT.
-
 inst/www/mascot-host.js
 inst/www/mascot.css
     Source: page host and layout written for this package.
@@ -54,8 +49,7 @@ inst/www/mascot-geometry.js
     Copyright (c) Harsh Verma. Licence: MIT.
 
 inst/format/characters/tessa.json
-    Source: Tessa's complete resolved version 1 character data (the migration of inst/characters/tessa.json), written for this
-    package. Read only for listings until the engine draws from it.
+    Source: Tessa's complete resolved version 1 character data, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
 inst/format/kits/classic.json
@@ -69,10 +63,6 @@ inst/format/policy-v1.json
 
 tests/testthat/fixtures/format/invalid/*.json
     Source: deliberately malformed character-format reference inputs written for this package.
-    Copyright (c) Harsh Verma. Licence: MIT.
-
-inst/www/mascot-tessa-adapter.js
-    Source: provisional legacy Tessa bridge to format-v1 parts and geometry written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
 inst/www/mascot-faces.js

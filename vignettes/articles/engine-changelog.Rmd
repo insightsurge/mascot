@@ -4,10 +4,25 @@ title: "Engine changelog"
 
 This article records changes to the browser engine in `inst/www/` (`mascot.js`, `mascot-draw.js`,
 `mascot-motion.js`, `mascot-host.js`, `mascot-parts.js`, `mascot-geometry.js`,
-`mascot-tessa-adapter.js`, `mascot-faces.js`, `mascot-player.js` and `mascot.css`), newest first. User-facing R functions and arguments are
+`mascot-faces.js`, `mascot-player.js` and `mascot.css`), newest first. User-facing R functions and arguments are
 covered in `NEWS.md`.
 
 # mascot (development version)
+
+## 2026-10-17 — The provisional Tessa bridge is removed (#313)
+
+**In brief:** Tessa has one drawing path now, the format-v1 engine. The temporary bridge that drew her old recipe
+through the new modules, and the internal switch that turned it on, are gone. Nothing users see changes.
+
+**Technical:**
+
+* Removed `inst/www/mascot-tessa-adapter.js` and its tests, and every branch that read
+  `mascot.internal.useCharacterAdapter` (`mascot.js`, `mascot-host.js`, `mascot-draw.js`, `mascot-motion.js`).
+* The old recipe `inst/characters/tessa.json` left the package; the legacy tests read it from
+  `tests/testthat/fixtures/characters/tessa.json`. The public recipe stays `inst/format/characters/tessa.json`.
+* The visual tool (`tools/visual/`) draws the format-v1 path by default, with detail bands; `--adapter` is gone.
+* Still here: the legacy drawing code (`mascot-draw.js`) and player (`mascot-motion.js`), used by tests of characters
+  without `format_version: 1`.
 
 ## 2026-10-17 — Default character Tessa moves onto the format-v1 engine (#308)
 

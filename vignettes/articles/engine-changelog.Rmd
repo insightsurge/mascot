@@ -11,15 +11,18 @@ covered in `NEWS.md`.
 
 ## 2026-10-17 — Outlines sit under the fill, slim as in the drawings (#325)
 
-**In brief:** The outlined characters (Sela and Knurl) looked heavier in the engine than in their drawings. The outline is now painted
-under the shape's colour, as in the drawings: only its outer half shows, so the line is slimmer and its light edge sits
-outside the shape instead of inside it. Tessa has no outlined parts and does not change.
+**In brief:** Sela, Knurl and Neer looked heavier in the engine than in their drawings. The outline is now painted
+under the shape's colour, as in the drawings: only its outer half shows, and its light edge sits outside the shape
+instead of inside it. Their outline widths grow by half so the visible line keeps a clear weight (the founder chose this
+from three options). Tessa has no outlined parts and does not change.
 
 **Technical:**
 
 * `mascot.geometry` paints an item with `outline: true` in the order second outline, outline, fill, then the item's
   own `stroke`. Before, the fill came first and both outline strokes covered it.
-* Widths, colours and the drawing-work counts are unchanged: the same paint passes, in a different order.
+* The same paint passes in a different order, so the drawing-work counts are unchanged.
+* `sela.json` and `neer.json`: outline 3 to 4.5, second outline 5 to 6.5; `knurl.json`: 2.5 to 3.75 and 5 to 6.25 (its
+  micro-band outline is unchanged).
 
 ## 2026-10-17 — The browser counts drawing work the way R does (#304)
 

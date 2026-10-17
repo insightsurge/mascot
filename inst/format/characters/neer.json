@@ -61,12 +61,12 @@
     }
   },
   "outline": {
-    "width": 3,
+    "width": 4.5,
     "colour": "outline",
     "join": "round",
     "cap": "round",
     "second": {
-      "width": 5,
+      "width": 6.5,
       "colour": "ivory"
     }
   },

@@ -117,12 +117,12 @@
     }
   },
   "outline": {
-    "width": 2.5,
+    "width": 3.75,
     "colour": "outline",
     "join": "round",
     "cap": "round",
     "second": {
-      "width": 5,
+      "width": 6.25,
       "colour": "outline_light"
     },
     "lod": {

@@ -37,35 +37,6 @@
   }
   window.Shiny.inputBindings.register(new ColourBinding(), 'mascotStudio.colour');
 
-  // Mood cards are the one input for mascot_mood(name), including updates from the server.
-  function setMood(el, value) {
-    el.dataset.value = value;
-    for (const button of el.querySelectorAll('[data-event="try_mood"]')) {
-      button.setAttribute('aria-pressed', String(button.dataset.value === value));
-    }
-  }
-  class MoodBinding extends window.Shiny.InputBinding {
-    find(scope) {
-      return $(scope).find('.pg-mood-input');
-    }
-    getValue(el) {
-      return el.dataset.value;
-    }
-    subscribe(el, callback) {
-      $(el).on('change.pgMood', () => callback(false));
-    }
-    unsubscribe(el) {
-      $(el).off('.pgMood');
-    }
-    receiveMessage(el, data) {
-      if (typeof data.value === 'string') {
-        setMood(el, data.value);
-        $(el).trigger('change');
-      }
-    }
-  }
-  window.Shiny.inputBindings.register(new MoodBinding(), 'mascotStudio.mood');
-
   let selectedFunction = 'mascot_mood';
   // The canvas shows the live mascot, or the page mascot_preview() returns while that function is selected.
   // Hiding (not removing) keeps the mascot and its state as they were.
@@ -365,12 +336,6 @@
         // Choosing a function opens the controls again if they were collapsed.
         const layout = document.getElementById('inspector_sidebar')?.closest('.bslib-sidebar-layout');
         if (layout) window.bslib?.Sidebar?.getInstance(layout)?.toggle('open');
-      }
-      if (target.dataset.event === 'try_mood') {
-        const mood = document.getElementById('mood');
-        setMood(mood, target.dataset.value);
-        $(mood).trigger('change');
-        return;
       }
       window.Shiny.setInputValue(target.dataset.event, target.dataset.value ?? 'click', { priority: 'event' });
       return;

@@ -419,12 +419,13 @@
 
   function validateTheme(value) {
     const fields = ['light', 'dark', 'mode', 'css', 'brand'];
+    const optional = ['palette', 'palette_colours'];
     if (
       !value ||
       typeof value !== 'object' ||
       Array.isArray(value) ||
-      Object.keys(value).length !== fields.length ||
-      Object.keys(value).some((key) => !fields.includes(key))
+      fields.some((key) => !has(value, key)) ||
+      Object.keys(value).some((key) => !fields.includes(key) && !optional.includes(key))
     )
       throw new Error('theme needs light, dark, mode, css and brand fields');
     if (value.mode !== null && !['light', 'dark', 'auto'].includes(value.mode))
@@ -436,6 +437,24 @@
       css: themeMap(value.css, 'css', true),
       brand: themeMap(value.brand, 'brand'),
     };
+    if (has(value, 'palette')) {
+      if (typeof value.palette !== 'string' || !value.palette.length)
+        throw new Error('theme.palette needs a palette id');
+      if (
+        !value.palette_colours ||
+        Object.keys(value.palette_colours).length !== 2 ||
+        !['light', 'dark'].every((key) => has(value.palette_colours, key))
+      )
+        throw new Error('theme.palette_colours needs light and dark maps');
+      if (result.brand) throw new Error('theme needs either a palette or brand colours');
+      result.palette = value.palette;
+      result.palette_colours = {
+        light: themeMap(value.palette_colours.light, 'palette_colours.light'),
+        dark: themeMap(value.palette_colours.dark, 'palette_colours.dark'),
+      };
+    } else if (has(value, 'palette_colours')) {
+      throw new Error('theme.palette_colours needs a palette id');
+    }
     if (
       result.brand &&
       (Object.keys(result.brand).length !== 2 ||
@@ -543,7 +562,7 @@
               `theme.${field}: unknown colour role "${role}"; valid roles: ${Object.keys(description.colours).join(', ')}`,
             );
     }
-    const selected = theme.brand ? {} : theme[mode] || {};
+    const selected = theme.brand ? {} : { ...theme.palette_colours?.[mode], ...theme[mode] };
     if (theme.brand) {
       for (const [slot, role] of Object.entries(description.brand || {})) {
         if (!has(theme.brand, slot) || !has(description.colours, role))
@@ -2427,10 +2446,24 @@
     const placement = has(patch, 'placement') ? validatePlacement(patch.placement) : undefined;
     const nextMotion = has(patch, 'motion') ? validateMotion(patch.motion) : undefined;
     if (nextMotion || changed) Object.assign(enginePatch, nextMotion || motion);
-    const nextTheme = has(patch, 'theme') ? validateTheme(patch.theme) : undefined;
+    let nextTheme = has(patch, 'theme') ? validateTheme(patch.theme) : undefined;
+    if (changed && !nextTheme && theme.palette) {
+      // Resolved palette colours belong to one character; never carry them across a swap.
+      nextTheme = { ...theme };
+      const palette = has(candidate.palettes || {}, theme.palette) ? candidate.palettes[theme.palette] : null;
+      if (palette || theme.palette === 'original') {
+        nextTheme.palette_colours = {
+          light: palette?.light || null,
+          dark: palette?.dark || palette?.light || null,
+        };
+      } else {
+        delete nextTheme.palette;
+        delete nextTheme.palette_colours;
+      }
+    }
     const resolved =
       nextTheme || changed
-        ? resolveTheme(nextTheme || theme, candidate, source, Boolean(nextTheme) && strictTheme)
+        ? resolveTheme(nextTheme || theme, candidate, source, has(patch, 'theme') && strictTheme)
         : undefined;
     if (resolved && candidate) enginePatch.colours = resolved.overrides;
     return {

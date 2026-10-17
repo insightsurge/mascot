@@ -274,6 +274,17 @@ the corner between visits, save it in your app and pass it back as `position`.
 ## Theme and light/dark mode
 
 No theme means Tessa's own colours. Brand colours are used only when you ask.
+
+A palette is a named theme for one character: use `mascot_palettes("knurl")` to
+list choices, then `mascot("helper", character = "knurl", theme = "orbit")`.
+Use `mascot_theme(palette = "orbit", light = list(body = "#d0d8e0"))` to put your
+role colours on top; CSS variables win last. `theme = "original"` restores the
+character's own colours in an update, while `NULL` leaves them unchanged. A
+character swap keeps a palette with the same id when available; otherwise R
+warns, restores the incoming character's colours and keeps your explicit colours
+for shared roles. Built-in palettes do not give contrast warnings; your added
+colours are checked as usual. `mascot_colour_roles("knurl", palette = "orbit")`
+shows the palette's colours, including derived followers.
 A named list supplies selected roles in every mode. Unset roles follow the
 character's declared leaders: `list(body = "#c2185b")` gives pink sleeves,
 eyelids and hands, plus lighter pink highlights and blush. Hands follow a

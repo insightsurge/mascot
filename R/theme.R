@@ -9,8 +9,10 @@
 #' fills the character's declared brand leaders with its primary and secondary
 #' colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
 #'
-#' A theme survives a character swap: follow rules are applied again, and roles
-#' absent from the incoming character are ignored. An empty `mascot_theme()`
+#' After a character swap, follow rules are applied again and roles absent from
+#' the incoming character are ignored. A palette is kept if the new character
+#' has the same id; otherwise R warns and restores its own colours, keeping
+#' explicit role colours where they exist. An empty `mascot_theme()`
 #' restores the character's own colours. A chosen colour below 3:1 contrast
 #' gives a warning and is kept (see "Contrast warnings" below). Supplied colours
 #' are kept exactly.
@@ -24,7 +26,7 @@
 #' background (white in light mode, `#212529` in dark mode, or the `bslib`
 #' theme's backgrounds). Contrast is checked when [mascot()] builds the UI,
 #' when [update_mascot()] applies colours with `theme = `, and collected into the
-#' contrast table by [mascot_preview()]; the character's own colours never warn;
+#' contrast table by [mascot_preview()]; native and built-in palette colours never warn;
 #' the colour is always kept.
 #'
 #' R warnings appear only when [shiny::in_devmode()] is `TRUE`, and always in
@@ -41,8 +43,14 @@
 #' )
 #' ```
 #' Note that `suppressWarnings()` also works but hides every warning.
+#' @param palette A palette id from [mascot_palettes()], or `NULL` (the default)
+#'   for the character's own colours. Checked against the chosen character when
+#'   used. `"original"` also chooses its own colours. A palette is applied first,
+#'   then `light` and `dark` roles, then `css`. Without a dark map, a palette uses
+#'   its light colours in both modes. A `bs_theme()` is a separate alternative.
 #' @param light,dark Named lists of colour roles, or `NULL` (the default) to keep
-#'   the character's own colours in that mode. Values can be colour names, hex
+#'   the palette's colours (or the character's own colours) in that mode.
+#'   Values can be colour names, hex
 #'   strings, [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or
 #'   three RGB numbers (red, green and blue) in 0--255. Single numeric palette
 #'   indices are not accepted. Roles use snake case; `light`, `dark` and
@@ -75,23 +83,30 @@
 #' @export
 #' @examples
 #' mascot_theme()
+#' mascot_theme(palette = "coral", light = list(rim = "#b93664"))
 #' mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
 #' mascot_theme(css = list(body = "--team-blue"))
 #' mascot("helper", theme = list(body = "#1f6feb"))
 #' @examplesIf requireNamespace("bslib", quietly = TRUE)
 #' mascot("brand", theme = bslib::bs_theme(primary = "#1f6feb"))
-mascot_theme <- function(..., light = NULL, dark = NULL, mode = "auto", css = NULL) {
+mascot_theme <- function(..., palette = NULL, light = NULL, dark = NULL, mode = "auto", css = NULL) {
   with_mascot_asserts({
+    checkmate::assert_string(palette, min.chars = 1, null.ok = TRUE)
     checkmate::assert_list(light, names = "unique", null.ok = TRUE)
     checkmate::assert_list(dark, names = "unique", null.ok = TRUE)
     checkmate::assert_choice(mode, c("light", "dark", "auto"))
     checkmate::assert_list(css, names = "unique", null.ok = TRUE)
   })
   if (...length() > 0L) {
-    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("light", "dark", "mode", "css"), environment())
+    abort_dots(
+      names(substitute(list(...)))[-1L],
+      ...length(),
+      c("palette", "light", "dark", "mode", "css"),
+      environment()
+    )
   }
   value <- structure(
-    list(light = light, dark = dark, mode = mode, css = css),
+    list(palette = palette, light = light, dark = dark, mode = mode, css = css),
     class = "mascot_theme"
   )
   check_arg(value, "theme", environment())
@@ -174,6 +189,9 @@ theme_problem <- function(x, roles = colour_role_registry()) {
   if (is.null(x)) {
     return(NULL)
   }
+  if (is.character(x)) {
+    return(if (isTRUE(checkmate::check_string(x, min.chars = 1))) NULL else "`theme` must name one palette id.")
+  }
   if (inherits(x, "bs_theme")) {
     if (!theme_has_bslib()) {
       return("`theme` needs the bslib package for a bs_theme() object.")
@@ -183,9 +201,12 @@ theme_problem <- function(x, roles = colour_role_registry()) {
   if (!inherits(x, "mascot_theme")) {
     return(theme_map_problem(x, "theme", roles))
   }
-  fields <- c("light", "dark", "mode", "css")
-  if (!isTRUE(checkmate::check_list(x, names = "unique")) || !setequal(names(x), fields) || length(x) != 4L) {
-    return("`theme` must be a mascot_theme() object with light, dark, mode and css fields.")
+  fields <- c("palette", "light", "dark", "mode", "css")
+  if (!isTRUE(checkmate::check_list(x, names = "unique")) || !setequal(names(x), fields) || length(x) != 5L) {
+    return("`theme` must be a mascot_theme() object with palette, light, dark, mode and css fields.")
+  }
+  if (!isTRUE(checkmate::check_string(x$palette, min.chars = 1, null.ok = TRUE))) {
+    return("`theme$palette` must be one palette id or NULL.")
   }
   if (!isTRUE(checkmate::check_choice(x$mode, c("light", "dark", "auto")))) {
     return("`theme$mode` must be one of \"light\", \"dark\" or \"auto\".")
@@ -285,11 +306,28 @@ as_theme_arg <- function(x, call, character = NULL) {
   checkmate::assert_environment(call)
   character_catalogue_assert(character, nullable = TRUE)
   problem <- theme_problem(x, colour_role_registry(character))
+  if (is.null(problem) && is.null(character)) {
+    palette <- if (is.character(x)) {
+      x
+    } else if (inherits(x, "mascot_theme")) {
+      x$palette
+    }
+    if (!is.null(palette) && !grepl("^[a-z][a-z0-9_]*$", palette)) {
+      problem <- paste0(
+        "`theme` must name a lowercase palette id; ",
+        encodeString(palette, quote = '\"'),
+        " is not a palette id."
+      )
+    }
+  }
   if (!is.null(problem)) {
     cli::cli_abort("{problem}", call = call, class = "mascot_error")
   }
   if (is.null(x)) {
     return(NULL)
+  }
+  if (is.character(x)) {
+    x <- mascot_theme(palette = x)
   }
   brand <- NULL
   backgrounds <- c(light = "#ffffff", dark = "#212529")
@@ -314,7 +352,7 @@ as_theme_arg <- function(x, call, character = NULL) {
     }
     x <- mascot_theme()
   } else if (!inherits(x, "mascot_theme")) {
-    x <- structure(list(light = x, dark = x, mode = "auto", css = NULL), class = "mascot_theme")
+    x <- structure(list(palette = NULL, light = x, dark = x, mode = "auto", css = NULL), class = "mascot_theme")
   }
   roles <- colour_role_registry(character)
   engine <- if (is.null(character)) {
@@ -351,13 +389,26 @@ as_theme_arg <- function(x, call, character = NULL) {
     names(value) <- engine[match(names(map), colour_role_names(engine))]
     value
   }
-  list(
+  value <- list(
     light = convert(x$light, "light"),
     dark = convert(x$dark, "dark"),
     mode = x$mode,
     css = convert(x$css, "css"),
     brand = brand
   )
+  if (!is.null(x$palette)) {
+    value$palette <- x$palette
+    value$palette_colours <- list(light = NULL, dark = NULL)
+    if (!is.null(character)) {
+      data <- character_colour_data(character)
+      problem <- theme_palette_problem(x$palette, data)
+      if (!is.null(problem)) {
+        cli::cli_abort("{problem}", call = call, class = "mascot_error")
+      }
+      value$palette_colours <- theme_palette_colours(x$palette, data)
+    }
+  }
+  value
 }
 
 #' A data-only script block; closing tags cannot escape it
@@ -409,4 +460,49 @@ contrast_warnings <- function(always = FALSE) {
     return(override)
   }
   always || shiny::in_devmode()
+}
+
+#' Explain an unavailable palette against a known character
+#' @noRd
+theme_palette_problem <- function(palette, data) {
+  checkmate::assert_string(palette, min.chars = 1)
+  checkmate::assert_list(data)
+  valid <- c("original", names(character_palettes(data)))
+  if (palette %in% valid) {
+    return(NULL)
+  }
+  paste0(
+    "Unknown palette ",
+    encodeString(palette, quote = '\"'),
+    " for character ",
+    encodeString(data$id, quote = '\"'),
+    ". Choose ",
+    paste(encodeString(valid, quote = '\"'), collapse = ", "),
+    ".",
+    theme_role_hint(palette, valid)
+  )
+}
+
+#' Resolve palette leaders once, keeping explicit role maps separate for swaps
+#' @noRd
+theme_palette_colours <- function(palette, data) {
+  checkmate::assert_string(palette, min.chars = 1)
+  checkmate::assert_list(data)
+  problem <- theme_palette_problem(palette, data)
+  if (!is.null(problem)) {
+    cli::cli_abort("{problem}", class = "mascot_error")
+  }
+  definition <- character_palettes(data)[[palette]]
+  roles <- names(data$colours)
+  maps <- lapply(c("light", "dark"), function(mode) {
+    map <- if (mode == "dark" && !is.null(definition$dark)) definition$dark else definition$light
+    if (!length(map)) {
+      return(NULL)
+    }
+    value <- lapply(names(map), function(role) theme_colour(map[[role]], role))
+    names(value) <- roles[match(colour_role_names(names(map)), colour_role_names(roles))]
+    value
+  })
+  names(maps) <- c("light", "dark")
+  maps
 }

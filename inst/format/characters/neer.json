@@ -2151,8 +2151,114 @@
       "glow": false
     }
   },
-  "palettes": {},
-  "palette_sources": {},
+  "palettes": {
+    "lagoon": {
+      "description": "Turquoise water with a pink shell.",
+      "light": {
+        "body": "#06B6D4",
+        "eyelid": "#06B6D4",
+        "iris": "#06B6D4",
+        "water_top": "#06B6D4",
+        "body_light": "#67E8F9",
+        "band": "#67E8F9",
+        "hand": "#67E8F9",
+        "body_deep": "#0E7490",
+        "water_bottom": "#0E7490",
+        "shell_base": "#FDA4AF",
+        "shell_foot": "#FDA4AF",
+        "blush": "#F472B6",
+        "blush_strong": "#F472B6",
+        "outline": "#181828",
+        "brow": "#0E2240"
+      }
+    },
+    "glacier": {
+      "description": "Pale blue water with a purple shell.",
+      "light": {
+        "body": "#BAE6FD",
+        "eyelid": "#BAE6FD",
+        "iris": "#BAE6FD",
+        "water_top": "#BAE6FD",
+        "body_light": "#E0F2FE",
+        "band": "#E0F2FE",
+        "hand": "#E0F2FE",
+        "body_deep": "#0284C7",
+        "water_bottom": "#0284C7",
+        "shell_base": "#C084FC",
+        "shell_foot": "#C084FC",
+        "blush": "#93C5FD",
+        "blush_strong": "#93C5FD",
+        "outline": "#181828",
+        "brow": "#0E2240"
+      }
+    },
+    "coral_reef": {
+      "description": "Green water with a coral shell.",
+      "light": {
+        "body": "#2DD4BF",
+        "eyelid": "#2DD4BF",
+        "iris": "#2DD4BF",
+        "water_top": "#2DD4BF",
+        "body_light": "#5EEAD4",
+        "band": "#5EEAD4",
+        "hand": "#5EEAD4",
+        "body_deep": "#0F766E",
+        "water_bottom": "#0F766E",
+        "shell_base": "#FB7185",
+        "shell_foot": "#FB7185",
+        "blush": "#FDA4AF",
+        "blush_strong": "#FDA4AF",
+        "outline": "#181828",
+        "brow": "#0E2240"
+      }
+    },
+    "night_bay": {
+      "description": "Deep blue water with a yellow shell and glowing cheeks.",
+      "light": {
+        "body": "#2563EB",
+        "eyelid": "#2563EB",
+        "iris": "#2563EB",
+        "water_top": "#2563EB",
+        "body_light": "#38BDF8",
+        "band": "#38BDF8",
+        "hand": "#38BDF8",
+        "body_deep": "#1E1B4B",
+        "water_bottom": "#1E1B4B",
+        "shell_base": "#FDE047",
+        "shell_foot": "#FDE047",
+        "blush": "#00F0FF",
+        "blush_strong": "#00F0FF",
+        "outline": "#181828"
+      }
+    },
+    "monsoon": {
+      "description": "Rain blue water with a golden shell.",
+      "light": {
+        "body": "#93C5FD",
+        "eyelid": "#93C5FD",
+        "iris": "#93C5FD",
+        "water_top": "#93C5FD",
+        "body_light": "#BFDBFE",
+        "band": "#BFDBFE",
+        "hand": "#BFDBFE",
+        "body_deep": "#1D4ED8",
+        "water_bottom": "#1D4ED8",
+        "shell_base": "#FBBF24",
+        "shell_foot": "#FBBF24",
+        "blush": "#A5B4FC",
+        "blush_strong": "#A5B4FC",
+        "outline": "#181828",
+        "brow": "#0E2240"
+      }
+    }
+  },
+  "palette_sources": {
+    "lagoon": "character",
+    "glacier": "character",
+    "coral_reef": "character",
+    "night_bay": "character",
+    "monsoon": "character"
+  },
   "note": "Source: the picked drawing improved.md and recovered drawNeer in the report. Crest variants preserve exact cubic controls at each held mood; no background wave. Slim outline follows founder preference. Gaps: continuous numeric flex/body rebuilding between held moods; animated screen caustics; particles; radial iris gradient and original pupil ratio; shell spring; open-mouth inner tongue/teeth clipping. Only static supported geometry is included. Nod/wave are explicitly root-tilt fallbacks, not the unsupported crest-flex gesture. Source Canvas arc in shell converted to cubic within 0.006 source units. Micro omits the inner band to retain the two eye clips within the cap; this is an explicit detail simplification. Body y coordinates bake the picked drawing’s exact 0.88 path-only compression; sheen/surface remain in their original source space. Authored figure scale is 0.60 with a raised origin so the complete arm rotation envelopes fit the frame; source geometry and all held arm angles are unchanged. Fidelity correction: restored the source dark water-depth fill and local white gleam, and paint a slim dark contour after the inner band. The flat role-only band uses the source middle-stop blue/alpha; the source gradient stroke remains approximated, without extending v1 stroke typing.",
   "contrast": [
     {
@@ -2160,6 +2266,18 @@
       "bg": "eye_white",
       "min": 3,
       "where": "dark pupils on the opaque eye whites"
+    },
+    {
+      "fg": "brow",
+      "bg": "body",
+      "min": 3,
+      "where": "brows, closed eyes and mouths against the body"
+    },
+    {
+      "fg": "outline",
+      "bg": "page_light",
+      "min": 3,
+      "where": "outline against a light page"
     }
   ]
 }

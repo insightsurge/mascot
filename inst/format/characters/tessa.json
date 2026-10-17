@@ -1473,5 +1473,38 @@
       "glow": false
     }
   },
-  "palette_sources": {}
+  "palette_sources": {
+    "nordic": "character",
+    "coral": "character",
+    "azure": "character"
+  },
+  "palettes": {
+    "nordic": {
+      "description": "Pale grey face with a slate rim.",
+      "light": {
+        "body": "#E2E8F0",
+        "rim": "#475569",
+        "feature": "#1E293B",
+        "outline": "#181828"
+      }
+    },
+    "coral": {
+      "description": "Peach face with a coral rim.",
+      "light": {
+        "body": "#FFE5D9",
+        "rim": "#FF6B6B",
+        "feature": "#1D3557",
+        "outline": "#181828"
+      }
+    },
+    "azure": {
+      "description": "Pale blue face with a blue rim.",
+      "light": {
+        "body": "#E0F2FE",
+        "rim": "#0284C7",
+        "feature": "#0F172A",
+        "outline": "#181828"
+      }
+    }
+  }
 }

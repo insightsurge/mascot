@@ -177,6 +177,106 @@
       "fix": "Remove the unsupported capability."
     },
     {
+      "id": "unsupported_extends",
+      "file": "invalid/unsupported_extends.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.extends",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_connector",
+      "file": "invalid/unsupported_connector.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.connector",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_ring_pulse",
+      "file": "invalid/unsupported_ring_pulse.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.requires[4]",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_follow",
+      "file": "invalid/unsupported_follow.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.parts[0].follow",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_morph",
+      "file": "invalid/unsupported_morph.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.requires[4]",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_blend",
+      "file": "invalid/unsupported_blend.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.parts[0].items[0].blend",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_inputs",
+      "file": "invalid/unsupported_inputs.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.inputs",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_fit",
+      "file": "invalid/unsupported_fit.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.accessories.badge.fit",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_wardrobe",
+      "file": "invalid/unsupported_wardrobe.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.wardrobe",
+      "fix": "Remove the unsupported capability."
+    },
+    {
+      "id": "unsupported_vividness",
+      "file": "invalid/unsupported_vividness.json",
+      "kind": "character",
+      "expected": "reject",
+      "stage": "version",
+      "code": "capability",
+      "path": "$.palettes.sea_glass.vividness",
+      "fix": "Remove the unsupported capability."
+    },
+    {
       "id": "unknown_key",
       "file": "invalid/unknown_key.json",
       "kind": "character",

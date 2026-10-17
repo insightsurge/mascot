@@ -77,6 +77,23 @@ def selected_character_checks(data, policy):
     problem_if(not isinstance(data.get("requires"), list), "input_type", "$.requires", "expected array")
     for index, capability in enumerate(data["requires"]):
         problem_if(capability not in policy["capabilities"], "capability", f"$.requires[{index}]", "unsupported capability")
+    # Reserved capabilities (contract 3.18) report "capability" where a fixed-field object uses them, before any other
+    # key check, as the package checker does. Map keys (ids, roles) are data and are never checked.
+    reserved = set(policy["reserved_unsupported"])
+
+    def reserved_keys(value, path):
+        if isinstance(value, dict):
+            for key in value:
+                problem_if(key in reserved, "capability", f"{path}.{key}", "not supported by this version of mascot")
+
+    reserved_keys(data, "$")
+    for index, part in enumerate(data.get("parts") or []):
+        reserved_keys(part, f"$.parts[{index}]")
+        for item_index, item in enumerate((part or {}).get("items") or []):
+            reserved_keys(item, f"$.parts[{index}].items[{item_index}]")
+    for group in ("accessories", "palettes"):
+        for name, entry in (data.get(group) or {}).items():
+            reserved_keys(entry, f"$.{group}.{name}")
     for key in data:
         problem_if(key not in TOP_KEYS, "unknown_key", "$." + key, "unknown top-level field")
     for key in ("id", "name", "family", "description"):

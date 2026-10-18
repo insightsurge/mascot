@@ -111,7 +111,7 @@ mascot_families <- function() {
 #'   `description`, `part` (the body part the anchor belongs to) and `side`
 #'   (`"l"` or `"r"`, or `NA` for an anchor on neither side).
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
-#'   names and types. The first column is the value you pass to the matching function.
+#'   names and types. The first column is the anchor name.
 #' @family mascot helpers
 #' @seealso [mascot_characters()]
 #' @export

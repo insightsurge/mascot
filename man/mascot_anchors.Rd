@@ -15,7 +15,7 @@ A data frame with character columns \code{name} (the anchor id),
 \code{description}, \code{part} (the body part the anchor belongs to) and \code{side}
 (\code{"l"} or \code{"r"}, or \code{NA} for an anchor on neither side).
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
-names and types. The first column is the value you pass to the matching function.
+names and types. The first column is the anchor name.
 }
 \description{
 Anchors are the named attachment points on a character, such as a hand or a

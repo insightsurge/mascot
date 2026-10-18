@@ -109,3 +109,28 @@ describe("character_catalogue_assert()", {
     expect_error(character_catalogue_assert("tessa", nullable = NA), "Assertion on 'nullable' failed")
   })
 })
+
+
+describe("character_palettes()", {
+  it("shares cached definitions between every public palette consumer without reading files again", {
+    data <- character_catalogue_get("knurl")
+    expect_identical(character_palettes("knurl"), character_palettes(data))
+    expect_identical(character_palettes(mascot_character("knurl")), data$palettes)
+    invisible(lapply(character_catalogue_ids(), character_catalogue_get))
+    local_mocked_bindings(
+      character_json = function(...) stop("Unexpected JSON read"),
+      character_format_check = function(...) stop("Unexpected character check")
+    )
+    expect_identical(mascot_palettes("knurl")$name, c("original", names(data$palettes)))
+    expect_match(mascot_characters()$palettes[mascot_characters()$id == "knurl"], "original, orbit")
+    expect_identical(mascot_colour_roles("knurl", palette = "orbit")$colour[[1]], "#F8FAFC")
+    expect_null(theme_palette_problem("orbit", data))
+    expect_identical(as_theme_arg("orbit", environment(), "knurl")$palette_colours$light$body, "#F8FAFC")
+  })
+  it("accepts unclassed internal format data and checks the lookup input", {
+    expect_identical(character_palettes(list()), character_object())
+    for (value in list(NULL, 1, "", NA_character_)) {
+      expect_error(character_palettes(value), "character")
+    }
+  })
+})

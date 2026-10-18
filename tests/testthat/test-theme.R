@@ -182,7 +182,7 @@ describe("theme_colour()", {
 
 describe("mascot_theme() named arguments", {
   it("keeps the agreed signature and rejects both forms of extra argument", {
-    expect_identical(names(formals(mascot_theme)), c("...", "light", "dark", "mode", "css"))
+    expect_identical(names(formals(mascot_theme)), c("...", "palette", "light", "dark", "mode", "css"))
     expect_error(mascot_theme(typo = 1), "Unexpected arguments", class = "mascot_error")
     expect_error(mascot_theme(1), "Name the optional arguments", class = "mascot_error")
   })
@@ -219,5 +219,87 @@ describe("public argument error classes", {
   it("adds mascot_error to the registered format and print methods", {
     expect_error(format.mascot_theme(1), "x", class = "mascot_error")
     expect_error(print.mascot_theme(1), "x", class = "mascot_error")
+  })
+})
+
+describe("named palette themes", {
+  it("resolves a reusable palette only when it meets a character and prints its id", {
+    value <- mascot_theme(palette = "coral")
+    expect_identical(capture.output(print(value)), 'mascot_theme(palette = "coral")')
+    expect_identical(eval(parse(text = format(value))), value)
+    expect_identical(as_theme_arg(value, environment(), "tessa")$palette_colours$light$body, "#FFE5D9")
+    expect_identical(as_theme_arg(value, environment(), "sela")$palette_colours$light$hair_purple, "#1D3557")
+    expect_identical(as_theme_arg("orbit", environment(), "knurl")$palette, "orbit")
+    expect_identical(as_theme_arg("original", environment(), "knurl")$palette_colours, list(light = NULL, dark = NULL))
+    expect_identical(as_theme_arg(value, environment())$palette, "coral")
+    expect_error(
+      mascot("helper", character = "knurl", theme = "oribt"),
+      'oribt.*knurl.*original.*orbit.*carbon.*cobalt_droid.*crimson.*Did you mean "orbit"',
+      class = "mascot_error"
+    )
+    expect_error(mascot("helper", character = "knurl", theme = "zzzzzz"), "zzzzzz.*knurl.*orbit")
+    expect_no_error(mascot("helper", character = "knurl", theme = "original"))
+  })
+  it("keeps explicit roles and CSS above the palette and checks only supplied colours", {
+    withr::local_options(mascot.contrast_warnings = TRUE)
+    for (id in builtin_characters()$id) {
+      for (palette in mascot_palettes(id)$name) {
+        expect_no_warning(mascot("helper", character = id, theme = palette))
+      }
+    }
+    value <- mascot_theme(
+      palette = "orbit",
+      light = list(body = "#ffffff"),
+      dark = list(body = "#212529"),
+      css = list(body = "--team-body")
+    )
+    warnings <- list()
+    wire <- withCallingHandlers(as_theme_arg(value, environment(), "knurl"), warning = function(warning) {
+      warnings[[length(warnings) + 1L]] <<- warning
+      invokeRestart("muffleWarning")
+    })
+    expect_length(warnings, 2)
+    expect_true(all(vapply(warnings, inherits, logical(1), "mascot_contrast")))
+    expect_identical(wire$palette_colours$light$body, "#F8FAFC")
+    expect_identical(wire$light$body, "#FFFFFF")
+    expect_identical(wire$dark$body, "#212529")
+    expect_identical(wire$css$body, "--team-body")
+    expect_identical(wire$palette_colours$light, wire$palette_colours$dark)
+    data <- character_colour_data("knurl")
+    data$palettes$orbit$dark <- list(body = "#123456")
+    expect_identical(theme_palette_colours("orbit", data)$dark, list(body = "#123456"))
+  })
+  it("checks palette argument types, shortcut shapes and internal assertions", {
+    for (value in list(1, "", NA_character_, c("a", "b"), list())) {
+      expect_error(mascot_theme(palette = value), "palette", class = "mascot_error")
+    }
+    expect_error(mascot("helper", theme = c("orbit", "carbon")), "one palette id")
+    expect_error(mascot("helper", theme = NA_character_), "one palette id")
+    for (fn in list(theme_palette_problem, theme_palette_colours)) {
+      expect_error(fn(1, list()), "palette")
+      expect_error(fn("original", 1), "data")
+    }
+    expect_error(theme_palette_colours("absent", character_colour_data("knurl")), "absent.*knurl.*orbit")
+    expect_error(mascot_theme(palette = "orbit", brand = list()), "Unexpected arguments")
+  })
+})
+
+
+describe("cold-start palette validation", {
+  it("names malformed palette ids without wire assertion text or accepting other fields", {
+    for (palette in c("Orbit", "peach-ink")) {
+      for (theme in list(palette, mascot_theme(palette = palette))) {
+        f <- protocol_fixture()
+        withr::defer(f$session$close())
+        warning <- expect_warning(
+          update_mascot("helper", theme = theme, status = "Not accepted", session = f$session),
+          paste0("lowercase palette id.*", palette),
+          class = "mascot_warning"
+        )
+        expect_false(grepl("Assertion|patch\\$theme", conditionMessage(warning)))
+        expect_null(f$session$userData$mascot_protocol)
+        expect_length(f$messages$values, 0L)
+      }
+    }
   })
 })

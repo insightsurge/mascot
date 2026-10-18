@@ -101,10 +101,10 @@
       "bg_paint": "screen_glow"
     },
     {
-      "fg": "body",
-      "bg": "page",
+      "fg": "outline",
+      "bg": "page_light",
       "min": 3,
-      "where": "chassis on light and dark page backgrounds"
+      "where": "outlined chassis on a light page"
     }
   ],
   "ground": {
@@ -1694,22 +1694,112 @@
     }
   },
   "palettes": {
-    "sea_glass": {
-      "description": "A cool screen.",
+    "orbit": {
+      "description": "White casing, black visor and cyan lights.",
       "light": {
-        "screen": "#06232a"
+        "body": "#F8FAFC",
+        "arm_body": "#F8FAFC",
+        "clamp_base": "#F8FAFC",
+        "trim": "#CBD5E1",
+        "hub_rim_mid": "#CBD5E1",
+        "hub_rim_dark": "#CBD5E1",
+        "screen": "#0F172A",
+        "screen_glow": "#0F172A",
+        "tyre_dark": "#0F172A",
+        "arm_socket": "#0F172A",
+        "copper": "#38BDF8",
+        "copper_shine": "#38BDF8",
+        "hub_spoke": "#38BDF8",
+        "spanner_head": "#94A3B8",
+        "spanner_handle": "#94A3B8",
+        "antenna": "#94A3B8",
+        "hub_rim_light": "#94A3B8",
+        "feature": "#00F0FF",
+        "eye_glow": "#00F0FF",
+        "outline": "#181828"
       }
     },
-    "night_screen": {
-      "description": "A deeper screen.",
+    "carbon": {
+      "description": "Gunmetal casing, black tyre and cyan visor.",
       "light": {
-        "screen": "#03151a"
+        "body": "#475569",
+        "arm_body": "#475569",
+        "clamp_base": "#475569",
+        "trim": "#64748B",
+        "hub_rim_mid": "#64748B",
+        "hub_rim_dark": "#64748B",
+        "screen": "#090D16",
+        "screen_glow": "#090D16",
+        "tyre_dark": "#090D16",
+        "arm_socket": "#090D16",
+        "copper": "#94A3B8",
+        "copper_shine": "#94A3B8",
+        "hub_spoke": "#94A3B8",
+        "spanner_head": "#CBD5E1",
+        "spanner_handle": "#CBD5E1",
+        "antenna": "#CBD5E1",
+        "hub_rim_light": "#CBD5E1",
+        "feature": "#22D3EE",
+        "eye_glow": "#22D3EE",
+        "outline": "#181828"
+      }
+    },
+    "cobalt_droid": {
+      "description": "White casing with blue trim and lights.",
+      "light": {
+        "body": "#F1F5F9",
+        "arm_body": "#F1F5F9",
+        "clamp_base": "#F1F5F9",
+        "trim": "#3B82F6",
+        "hub_rim_mid": "#3B82F6",
+        "hub_rim_dark": "#3B82F6",
+        "screen": "#0F172A",
+        "screen_glow": "#0F172A",
+        "tyre_dark": "#0F172A",
+        "arm_socket": "#0F172A",
+        "copper": "#1D4ED8",
+        "copper_shine": "#1D4ED8",
+        "hub_spoke": "#1D4ED8",
+        "spanner_head": "#E11D48",
+        "spanner_handle": "#E11D48",
+        "antenna": "#E11D48",
+        "hub_rim_light": "#E11D48",
+        "feature": "#60A5FA",
+        "eye_glow": "#60A5FA",
+        "outline": "#181828"
+      }
+    },
+    "crimson": {
+      "description": "White casing with red limbs and lights.",
+      "light": {
+        "body": "#F8FAFC",
+        "arm_body": "#F8FAFC",
+        "clamp_base": "#F8FAFC",
+        "trim": "#E2E8F0",
+        "hub_rim_mid": "#E2E8F0",
+        "hub_rim_dark": "#E2E8F0",
+        "screen": "#18181B",
+        "screen_glow": "#18181B",
+        "tyre_dark": "#18181B",
+        "arm_socket": "#18181B",
+        "copper": "#E11D48",
+        "copper_shine": "#E11D48",
+        "hub_spoke": "#E11D48",
+        "spanner_head": "#CBD5E1",
+        "spanner_handle": "#CBD5E1",
+        "antenna": "#CBD5E1",
+        "hub_rim_light": "#CBD5E1",
+        "feature": "#F43F5E",
+        "eye_glow": "#F43F5E",
+        "outline": "#181828"
       }
     }
   },
   "palette_sources": {
-    "sea_glass": "family",
-    "night_screen": "family"
+    "orbit": "character",
+    "carbon": "character",
+    "cobalt_droid": "character",
+    "crimson": "character"
   },
   "note": "Picked round-5 drawing: source wheel, trapezoid chassis, tilted visor, far socket stub and upright held spanner. Removed an unpicked star-eye style; celebrating keeps the source eye arcs. Static glints and separate dark spanner strokes preserve source details. Source screen/additive blending, particle sparks, continuous pulse and spring-driven antenna remain gaps. Finite tracks and precomputed static texture are supported authoring options, not missing grammar. No built-in shipping or visual approval is implied. Authored figure scale is 0.56 with a raised, centred origin to retain every tool pose, glow and gesture inside the frame. Explicit glow alpha is 1; the micro chassis retains its lamp while micro glow is off. Fidelity correction: neck is painted after the chassis and before the head, as in the source, retaining its exact 34 by 24 geometry; antenna has the source 9-unit dark under-stroke and 4-unit metal stroke. The source gface fills rounded eye capsules, so the filled mint eyes are retained; scanlines and additive glow remain named omissions."
 }

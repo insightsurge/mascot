@@ -96,10 +96,10 @@
       "where": "eyes, brows and mouth on the hex body"
     },
     {
-      "fg": "body",
-      "bg": "page",
+      "fg": "outline",
+      "bg": "page_light",
       "min": 3,
-      "where": "body silhouette on light and dark pages"
+      "where": "outlined silhouette on a light page"
     }
   ],
   "ground": {
@@ -1418,7 +1418,82 @@
       "glow": false
     }
   },
-  "palettes": {},
-  "palette_sources": {},
+  "palettes": {
+    "coral": {
+      "description": "Peach face, coral rim and dark blue hair.",
+      "light": {
+        "body": "#FFE5D9",
+        "rim": "#FF6B6B",
+        "rim_shade": "#FF6B6B",
+        "hair_purple": "#1D3557",
+        "hair_dark": "#1D3557",
+        "iris_dark": "#1D3557",
+        "arm_highlight": "#457B9D",
+        "gold": "#FFB703",
+        "star": "#FFB703",
+        "chip_b": "#FFB703",
+        "iris": "#2A9D8F",
+        "blush": "#2A9D8F",
+        "blush_strong": "#2A9D8F",
+        "fringe_pink": "#2A9D8F",
+        "fringe_cyan": "#2A9D8F",
+        "chip_a": "#2A9D8F",
+        "outline": "#181828",
+        "rim_light": "#FFFDF4"
+      }
+    },
+    "azure": {
+      "description": "Pale blue face, blue rim and dark hair.",
+      "light": {
+        "body": "#E0F2FE",
+        "rim": "#0284C7",
+        "rim_shade": "#0284C7",
+        "hair_purple": "#0F172A",
+        "hair_dark": "#0F172A",
+        "iris_dark": "#0F172A",
+        "arm_highlight": "#38BDF8",
+        "gold": "#F59E0B",
+        "star": "#F59E0B",
+        "chip_b": "#F59E0B",
+        "iris": "#7DD3FC",
+        "blush": "#7DD3FC",
+        "blush_strong": "#7DD3FC",
+        "fringe_pink": "#7DD3FC",
+        "fringe_cyan": "#7DD3FC",
+        "chip_a": "#7DD3FC",
+        "outline": "#181828",
+        "rim_light": "#FFFDF4"
+      }
+    },
+    "peach": {
+      "description": "Peach face, rose rim and ink blue hair.",
+      "light": {
+        "body": "#FFE4D6",
+        "rim": "#B93664",
+        "rim_shade": "#832746",
+        "rim_light": "#FFFDF4",
+        "hair_purple": "#2B305C",
+        "hair_dark": "#171D3A",
+        "fringe_pink": "#EF85A3",
+        "fringe_cyan": "#EF85A3",
+        "iris": "#49578C",
+        "iris_dark": "#171D3A",
+        "blush": "#E7A89F",
+        "blush_strong": "#E7A89F",
+        "chip_a": "#B93664",
+        "chip_b": "#EF85A3",
+        "chip_conflict": "#832746",
+        "gold": "#D9A62D",
+        "star": "#F2C24B",
+        "arm_highlight": "#EF85A3",
+        "outline": "#211E2C"
+      }
+    }
+  },
+  "palette_sources": {
+    "coral": "character",
+    "azure": "character",
+    "peach": "character"
+  },
   "note": "Source: picked round5.md and the recovered drawing source drawSela lines 90-113. True source geometry, coordinates, palette, and features. Preserves source coordinates inside figure parent at [-144, -253.44] scale 0.72 mapping source ground 352 to 270. Format gaps: dynamic time block clipping/hatching, procedural honeycomb canvas texture, dual-rotation group lag, shadowBlur glow on canvas, fine procedural hair strands. Fidelity correction: source four-tip gold sparkle at radius 13/inner ratio 0.22 and rotation 0.2, without an outline; restored the body radial gleam and purple shadow colour. Fringe pink/cyan paths, widths and alpha already match the source; no arbitrary highlight brightening."
 }

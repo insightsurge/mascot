@@ -212,7 +212,17 @@ update_mascot <- function(
     )
   }
   if (length(helper_problems)) {
-    mascot_update_warning(id, paste(helper_problems, collapse = "; "))
+    # One bullet per failed helper, as for the ordinary problems below.
+    cli::cli_warn(
+      c(
+        "{.fn update_mascot} left mascot {.val {id}} unchanged.",
+        structure(
+          paste0("{helper_problems[[", seq_along(helper_problems), "]]}"),
+          names = rep("x", length(helper_problems))
+        )
+      ),
+      class = c("mascot_update_ignored", "mascot_warning")
+    )
     if (dev_mode()) {
       send_update(session, id, list(problem = paste0("mascot: ", paste(helper_problems, collapse = "; "))))
     }

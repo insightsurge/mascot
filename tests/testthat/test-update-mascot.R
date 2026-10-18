@@ -1450,6 +1450,16 @@ describe("nested modules across tabs", {
 
 
 describe("inline helper errors in update_mascot() (#349)", {
+  it("lists every failed helper as its own bullet in one warning", {
+    local_mocked_bindings(dev_mode = function() FALSE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    warning <- expect_warning(
+      update_mascot("helper", size = mascot_size(-1), bubble = mascot_bubble(""), session = f$session),
+      class = "mascot_update_ignored"
+    )
+    expect_equal(sum(grepl("^x ", strsplit(cli::ansi_strip(conditionMessage(warning)), "\n")[[1]])), 2)
+  })
   it("warns without accepting any fields and lets the observer run again", {
     local_mocked_bindings(dev_mode = function() FALSE)
     shiny::testServer(

@@ -31,6 +31,7 @@
     Condition
       Error in `mascot()`:
       ! `mood` must be a lowercase id; "ha!py" is not a mood.
+      i Choose "idle", "thinking", "happy", "worried", or "celebrating".
 
 ---
 

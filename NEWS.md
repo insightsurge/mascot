@@ -138,6 +138,9 @@
 
 * Theme errors list valid roles, invalid contrast-warning options warn once, and theme mode, drag and studio choices carry `mascot_error_choice` (#350).
 
+* `mascot_anchors("neer")` now lists 14 attachment points. The help explains
+  what anchors are for and that characters may have none (#360).
+
 * Click menus and other panels opening below a mascot leave room for its status text, including wrapped lines, and fall back to another side when there is not enough room (#344).
 
 * Tessa's default status now uses a sentence for each mood, so apps that use her default status show the new text beside her and to screen readers (#142).

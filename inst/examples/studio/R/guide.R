@@ -121,7 +121,7 @@ playground_guide <- list(
   mascot_preview = guide_entry(
     "preview",
     "Check a look before using it",
-    c("character", "...", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click")
+    c("character", "...", "mood", "status", "bubble", "size", "theme", "motion")
   ),
   mascot_examples = guide_entry("examples", "Open an example"),
   mascot_example = guide_entry("examples", "Open an example", c("name", "...", "run")),

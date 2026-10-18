@@ -42,7 +42,7 @@
       update_mascot("helper", NULL, NULL, NULL, NULL, session)
     Condition
       Error in `update_mascot()`:
-      ! Unexpected arguments: "unnamed", "unnamed", "unnamed", "unnamed", and "unnamed".
+      ! Unexpected arguments: an unnamed argument, an unnamed argument, an unnamed argument, an unnamed argument, an unnamed argument.
       i Name the optional arguments: `character`, `mood`, `status`, `bubble`, `size`, `placement`, `theme`, `motion`, `click`, `gesture`, and `session`.
 
 # update_mascot() size and placement / informs about explicit inline controls and still sends the complete update

@@ -2,6 +2,8 @@
 
 ## Breaking changes
 
+* `mascot_preview()` removes the inert `placement` and `click` arguments. Remove them from preview calls; comparison columns now use 160, 96 and 24 pixels after the requested size (#350).
+
 * `mascot_character(id = "tessa")` names its argument `id`, as every other function that addresses a character does; `name =` is no longer accepted and has no alias. Pass the id positionally or as `id =` (#296).
 
 * `mascot_motion_settings()` replaces `mascot_motion()` without an alias; all settings must be named and `animate` is removed. Use `motion = FALSE` to stop everything (#239).
@@ -104,6 +106,18 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* Checked character data gains a compact `format()` method; `print()` assertion failures carry `mascot_error` (#350).
+
+* Mascot construction preserves specific error classes and explains malformed mood and gesture ids using the lowercase rule. Unexpected positional arguments are described as unnamed arguments (#350).
+
+* Mascot conditions are listed in the package help, including choice, authoring and development diagnostics (#350).
+
+* Palette ids reserve `minimal`, `pastel`, `vivid`, `corporate`, `earthy` and `night` for style aliases (#350).
+
+* Shiny excludes private mascot state inputs from bookmarks and shows the development problem overlay when a buffered update fails at mount (#350).
+
+* Theme errors list valid roles, invalid contrast-warning options warn once, and theme mode, drag and studio choices carry `mascot_error_choice` (#350).
 
 * Tessa's default status now uses a sentence for each mood, so apps that use her default status show the new text beside her and to screen readers (#142).
 

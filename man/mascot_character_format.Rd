@@ -8,7 +8,9 @@ An offline guide to the internal character authoring route. Descriptions are
 JSON objects with \code{format_version = 1}, \code{requires}, \code{id}, \code{name}, \code{description},
 a \code{family}, colours, ground, parts and five shared moods (\code{idle}, \code{thinking},
 \code{happy}, \code{worried}, \code{celebrating}). Optional anchors, palettes, face kits and
-gestures describe their own supported names. Small sizes may hide details
+gestures describe their own supported names. Palette ids cannot be \code{original}
+or the reserved style aliases \code{minimal}, \code{pastel}, \code{vivid}, \code{corporate},
+\code{earthy} and \code{night}. Small sizes may hide details
 the character marks for small sizes. Text is displayed as text, never HTML.
 }
 \details{

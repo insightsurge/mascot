@@ -399,7 +399,8 @@ describe("the studio's controls", {
     # mascot_preview() is in the studio page: its canvas part and its controls.
     expect_match(pages[[1]], 'data-canvas="preview"', fixed = TRUE)
     expect_match(pages[[1]], 'id="preview_card"', fixed = TRUE)
-    expect_match(pages[[1]], 'id="preview_menu_items"', fixed = TRUE)
+    expect_false(grepl('id="preview_menu_items"', pages[[1]], fixed = TRUE))
+    expect_false(grepl('id="preview_placement"', pages[[1]], fixed = TRUE))
     expect_false(grepl('id="helper"', pages[[2]], fixed = TRUE))
     expect_false(grepl("Use the studio's", pages[[2]], fixed = TRUE))
     expect_false(grepl("Open in a new tab", pages[[2]], fixed = TRUE))
@@ -1026,7 +1027,7 @@ describe("bundled example apps", {
     expect_true(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     expect_false(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     expect_true(app$get_js(
-      "!!document.getElementById('preview_menu_items') &&
+      "!!document.getElementById('preview_mood') &&
       !document.querySelector('#studio_inspector [data-function=mascot_preview]').hidden"
     ))
     expect_true(app$get_js("document.querySelector('#preview_card .bslib-full-screen-enter') !== null"))
@@ -1058,20 +1059,14 @@ describe("bundled example apps", {
     )
     app$run_js("Shiny.setInputValue('preview_theme_source', 'custom')")
     app$run_js(
-      "Shiny.setInputValue('preview_menu_items', 'about = About the preview');
-      document.querySelector('input[name=preview_width][value=phone]').click();"
+      "document.querySelector('input[name=preview_width][value=phone]').click();"
     )
     # No button is pressed: the page rebuilds by itself once the controls settle, and the code matches it.
     app$wait_for_js(
-      "document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"') &&
-      document.getElementById('code_preview').textContent.includes('About the preview')"
+      "document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"')"
     )
     app$wait_for_js("document.querySelector('iframe.pg-preview').classList.contains('is-phone')")
-    expect_match(
-      app$get_js("document.getElementById('code_preview').textContent"),
-      'click = mascot_popup_menu(c(about = "About the preview"))',
-      fixed = TRUE
-    )
+    expect_false(grepl("click =", app$get_js("document.getElementById('code_preview').textContent"), fixed = TRUE))
     # A visible "Building" badge shows between a change and the rebuilt page.
     app$run_js(
       "window.sawBuilding = false;
@@ -1534,9 +1529,7 @@ describe("studio state and built previews", {
         preview_status = "",
         preview_bubble = "",
         preview_size = 120,
-        preview_placement = "inline",
         preview_motion = FALSE,
-        preview_menu_items = "",
         preview_width = "full"
       )
       # Nothing is built until mascot_preview() is selected.
@@ -1559,29 +1552,19 @@ describe("studio state and built previews", {
       session$elapse(500)
       expect_match(output$code_preview, 'status = "Auto rebuild status"', fixed = TRUE)
       expect_true(file.exists(file.path(preview_dir, sprintf("preview-%s-%d.html", session$token, preview_count()))))
-      # A menu line that is not "id = Label" is reported and nothing is rebuilt from it.
-      session$setInputs(preview_menu_items = "no label here")
-      session$elapse(500)
-      expect_match(output$preview_problem$html, "id = Label", fixed = TRUE)
-      expect_match(output$code_preview, "^# .*id = Label")
-      expect_match(output$code_function, "^# .*id = Label")
-      session$setInputs(preview_menu_items = "")
-      session$elapse(500)
-      expect_match(output$preview_frame$html, "iframe")
-      session$setInputs(preview_menu_items = "same = One\nsame = Two")
+      # A size below the supported minimum is reported without replacing the last good page.
+      session$setInputs(preview_size = 10)
       session$elapse(500)
       expect_match(output$code_preview, "^# ")
-      expect_false(grepl("mascot_preview(", output$code_preview, fixed = TRUE))
       expect_identical(last_preview_attempt()$outcome, "error")
-      session$setInputs(preview_menu_items = "")
+      session$setInputs(preview_size = 120)
       session$elapse(500)
       expect_match(output$preview_frame$html, "iframe")
       expect_identical(last_preview_attempt()$outcome, "ok")
       expect_identical(last_preview_attempt()$args, last_built_call())
-      session$setInputs(preview_menu_items = "same = One\nsame = Two")
+      session$setInputs(preview_size = 10)
       session$elapse(500)
-      expect_match(output$code_preview, "^# ")
-      session$setInputs(select_function = "mascot_mood", preview_menu_items = "")
+      session$setInputs(select_function = "mascot_mood", preview_size = 120)
       session$elapse(500)
       expect_identical(last_preview_attempt()$outcome, "error")
       session$setInputs(select_function = "mascot_preview")
@@ -2034,16 +2017,11 @@ describe("studio safeguards (#248)", {
       preview_status = list(list(preview_status = "Ready"), 'status = "Ready"'),
       preview_bubble = list(list(preview_bubble = "Hi"), 'bubble = "Hi"'),
       preview_size = list(list(preview_size = 96), "size = 96"),
-      preview_placement = list(list(preview_placement = "top-left"), 'placement = "top-left"'),
       preview_theme_source = list(
         list(preview_theme_source = "custom", preview_body = "#1f6feb"),
         'theme = list(body = "#1f6feb")'
       ),
-      preview_motion = list(list(preview_motion = TRUE), "motion = TRUE"),
-      preview_menu_items = list(
-        list(preview_menu_items = "about = About"),
-        'click = mascot_popup_menu(c(about = "About"))'
-      )
+      preview_motion = list(list(preview_motion = TRUE), "motion = TRUE")
     )
     # Controls without a row, and why. Anything else in the control map needs a row above.
     exempt <- c(
@@ -2240,10 +2218,8 @@ describe("studio safeguards (#248)", {
       preview_status = "",
       preview_bubble = "",
       preview_size = formals(mascot_preview)$size,
-      preview_placement = formals(mascot_preview)$placement,
       preview_theme_source = "own",
-      preview_motion = formals(mascot_preview)$motion,
-      preview_menu_items = ""
+      preview_motion = formals(mascot_preview)$motion
     )
     for (id in names(expected)) {
       expect_identical(start[[id]], expected[[id]], info = id)

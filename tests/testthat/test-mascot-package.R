@@ -69,3 +69,29 @@ describe("mascot exports", {
     expect_true(all(startsWith(setdiff(exports, c("mascot", "update_mascot")), "mascot_")))
   })
 })
+describe("B2 condition reference", {
+  it("documents every condition callers can handle", {
+    root <- test_path("..", "..")
+    db <- if (dir.exists(file.path(root, "man"))) tools::Rd_db(dir = root) else tools::Rd_db("mascot")
+    text <- paste(capture.output(tools::Rd2txt(db[["mascot-package.Rd"]])), collapse = "\n")
+    for (class in c(
+      "mascot_error",
+      "mascot_warning",
+      "mascot_message",
+      "mascot_error_choice",
+      "mascot_error_dots",
+      "mascot_error_argument",
+      "mascot_error_character",
+      "mascot_error_file",
+      "mascot_preset_dropped",
+      "mascot_gesture_dropped",
+      "mascot_click_dropped",
+      "mascot_template_evicted",
+      "mascot_update_ignored",
+      "mascot_contrast",
+      "mascot_placement_ignored"
+    )) {
+      expect_match(text, class, fixed = TRUE)
+    }
+  })
+})

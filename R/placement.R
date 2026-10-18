@@ -132,22 +132,12 @@ inform_placement_ignored <- function(args) {
 abort_drag <- function(drag, call) {
   checkmate::assert(checkmate::check_flag(drag), checkmate::check_string(drag), .var.name = "drag")
   checkmate::assert_environment(call)
-  cli::cli_abort(
-    c(
-      "{.arg drag} must be {.val none}, {.val snap} or {.val free}.",
-      "x" = if (isTRUE(drag)) {
-        "{.code TRUE} is not accepted: choose how the mascot behaves when dropped."
-      } else {
-        "{.val {drag}} is not a drag mode."
-      },
-      "i" = paste(
-        "Use {.code drag = \"none\"} for no dragging, {.val snap} to move to the nearest",
-        "corner or {.val free} to stay where dropped."
-      )
-    ),
-    call = call,
-    class = "mascot_error"
-  )
+  hint <- if (isTRUE(drag)) {
+    'drag mode (TRUE is not accepted); use drag = "none" for no dragging'
+  } else {
+    'drag mode; use drag = "none" for no dragging'
+  }
+  abort_choice(as.character(drag), placement_drags(), "drag", hint, call)
 }
 
 #' The public drag modes

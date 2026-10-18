@@ -17,14 +17,6 @@
 #' @param size A finite number of CSS pixels (at least `24`), a positive
 #'   percentage string such as `"20%"`, or a [mascot_size()] object. Defaults to
 #'   `160`. Percentages follow the comparison cell width. `NULL` is not accepted.
-#' @param placement A placement shortcut, named list or [mascot_placement()]
-#'   object, defaulting to `"inline"`. Accepted so the same arguments as
-#'   [mascot()] can be passed, and has no effect in a preview (cells stay in
-#'   their grid). `NULL` is not accepted.
-#' @param click A label, a [mascot_action()] object or a [mascot_popup_menu()]
-#'   object, or `NULL` (the default) for no click. Accepted so the same arguments
-#'   as [mascot()] can be passed, and has no effect in a preview (clicks need
-#'   Shiny, so every cell stays a picture).
 #' @param motion A logical flag or [mascot_motion_settings()] object. Defaults to `FALSE`
 #'   for steady faces; `TRUE` allows movement subject to the visitor's preference.
 #'   `NULL` is not accepted.
@@ -35,7 +27,7 @@
 #'   issued in R unless `mascot.contrast_warnings` is `FALSE`.
 #' @details
 #' **Comparison grid.** Rows are moods; columns are the requested `size`, then
-#' 48, 32 and 24 CSS pixels. The first column preserves percentage and
+#' 160, 96 and 24 CSS pixels. The first column preserves percentage and
 #' `small_screen` settings; fixed comparison columns do not change on narrow
 #' screens. Every size draws the full character. Each cell keeps its status text,
 #' since small faces lose fine detail.
@@ -47,11 +39,9 @@
 #' Experimental CSS variables are worked out in the browser: their warnings appear
 #' in its console, outside the R `contrast` attribute.
 #'
-#' **Placement, menus and bubbles.** Floating `placement` is checked, then shown
-#' inline for comparison, so every cell remains in its grid. A `click` is
-#' checked but has no effect on this static page. Empty bubble space is omitted
-#' here; a supplied bubble keeps its normal space and timing, and each cell is
-#' wide enough to hold it, so bubbles never cover neighbouring cells.
+#' **Bubbles.** Empty bubble space is omitted here; a supplied bubble keeps its
+#' normal space and timing. Each cell is wide enough to hold it, so bubbles
+#' never cover neighbouring cells.
 #' @family mascot helpers
 #' @seealso [mascot()], [mascot_colour_roles()], [mascot_theme()]
 #' @export
@@ -67,10 +57,8 @@ mascot_preview <- function(
   status = NULL,
   bubble = NULL,
   size = 160,
-  placement = "inline",
   theme = NULL,
-  motion = FALSE,
-  click = NULL
+  motion = FALSE
 ) {
   # These union arguments share mascot()'s converters and checkmate boundaries.
   character <- as_character_arg(character, environment())
@@ -82,9 +70,7 @@ mascot_preview <- function(
   status <- as_status_arg(status, environment())
   bubble <- as_bubble_arg(bubble, environment())
   size <- as_size_arg(size, environment())
-  placement <- as_placement_arg(placement, environment())
   invisible(as_motion_arg(motion, environment()))
-  click <- as_click_arg(click, environment())
   # Resolve once. Replace only slice 4's per-role contrast warnings with one list.
   resolved <- withCallingHandlers(
     mascot_update_theme(theme, environment(), if (is.null(character$data)) character$id else character$data),
@@ -99,7 +85,7 @@ mascot_preview <- function(
     abort_dots(
       names(substitute(list(...)))[-1L],
       ...length(),
-      c("mood", "status", "bubble", "size", "placement", "theme", "motion", "click"),
+      c("mood", "status", "bubble", "size", "theme", "motion"),
       environment()
     )
   }
@@ -117,7 +103,7 @@ mascot_preview <- function(
   }
   sizes <- c(
     list(size),
-    lapply(c(48, 32, 24), function(pixels) {
+    lapply(c(160, 96, 24), function(pixels) {
       checkmate::assert_number(pixels, lower = 24)
       mascot_size(pixels)
     })
@@ -157,10 +143,6 @@ mascot_preview <- function(
     ),
     htmltools::tags$h1(id = paste0(prefix, "-heading"), paste(character$name, "preview")),
     htmltools::tags$p("Compare each mood and size in both modes. Status text keeps the meaning readable."),
-    if (placement$position != "inline") htmltools::tags$p("Floating placement is shown inline in this comparison."),
-    if (!is.null(click) && click$type != "none") {
-      htmltools::tags$p("Clicks need Shiny and are inactive in this static preview.")
-    },
     if (length(resolved$css)) {
       htmltools::tags$p("Experimental CSS colours are checked in the browser console, not the R contrast list.")
     },

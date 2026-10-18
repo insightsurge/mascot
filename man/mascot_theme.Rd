@@ -41,7 +41,8 @@ they keep their original colours. Call \code{\link[=mascot_colour_roles]{mascot_
 roles for a character. A plain named list passed to \code{\link[=mascot]{mascot()}} or
 \code{\link[=update_mascot]{update_mascot()}} uses one set of colours in every mode. A \code{\link[bslib:bs_theme]{bslib::bs_theme()}}
 fills the character's declared brand leaders with its primary and secondary
-colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand =)}.
+colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand = )}. A
+\code{bs_theme()} always uses \code{mode = "auto"}.
 }
 \details{
 A theme survives a character swap: follow rules are applied again, and roles
@@ -65,7 +66,8 @@ the colour is always kept.
 
 R warnings appear only when \code{\link[shiny:in_devmode]{shiny::in_devmode()}} is \code{TRUE}, and always in
 \code{\link[=mascot_preview]{mascot_preview()}} and the studio. Set \code{options(mascot.contrast_warnings = TRUE)}
-or \code{FALSE} to force them on or off everywhere. Visitors never see R warnings.
+or \code{FALSE} to force them on or off everywhere. A non-flag value warns once
+per R session and uses the default. Visitors never see R warnings.
 CSS-variable colours (\verb{css =}) are checked and warn in the browser console.
 
 These warnings have the class \code{mascot_contrast}. To silence only these

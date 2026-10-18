@@ -4,11 +4,11 @@
 #' The status shows the capitalised mood word until the app sets its own text.
 #' It follows the mood again when [mascot_status()] is supplied without text.
 #'
-#' @param character A character name or [mascot_character()] object. Defaults
-#'   to `"tessa"`. `NULL` is not accepted.
 #' @param id A required non-empty string without whitespace, unique on the
 #'   page. In a Shiny module use `ns("helper")` in the UI and `"helper"` in
 #'   the server; [update_mascot()] adds the module namespace once.
+#' @param character A character name or [mascot_character()] object. Defaults
+#'   to `"tessa"`. `NULL` is not accepted.
 #' @param mood A mood name or [mascot_mood()] object. Defaults to `"idle"`.
 #'   See [mascot_moods()] for available choices. `NULL` is not accepted.
 #' @param status A non-empty string or [mascot_status()] object. `NULL` (the
@@ -238,7 +238,11 @@ mascot <- function(
       mascot_state_prepare(list(desired = list(), context = NULL), baseline)
     },
     error = function(error) {
-      cli::cli_abort("{conditionMessage(error)}", class = "mascot_error", call = public_call)
+      cli::cli_abort(
+        "{conditionMessage(error)}",
+        class = unique(c(class(error)[startsWith(class(error), "mascot_error")], "mascot_error")),
+        call = public_call
+      )
     }
   )
   token <- mascot_mount_token(id, prepared$desired)
@@ -364,8 +368,8 @@ check_arg <- function(x, arg, call) {
   if (is.null(problem)) {
     return(invisible(NULL))
   }
-  if (arg %in% c("character", "mood", "gesture") && isTRUE(checkmate::check_string(x, min.chars = 1))) {
-    valid <- switch(arg, character = builtin_characters()$id, mood = mood_table()$name, gesture = gesture_table()$name)
+  if (arg == "character" && isTRUE(checkmate::check_string(x, min.chars = 1))) {
+    valid <- builtin_characters()$id
     abort_choice(x, valid, arg, arg, call)
   }
   cli::cli_abort("{problem}", call = call, class = "mascot_error")
@@ -379,9 +383,12 @@ abort_dots <- function(extras, n, valid, call) {
   checkmate::assert_character(valid, min.chars = 1, any.missing = FALSE, min.len = 1)
   checkmate::assert_environment(call)
   # Unnamed values have no name; positional values after `...` are the usual slip.
-  extras <- if (is.null(extras)) rep("unnamed", n) else replace(extras, !nzchar(extras), "unnamed")
+  extras <- if (is.null(extras)) rep("", n) else extras
+  labels <- ifelse(nzchar(extras), encodeString(extras, quote = '"'), "an unnamed argument")
+  message <- paste0("Unexpected arguments: ", paste(labels, collapse = ", "), ".")
+  message <- gsub("}", "}}", gsub("{", "{{", message, fixed = TRUE), fixed = TRUE)
   cli::cli_abort(
-    c("Unexpected arguments: {.val {extras}}.", "i" = "Name the optional arguments: {.arg {valid}}."),
+    c(message, "i" = "Name the optional arguments: {.arg {valid}}."),
     call = call,
     class = c("mascot_error_dots", "mascot_error"),
     names = extras
@@ -470,20 +477,6 @@ arg_problem <- function(x, arg) {
   }
   if (arg %in% c("status", "bubble")) {
     return(NULL)
-  }
-  valid <- switch(arg, character = builtin_characters()$id, mood = mood_table()$name, gesture = gesture_table()$name)
-  if (!x %in% valid) {
-    return(paste0(
-      "`",
-      arg,
-      "` must be one of ",
-      paste(encodeString(valid, quote = '"'), collapse = ", "),
-      "; ",
-      encodeString(x, quote = '"'),
-      " is not a ",
-      arg,
-      "."
-    ))
   }
   NULL
 }

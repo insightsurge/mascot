@@ -7,7 +7,8 @@
 #' roles for a character. A plain named list passed to [mascot()] or
 #' [update_mascot()] uses one set of colours in every mode. A [bslib::bs_theme()]
 #' fills the character's declared brand leaders with its primary and secondary
-#' colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
+#' colours; `_brand.yml` can be supplied through `bs_theme(brand = )`. A
+#' `bs_theme()` always uses `mode = "auto"`.
 #'
 #' A theme survives a character swap: follow rules are applied again, and roles
 #' absent from the incoming character are ignored. An empty `mascot_theme()`
@@ -29,7 +30,8 @@
 #'
 #' R warnings appear only when [shiny::in_devmode()] is `TRUE`, and always in
 #' [mascot_preview()] and the studio. Set `options(mascot.contrast_warnings = TRUE)`
-#' or `FALSE` to force them on or off everywhere. Visitors never see R warnings.
+#' or `FALSE` to force them on or off everywhere. A non-flag value warns once
+#' per R session and uses the default. Visitors never see R warnings.
 #' CSS-variable colours (`css =`) are checked and warn in the browser console.
 #'
 #' These warnings have the class `mascot_contrast`. To silence only these
@@ -84,11 +86,14 @@ mascot_theme <- function(..., light = NULL, dark = NULL, mode = "auto", css = NU
   with_mascot_asserts({
     checkmate::assert_list(light, names = "unique", null.ok = TRUE)
     checkmate::assert_list(dark, names = "unique", null.ok = TRUE)
-    checkmate::assert_choice(mode, c("light", "dark", "auto"))
+    checkmate::assert_string(mode)
     checkmate::assert_list(css, names = "unique", null.ok = TRUE)
   })
   if (...length() > 0L) {
     abort_dots(names(substitute(list(...)))[-1L], ...length(), c("light", "dark", "mode", "css"), environment())
+  }
+  if (!mode %in% c("light", "dark", "auto")) {
+    abort_choice(mode, c("light", "dark", "auto"), "mode", "mode", environment())
   }
   value <- structure(
     list(light = light, dark = dark, mode = mode, css = css),
@@ -120,7 +125,9 @@ theme_map_problem <- function(x, arg, roles, css = FALSE) {
       paste(encodeString(wrong, quote = '"'), collapse = ", "),
       ".",
       theme_role_hint(wrong, roles),
-      " See `mascot_colour_roles()` for each character's roles."
+      " Valid roles: ",
+      paste(encodeString(roles, quote = '"'), collapse = ", "),
+      ". See `mascot_colour_roles()` for each character's roles."
     ))
   }
   for (role in names(x)) {
@@ -408,5 +415,15 @@ contrast_warnings <- function(always = FALSE) {
   if (isTRUE(override) || identical(override, FALSE)) {
     return(override)
   }
+  if (!is.null(override) && !isTRUE(contrast_warning_state$warned)) {
+    contrast_warning_state$warned <- TRUE
+    cli::cli_warn(
+      "Option {.code mascot.contrast_warnings} must be TRUE or FALSE; using the default.",
+      class = "mascot_warning"
+    )
+  }
   always || shiny::in_devmode()
 }
+
+# Session-local diagnostic state; no warning or option changes on load.
+contrast_warning_state <- new.env(parent = emptyenv())

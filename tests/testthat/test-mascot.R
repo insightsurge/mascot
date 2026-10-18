@@ -520,3 +520,20 @@ describe("internal R4a character argument forms", {
     expect_warning(update_mascot("helper", theme = "sea", session = session), "unchanged")
   })
 })
+
+describe("B2 construction diagnostics", {
+  it("explains lowercase ids for custom moods and gestures", {
+    bot <- mascot_check_character(format_recipe("study_bot"))
+    expect_error(mascot("helper", character = bot, mood = "Reviewing"), "lowercase")
+    expect_error(check_arg("Greet", "gesture", environment()), "lowercase")
+  })
+  it("preserves a specific condition when baseline preparation fails", {
+    local_mocked_bindings(mascot_state_prepare = function(...) {
+      abort_choice("bad", "good", "mood", "mood", environment())
+    })
+    expect_error(mascot("helper"), class = "mascot_error_choice")
+  })
+  it("describes unnamed arguments as arguments", {
+    expect_error(mascot("helper", 1), "an unnamed argument", fixed = TRUE)
+  })
+})

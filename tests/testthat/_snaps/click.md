@@ -4,7 +4,7 @@
       mascot_action("Open help", FALSE, href = "#help")
     Condition
       Error in `mascot_action()`:
-      ! Unexpected arguments: "unnamed" and "href".
+      ! Unexpected arguments: an unnamed argument, "href".
       i Name the optional arguments: `tooltip` and `disabled`.
 
 # mascot_action() / prints a recreating call without defaults

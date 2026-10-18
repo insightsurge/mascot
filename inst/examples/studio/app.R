@@ -1153,15 +1153,10 @@ studio_server <- function(input, output, session) {
   })
   preview_args <- reactive({
     own <- formals(mascot::mascot_preview)
-    lines <- trimws(strsplit(input$preview_menu_items %||% "", "\n", fixed = TRUE)[[1]])
-    lines <- lines[nzchar(lines)]
-    validate(need(all(grepl("=", lines, fixed = TRUE)), "Write each menu item as id = Label."))
-    items <- stats::setNames(trimws(sub("^[^=]*=", "", lines)), trimws(sub("=.*$", "", lines)))
     mood <- input$preview_mood %||% ""
     status <- input$preview_status %||% ""
     bubble <- input$preview_bubble %||% ""
     size <- input$preview_size %||% own$size
-    placement <- input$preview_placement %||% own$placement
     args <- list(
       character = if (!is.null(uploaded_character())) {
         helper_call("mascot_read_character", uploaded_filename())
@@ -1172,24 +1167,12 @@ studio_server <- function(input, output, session) {
       status = if (nzchar(trimws(status))) status,
       bubble = if (nzchar(trimws(bubble))) bubble,
       size = if (size != own$size) as.numeric(size),
-      placement = if (placement != own$placement) placement,
       theme = if (identical(input$preview_theme_source, "custom") && length(preview_colours())) {
         named_call("list", preview_colours())
       },
-      motion = if (isTRUE(input$preview_motion)) TRUE,
-      click = if (length(items)) helper_call("mascot_popup_menu", named_call("c", items))
+      motion = if (isTRUE(input$preview_motion)) TRUE
     )
     Filter(Negate(is.null), args)
-  })
-  output$preview_problem <- renderUI({
-    problem <- tryCatch(
-      {
-        preview_args()
-        NULL
-      },
-      error = function(e) conditionMessage(e)
-    )
-    if (!is.null(problem)) div(class = "pg-note pg-warn", problem)
   })
   prefix <- paste0("studio-preview-", session$token)
   preview_dir <- file.path(tempdir(), prefix)

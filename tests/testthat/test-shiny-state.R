@@ -531,3 +531,31 @@ describe("target-specific diagnostics", {
     )
   })
 })
+
+describe("B2 mount diagnostics and private inputs", {
+  it("adds the development overlay when a buffered update fails at mount", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot("helper", mood = "missing", session = f$session)
+    expect_warning(protocol_ready(f), class = "mascot_update_ignored")
+    latest <- protocol_flush(f)
+    expect_match(latest$problem, "mascot: .*missing")
+    expect_identical(latest$state$mood, "idle")
+  })
+  it("keeps private inputs visible to reactiveValuesToList but excludes them from bookmarks", {
+    shiny::testServer(
+      function(input, output, session) {
+        shiny::setBookmarkExclude("existing", session)
+        mascot_id_state(session, "helper")
+        session$setInputs(helper = list(version = 1L), ordinary = "kept")
+        values <- shiny::isolate(shiny::reactiveValuesToList(input))
+        expect_true("helper" %in% names(values))
+        expect_equal(values$ordinary, "kept")
+        expect_true(all(c("existing", "helper") %in% session$getBookmarkExclude()))
+        expect_false("ordinary" %in% session$getBookmarkExclude())
+      },
+      {}
+    )
+  })
+})

@@ -3,6 +3,7 @@
 S3method(format,mascot_action)
 S3method(format,mascot_bubble)
 S3method(format,mascot_character)
+S3method(format,mascot_character_data)
 S3method(format,mascot_gesture)
 S3method(format,mascot_mood)
 S3method(format,mascot_motion_settings)

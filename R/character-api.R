@@ -171,20 +171,32 @@ character_api_asserts <- function(code, argument, value) {
 #' @exportS3Method print mascot_character_data
 #' @noRd
 print.mascot_character_data <- function(x, ...) {
-  checkmate::assert_class(x, "mascot_character_data")
+  with_mascot_asserts(checkmate::assert_class(x, "mascot_character_data"))
+  character_build_dots(..., .path = "$")
+  cli::cat_line(format(x))
+  invisible(x)
+}
+
+#' Compact text for checked character data
+#' @method format mascot_character_data
+#' @exportS3Method format mascot_character_data
+#' @noRd
+format.mascot_character_data <- function(x, ...) {
+  with_mascot_asserts(checkmate::assert_class(x, "mascot_character_data"))
   character_build_dots(..., .path = "$")
   checked <- character_data_verify(x)
   origin <- attr(x, "mascot_origin")
   if (is.null(origin)) {
     origin <- "object"
   }
-  cli::cat_line(paste0(checked$id, ": ", checked$name, " (", checked$family, ")"))
-  cli::cat_line(paste("Moods:", paste(names(checked$moods), collapse = ", ")))
-  cli::cat_line(paste("Gestures:", paste(names(checked$gestures), collapse = ", ")))
   bands <- names(checked$lod)
-  cli::cat_line(paste("Detail overrides:", if (length(bands)) paste(bands, collapse = ", ") else "none"))
-  cli::cat_line(paste("From:", origin))
-  invisible(x)
+  c(
+    paste0(checked$id, ": ", checked$name, " (", checked$family, ")"),
+    paste("Moods:", paste(names(checked$moods), collapse = ", ")),
+    paste("Gestures:", paste(names(checked$gestures), collapse = ", ")),
+    paste("Detail overrides:", if (length(bands)) paste(bands, collapse = ", ") else "none"),
+    paste("From:", origin)
+  )
 }
 
 #' Character format version 1
@@ -193,7 +205,9 @@ print.mascot_character_data <- function(x, ...) {
 #' JSON objects with `format_version = 1`, `requires`, `id`, `name`, `description`,
 #' a `family`, colours, ground, parts and five shared moods (`idle`, `thinking`,
 #' `happy`, `worried`, `celebrating`). Optional anchors, palettes, face kits and
-#' gestures describe their own supported names. Small sizes may hide details
+#' gestures describe their own supported names. Palette ids cannot be `original`
+#' or the reserved style aliases `minimal`, `pastel`, `vivid`, `corporate`,
+#' `earthy` and `night`. Small sizes may hide details
 #' the character marks for small sizes. Text is displayed as text, never HTML.
 #'
 #' Start from `system.file("examples", "characters", "study_bot.json", package = "mascot")`.

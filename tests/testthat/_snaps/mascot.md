@@ -110,3 +110,21 @@
     Output
       [1] "Assertion on 'value' failed: Must be of type 'string', not 'double'."
 
+# review fixes for construction diagnostics and documentation / counts unnamed arguments and keeps named arguments listed
+
+    Code
+      mascot("helper", 1, 2, typo = 3)
+    Condition
+      Error in `mascot()`:
+      ! Unexpected arguments: 2 unnamed arguments, "typo".
+      i Name the optional arguments: `character`, `mood`, `status`, `bubble`, `size`, `placement`, `theme`, `motion`, and `click`.
+
+---
+
+    Code
+      mascot("helper", 1)
+    Condition
+      Error in `mascot()`:
+      ! Unexpected arguments: an unnamed argument.
+      i Name the optional arguments: `character`, `mood`, `status`, `bubble`, `size`, `placement`, `theme`, `motion`, and `click`.
+

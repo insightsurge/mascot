@@ -121,13 +121,20 @@
 
 * Checked character data gains a compact `format()` method; `print()` assertion failures carry `mascot_error` (#350).
 
-* Mascot construction preserves specific error classes and explains malformed mood and gesture ids using the lowercase rule. Unexpected positional arguments are described as unnamed arguments (#350).
+* `mascot()` preserves specific error classes and their choice fields for handlers.
+  Malformed mood ids list the chosen character's moods as well as the lowercase
+  rule; unexpected arguments count unnamed values and list named ones (#350).
+
+* `mascot_placement()` prints logical drag values without quotes and explains
+  the `"none"`, `"snap"` and `"free"` modes in errors (#350).
 
 * Mascot conditions are listed in the package help, including choice, authoring and development diagnostics (#350).
 
 * Palette ids reserve `minimal`, `pastel`, `vivid`, `corporate`, `earthy` and `night` for style aliases (#350).
 
-* Shiny excludes private mascot state inputs from bookmarks and shows the development problem overlay when a buffered update fails at mount (#350).
+* Shiny excludes private mascot state inputs from bookmarks even when the app
+  later replaces its exclusions, including inside modules, and shows the
+  development problem overlay when a buffered update fails at mount (#350).
 
 * Theme errors list valid roles, invalid contrast-warning options warn once, and theme mode, drag and studio choices carry `mascot_error_choice` (#350).
 

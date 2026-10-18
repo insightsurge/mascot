@@ -14,7 +14,8 @@
     Condition
       Error in `mascot_placement()`:
       ! `drag` must be one of "none", "snap", or "free".
-      x "TRUE" is not a drag mode (TRUE is not accepted); use drag = "none" for no dragging.
+      x TRUE is not a drag mode (TRUE is not accepted).
+      i Use drag = "none" for no dragging: "none" disables dragging, "snap" moves to the nearest corner, and "free" stays where dropped.
 
 ---
 
@@ -23,7 +24,8 @@
     Condition
       Error in `mascot_placement()`:
       ! `drag` must be one of "none", "snap", or "free".
-      x "fixed" is not a drag mode; use drag = "none" for no dragging.
+      x "fixed" is not a drag mode.
+      i Use drag = "none" for no dragging: "none" disables dragging, "snap" moves to the nearest corner, and "free" stays where dropped.
 
 ---
 

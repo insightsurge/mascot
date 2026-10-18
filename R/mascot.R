@@ -7,6 +7,7 @@
 #' @param id A required non-empty string without whitespace, unique on the
 #'   page. In a Shiny module use `ns("helper")` in the UI and `"helper"` in
 #'   the server; [update_mascot()] adds the module namespace once.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param character A character name or [mascot_character()] object. Defaults
 #'   to `"tessa"`. `NULL` is not accepted.
 #' @param mood A mood name or [mascot_mood()] object. Defaults to `"idle"`.
@@ -51,7 +52,6 @@
 #'   A [mascot_popup_menu()] object makes it open a menu, whose choice sets
 #'   `input$<id>_menu`. With a click, every
 #'   activation sets `input$<id>_click` (see Details).
-#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns An `htmltools` tag with the mascot's web dependency attached.
 #' @family mascots in Shiny
 #' @seealso [update_mascot()]
@@ -183,7 +183,7 @@ mascot <- function(
     checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   })
   character <- as_character_arg(character, environment())
-  mood <- as_mood_arg(mood, environment())
+  mood <- as_mood_arg(mood, environment(), character)
   known_moods <- mascot_moods(if (is.null(character$data)) character$id else character$data)$name
   if (!mood$name %in% known_moods) {
     abort_choice(mood$name, known_moods, "mood", "mood", environment())
@@ -242,7 +242,10 @@ mascot <- function(
       cli::cli_abort(
         "{conditionMessage(error)}",
         class = unique(c(class(error)[startsWith(class(error), "mascot_error")], "mascot_error")),
-        call = public_call
+        call = public_call,
+        argument = error$argument,
+        choices = error$choices,
+        value = error$value
       )
     }
   )
@@ -340,10 +343,13 @@ as_character_arg <- function(x, call) {
 
 #' Accept a mood shortcut or helper
 #' @noRd
-as_mood_arg <- function(x, call) {
+as_mood_arg <- function(x, call, character = NULL) {
   checkmate::assert_environment(call)
+  if (!is.null(character)) {
+    character_catalogue_assert(character)
+  }
   # See as_character_arg(): this argument accepts a union of types.
-  check_arg(x, "mood", call)
+  check_arg(x, "mood", call, character)
   if (inherits(x, "mascot_mood")) x else mascot_mood(x)
 }
 
@@ -358,12 +364,15 @@ as_status_arg <- function(x, call) {
 
 #' Check a build-time argument with the public call attached
 #' @noRd
-check_arg <- function(x, arg, call) {
+check_arg <- function(x, arg, call, character = NULL) {
   checkmate::assert_choice(
     arg,
     c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "click")
   )
   checkmate::assert_environment(call)
+  if (!is.null(character)) {
+    character_catalogue_assert(character)
+  }
   # x is checked by arg_problem(), shared with warning-only runtime validation.
   problem <- arg_problem(x, arg)
   if (is.null(problem)) {
@@ -372,6 +381,10 @@ check_arg <- function(x, arg, call) {
   if (arg == "character" && isTRUE(checkmate::check_string(x, min.chars = 1))) {
     valid <- builtin_characters()$id
     abort_choice(x, valid, arg, arg, call)
+  }
+  if (arg %in% c("mood", "gesture") && !is.null(character)) {
+    valid <- if (arg == "mood") mascot_moods(character)$name else mascot_gestures(character)$name
+    cli::cli_abort(c("{problem}", "i" = "Choose {.or {.val {valid}}}."), call = call, class = "mascot_error")
   }
   cli::cli_abort("{problem}", call = call, class = "mascot_error")
 }
@@ -385,8 +398,20 @@ abort_dots <- function(extras, n, valid, call) {
   checkmate::assert_environment(call)
   # Unnamed values have no name; positional values after `...` are the usual slip.
   extras <- if (is.null(extras)) rep("", n) else extras
-  labels <- ifelse(nzchar(extras), encodeString(extras, quote = '"'), "an unnamed argument")
-  message <- paste0("Unexpected arguments: ", paste(labels, collapse = ", "), ".")
+  unnamed <- sum(!nzchar(extras))
+  labels <- c(
+    if (unnamed == 1L) {
+      "an unnamed argument"
+    } else if (unnamed > 1L) {
+      paste(unnamed, "unnamed arguments")
+    },
+    encodeString(extras[nzchar(extras)], quote = '"')
+  )
+  message <- paste0(
+    "Unexpected arguments: ",
+    paste(labels, collapse = ", "),
+    "."
+  )
   message <- gsub("}", "}}", gsub("{", "{{", message, fixed = TRUE), fixed = TRUE)
   cli::cli_abort(
     c(message, "i" = "Name the optional arguments: {.arg {valid}}."),

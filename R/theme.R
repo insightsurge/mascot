@@ -50,6 +50,7 @@
 #'   used. `"original"` also chooses its own colours. A palette is applied first,
 #'   then `light` and `dark` roles, then `css`. Without a dark map, a palette uses
 #'   its light colours in both modes. A `bs_theme()` is a separate alternative.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param light,dark Named lists of colour roles, or `NULL` (the default) to keep
 #'   the palette's colours (or the character's own colours) in that mode.
 #'   Values can be colour names, hex
@@ -68,7 +69,6 @@
 #'   colour and warn in the browser console; low contrast also warns there and
 #'   keeps the colour. Variables are read from the original source context,
 #'   including when the mascot floats.
-#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_theme` object describing colours, CSS sources and mode.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers

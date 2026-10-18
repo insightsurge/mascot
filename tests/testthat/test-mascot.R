@@ -539,3 +539,60 @@ describe("B2 construction diagnostics", {
     expect_error(mascot("helper", 1), "an unnamed argument", fixed = TRUE)
   })
 })
+
+
+describe("review fixes for construction diagnostics and documentation", {
+  it("lists the chosen character's moods and gestures for malformed ids", {
+    for (character in list(catalogue_alpha_two(), "tessa")) {
+      mood_error <- tryCatch(mascot("helper", character = character, mood = "ha!py"), error = identity)
+      expect_match(conditionMessage(mood_error), "lowercase")
+      for (name in mascot_moods(character)$name) {
+        expect_match(conditionMessage(mood_error), name, fixed = TRUE)
+      }
+      gesture_error <- tryCatch(check_arg("wa!ve", "gesture", environment(), character), error = identity)
+      for (name in mascot_gestures(character)$name) {
+        expect_match(conditionMessage(gesture_error), name, fixed = TRUE)
+      }
+    }
+  })
+
+  it("retains choice fields when baseline preparation re-raises an error", {
+    local_mocked_bindings(mascot_state_prepare = function(...) {
+      abort_choice("bad", c("idle", "happy"), "mood", "mood", environment())
+    })
+    error <- tryCatch(mascot("helper"), mascot_error_choice = identity)
+    expect_identical(error$argument, "mood")
+    expect_identical(error$choices, c("idle", "happy"))
+    expect_identical(error$value, "bad")
+  })
+
+  it("counts unnamed arguments and keeps named arguments listed", {
+    expect_error(mascot("helper", 1, 2, typo = 3), '2 unnamed arguments, "typo"', fixed = TRUE)
+    expect_error(mascot("helper", 1), "Unexpected arguments: an unnamed argument.", fixed = TRUE)
+    expect_snapshot(error = TRUE, mascot("helper", 1, 2, typo = 3))
+    expect_snapshot(error = TRUE, mascot("helper", 1))
+  })
+
+  it("describes the current preview sizes and inline layout", {
+    path <- test_path("..", "..", "vignettes", "mascot.Rmd")
+    skip_if_not(file.exists(path), "Source-only vignette check")
+    text <- paste(readLines(path), collapse = "\n")
+    section <- strsplit(
+      strsplit(text, "## Check a look before using it", fixed = TRUE)[[1]][2],
+      "## Leave unchanged or reset",
+      fixed = TRUE
+    )[[1]][1]
+    expect_match(section, "160, 96 and 24 pixels", fixed = TRUE)
+    expect_match(section, "inline", fixed = TRUE)
+    expect_false(grepl("Floating settings|click menu|32 and 24", section))
+  })
+
+  it("documents dots immediately after the first argument", {
+    skip_if_not(file.exists(test_path("..", "..", "R", "mascot.R")), "Source-only roxygen check")
+    for (file in c("mascot", "bubble", "size", "placement", "theme")) {
+      lines <- readLines(test_path("..", "..", "R", paste0(file, ".R")))
+      params <- grep("^#' @param ", lines, value = TRUE)
+      expect_true(startsWith(params[2], "#' @param ... "), info = file)
+    }
+  })
+})

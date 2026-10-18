@@ -639,3 +639,42 @@ describe("B2 mount diagnostics and private inputs", {
     )
   })
 })
+
+
+describe("private bookmark exclusions", {
+  it("survives later app exclusions at root and in nested modules", {
+    shiny::testServer(
+      function(input, output, session) {
+        nested <- session$makeScope("outer")$makeScope("inner")
+        update_mascot("helper", mood = "happy", session = session)
+        update_mascot("helper", mood = "happy", session = nested)
+        shiny::setBookmarkExclude("x", session = session)
+        shiny::setBookmarkExclude("password", session = nested)
+        # Shiny doBookmark() collects this list before running onBookmark callbacks.
+        excluded <- session$getBookmarkExclude()
+        expect_true(all(c("helper", "outer-inner-helper", "x", "outer-inner-password") %in% excluded))
+        expect_false("ordinary" %in% excluded)
+      },
+      {}
+    )
+  })
+})
+
+
+describe("real Shiny bookmark collection", {
+  it("collects private exclusions after later app and module replacements", {
+    # Only the transport is inert; scope and exclusion collection use ShinySession.
+    session <- getFromNamespace("ShinySession", "shiny")$new(list(
+      request = list(),
+      send = function(...) NULL,
+      close = function(...) NULL
+    ))
+    withr::defer(session$close())
+    nested <- session$makeScope("outer")$makeScope("inner")
+    update_mascot("helper", mood = "happy", session = session)
+    update_mascot("helper", mood = "happy", session = nested)
+    shiny::setBookmarkExclude("x", session = session)
+    shiny::setBookmarkExclude("password", session = nested)
+    expect_true(all(c("helper", "outer-inner-helper", "x", "outer-inner-password") %in% session$getBookmarkExclude()))
+  })
+})

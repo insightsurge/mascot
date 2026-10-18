@@ -3,8 +3,8 @@
 [![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml)
 
 Live, mood-driven mascots for R: a character drawn in code that shows a mood in your Shiny app or Quarto site and
-animates when the mood changes. It reacts to form validation, shows a busy mood while your app computes, follows
-light and dark mode, and takes its colours from your brand. No AI needed to use it.
+animates when the mood changes. You set its mood from your server code, for example while your app computes or a form
+fails validation. It follows light and dark mode, and takes its colours from your brand. No AI needed to use it.
 
 **Status:** early development, before 0.1.0. Not on CRAN yet.
 

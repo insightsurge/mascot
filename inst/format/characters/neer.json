@@ -1470,7 +1470,214 @@
       }
     }
   ],
-  "anchors": {},
+  "anchors": {
+    "crown": {
+      "part": "body",
+      "at": [
+        250,
+        126
+      ],
+      "description": "Top summit of the wave crest.",
+      "variants": {
+        "thinking": {
+          "at": [
+            252,
+            124
+          ]
+        },
+        "happy": {
+          "at": [
+            254,
+            120
+          ]
+        },
+        "worried": {
+          "at": [
+            248,
+            132
+          ]
+        },
+        "celebrating": {
+          "at": [
+            258,
+            114
+          ]
+        }
+      }
+    },
+    "crest": {
+      "part": "body",
+      "at": [
+        308,
+        204
+      ],
+      "side": "r",
+      "description": "Curling tip of the wave crest.",
+      "variants": {
+        "thinking": {
+          "at": [
+            309,
+            204
+          ]
+        },
+        "happy": {
+          "at": [
+            311,
+            203
+          ]
+        },
+        "worried": {
+          "at": [
+            306,
+            205
+          ]
+        },
+        "celebrating": {
+          "at": [
+            314,
+            202
+          ]
+        }
+      }
+    },
+    "forehead": {
+      "part": "body",
+      "at": [
+        156,
+        195
+      ],
+      "description": "Forehead centre above the brows."
+    },
+    "eyes": {
+      "part": "body",
+      "at": [
+        156,
+        236
+      ],
+      "description": "Midpoint between the eyes."
+    },
+    "face": {
+      "part": "body",
+      "at": [
+        156,
+        260
+      ],
+      "description": "Centre of the face between eyes and mouth."
+    },
+    "chest": {
+      "part": "body",
+      "at": [
+        165,
+        305
+      ],
+      "description": "Chest area on the front wave surface below the mouth."
+    },
+    "hand_l": {
+      "part": "arm_l",
+      "at": [
+        59.48,
+        3.61
+      ],
+      "side": "l",
+      "description": "Left hand attachment point."
+    },
+    "hand_r": {
+      "part": "arm_r",
+      "at": [
+        59.48,
+        -3.61
+      ],
+      "side": "r",
+      "description": "Right hand attachment point."
+    },
+    "foot_l": {
+      "part": "feet",
+      "at": [
+        116,
+        327
+      ],
+      "side": "l",
+      "description": "Left foot attachment point."
+    },
+    "foot_r": {
+      "part": "feet",
+      "at": [
+        214,
+        327
+      ],
+      "side": "r",
+      "description": "Right foot attachment point."
+    },
+    "shell": {
+      "part": "shell",
+      "at": [
+        0,
+        0
+      ],
+      "side": "l",
+      "description": "Scallop shell hair clip on the left."
+    },
+    "sweat": {
+      "part": "body",
+      "at": [
+        298,
+        204
+      ],
+      "side": "r",
+      "description": "Sweat drop anchor on the upper right wave flank.",
+      "variants": {
+        "worried": {
+          "at": [
+            296,
+            204
+          ]
+        }
+      }
+    },
+    "sparkle": {
+      "part": "body",
+      "at": [
+        288,
+        140
+      ],
+      "side": "r",
+      "description": "Sparkle effect anchor on the sunlit crest curve.",
+      "variants": {
+        "thinking": {
+          "at": [
+            289,
+            138
+          ]
+        },
+        "happy": {
+          "at": [
+            291,
+            134
+          ]
+        },
+        "worried": {
+          "at": [
+            285,
+            145
+          ]
+        },
+        "celebrating": {
+          "at": [
+            294,
+            128
+          ]
+        }
+      }
+    },
+    "wave_base": {
+      "part": "body",
+      "at": [
+        156,
+        322
+      ],
+      "description": "Base waterline of the wave where it meets the ground."
+    }
+  },
   "face": {
     "part": "face_owner",
     "kit": "neer_face",

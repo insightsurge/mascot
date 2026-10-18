@@ -1765,7 +1765,7 @@ describe("mascot.host popup menu", {
     # Menu toggles, choices and Escape never send action clicks.
     expect_identical(r$clicks, 0L)
   })
-  it("opens eight pixels from the painted character, including inline reserved bubble space", {
+  it("opens eight pixels from the painted character above it, or from the status below it", {
     skip_without_chrome()
     for (position in c("inline", "top-left", "top-right", "bottom-left", "bottom-right")) {
       js <- local_host_page(
@@ -1791,9 +1791,10 @@ describe("mascot.host popup menu", {
           }
         }
         const top = box.top + rows[0] / canvas.height * box.height;
-        const bottom = box.top + (rows.at(-1) + 1) / canvas.height * box.height;
+        // A menu below the mascot clears its status text, which sits under the drawing.
+        const below = el.querySelector('.mascot-status').getBoundingClientRect().bottom;
         return {gap: el.dataset.position.startsWith('top') && el.dataset.floating === 'true'
-          ? menu.top - bottom : top - menu.bottom, top: menu.top, bottom: menu.bottom,
+          ? menu.top - below : top - menu.bottom, top: menu.top, bottom: menu.bottom,
           focus: document.activeElement === el.querySelector('[role=menuitem]')};
       })()"
       )
@@ -1967,7 +1968,7 @@ describe("mascot.host popup menu", {
     expect_false(r$open)
     expect_false(r$hidden)
   })
-  it("places the popup menu in each requested direction with an eight-pixel gap from the canvas", {
+  it("places the popup menu in each requested direction with an eight-pixel gap from the drawing or status", {
     skip_without_chrome()
     for (dir in c("top", "bottom", "left", "right")) {
       js <- local_host_page(
@@ -2003,7 +2004,7 @@ describe("mascot.host popup menu", {
         const inkBottom = box.top + ((maxY + 1) / canvas.height) * box.height;
         return {
           gapTop: inkTop - menu.bottom,
-          gapBottom: menu.top - inkBottom,
+          gapBottom: menu.top - el.querySelector('.mascot-status').getBoundingClientRect().bottom,
           gapLeft: inkLeft - menu.right,
           gapRight: menu.left - inkRight,
           menuTop: menu.top,
@@ -2032,6 +2033,39 @@ describe("mascot.host popup menu", {
       }
     }
   })
+  it("keeps a two-line status readable when a menu requests the bottom side", {
+    skip_without_chrome()
+    for (corner in c("top-left", "bottom-left")) {
+      js <- local_host_page(
+        click = mascot_popup_menu(c(about = "About"), direction = "bottom"),
+        shiny_menu = TRUE,
+        placement = mascot_placement(corner, minimise = FALSE),
+        viewport = c(800, 600)
+      )
+      res <- js(
+        "(() => {
+        const el = document.getElementById('a'), status = el.querySelector('.mascot-status');
+        const range = document.createRange();
+        range.selectNodeContents(status);
+        const lines = range.getClientRects().length;
+        el.querySelector('.mascot-menu-toggle').click();
+        const panel = el.querySelector('.mascot-menu');
+        const menu = panel.getBoundingClientRect(), text = status.getBoundingClientRect();
+        return { lines, side: panel.dataset.side, gap: menu.top - text.bottom,
+          overlaps: menu.left < text.right && menu.right > text.left &&
+            menu.top < text.bottom && menu.bottom > text.top };
+      })()"
+      )
+      expect_equal(res$lines, 2)
+      expect_false(res$overlaps)
+      if (corner == "top-left") {
+        expect_identical(res$side, "bottom")
+        expect_equal(res$gap, 8, tolerance = 1)
+      } else {
+        expect_identical(res$side, "top")
+      }
+    }
+  })
   it("falls back to the opposite side then auto when the requested direction has no room", {
     skip_without_chrome()
     js_top <- local_host_page(
@@ -2042,22 +2076,15 @@ describe("mascot.host popup menu", {
     )
     res_top <- js_top(
       "(() => {
-      const el = document.getElementById('a'), canvas = el.querySelector('canvas');
+      const el = document.getElementById('a');
       el.querySelector('.mascot-menu-toggle').click();
       const menu = el.querySelector('.mascot-menu').getBoundingClientRect();
-      const box = canvas.getBoundingClientRect();
-      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-      let maxY = -1;
-      for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-          if (pixels[(y * canvas.width + x) * 4 + 3] > 0) maxY = Math.max(maxY, y);
-        }
-      }
-      const inkBottom = box.top + ((maxY + 1) / canvas.height) * box.height;
-      return { gap: menu.top - inkBottom };
+      const status = el.querySelector('.mascot-status').getBoundingClientRect();
+      return { gap: menu.top - status.bottom, side: el.querySelector('.mascot-menu').dataset.side };
     })()"
     )
     expect_equal(res_top$gap, 8, tolerance = 1)
+    expect_identical(res_top$side, "bottom")
 
     js_bottom <- local_host_page(
       click = mascot_popup_menu(c(about = "About"), direction = "bottom"),

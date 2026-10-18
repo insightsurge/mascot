@@ -30,7 +30,7 @@ risks) is in the character design records, kept on the `design-assets` branch (`
 
 | Confidence | User | Use cases |
 |---|---|---|
-| High | Shiny developers | Mood reacts to form validation (`shinyvalidate`); a busy mood instead of a spinner; empty-state hints; message bubbles ("Take a break, this part is long"); brand colours and light/dark mode for free; later, a quiet hint giver that explains inputs and outputs |
+| High | Shiny developers | Mood set from the server when a form fails or a task runs (automatic `shinyvalidate` and busy-event helpers follow in 0.2.0); a busy mood instead of a spinner; empty-state hints; message bubbles ("Take a break, this part is long"); brand colours and light/dark mode for free; later, a quiet hint giver that explains inputs and outputs |
 | High | The R Engineering Playbook site (first user) | Mascot in articles through a Quarto shortcode, following the site's light/dark toggle |
 | High | Open-source package maintainers | A mascot for their package: README and pkgdown hero; later avatars, hex stickers, release clips |
 | High | Teachers and workshop authors | Mascot in Quarto slides and tutorials; cheering learners on in Shiny exercises; hints for terms |
@@ -41,8 +41,8 @@ risks) is in the character design records, kept on the `design-assets` branch (`
 | Low | R user groups and conferences | Event mascots |
 
 ## Works without AI (0.1.0)
-Tessa, Sela, Knurl and Neer with the five moods (idle, thinking, happy, worried, celebrating) with smooth transitions; a busy mood driven
-by Shiny's own busy events; reacting to a `shinyvalidate` validator; message bubbles; light and dark mode following
+Tessa, Sela, Knurl and Neer with the five moods (idle, thinking, happy, worried, celebrating) with smooth transitions, set from your app with
+`update_mascot()` (for example while a task runs or a form fails); message bubbles; light and dark mode following
 bslib's `input_dark_mode()`, Quarto's toggle or the system setting; themes from `_brand.yml`, a `bs_theme()` or CSS;
 a floating, fixed, inline or dismissible card that never covers Shiny's own messages; a gallery app with a character
 chooser; palette presets for each character; a studio that shows every function and argument. The Quarto shortcode
@@ -51,8 +51,8 @@ follows in 0.2.0.
 ## Releases (draft)
 | Release | Theme | Contents |
 |---|---|---|
-| 0.1.0 | Live mascot | Tessa and Sela (stable), Knurl and Neer (experimental) on a multi-character engine; moods with wiggle-then-change; a wave and a nod for every character; light/dark; themes and palette presets; the Shiny widget, `update_mascot()`, validator binding, busy mood, message bubble, click menu, placement; the gallery and the studio; an experimental route for making your own character from a file; groundwork for hints. The first CRAN release: the R interface comes first, because the Quarto shortcode and the AI skills build on it |
-| 0.2.0 | Quarto, static assets and pharma | The Quarto extension and shortcode (the playbook site's first use); AI skills for Claude, Codex and Gemini; a shared wardrobe (outfits, accessories, held items any character can wear); avatars (PNG/SVG); hex stickers; the pharma theme pack, if 0.1.0 is received well |
+| 0.1.0 | Live mascot | Tessa and Sela (stable), Knurl and Neer (experimental) on a multi-character engine; moods with wiggle-then-change; a wave and a nod for every character; light/dark; themes and palette presets; the Shiny widget, `update_mascot()`, message bubble, click menu, placement; the gallery and the studio; an experimental route for making your own character from a file; groundwork for hints. The first CRAN release: the R interface comes first, because the Quarto shortcode and the AI skills build on it |
+| 0.2.0 | Quarto, static assets and pharma | The Quarto extension and shortcode (the playbook site's first use); the busy mood driven by Shiny's own busy events and the `shinyvalidate` validator binding; AI skills for Claude, Codex and Gemini; a shared wardrobe (outfits, accessories, held items any character can wear); avatars (PNG/SVG); hex stickers; the pharma theme pack, if 0.1.0 is received well |
 | 0.3.0 | Ojas and the builder | Ojas; a visual character builder; more shapes; SVG and Lottie export |
 | Later | Hints and app events | A quiet hint giver, off by default: a help list in the bubble, a "what's this?" mode, hints when validation fails, dragging the mascot onto an element; reactions to custom app events |
 | Later | Trailers | A trailer base built on the static helpers, then trailers, then storyboard YAML |

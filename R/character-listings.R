@@ -108,13 +108,16 @@ mascot_families <- function() {
 
 #' List a character's anchors
 #'
-#' Anchors are the named attachment points on a character, such as a hand or a
-#' badge position. They are listed in the order the author wrote them.
+#' Anchors are named points on a character where effects such as sweat and
+#' sparkles, gesture effects and accessories attach. They are listed in the
+#' order the author wrote them. A character may have no anchors.
 #' @param character A character, defaulting to `"tessa"`: an id string or a
 #'   [mascot_character()] helper. `NULL` is not accepted.
 #' @returns A data frame with character columns `name` (the anchor id),
 #'   `description`, `part` (the body part the anchor belongs to) and `side`
 #'   (`"l"` or `"r"`, or `NA` for an anchor on neither side).
+#'   A character with no anchors returns a zero-row data frame with the same
+#'   columns and column types.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the anchor name.
 #' @family mascot helpers

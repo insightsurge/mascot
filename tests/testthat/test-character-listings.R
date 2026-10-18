@@ -101,6 +101,29 @@ describe("mascot_anchors()", {
     expect_identical(value$part[value$name == "hand_l"], "arm_l")
     expect_false(anyNA(value$description))
   })
+  it("lists Neer's fourteen anchors in authored order", {
+    value <- mascot_anchors("neer")
+    is_listing(value, c("name", "description", "part", "side"), rep("character", 4))
+    expect_identical(
+      value$name,
+      c(
+        "crown",
+        "crest",
+        "forehead",
+        "eyes",
+        "face",
+        "chest",
+        "hand_l",
+        "hand_r",
+        "foot_l",
+        "foot_r",
+        "shell",
+        "sweat",
+        "sparkle",
+        "wave_base"
+      )
+    )
+  })
   it("lists a registered character by id and checked data alike, in authored order", {
     local_empty_registry()
     custom <- catalogue_alpha_two()

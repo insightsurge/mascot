@@ -14,12 +14,15 @@ mascot_anchors(character = "tessa")
 A data frame with character columns \code{name} (the anchor id),
 \code{description}, \code{part} (the body part the anchor belongs to) and \code{side}
 (\code{"l"} or \code{"r"}, or \code{NA} for an anchor on neither side).
+A character with no anchors returns a zero-row data frame with the same
+columns and column types.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the anchor name.
 }
 \description{
-Anchors are the named attachment points on a character, such as a hand or a
-badge position. They are listed in the order the author wrote them.
+Anchors are named points on a character where effects such as sweat and
+sparkles, gesture effects and accessories attach. They are listed in the
+order the author wrote them. A character may have no anchors.
 }
 \examples{
 mascot_anchors()

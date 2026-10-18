@@ -13,8 +13,9 @@
 #' authoring argument errors, `mascot_error_character` for character content
 #' errors, and `mascot_error_file` for character file errors.
 #'
-#' Development diagnostics use `mascot_preset_dropped` when a palette is absent
-#' from the incoming character, `mascot_gesture_dropped` when a pending gesture
+#' `mascot_palette_dropped` warns when a character swap drops a palette the
+#' incoming character lacks. Development diagnostics use
+#' `mascot_gesture_dropped` when a pending gesture
 #' cannot play, `mascot_click_dropped` when a click needs an unavailable mood or
 #' gesture, and `mascot_template_evicted` when unused UI templates leave the
 #' cache. Each inherits `mascot_warning`.

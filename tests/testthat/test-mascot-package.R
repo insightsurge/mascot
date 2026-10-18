@@ -83,7 +83,7 @@ describe("B2 condition reference", {
       "mascot_error_argument",
       "mascot_error_character",
       "mascot_error_file",
-      "mascot_preset_dropped",
+      "mascot_palette_dropped",
       "mascot_gesture_dropped",
       "mascot_click_dropped",
       "mascot_template_evicted",

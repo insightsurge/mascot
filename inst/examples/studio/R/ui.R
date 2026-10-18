@@ -368,29 +368,6 @@ data_table <- function(df, cells = NULL) {
   )
 }
 
-mood_cards <- function(moods) {
-  div(
-    id = "mood",
-    class = "pg-mood-input pg-cards",
-    `data-value` = "idle",
-    role = "group",
-    `aria-label` = "Mood",
-    lapply(seq_len(nrow(moods)), function(i) {
-      bslib::card(
-        class = "pg-card-mini",
-        div(class = "pg-card-title", tools::toTitleCase(moods$name[i])),
-        div(class = "pg-muted", moods$description[i]),
-        div(class = "pg-card-foot", tags$code(sprintf("mood = \"%s\"", moods$name[i]))),
-        tagAppendAttributes(
-          try_button("try_mood", moods$name[i], "Try it"),
-          `aria-label` = paste("Try", moods$name[i]),
-          `aria-pressed` = if (moods$name[i] == "idle") "true" else "false"
-        )
-      )
-    })
-  )
-}
-
 visual_mood <- function() {
   tagList(
     tags$h3(class = "pg-section-title", paste("The", nrow(mascot_moods()), "moods")),
@@ -399,7 +376,7 @@ visual_mood <- function() {
       class = "pg-callout",
       tags$strong("The mood never speaks alone. "),
       "The status line under the mascot names the mood (or displays your custom text), providing clear meaning for
-      screen readers and anyone who cannot distinguish facial expressions. Try moods with the cards in the top bar."
+      screen readers and anyone who cannot distinguish facial expressions. Try moods with the Mood drop-down in the top bar."
     )
   )
 }
@@ -606,15 +583,20 @@ placement_map <- function(position, minimise, name = mascot::mascot_character()$
 }
 
 # The table from mascot_colour_roles(character), with swatches and follow arrows.
-roles_table <- function(character) {
+roles_table <- function(character, palette = NULL) {
+  checkmate::assert_string(character)
+  checkmate::assert_string(palette, min.chars = 1, null.ok = TRUE)
   swatch <- function(colour) {
     tagList(tags$span(class = "pg-swatch", style = paste0("background:", colour)), tags$code(colour))
   }
   follows <- function(value) if (is.na(value)) tags$span(class = "pg-muted", "leader") else paste("\u2190", value)
   shade <- function(value) if (is.na(value)) "" else value
   tagList(
-    code_block(sprintf("mascot_colour_roles(\"%s\")", character), "pg-code-small"),
-    data_table(mascot_colour_roles(character), cells = list(colour = swatch, follows = follows, shade = shade))
+    code_block(format_call("mascot_colour_roles", list(character = character, palette = palette)), "pg-code-small"),
+    data_table(
+      mascot_colour_roles(character, palette = palette),
+      cells = list(colour = swatch, follows = follows, shade = shade)
+    )
   )
 }
 

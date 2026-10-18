@@ -35,9 +35,11 @@
 #'   - With dragging enabled, the minimised restore button can also be dragged.
 #'     A click restores it; a drag leaves it minimised in its new position.
 #' @param theme A theme in the forms accepted by [mascot()]. `NULL` (the
-#'   default) leaves the theme unchanged; `mascot_theme()` restores the
+#'   default) leaves the theme unchanged; `"original"` or `mascot_theme()` restores the
 #'   character's own colours. After a character swap, the theme is applied
-#'   again to the new character's parts.
+#'   again to the new character's parts. A palette id string chooses a named
+#'   palette. A swap keeps it when available, otherwise warns with class
+#'   `mascot_palette_dropped` and keeps explicit colours for shared roles.
 #' @param motion A logical flag or [mascot_motion_settings()] object, as in [mascot()].
 #'   `NULL` (the default) leaves motion unchanged. Changes apply to the live mascot
 #'   without restarting it; the visitor's reduced-motion preference still applies.

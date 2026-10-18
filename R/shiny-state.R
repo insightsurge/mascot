@@ -183,26 +183,25 @@ mascot_state_theme <- function(theme, data, strict = TRUE, roles = names(data$co
   checkmate::assert_list(data)
   checkmate::assert_flag(strict)
   checkmate::assert_character(roles, any.missing = FALSE, unique = TRUE, min.len = 1)
-  preset <- theme$preset
-  if (!is.null(preset) && !preset %in% names(data$palettes)) {
-    if (strict) {
-      cli::cli_abort(
-        c(
-          "Unknown theme preset {.val {preset}} for {.val {data$id}}.",
-          "i" = if (length(data$palettes)) {
-            "Choose {.or {names(data$palettes)}}."
-          } else {
-            "This character has no theme presets."
-          }
+  palette <- theme$palette
+  if (!is.null(palette)) {
+    problem <- theme_palette_problem(palette, data)
+    if (!is.null(problem)) {
+      if (strict) {
+        cli::cli_abort("{problem}", class = "mascot_error")
+      }
+      cli::cli_warn(
+        paste0(
+          "Palette {.val {palette}} dropped for character {.val {data$id}}; ",
+          "its own colours are used and explicit colours for shared roles are kept."
         ),
-        class = "mascot_error"
+        class = c("mascot_palette_dropped", "mascot_warning")
       )
+      theme$palette <- NULL
+      theme$palette_colours <- NULL
+    } else {
+      theme$palette_colours <- theme_palette_colours(palette, data)
     }
-    mascot_diagnostic(
-      "mascot_preset_dropped",
-      paste0("Preset '", preset, "' dropped for mascot character '", data$id, "'.")
-    )
-    theme$preset <- NULL
   }
   for (field in c("light", "dark", "css")) {
     # Legacy camel-case roles are the current engine's spelling.
@@ -296,13 +295,13 @@ mascot_state_prepare <- function(record, patch, restore = FALSE) {
   if (!is.null(patch$gesture) && !patch$gesture %in% names(context$data$gestures)) {
     abort_choice(patch$gesture, names(context$data$gestures), "gesture", "gesture", environment())
   }
+  next_state$click <- mascot_state_click(next_state$click, context$data, !restore && !is.null(patch$click))
   next_state$theme <- mascot_state_theme(
     next_state$theme,
     context$data,
     !restore && !is.null(patch$theme),
     context$roles
   )
-  next_state$click <- mascot_state_click(next_state$click, context$data, !restore && !is.null(patch$click))
   list(desired = next_state, context = context, changed = changed)
 }
 
@@ -432,23 +431,6 @@ mascot_state_schedule <- function(session, key) {
         record$pending <- NULL
       }
       state <- record$desired
-      # A preset is resolved here, in R, over native incoming colours; explicit
-      # overrides remain the final authority. Pages need no preset decisions.
-      preset <- state$theme$preset
-      state$theme$preset <- NULL
-      if (!is.null(preset)) {
-        for (mode in c("light", "dark")) {
-          base <- record$context$data$palettes[[preset]][[mode]]
-          if (length(base)) {
-            names(base) <- record$context$roles[match(
-              colour_role_names(names(base)),
-              colour_role_names(record$context$roles)
-            )]
-          }
-          base[names(state$theme[[mode]])] <- state$theme[[mode]]
-          state$theme[mode] <- list(base)
-        }
-      }
       # Target-dependent click groups are an internal extension point; the
       # current public helpers expose independent actions/menus only. Keep
       # their availability metadata outside the closed native-click payload.
@@ -750,8 +732,11 @@ mascot_wire_check <- function(patch) {
     checkmate::assert_number(patch$bubble$duration, lower = .Machine$double.eps, finite = TRUE, null.ok = TRUE)
   }
   if (!is.null(patch$theme)) {
-    checkmate::assert_subset(names(patch$theme), c("light", "dark", "mode", "css", "brand", "preset"))
-    if (!is.null(patch$theme$preset)) checkmate::assert_string(patch$theme$preset, pattern = "^[a-z][a-z0-9_]*$")
+    checkmate::assert_subset(
+      names(patch$theme),
+      c("light", "dark", "mode", "css", "brand", "palette", "palette_colours")
+    )
+    if (!is.null(patch$theme$palette)) checkmate::assert_string(patch$theme$palette, pattern = "^[a-z][a-z0-9_]*$")
   }
   invisible(NULL)
 }

@@ -812,9 +812,9 @@ describe("bundled example apps", {
     app$run_js(
       "[...document.querySelectorAll('.dropdown-toggle')].find(el => el.textContent.includes('Links')).click()"
     )
-    # The mood cards are the studio's only mood input.
-    expect_identical(app$get_js("document.querySelectorAll('#mood input[type=radio]').length"), 0L)
-    app$run_js("document.querySelector('[data-event=try_mood][data-value=happy]').click()")
+    # The native Mood drop-down is the studio's only mood input.
+    expect_identical(app$get_js("document.querySelectorAll('select#mood').length"), 1L)
+    app$set_inputs(mood = "happy")
     wait_example_mood(app, "helper", "happy")
     app$wait_for_js("document.getElementById('code_last').textContent.includes('mood = \"happy\"')")
     select_function("mascot_status")
@@ -945,7 +945,7 @@ describe("bundled example apps", {
     app$wait_for_js(paste0(state, ".status.text === 'All 120 rows checked'"))
     app$wait_for_js("document.getElementById('code_last').textContent.includes('session = session')")
     app$wait_for_js(
-      "document.getElementById('mood').dataset.value === 'happy' && document.getElementById('status_text').value === 'All 120 rows checked'"
+      "document.getElementById('mood').value === 'happy' && document.getElementById('status_text').value === 'All 120 rows checked'"
     )
     expect_match(app$get_value(output = "code_app"), "shinyApp(ui, server)", fixed = TRUE)
     # Switching the menu off works even while its text has a problem.
@@ -1728,7 +1728,7 @@ describe("studio round 8 help and copied apps", {
     expect_match(as.character(get("guide_help", env)("mascot")), 'vignette("mascot", package = "mascot")', fixed = TRUE)
     expect_match(
       as.character(get("function_visual", env)("mascot_mood")),
-      "Try moods with the cards in the top bar",
+      "Try moods with the Mood drop-down in the top bar",
       fixed = TRUE
     )
   })
@@ -1743,7 +1743,7 @@ studio_parts <- function() {
 }
 
 describe("studio character bar", {
-  it("holds the character picker and mood cards in the main area at 375 pixels", {
+  it("holds all four drop-downs and Play in the main area at 375 pixels", {
     local_shiny_browser()
     app <- example_driver("studio", width = 375)
     withr::defer(app$stop())
@@ -1755,6 +1755,21 @@ describe("studio character bar", {
       "document.querySelector('#studio_centre #studio_character_bar').contains(document.getElementById('character')) &&
       document.querySelector('#studio_centre #studio_character_bar').contains(document.getElementById('mood'))"
     ))
+    for (id in c("character", "palette", "mood", "gesture")) {
+      expect_true(app$get_js(sprintf("document.querySelector('#studio_character_bar select#%s') !== null", id)))
+    }
+    expect_true(app$get_js("document.querySelector('#studio_character_bar #gesture_play') !== null"))
+    expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
+    app$set_inputs(character = "knurl")
+    app$wait_for_js("document.getElementById('character').value === 'knurl'")
+    app$wait_for_js("Object.hasOwn(document.querySelector('#palette').selectize?.options || {}, 'orbit')")
+    app$set_inputs(palette = "orbit")
+    app$wait_for_js("document.getElementById('code_ui').textContent.includes('theme = \"orbit\"')")
+    app$set_inputs(character = "neer")
+    app$wait_for_js(
+      "document.querySelector('#palette').value === 'original' && Object.hasOwn(document.querySelector('#palette').selectize?.options || {}, 'lagoon')"
+    )
+    expect_false(app$get_js("Object.hasOwn(document.querySelector('#palette').selectize?.options || {}, 'orbit')"))
     expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
   })
 })
@@ -1825,7 +1840,6 @@ studio_start_values <- function(page) {
     chosen <- grep("selected", options, fixed = TRUE, value = TRUE)
     values[[attribute(tag, "id")]] <- unescape(attribute(c(chosen, options)[[1]], "value"))
   }
-  values$mood <- attribute(tags('<div id="mood" [^>]*>'), "data-value")
   values
 }
 
@@ -1844,6 +1858,9 @@ describe("studio safeguards (#248)", {
     }
     show <- function(...) list(list(...), list(bubble_show = 1))
     rows <- list(
+      palette = row(list(list(palette = "coral")), "theme", 'theme = "coral"', wait = 300, sent = function(p) {
+        identical(p$theme$palette, "coral")
+      }),
       mood = row(list(list(mood = "happy")), "mood", 'mood = "happy"', sent = function(p) identical(p$mood, "happy")),
       status_text = row(
         list(list(status_text = "Saving")),
@@ -1901,9 +1918,15 @@ describe("studio safeguards (#248)", {
       others = row(list(list(others = FALSE)), "motion", "others = FALSE", sent = function(p) {
         isFALSE(p$motion$idle) && isFALSE(p$motion$others)
       }),
-      gesture = row(list(list(gesture = "wave")), "gesture", 'gesture = "wave"', ui = FALSE, sent = function(p) {
-        identical(p$gesture, "wave")
-      }),
+      gesture_play = row(
+        list(list(gesture = "wave"), list(gesture_play = 1)),
+        "gesture",
+        'gesture = "wave"',
+        ui = FALSE,
+        sent = function(p) {
+          identical(p$gesture, "wave")
+        }
+      ),
       size_px = row(list(list(size_px = 120)), "size", "size = 120", sent = function(p) identical(p$size$size, 120)),
       size_unit = row(list(list(size_unit = "pct", size_pct = 40)), "size", 'size = "40%"', sent = function(p) {
         identical(p$size$size, "40%")
@@ -2048,6 +2071,7 @@ describe("studio safeguards (#248)", {
     # Controls without a row, and why. Anything else in the control map needs a row above.
     exempt <- c(
       character = "selector choices are checked against every shipped character",
+      gesture = "selects the gesture; the gesture_play row checks sending it",
       bubble_example = "fills the bubble controls; tested with Show bubble (#249)",
       mistake = "demonstrates invalid calls, which change nothing",
       mistake_run = "demonstrates invalid calls, which change nothing",
@@ -2548,5 +2572,106 @@ describe("the internal Your character studio panel", {
       }
     }
     expect_match(html, "never sent to another service", fixed = TRUE)
+  })
+})
+
+
+describe("studio palette controls", {
+  it("offers each character's choices and builds shortcuts and override helpers", {
+    parts <- studio_parts()
+    for (id in builtin_characters()$id) {
+      bar <- as.character(get("panel_character_bar", parts$env)(character = id))
+      for (input in c("character", "palette", "mood", "gesture")) {
+        expect_match(bar, paste0('<select id="', input, '"'), fixed = TRUE)
+      }
+      for (palette in mascot_palettes(id)$name) {
+        expect_match(bar, paste0('value="', palette, '"'), fixed = TRUE)
+      }
+      expect_match(bar, 'id="gesture_play"', fixed = TRUE)
+      expect_false(grepl("try_mood", bar, fixed = TRUE))
+    }
+    table <- get("roles_table", parts$env)
+    expect_match(as.character(table("tessa", "coral")), "#FFE5D9", fixed = TRUE)
+    expect_error(table(1), "character")
+    expect_error(table("tessa", 1), "palette")
+    builder <- get("code_theme", parts$env)
+    valid <- list(
+      source = "own",
+      light = NULL,
+      dark = NULL,
+      mode = "auto",
+      css_roles = NULL,
+      primary = NULL,
+      secondary = NULL,
+      palette = "original"
+    )
+    for (arg in names(valid)) {
+      invalid <- valid
+      invalid[arg] <- list(1)
+      expect_error(do.call(builder, invalid), arg)
+    }
+    value <- builder("own", NULL, NULL, "auto", NULL, "", "", palette = "orbit")
+    expect_identical(value$short, "orbit")
+    expect_identical(value$helper, quote(mascot_theme(palette = "orbit")))
+    value <- builder("mascot", c(body = "#123456"), NULL, "dark", NULL, "", "", palette = "orbit")
+    expect_identical(eval(value$helper), mascot_theme(palette = "orbit", light = list(body = "#123456"), mode = "dark"))
+    expect_identical(
+      builder("bslib", NULL, NULL, "auto", NULL, "blue", "orange", palette = "orbit")$short,
+      quote(bslib::bs_theme(primary = "blue", secondary = "orange"))
+    )
+  })
+  it("shows colour-role argument controls and keeps the palette in the low-contrast demonstration", {
+    parts <- studio_parts()
+    controls <- Filter(
+      function(tag) {
+        identical(tag$attribs[["data-function"]], "mascot_colour_roles")
+      },
+      get("panel_colours", parts$env)()
+    )[[1]]
+    for (arg in c("...", "palette")) {
+      expect_match(as.character(controls), paste0('data-argument="', arg, '"'), fixed = TRUE)
+    }
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(palette = "coral")
+      session$elapse(301)
+      session$setInputs(mistake = "Low contrast", mistake_run = 1)
+      expect_identical(eval(state$theme$short)$palette, "coral")
+      expect_match(output$code_ui, 'palette = "coral"', fixed = TRUE)
+    })
+  })
+  it("refreshes choices and sends a gesture only when Play is pressed", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      messages <- choices <- list()
+      session$sendInputMessage <- function(id, message) {
+        if (!is.null(message$options)) {
+          choices[[id]] <<- message$options
+        }
+        messages[[id]] <<- message
+      }
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(palette = "coral")
+      session$elapse(301)
+      expect_match(output$code_ui, 'theme = "coral"', fixed = TRUE)
+      session$setInputs(character = "sela")
+      expect_match(output$code_ui, 'theme = "coral"', fixed = TRUE)
+      expect_match(messages$palette$options, 'value="peach"', fixed = TRUE)
+      expect_identical(messages$palette$value, "coral")
+      expect_match(choices$mood, 'value="happy"', fixed = TRUE)
+      expect_match(choices$gesture, 'value="wave"', fixed = TRUE)
+      session$setInputs(character = "knurl")
+      expect_identical(messages$palette$value, "original")
+      expect_false(grepl('theme = "coral"', output$code_ui, fixed = TRUE))
+      previous <- session$userData$mascot_updates[[session$ns("helper")]]$revision
+      session$setInputs(gesture = "wave")
+      expect_identical(session$userData$mascot_updates[[session$ns("helper")]]$revision, previous)
+      session$setInputs(gesture_play = 1)
+      expect_identical(session$userData$mascot_updates[[session$ns("helper")]]$pending$name, "wave")
+    })
   })
 })

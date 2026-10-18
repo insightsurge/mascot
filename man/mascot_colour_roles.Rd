@@ -4,11 +4,16 @@
 \alias{mascot_colour_roles}
 \title{List a character's colour roles}
 \usage{
-mascot_colour_roles(character = "tessa")
+mascot_colour_roles(character = "tessa", ..., palette = NULL)
 }
 \arguments{
 \item{character}{A character, defaulting to \code{"tessa"}: an id string or a
 \code{\link[=mascot_character]{mascot_character()}} helper. \code{NULL} is not accepted.}
+
+\item{...}{Must be empty. Forces the arguments after it to be named.}
+
+\item{palette}{A palette id from \code{\link[=mascot_palettes]{mascot_palettes()}}, or \code{NULL} (the default)
+for the character's own colours. Followers are derived from palette leaders.}
 }
 \value{
 A data frame with character columns \code{role}, \code{colour}, \code{follows}
@@ -22,14 +27,14 @@ names and types. The first column is the value you pass to the matching function
 }
 \description{
 Lists a character's colour roles (its colour parts) with their own colours,
-before any theme is applied. Roles are written in snake case in R. Follow
+with an optional named palette applied. Roles are written in snake case in R. Follow
 rules list leaders in priority order. A colour you supply for a role always
 wins; otherwise the role follows the first supplied or filled leader. With no
 available leader, the role keeps its original colour.
 }
 \examples{
 mascot_colour_roles()
-mascot_colour_roles("tessa")
+mascot_colour_roles("tessa", palette = "coral")
 }
 \seealso{
 \code{\link[=mascot_theme]{mascot_theme()}}, \code{\link[=mascot]{mascot()}}

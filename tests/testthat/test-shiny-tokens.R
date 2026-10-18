@@ -139,6 +139,32 @@ describe("static template recovery", {
     expect_identical(tail(g$messages$values, 1)[[1]]$kind, "template-rejected")
   })
 
+  it("recovers palette UI baselines and rejects forged palette colours", {
+    for (theme in list("orbit", "original", mascot_theme(palette = "orbit"))) {
+      ui <- mascot("helper", character = "knurl", theme = theme)
+      script <- Filter(
+        function(tag) {
+          inherits(tag, "shiny.tag") && "data-mascot-baseline" %in% names(tag$attribs)
+        },
+        ui$children
+      )[[1]]
+      state <- jsonlite::fromJSON(as.character(script$children[[1]]), simplifyVector = FALSE)
+      state$character$json <- as.character(ui$children[[1]]$children[[1]])
+      token <- ui$attribs[["data-mount-token"]]
+      f <- protocol_fixture()
+      withr::defer(f$session$close())
+      recovered <- mascot_mount_recover(f$session, "helper", token, state)
+      expect_identical(recovered$spec$state$theme$palette, state$theme$palette)
+      forged <- state
+      forged$theme$palette_colours$light <- list(body = "#000000")
+      expect_error(mascot_baseline_check(forged), "palette_colours")
+      forged$theme$palette <- "absent"
+      expect_error(mascot_baseline_check(forged), "absent.*knurl.*orbit", class = "mascot_error")
+      forged$theme$palette <- NULL
+      expect_error(mascot_baseline_check(forged), "palette")
+    }
+  })
+
   it("refuses forged native fields even with a matching content-derived token", {
     f <- protocol_fixture()
     withr::defer(f$session$close())

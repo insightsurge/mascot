@@ -4,18 +4,18 @@
 \alias{mascot_palettes}
 \title{List a character's colour palettes}
 \usage{
-mascot_palettes(character = "tessa")
+mascot_palettes(character = NULL)
 }
 \arguments{
-\item{character}{A character, defaulting to \code{"tessa"}: an id string or a
-\code{\link[=mascot_character]{mascot_character()}} helper. \code{NULL} is not accepted.}
+\item{character}{An id string or \code{\link[=mascot_character]{mascot_character()}} helper. \code{NULL}
+(the default) lists every character, with a \code{character} column at the end.}
 }
 \value{
 A data frame with character columns \code{name} (the palette id),
 \code{description} and \code{source}: \code{"native"} for \code{"original"}, \code{"character"} for
 a palette the character defines and \code{"family"} for one it takes from its
 family. The character's own palettes follow in the order its author wrote
-them.
+them. With \code{character = NULL}, a final \code{character} column names each id.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the value you pass to the matching function.
 }
@@ -27,6 +27,7 @@ with no palette applied.
 \examples{
 mascot_palettes()
 mascot_palettes("tessa")
+mascot("helper", character = "tessa", theme = "coral")
 }
 \seealso{
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot_theme]{mascot_theme()}}

@@ -37,9 +37,10 @@ head content are not supported.}
 percentage string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} object. Defaults to
 \code{160}. Percentages follow the comparison cell width. \code{NULL} is not accepted.}
 
-\item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
+\item{theme}{A palette id string from \code{\link[=mascot_palettes]{mascot_palettes()}}, a named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
-colours. Unset roles keep their original colours in both modes.}
+colours. A palette supplies the base colours in both modes; \code{"original"}
+selects the character's own colours. Unset roles follow the character's rules.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object. Defaults to \code{FALSE}
 for steady faces; \code{TRUE} allows movement subject to the visitor's preference.
@@ -65,7 +66,9 @@ or Quarto document.
 screens. Every size draws the full character. Each cell keeps its status text,
 since small faces lose fine detail.
 
-\strong{Theme and contrast.} Both supplied theme maps are shown, even if the theme
+\strong{Theme and contrast.} A palette id string works as in \code{\link[=mascot]{mascot()}}.
+Built-in palette colours do not add contrast warnings. Both supplied theme
+maps are shown, even if the theme
 selected one mode. Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's
 \code{bg} and \code{body-bg-dark}; text uses \code{fg} and \code{body-color-dark}. Only supplied
 colour roles are checked, using the same contrast calculation as \code{\link[=mascot]{mascot()}}.

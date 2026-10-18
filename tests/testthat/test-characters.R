@@ -69,3 +69,46 @@ describe("public argument error classes", {
     expect_error(print.mascot_character(1), "x", class = "mascot_error")
   })
 })
+
+describe("shipped palette roles and contrast", {
+  it("sets only existing leader roles and keeps the silhouette and face above 3:1 on a light page", {
+    for (id in builtin_characters()$id) {
+      data <- character_colour_data(id)
+      for (palette in c("original", names(data$palettes))) {
+        for (mode in c("light", "dark")) {
+          roles <- names(data$palettes[[palette]][[mode]])
+          expect_true(all(roles %in% names(data$colours)), info = paste(id, palette, mode))
+          expect_length(intersect(roles, names(data$follows)), 0)
+        }
+        colours <- mascot_colour_roles(id, palette = palette)
+        colour <- stats::setNames(colours$colour, colours$role)
+        second <- intersect(c("outline_second", "outline_light"), names(colour))
+        edge <- max(c(
+          theme_contrast(colour[["outline"]], colour[["body"]]),
+          vapply(second, function(role) theme_contrast(colour[[role]], colour[["body"]]), numeric(1))
+        ))
+        expect_gte(edge, 3, label = paste(id, palette, "body edge"))
+        expect_gte(theme_contrast(colour[["outline"]], "#ffffff"), 3, label = paste(id, palette, "page edge"))
+        face <- if (id == "knurl") {
+          "screen"
+        } else if (id == "neer") {
+          "eye_white"
+        } else {
+          "body"
+        }
+        expect_gte(theme_contrast(colour[["feature"]], colour[[face]]), 3, label = paste(id, palette, "face"))
+        if (id == "neer") {
+          expect_gte(theme_contrast(colour[["brow"]], colour[["body"]]), 3, label = paste(id, palette, "brows"))
+        }
+        # Knurl's visor is a gradient: both ends must keep face features readable.
+        if (id == "knurl") {
+          expect_gte(
+            theme_contrast(colour[["feature"]], colour[["screen_glow"]]),
+            3,
+            label = paste(id, palette, "visor glow")
+          )
+        }
+      }
+    }
+  })
+})

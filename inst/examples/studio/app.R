@@ -573,7 +573,7 @@ studio_server <- function(input, output, session) {
       for (field in intersect(names(pairs), names(defaults))) {
         state[[field]] <- pairs[[field]]
         if (field == "mood") {
-          session$sendInputMessage("mood", list(value = eval(pairs[[field]]$short)))
+          updateSelectInput(session, "mood", selected = eval(pairs[[field]]$short))
         }
         if (field == "bubble") {
           sync_bubble_controls(pairs[[field]])
@@ -609,14 +609,25 @@ studio_server <- function(input, output, session) {
   observeEvent(input$close_guide, removeModal())
   observeEvent(input$reset_all, session$reload())
 
-  # Character and mood
+  # Keep each top-bar choice when the incoming character supports it.
+  selected_palette <- reactive({
+    value <- input$palette %||% "original"
+    if (value %in% mascot_palettes(current_character())$name) value else "original"
+  })
   observeEvent(
     input$character,
-    # A character swap resets the engine's mood unless the same update supplies it.
-    send(
-      list(character = code_character(input$character), theme = theme_now(), mood = code_mood(input$mood)),
-      force = TRUE
-    ),
+    {
+      character <- current_character()
+      palettes <- mascot_palettes(character)$name
+      moods <- mascot_moods(character)$name
+      gestures <- mascot_gestures(character)$name
+      mood <- if (isTRUE(input$mood %in% moods)) input$mood else "idle"
+      gesture <- if (isTRUE(input$gesture %in% gestures)) input$gesture else gestures[[1]]
+      updateSelectInput(session, "palette", choices = palettes, selected = selected_palette())
+      updateSelectInput(session, "mood", choices = stats::setNames(moods, tools::toTitleCase(moods)), selected = mood)
+      updateSelectInput(session, "gesture", choices = gestures, selected = gesture)
+      send(list(character = code_character(character), theme = theme_now(), mood = code_mood(mood)), force = TRUE)
+    },
     ignoreInit = TRUE
   )
   observeEvent(input$mood, send(list(mood = code_mood(input$mood))), ignoreInit = TRUE)
@@ -672,7 +683,7 @@ studio_server <- function(input, output, session) {
     send(list(motion = motion_code())),
     ignoreInit = TRUE
   )
-  observeEvent(input$gesture, send(list(gesture = code_gesture(input$gesture)), force = TRUE))
+  observeEvent(input$gesture_play, send(list(gesture = code_gesture(input$gesture)), force = TRUE))
 
   # Size and placement
   size_code <- reactive({
@@ -814,9 +825,26 @@ studio_server <- function(input, output, session) {
       input$theme_mode %||% "auto",
       intersect(input$css_roles, roles()$role),
       input$bs_primary %||% "#1f6feb",
-      input$bs_secondary %||% "#966600"
+      input$bs_secondary %||% "#966600",
+      selected_palette()
     )
   })
+  observeEvent(
+    input$theme_source,
+    {
+      if (identical(input$theme_source, "bslib")) updateSelectInput(session, "palette", selected = "original")
+    },
+    ignoreInit = TRUE
+  )
+  observeEvent(
+    input$palette,
+    {
+      if (input$palette != "original" && identical(input$theme_source, "bslib")) {
+        updateRadioButtons(session, "theme_source", selected = "own")
+      }
+    },
+    ignoreInit = TRUE
+  )
   theme_code <- debounce(theme_now, 300)
   observeEvent(theme_code(), send(list(theme = theme_code())), ignoreInit = TRUE)
   # The browser reads the variable again only when the theme is sent, so resend it.
@@ -1049,7 +1077,7 @@ studio_server <- function(input, output, session) {
       ),
       force = TRUE
     )
-    session$sendInputMessage("mood", list(value = "celebrating"))
+    updateSelectInput(session, "mood", selected = "celebrating")
     updateTextInput(session, "status_text", value = "Review complete")
   })
   # A slow step: one job at a time, finished by a timer observer. The completion call
@@ -1106,7 +1134,7 @@ studio_server <- function(input, output, session) {
       } else if (input$mistake == "Low contrast") {
         role <- roles()$role[1]
         light <- stats::setNames("#f8f9fa", role)
-        state$theme <- code_theme("mascot", light, light, "auto", NULL, NULL, NULL)
+        state$theme <- code_theme("mascot", light, light, "auto", NULL, NULL, NULL, selected_palette())
         updateRadioButtons(session, "theme_source", selected = "mascot")
         updateRadioButtons(session, "theme_mode", selected = "auto")
         updateCheckboxGroupInput(session, "css_roles", selected = character())
@@ -1168,7 +1196,18 @@ studio_server <- function(input, output, session) {
       bubble = if (nzchar(trimws(bubble))) bubble,
       size = if (size != own$size) as.numeric(size),
       theme = if (identical(input$preview_theme_source, "custom") && length(preview_colours())) {
-        named_call("list", preview_colours())
+        if (selected_palette() == "original") {
+          named_call("list", preview_colours())
+        } else {
+          helper_call(
+            "mascot_theme",
+            palette = selected_palette(),
+            light = named_call("list", preview_colours()),
+            dark = named_call("list", preview_colours())
+          )
+        }
+      } else if (selected_palette() != "original") {
+        selected_palette()
       },
       motion = if (isTRUE(input$preview_motion)) TRUE
     )
@@ -1386,7 +1425,7 @@ studio_server <- function(input, output, session) {
 
   # A reference for the selected function, with code made from its current controls.
   output$guide <- renderUI(selected_guide(selected_function(), current_character()))
-  output$roles_table <- renderUI(roles_table(current_character()))
+  output$roles_table <- renderUI(roles_table(current_character(), selected_palette()))
   output$code_function <- renderText({
     fn <- selected_function()
     if (fn %in% c("mascot", "update_mascot", "mascot_action", "mascot_popup_menu") && !is.null(settings_problem())) {
@@ -1430,13 +1469,13 @@ studio_server <- function(input, output, session) {
     )
     if (!is.null(pair)) {
       # A bslib theme is a supported alternative to mascot_theme(), shown exactly as supplied.
-      return(format_expr(if (fn == "mascot_theme") pair$short else pair$helper))
+      return(format_expr(if (fn == "mascot_theme" && !is.character(pair$short)) pair$short else pair$helper))
     }
     switch(
       fn,
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
       update_mascot = format_call("update_mascot", server_args(reactiveValuesToList(state), style())),
-      mascot_colour_roles = format_call(fn, list(character = current_character())),
+      mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),
       mascot_moods = format_call(fn, list(character = current_character())),
       mascot_gestures = format_call(fn, list(character = current_character())),
       mascot_anchors = format_call(fn, list(character = current_character())),

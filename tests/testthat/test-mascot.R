@@ -508,7 +508,7 @@ describe("mascot resources in modules", {
 })
 
 describe("internal R4a character argument forms", {
-  it("accepts checked data while leaving the preset shortcut outside this unit", {
+  it("accepts checked character palettes through the theme shortcut", {
     checked <- character_format_check(protocol_character()$json, from = "text")
     expect_no_error(mascot("helper", character = checked))
     expect_error(mascot("helper", mood = "processing"), "must be one of", class = "mascot_error")
@@ -517,7 +517,9 @@ describe("internal R4a character argument forms", {
     withr::defer(session$close())
     update_mascot("helper", character = checked, session = session)
     expect_identical(mascot_id_state(session, "helper")$context$data$id, checked$id)
-    expect_warning(update_mascot("helper", theme = "sea", session = session), "unchanged")
+    expect_no_warning(update_mascot("helper", theme = "sea", session = session))
+    expect_identical(mascot_id_state(session, "helper")$desired$theme$palette, "sea")
+    expect_no_error(mascot("helper", character = checked, theme = "sea"))
   })
 })
 

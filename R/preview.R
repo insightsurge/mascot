@@ -32,7 +32,9 @@
 #' screens. Every size draws the full character. Each cell keeps its status text,
 #' since small faces lose fine detail.
 #'
-#' **Theme and contrast.** Both supplied theme maps are shown, even if the theme
+#' **Theme and contrast.** A palette id string works as in [mascot()].
+#' Built-in palette colours do not add contrast warnings. Both supplied theme
+#' maps are shown, even if the theme
 #' selected one mode. Backgrounds are white and `#212529`, or the `bslib` theme's
 #' `bg` and `body-bg-dark`; text uses `fg` and `body-color-dark`. Only supplied
 #' colour roles are checked, using the same contrast calculation as [mascot()].

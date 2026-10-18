@@ -10,7 +10,7 @@ describe("R-settled latest mascot state", {
       send_update(
         f$session,
         "helper",
-        list(theme = c(mascot_empty_theme(), list(preset = "missing")), bubble = list(clear = TRUE))
+        list(theme = c(mascot_empty_theme(), list(palette = "missing")), bubble = list(clear = TRUE))
       ),
       "helper",
       class = "mascot_update_ignored"
@@ -129,7 +129,7 @@ describe("R-settled latest mascot state", {
         f$session,
         "helper",
         list(
-          theme = c(mascot_empty_theme(), list(preset = paste0("preset_", i))),
+          theme = c(mascot_empty_theme(), list(palette = paste0("palette_", i))),
           status = list(mode = "custom", text = as.character(i))
         )
       )
@@ -139,7 +139,7 @@ describe("R-settled latest mascot state", {
         f$session,
         "helper",
         list(
-          theme = c(mascot_empty_theme(), list(preset = paste0("preset_", i))),
+          theme = c(mascot_empty_theme(), list(palette = paste0("palette_", i))),
           bubble = list(text = "Second field", html = FALSE, closable = TRUE, duration = 5)
         )
       )
@@ -150,7 +150,7 @@ describe("R-settled latest mascot state", {
       send_update(
         f$session,
         "helper",
-        list(theme = c(mascot_empty_theme(), list(preset = "overflow")), bubble = list(clear = TRUE))
+        list(theme = c(mascot_empty_theme(), list(palette = "overflow")), bubble = list(clear = TRUE))
       ),
       "capacity"
     )
@@ -180,7 +180,7 @@ describe("R-settled latest mascot state", {
       f$session,
       "helper",
       list(
-        theme = c(mascot_empty_theme(), list(preset = "absent")),
+        theme = c(mascot_empty_theme(), list(palette = "absent")),
         bubble = list(text = "Wrong", html = FALSE, closable = TRUE, duration = 5)
       )
     )
@@ -189,7 +189,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(f), before)
     expect_warning(
       send_update(f$session, "helper", list(character = x, status = list(mode = "custom", text = "Later"))),
-      "preset"
+      "palette"
     )
     expect_identical(protocol_record(f)$desired$status$text, "Later")
     expect_identical(protocol_record(f)$desired$mood, "processing")
@@ -213,14 +213,14 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(f)$desired$character$id, "other_probe")
   })
 
-  it("U1.4 recomputes every ownership row and adapts unowned presets and click groups", {
+  it("U1.4 recomputes every ownership row and adapts unowned palettes and click groups", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()
     withr::defer(f$session$close())
     x <- protocol_character()
     y <- protocol_character(FALSE, "other_probe")
     baseline <- mascot_state_defaults(x)
-    baseline$theme$preset <- "sea"
+    baseline$theme$palette <- "sea"
     baseline$click <- list(type = "action", label = "Help", tooltip = FALSE, disabled = FALSE, gesture = "spin")
     protocol_ready(f, state = baseline)
     protocol_flush(f)
@@ -243,7 +243,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(f)$desired$theme, mascot_empty_theme())
     newer <- mascot_state_defaults(x)
     newer$mood <- "processing"
-    newer$theme$preset <- "sea"
+    newer$theme$palette <- "sea"
     newer$click <- baseline$click
     expect_warning(protocol_ready(f, 2, state = newer), "click", class = "mascot_click_dropped")
     r <- protocol_record(f)
@@ -258,15 +258,15 @@ describe("R-settled latest mascot state", {
     h <- protocol_fixture()
     withr::defer(h$session$close())
     send_update(h$session, "helper", list(character = y))
-    # UI preset is valid on its own UI character but unavailable on the
+    # UI palette is valid on its own UI character but unavailable on the
     # server-owned winner. Neither restored field acquires ownership.
     conditions <- character()
     withCallingHandlers(protocol_ready(h, state = baseline), warning = function(w) {
       conditions <<- c(conditions, class(w)[[1]])
       invokeRestart("muffleWarning")
     })
-    expect_setequal(conditions, c("mascot_preset_dropped", "mascot_click_dropped"))
-    expect_null(protocol_record(h)$desired$theme$preset)
+    expect_setequal(conditions, c("mascot_palette_dropped", "mascot_click_dropped"))
+    expect_null(protocol_record(h)$desired$theme$palette)
     expect_false(any(c("theme", "click") %in% protocol_record(h)$owned))
     # Unowned character follows the new UI; retained mood follows outgoing fallback.
     g <- protocol_fixture()
@@ -520,7 +520,7 @@ describe("target-specific diagnostics", {
     expect_error(mascot_state_prepare(state, list(mood = "hapy")), "processing.*hapy", class = "mascot_error")
     expect_error(mascot_state_prepare(state, list(gesture = "jump")), "spin.*jump", class = "mascot_error")
     expect_error(
-      mascot_state_prepare(state, list(theme = list(preset = "absent"))),
+      mascot_state_prepare(state, list(theme = list(palette = "absent"))),
       "absent.*sea",
       class = "mascot_error"
     )
@@ -529,6 +529,86 @@ describe("target-specific diagnostics", {
       "bdoy.*body",
       class = "mascot_error"
     )
+  })
+})
+
+describe("palette state across public updates", {
+  it("warns and accepts no part of an unknown-palette update, and resets with original", {
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot("helper", character = "knurl", theme = "orbit", session = f$session)
+    before <- protocol_record(f)$desired
+    expect_warning(
+      update_mascot("helper", theme = "oribt", status = "Discard me", session = f$session),
+      "oribt.*knurl.*orbit.*Did you mean",
+      class = "mascot_update_ignored"
+    )
+    expect_identical(protocol_record(f)$desired, before)
+    update_mascot("helper", theme = NULL, session = f$session)
+    expect_identical(protocol_record(f)$desired, before)
+    update_mascot("helper", theme = "original", session = f$session)
+    theme <- protocol_record(f)$desired$theme
+    expect_identical(theme$palette, "original")
+    expect_null(theme$light)
+    expect_null(theme$palette_colours$light)
+  })
+  it("drops unsupported palettes with an always-on warning and keeps only shared explicit roles", {
+    withr::local_options(mascot.contrast_warnings = FALSE)
+    local_mocked_bindings(dev_mode = function() FALSE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot(
+      "helper",
+      character = "knurl",
+      theme = mascot_theme(
+        palette = "orbit",
+        light = list(body = "#123456", screen = "#102030"),
+        dark = list(body = "#654321"),
+        css = list(body = "--shared", screen = "--screen")
+      ),
+      session = f$session
+    )
+    expect_warning(
+      update_mascot("helper", character = "neer", session = f$session),
+      "orbit.*neer.*explicit colours",
+      class = "mascot_palette_dropped"
+    )
+    theme <- protocol_record(f)$desired$theme
+    expect_null(theme$palette)
+    expect_null(theme$palette_colours)
+    expect_identical(theme$light, list(body = "#123456"))
+    expect_identical(theme$dark, list(body = "#654321"))
+    expect_identical(theme$css, list(body = "--shared"))
+    protocol_ready(f)
+    expect_identical(protocol_flush(f)$state$theme, theme)
+  })
+  it("keeps a shared id using the incoming character's palette and accepts a palette with a swap", {
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot("helper", character = "tessa", theme = "coral", session = f$session)
+    expect_no_warning(update_mascot("helper", character = "sela", session = f$session))
+    theme <- protocol_record(f)$desired$theme
+    expect_identical(theme$palette, "coral")
+    expect_identical(theme$palette_colours$light$hair_purple, "#1D3557")
+    expect_null(theme$palette_colours$light$accessory)
+    expect_no_warning(update_mascot("helper", character = "neer", theme = "lagoon", session = f$session))
+    expect_identical(protocol_record(f)$desired$theme$palette, "lagoon")
+  })
+  it("resolves a buffered palette once the first UI character is known", {
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot("helper", theme = "orbit", session = f$session)
+    wire <- list(id = "knurl", name = "Knurl", json = character_json("knurl"))
+    baseline <- mascot_state_defaults(wire)
+    protocol_ready(f, state = baseline)
+    expect_identical(protocol_record(f)$desired$theme$palette_colours$light$body, "#F8FAFC")
+  })
+})
+
+describe("palette wire assertions", {
+  it("checks the palette id before buffering an update", {
+    expect_error(mascot_wire_check(list(theme = list(palette = 1))), "palette")
+    expect_error(mascot_wire_check(list(theme = list(palette = "not-an-id"))), "palette")
   })
 })
 

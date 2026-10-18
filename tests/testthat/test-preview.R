@@ -19,9 +19,9 @@ describe("mascot_preview()", {
     expect_length(preview_nodes(page, "thead th"), 10)
     expect_length(preview_nodes(page, "tbody th"), 10)
     expect_length(preview_nodes(page, "h1"), 1)
-    expect_match(as.character(page), "happy, 96 px, dark", fixed = TRUE)
+    expect_match(as.character(page), "happy, 48 px, dark", fixed = TRUE)
     tags <- preview_nodes(page, ".mascot")
-    expect_identical(vapply(tags, function(x) x$attribs[["data-size"]], numeric(1)), rep(c(160, 160, 96, 24), 10))
+    expect_identical(vapply(tags, function(x) x$attribs[["data-size"]], numeric(1)), rep(c(160, 48, 32, 24), 10))
     expect_identical(
       vapply(tags, function(x) x$attribs[["data-mood"]], character(1)),
       rep(rep(mascot_moods()$name, each = 4), 2)
@@ -46,10 +46,14 @@ describe("mascot_preview()", {
       status = mascot_status("Ready <now>"),
       bubble = mascot_bubble("Check this", duration = Inf),
       size = mascot_size("20%", small_screen = 96),
+      placement = mascot_placement("bottom-right", minimise = TRUE),
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "dark"),
-      motion = mascot_motion_settings(swap = FALSE)
+      motion = mascot_motion_settings(swap = FALSE),
+      click = mascot_popup_menu(c(about = "About"))
     )
     expect_length(preview_nodes(page, "canvas"), 8)
+    expect_match(as.character(page), "Floating placement is shown inline", fixed = TRUE)
+    expect_match(as.character(page), "Clicks need Shiny", fixed = TRUE)
     expect_match(as.character(page), "Ready &lt;now&gt;", fixed = TRUE)
     expect_match(as.character(page), "happy, 20% of cell width, light", fixed = TRUE)
     tags <- preview_nodes(page, ".mascot")
@@ -185,8 +189,8 @@ describe("mascot_preview()", {
     for (args in cases) {
       expect_error(do.call(mascot_preview, args), names(args)[[1]], fixed = TRUE)
     }
-    expect_error(mascot_preview(click = c(about = "About")), class = "mascot_error_dots")
-    expect_error(mascot_preview(click = mascot_action()), class = "mascot_error_dots")
+    expect_error(mascot_preview(click = c(about = "About")), "mascot_popup_menu()", fixed = TRUE)
+    expect_false(grepl("Clicks need Shiny", as.character(mascot_preview(click = mascot_action())), fixed = TRUE))
     expect_error(mascot_preview(theme = list(body = "not-a-colour")), "Colour for role", fixed = TRUE)
     expect_snapshot(error = TRUE, mascot_preview(character = "typo"))
     expect_snapshot(error = TRUE, mascot_preview(mood = "typo"))
@@ -270,7 +274,7 @@ describe("mascot_preview() in Chrome", {
     )
     expect_identical(
       unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE),
-      rep(c(160L, 160L, 96L, 24L), 10)
+      rep(c(160L, 48L, 32L, 24L), 10)
     )
     expect_identical(
       unlist(js("Array.from(document.querySelectorAll('.mascot-status')).map(el=>el.textContent)"), use.names = FALSE),
@@ -313,12 +317,14 @@ describe("mascot_preview() in Chrome", {
     page <- suppressWarnings(mascot_preview(
       mood = "happy",
       size = 96,
+      placement = "bottom-right",
       status = "Review complete",
       theme = mascot_theme(
         light = list(body = "white", sleeve = "#B53D78"),
         dark = list(body = "#F2A6CF"),
         mode = "light"
-      )
+      ),
+      click = mascot_popup_menu(c(about = "About"))
     ))
     js <- local_preview_page(page)
     expect_identical(
@@ -342,7 +348,7 @@ describe("mascot_preview() in Chrome", {
     )
     expect_identical(
       unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE),
-      rep(c(96L, 160L, 96L, 24L), 2)
+      rep(c(96L, 48L, 32L, 24L), 2)
     )
   })
   it("P3 keeps percentage and narrow-screen sizes in the requested column only", {
@@ -352,21 +358,21 @@ describe("mascot_preview() in Chrome", {
       size = mascot_size("20%", small_screen = 96)
     ))
     widths <- unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE)
-    expect_identical(widths[c(2:4, 6:8)], rep(c(160L, 96L, 24L), 2))
+    expect_identical(widths[c(2:4, 6:8)], rep(c(48L, 32L, 24L), 2))
     expect_true(all(widths[c(1, 5)] >= 24))
     session <- attr(js, "session")
     session$Emulation$setDeviceMetricsOverride(width = 400, height = 900, deviceScaleFactor = 1, mobile = FALSE)
     js("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))")
     expect_identical(
       unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE),
-      rep(c(96L, 160L, 96L, 24L), 2)
+      rep(c(96L, 48L, 32L, 24L), 2)
     )
     expect_true(js("Array.from(document.querySelectorAll('.mascot')).every(el=>!('detail' in mascot.host.state(el)))"))
   })
 })
 
 describe("mascot_preview() of a format-v1 character in Chrome", {
-  it("I1 draws every mood at 160, 160, 96 and 24 px offline, each in the detail band its width asks for", {
+  it("I1 draws every mood at 160, 48, 32 and 24 px offline, each in the detail band its width asks for", {
     skip_without_chrome()
     character <- runtime_character(runtime_data(edit = function(recipe) {
       recipe$moods$thinking$status <- "Reading the logs"
@@ -379,15 +385,15 @@ describe("mascot_preview() of a format-v1 character in Chrome", {
     expect_identical(js("typeof window.Shiny"), "undefined")
     expect_identical(
       unlist(js("Array.from(document.querySelectorAll('.mascot canvas')).map(el=>el.width)"), use.names = FALSE),
-      rep(c(160L, 160L, 96L, 24L), 12)
+      rep(c(160L, 48L, 32L, 24L), 12)
     )
-    # 160 px uses the full band, 96 px the small band, and 24 px the micro band.
+    # 160 px is the full band, 48 px the small one, and 32 and 24 px the micro one.
     expect_identical(
       unlist(
         js("Array.from(document.querySelectorAll('.mascot')).map(el=>mascot.host.state(el).band)"),
         use.names = FALSE
       ),
-      rep(c("full", "full", "small", "micro"), 12)
+      rep(c("full", "small", "micro", "micro"), 12)
     )
     # The status and the accessible name come from the character's own moods.
     expect_identical(
@@ -479,7 +485,7 @@ describe("mascot_preview() named arguments", {
   it("keeps the agreed signature and rejects both forms of extra argument", {
     expect_identical(
       names(formals(mascot_preview)),
-      c("character", "...", "mood", "status", "bubble", "size", "theme", "motion")
+      c("character", "...", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click")
     )
     expect_error(mascot_preview("tessa", typo = 1), "Unexpected arguments", class = "mascot_error")
     expect_error(mascot_preview("tessa", 1), "Name the optional arguments", class = "mascot_error")
@@ -505,6 +511,24 @@ describe("preview contrast warning policy", {
 describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {
     expect_error(mascot_preview(character = 1), "character", class = "mascot_error")
+  })
+})
+
+describe("palette previews", {
+  it("accepts a string shortcut without contrast warnings and checks added role colours", {
+    withr::local_options(mascot.contrast_warnings = TRUE)
+    expect_no_warning(page <- mascot_preview(character = "knurl", theme = "orbit"))
+    expect_equal(nrow(attr(page, "contrast")), 0)
+    expect_match(as.character(page), '"palette":"orbit"', fixed = TRUE)
+    expect_warning(
+      page <- mascot_preview(
+        character = "knurl",
+        theme = mascot_theme(palette = "orbit", light = list(body = "white"))
+      ),
+      class = "mascot_contrast"
+    )
+    expect_identical(attr(page, "contrast")$role, "body")
+    expect_error(mascot_preview(character = "knurl", theme = "oribt"), "oribt.*knurl.*orbit.*Did you mean")
   })
 })
 

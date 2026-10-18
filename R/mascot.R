@@ -36,9 +36,10 @@
 #'   each drop sets `input$<id>_position` to the corner (`"snap"`) or a list with
 #'   `x` and `y` (`"free"`); saving it between visits is the app's job. See
 #'   [mascot_placement()]. `NULL` is not accepted.
-#' @param theme A named list of colour roles, a [bslib::bs_theme()] or a
+#' @param theme A palette id string from [mascot_palettes()], a named list of colour roles, a [bslib::bs_theme()] or a
 #'   [mascot_theme()] object. `NULL` (the default) keeps the character's own
-#'   colours. Unset roles keep their original colours in both modes.
+#'   colours. A palette supplies the base colours in both modes; `"original"`
+#'   selects the character's own colours. Unset roles follow the character's rules.
 #' @param motion A logical flag or [mascot_motion_settings()] object. `TRUE` (the default)
 #'   allows movement while honouring the visitor's reduced-motion preference.
 #'   `FALSE` stops all movement, including panels, drag snapping, minimising and

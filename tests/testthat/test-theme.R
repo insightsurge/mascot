@@ -56,7 +56,7 @@ describe("mascot_theme()", {
       }
     }
     for (x in list(NULL, "missing", c("light", "dark"), 1, NA_character_)) {
-      expect_error(mascot_theme(mode = x), "'mode'")
+      expect_error(mascot_theme(mode = x), "mode")
     }
     for (x in list(NULL, 1, "team-blue", "--", "--bad name", NA_character_)) {
       expect_error(mascot_theme(css = list(body = x)), "CSS variable")

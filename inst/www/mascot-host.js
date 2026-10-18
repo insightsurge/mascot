@@ -1182,7 +1182,9 @@
     const wantedWidth = panel.scrollWidth + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
 
     const spaceAbove = Math.max(0, anchorTop - gap - ceiling);
-    const spaceBelow = Math.max(0, floor - anchorBottom - gap);
+    // A panel below the drawing must also clear its status, including wrapped lines.
+    const belowStatus = Math.max(anchorBottom, record.statusEl.getBoundingClientRect().bottom);
+    const spaceBelow = Math.max(0, floor - belowStatus - gap);
     const spaceLeft = Math.max(0, anchorLeft - gap - bounds.left);
     const spaceRight = Math.max(0, bounds.right - anchorRight - gap);
 
@@ -1230,7 +1232,7 @@
       const naturalLeft = anchorLeft + (anchorWidth - rect.width) / 2;
       left = Math.max(bounds.left, Math.min(naturalLeft, bounds.right - rect.width));
     } else if (chosen === 'bottom') {
-      top = Math.max(ceiling, Math.min(anchorBottom + gap, floor - rect.height));
+      top = Math.max(ceiling, Math.min(belowStatus + gap, floor - rect.height));
       const naturalLeft = anchorLeft + (anchorWidth - rect.width) / 2;
       left = Math.max(bounds.left, Math.min(naturalLeft, bounds.right - rect.width));
     } else if (chosen === 'left') {

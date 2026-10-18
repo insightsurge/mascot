@@ -135,7 +135,7 @@ playground_controls <- list(
     messages = input_id("messages"),
     others = input_id("others")
   ),
-  mascot_gesture = list(... = fixed_arg("Must be empty: optional arguments are named."), name = input_event("gesture")),
+  mascot_gesture = list(name = input_event("gesture")),
   mascot_size = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     size = input_id("size_unit", "size_px", "size_pct"),

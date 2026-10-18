@@ -9,6 +9,11 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-18 — Menu toggles no longer send action clicks (#349)
+
+`mascot-host.js` sends `input$<id>_click` only for action buttons. Opening or closing a menu by pointer or keyboard
+leaves the click count unchanged; choosing an item still sends `input$<id>_menu` with event priority.
+
 ## 2026-10-17 — Mascots show connection loss in Shiny (#70)
 
 **In brief:** When Shiny loses its connection, every mounted mascot switches straight to its worried mood and announces

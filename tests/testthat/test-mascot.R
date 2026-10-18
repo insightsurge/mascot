@@ -333,7 +333,7 @@ describe("mascot() click", {
 })
 
 describe("mascot() clicks in a Shiny browser (#257)", {
-  it("counts every activation in a module, menus included, and sends nothing without a click", {
+  it("counts action activations in a module and sends no clicks for menus or pictures", {
     local_shiny_browser()
     app <- app_driver(function() {
       library(mascot)
@@ -366,13 +366,15 @@ describe("mascot() clicks in a Shiny browser (#257)", {
       button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));"
     )
     app$wait_for_js("document.getElementById('module-clicks').textContent === '3'")
-    # With a menu, opening and closing it both count.
+    # Menu toggles do not send action clicks.
     app$click(selector = "#module-menu .mascot-menu-toggle")
     app$wait_for_js("mascot.host.state(document.getElementById('module-menu')).menuOpen")
-    app$wait_for_js("document.getElementById('module-menu_clicks').textContent === '1'")
+    app$wait_for_idle()
+    expect_null(app$get_value(input = "module-menu_click"))
     app$click(selector = "#module-menu .mascot-menu-toggle")
     app$wait_for_js("!mascot.host.state(document.getElementById('module-menu')).menuOpen")
-    app$wait_for_js("document.getElementById('module-menu_clicks').textContent === '2'")
+    app$wait_for_idle()
+    expect_null(app$get_value(input = "module-menu_click"))
     # A picture sends nothing.
     app$click(selector = "#module-picture canvas")
     app$wait_for_idle()

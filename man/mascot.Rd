@@ -74,7 +74,7 @@ label containing a non-whitespace character, such as \code{"Open help"}, or a
 \code{\link[=mascot_action]{mascot_action()}} object makes it a button for one action of your app.
 A \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object makes it open a menu, whose choice sets
 \verb{input$<id>_menu}. With a click, every
-activation sets \verb{input$<id>_click} (see Details).}
+action activation sets \verb{input$<id>_click} (see Details).}
 }
 \value{
 An \code{htmltools} tag with the mascot's web dependency attached.
@@ -169,12 +169,12 @@ The \code{reactiveVal()} makes the mascot appear once: clicking \strong{Start th
 review} again does not rebuild it, so it keeps its mood and position.
 
 \strong{Clicks.} With \code{click}, the mascot is a button: an action named by its
-label, or a menu. Every activation (a click or tap, Enter or Space while it
-has keyboard focus, or a screen reader's activate command) sets
+label, or a menu. Every action activation (a click or tap, Enter or Space while
+it has keyboard focus, or a screen reader's activate command) sets
 \verb{input$<id>_click} to the number of activations since the mascot appeared, so
-\code{shiny::observeEvent(input$helper_click, ...)} runs each time; with a menu,
-opening and closing it both count. Dragging a floating mascot never counts as
-a click. See \code{\link[=mascot_action]{mascot_action()}} and \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}.
+\code{shiny::observeEvent(input$helper_click, ...)} runs each time for an action.
+Opening and closing a menu never sets this input. Dragging a floating mascot
+never counts as a click. See \code{\link[=mascot_action]{mascot_action()}} and \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}.
 }
 \examples{
 mascot("helper", mood = "happy")

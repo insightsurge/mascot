@@ -106,7 +106,9 @@ and unchanged in \code{\link[=update_mascot]{update_mascot()}}. An empty helper 
 
 Building UI with \code{\link[=mascot]{mascot()}} or helpers errors on invalid values;
 \code{\link[=update_mascot]{update_mascot()}} warns and leaves the mascot unchanged. See
-\link{mascot-package} for condition classes.
+\link{mascot-package} for condition classes. This includes a helper that raises a
+\code{mascot_error} while an argument is evaluated inside the call, such as
+\code{size = mascot_size(input$px)}; the whole update is ignored.
 
 \strong{Status text and bubbles.} Use the always visible status line for a short
 description of the current state.

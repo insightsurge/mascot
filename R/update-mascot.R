@@ -65,7 +65,9 @@
 #'
 #' Building UI with [mascot()] or helpers errors on invalid values;
 #' [update_mascot()] warns and leaves the mascot unchanged. See
-#' [mascot-package] for condition classes.
+#' [mascot-package] for condition classes. This includes a helper that raises a
+#' `mascot_error` while an argument is evaluated inside the call, such as
+#' `size = mascot_size(input$px)`; the whole update is ignored.
 #'
 #' **Status text and bubbles.** Use the always visible status line for a short
 #' description of the current state.
@@ -178,18 +180,17 @@ update_mascot <- function(
       environment()
     )
   }
-  values <- list(
-    character = character,
-    mood = mood,
-    status = status,
-    bubble = bubble,
-    size = size,
-    placement = placement,
-    theme = theme,
-    motion = motion,
-    click = click,
-    gesture = gesture
-  )
+  # Force each promise within the helper-error boundary before accepting any field.
+  call <- environment()
+  arguments <- c("character", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click", "gesture")
+  evaluated <- lapply(stats::setNames(arguments, arguments), function(arg) {
+    tryCatch(
+      list(value = get(arg, envir = call, inherits = FALSE)),
+      mascot_error = function(error) list(problem = conditionMessage(error))
+    )
+  })
+  values <- lapply(evaluated, function(result) result$value)
+  helper_problems <- unlist(lapply(evaluated, function(result) result$problem), use.names = FALSE)
   misplaced <- vapply(
     values[c("character", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click")],
     inherits,
@@ -207,6 +208,13 @@ update_mascot <- function(
       "{.fn update_mascot} must be called inside a Shiny server function or module.",
       class = "mascot_error"
     )
+  }
+  if (length(helper_problems)) {
+    mascot_update_warning(id, paste(helper_problems, collapse = "; "))
+    if (dev_mode()) {
+      send_update(session, id, list(problem = paste0("mascot: ", paste(helper_problems, collapse = "; "))))
+    }
+    return(invisible(NULL))
   }
   # Normalise once within the warning boundary; keep the result for sending.
   bubble_result <- if (!is.null(bubble)) {

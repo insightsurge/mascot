@@ -2,6 +2,12 @@
 
 ## Breaking changes
 
+* `mascot_popup_menu()` no longer sets `input$<id>_click` when its menu opens or closes. Handle choices through `input$<id>_menu`; use `mascot_action()` for a single action that sets the click count (#349).
+
+* `mascot_gesture(name)` accepts only `name`; its unused `...` is removed (#349).
+
+* `mascot_action()`, `mascot_popup_menu()` and `mascot_bubble()` reject explicitly supplied options when their main argument (`label`, `items` or `text`) is `NULL`. Supply the main argument with those options, or call the helper without options to remove the click or bubble (#349).
+
 * `mascot_character(id = "tessa")` names its argument `id`, as every other function that addresses a character does; `name =` is no longer accepted and has no alias. Pass the id positionally or as `id =` (#296).
 
 * `mascot_motion_settings()` replaces `mascot_motion()` without an alias; all settings must be named and `animate` is removed. Use `motion = FALSE` to stop everything (#239).
@@ -25,7 +31,7 @@
 * `mascot(id, ..., character = "tessa")` requires an id first; arguments after it are named. `mascot()` adds a character with a mood, a status line and an optional message bubble to a Shiny app or Quarto page. It floats in the bottom-right corner by default (#190, #223).
   * `placement = "inline"` places it in the page flow; a corner name or `mascot_placement()` gives the other options (#223).
   * `bubble` shows a message (#196), `size` takes pixels, a percentage or `mascot_size()` (#201), `theme` takes colours, a `bslib::bs_theme()` or `mascot_theme()` (#202), `motion = FALSE` stops animation (#203), and `click` says what a click does: one action with a label, or a menu (#257).
-  * Without `click`, the mascot is a picture: no keyboard stop and no events. With one, it is a button named for screen readers, and every activation (a click or tap, Enter or Space, a screen reader's activate command) sets `input$<id>_click` to a count. Holding a key down counts once, and a drag never counts (#237, #257).
+  * Without `click`, the mascot is a picture: no keyboard stop and no events. With one, it is a button named for screen readers, and every action activation (a click or tap, Enter or Space, a screen reader's activate command) sets `input$<id>_click` to a count. Holding a key down counts once, and a drag never counts (#237, #257).
 
 * `mascot_action()` makes the mascot a button for one action of the app, such as opening a help panel; `click = "Open help"` is the short form. Its label names the button for screen readers and shows in a tooltip on hover and keyboard focus, which Escape hides; `tooltip = FALSE` turns the tooltip off. `disabled = TRUE` keeps the button but sends nothing: it stays reachable with the keyboard, and screen readers announce it as unavailable (#257).
 
@@ -49,7 +55,7 @@
 
 * `mascot_examples()` lists the bundled Shiny apps in teaching order. The studio comes first; each other app is a copyable `app.R` for one scenario, built with `bslib` cards (#177, #213).
 
-* `mascot_gesture(name, ...)` rejects extra arguments. It plays one movement once, without changing the mood: `"nod"` acknowledges an action and `"wave"` greets. Use it on its own or pass a plain name to `update_mascot()` (#196).
+* `mascot_gesture(name)` rejects extra arguments. It plays one movement once, without changing the mood: `"nod"` acknowledges an action and `"wave"` greets. Use it on its own or pass a plain name to `update_mascot()` (#196).
 
 * `mascot_gestures(character = NULL)` lists the gestures, with a description of each (#196). It gains `fallback` and `frames` columns; with a `character`, `frames` is the length of the movement that plays, so a wave that falls back to a rock reports the rock's length. (#296).
 
@@ -72,7 +78,7 @@
 * `mascot_popup_menu()` makes a click open a menu of app-defined items: pass it as `click`. A chosen item sets `input$<id>_menu` to its ID, so choosing the same item twice triggers the input twice (#143, #213, #257).
   * `direction` is `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`. The menu opens from the mascot's on-screen position, and falls back to the opposite side when the chosen side has no room (#225).
   * Opening the menu closes a speech bubble, and a new bubble closes an open menu (#225).
-  * Opening and closing the menu also set `input$<id>_click`. `label` names the menu button for screen readers and shows in a tooltip, which `tooltip = FALSE` turns off; without it, the button is named after the character, such as "Tessa, menu" (#257).
+  * Opening and closing the menu never set `input$<id>_click`. `label` names the menu button for screen readers and shows in a tooltip, which `tooltip = FALSE` turns off; without it, the button is named after the character, such as "Tessa, menu" (#257).
   * Enter and Space toggle the focused menu control, once while the key is held down; the arrow keys, Home and End move between items, and Escape closes the menu (#213, #257).
   * While the menu is open, the mascot looks towards it: up, down, left or right, on the side where the menu actually opened, after any fallback. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208, #241).
 
@@ -104,6 +110,12 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* `mascot_motion_settings(others = FALSE)` uses the same reduced-motion poses and instant drag transitions as `motion = FALSE` when no named switch enables movement (#349).
+
+* `mascot_popup_menu()` includes `tooltip` in its unexpected-argument hint (#349).
+
+* `update_mascot()` catches `mascot_error` conditions raised by inline helpers, warns with `mascot_update_ignored` and ignores the whole update so an observer can continue (#349).
 
 * Tessa's default status now uses a sentence for each mood, so apps that use her default status show the new text beside her and to screen readers (#142).
 

@@ -105,6 +105,8 @@
 
 ## Minor improvements and fixes
 
+* Click menus and other panels opening below a mascot leave room for its status text, including wrapped lines, and fall back to another side when there is not enough room (#344).
+
 * Tessa's default status now uses a sentence for each mood, so apps that use her default status show the new text beside her and to screen readers (#142).
 
 * `mascot_studio()` shows its canvas and mascot on narrow screens again; on screens narrower than 576 pixels the main area was empty (#341).

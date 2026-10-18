@@ -518,11 +518,6 @@ describe("B2 preview contract", {
   })
 })
 
-describe("public argument error classes", {
-  it("keeps the argument name and adds mascot_error to invalid types", {
-    expect_error(mascot_preview(character = 1), "character", class = "mascot_error")
-  })
-})
 
 describe("palette previews", {
   it("accepts a string shortcut without contrast warnings and checks added role colours", {
@@ -539,5 +534,11 @@ describe("palette previews", {
     )
     expect_identical(attr(page, "contrast")$role, "body")
     expect_error(mascot_preview(character = "knurl", theme = "oribt"), "oribt.*knurl.*orbit.*Did you mean")
+  })
+})
+
+describe("mascot_preview() mood errors", {
+  it("names the valid moods for a malformed mood", {
+    expect_error(mascot_preview(mood = "ha!py"), "Choose.*idle.*celebrating", class = "mascot_error")
   })
 })

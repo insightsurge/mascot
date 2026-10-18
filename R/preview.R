@@ -65,7 +65,7 @@ mascot_preview <- function(
   # These union arguments share mascot()'s converters and checkmate boundaries.
   character <- as_character_arg(character, environment())
   known_moods <- mascot_moods(if (is.null(character$data)) character$id else character$data)$name
-  moods <- if (is.null(mood)) known_moods else as_mood_arg(mood, environment())$name
+  moods <- if (is.null(mood)) known_moods else as_mood_arg(mood, environment(), character)$name
   if (!is.null(mood) && !moods %in% known_moods) {
     abort_choice(moods, known_moods, "mood", "mood", environment())
   }

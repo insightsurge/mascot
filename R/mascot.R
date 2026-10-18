@@ -245,7 +245,10 @@ mascot <- function(
         call = public_call,
         argument = error$argument,
         choices = error$choices,
-        value = error$value
+        value = error$value,
+        code = error$code,
+        path = error$path,
+        fix = error$fix
       )
     }
   )

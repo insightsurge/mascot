@@ -91,7 +91,7 @@
   * While the menu is open, the mascot looks towards it: up, down, left or right, on the side where the menu actually opened, after any fallback. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208, #241).
 
 * `mascot_preview(character = "tessa", ...)` (*experimental*) names its options and shows an offline page that compares moods, sizes and light and dark colours, with contrast findings on the page and in R (#175, #213). It starts no Shiny app and writes no files; printing the page opens the Viewer or a browser.
-  * Rows are moods; columns are the requested size, then 48, 32 and 24 CSS pixels (#175).
+  * Rows are moods; columns are the requested size, then 160, 96 and 24 CSS pixels (#175, #350).
   * Light and dark backgrounds are checked separately. Contrast warnings have the class `mascot_contrast` (#213).
   * Each cell is wide enough for its bubble, so bubbles no longer cover neighbouring cells at any size (#244).
 

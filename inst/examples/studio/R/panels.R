@@ -70,7 +70,7 @@ role_pickers <- function(mode, roles, values = list(), name = mascot_character()
   )
 }
 
-panel_character_bar <- function(moods = mascot_moods(), character = formals(mascot::mascot)$character) {
+panel_character_bar <- function(moods = mascot_moods(character), character = formals(mascot::mascot)$character) {
   checkmate::assert_data_frame(moods)
   checkmate::assert_string(character)
   div(
@@ -79,7 +79,10 @@ panel_character_bar <- function(moods = mascot_moods(), character = formals(masc
     div(
       class = "d-flex flex-wrap align-items-end gap-2 w-100 pg-character-bar-controls",
       selectInput("character", "Character", studio_characters(), selected = character),
-      mood_cards(moods),
+      selectInput("palette", "Palette", mascot_palettes(character)$name, selected = "original"),
+      selectInput("mood", "Mood", stats::setNames(moods$name, tools::toTitleCase(moods$name)), selected = "idle"),
+      selectInput("gesture", "Gesture", mascot_gestures(character)$name, selected = "nod"),
+      actionButton("gesture_play", "Play", class = "btn-outline-primary btn-sm"),
       if (!is.null(studio_character_hint())) div(class = "pg-hint", studio_character_hint())
     ),
     actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm")
@@ -317,10 +320,7 @@ panel_motion <- function(gestures = mascot_gestures()) {
     arg_field(
       "mascot_gesture",
       "name",
-      div(
-        class = "pg-actions",
-        lapply(gestures$name, function(name) try_button("gesture", name, tools::toTitleCase(name)))
-      )
+      div(class = "pg-note", "Choose a gesture in the top bar, then press Play.")
     ),
     div(
       class = "pg-note",
@@ -437,11 +437,12 @@ panel_colours <- function() {
         )
       ),
       arg_field("mascot_theme", "...", NULL),
+      arg_field("mascot_theme", "palette", div(class = "pg-note", "Choose a palette in the top bar.")),
       radioButtons(
         "theme_source",
         "Where the colours come from",
         c(
-          "Character's own colours" = "own",
+          "Palette from the top bar" = "own",
           "Your colours" = "mascot",
           "Your app's brand: bslib::bs_theme() instead of mascot_theme()" = "bslib"
         )
@@ -452,7 +453,7 @@ panel_colours <- function() {
       ),
       conditionalPanel(
         "input.theme_source == 'own'",
-        div(class = "pg-note", "Uses the character's own colours in light and dark mode.")
+        div(class = "pg-note", "Uses the palette from the top bar; original keeps the character's own colours.")
       ),
       conditionalPanel(
         "input.theme_source == 'mascot'",
@@ -484,6 +485,8 @@ panel_colours <- function() {
     ),
     inspector_function(
       "mascot_colour_roles",
+      arg_field("mascot_colour_roles", "...", NULL),
+      arg_field("mascot_colour_roles", "palette", div(class = "pg-note", "Choose a palette in the top bar.")),
       arg_field(
         "mascot_colour_roles",
         "character",
@@ -626,7 +629,7 @@ panel_preview <- function(moods = mascot_moods()) {
         radioButtons(
           "preview_theme_source",
           "Colours",
-          c("Character's own colours" = "own", "Your colours" = "custom")
+          c("Palette from the top bar" = "own", "Your colours" = "custom")
         ),
         conditionalPanel("input.preview_theme_source == 'custom'", uiOutput("preview_pickers"))
       )

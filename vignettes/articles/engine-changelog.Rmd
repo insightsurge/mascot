@@ -14,6 +14,15 @@ covered in `NEWS.md`.
 `mascot-host.js` sends `input$<id>_click` only for action buttons. Opening or closing a menu by pointer or keyboard
 leaves the click count unchanged; choosing an item still sends `input$<id>_menu` with event priority.
 
+## 2026-10-18 — Named palettes resolved in R (#336)
+
+The host receives a palette id and its light and dark leader colours separately
+from explicit overrides. It applies palette colours first, role overrides next,
+and CSS last. R settles palette retention on character swaps and warns when the
+incoming character lacks the id. Host patches outside Shiny also resolve a shared
+palette against the incoming character, or drop it when unavailable, keeping explicit
+overrides. Followers continue to use the character's rules.
+
 ## 2026-10-17 — Mascots show connection loss in Shiny (#70)
 
 **In brief:** When Shiny loses its connection, every mounted mascot switches straight to its worried mood and announces

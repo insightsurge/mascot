@@ -16,6 +16,18 @@
 
 ## New features
 
+* `mascot()`, `update_mascot()` and `mascot_preview()` accept palette id strings
+  through `theme`; `mascot_theme()` gains `palette`, with role and CSS overrides
+  applied on top. Character swaps keep shared palette ids or warn and restore
+  original colours while retaining explicit colours for shared roles (#336).
+* Built-in characters gain named palettes; the Knurl palettes `sea_glass` and `night_screen`
+  are replaced by `orbit`, `carbon`, `cobalt_droid` and `crimson` (#336).
+* `mascot_colour_roles()` gains `palette`; `mascot_palettes()` now defaults to
+  all characters, with a final `character` column. `mascot_characters()` adds a
+  final `palettes` column, and printed themes show their palette (#336).
+* The studio top bar gains Palette, Mood and Gesture drop-downs and a Play
+  button; choices refresh with the character (#336).
+
 * Every character must now have a `wave` and a `nod` gesture that visibly move. `wave` must move a part other than `root` (an arm, a hand, a fin), so it is more than a tilt of the whole body; `nod` may move any part, `root` included. A character that breaks this is refused with a message naming the gesture (#328).
 
 * When a Shiny connection drops, each mascot immediately shows its worried mood and a readable connection message above the Shiny disconnect overlay. It restores the latest mood and status when Shiny reconnects (#70).

@@ -59,9 +59,10 @@ each drop sets \verb{input$<id>_position} to the corner (\code{"snap"}) or a lis
 \code{x} and \code{y} (\code{"free"}); saving it between visits is the app's job. See
 \code{\link[=mascot_placement]{mascot_placement()}}. \code{NULL} is not accepted.}
 
-\item{theme}{A named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
+\item{theme}{A palette id string from \code{\link[=mascot_palettes]{mascot_palettes()}}, a named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
-colours. Unset roles keep their original colours in both modes.}
+colours. A palette supplies the base colours in both modes; \code{"original"}
+selects the character's own colours. Unset roles follow the character's rules.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object. \code{TRUE} (the default)
 allows movement while honouring the visitor's reduced-motion preference.

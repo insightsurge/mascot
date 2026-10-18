@@ -61,9 +61,11 @@ A click restores it; a drag leaves it minimised in its new position.
 }}
 
 \item{theme}{A theme in the forms accepted by \code{\link[=mascot]{mascot()}}. \code{NULL} (the
-default) leaves the theme unchanged; \code{mascot_theme()} restores the
+default) leaves the theme unchanged; \code{"original"} or \code{mascot_theme()} restores the
 character's own colours. After a character swap, the theme is applied
-again to the new character's parts.}
+again to the new character's parts. A palette id string chooses a named
+palette. A swap keeps it when available, otherwise warns with class
+\code{mascot_palette_dropped} and keeps explicit colours for shared roles.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object, as in \code{\link[=mascot]{mascot()}}.
 \code{NULL} (the default) leaves motion unchanged. Changes apply to the live mascot

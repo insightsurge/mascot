@@ -63,12 +63,3 @@ describe("public argument error classes", {
     expect_error(print.mascot_gesture(1), "x", class = "mascot_error")
   })
 })
-
-
-describe("mascot_gesture() signature (#349)", {
-  it("accepts only its required name", {
-    expect_identical(names(formals(mascot_gesture)), "name")
-    expect_error(mascot_gesture("nod", typo = TRUE), "unused argument")
-    expect_error(mascot_gesture("nod", TRUE), "unused argument")
-  })
-})

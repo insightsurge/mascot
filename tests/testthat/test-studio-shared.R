@@ -383,6 +383,7 @@ describe("preview_folder()", {
     expect_false(dir.exists(folder$dir))
     expect_false(folder$prefix %in% names(shiny::resourcePaths()))
     expect_error(folder_for(session, "Theme preview"), "prefix")
+    expect_error(folder_for(list(token = "x"), "theme-preview"), "session")
   })
 })
 

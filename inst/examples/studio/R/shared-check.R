@@ -4,6 +4,7 @@
 # A folder for one session's built pages (mascot_preview() pages), served at prefix-<session token> and removed when
 # the session ends. Returns the served prefix and the folder.
 preview_folder <- function(session, prefix) {
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
   checkmate::assert_string(prefix, pattern = "^[a-z][a-z-]*$")
   name <- paste0(prefix, "-", session$token)
   dir <- file.path(tempdir(), name)

@@ -349,6 +349,8 @@ theme_view_server <- function(input, output, session) {
   # of this session's (made on the first build).
   folder <- NULL
   built <- shiny::reactiveVal(NULL)
+  # What the page depends on: a new CSS variable value makes it out of date too.
+  preview_settings <- shiny::reactive(list(character(), theme(), css_values()))
   shiny::observeEvent(input$check_preview, {
     if (is.null(folder)) {
       folder <<- preview_folder(session, "theme-preview")
@@ -357,6 +359,14 @@ theme_view_server <- function(input, output, session) {
     style <- if (identical(input$code_style, "helper")) "helper" else "short"
     args <- Filter(Negate(is.null), list(character = character(), theme = theme()[[style]]))
     code <- format_call("mascot_preview", args)
+    # A part that reads a CSS variable needs the page to set it, as the copied code says.
+    values <- css_values()
+    root_style <- if (length(values)) {
+      sprintf(":root { %s }", paste0(names(values), ": ", values, ";", collapse = " "))
+    }
+    if (!is.null(root_style)) {
+      code <- paste0("# The page sets the CSS variable: tags$style(\"", root_style, "\")\n", code)
+    }
     page <- tryCatch(
       suppressWarnings(mascot::mascot_preview(character = character(), theme = theme_value(theme()))),
       error = function(e) e
@@ -365,11 +375,14 @@ theme_view_server <- function(input, output, session) {
       built(list(code = code, error = cli::ansi_strip(conditionMessage(page))))
       return()
     }
+    if (!is.null(root_style)) {
+      page <- htmltools::tagList(htmltools::tags$head(htmltools::tags$style(root_style)), page)
+    }
     file <- sprintf("preview-%d.html", input$check_preview)
     htmltools::save_html(page, file.path(folder$dir, file), libdir = "lib")
     # The page before stays until the new one has loaded.
     unlink(file.path(folder$dir, sprintf("preview-%d.html", seq_len(max(0L, input$check_preview - 2L)))))
-    built(list(code = code, src = paste0(folder$prefix, "/", file), settings = list(character(), theme())))
+    built(list(code = code, src = paste0(folder$prefix, "/", file), settings = preview_settings()))
   })
   output$check_preview_ui <- shiny::renderUI({
     page <- built()
@@ -380,7 +393,7 @@ theme_view_server <- function(input, output, session) {
         shiny::div(class = "pg-note pg-warn", "The page could not be built: ", page$error)
       } else {
         shiny::tagList(
-          if (!identical(page$settings, list(character(), theme()))) {
+          if (!identical(page$settings, preview_settings())) {
             shiny::div(class = "pg-note", "The settings changed since this page was built. Show every mood again.")
           },
           shiny::tags$iframe(class = "theme-preview-page", src = page$src, title = "Every mood, light and dark")

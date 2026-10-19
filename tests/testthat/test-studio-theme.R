@@ -462,6 +462,26 @@ describe("the Check tab", {
       expect_match(output$check_preview_ui$html, "The settings changed since this page was built.", fixed = TRUE)
     })
   })
+  it("sets the CSS variable values on the every-mood page and marks it out of date when one changes", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      folder <- file.path(tempdir(), paste0("theme-preview-", session$token))
+      session$setInputs(character = "tessa", mood = "idle")
+      roles <- mascot_colour_roles("tessa")
+      do.call(session$setInputs, stats::setNames(as.list(roles$colour), paste0("colours-light_", roles$role)))
+      # Given the body reading the CSS variable, set to red
+      session$setInputs(`colours-css_roles` = "body", `colours-css_value` = "#ff0000")
+      session$setInputs(check_preview = 1)
+      # Then the saved page sets the variable, and the code says so
+      saved <- paste(readLines(file.path(folder, "preview-1.html"), warn = FALSE), collapse = "\n")
+      expect_match(saved, "<style>:root { --app-accent: #ff0000; }</style>", fixed = TRUE)
+      expect_match(output$check_preview_ui$html, '# The page sets the CSS variable: tags$style(":root', fixed = TRUE)
+      expect_false(grepl("The settings changed", output$check_preview_ui$html, fixed = TRUE))
+      # When the value changes, the page is out of date
+      session$setInputs(`colours-css_value` = "#00aa00")
+      expect_match(output$check_preview_ui$html, "The settings changed since this page was built.", fixed = TRUE)
+    })
+  })
   it("checks the arguments of its result card", {
     env <- theme_parts()$env
     result <- list(ok = TRUE, class = "ok", message = NULL, silencer = NULL, condition_classes = NULL)

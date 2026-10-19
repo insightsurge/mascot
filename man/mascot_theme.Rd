@@ -58,7 +58,8 @@ roles for a character. A plain named list passed to \code{\link[=mascot]{mascot(
 \code{\link[=update_mascot]{update_mascot()}} uses one set of colours in every mode. A \code{\link[bslib:bs_theme]{bslib::bs_theme()}}
 fills the character's declared brand leaders with its primary and secondary
 colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand = )}. A
-\code{bs_theme()} always uses \code{mode = "auto"}.
+\code{bs_theme()} always uses \code{mode = "auto"}. Which parts of a character a
+\code{bs_theme()} colours is experimental and may change in a later release.
 }
 \details{
 After a character swap, follow rules are applied again and roles absent from
@@ -139,4 +140,8 @@ Other mascot helpers:
 \section{Experimental CSS source}{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
 CSS variables are worked out by the browser, so R cannot check their values.
+}
+\section{Experimental colour mapping for \code{bs_theme()}}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+\code{theme = bslib::bs_theme()} is accepted, but which parts of a character it colours may change in a later release.
 }

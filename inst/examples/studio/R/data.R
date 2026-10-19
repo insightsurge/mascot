@@ -357,7 +357,9 @@ studio_palette_labels <- function(character) {
 studio_long_status <- "Review in progress: checking the submitted rows and recording the results before the next step."
 
 # Named examples, independent of the studio default character.
-studio_palette_swap <- c(from = "tessa", kept = "sela", dropped = "knurl", palette = "peach")
+# The first two characters share this palette id and the third has none of it. A test fails if a change to the
+# palettes breaks that.
+studio_palette_swap <- c(from = "tessa", kept = "sela", dropped = "knurl", palette = "coral_navy")
 
 # Use a real palette owned by another shipped character, and an id that no character owns.
 studio_mistake_palettes <- function(character) {

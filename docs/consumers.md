@@ -11,6 +11,11 @@ package starts using mascot, with a way to check it still works. A PR that may a
 | Tanmay (R package author, outside trial) | to be added | Trial of 0.1.0 before CRAN (#43) | GitHub | Their feedback issues are closed | planned |
 
 ## Visible changes to the built-in characters
+- 2026-10-19, Sela's final palette set (#379): her own colours are lilac with deep violet hair, named
+  `lilac_violet` (`"original"` still works); her pink look is now `orchid`, with a plum rim and deeper hair.
+  Her palettes are `orchid`, `coral_navy`, `azure`, `peach_ink`, `lilac_soft`, `mist_navy`, `desert_clay`,
+  `forest`, `apricot_navy`, `blush_plum`, `lilac_dusk` and `sea_green`. Use `coral_navy` instead of `coral`
+  and `peach_ink` instead of `peach`; `azure` has updated colours. No known user picks Sela.
 - 2026-10-19, Tessa's new look (#359): a slimmer teal hexagon, hair, a small bow and studs, a chest badge showing the
   mood, arms hanging down; her own colours are called `night_teal` (`"original"` still works) and her palettes are
   `sea_green`, `forest`, `spring`, `peach`, `coral_navy`, `desert_coral`, `rose_soft`, `lilac_soft` and `mist_navy`.

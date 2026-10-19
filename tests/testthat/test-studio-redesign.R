@@ -2155,8 +2155,10 @@ describe("studio palette follow-up (#353)", {
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('theme = \"sea_green\"')")
     expect_match(app$get_value(output = "code_ui"), 'theme = "sea_green"', fixed = TRUE)
     app$set_inputs(character = "sela", palette = "original")
-    app$wait_for_js("document.querySelector('#palette').selectedOptions[0].textContent === \"Sela's own colours\"")
-    expect_match(app$get_js(sentence), "Showing Sela in Sela's own colours", fixed = TRUE)
+    app$wait_for_js(
+      "document.querySelector('#palette').selectedOptions[0].textContent === \"Sela's own colours (lilac_violet)\""
+    )
+    expect_match(app$get_js(sentence), "Showing Sela in Sela's own colours (lilac_violet)", fixed = TRUE)
     studio_select_function(app, "mascot_palettes")
     app$click(selector = "#inspector_tab_guide")
     app$wait_for_js("document.querySelector('#guide .pg-palette-table td')?.getBoundingClientRect().width > 0")

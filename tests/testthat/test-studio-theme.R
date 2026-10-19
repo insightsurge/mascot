@@ -471,3 +471,19 @@ describe("the Check tab", {
     expect_error(env$theme_check_result_ui("Title", "x()", result, ""), "outcome")
   })
 })
+
+describe("opening the theme view", {
+  it("is in the studio's More menu, in a new tab, and in the Examples view's list", {
+    skip_if_not_installed("bslib")
+    app <- mascot_studio(run = FALSE)
+    page <- function(query) {
+      as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
+    }
+    expect_match(
+      page(""),
+      '<a id="more_theme" href="?view=theme" target="_blank" rel="noopener">Theme a mascot</a>',
+      fixed = TRUE
+    )
+    expect_match(page("view=examples"), '<option value="theme">Theme a mascot (theme)</option>', fixed = TRUE)
+  })
+})

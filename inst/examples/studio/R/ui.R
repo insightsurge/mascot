@@ -651,6 +651,7 @@ studio_right_rail <- function() {
         class = "pg-menu-body pg-float",
         tags$a(href = "?view=studio", "Studio"),
         tags$a(id = "more_examples", href = "?view=examples", "More examples"),
+        tags$a(id = "more_theme", href = "?view=theme", target = "_blank", rel = "noopener", "Theme a mascot"),
         tags$a(href = "https://github.com/insightsurge/mascot", target = "_blank", rel = "noopener", "GitHub"),
         tags$a(href = "https://mascot-pkg.web.app/", target = "_blank", rel = "noopener", "Package website"),
         tags$label(

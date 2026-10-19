@@ -1,13 +1,14 @@
 describe("mascot_examples()", {
-  it("lists the studio and six scenario apps in order with readable metadata", {
+  it("lists the studio, its theme page and five scenario apps in order with readable metadata", {
     examples <- mascot_examples()
     expect_s3_class(examples, "data.frame")
     expect_named(examples, c("name", "title", "description"))
-    expect_identical(examples$name, c("studio", "form-check", "long-task", "modules", "branding", "golem", "rhino"))
+    expect_identical(examples$name, c("studio", "form-check", "long-task", "modules", "theme", "golem", "rhino"))
     expect_true(all(vapply(examples, is.character, logical(1))))
     expect_true(all(nzchar(unlist(examples))))
     expect_identical(anyDuplicated(examples$name), 0L)
-    expect_match(examples$description[examples$name == "branding"], "Requires bslib")
+    expect_identical(examples$title[examples$name == "theme"], "Theme a mascot")
+    expect_match(examples$description[examples$name == "theme"], "Requires bslib")
   })
   it("copies single-file scenarios and the studio and rhino folders, and builds it without a server", {
     # mascot is already attached by the test run; attaching it here would detach it on exit.
@@ -20,6 +21,11 @@ describe("mascot_examples()", {
       expect_true(file.exists(file), info = name)
       # The studio and framework examples need their whole folder.
       sources <- list.files(dirname(file), recursive = TRUE)
+      # The theme page is a view of the studio's app: the same folder.
+      if (name == "theme") {
+        expect_identical(file, mascot_example("studio", run = FALSE))
+        next
+      }
       if (name == "studio") {
         expect_setequal(
           sources,
@@ -528,6 +534,25 @@ describe("mascot_example()", {
     expect_identical(mascot_example("modules"), "app stopped")
     expect_identical(captured, dirname(mascot_example("modules", run = FALSE)))
   })
+  it("opens the studio's app on its theme page for \"theme\"", {
+    skip_if_not_installed("bslib")
+    # Given an interactive session where running an app only records it
+    local_mocked_bindings(example_interactive = function() TRUE)
+    captured <- NULL
+    local_mocked_bindings(
+      runApp = function(appDir) {
+        captured <<- appDir
+        "app stopped"
+      },
+      .package = "shiny"
+    )
+    # Then run = FALSE gives the studio's app.R, and run = TRUE runs that app on the theme page
+    expect_identical(mascot_example("theme", run = FALSE), mascot_example("studio", run = FALSE))
+    expect_identical(mascot_example("theme"), "app stopped")
+    expect_s3_class(captured, "shiny.appobj")
+    page <- captured$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
+    expect_match(as.character(page), "<title>Theme a mascot</title>", fixed = TRUE)
+  })
 })
 
 # A literal scenario name is embedded so the child R process needs no test globals.
@@ -608,52 +633,6 @@ describe("bundled example apps", {
     app$set_inputs(`second-ready` = TRUE)
     wait_example_mood(app, "parent", "happy")
     expect_true(app$get_js("mascot.host.state(document.getElementById('parent')).placement.floating"))
-  })
-  it("E5 branding switches palettes and modes and handles each menu action", {
-    local_shiny_browser()
-    skip_if_not_installed("bslib")
-    app <- example_driver("branding")
-    withr::defer(app$stop())
-    wait_example_mood(app, "helper", "idle")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.sleeve?.toLowerCase()==='#1f6feb'")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#966600")
-    app$click("celebrate")
-    wait_example_mood(app, "helper", "celebrating")
-    app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
-    app$wait_for_js("document.documentElement.dataset.bsTheme==='dark'")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#1f6feb'")
-    app$set_inputs(palette = "rose")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#f2a6cf'")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.rim"), "#C5B0EB")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.sleeve"), "#F2A6CF")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#C5B0EB")
-    app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
-    app$wait_for_js("document.documentElement.dataset.bsTheme==='light'")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#b53d78'")
-    # The bow has its own colour now, so a brand's rim no longer reaches it.
-    expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).colours.accessory"))
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.sleeve"), "#B53D78")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#A94A82")
-    app$click("personalise")
-    app$wait_for_js("!!mascot.host.state(document.getElementById('helper')).bubble")
-    app$click("original")
-    app$wait_for_js("Object.values(mascot.host.state(document.getElementById('helper')).colours).every(x=>x===null)")
-    app$click("brand")
-    app$wait_for_js("!!mascot.host.state(document.getElementById('helper')).colours.body")
-    app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper [role=menuitem][data-item-id=finish]")
-    wait_example_mood(app, "helper", "happy")
-    expect_match(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Review complete")
-    expect_match(app$get_js("document.querySelector('#helper .mascot-bubble').textContent"), "All checks finished")
-    app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper .mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=reset]")
-    wait_example_mood(app, "helper", "idle")
-    expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).bubble"))
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.body"), "#B53D78")
-    app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper .mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=about]")
-    app$wait_for_js("!!document.querySelector('.modal.show, .modal.in')")
-    expect_match(app$get_js("document.querySelector('.modal-title').textContent"), "About this example")
   })
 })
 

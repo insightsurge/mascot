@@ -129,6 +129,8 @@
 
 ## Minor improvements and fixes
 
+* `?mascot_theme` explains that built-in characters keep one outline colour in both modes, and how to set your own dark-mode outline with `dark = list(outline = )` (#380).
+
 * Exported examples assign mascot tags instead of printing the embedded character data (#350).
 
 * `mascot_motion_settings()` reports invalid `messages` panel names with class `mascot_error_choice` (#350).

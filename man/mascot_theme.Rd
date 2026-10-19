@@ -28,7 +28,9 @@ Values can be colour names, hex
 strings, \code{\link[grDevices:rgb]{grDevices::rgb()}} output, CSS \code{rgb()} or \code{rgba()} strings, or
 three RGB numbers (red, green and blue) in 0--255. Single numeric palette
 indices are not accepted. Roles use snake case; \code{light}, \code{dark} and
-\code{default} are reserved.}
+\code{default} are reserved. Built-in characters keep one outline colour in
+both modes; their light outer band keeps them readable on any dark page.
+To use your own dark-mode outline, set \code{dark = list(outline = "#FFC93C")}.}
 
 \item{mode}{Mode selection: \code{"auto"} (the default), \code{"light"} or \code{"dark"}.
 \code{"auto"} follows the nearest valid \code{data-bs-theme} in the original source

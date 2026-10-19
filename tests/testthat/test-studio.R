@@ -173,3 +173,64 @@ describe("B2 studio choices", {
     expect_error(mascot_studio(character = "wrong", run = FALSE), class = "mascot_error_choice")
   })
 })
+
+describe("mascot_studio() views (#395)", {
+  page <- function(app, query = "") {
+    as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
+  }
+  it("opens the theme view on its own page, without the studio's shell", {
+    skip_if_not_installed("bslib")
+    theme <- mascot_studio("theme", character = "sela", run = FALSE)
+    html <- page(theme)
+    expect_match(html, "<title>Theme a mascot</title>", fixed = TRUE)
+    expect_match(html, '<div class="mascot" id="theme_mascot"[^>]* data-character="sela"')
+    expect_false(grepl('id="studio_shell"', html, fixed = TRUE))
+    expect_false(grepl("studio.js", html, fixed = TRUE))
+    # A link that names another view still opens it.
+    expect_match(page(theme, "view=studio"), 'id="studio_shell"', fixed = TRUE)
+    expect_match(page(mascot_studio(run = FALSE), "view=theme"), 'id="theme_mascot"', fixed = TRUE)
+  })
+  it("starts only the server of the view a session serves", {
+    skip_if_not_installed("bslib")
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
+    env <- environment(app$serverFuncSource())
+    for (view in c("theme", "studio")) {
+      # Given a session whose page was built for this view
+      session <- shiny::MockShinySession$new()
+      session$setInputs(tabs = view)
+      # When the app's server starts it
+      shiny::withReactiveDomain(session, env$server(session$input, session$output, session))
+      # Then only the studio makes its preview folder (one of the studio server's first steps)
+      folder <- file.path(tempdir(), paste0("studio-preview-", session$token))
+      expect_identical(dir.exists(folder), view == "studio", info = view)
+      session$close()
+      expect_false(dir.exists(folder))
+    }
+  })
+  it("reads the view from the address bar first, then from the page", {
+    skip_if_not_installed("bslib")
+    env <- environment(shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))$serverFuncSource())
+    from <- get("view_from_client", env)
+    expect_identical(from("?view=theme", "studio"), "theme")
+    expect_identical(from("?view=examples&character=sela"), "examples")
+    expect_identical(from("?view=unknown", "theme"), "theme")
+    expect_identical(from("", "theme"), "theme")
+    expect_identical(from(NULL, "unknown"), "studio")
+    expect_identical(from(NULL), "studio")
+    expect_error(from(1), "search")
+    expect_error(from("", 1), "routed")
+    expect_identical(names(env$views), names(get("studio_view_titles", env)))
+    expect_error(get("studio_views", env)(function(query) NULL, env$server), "studio_ui")
+  })
+  it("needs knitr only for the studio's own page", {
+    skip_if_not_installed("bslib")
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    top <- vapply(as.list(parse(file.path(dir, "app.R"))), deparse1, character(1))
+    expect_false(any(grepl("knitr", top[!startsWith(top, "studio_view_ui <-")], fixed = TRUE)))
+    env <- environment(shiny::shinyAppDir(dir)$serverFuncSource())
+    expect_match(deparse1(body(env$studio_view_ui)), 'requireNamespace("knitr"', fixed = TRUE)
+    theme_ui <- get("theme_view_ui", env)
+    expect_false(grepl("knitr", deparse1(body(theme_ui)), fixed = TRUE))
+    expect_error(theme_ui("sela"), "query")
+  })
+})

@@ -6,10 +6,6 @@ library(shiny)
 if (!requireNamespace("bslib", quietly = TRUE)) {
   stop("This example needs bslib. Install it before running the app.")
 }
-# The guide pages are R Markdown files (guide/<function>.Rmd), knitted when a guide is opened.
-if (!requireNamespace("knitr", quietly = TRUE)) {
-  stop("The studio needs knitr for its guide pages. Install it before running the app.")
-}
 library(bslib)
 library(mascot)
 
@@ -357,7 +353,7 @@ examples_page <- example_browser()
 view_from_request <- function(request) {
   checkmate::assert(checkmate::check_list(request), checkmate::check_environment(request), .var.name = "request")
   query <- shiny::parseQueryString(if (is.null(request$QUERY_STRING)) "" else request$QUERY_STRING)
-  if (is.null(query$view) || !query$view %in% "examples") "studio" else query$view
+  if (is.null(query$view) || !query$view %in% names(views)) "studio" else query$view
 }
 
 view_link <- function(label, view, new_tab = TRUE) {
@@ -374,22 +370,32 @@ view_link <- function(label, view, new_tab = TRUE) {
   ))
 }
 
+# The page of the studio and examples views; the query string chooses what it opens on.
+studio_view_ui <- function(query, view) {
+  checkmate::assert_list(query)
+  checkmate::assert_choice(view, c("studio", "examples"))
+  # The guide pages are R Markdown files (guide/<function>.Rmd), knitted when a guide is opened. Only this page
+  # has them, so the other views start without knitr.
+  if (!requireNamespace("knitr", quietly = TRUE)) {
+    stop("The studio needs knitr for its guide pages. Install it before running the app.")
+  }
+  fn <- if (!is.null(query$fn) && query$fn %in% names(playground_guide)) query$fn else "mascot_mood"
+  tagList(
+    tags$head(tags$link(rel = "stylesheet", href = "studio.css"), tags$script(src = "studio.js")),
+    studio_page(view_character(query), fn, view, identical(query$open, "guide"))
+  )
+}
+
 ui <- function(request) {
   view <- view_from_request(request)
   query <- shiny::parseQueryString(request$QUERY_STRING %||% "")
-  character <- if (!is.null(query$character) && query$character %in% unname(studio_characters())) {
-    query$character
-  } else {
-    defaults$character
-  }
-  fn <- if (!is.null(query$fn) && query$fn %in% names(playground_guide)) query$fn else "mascot_mood"
   bslib::page_fillable(
-    title = "mascot studio",
+    title = views[[view]]$title,
     theme = bs_theme(version = 5),
     padding = 0,
-    tags$head(tags$link(rel = "stylesheet", href = "studio.css"), tags$script(src = "studio.js")),
-    div(class = "pg-routing", selectInput("tabs", NULL, c("studio", "examples"), selected = view)),
-    studio_page(character, fn, view, identical(query$open, "guide"))
+    # The server reads the view from here when the address bar does not name it (see view_from_client()).
+    div(class = "pg-routing", hidden = NA, selectInput("tabs", NULL, names(views), selected = view)),
+    views[[view]]$ui(query)
   )
 }
 
@@ -1880,10 +1886,17 @@ examples_server <- function(input, output, session) {
   })
 }
 
-# Both URL views use the same studio shell; the URL only chooses its initial host mode.
-server <- function(input, output, session) {
+# The studio and examples views use the same studio shell; the URL only chooses its initial host mode.
+views <- studio_views(studio_view_ui, function(input, output, session) {
   studio_server(input, output, session)
   examples_server(input, output, session)
+})
+
+# A session runs only its own view's server, read once when it starts: Shiny sets the page's first input values
+# and the address before it calls this function.
+server <- function(input, output, session) {
+  view <- view_from_client(isolate(session$clientData$url_search), isolate(input$tabs))
+  views[[view]]$server(input, output, session)
 }
 
 shinyApp(ui, server)

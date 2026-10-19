@@ -6,6 +6,10 @@ library(shiny)
 if (!requireNamespace("bslib", quietly = TRUE)) {
   stop("This example needs bslib. Install it before running the app.")
 }
+# The guide pages are R Markdown files (guide/<function>.Rmd), knitted when a guide is opened.
+if (!requireNamespace("knitr", quietly = TRUE)) {
+  stop("The studio needs knitr for its guide pages. Install it before running the app.")
+}
 library(bslib)
 library(mascot)
 

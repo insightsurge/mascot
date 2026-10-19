@@ -1276,23 +1276,21 @@ describe("studio guide pages", {
     writeLines(sub("Status line or speech bubble?", "A new heading", text, fixed = TRUE), page)
     expect_match(page_html(env$studio_guide_page("mascot_status", "tessa", dir)), "A new heading", fixed = TRUE)
   })
-  it("falls back to the R builders when knitr is missing or a page cannot be built", {
+  it("says so in the guide, and warns, when a page cannot be built", {
     env <- studio_guide_env()
-    env$studio_has_knitr <- function() FALSE
-    expect_null(env$studio_guide_page("mascot_status", "tessa", guide_dir()))
-    html <- as.character(env$selected_guide("mascot_status"))
-    expect_match(html, "needs knitr", fixed = TRUE)
-    expect_match(html, "Help page: mascot_status()", fixed = TRUE)
-    expect_match(as.character(env$selected_guide("mascot_theme")), "Palette roles on the live mascot", fixed = TRUE)
-    # A page that fails to knit warns and falls back instead of breaking the Guide.
-    env$studio_has_knitr <- function() TRUE
     dir <- withr::local_tempdir()
     file.copy(list.files(guide_dir(), full.names = TRUE), dir)
     writeLines(c("```{r}", "stop('broken page')", "```"), file.path(dir, "mascot_status.Rmd"))
     suppressMessages(expect_warning(
-      expect_null(env$studio_guide_page("mascot_status", "tessa", dir)),
+      page <- env$studio_guide_page("mascot_status", "tessa", dir),
       "could not be built"
     ))
+    html <- page_html(page)
+    expect_match(html, "This guide page could not be built.", fixed = TRUE)
+    expect_match(html, "broken page", fixed = TRUE)
+    # A guide never shows a page of an older builder: those functions are gone from the studio.
+    expect_false(exists("visual_status", envir = env, inherits = FALSE))
+    expect_false(exists("visual_needs_knitr", envir = env, inherits = FALSE))
   })
   it("does not repeat the description of the help page", {
     env <- studio_guide_env()

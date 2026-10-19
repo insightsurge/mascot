@@ -3,11 +3,6 @@
 # the same file with a knitr child chunk. A function without a page keeps its builder in R/ui.R.
 # Shiny sources this file with the others in R/, so it holds functions only.
 
-# Whether pages can be knitted at all. A function of its own so a test can pretend knitr is missing.
-studio_has_knitr <- function() {
-  requireNamespace("knitr", quietly = TRUE)
-}
-
 # The folder with the pages and their helpers: the app's own guide/ folder (Shiny runs the app from
 # its folder), otherwise the one in the installed package.
 studio_guide_dir <- function() {
@@ -18,8 +13,8 @@ studio_guide_dir <- function() {
   system.file("examples", "studio", "guide", package = "mascot")
 }
 
-# The page of `fn` for `character` as a list of pieces for selected_guide(), or NULL when there is no
-# page (or knitr is missing), so the caller falls back to the builder in R/ui.R.
+# The page of `fn` for `character` as a list of pieces for selected_guide(), or NULL when the function has
+# no page (yet). knitr is required by the app (app.R), so there is no fallback for a missing package.
 studio_guide_page <- function(fn, character, dir = studio_guide_dir()) {
   checkmate::assert_string(fn, min.chars = 1)
   checkmate::assert_string(character, min.chars = 1)
@@ -27,7 +22,7 @@ studio_guide_page <- function(fn, character, dir = studio_guide_dir()) {
   file <- file.path(dir, paste0(fn, ".Rmd"))
   helpers <- file.path(dir, "guide-helpers.R")
   # `fn` becomes part of a file name: only function names are accepted.
-  if (!grepl("^[A-Za-z0-9_.]+$", fn) || !file.exists(file) || !file.exists(helpers) || !studio_has_knitr()) {
+  if (!grepl("^[A-Za-z0-9_.]+$", fn) || !file.exists(file) || !file.exists(helpers)) {
     return(NULL)
   }
   # Built afresh on every visit and never stored: a live demo on the page holds a mascot that belongs to the
@@ -35,11 +30,17 @@ studio_guide_page <- function(fn, character, dir = studio_guide_dir()) {
   tryCatch(
     studio_guide_knit(file, helpers, character),
     error = function(e) {
-      cli::cli_warn(c(
-        "The guide page {.file {basename(file)}} could not be built; the older builder is used.",
-        "x" = cli::ansi_strip(conditionMessage(e))
+      reason <- cli::ansi_strip(conditionMessage(e))
+      cli::cli_warn(c("The guide page {.file {basename(file)}} could not be built.", "x" = reason))
+      # The guide says so, rather than showing nothing.
+      list(structure(
+        shiny::HTML(as.character(htmltools::tags$div(
+          class = "pg-callout pg-callout-warn",
+          htmltools::tags$strong("This guide page could not be built. "),
+          reason
+        ))),
+        guide_kind = "callout"
       ))
-      NULL
     }
   )
 }

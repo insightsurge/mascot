@@ -399,7 +399,6 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_families = visual_families(),
     mascot_anchors = visual_anchors(character),
     mascot_palettes = visual_palettes(character),
-    mascot_status = visual_needs_knitr(),
     mascot_bubble = visual_bubble(),
     mascot_motion_settings = visual_motion(),
     mascot_gesture = visual_gesture(character),
@@ -407,7 +406,6 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_size = visual_size(),
     mascot_placement = visual_placement(),
     mascot_colour_roles = visual_colour_roles(character),
-    mascot_theme = visual_theme(character),
     mascot_action = visual_action(),
     mascot_popup_menu = visual_menu(),
     mascot = visual_mascot(),
@@ -497,11 +495,6 @@ visual_palettes <- function(character = formals(mascot::mascot)$character) {
     palette_table(character),
     palette_guide_demo(character)
   )
-}
-
-# What a function with a guide page shows when knitr is missing and the page cannot be built.
-visual_needs_knitr <- function() {
-  tags$p(class = "pg-muted", "The visual guide for this function is written as an R Markdown page and needs knitr.")
 }
 
 visual_bubble <- function() {
@@ -699,11 +692,6 @@ visual_colour_roles <- function(character) {
     ),
     uiOutput("roles_table")
   )
-}
-
-# The page is guide/mascot_theme.Rmd; without knitr only the live parts remain.
-visual_theme <- function(character = formals(mascot::mascot)$character) {
-  tagList(visual_needs_knitr(), palette_table(character), palette_guide_demo(character))
 }
 
 visual_action <- function() {

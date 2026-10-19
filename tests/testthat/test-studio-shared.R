@@ -196,6 +196,7 @@ describe("palette_cards()", {
 
 describe("role_picker() and role_pickers()", {
   it("name the picker and its reset event for a module, and show the swatch in use only when asked", {
+    skip_if_not_installed("bslib")
     shared <- studio_shared("shared-colours.R")
     roles <- mascot_colour_roles("sela")
     ns <- shiny::NS("colours")
@@ -230,6 +231,7 @@ describe("colour_roles_ui()", {
 
 describe("colour_roles_server()", {
   it("carries changed colours over a character swap only for roles the new character has", {
+    skip_if_not_installed("bslib")
     character <- shiny::reactiveVal("tessa")
     shiny::testServer(
       studio_shared("shared-colours.R")$colour_roles_server,
@@ -259,6 +261,7 @@ describe("colour_roles_server()", {
     )
   })
   it("keeps a changed colour when the palette changes and lets untouched pickers follow the palette", {
+    skip_if_not_installed("bslib")
     palette <- shiny::reactiveVal("original")
     shiny::testServer(
       studio_shared("shared-colours.R")$colour_roles_server,
@@ -284,6 +287,7 @@ describe("colour_roles_server()", {
     )
   })
   it("resets one picker, a mode or everything, and sets a picker", {
+    skip_if_not_installed("bslib")
     shiny::testServer(
       studio_shared("shared-colours.R")$colour_roles_server,
       args = list(
@@ -329,6 +333,7 @@ describe("colour_roles_server()", {
     )
   })
   it("keeps a colour set before the pickers are first drawn", {
+    skip_if_not_installed("bslib")
     # testServer() runs this before the module's first flush, as a caller's set() right after start-up does.
     shiny::testServer(
       studio_shared("shared-colours.R")$colour_roles_server,

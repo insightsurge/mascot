@@ -620,7 +620,9 @@ describe("quiet exported examples (#350)", {
         if (!startsWith(line, "#'")) {
           in_examples <- FALSE
         }
-        if (in_examples) expect_false(grepl("^#' (\\w+(::\\w+)?\\()*mascot\\(", line), info = paste(basename(path), line))
+        if (in_examples) {
+          expect_false(grepl("^#' (\\w+(::\\w+)?\\()*mascot\\(", line), info = paste(basename(path), line))
+        }
       }
     }
   })

@@ -74,7 +74,7 @@
 #' | Bubble | `bubble = mascot_bubble()` removes it |
 #' | Theme | `theme = mascot_theme()` restores character colours |
 #' | Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
-#' | Placement | `placement = mascot_placement()` resets to default bottom-right; `mascot_placement("inline")` returns inline |
+#' | Placement | `placement = mascot_placement()` (bottom-right); `mascot_placement("inline")` for inline |
 #' | Motion | `motion = mascot_motion_settings()` allows movement subject to visitor preference |
 #'
 #' Each non-`NULL` argument replaces that whole setting, not part of it. For

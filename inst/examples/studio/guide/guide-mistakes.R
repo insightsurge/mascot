@@ -195,7 +195,8 @@ guide_mistake_cases <- function(fn, character) {
       ),
       error = function(e) messages <<- c(messages, paste("Error:", cli::ansi_strip(conditionMessage(e))))
     )
-    list(code = code, why = described[[names(cases)[i] %||% ""]]$why, messages = messages)
+    label <- if (is.null(names(cases))) "" else names(cases)[[i]]
+    list(code = code, why = described[[label]]$why, messages = messages)
   })
 }
 

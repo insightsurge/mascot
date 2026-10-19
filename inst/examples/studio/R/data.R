@@ -71,6 +71,11 @@ defaults <- list(
 # The calls of the guide's "common mistakes" lists live in guide/guide-mistakes.R, shared with the website;
 # its functions are defined here too, and the studio's names point to them.
 studio_guide_dir <- function() {
+  # mascot_studio() names the app's folder; otherwise the app's own folder (Shiny runs it from there) or the
+  # installed package.
+  if (exists("studio_guide_root", inherits = TRUE)) {
+    return(file.path(get("studio_guide_root", inherits = TRUE), "guide"))
+  }
   local <- file.path(getwd(), "guide")
   if (file.exists(file.path(local, "guide-helpers.R"))) {
     return(normalizePath(local))

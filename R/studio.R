@@ -42,6 +42,9 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
   guide <- new.env(parent = baseenv())
   sys.source(file.path(path, "R", "guide.R"), envir = guide)
   data <- new.env(parent = baseenv())
+  # The data file loads the guide's shared code; it finds that folder next to the app (a development copy of
+  # the package is not visible to system.file() from this environment).
+  data$studio_guide_root <- path
   sys.source(file.path(path, "R", "data.R"), envir = data)
   # These choices are available only after loading the studio data.
   for (arg in c("view", "fn", "character")) {

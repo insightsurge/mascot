@@ -108,6 +108,8 @@ describe("the studio on older R", {
   it("defines its own %||%, which base R has only from R 4.4", {
     path <- dirname(mascot_example("studio", run = FALSE))
     data <- new.env(parent = baseenv())
+    # As mascot_studio() does: the data file finds the guide's shared code next to the app.
+    data$studio_guide_root <- path
     sys.source(file.path(path, "R", "data.R"), envir = data)
     expect_true(exists("%||%", envir = data, inherits = FALSE))
     expect_identical(data$`%||%`(NULL, "b"), "b")

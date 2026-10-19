@@ -197,29 +197,6 @@ wiring_links <- function(fn) {
   })
 }
 
-colour_input <- function(id, value, label, ...) {
-  checkmate::assert_string(id, min.chars = 1)
-  checkmate::assert_string(value)
-  checkmate::assert_string(label)
-  # A colour picker holds only #rrggbb. A role listed with transparency (rgba(...)) gets a text box with the
-  # listed value instead, so it is never turned into a solid colour that would be sent as an override.
-  solid <- grepl("^#[0-9a-fA-F]{6}$", value)
-  tags$input(
-    id = id,
-    type = if (solid) "color" else "text",
-    class = if (solid) {
-      "pg-colour form-control form-control-color"
-    } else {
-      "pg-colour pg-colour-text form-control form-control-sm"
-    },
-    value = value,
-    title = if (solid) label else paste0(label, " (translucent: edit the text, for example ", value, ")"),
-    `aria-label` = label,
-    spellcheck = if (!solid) "false",
-    ...
-  )
-}
-
 # A pre block without the line breaks htmltools would add inside it.
 code_block <- function(text, class = NULL, id = NULL) {
   tags$pre(id = id, class = class, tags$code(text), .noWS = "inside")

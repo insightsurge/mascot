@@ -699,12 +699,7 @@ studio_server <- function(input, output, session) {
         updateSelectInput(session, "palette", selected = "original")
         updateSelectInput(session, "theme_source", selected = "own")
         updateRadioButtons(session, "theme_mode", selected = "auto")
-        for (mode in c("light", "dark")) {
-          for (role in roles()$role) {
-            reset_colour(mode, role)
-          }
-        }
-        updateCheckboxGroupInput(session, "css_roles", selected = character())
+        colours$reset()
       },
       motion = {
         update_switch("motion_on", value = TRUE, session = session)
@@ -732,14 +727,10 @@ studio_server <- function(input, output, session) {
     sentence <- studio_palette_sentence(character, selected_palette())
     session$sendCustomMessage("studio:palette", c(sentence, list(ids = names(studio_palette_choices(character)))))
   })
-  # The character before the current switch. A low-priority observer updates it after the switch has been handled.
-  previous_character <- reactiveVal(NULL)
-  observeEvent(input$character, previous_character(input$character), priority = -10)
   observeEvent(
     input$character,
     {
       character <- current_character()
-      previous <- previous_character() %||% character
       moods <- mascot_moods(character)$name
       gestures <- mascot_gestures(character)$name
       mood <- if (isTRUE(input$mood %in% moods)) input$mood else "idle"
@@ -757,12 +748,12 @@ studio_server <- function(input, output, session) {
         choices = studio_gesture_choices(character),
         selected = gesture
       )
-      # The pickers still show the previous character's colours until they are rebuilt: carry only the roles the
-      # user changed, as the rebuild does, so the new character is not sent the old character's colours.
+      # The colour module carries only the roles the user changed that the new character has too, so the new
+      # character is not sent the old character's colours.
       send(
         list(
           character = code_character(character),
-          theme = theme_with(carried_colours("light", previous), carried_colours("dark", previous)),
+          theme = theme_with(colours$light(), colours$dark()),
           mood = code_mood(mood)
         ),
         force = TRUE
@@ -921,51 +912,15 @@ studio_server <- function(input, output, session) {
     )
   })
 
-  # Colour inputs rebuild only when the character changes; source switches retain them.
-  picker_roles <- new.env(parent = emptyenv())
-  role_values <- function(mode) {
-    checkmate::assert_choice(mode, c("light", "dark"))
-    values <- stats::setNames(
-      lapply(roles()$role, function(role) isolate(input[[paste0(mode, "_", role)]])),
-      roles()$role
-    )
-    values <- reconcile_colour_values(picker_roles[[mode]], roles(), values)
-    picker_roles[[mode]] <- roles()
-    values
-  }
-  output$theme_light <- renderUI(arg_field(
-    "mascot_theme",
-    "light",
-    role_pickers("light", roles(), role_values("light"), character_name(), current_character())
-  ))
-  output$theme_dark <- renderUI(arg_field(
-    "mascot_theme",
-    "dark",
-    role_pickers("dark", roles(), role_values("dark"), character_name(), current_character())
-  ))
-  output$theme_css <- renderUI(arg_field(
-    "mascot_theme",
-    "css",
-    tagList(
-      div(
-        class = "pg-css",
-        colour_input(
-          "css_accent",
-          isolate(input$css_accent) %||% "#7b4fd6",
-          "Value of --studio-accent",
-          `data-css-var` = "--studio-accent"
-        ),
-        tags$code("--studio-accent")
-      ),
-      checkboxGroupInput(
-        "css_roles",
-        "Parts that read the variable",
-        roles()$role,
-        selected = intersect(isolate(input$css_roles), roles()$role),
-        inline = TRUE
-      )
-    )
-  ))
+  # Colour pickers for every role, light and dark, and the parts that read --studio-accent: the shared module
+  # (R/shared-colours.R). They are drawn again when the character or palette changes; source switches keep them.
+  colours <- colour_roles_server(
+    "colours",
+    current_character,
+    selected_palette,
+    css = c(`--studio-accent` = "#7b4fd6"),
+    resolved = TRUE
+  )
   output$theme_brand <- renderUI({
     brand <- studio_brand(current_character())
     tagList(lapply(c("primary", "secondary"), function(slot) {
@@ -988,52 +943,22 @@ studio_server <- function(input, output, session) {
       )
     }))
   })
-  for (id in c("theme_light", "theme_dark", "theme_css", "theme_brand")) {
-    outputOptions(output, id, suspendWhenHidden = FALSE)
-  }
+  outputOptions(output, "theme_brand", suspendWhenHidden = FALSE)
 
   # Colours and theme
-  picked <- function(mode) {
-    values <- vapply(
-      roles()$role,
-      function(role) {
-        value <- input[[paste0(mode, "_", role)]]
-        if (is.null(value)) NA_character_ else value
-      },
-      character(1)
-    )
-    keep <- !is.na(values) & tolower(values) != tolower(roles()$colour)
-    stats::setNames(tolower(values[keep]), roles()$role[keep])
-  }
   theme_with <- function(light, dark) {
     code_theme(
       input$theme_source %||% "own",
       light,
       dark,
       input$theme_mode %||% "auto",
-      intersect(input$css_roles, roles()$role),
+      names(colours$css()),
       input$bs_primary %||% "#1f6feb",
       input$bs_secondary %||% "#966600",
       selected_palette()
     )
   }
-  theme_now <- reactive(theme_with(picked("light"), picked("dark")))
-  # The colours a user changed, read before the pickers follow a new character: the pickers still hold the previous
-  # character's values, so only a role the previous character had, whose value differs from the colour that
-  # character listed, counts as changed (the same rule as role_values()).
-  carried_colours <- function(mode, previous) {
-    palette <- isolate(input$palette)
-    listed <- mascot_colour_roles(
-      previous,
-      palette = if (isTRUE(palette %in% studio_palette_choices(previous))) palette else "original"
-    )
-    values <- stats::setNames(
-      lapply(roles()$role, function(role) isolate(input[[paste0(mode, "_", role)]])),
-      roles()$role
-    )
-    kept <- Filter(Negate(is.null), reconcile_colour_values(listed, roles(), values))
-    vapply(kept, tolower, character(1))
-  }
+  theme_now <- reactive(theme_with(colours$light(), colours$dark()))
   observeEvent(
     input$theme_source,
     {
@@ -1054,28 +979,15 @@ studio_server <- function(input, output, session) {
   observeEvent(theme_code(), send(list(theme = theme_code())), ignoreInit = TRUE)
   # The browser reads the variable again only when the theme is sent, so resend it.
   observeEvent(
-    input$css_accent,
-    if (length(input$css_roles)) send(list(theme = theme_code()), force = TRUE),
+    colours$css_values(),
+    if (length(colours$css())) send(list(theme = theme_code()), force = TRUE),
     ignoreInit = TRUE
-  )
-  reset_colour <- function(mode, role) {
-    session$sendInputMessage(paste0(mode, "_", role), list(value = roles()$colour[roles()$role == role]))
-  }
-  observeEvent(input$reset_colour, {
-    parts <- strsplit(input$reset_colour, ":", fixed = TRUE)[[1]]
-    reset_colour(parts[1], parts[2])
-  })
-  observeEvent(
-    input$reset_mode,
-    for (role in roles()$role) {
-      reset_colour(input$reset_mode, role)
-    }
   )
   contrast_settings <- reactive(list(
     character = current_character(),
     theme = theme_now(),
     accepted_theme = state$theme,
-    css = input$css_accent
+    css = colours$css_values()
   ))
   checked_contrast <- eventReactive(input$contrast_check, contrast_settings())
   output$contrast <- renderUI({
@@ -1092,11 +1004,11 @@ studio_server <- function(input, output, session) {
     if (inherits(preview, "error")) {
       return(div(class = "pg-note pg-warn", "The check failed: ", cli::ansi_strip(conditionMessage(preview))))
     }
-    css_note <- if (length(input$css_roles) && input$theme_source == "mascot") {
+    css_note <- if (length(colours$css()) && input$theme_source == "mascot") {
       div(
         class = "pg-note",
         "Parts tied to a CSS variable (",
-        paste(input$css_roles, collapse = ", "),
+        paste(names(colours$css()), collapse = ", "),
         ") are not checked here: only the browser knows their value. It warns in its console."
       )
     }
@@ -1351,12 +1263,9 @@ studio_server <- function(input, output, session) {
         updateSelectInput(session, "palette", selected = "original")
         updateSelectInput(session, "theme_source", selected = "mascot")
         updateRadioButtons(session, "theme_mode", selected = "auto")
-        updateCheckboxGroupInput(session, "css_roles", selected = character())
+        colours$reset()
         for (mode in c("light", "dark")) {
-          for (part in roles()$role) {
-            reset_colour(mode, part)
-          }
-          session$sendInputMessage(paste0(mode, "_", role), list(value = "#f8f9fa"))
+          colours$set(mode, role, "#f8f9fa")
         }
       }
     }
@@ -1612,7 +1521,7 @@ studio_server <- function(input, output, session) {
       ui,
       click_handler_code(current$click$helper),
       c("shiny", if (grepl("bs_theme", theme, fixed = TRUE)) "bslib", "mascot"),
-      if (grepl("--studio-accent", theme, fixed = TRUE)) input$css_accent
+      if (grepl("--studio-accent", theme, fixed = TRUE)) colours$css_values()[["--studio-accent"]]
     )
   })
   output$code_last <- renderText(last_call())

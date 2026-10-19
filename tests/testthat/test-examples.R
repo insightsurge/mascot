@@ -708,7 +708,7 @@ describe("studio round 4 regression guards", {
   })
   it("keeps only explicit shared colour overrides across character palettes", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "panels.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-colours.R"), env)
     old <- data.frame(role = c("body", "outline", "limb"), colour = c("#abcdef", "#000000", "#123456"))
     new <- data.frame(role = c("body", "outline", "beak"), colour = c("#fedcba", "#111111", "#654321"))
     values <- env$reconcile_colour_values(
@@ -761,8 +761,8 @@ describe("studio state and built previews", {
         bubble_closable = TRUE,
         theme_source = "own",
         theme_mode = "auto",
-        css_roles = character(),
-        css_accent = "#123456",
+        `colours-css_roles` = character(),
+        `colours-css_value` = "#123456",
         position = "inline",
         minimise = TRUE,
         drag = "none",
@@ -994,8 +994,8 @@ describe("studio state and built previews", {
         bubble_closable = TRUE,
         theme_source = "own",
         theme_mode = "auto",
-        css_roles = character(),
-        css_accent = "#123456",
+        `colours-css_roles` = character(),
+        `colours-css_value` = "#123456",
         position = "inline",
         minimise = FALSE,
         drag = "none",
@@ -2280,28 +2280,28 @@ describe("studio safeguards (#248)", {
         sent = function(p) length(p$theme$brand) == 2
       ),
       theme_mode = row(
-        list(list(theme_source = "mascot", light_body = "#1f6feb", theme_mode = "dark")),
+        list(list(theme_source = "mascot", `colours-light_body` = "#1f6feb", theme_mode = "dark")),
         "theme",
         'mode = "dark"',
         wait = 400,
         sent = function(p) identical(p$theme$mode, "dark")
       ),
       light_body = row(
-        list(list(theme_source = "mascot", light_body = "#1f6feb")),
+        list(list(theme_source = "mascot", `colours-light_body` = "#1f6feb")),
         "theme",
         'light = list(body = "#1f6feb")',
         wait = 400,
         sent = function(p) identical(tolower(p$theme$light$body), "#1f6feb")
       ),
       dark_body = row(
-        list(list(theme_source = "mascot", dark_body = "#9ec5fe")),
+        list(list(theme_source = "mascot", `colours-dark_body` = "#9ec5fe")),
         "theme",
         'dark = list(body = "#9ec5fe")',
         wait = 400,
         sent = function(p) identical(tolower(p$theme$dark$body), "#9ec5fe")
       ),
       css_roles = row(
-        list(list(theme_source = "mascot", css_roles = "body")),
+        list(list(theme_source = "mascot", `colours-css_roles` = "body")),
         "theme",
         'css = list(body = "--studio-accent")',
         wait = 400,
@@ -3222,10 +3222,10 @@ describe("studio palette sync (#353)", {
       app$wait_for_js(sprintf("!document.querySelector('#studio_inspector [data-function=%s]').hidden", fn))
     }
     select_function("mascot_theme")
-    app$wait_for_js("document.getElementById('light_hair') && document.getElementById('dark_badge')")
+    app$wait_for_js("document.getElementById('colours-light_hair') && document.getElementById('colours-dark_badge')")
     for (role in c("hair", "badge", "iris", "body_shade", "hand")) {
       expect_true(app$get_js(sprintf(
-        "!!document.getElementById('light_%s') && !!document.getElementById('dark_%s')",
+        "!!document.getElementById('colours-light_%s') && !!document.getElementById('colours-dark_%s')",
         role,
         role
       )))
@@ -3493,7 +3493,7 @@ describe("studio review fixes (#353)", {
         session$elapse(400)
         roles <- mascot_colour_roles(who)
         # What the browser reports for untouched pickers: each role's listed colour.
-        untouched <- stats::setNames(as.list(roles$colour), paste0("light_", roles$role))
+        untouched <- stats::setNames(as.list(roles$colour), paste0("colours-light_", roles$role))
         do.call(session$setInputs, c(list(theme_source = "mascot"), untouched))
         session$elapse(400)
         expect_false(grepl("theme =", output$code_ui, fixed = TRUE), info = who)
@@ -3509,7 +3509,7 @@ describe("studio review fixes (#353)", {
       do.call(session$setInputs, start)
       studio_go_live(session)
       tessa <- mascot_colour_roles("tessa")
-      untouched <- stats::setNames(as.list(tessa$colour), paste0("light_", tessa$role))
+      untouched <- stats::setNames(as.list(tessa$colour), paste0("colours-light_", tessa$role))
       do.call(session$setInputs, c(list(theme_source = "mascot"), untouched))
       session$elapse(400)
       session$setInputs(character = "sela")
@@ -3519,7 +3519,7 @@ describe("studio review fixes (#353)", {
       shared <- intersect(tessa$role, mascot_colour_roles("sela")$role)[[1L]]
       session$setInputs(character = "tessa")
       session$elapse(400)
-      do.call(session$setInputs, stats::setNames(list("#123456"), paste0("light_", shared)))
+      do.call(session$setInputs, stats::setNames(list("#123456"), paste0("colours-light_", shared)))
       session$setInputs(character = "sela")
       carried <- session$userData$mascot_updates[[session$ns("helper")]]$desired$theme
       expect_identical(tolower(unlist(carried$light)[[1L]]), "#123456")

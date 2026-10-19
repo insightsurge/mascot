@@ -12,79 +12,6 @@ studio_palette_choices <- function(character) {
 
 # ---- Inspector controls, grouped by function -----------------------------------------------
 
-role_picker <- function(mode, role, roles, value = NULL) {
-  row <- roles[roles$role == role, ]
-  follows <- if (is.na(row$follows)) "leader" else paste0("follows ", row$follows, " (", row$shade, ")")
-  div(
-    class = "pg-role",
-    colour_input(paste0(mode, "_", role), value %||% row$colour, paste(role, "in", mode, "mode")),
-    div(class = "pg-role-text", tags$code(role), div(class = "pg-muted", follows)),
-    tags$span(
-      class = "pg-resolved",
-      `data-role` = role,
-      `data-mode` = mode,
-      `data-default` = row$colour,
-      title = "In use now"
-    ),
-    tags$button(
-      type = "button",
-      class = "btn btn-link btn-sm pg-role-reset",
-      `data-event` = "reset_colour",
-      `data-value` = paste0(mode, ":", role),
-      `aria-label` = paste("Reset", role, "in", mode, "mode"),
-      "\u00d7"
-    )
-  )
-}
-
-# The pickers for one mode, in the groups of colour_groups(): Main colours open, More parts folded with a heading
-# per group of parts.
-role_pickers <- function(
-  mode,
-  roles,
-  values = list(),
-  name = mascot_character()$name,
-  character = formals(mascot::mascot)$character
-) {
-  checkmate::assert_choice(mode, c("light", "dark"))
-  checkmate::assert_data_frame(roles)
-  checkmate::assert_list(values)
-  checkmate::assert_string(name)
-  checkmate::assert_string(character, min.chars = 1)
-  role_groups <- colour_groups(roles, character)
-  picker <- function(role) role_picker(mode, role, roles, values[[role]])
-  more <- role_groups$`More parts`
-  panels <- c(
-    if (length(role_groups$`Main colours`)) {
-      list(bslib::accordion_panel("Main colours", lapply(role_groups$`Main colours`, picker), value = "Main colours"))
-    },
-    if (length(more)) {
-      list(bslib::accordion_panel(
-        "More parts",
-        lapply(names(more), function(group) {
-          div(class = "pg-role-group", tags$h4(class = "pg-role-group-title", group), lapply(more[[group]], picker))
-        }),
-        value = "More parts"
-      ))
-    }
-  )
-  tagList(
-    div(
-      class = "pg-hint",
-      paste0(
-        "Each picker starts at ",
-        name,
-        "'s colour. Change one to add it to the theme. Click \u00d7 to remove it. The round swatch shows the colour in use now."
-      )
-    ),
-    do.call(
-      bslib::accordion,
-      c(panels, list(open = if (length(role_groups$`Main colours`)) "Main colours" else "More parts"))
-    ),
-    try_button("reset_mode", mode, paste("Reset", mode, "colours"), "btn-outline-primary")
-  )
-}
-
 panel_character_bar <- function(moods = mascot_moods(character), character = formals(mascot::mascot)$character) {
   checkmate::assert_data_frame(moods)
   checkmate::assert_string(character)
@@ -585,11 +512,15 @@ panel_colours <- function() {
       ),
       conditionalPanel(
         "input.theme_source == 'mascot'",
-        bslib::navset_tab(
-          bslib::nav_panel("Light", uiOutput("theme_light")),
-          bslib::nav_panel("Dark", uiOutput("theme_dark")),
-          bslib::nav_panel("CSS variables", uiOutput("theme_css"))
-        )
+        # The pickers are the colour_roles_server("colours") module's (app.R).
+        local({
+          colours <- colour_roles_ui("colours")
+          bslib::navset_tab(
+            bslib::nav_panel("Light", arg_field("mascot_theme", "light", colours$light)),
+            bslib::nav_panel("Dark", arg_field("mascot_theme", "dark", colours$dark)),
+            bslib::nav_panel("CSS variables", arg_field("mascot_theme", "css", colours$css))
+          )
+        })
       ),
       conditionalPanel(
         "input.theme_source == 'bslib'",
@@ -785,24 +716,6 @@ panel_views <- function() {
       div(class = "pg-note", "This view has its own controls and opens in a new tab.")
     )
   }))
-}
-
-# Keep explicit overrides for shared roles; untouched pickers adopt the new palette.
-reconcile_colour_values <- function(old_roles, roles, values) {
-  checkmate::assert_data_frame(old_roles, null.ok = TRUE)
-  checkmate::assert_data_frame(roles)
-  checkmate::assert_list(values)
-  stats::setNames(
-    lapply(roles$role, function(role) {
-      value <- values[[role]]
-      if (is.null(old_roles) || !role %in% old_roles$role || is.null(value)) {
-        return(NULL)
-      }
-      old <- old_roles$colour[match(role, old_roles$role)]
-      if (tolower(value) == tolower(old)) NULL else value
-    }),
-    roles$role
-  )
 }
 
 # Internal R4a review panel, omitted unless explicitly enabled before launch.

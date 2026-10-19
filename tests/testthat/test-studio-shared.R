@@ -193,3 +193,157 @@ describe("palette_cards()", {
     expect_error(cards(1), "character")
   })
 })
+
+describe("role_picker() and role_pickers()", {
+  it("name the picker and its reset event for a module, and show the swatch in use only when asked", {
+    shared <- studio_shared("shared-colours.R")
+    roles <- mascot_colour_roles("sela")
+    ns <- shiny::NS("colours")
+    html <- as.character(shared$role_picker("dark", "body", roles, resolved = FALSE, ns = ns))
+    expect_match(html, 'id="colours-dark_body"', fixed = TRUE)
+    expect_match(html, 'data-event="colours-reset_colour"', fixed = TRUE)
+    expect_match(html, 'data-value="dark:body"', fixed = TRUE)
+    expect_false(grepl("pg-resolved", html, fixed = TRUE))
+    expect_match(as.character(shared$role_picker("dark", "body", roles)), 'class="pg-resolved"', fixed = TRUE)
+    all <- as.character(shared$role_pickers("light", roles, character = "sela", resolved = FALSE, ns = ns))
+    expect_match(all, 'data-event="colours-reset_mode"', fixed = TRUE)
+    expect_false(grepl("round swatch", all, fixed = TRUE))
+    expect_match(as.character(shared$role_pickers("light", roles, character = "sela")), "round swatch", fixed = TRUE)
+    expect_error(shared$role_picker("dark", "beak", roles), "role")
+    expect_error(shared$role_picker("dark", "body", roles, resolved = NA), "resolved")
+    expect_error(shared$role_pickers("light", roles, ns = "colours"), "ns")
+  })
+})
+
+describe("colour_roles_ui()", {
+  it("gives one piece per mode and one for the CSS variable, named for the module", {
+    ui <- studio_shared("shared-colours.R")$colour_roles_ui
+    pieces <- ui("colours")
+    expect_named(pieces, c("light", "dark", "css"))
+    expect_match(as.character(pieces$dark), 'id="colours-dark"', fixed = TRUE)
+    expect_named(ui("colours", modes = "light", css = FALSE), "light")
+    expect_error(ui("colours", modes = "sepia"), "modes")
+    expect_error(ui("colours", css = "yes"), "css")
+    expect_error(ui(""), "id")
+  })
+})
+
+describe("colour_roles_server()", {
+  it("carries changed colours over a character swap only for roles the new character has", {
+    character <- shiny::reactiveVal("tessa")
+    shiny::testServer(
+      studio_shared("shared-colours.R")$colour_roles_server,
+      args = list(character = character, palette = shiny::reactiveVal("original")),
+      {
+        colours <- session$returned
+        tessa <- mascot_colour_roles("tessa")
+        neer <- mascot_colour_roles("neer")
+        shared_role <- intersect(tessa$role, neer$role)[[1L]]
+        tessa_only <- setdiff(tessa$role, neer$role)[[1L]]
+        # Given untouched pickers, as the browser reports them, and two changed ones
+        do.call(session$setInputs, stats::setNames(as.list(tessa$colour), paste0("light_", tessa$role)))
+        expect_length(colours$light(), 0L)
+        do.call(
+          session$setInputs,
+          stats::setNames(list("#123456", "#654321"), paste0("light_", c(shared_role, tessa_only)))
+        )
+        expect_identical(colours$light()[[shared_role]], "#123456")
+        expect_identical(colours$light()[[tessa_only]], "#654321")
+        # When the character changes, before the browser has drawn the new pickers
+        character("neer")
+        session$flushReact()
+        # Then only the role Neer has too is kept, and the old pickers' values are not read again
+        expect_identical(colours$light(), stats::setNames("#123456", shared_role))
+        expect_length(colours$dark(), 0L)
+      }
+    )
+  })
+  it("keeps a changed colour when the palette changes and lets untouched pickers follow the palette", {
+    palette <- shiny::reactiveVal("original")
+    shiny::testServer(
+      studio_shared("shared-colours.R")$colour_roles_server,
+      args = list(character = shiny::reactiveVal("tessa"), palette = palette),
+      {
+        colours <- session$returned
+        tessa <- mascot_colour_roles("tessa")
+        do.call(session$setInputs, stats::setNames(as.list(tessa$colour), paste0("dark_", tessa$role)))
+        session$setInputs(dark_body = "#123456")
+        palette("coral_navy")
+        session$flushReact()
+        expect_identical(colours$dark(), c(body = "#123456"))
+        # The browser then reports the pickers drawn again: the palette's colours, and the kept change.
+        coral <- mascot_colour_roles("tessa", palette = "coral_navy")
+        drawn <- stats::setNames(as.list(coral$colour), paste0("dark_", coral$role))
+        drawn$dark_body <- "#123456"
+        do.call(session$setInputs, drawn)
+        expect_identical(colours$dark(), c(body = "#123456"))
+        # Choosing the palette's own colour for a part is no change.
+        session$setInputs(dark_rim = tolower(coral$colour[coral$role == "rim"]))
+        expect_identical(colours$dark(), c(body = "#123456"))
+      }
+    )
+  })
+  it("resets one picker, a mode or everything, and sets a picker", {
+    shiny::testServer(
+      studio_shared("shared-colours.R")$colour_roles_server,
+      args = list(
+        character = shiny::reactiveVal("tessa"),
+        palette = shiny::reactiveVal("original"),
+        css = c(`--brand` = "#7b4fd6")
+      ),
+      {
+        colours <- session$returned
+        sent <- list()
+        root <- session$rootScope()
+        root$sendInputMessage <- function(inputId, message) {
+          sent[[length(sent) + 1L]] <<- list(id = inputId, value = message$value)
+        }
+        tessa <- mascot_colour_roles("tessa")
+        do.call(session$setInputs, stats::setNames(as.list(tessa$colour), paste0("light_", tessa$role)))
+        session$setInputs(
+          light_body = "#123456",
+          light_rim = "#654321",
+          css_roles = c("body", "beak"),
+          css_value = "#000000"
+        )
+        expect_identical(colours$css(), c(body = "--brand"))
+        expect_identical(colours$css_values(), c(`--brand` = "#000000"))
+        # The reset button of one role
+        session$setInputs(reset_colour = "light:body")
+        expect_identical(colours$light(), c(rim = "#654321"))
+        # The message goes to the picker; a running app adds the module's prefix to its name.
+        expect_true(endsWith(sent[[1L]]$id, "light_body"))
+        expect_identical(sent[[1L]]$value, tessa$colour[tessa$role == "body"])
+        session$setInputs(reset_colour = "light:not_a_role")
+        expect_length(sent, 1L)
+        colours$set("dark", "hair", "#ABCDEF")
+        expect_identical(colours$dark(), c(hair = "#abcdef"))
+        session$setInputs(reset_mode = "dark")
+        expect_length(colours$dark(), 0L)
+        expect_identical(colours$light(), c(rim = "#654321"))
+        colours$reset()
+        expect_length(colours$light(), 0L)
+        expect_error(colours$reset("sepia"), "mode")
+        expect_error(colours$set("light", "body", 1), "value")
+      }
+    )
+  })
+  it("starts outside a reactive context, as a running app starts it", {
+    # testServer() runs the module inside isolate(), which would hide a reactive read at start-up.
+    session <- shiny::MockShinySession$new()
+    withr::defer(session$close())
+    server <- studio_shared("shared-colours.R")$colour_roles_server
+    colours <- shiny::withReactiveDomain(
+      session,
+      server("colours", shiny::reactiveVal("tessa"), shiny::reactiveVal("original"))
+    )
+    expect_named(colours, c("light", "dark", "css", "css_values", "reset", "set"))
+  })
+  it("checks its arguments", {
+    server <- studio_shared("shared-colours.R")$colour_roles_server
+    expect_error(server("colours", "tessa", shiny::reactiveVal("original")), "character")
+    expect_error(server("colours", shiny::reactiveVal("tessa"), "original"), "palette")
+    expect_error(server("colours", shiny::reactiveVal("tessa"), shiny::reactiveVal("original"), css = "#fff"), "css")
+    expect_error(server(1, shiny::reactiveVal("tessa"), shiny::reactiveVal("original")), "id")
+  })
+})

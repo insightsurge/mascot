@@ -22,7 +22,7 @@ studio_guide_page <- function(fn, character, dir = studio_guide_dir()) {
   file <- file.path(dir, paste0(fn, ".Rmd"))
   helpers <- file.path(dir, "guide-helpers.R")
   # `fn` becomes part of a file name: only function names are accepted.
-  if (!grepl("^[A-Za-z0-9_.]+$", fn) || !file.exists(file) || !file.exists(helpers)) {
+  if (startsWith(fn, "_") || !grepl("^[A-Za-z0-9_.]+$", fn) || !file.exists(file) || !file.exists(helpers)) {
     return(NULL)
   }
   # Built afresh on every visit and never stored: a live demo on the page holds a mascot that belongs to the

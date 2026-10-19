@@ -17,7 +17,7 @@ guide_dependency <- function(dir = guide_dir) {
   checkmate::assert_file_exists(file.path(dir, "guide.css"))
   htmltools::htmlDependency(
     name = "mascot-guide",
-    version = "1.0.0",
+    version = "1.1.0",
     src = c(file = normalizePath(dir)),
     stylesheet = "guide.css"
   )
@@ -96,4 +96,27 @@ guide_brand_roles <- function(character) {
     }
   }
   result
+}
+
+# Gesture cards use the same classes as the studio, without requiring bslib on a website.
+guide_gesture_cards <- function(gestures) {
+  checkmate::assert_data_frame(gestures)
+  checkmate::assert_subset(c("name", "description"), names(gestures))
+  htmltools::attachDependencies(
+    htmltools::div(
+      class = "pg-cards",
+      lapply(seq_len(nrow(gestures)), function(i) {
+        htmltools::div(
+          class = "card bslib-card pg-card-mini",
+          htmltools::div(
+            class = "card-body bslib-gap-spacing html-fill-item html-fill-container",
+            htmltools::div(class = "pg-card-title", tools::toTitleCase(gestures$name[i])),
+            htmltools::div(class = "pg-muted", gestures$description[i]),
+            htmltools::div(class = "pg-card-foot", htmltools::tags$code(sprintf('gesture = "%s"', gestures$name[i])))
+          )
+        )
+      })
+    ),
+    guide_dependency()
+  )
 }

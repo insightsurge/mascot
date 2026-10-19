@@ -38,6 +38,15 @@ describe("mascot_examples()", {
             "guide/mascot_action.Rmd",
             "guide/mascot_preview.Rmd",
             "guide/update_mascot.Rmd",
+            "guide/_palette-notes.Rmd",
+            "guide/mascot_mood.Rmd",
+            "guide/mascot_moods.Rmd",
+            "guide/mascot_characters.Rmd",
+            "guide/mascot_families.Rmd",
+            "guide/mascot_anchors.Rmd",
+            "guide/mascot_gesture.Rmd",
+            "guide/mascot_gestures.Rmd",
+            "guide/mascot_palettes.Rmd",
             "guide/mascot_status.Rmd",
             "guide/mascot_theme.Rmd",
             "www/studio.css",
@@ -1274,6 +1283,129 @@ describe("studio guide pages", {
       expect_match(selected, "Warnings, errors and common mistakes", fixed = TRUE)
     })
   }
+  data_pages <- c(
+    "mascot_mood",
+    "mascot_moods",
+    "mascot_characters",
+    "mascot_families",
+    "mascot_anchors",
+    "mascot_gesture",
+    "mascot_gestures",
+    "mascot_palettes"
+  )
+  data_content <- list(
+    mascot_mood = c("The 5 moods", "The mood never speaks alone.", "screen readers"),
+    mascot_moods = c("Sela's", "moods", "The five shared moods come first", "fallback"),
+    mascot_characters = "Characters this session knows",
+    mascot_families = "Character families",
+    mascot_anchors = "Sela's anchors",
+    mascot_gesture = c("Gestures", "pg-cards", "pg-card-mini", "gesture ="),
+    mascot_gestures = c("Sela's gestures", "30 frames per second", "plays its fallback"),
+    mascot_palettes = c("Sela's palettes", "first row", "Colour precedence", "below 3:1 contrast")
+  )
+  for (fn in data_pages) {
+    it(paste("knits", fn, "with its data, headings and guarded widgets"), {
+      env <- studio_guide_env()
+      html <- page_html(env$studio_guide_page(fn, "sela", guide_dir()))
+      standalone <- new.env(parent = globalenv())
+      standalone$guide_dir <- guide_dir()
+      standalone$studio_character <- "sela"
+      sys.source(file.path(guide_dir(), "guide-helpers.R"), standalone)
+      options <- knitr::opts_chunk$get()
+      withr::defer(knitr::opts_chunk$restore(options))
+      markdown <- knitr::knit(
+        file.path(guide_dir(), paste0(fn, ".Rmd")),
+        output = file.path(withr::local_tempdir(), "page.md"),
+        envir = standalone,
+        quiet = TRUE
+      )
+      outside <- page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n")))
+      for (text in data_content[[fn]]) {
+        expect_match(html, text, fixed = TRUE)
+        expect_match(outside, text, fixed = TRUE)
+      }
+      expect_false(grepl("data-event|shiny-html-output|shiny-text-output|data-mascot", outside))
+      expect_false(grepl("studio|sentence|top bar|Controls tab", env$html_text(outside), ignore.case = TRUE))
+      ids <- switch(
+        fn,
+        mascot_characters = "characters_table",
+        mascot_palettes = c(
+          "palette_base_demo",
+          "dark_outline_tip",
+          "roles_table",
+          "palette_swap_demo",
+          "palette_swap_result"
+        ),
+        character()
+      )
+      for (id in ids) {
+        expect_match(html, paste0('id="', id, '"'), fixed = TRUE)
+        expect_false(grepl(paste0('id="', id, '"'), outside, fixed = TRUE))
+      }
+      if (fn == "mascot_palettes") {
+        expect_match(html, "data-event", fixed = TRUE)
+      }
+      if (fn == "mascot_mood") {
+        expect_match(html, "Try moods with the Mood drop-down in the top bar.", fixed = TRUE)
+        expect_false(grepl("Try moods", outside, fixed = TRUE))
+      }
+      listing <- switch(
+        fn,
+        mascot_mood = mascot_moods(),
+        mascot_moods = mascot_moods("sela"),
+        mascot_characters = mascot_characters(),
+        mascot_families = mascot_families(),
+        mascot_anchors = mascot_anchors("sela"),
+        mascot_gestures = mascot_gestures("sela"),
+        mascot_palettes = mascot_palettes("sela"),
+        NULL
+      )
+      if (!is.null(listing)) {
+        for (column in names(listing)) {
+          for (value in ifelse(is.na(listing[[column]]), "NA", as.character(listing[[column]]))) {
+            expect_match(outside, as.character(htmltools::htmlEscape(value)), fixed = TRUE)
+            if (fn != "mascot_characters") expect_match(html, as.character(htmltools::htmlEscape(value)), fixed = TRUE)
+          }
+        }
+      }
+      builder <- sub("mascot_", "visual_", fn, fixed = TRUE)
+      expect_false(exists(builder, envir = env, inherits = FALSE))
+      selected <- as.character(env$selected_guide(fn, "sela"))
+      expect_match(selected, paste0("Help page: ", fn, "()"), fixed = TRUE)
+      expect_match(selected, "Warnings, errors and common mistakes", fixed = TRUE)
+    })
+  }
+  it("follows each selected character in the data pages and preserves anchor empty states", {
+    env <- studio_guide_env()
+    for (id in mascot_characters()$id) {
+      name <- mascot_character(id)$name
+      for (fn in c("mascot_moods", "mascot_anchors", "mascot_gestures", "mascot_palettes")) {
+        html <- page_html(env$studio_guide_page(fn, id, guide_dir()))
+        expect_match(html, paste0(name, "'s"), fixed = TRUE)
+        listing <- getExportedValue("mascot", fn)(id)
+        if (nrow(listing)) {
+          for (value in as.character(listing[[1]])) {
+            expect_match(html, paste0("<td>", value, "</td>"), fixed = TRUE)
+          }
+        } else if (fn == "mascot_anchors") {
+          expect_match(html, paste(name, "has no anchors"), fixed = TRUE)
+        }
+      }
+      gestures <- page_html(env$studio_guide_page("mascot_gesture", id, guide_dir()))
+      resting <- mascot_gestures(id)$name %in% env$studio_resting_gestures[id]
+      for (value in mascot_gestures(id)$description[!resting]) {
+        expect_match(gestures, value, fixed = TRUE)
+      }
+      if (any(resting)) {
+        expect_match(gestures, "idle animation.", fixed = TRUE)
+        expect_match(gestures, "Choose its resting animation entry", fixed = TRUE)
+      }
+    }
+    for (helper in c("palette_table", "palette_guide_notes", "palette_guide_demo")) {
+      expect_false(exists(helper, envir = env, inherits = FALSE))
+    }
+    expect_null(env$studio_guide_page("_palette-notes", "sela", guide_dir()))
+  })
   it("returns NULL for a function without a page, so only its help and mistakes are shown", {
     env <- studio_guide_env()
     expect_null(env$studio_guide_page("mascot_motion_settings", "tessa", guide_dir()))
@@ -1384,7 +1516,7 @@ describe("studio guide pages", {
   })
   it("does not repeat the description of the help page", {
     env <- studio_guide_env()
-    for (fn in c("mascot_status", "mascot_theme", batch_pages)) {
+    for (fn in c("mascot_status", "mascot_theme", batch_pages, data_pages)) {
       text <- env$html_text(page_html(env$studio_guide_page(fn, "tessa", guide_dir())))
       description <- env$html_text(env$help_page(fn)$description)
       sentences <- trimws(strsplit(description, "(?<=[.!?])\\s+", perl = TRUE)[[1]])
@@ -1396,7 +1528,7 @@ describe("studio guide pages", {
     }
   })
   it("starts every page with a setup chunk that sets studio_character", {
-    pages <- list.files(guide_dir(), pattern = "[.]Rmd$", full.names = TRUE)
+    pages <- list.files(guide_dir(), pattern = "^[^_].*[.]Rmd$", full.names = TRUE)
     expect_gte(length(pages), 2L)
     for (page in pages) {
       lines <- readLines(page, warn = FALSE)
@@ -1448,12 +1580,14 @@ describe("studio guide pages", {
     expect_error(helpers$guide_callout("x", warn = "yes"), "flag")
     expect_error(helpers$guide_flow(arrow = 1), "string")
     expect_error(helpers$guide_table(1), "data.frame")
+    expect_error(helpers$guide_gesture_cards(1), "data.frame")
+    expect_error(helpers$guide_gesture_cards(data.frame(name = "wave")), "subset")
     expect_error(helpers$guide_dependency(file.path(tempdir(), "no-such-folder")), "exist")
   })
   it("knits on its own as a child of another document, with the live demos hidden", {
     skip_if_not_installed("knitr")
     skip_if_not_installed("bslib")
-    for (page in c("mascot_status", "mascot_theme", batch_pages)) {
+    for (page in c("mascot_status", "mascot_theme", batch_pages, data_pages)) {
       dir <- withr::local_tempdir()
       stub <- file.path(dir, "stub.Rmd")
       writeLines(
@@ -2592,7 +2726,14 @@ describe("studio palette sync (#353)", {
     character <- character_format_check(fixture)
     local_empty_registry()
     character_data_register(character)
-    html <- as.character(get("visual_anchors", parts$env)(character$id))
+    html <- paste(
+      vapply(
+        get("function_visual", parts$env)("mascot_anchors", character$id),
+        as.character,
+        character(1)
+      ),
+      collapse = "\n"
+    )
     expect_match(html, paste(character$name, "has no anchors"), fixed = TRUE)
   })
   it("shows native palette labels, new roles, resting gestures and guide demonstrations in the browser", {

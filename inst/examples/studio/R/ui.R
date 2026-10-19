@@ -393,14 +393,6 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
   }
   switch(
     fn,
-    mascot_mood = visual_mood(),
-    mascot_moods = visual_moods(character),
-    mascot_characters = visual_characters(),
-    mascot_families = visual_families(),
-    mascot_anchors = visual_anchors(character),
-    mascot_palettes = visual_palettes(character),
-    mascot_gesture = visual_gesture(character),
-    mascot_gestures = visual_gestures(character),
     mascot_size = visual_size(),
     mascot_placement = visual_placement(),
     mascot_colour_roles = visual_colour_roles(character),
@@ -420,117 +412,6 @@ data_table <- function(df, cells = NULL) {
         tags$td(if (!is.null(cells[[column]])) cells[[column]](value) else value)
       }))
     }))
-  )
-}
-
-visual_mood <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", paste("The", nrow(mascot_moods()), "moods")),
-    data_table(mascot_moods()),
-    div(
-      class = "pg-callout",
-      tags$strong("The mood never speaks alone. "),
-      "The status line under the mascot names the mood (or displays your custom text), providing clear meaning for
-      screen readers and anyone who cannot distinguish facial expressions. Try moods with the Mood drop-down in the top bar."
-    )
-  )
-}
-
-visual_moods <- function(character = formals(mascot::mascot)$character) {
-  moods <- mascot_moods(character)
-  tagList(
-    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s ", nrow(moods), " moods")),
-    tags$p(
-      class = "pg-muted",
-      "The five shared moods come first. A character may add its own; a mood that is not available falls back to the
-      one named in fallback."
-    ),
-    data_table(moods)
-  )
-}
-
-visual_characters <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", "Characters this session knows"),
-    uiOutput("characters_table")
-  )
-}
-
-visual_families <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", "Character families"),
-    data_table(mascot_families())
-  )
-}
-
-visual_anchors <- function(character = formals(mascot::mascot)$character) {
-  tagList(
-    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s anchors")),
-    if (nrow(mascot_anchors(character))) {
-      data_table(mascot_anchors(character))
-    } else {
-      tags$p(paste(mascot_character(character)$name, "has no anchors"))
-    }
-  )
-}
-
-# Only descriptions wrap; the wrapper contains any horizontal overflow on narrow screens.
-palette_table <- function(character) {
-  checkmate::assert_string(character, min.chars = 1)
-  div(class = "pg-palette-table", data_table(mascot_palettes(character)))
-}
-
-visual_palettes <- function(character = formals(mascot::mascot)$character) {
-  tagList(
-    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s palettes")),
-    tags$p(
-      class = "pg-muted",
-      "The first row is the character's own colours, with no palette applied; \"original\" always selects them."
-    ),
-    palette_table(character),
-    palette_guide_demo(character)
-  )
-}
-
-visual_gesture <- function(character = formals(mascot::mascot)$character) {
-  checkmate::assert_string(character)
-  gestures <- mascot_gestures(character)
-  resting <- gestures$name %in% studio_resting_gestures[character]
-  gestures <- gestures[!resting, ]
-  tagList(
-    tags$h3(class = "pg-section-title", "Gestures"),
-    if (any(resting)) {
-      tags$p(paste(
-        studio_resting_gestures[[character]],
-        "is",
-        paste0(mascot_character(character)$name, "'s"),
-        "idle animation; choose its resting animation entry in the sentence to try it."
-      ))
-    },
-    div(
-      class = "pg-cards",
-      lapply(seq_len(nrow(gestures)), function(i) {
-        bslib::card(
-          class = "pg-card-mini",
-          div(class = "pg-card-title", tools::toTitleCase(gestures$name[i])),
-          div(class = "pg-muted", gestures$description[i]),
-          div(class = "pg-card-foot", tags$code(sprintf("gesture = \"%s\"", gestures$name[i])))
-        )
-      })
-    )
-  )
-}
-
-visual_gestures <- function(character = formals(mascot::mascot)$character) {
-  gestures <- mascot_gestures(character)
-  tagList(
-    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s gestures")),
-    tags$p(
-      class = "pg-muted",
-      "frames is the length of the movement that plays, at 30 frames per second. A gesture whose parts are missing
-      plays its fallback."
-    ),
-    data_table(gestures)
   )
 }
 
@@ -1257,25 +1138,6 @@ shared_input_button <- function(fn, arg) {
   tags$button(type = "button", class = "btn btn-sm", `data-focus-input` = ids[[1]], paste("Edit", arg))
 }
 
-# The notes under the palette table. The same words are in guide/mascot_theme.Rmd; this copy serves
-# mascot_palettes() until that page is written as a guide page too.
-palette_guide_notes <- function() {
-  tagList(
-    tags$p(
-      "Colour precedence: the character's own colours, then palette, then light/dark colours, then css (later wins)."
-    ),
-    tags$p(
-      'In update_mascot(), theme = "original" restores the character\'s own colours; theme = NULL leaves colours as they are.'
-    ),
-    tags$p(
-      "A palette without a dark version uses its light colours in both modes; this applies to all shipped palettes today."
-    ),
-    tags$p(
-      "Native and built-in palette colours give no contrast warnings. Your own colours warn below 3:1 contrast in this studio and are kept."
-    )
-  )
-}
-
 # The live table of palette roles; the palette is chosen in the sentence of the Controls.
 palette_roles_demo <- function() {
   tagList(
@@ -1315,17 +1177,6 @@ palette_swap_section <- function(character) {
     try_button("palette_swap", "kept", paste("Swap and keep", example[["palette"]])),
     try_button("palette_swap", "dropped", paste("Swap and drop", example[["palette"]])),
     tags$div(role = "status", textOutput("palette_swap_result"))
-  )
-}
-
-palette_guide_demo <- function(character) {
-  checkmate::assert_string(character)
-  tagList(
-    palette_guide_notes(),
-    palette_base_demo(character),
-    dark_outline_demo(character),
-    palette_roles_demo(),
-    palette_swap_section(character)
   )
 }
 

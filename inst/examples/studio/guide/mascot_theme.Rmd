@@ -9,13 +9,8 @@ character_name <- mascot::mascot_character(studio_character)$name
 guide_table(mascot::mascot_palettes(studio_character), wrap = "pg-palette-table")
 ```
 
-Colour precedence: the character's own colours, then palette, then light/dark colours, then css (later wins).
-
-In `update_mascot()`, `theme = "original"` restores the character's own colours; `theme = NULL` leaves colours as they are.
-
-A palette without a dark version uses its light colours in both modes; this applies to all shipped palettes today.
-
-Native and built-in palette colours give no contrast warnings. Your own colours warn below 3:1 contrast in development mode and previews; the colours are kept.
+```{r mascot_theme-notes, child = file.path(guide_dir, "_palette-notes.Rmd"), echo = FALSE}
+```
 
 ```{r mascot_theme-base-demo, echo = FALSE}
 if (in_studio()) palette_base_demo(studio_character)

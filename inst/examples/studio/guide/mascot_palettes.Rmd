@@ -1,0 +1,34 @@
+```{r setup-mascot_palettes, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### `r mascot::mascot_character(studio_character)$name`'s palettes
+
+<div class="pg-muted">
+
+The first row is the character's own colours, with no palette applied; "original" always selects them.
+
+</div>
+
+```{r mascot_palettes-table, echo = FALSE}
+guide_table(mascot::mascot_palettes(studio_character), wrap = "pg-palette-table")
+```
+
+```{r mascot_palettes-notes, child = file.path(guide_dir, "_palette-notes.Rmd"), echo = FALSE}
+```
+
+```{r mascot_palettes-base-demo, echo = FALSE}
+if (in_studio()) palette_base_demo(studio_character)
+```
+
+```{r mascot_palettes-outline-demo, echo = FALSE}
+if (in_studio()) dark_outline_demo(studio_character)
+```
+
+```{r mascot_palettes-roles-demo, echo = FALSE}
+if (in_studio()) palette_roles_demo()
+```
+
+```{r mascot_palettes-swap-demo, echo = FALSE}
+if (in_studio()) palette_swap_section(studio_character)
+```

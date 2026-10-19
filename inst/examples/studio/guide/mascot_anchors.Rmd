@@ -1,0 +1,14 @@
+```{r setup-mascot_anchors, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### `r mascot::mascot_character(studio_character)$name`'s anchors
+
+```{r mascot_anchors-table, echo = FALSE}
+anchors <- mascot::mascot_anchors(studio_character)
+if (nrow(anchors)) {
+  guide_table(anchors)
+} else {
+  htmltools::tags$p(paste(mascot::mascot_character(studio_character)$name, "has no anchors"))
+}
+```

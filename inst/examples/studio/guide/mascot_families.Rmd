@@ -1,0 +1,9 @@
+```{r setup-mascot_families, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### Character families
+
+```{r mascot_families-table, echo = FALSE}
+guide_table(mascot::mascot_families())
+```

@@ -1,0 +1,16 @@
+```{r setup-mascot_moods, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### `r mascot::mascot_character(studio_character)$name`'s `r nrow(mascot::mascot_moods(studio_character))` moods
+
+<div class="pg-muted">
+
+The five shared moods come first. A character may add its own; a mood that is not available falls back to the
+one named in fallback.
+
+</div>
+
+```{r mascot_moods-table, echo = FALSE}
+guide_table(mascot::mascot_moods(studio_character))
+```

@@ -1,0 +1,9 @@
+```{r setup-mascot_characters, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### Characters this session knows
+
+```{r mascot_characters-table, echo = FALSE}
+if (in_studio()) shiny::uiOutput("characters_table") else guide_table(mascot::mascot_characters())
+```

@@ -1,0 +1,22 @@
+```{r setup-mascot_gesture, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+gestures <- mascot::mascot_gestures(studio_character)
+# Temporary #375 workaround, matching the studio's resting-animation choices.
+resting_names <- if (exists("studio_resting_gestures")) studio_resting_gestures else stats::setNames("shimmer", formals(mascot::mascot)$character)
+resting_name <- resting_names[studio_character]
+resting <- gestures$name %in% resting_name
+```
+
+### Gestures
+
+`r if (any(resting)) paste(resting_name, "is", paste0(mascot::mascot_character(studio_character)$name, "'s"), "idle animation.") else ""`
+
+```{r mascot_gesture-resting, echo = FALSE}
+if (in_studio() && any(resting)) {
+  htmltools::tags$p("Choose its resting animation entry in the sentence to try it.")
+}
+```
+
+```{r mascot_gesture-cards, echo = FALSE}
+guide_gesture_cards(gestures[!resting, ])
+```

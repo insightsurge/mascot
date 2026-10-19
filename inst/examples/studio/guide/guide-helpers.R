@@ -17,7 +17,7 @@ guide_dependency <- function(dir = guide_dir) {
   checkmate::assert_file_exists(file.path(dir, "guide.css"))
   htmltools::htmlDependency(
     name = "mascot-guide",
-    version = "1.1.0",
+    version = "1.2.0",
     src = c(file = normalizePath(dir)),
     stylesheet = "guide.css"
   )
@@ -116,6 +116,98 @@ guide_gesture_cards <- function(gestures) {
           )
         )
       })
+    ),
+    guide_dependency()
+  )
+}
+
+# Static placement overview, with the package's default corner emphasised.
+guide_placement_map <- function() {
+  corners <- c("top-left", "top-right", "bottom-left", "bottom-right")
+  default <- formals(mascot::mascot_placement)$position
+  htmltools::attachDependencies(
+    htmltools::div(
+      class = "pg-map",
+      htmltools::div(class = "pg-map-bar"),
+      htmltools::div(
+        class = "pg-map-page",
+        htmltools::div(class = "pg-map-line"),
+        htmltools::tags$span(class = "pg-map-inline", "inline"),
+        htmltools::div(class = "pg-map-line short"),
+        htmltools::div(class = "pg-map-line")
+      ),
+      lapply(corners, function(corner) {
+        htmltools::tags$span(
+          class = paste("pg-map-corner", paste0("pg-", corner), if (identical(corner, default)) "is-active"),
+          corner
+        )
+      })
+    ),
+    guide_dependency()
+  )
+}
+
+# Same columns as the live roles table; the website points to the outline tip without a studio link.
+guide_roles_table <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  roles <- mascot::mascot_colour_roles(character)
+  htmltools::attachDependencies(
+    htmltools::tagList(
+      htmltools::tags$pre(htmltools::tags$code(sprintf('mascot_colour_roles("%s")', character))),
+      htmltools::tags$table(
+        class = "table table-sm pg-table",
+        htmltools::tags$thead(htmltools::tags$tr(lapply(names(roles), htmltools::tags$th))),
+        htmltools::tags$tbody(lapply(seq_len(nrow(roles)), function(i) {
+          htmltools::tags$tr(lapply(names(roles), function(column) {
+            value <- roles[[column]][i]
+            cell <- if (column == "colour") {
+              htmltools::tagList(
+                htmltools::tags$span(class = "pg-swatch", style = paste0("background:", value)),
+                htmltools::tags$code(value)
+              )
+            } else if (column == "follows") {
+              if (is.na(value)) htmltools::tags$span(class = "pg-muted", "leader") else paste("\u2190", value)
+            } else if (column == "shade" && is.na(value)) {
+              ""
+            } else if (column == "description" && roles$role[i] == "outline") {
+              paste(value, "See the dark-mode outline tip on the mascot_theme page.")
+            } else {
+              as.character(value)
+            }
+            htmltools::tags$td(cell)
+          }))
+        }))
+      )
+    ),
+    guide_dependency()
+  )
+}
+
+# UI/server pairs for a whole app and for a module, sharing the same local id.
+guide_wiring <- function() {
+  pair <- function(ui_label, ui_code, server_label) {
+    checkmate::assert_string(ui_label)
+    checkmate::assert_string(ui_code)
+    checkmate::assert_string(server_label)
+    htmltools::div(
+      class = "pg-wire",
+      htmltools::div(
+        class = "pg-wire-box",
+        htmltools::div(class = "pg-muted", ui_label),
+        htmltools::tags$pre(htmltools::tags$code(ui_code))
+      ),
+      htmltools::div(class = "pg-flow-arrow", "\u2194"),
+      htmltools::div(
+        class = "pg-wire-box",
+        htmltools::div(class = "pg-muted", server_label),
+        htmltools::tags$pre(htmltools::tags$code('update_mascot("helper", mood = "happy")'))
+      )
+    )
+  }
+  htmltools::attachDependencies(
+    htmltools::tagList(
+      pair("UI", 'mascot("helper")', "server"),
+      pair("module UI", 'mascot(ns("helper"))', "module server")
     ),
     guide_dependency()
   )

@@ -47,6 +47,11 @@ describe("mascot_examples()", {
             "guide/mascot_gesture.Rmd",
             "guide/mascot_gestures.Rmd",
             "guide/mascot_palettes.Rmd",
+            "guide/mascot_size.Rmd",
+            "guide/mascot_placement.Rmd",
+            "guide/mascot_colour_roles.Rmd",
+            "guide/mascot_popup_menu.Rmd",
+            "guide/mascot.Rmd",
             "guide/mascot_status.Rmd",
             "guide/mascot_theme.Rmd",
             "www/studio.css",
@@ -1283,6 +1288,112 @@ describe("studio guide pages", {
       expect_match(selected, "Warnings, errors and common mistakes", fixed = TRUE)
     })
   }
+  interactive_pages <- c("mascot_size", "mascot_placement", "mascot_colour_roles", "mascot_popup_menu", "mascot")
+  interactive_content <- list(
+    mascot_size = c("Size", "Small screens.", "576 pixels", "160"),
+    mascot_placement = c("Placement", "bottom-right corner", "inline"),
+    mascot_colour_roles = c("Sela's parts", "Leaders adopt", "Followers copy", "mascot.contrast_warnings"),
+    mascot_popup_menu = c(
+      "From a click to your server",
+      "Long status",
+      "Your server code for these items",
+      "Options need their main argument.",
+      "Keyboard.",
+      "Opening and closing the menu sends no Shiny input."
+    ),
+    mascot = c("Two calls, one id", "module UI", "module server", "pg-wire-box")
+  )
+  for (fn in interactive_pages) {
+    it(paste("knits", fn, "with its content and guards its live widgets"), {
+      env <- studio_guide_env()
+      html <- page_html(env$studio_guide_page(fn, "sela", guide_dir()))
+      standalone <- new.env(parent = globalenv())
+      standalone$guide_dir <- guide_dir()
+      standalone$studio_character <- "sela"
+      sys.source(file.path(guide_dir(), "guide-helpers.R"), standalone)
+      options <- knitr::opts_chunk$get()
+      withr::defer(knitr::opts_chunk$restore(options))
+      knitr::opts_chunk$set(error = FALSE)
+      markdown <- knitr::knit(
+        file.path(guide_dir(), paste0(fn, ".Rmd")),
+        output = file.path(withr::local_tempdir(), "page.md"),
+        envir = standalone,
+        quiet = TRUE
+      )
+      outside <- page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n")))
+      for (text in interactive_content[[fn]]) {
+        expect_match(html, text, fixed = TRUE)
+        expect_match(outside, text, fixed = TRUE)
+      }
+      expect_false(grepl("data-event|shiny-html-output|shiny-text-output|data-mascot", outside))
+      expect_false(grepl("studio|Controls tab|sentence bar", env$html_text(outside), ignore.case = TRUE))
+      ids <- switch(
+        fn,
+        mascot_size = "size_ruler",
+        mascot_placement = "placement_map",
+        mascot_colour_roles = "roles_table",
+        mascot_popup_menu = c("menu_last", "menu_code"),
+        character()
+      )
+      for (id in ids) {
+        expect_match(html, paste0('id="', id, '"'), fixed = TRUE)
+        expect_false(grepl(paste0('id="', id, '"'), outside, fixed = TRUE))
+      }
+      if (fn == "mascot_popup_menu") {
+        expect_match(html, 'data-event="menu_long_status"', fixed = TRUE)
+        expect_match(outside, "shiny::observeEvent", fixed = TRUE)
+      }
+      if (fn == "mascot_colour_roles") {
+        expect_false(grepl("<table", html, fixed = TRUE))
+        expect_match(outside, "pg-swatch", fixed = TRUE)
+        expect_match(outside, "mascot_theme page", fixed = TRUE)
+      }
+      if (fn == "mascot_placement") {
+        expect_match(outside, "pg-map", fixed = TRUE)
+      }
+      builder <- switch(
+        fn,
+        mascot_size = "visual_size",
+        mascot_placement = "visual_placement",
+        mascot_colour_roles = "visual_colour_roles",
+        mascot_popup_menu = "visual_menu",
+        mascot = "visual_mascot"
+      )
+      expect_false(exists(builder, envir = env, inherits = FALSE))
+      selected <- as.character(env$selected_guide(fn, "sela"))
+      expect_match(selected, paste0("Help page: ", fn, "()"), fixed = TRUE)
+    })
+  }
+  it("draws static role swatches for each character and retains the live outline link", {
+    env <- studio_guide_env()
+    helpers <- new.env()
+    helpers$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), helpers)
+    for (id in mascot_characters()$id) {
+      roles <- mascot_colour_roles(id)
+      static <- as.character(helpers$guide_roles_table(id))
+      live <- as.character(env$roles_table(id))
+      for (value in c(roles$role, roles$colour, roles$brand[!is.na(roles$brand)])) {
+        expect_match(static, value, fixed = TRUE)
+        expect_match(live, value, fixed = TRUE)
+      }
+      for (column in names(roles)) {
+        expect_match(static, paste0("<th>", column, "</th>"), fixed = TRUE)
+      }
+      expect_identical(lengths(regmatches(static, gregexpr('class="pg-swatch"', static, fixed = TRUE))), nrow(roles))
+      for (value in roles$follows[!is.na(roles$follows)]) {
+        expect_match(static, paste("\u2190", value), fixed = TRUE)
+      }
+      expect_match(live, 'data-value="mascot_theme"', fixed = TRUE)
+      expect_false(grepl("data-event", static, fixed = TRUE))
+      expect_match(
+        page_html(env$studio_guide_page("mascot_colour_roles", id, guide_dir())),
+        paste0(mascot_character(id)$name, "'s parts"),
+        fixed = TRUE
+      )
+    }
+    expect_error(helpers$guide_roles_table(1), "string")
+  })
   data_pages <- c(
     "mascot_mood",
     "mascot_moods",
@@ -1516,7 +1627,7 @@ describe("studio guide pages", {
   })
   it("does not repeat the description of the help page", {
     env <- studio_guide_env()
-    for (fn in c("mascot_status", "mascot_theme", batch_pages, data_pages)) {
+    for (fn in c("mascot_status", "mascot_theme", batch_pages, data_pages, interactive_pages)) {
       text <- env$html_text(page_html(env$studio_guide_page(fn, "tessa", guide_dir())))
       description <- env$html_text(env$help_page(fn)$description)
       sentences <- trimws(strsplit(description, "(?<=[.!?])\\s+", perl = TRUE)[[1]])
@@ -1587,7 +1698,7 @@ describe("studio guide pages", {
   it("knits on its own as a child of another document, with the live demos hidden", {
     skip_if_not_installed("knitr")
     skip_if_not_installed("bslib")
-    for (page in c("mascot_status", "mascot_theme", batch_pages, data_pages)) {
+    for (page in c("mascot_status", "mascot_theme", batch_pages, data_pages, interactive_pages)) {
       dir <- withr::local_tempdir()
       stub <- file.path(dir, "stub.Rmd")
       writeLines(

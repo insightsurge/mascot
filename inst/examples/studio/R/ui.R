@@ -386,20 +386,7 @@ guide_content <- function(category) {
 function_visual <- function(fn, character = formals(mascot::mascot)$character) {
   checkmate::assert_string(fn)
   checkmate::assert_string(character)
-  # A function with a guide page (guide/<fn>.Rmd) shows that page, see R/guide-md.R.
-  page <- studio_guide_page(fn, character)
-  if (!is.null(page)) {
-    return(page)
-  }
-  switch(
-    fn,
-    mascot_size = visual_size(),
-    mascot_placement = visual_placement(),
-    mascot_colour_roles = visual_colour_roles(character),
-    mascot_popup_menu = visual_menu(),
-    mascot = visual_mascot(),
-    NULL
-  )
+  studio_guide_page(fn, character)
 }
 
 data_table <- function(df, cells = NULL) {
@@ -412,30 +399,6 @@ data_table <- function(df, cells = NULL) {
         tags$td(if (!is.null(cells[[column]])) cells[[column]](value) else value)
       }))
     }))
-  )
-}
-
-visual_size <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", "Size"),
-    uiOutput("size_ruler"),
-    div(
-      class = "pg-callout",
-      tags$strong("Small screens. "),
-      "small_screen applies at 576 pixels wide or less. Narrow your browser window to see the mascot switch
-      size."
-    )
-  )
-}
-
-visual_placement <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", "Placement"),
-    tags$p(
-      class = "pg-muted",
-      "A default mascot() floats in the bottom-right corner. This studio displays the character inline with placement = \"inline\" so it remains on the canvas."
-    ),
-    uiOutput("placement_map")
   )
 }
 
@@ -527,100 +490,6 @@ roles_table <- function(character, palette = NULL) {
   tagList(
     code_block(format_call("mascot_colour_roles", list(character = character, palette = palette)), "pg-code-small"),
     data_table(roles, cells = list(colour = swatch, follows = follows, shade = shade, description = description))
-  )
-}
-
-visual_colour_roles <- function(character) {
-  tagList(
-    tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s parts")),
-    tags$p(
-      class = "pg-muted",
-      "Leaders adopt the colours you supply. Followers copy the first leader you customise, shaded the same, lighter, or
-      darker, unless you customise them directly. Low contrast against the page warns in development mode, previews and this studio; the colour is kept. The mascot.contrast_warnings option forces R warnings on or off."
-    ),
-    uiOutput("roles_table")
-  )
-}
-
-visual_menu <- function() {
-  step <- function(...) div(class = "pg-flow-step", ...)
-  arrow <- div(class = "pg-flow-arrow", "\u2192")
-  tagList(
-    tags$h3(class = "pg-section-title", "From a click to your server"),
-    div(
-      class = "pg-flow",
-      step("The visitor picks", div(tags$strong("Finish review"))),
-      arrow,
-      step(tags$code("input$helper_menu"), div("becomes \"finish\"")),
-      arrow,
-      step("Your", tags$code("observeEvent()"), div("decides")),
-      arrow,
-      step(tags$code("update_mascot()"), div("answers"))
-    ),
-    div(class = "pg-live", tags$span(class = "pg-muted", "Last choice here: "), textOutput("menu_last", inline = TRUE)),
-    tags$h3(class = "pg-section-title", "Long status"),
-    tags$p(
-      "The menu opens from the mascot's position on the screen and falls back to the opposite side when the chosen side has no room. A long status makes the mascot taller, so choose a corner, then open the live mascot's menu to see where it lands."
-    ),
-    try_button("menu_long_status", "top-right", "Try top corner with long status"),
-    try_button("menu_long_status", "bottom-right", "Try bottom corner with long status"),
-    tags$h3(class = "pg-section-title", "Your server code for these items"),
-    div(class = "pg-code-wrap", code_output("menu_code"), copy_button("menu_code")),
-    div(
-      class = "pg-callout",
-      tags$strong("input$<id>_menu vs input$<id>_click. "),
-      "Menus never set ",
-      tags$code("input$<id>_click"),
-      "; only ",
-      tags$code("mascot_action()"),
-      " does. Choosing an item sets ",
-      tags$code("input$<id>_menu"),
-      " to the chosen item's id. Opening and closing the menu sends no Shiny input."
-    ),
-    div(
-      class = "pg-callout",
-      tags$strong("Options need their main argument. "),
-      "Options need their main argument; an empty call removes it."
-    ),
-    div(
-      class = "pg-callout",
-      tags$strong("Keyboard. "),
-      "Tab to the mascot's menu button, then Enter or Space opens it; arrow keys move between items; Escape closes it."
-    )
-  )
-}
-
-visual_mascot <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", "Two calls, one id"),
-    div(
-      class = "pg-wire",
-      div(
-        class = "pg-wire-box",
-        div(class = "pg-muted", "UI"),
-        code_block("mascot(\"helper\")")
-      ),
-      div(class = "pg-flow-arrow", "\u2194"),
-      div(
-        class = "pg-wire-box",
-        div(class = "pg-muted", "server"),
-        code_block("update_mascot(\"helper\", mood = \"happy\")")
-      )
-    ),
-    div(
-      class = "pg-wire",
-      div(
-        class = "pg-wire-box",
-        div(class = "pg-muted", "module UI"),
-        code_block("mascot(ns(\"helper\"))")
-      ),
-      div(class = "pg-flow-arrow", "\u2194"),
-      div(
-        class = "pg-wire-box",
-        div(class = "pg-muted", "module server"),
-        code_block("update_mascot(\"helper\", mood = \"happy\")")
-      )
-    )
   )
 }
 

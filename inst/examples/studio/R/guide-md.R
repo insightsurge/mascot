@@ -1,6 +1,6 @@
 # Guide pages written as R Markdown (guide/<function>.Rmd), shared with the package website: one place
 # to maintain the explanation. studio_guide_page() knits one page for the studio; the website includes
-# the same file with a knitr child chunk. A function without a page keeps its builder in R/ui.R.
+# the same file with a knitr child chunk. A function without a page shows only its help and mistakes.
 # Shiny sources this file with the others in R/, so it holds functions only.
 
 # The folder with the pages and their helpers: the app's own guide/ folder (Shiny runs the app from

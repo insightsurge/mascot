@@ -328,6 +328,19 @@ describe("colour_roles_server()", {
       }
     )
   })
+  it("keeps a colour set before the pickers are first drawn", {
+    # testServer() runs this before the module's first flush, as a caller's set() right after start-up does.
+    shiny::testServer(
+      studio_shared("shared-colours.R")$colour_roles_server,
+      args = list(character = shiny::reactiveVal("tessa"), palette = shiny::reactiveVal("original")),
+      {
+        colours <- session$returned
+        colours$set("light", "body", "#ABCDEF")
+        session$flushReact()
+        expect_identical(colours$light(), c(body = "#abcdef"))
+      }
+    )
+  })
   it("starts outside a reactive context, as a running app starts it", {
     # testServer() runs the module inside isolate(), which would hide a reactive read at start-up.
     session <- shiny::MockShinySession$new()

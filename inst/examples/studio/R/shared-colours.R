@@ -279,9 +279,11 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
     shown$read <- 0L
     drawn <- shiny::reactiveVal(0L)
     # A new character or palette: keep the colours the user changed for roles the new listing has too, then draw.
+    # The first drawing keeps every colour already picked (a set() before it), since no listing came before.
     shiny::observeEvent(roles(), {
       for (mode in modes) {
-        kept <- reconcile_colour_values(shown$roles, roles(), as.list(shiny::isolate(picked[[mode]])))
+        now <- as.list(shiny::isolate(picked[[mode]]))
+        kept <- if (is.null(shown$roles)) now else reconcile_colour_values(shown$roles, roles(), now)
         picked[[mode]] <- changed_colours(Filter(Negate(is.null), kept), roles())
       }
       shown$roles <- roles()

@@ -2111,7 +2111,7 @@ describe("standalone palette swaps", {
     js <- local_runtime_page(list(mascot(
       "a",
       character = "tessa",
-      theme = "peach",
+      theme = "coral_navy",
       motion = FALSE,
       placement = "inline"
     )))
@@ -2121,11 +2121,11 @@ describe("standalone palette swaps", {
     ))
     result <- js("mascot.host.state(document.getElementById('a'))")
     expect_identical(result$character, "sela")
-    expect_identical(result$theme$palette, "peach")
-    expect_identical(result$theme$palette_colours$light$hair_purple, "#2B305C")
-    expect_identical(result$colours$hair_purple, "#2B305C")
-    # Tessa's peach sets `feature`; Sela's does not, so its absence shows the old map was dropped.
-    expect_null(result$theme$palette_colours$light$feature)
+    expect_identical(result$theme$palette, "coral_navy")
+    expect_identical(result$theme$palette_colours$light$hair_purple, "#1D3557")
+    expect_identical(result$colours$hair_purple, "#1D3557")
+    # Tessa's coral_navy sets `accessory`; Sela's does not, so its absence shows the old map was dropped.
+    expect_null(result$theme$palette_colours$light$accessory)
   })
   it("keeps the name of a character's own colours across a swap only to a character that uses the same name", {
     own_name <- list(mascot("a", character = "tessa", theme = "night_teal", motion = FALSE, placement = "inline"))

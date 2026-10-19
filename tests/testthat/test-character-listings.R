@@ -184,7 +184,21 @@ describe("mascot_palettes()", {
         "lilac_soft",
         "mist_navy"
       ),
-      sela = c("original", "coral", "azure", "peach"),
+      sela = c(
+        "lilac_violet",
+        "orchid",
+        "coral_navy",
+        "azure",
+        "peach_ink",
+        "lilac_soft",
+        "mist_navy",
+        "desert_clay",
+        "forest",
+        "apricot_navy",
+        "blush_plum",
+        "lilac_dusk",
+        "sea_green"
+      ),
       knurl = c("original", "orbit", "carbon", "cobalt_droid", "crimson"),
       neer = c("original", "lagoon", "glacier", "coral_reef", "night_bay", "monsoon")
     )
@@ -207,9 +221,17 @@ describe("mascot_palettes()", {
     expect_length(value$name, 10L)
     expect_identical(sort(character_palettes("tessa") |> names()), sort(value$name[-1]))
     expect_identical(character_catalogue_builtin("tessa")$native_palette, "night_teal")
-    for (id in c("sela", "knurl", "neer")) {
+    for (id in c("knurl", "neer")) {
       expect_identical(mascot_palettes(id)$name[[1]], "original")
     }
+  })
+  it("lists Sela's own colours as lilac_violet followed by her twelve palettes", {
+    value <- mascot_palettes("sela")
+    expect_identical(value$name[[1]], "lilac_violet")
+    expect_false("original" %in% value$name)
+    expect_length(value$name, 13L)
+    expect_identical(value$source, c("native", rep("character", 12L)))
+    expect_identical(character_catalogue_builtin("sela")$native_palette, "lilac_violet")
   })
   it("adds the character's palettes after original, with their checked origin", {
     value <- mascot_palettes(character_format_check(format_recipe("study_bot")))

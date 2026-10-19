@@ -597,11 +597,11 @@ describe("palette state across public updates", {
   it("keeps a shared id using the incoming character's palette and accepts a palette with a swap", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
-    update_mascot("helper", character = "tessa", theme = "peach", session = f$session)
+    update_mascot("helper", character = "tessa", theme = "coral_navy", session = f$session)
     expect_no_warning(update_mascot("helper", character = "sela", session = f$session))
     theme <- protocol_record(f)$desired$theme
-    expect_identical(theme$palette, "peach")
-    expect_identical(theme$palette_colours$light$hair_purple, "#2B305C")
+    expect_identical(theme$palette, "coral_navy")
+    expect_identical(theme$palette_colours$light$hair_purple, "#1D3557")
     expect_null(theme$palette_colours$light$accessory)
     expect_no_warning(update_mascot("helper", character = "neer", theme = "lagoon", session = f$session))
     expect_identical(protocol_record(f)$desired$theme$palette, "lagoon")

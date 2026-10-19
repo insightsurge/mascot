@@ -1,13 +1,12 @@
 ---
-title: "update_mascot()"
+title: "`update_mascot()`"
 ---
 
 The studio guide for [`update_mascot()`](../reference/update_mascot.html). The same page is read in the mascot studio.
 
 ```{r setup, include = FALSE}
-library(mascot)
 guide <- system.file("examples", "studio", "guide", package = "mascot")
-source(file.path(guide, "guide-helpers.R"))
+sys.source(file.path(guide, "guide-helpers.R"), envir = knitr::knit_global())
 ```
 
 ```{r child = file.path(guide, "update_mascot.Rmd")}

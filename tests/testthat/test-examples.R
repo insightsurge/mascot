@@ -1748,7 +1748,12 @@ describe("studio guide pages", {
       stub <- paste(readLines(file.path(articles, paste0("guide-", page, ".Rmd")), warn = FALSE), collapse = "\n")
       # The stub includes the page by name and sets up the helpers from the installed package.
       expect_match(stub, paste0('file.path(guide, "', page, '.Rmd")'), fixed = TRUE, info = page)
-      expect_match(stub, 'source(file.path(guide, "guide-helpers.R"))', fixed = TRUE, info = page)
+      expect_match(
+        stub,
+        'sys.source(file.path(guide, "guide-helpers.R"), envir = knitr::knit_global())',
+        fixed = TRUE,
+        info = page
+      )
       expect_match(navbar, paste0("href: articles/guide-", page, ".html"), fixed = TRUE, info = page)
     }
   })

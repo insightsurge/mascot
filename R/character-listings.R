@@ -168,7 +168,7 @@ mascot_anchors <- function(character = "tessa") {
 #' @examples
 #' mascot_palettes()
 #' mascot_palettes("tessa")
-#' mascot("helper", character = "tessa", theme = "coral")
+#' ui <- mascot("helper", character = "tessa", theme = "coral")
 mascot_palettes <- function(character = NULL) {
   with_mascot_asserts({
     character_catalogue_assert(character, nullable = TRUE)

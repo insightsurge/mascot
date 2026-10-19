@@ -16,9 +16,12 @@
 #'   Defaults to `NULL`, an empty helper: in [update_mascot()], it removes the
 #'   click, so the mascot is a picture again. An empty vector is not accepted.
 #'   Labels are always escaped. With `items = NULL`, explicitly supplying
-#'   `direction`, `label` or `tooltip` is an error; use `mascot_popup_menu()`
+#'   `disabled`, `direction`, `label` or `tooltip` is an error; use `mascot_popup_menu()`
 #'   without options to remove the click.
 #' @param ... Must be empty. Forces the arguments after it to be named.
+#' @param disabled A flag. `TRUE` keeps the menu button reachable by keyboard,
+#'   but opens nothing and sends no input. Screen readers announce it as
+#'   unavailable. `FALSE` (the default) allows the menu to open.
 #' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
 #'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
 #'   (preferring above, then below, then the side towards the page centre). A
@@ -30,7 +33,7 @@
 #'   the pointer rests on the mascot or the keyboard focuses it, provided a
 #'   `label` is set. `FALSE` hides the tooltip; screen readers still announce
 #'   the label.
-#' @returns A `mascot_popup_menu` object with `items`, `direction`, `label` and
+#' @returns A `mascot_popup_menu` object with `items`, `disabled`, `direction`, `label` and
 #'   `tooltip` elements.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
@@ -93,7 +96,7 @@
 #' mascot_popup_menu(c(about = "About this app"), label = "Help and settings")
 #' mascot_popup_menu(c(about = "About this app"), label = "Help and settings", tooltip = FALSE)
 #' mascot_popup_menu()
-#' mascot("helper", click = mascot_popup_menu(c(about = "About this app")))
+#' ui <- mascot("helper", click = mascot_popup_menu(c(about = "About this app")))
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   shiny::fluidPage(mascot("helper", click = mascot_popup_menu(
@@ -104,7 +107,7 @@
 #'     })
 #'   }
 #' )
-mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NULL, tooltip = TRUE) {
+mascot_popup_menu <- function(items = NULL, ..., disabled = FALSE, direction = "auto", label = NULL, tooltip = TRUE) {
   with_mascot_asserts({
     checkmate::assert_character(items, min.chars = 1, any.missing = FALSE, min.len = 1, null.ok = TRUE)
     if (!isTRUE(checkmate::check_string(direction))) {
@@ -112,14 +115,20 @@ mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NUL
     }
     checkmate::assert_string(label, min.chars = 1, pattern = "\\S", null.ok = TRUE)
     checkmate::assert_flag(tooltip)
+    checkmate::assert_flag(disabled)
   })
   if (...length() > 0L) {
-    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("direction", "label", "tooltip"), environment())
+    abort_dots(
+      names(substitute(list(...)))[-1L],
+      ...length(),
+      c("disabled", "direction", "label", "tooltip"),
+      environment()
+    )
   }
   if (!direction %in% popup_menu_directions()) {
     abort_choice(direction, popup_menu_directions(), "direction", "direction", environment())
   }
-  if (is.null(items) && (!missing(direction) || !missing(label) || !missing(tooltip))) {
+  if (is.null(items) && (!missing(disabled) || !missing(direction) || !missing(label) || !missing(tooltip))) {
     cli::cli_abort(
       c(
         "{.arg items} cannot be NULL when options are supplied.",
@@ -129,7 +138,7 @@ mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NUL
     )
   }
   value <- structure(
-    list(items = items, direction = direction, label = label, tooltip = tooltip),
+    list(items = items, direction = direction, label = label, tooltip = tooltip, disabled = disabled),
     class = "mascot_popup_menu"
   )
   problem <- popup_menu_problem(value)
@@ -152,12 +161,13 @@ popup_menu_problem <- function(x) {
   if (inherits(x, "mascot_popup_menu")) {
     if (
       !isTRUE(checkmate::check_list(x, names = "unique")) ||
-        length(x) != 4L ||
-        !setequal(names(x), c("items", "direction", "label", "tooltip")) ||
+        length(x) != 5L ||
+        !setequal(names(x), c("items", "direction", "label", "tooltip", "disabled")) ||
         !isTRUE(checkmate::check_string(x$label, min.chars = 1, pattern = "\\S", null.ok = TRUE)) ||
-        !isTRUE(checkmate::check_flag(x$tooltip))
+        !isTRUE(checkmate::check_flag(x$tooltip)) ||
+        !isTRUE(checkmate::check_flag(x$disabled))
     ) {
-      return("`click` must have items, direction, label and tooltip fields; use mascot_popup_menu().")
+      return("`click` must have items, direction, label, tooltip and disabled fields; use mascot_popup_menu().")
     }
     if (!isTRUE(checkmate::check_choice(x$direction, popup_menu_directions()))) {
       return(paste0(

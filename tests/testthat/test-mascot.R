@@ -605,3 +605,23 @@ describe("review fixes for construction diagnostics and documentation", {
     }
   })
 })
+
+describe("quiet exported examples (#350)", {
+  it("assigns standalone mascot tags in roxygen examples", {
+    skip_if_not(file.exists(test_path("..", "..", "R", "mascot.R")), "Source-only roxygen check")
+    paths <- list.files(test_path("..", "..", "R"), pattern = "\\.R$", full.names = TRUE)
+    for (path in paths) {
+      lines <- readLines(path)
+      in_examples <- FALSE
+      for (line in lines) {
+        if (grepl("^#' @", line)) {
+          in_examples <- grepl("^#' @examples", line)
+        }
+        if (!startsWith(line, "#'")) {
+          in_examples <- FALSE
+        }
+        if (in_examples) expect_false(grepl("^#' mascot\\(", line), info = paste(basename(path), line))
+      }
+    }
+  })
+})

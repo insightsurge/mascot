@@ -125,3 +125,13 @@ describe("motion shortcut equivalence (#349)", {
     )
   })
 })
+
+describe("motion panel choices (#350)", {
+  it("reports unknown panels with the choice class and valid panel names", {
+    expect_error(
+      mascot_motion_settings(messages = c("menu", "dialog")),
+      "messages.*bubble.*tooltip.*menu",
+      class = "mascot_error_choice"
+    )
+  })
+})

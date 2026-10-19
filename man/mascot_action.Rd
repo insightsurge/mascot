@@ -63,7 +63,7 @@ or bubble is open. On static pages the mascot stays a picture.
 mascot_action("Open help")
 mascot_action("Open help", tooltip = FALSE)
 mascot_action()
-mascot("helper", click = "Open help")
+ui <- mascot("helper", click = "Open help")
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   shiny::fluidPage(mascot("helper", click = "Open help")),

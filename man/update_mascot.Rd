@@ -101,10 +101,26 @@ its status; the next valid update clears it. Updates sent before a mascot
 appears are kept until it appears.
 }
 \details{
-\code{NULL} means none or the default in \code{\link[=mascot]{mascot()}} and helpers where accepted,
-and unchanged in \code{\link[=update_mascot]{update_mascot()}}. An empty helper (\code{mascot_bubble()},
-\code{mascot_status()}, \code{mascot_theme()}, \code{mascot_action()} or
-\code{mascot_popup_menu()}) resets that setting.
+\code{NULL} means none or the default in \code{\link[=mascot]{mascot()}} and helpers where accepted.
+In \code{update_mascot()}, \code{NULL} leaves a setting unchanged. Use an empty helper
+to reset a setting:\tabular{ll}{
+   Setting \tab Reset sent to \code{update_mascot()} \cr
+   Character \tab \code{character = mascot_character()} (back to \code{"tessa"}) \cr
+   Mood \tab \code{mood = mascot_mood()} (back to \code{"idle"}) \cr
+   Size \tab \code{size = mascot_size()} (160, \code{small_screen = "auto"}) \cr
+   Custom status \tab \code{status = mascot_status()} follows the mood \cr
+   Bubble \tab \code{bubble = mascot_bubble()} removes it \cr
+   Theme \tab \code{theme = mascot_theme()} restores character colours \cr
+   Click \tab \code{click = mascot_action()} (or \code{mascot_popup_menu()}) removes it \cr
+   Placement \tab \code{placement = mascot_placement()} resets to default bottom-right \cr
+   Motion \tab \code{motion = mascot_motion_settings()} allows movement subject to visitor preference \cr
+}
+
+
+\code{mascot_placement("inline")} returns inline.
+Each non-\code{NULL} argument replaces that whole setting, not part of it. For
+example, \code{update_mascot("h", size = 200)} also resets a custom \code{small_screen}
+to \code{"auto"}.
 
 Building UI with \code{\link[=mascot]{mascot()}} or helpers errors on invalid values;
 \code{\link[=update_mascot]{update_mascot()}} warns and leaves the mascot unchanged. See

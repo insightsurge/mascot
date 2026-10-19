@@ -21,7 +21,11 @@ studio_live <- paste0(studio_frame, ".document.getElementById('helper')")
 wait_studio_mood <- function(app, mood) {
   checkmate::assert_r6(app, "AppDriver")
   checkmate::assert_string(mood)
-  app$wait_for_js(sprintf("%s?.document.getElementById('helper')?.dataset.shownMood === '%s'", studio_frame, mood))
+  # Generous: the coverage run instruments the package and the live host takes longer to start.
+  app$wait_for_js(
+    sprintf("%s?.document.getElementById('helper')?.dataset.shownMood === '%s'", studio_frame, mood),
+    timeout = 90000
+  )
 }
 
 describe("the redesigned studio", {

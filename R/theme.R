@@ -8,7 +8,8 @@
 #' [update_mascot()] uses one set of colours in every mode. A [bslib::bs_theme()]
 #' fills the character's declared brand leaders with its primary and secondary
 #' colours; `_brand.yml` can be supplied through `bs_theme(brand = )`. A
-#' `bs_theme()` always uses `mode = "auto"`.
+#' `bs_theme()` always uses `mode = "auto"`. Which parts of a character a
+#' `bs_theme()` colours is experimental and may change in a later release.
 #'
 #' After a character swap, follow rules are applied again and roles absent from
 #' the incoming character are ignored. A palette is kept if the new character

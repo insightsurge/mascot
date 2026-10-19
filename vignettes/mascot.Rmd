@@ -324,6 +324,8 @@ update_mascot("helper", theme = mascot_theme()) # Restore original colours.
 
 With `bslib` installed, primary supplies Tessa's body and secondary supplies
 her rim. Her follow rules also colour sleeves, eyelids and feet.
+Which parts a `bs_theme()` colours is experimental and may change in a later
+release.
 
 ```{r bslib-theme, eval=FALSE}
 if (requireNamespace("bslib", quietly = TRUE)) {

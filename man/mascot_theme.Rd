@@ -58,7 +58,8 @@ roles for a character. A plain named list passed to \code{\link[=mascot]{mascot(
 \code{\link[=update_mascot]{update_mascot()}} uses one set of colours in every mode. A \code{\link[bslib:bs_theme]{bslib::bs_theme()}}
 fills the character's declared brand leaders with its primary and secondary
 colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand = )}. A
-\code{bs_theme()} always uses \code{mode = "auto"}.
+\code{bs_theme()} always uses \code{mode = "auto"}. Which parts of a character a
+\code{bs_theme()} colours is experimental and may change in a later release.
 }
 \details{
 After a character swap, follow rules are applied again and roles absent from

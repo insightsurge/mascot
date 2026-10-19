@@ -25,6 +25,7 @@ vignettes/figures/*.png
 
 inst/examples/studio/www/studio.css
 inst/examples/studio/www/studio.js
+inst/examples/studio/guide/guide.css
     Source: layout, diagrams and the colour picker input of the studio example, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 

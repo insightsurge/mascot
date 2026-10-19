@@ -1,0 +1,70 @@
+/* Styles for the diagrams of the guide pages (guide-helpers.R). The studio has its own copy of these
+   classes in www/studio.css; every selector here sits in :where() so it has no weight and the studio's
+   rules win there. Colours come from Bootstrap's variables when the page has them (the studio, bslib,
+   pkgdown) and from neutral fallbacks otherwise, which read on a light and a dark page. */
+
+:where(.pg-flow) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 0.8rem 0;
+}
+
+:where(.pg-flow-step) {
+  border: 1px solid var(--bs-border-color, rgba(127, 127, 127, 0.45));
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  background: var(--bs-tertiary-bg, rgba(127, 127, 127, 0.1));
+}
+
+:where(.pg-flow-arrow) {
+  align-self: center;
+  color: var(--bs-secondary-color, inherit);
+}
+
+:where(.pg-flow-gap) {
+  flex-basis: 100%;
+}
+
+:where(.pg-callout) {
+  background: var(--bs-info-bg-subtle, rgba(13, 110, 253, 0.12));
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  margin: 0.8rem 0;
+  font-size: 0.9rem;
+}
+
+:where(.pg-callout-warn) {
+  background: var(--bs-warning-bg-subtle, rgba(255, 193, 7, 0.2));
+}
+
+:where(.pg-timeline) {
+  font-size: 0.8rem;
+  margin: 0.8rem 0;
+}
+
+:where(.pg-timeline-bar) {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg, rgba(127, 127, 127, 0.15));
+  overflow: hidden;
+}
+
+:where(.pg-timeline-fill) {
+  width: 60%;
+  height: 100%;
+  background: var(--bs-primary, #0d6efd);
+}
+
+:where(.pg-timeline-labels) {
+  display: flex;
+  justify-content: space-between;
+  color: var(--bs-secondary-color, inherit);
+}
+
+:where(.pg-palette-table) {
+  max-width: 100%;
+  overflow-x: auto;
+}

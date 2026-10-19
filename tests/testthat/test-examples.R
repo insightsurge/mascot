@@ -27,10 +27,15 @@ describe("mascot_examples()", {
             "app.R",
             "R/code.R",
             "R/data.R",
+            "R/guide-md.R",
             "R/guide.R",
             "R/help.R",
             "R/panels.R",
             "R/ui.R",
+            "guide/guide-helpers.R",
+            "guide/guide.css",
+            "guide/mascot_status.Rmd",
+            "guide/mascot_theme.Rmd",
             "www/studio.css",
             "www/studio.js"
           )
@@ -342,6 +347,7 @@ describe("the studio's controls", {
     sys.source(file.path(dir, "R", "help.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
+    sys.source(file.path(dir, "R", "guide-md.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
     sys.source(file.path(dir, "R", "code.R"), envir = ui)
     expect_error(ui$selected_guide(42), "string")
@@ -1160,6 +1166,228 @@ studio_parts <- function() {
   page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
   list(env = environment(app$serverFuncSource()), page = as.character(page))
 }
+
+# The studio and its guide pages (guide/*.Rmd), loaded the way the tests above load pieces of the studio.
+studio_guide_env <- function(frame = parent.frame()) {
+  testthat::skip_if_not_installed("bslib")
+  testthat::skip_if_not_installed("knitr")
+  withr::local_package("shiny", .local_envir = frame)
+  withr::local_package("bslib", .local_envir = frame)
+  dir <- dirname(mascot_example("studio", run = FALSE))
+  env <- new.env()
+  for (file in c("guide.R", "help.R", "data.R", "code.R", "panels.R", "ui.R", "guide-md.R")) {
+    sys.source(file.path(dir, "R", file), envir = env)
+  }
+  env
+}
+
+describe("studio guide pages", {
+  guide_dir <- function() file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+  page_html <- function(page) paste(vapply(page, as.character, character(1)), collapse = "\n")
+  it("returns NULL for a function without a page, so its R builder is used", {
+    env <- studio_guide_env()
+    expect_null(env$studio_guide_page("mascot_mood", "tessa", guide_dir()))
+    expect_null(env$studio_guide_page("../mascot_theme", "tessa", guide_dir()))
+    expect_null(env$studio_guide_page("mascot_theme", "tessa", withr::local_tempdir()))
+    expect_error(env$studio_guide_page(1, "tessa"), "string")
+    expect_error(env$studio_guide_page("mascot_theme", "", guide_dir()), "character")
+    expect_error(env$studio_guide_page("mascot_theme", "tessa", 1), "string")
+    # The Guide of such a function is built as before.
+    expect_match(as.character(env$selected_guide("mascot_mood")), "pg-guide-piece", fixed = TRUE)
+  })
+  it("knits mascot_status into its table of status line and speech bubble", {
+    env <- studio_guide_env()
+    page <- env$studio_guide_page("mascot_status", "tessa", guide_dir())
+    html <- page_html(page)
+    expect_match(html, '<h3 class="pg-section-title">Status line or speech bubble?</h3>', fixed = TRUE)
+    expect_match(html, '<table class="table table-sm pg-table">', fixed = TRUE)
+    for (text in c("Screen readers", "Announced politely", "status = mascot_status()", "bubble = mascot_bubble()")) {
+      expect_match(html, text, fixed = TRUE)
+    }
+    expect_identical(vapply(page, attr, character(1), "guide_kind"), "heading")
+  })
+  it("knits mascot_theme into its diagrams, callout and live demos with the ids the studio relies on", {
+    env <- studio_guide_env()
+    page <- env$studio_guide_page("mascot_theme", "tessa", guide_dir())
+    html <- page_html(page)
+    for (text in c(
+      "Which mode applies",
+      "Brand colours from bslib",
+      "pg-flow-step",
+      "pg-flow-arrow",
+      "pg-flow-gap",
+      "Colour precedence",
+      "theme = &quot;original&quot;",
+      "below 3:1 contrast",
+      "A bs_theme() always uses mode"
+    )) {
+      expect_match(html, text, fixed = TRUE)
+    }
+    for (id in c("palette_swap_demo", "palette_base_demo", "dark_outline_tip", "roles_table")) {
+      expect_match(html, sprintf('id="%s"', id), fixed = TRUE)
+    }
+    # The tip comes from the help page of mascot_theme(), not from the page.
+    tip <- env$studio_help_tail(
+      env$help_arg("mascot_theme", "dark"),
+      "Built-in characters keep one outline colour"
+    )
+    expect_match(html, tip, fixed = TRUE)
+    expect_false(grepl(
+      "Built-in characters keep one outline colour",
+      paste(readLines(file.path(guide_dir(), "mascot_theme.Rmd")), collapse = " "),
+      fixed = TRUE
+    ))
+    # Headings and the callout start their own pieces; the callout stands alone at the end.
+    kinds <- vapply(page, attr, character(1), "guide_kind")
+    expect_identical(kinds[[1]], "heading")
+    expect_identical(kinds[[length(kinds)]], "callout")
+    expect_true(all(kinds[-length(kinds)] == "heading"))
+    # The diagram stylesheet travels with the page.
+    expect_true("mascot-guide" %in% vapply(htmltools::findDependencies(page), function(d) d$name, character(1)))
+    # selected_guide() puts every piece in its own column and keeps the help page and the mistakes.
+    guide <- as.character(env$selected_guide("mascot_theme"))
+    expect_gte(lengths(regmatches(guide, gregexpr('class="pg-guide-piece', guide, fixed = TRUE))), length(page))
+    expect_match(guide, "Help page: mascot_theme()", fixed = TRUE)
+    expect_match(guide, "Warnings, errors and common mistakes", fixed = TRUE)
+  })
+  it("follows the selected character in its tables", {
+    env <- studio_guide_env()
+    tessa <- page_html(env$studio_guide_page("mascot_theme", "tessa", guide_dir()))
+    sela <- page_html(env$studio_guide_page("mascot_theme", "sela", guide_dir()))
+    expect_match(tessa, "Tessa's palettes", fixed = TRUE)
+    expect_match(sela, "Sela's palettes", fixed = TRUE)
+    own <- setdiff(mascot_palettes("sela")$name, mascot_palettes("tessa")$name)
+    expect_gt(length(own), 0L)
+    expect_match(sela, paste0("<td>", own[[1]], "</td>"), fixed = TRUE)
+    expect_false(grepl(paste0("<td>", own[[1]], "</td>"), tessa, fixed = TRUE))
+  })
+  it("builds a page afresh on every visit, so a live demo never holds another session's mascot", {
+    env <- studio_guide_env()
+    dir <- withr::local_tempdir()
+    file.copy(list.files(guide_dir(), full.names = TRUE), dir)
+    expect_false(exists("studio_guide_cache", envir = env))
+    page <- file.path(dir, "mascot_status.Rmd")
+    expect_match(
+      page_html(env$studio_guide_page("mascot_status", "tessa", dir)),
+      "Status line or speech bubble?",
+      fixed = TRUE
+    )
+    text <- readLines(page)
+    writeLines(sub("Status line or speech bubble?", "A new heading", text, fixed = TRUE), page)
+    expect_match(page_html(env$studio_guide_page("mascot_status", "tessa", dir)), "A new heading", fixed = TRUE)
+  })
+  it("falls back to the R builders when knitr is missing or a page cannot be built", {
+    env <- studio_guide_env()
+    env$studio_has_knitr <- function() FALSE
+    expect_null(env$studio_guide_page("mascot_status", "tessa", guide_dir()))
+    html <- as.character(env$selected_guide("mascot_status"))
+    expect_match(html, "needs knitr", fixed = TRUE)
+    expect_match(html, "Help page: mascot_status()", fixed = TRUE)
+    expect_match(as.character(env$selected_guide("mascot_theme")), "Palette roles on the live mascot", fixed = TRUE)
+    # A page that fails to knit warns and falls back instead of breaking the Guide.
+    env$studio_has_knitr <- function() TRUE
+    dir <- withr::local_tempdir()
+    file.copy(list.files(guide_dir(), full.names = TRUE), dir)
+    writeLines(c("```{r}", "stop('broken page')", "```"), file.path(dir, "mascot_status.Rmd"))
+    suppressMessages(expect_warning(
+      expect_null(env$studio_guide_page("mascot_status", "tessa", dir)),
+      "could not be built"
+    ))
+  })
+  it("does not repeat the description of the help page", {
+    env <- studio_guide_env()
+    for (fn in c("mascot_status", "mascot_theme")) {
+      text <- env$html_text(page_html(env$studio_guide_page(fn, "tessa", guide_dir())))
+      description <- env$html_text(env$help_page(fn)$description)
+      sentences <- trimws(strsplit(description, "(?<=[.!?])\\s+", perl = TRUE)[[1]])
+      sentences <- sentences[nchar(sentences) >= 30]
+      expect_gt(length(sentences), 0L)
+      for (sentence in sentences) {
+        expect_false(grepl(sentence, text, fixed = TRUE), info = paste(fn, sentence))
+      }
+    }
+  })
+  it("starts every page with a setup chunk that sets studio_character", {
+    pages <- list.files(guide_dir(), pattern = "[.]Rmd$", full.names = TRUE)
+    expect_gte(length(pages), 2L)
+    for (page in pages) {
+      lines <- readLines(page, warn = FALSE)
+      expect_match(lines[[1]], "^```\\{r setup", info = page)
+      expect_true(
+        any(
+          lines ==
+            'studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character'
+        ),
+        info = page
+      )
+    }
+  })
+  it("loads its helpers without the studio and draws the diagrams with their stylesheet", {
+    skip_if_not_installed("knitr")
+    helpers <- new.env()
+    helpers$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), envir = helpers)
+    expect_false(helpers$in_studio())
+    flow <- helpers$guide_flow(
+      helpers$guide_step("a"),
+      helpers$guide_step("b"),
+      helpers$guide_gap(),
+      helpers$guide_step("c")
+    )
+    html <- as.character(flow)
+    expect_identical(lengths(regmatches(html, gregexpr("pg-flow-arrow", html, fixed = TRUE))), 1L)
+    expect_match(as.character(helpers$guide_callout("x", warn = TRUE)), "pg-callout pg-callout-warn", fixed = TRUE)
+    expect_match(as.character(helpers$guide_timeline("shown", "hides")), "<span>hides</span>", fixed = TRUE)
+    expect_match(
+      as.character(helpers$guide_table(data.frame(a = 1), wrap = "pg-palette-table")),
+      "<td>1</td>",
+      fixed = TRUE
+    )
+    for (piece in list(
+      flow,
+      helpers$guide_callout("x"),
+      helpers$guide_timeline("a"),
+      helpers$guide_table(data.frame(a = 1))
+    )) {
+      dependency <- htmltools::findDependencies(piece)[[1]]
+      expect_identical(dependency$name, "mascot-guide")
+      expect_true(file.exists(file.path(dependency$src$file, dependency$stylesheet)))
+    }
+    expect_identical(
+      helpers$guide_brand_roles("tessa")$primary,
+      mascot_colour_roles("tessa")$role[grepl("primary", mascot_colour_roles("tessa")$brand)][[1]]
+    )
+    expect_error(helpers$guide_callout("x", warn = "yes"), "flag")
+    expect_error(helpers$guide_flow(arrow = 1), "string")
+    expect_error(helpers$guide_table(1), "data.frame")
+    expect_error(helpers$guide_dependency(file.path(tempdir(), "no-such-folder")), "exist")
+  })
+  it("knits on its own as a child of another document, with the live demos hidden", {
+    skip_if_not_installed("knitr")
+    skip_if_not_installed("bslib")
+    for (page in c("mascot_status", "mascot_theme")) {
+      dir <- withr::local_tempdir()
+      stub <- file.path(dir, "stub.Rmd")
+      writeLines(
+        c(
+          "```{r setup, include = FALSE}",
+          sprintf("guide_dir <- '%s'", guide_dir()),
+          "source(file.path(guide_dir, 'guide-helpers.R'))",
+          "```",
+          "",
+          sprintf("```{r, child = '%s'}", file.path(guide_dir(), paste0(page, ".Rmd"))),
+          "```"
+        ),
+        stub
+      )
+      output <- knitr::knit(stub, file.path(dir, "stub.md"), envir = new.env(parent = globalenv()), quiet = TRUE)
+      text <- paste(readLines(output, warn = FALSE), collapse = "\n")
+      expect_match(text, "###", fixed = TRUE, info = page)
+      expect_false(grepl('id="palette_swap_demo"', text, fixed = TRUE), info = page)
+      expect_false(grepl("data-event", text, fixed = TRUE), info = page)
+    }
+  })
+})
 
 describe("studio character bar", {
   it("holds all four drop-downs and Play it again in the main area at 375 pixels", {

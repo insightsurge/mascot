@@ -322,20 +322,34 @@ function_card <- function(fn, example = FALSE, expand = FALSE) {
 selected_guide <- function(fn, character = formals(mascot::mascot)$character) {
   checkmate::assert_string(fn)
   checkmate::assert_string(character)
-  # Keep headings with their diagrams or tables; callouts can flow into their own column.
+  # Keep headings with their diagrams or tables; callouts can flow into their own column. A piece built
+  # by hand is a tag; one from a guide page (R/guide-md.R) says what it is in its "guide_kind" attribute.
+  piece_kind <- function(piece) {
+    kind <- attr(piece, "guide_kind")
+    if (!is.null(kind)) {
+      return(kind)
+    }
+    if (!inherits(piece, "shiny.tag")) {
+      return("other")
+    }
+    if (identical(piece$name, "h3")) {
+      "heading"
+    } else if (!is.null(piece$attribs$class) && grepl("pg-callout", piece$attribs$class, fixed = TRUE)) {
+      "callout"
+    } else {
+      "other"
+    }
+  }
   sections <- list()
   content <- list()
   for (piece in function_visual(fn, character)) {
-    heading <- inherits(piece, "shiny.tag") && identical(piece$name, "h3")
-    callout <- inherits(piece, "shiny.tag") &&
-      !is.null(piece$attribs$class) &&
-      grepl("pg-callout", piece$attribs$class, fixed = TRUE)
-    if ((heading || callout) && length(content)) {
+    kind <- piece_kind(piece)
+    if (kind != "other" && length(content)) {
       sections <- c(sections, list(div(class = "pg-guide-piece", content)))
       content <- list()
     }
     content <- c(content, list(piece))
-    if (callout) {
+    if (kind == "callout") {
       sections <- c(sections, list(div(class = "pg-guide-piece", content)))
       content <- list()
     }
@@ -372,6 +386,11 @@ guide_content <- function(category) {
 function_visual <- function(fn, character = formals(mascot::mascot)$character) {
   checkmate::assert_string(fn)
   checkmate::assert_string(character)
+  # A function with a guide page (guide/<fn>.Rmd) shows that page, see R/guide-md.R.
+  page <- studio_guide_page(fn, character)
+  if (!is.null(page)) {
+    return(page)
+  }
   switch(
     fn,
     mascot_mood = visual_mood(),
@@ -380,7 +399,7 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_families = visual_families(),
     mascot_anchors = visual_anchors(character),
     mascot_palettes = visual_palettes(character),
-    mascot_status = visual_status(),
+    mascot_status = visual_needs_knitr(),
     mascot_bubble = visual_bubble(),
     mascot_motion_settings = visual_motion(),
     mascot_gesture = visual_gesture(character),
@@ -480,29 +499,9 @@ visual_palettes <- function(character = formals(mascot::mascot)$character) {
   )
 }
 
-visual_status <- function() {
-  rows <- data.frame(
-    ` ` = c("Visible", "Screen readers", "Use it for", "Set it", "Clear it"),
-    `Status line` = c(
-      "Always, under the mascot",
-      "Announced politely when it changes",
-      "The current state: \"Checking 120 rows\"",
-      "status = \"text\"",
-      "status = mascot_status()"
-    ),
-    `Speech bubble` = c(
-      "Until it times out or is closed",
-      "Announced politely when it appears",
-      "News: \"Three rows were skipped\"",
-      "bubble = \"text\"",
-      "bubble = mascot_bubble()"
-    ),
-    check.names = FALSE
-  )
-  tagList(
-    tags$h3(class = "pg-section-title", "Status line or speech bubble?"),
-    data_table(rows)
-  )
+# What a function with a guide page shows when knitr is missing and the page cannot be built.
+visual_needs_knitr <- function() {
+  tags$p(class = "pg-muted", "The visual guide for this function is written as an R Markdown page and needs knitr.")
 }
 
 visual_bubble <- function() {
@@ -702,39 +701,9 @@ visual_colour_roles <- function(character) {
   )
 }
 
+# The page is guide/mascot_theme.Rmd; without knitr only the live parts remain.
 visual_theme <- function(character = formals(mascot::mascot)$character) {
-  brand <- studio_brand(character)
-  tagList(
-    palette_table(character),
-    palette_guide_demo(character),
-    tags$h3(class = "pg-section-title", "Which mode applies"),
-    div(
-      class = "pg-flow",
-      div(class = "pg-flow-step", tags$code("mode = \"light\""), " or ", tags$code("\"dark\""), div("always wins")),
-      div(class = "pg-flow-arrow", "\u2192"),
-      div(class = "pg-flow-step", "page switch", div(tags$code("data-bs-theme"))),
-      div(class = "pg-flow-arrow", "\u2192"),
-      div(class = "pg-flow-step", "Quarto", div(tags$code("quarto-dark"))),
-      div(class = "pg-flow-arrow", "\u2192"),
-      div(class = "pg-flow-step", "no signal", div("light"))
-    ),
-    tags$h3(class = "pg-section-title", "Brand colours from bslib"),
-    div(
-      class = "pg-flow",
-      div(class = "pg-flow-step", tags$code("bs_theme(primary =)")),
-      div(class = "pg-flow-arrow", "\u2192"),
-      div(class = "pg-flow-step", tags$code(brand$primary), div("and its followers")),
-      div(class = "pg-flow-gap"),
-      div(class = "pg-flow-step", tags$code("bs_theme(secondary =)")),
-      div(class = "pg-flow-arrow", "\u2192"),
-      div(class = "pg-flow-step", tags$code(brand$secondary), div("and its followers"))
-    ),
-    div(
-      class = "pg-callout",
-      tags$strong("bs_theme(). "),
-      "A bs_theme() always uses mode = \"auto\" and cannot be combined with a forced mode or extra roles."
-    )
-  )
+  tagList(visual_needs_knitr(), palette_table(character), palette_guide_demo(character))
 }
 
 visual_action <- function() {
@@ -1443,14 +1412,9 @@ shared_input_button <- function(fn, arg) {
   tags$button(type = "button", class = "btn btn-sm", `data-focus-input` = ids[[1]], paste("Edit", arg))
 }
 
-# These calls use a separate mascot so the sentence and the live host keep their current settings.
-palette_guide_demo <- function(character) {
-  checkmate::assert_string(character)
-  example <- studio_palette_swap
-  from <- mascot_character(example[["from"]])$name
-  kept <- mascot_character(example[["kept"]])$name
-  dropped <- mascot_character(example[["dropped"]])$name
-  initial <- list("palette_swap_demo", character = example[["from"]], theme = example[["palette"]], motion = FALSE)
+# The notes under the palette table. The same words are in guide/mascot_theme.Rmd; this copy serves
+# mascot_palettes() until that page is written as a guide page too.
+palette_guide_notes <- function() {
   tagList(
     tags$p(
       "Colour precedence: the character's own colours, then palette, then light/dark colours, then css (later wins)."
@@ -1463,12 +1427,28 @@ palette_guide_demo <- function(character) {
     ),
     tags$p(
       "Native and built-in palette colours give no contrast warnings. Your own colours warn below 3:1 contrast in this studio and are kept."
-    ),
-    palette_base_demo(character),
-    dark_outline_demo(character),
+    )
+  )
+}
+
+# The live table of palette roles; the palette is chosen in the sentence of the Controls.
+palette_roles_demo <- function() {
+  tagList(
     tags$h3(class = "pg-section-title", "Palette roles on the live mascot"),
     tags$p("Choose a palette in the sentence to recolour the live mascot and this table."),
-    uiOutput("roles_table"),
+    uiOutput("roles_table")
+  )
+}
+
+# These calls use a separate mascot so the sentence and the live host keep their current settings.
+palette_swap_section <- function(character) {
+  checkmate::assert_string(character)
+  example <- studio_palette_swap
+  from <- mascot_character(example[["from"]])$name
+  kept <- mascot_character(example[["kept"]])$name
+  dropped <- mascot_character(example[["dropped"]])$name
+  initial <- list("palette_swap_demo", character = example[["from"]], theme = example[["palette"]], motion = FALSE)
+  tagList(
     tags$h3(class = "pg-section-title", "Character swap"),
     tags$p(paste(
       "Both examples start with",
@@ -1490,6 +1470,17 @@ palette_guide_demo <- function(character) {
     try_button("palette_swap", "kept", paste("Swap and keep", example[["palette"]])),
     try_button("palette_swap", "dropped", paste("Swap and drop", example[["palette"]])),
     tags$div(role = "status", textOutput("palette_swap_result"))
+  )
+}
+
+palette_guide_demo <- function(character) {
+  checkmate::assert_string(character)
+  tagList(
+    palette_guide_notes(),
+    palette_base_demo(character),
+    dark_outline_demo(character),
+    palette_roles_demo(),
+    palette_swap_section(character)
   )
 }
 

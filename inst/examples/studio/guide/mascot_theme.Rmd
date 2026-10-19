@@ -1,0 +1,65 @@
+```{r setup-mascot_theme, include = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+character_name <- mascot::mascot_character(studio_character)$name
+```
+
+### `r character_name`'s palettes
+
+```{r mascot_theme-palettes, echo = FALSE}
+guide_table(mascot::mascot_palettes(studio_character), wrap = "pg-palette-table")
+```
+
+Colour precedence: the character's own colours, then palette, then light/dark colours, then css (later wins).
+
+In `update_mascot()`, `theme = "original"` restores the character's own colours; `theme = NULL` leaves colours as they are.
+
+A palette without a dark version uses its light colours in both modes; this applies to all shipped palettes today.
+
+Native and built-in palette colours give no contrast warnings. Your own colours warn below 3:1 contrast in this studio and are kept.
+
+```{r mascot_theme-base-demo, echo = FALSE}
+if (in_studio()) palette_base_demo(studio_character)
+```
+
+```{r mascot_theme-outline-demo, echo = FALSE}
+if (in_studio()) dark_outline_demo(studio_character)
+```
+
+```{r mascot_theme-roles-demo, echo = FALSE}
+if (in_studio()) palette_roles_demo()
+```
+
+```{r mascot_theme-swap-demo, echo = FALSE}
+if (in_studio()) palette_swap_section(studio_character)
+```
+
+### Which mode applies
+
+```{r mascot_theme-mode-flow, echo = FALSE}
+guide_flow(
+  guide_step(htmltools::tags$code('mode = "light"'), " or ", htmltools::tags$code('"dark"'), htmltools::div("always wins")),
+  guide_step("page switch", htmltools::div(htmltools::tags$code("data-bs-theme"))),
+  guide_step("Quarto", htmltools::div(htmltools::tags$code("quarto-dark"))),
+  guide_step("no signal", htmltools::div("light"))
+)
+```
+
+### Brand colours from bslib
+
+```{r mascot_theme-brand-flow, echo = FALSE}
+brand <- guide_brand_roles(studio_character)
+guide_flow(
+  guide_step(htmltools::tags$code("bs_theme(primary =)")),
+  guide_step(htmltools::tags$code(brand$primary), htmltools::div("and its followers")),
+  guide_gap(),
+  guide_step(htmltools::tags$code("bs_theme(secondary =)")),
+  guide_step(htmltools::tags$code(brand$secondary), htmltools::div("and its followers"))
+)
+```
+
+```{r mascot_theme-bs-theme-note, echo = FALSE}
+guide_callout(
+  htmltools::tags$strong("bs_theme(). "),
+  'A bs_theme() always uses mode = "auto" and cannot be combined with a forced mode or extra roles.'
+)
+```

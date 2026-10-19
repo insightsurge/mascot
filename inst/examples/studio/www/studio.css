@@ -2142,3 +2142,146 @@ body:has(.pg-studio),
 #studio_character_bar {
   justify-content: center;
 }
+
+/* Wider reading panels overlay the canvas and retain the rail's docking gap. */
+#inspector_sidebar {
+  --studio-inspector-w: 344px;
+  width: var(--studio-inspector-w);
+}
+#inspector_sidebar.is-expanded {
+  --studio-inspector-w: min(580px, 45vw);
+}
+#expand_inspector {
+  margin-left: auto;
+}
+#all_functions:hover .pg-word-tooltip,
+#all_functions:focus-visible .pg-word-tooltip {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+#studio_dock .pg-call-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  min-height: 26px;
+  padding: 2px 6px;
+}
+.pg-call-chip:focus-visible {
+  border-color: var(--studio-primary);
+  outline: 2px solid var(--studio-primary);
+  outline-offset: 2px;
+}
+.pg-chip-pencil {
+  flex-shrink: 0;
+  opacity: 0;
+}
+.pg-call-chip:hover .pg-chip-pencil,
+.pg-call-chip:focus-visible .pg-chip-pencil {
+  opacity: 1;
+}
+@media (hover: none) {
+  .pg-chip-pencil {
+    opacity: 0.4;
+  }
+}
+.pg-chip-pulse {
+  animation: studio-chip-pulse 600ms ease-out;
+}
+@keyframes studio-chip-pulse {
+  from {
+    outline: 2px solid var(--studio-primary);
+    background: var(--studio-note);
+  }
+  to {
+    outline: 2px solid transparent;
+    background: var(--studio-code);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-chip-pulse {
+    animation: none;
+    outline: 2px solid var(--studio-primary);
+    background: var(--studio-note);
+  }
+}
+#inspector_help .card {
+  overflow: visible;
+}
+#inspector_help .pg-help-usage {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--studio-panel);
+  padding-block: 4px;
+}
+#inspector_help .pg-help-usage.is-stuck {
+  box-shadow: 0 4px 5px rgb(0 0 0 / 12%);
+}
+#inspector_help .pg-arg-name {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--studio-line);
+  border-radius: 5px;
+  background: var(--studio-code);
+  font-size: 12px;
+}
+/* Match the sentence's computed font, including any host theme font scaling. */
+.pg-call-dock {
+  padding: 6px 12px 8px;
+  font-size: var(--studio-call-font, 13px);
+}
+#studio_dock :where(.pg-eyebrow, label, .btn, .pg-call-name, .pg-live-call) {
+  font-size: var(--studio-call-font, 13px);
+}
+#studio_dock .pg-surface-head > .pg-eyebrow {
+  letter-spacing: 0.03em;
+}
+.pg-call-dock .pg-call-chip code {
+  font-size: 12px;
+}
+.pg-call-dock .btn {
+  padding: 2px 6px;
+}
+.pg-call-hint {
+  color: var(--studio-muted);
+  font-size: 12px;
+}
+#examples_phone_tools {
+  display: none;
+}
+.is-examples .pg-host {
+  width: 100%;
+  max-width: none;
+  flex: 1;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.is-examples .pg-host-options,
+.is-examples .pg-host-footer {
+  display: none;
+}
+.is-examples .pg-rail [aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (max-width: 860px) {
+  #inspector_sidebar {
+    width: auto;
+  }
+  #inspector_sidebar.is-expanded {
+    --studio-sheet-h: calc(100dvh - env(safe-area-inset-top) - 8px);
+    height: var(--studio-sheet-h);
+    top: calc(var(--studio-viewport-top, 0px) + var(--studio-viewport-height, 100dvh) - var(--studio-sheet-h));
+  }
+  .pg-call-hint {
+    display: none;
+  }
+  .pg-call-dock #code_style .radio-inline {
+    min-height: 32px;
+  }
+  .is-examples #examples_phone_tools {
+    display: flex;
+    gap: 6px;
+  }
+}

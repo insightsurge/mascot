@@ -62,7 +62,7 @@ studio_page <- function(character, fn, view = "studio") {
       id = "studio_centre",
       class = "pg-centre",
       `data-initial-function` = fn,
-      `data-initial-mode` = if (view == "examples") {
+      `data-initial-mode` = if (view == "examples" || fn %in% c("mascot_example", "mascot_examples")) {
         "examples"
       } else if (fn == "mascot_preview") {
         "preview"
@@ -85,14 +85,16 @@ studio_page <- function(character, fn, view = "studio") {
             tags$i(class = "pg-light-green")
           ),
           tags$span("Host container"),
-          tags$span(class = "pg-muted", "Contained preview")
+          tags$span(class = "pg-muted", "Contained preview"),
+          tagAppendAttributes(studio_button("back_to_studio", "Back to studio"), hidden = NA),
+          div(id = "examples_phone_tools", class = "pg-topright")
         ),
         div(
           class = "pg-host-options",
           selectInput(
             "host_mode",
             "Host mode",
-            c("Live mascot" = "mascot", "Preview page" = "preview", "Example source" = "examples")
+            c("Live mascot" = "mascot", "Preview page" = "preview")
           ),
           studio_button("phone_width", "Phone width", pressed = FALSE),
           studio_button("show_anchors", "Anchors", pressed = FALSE),
@@ -123,6 +125,7 @@ studio_page <- function(character, fn, view = "studio") {
         div(
           class = "pg-surface-head",
           tags$span(class = "pg-eyebrow", "Current configuration"),
+          tags$span(class = "pg-call-hint", "Click an argument to edit it"),
           div(
             class = "pg-actions",
             radioButtons(
@@ -149,6 +152,16 @@ studio_page <- function(character, fn, view = "studio") {
       div(
         class = "pg-surface-head",
         tags$strong(id = "inspector_title", paste0(fn, "()")),
+        tags$button(
+          id = "expand_inspector",
+          type = "button",
+          class = "btn btn-sm",
+          hidden = NA,
+          `aria-expanded` = "false",
+          `aria-controls` = "inspector_sidebar",
+          `aria-label` = "Expand panel",
+          "Expand panel"
+        ),
         studio_button("close_inspector", "Close", "Close inspector")
       ),
       div(

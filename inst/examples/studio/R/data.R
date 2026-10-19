@@ -53,7 +53,7 @@ bubble_examples <- list(
 )
 
 default_menu <- c(finish = "Finish review", reset = "Reset helper", about = "About this studio")
-welcome <- "Hello! Choose a function in the function index, change its controls, and I will follow."
+welcome <- "Hello! Open the function index (the m button) to pick a function, change its controls, and I will follow."
 
 # What mascot() uses when an argument is left out, as shortcut code.
 defaults <- list(

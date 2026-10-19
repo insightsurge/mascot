@@ -263,8 +263,11 @@ function_card <- function(fn, example = FALSE) {
     bslib::card_header(tags$code(paste0(fn, "()"))),
     tags$h3(class = "pg-section-title", "Description"),
     div(class = "pg-help", help$description),
-    tags$h3(class = "pg-section-title", "Usage"),
-    code_block(signature(fn), "pg-signature"),
+    div(
+      class = "pg-help-usage",
+      tags$h3(class = "pg-section-title", "Usage"),
+      code_block(signature(fn), "pg-signature")
+    ),
     tags$h3(class = "pg-section-title", "Arguments"),
     if (length(arguments)) {
       div(class = "pg-args", lapply(arguments, function(arg) arg_block(fn, arg)))
@@ -900,11 +903,19 @@ studio_rail <- function() {
       id = "all_functions",
       type = "button",
       class = "pg-logo",
-      `aria-label` = "Functions: show all by category",
+      `aria-label` = "Function index (all 24 functions)",
+      title = "Function index (all 24 functions)",
+      `aria-describedby` = "function_index_tooltip",
       `aria-expanded` = "false",
       `aria-controls` = "function_flyout",
       "m",
-      tags$span(class = "pg-phone-label", "Functions")
+      tags$span(class = "pg-phone-label", "Functions"),
+      tags$span(
+        id = "function_index_tooltip",
+        class = "pg-word-tooltip",
+        role = "tooltip",
+        "Function index (all 24 functions)"
+      )
     ),
     lapply(groups, function(group) {
       tags$button(
@@ -976,7 +987,7 @@ studio_right_rail <- function() {
       div(
         class = "pg-menu-body pg-float",
         tags$a(href = "?view=studio", "Studio"),
-        tags$a(href = "?view=examples", "Examples"),
+        tags$a(id = "more_examples", href = "?view=examples", "More examples"),
         tags$a(href = "https://github.com/insightsurge/mascot", target = "_blank", rel = "noopener", "GitHub"),
         tags$a(href = "https://mascot-pkg.web.app/", target = "_blank", rel = "noopener", "Package website"),
         tags$label(
@@ -1130,13 +1141,29 @@ call_chips <- function(state, style, gesture = NULL) {
           `aria-expanded` = "false",
           `aria-controls` = "chip_editor",
           `aria-label` = paste(arg, "=", value, "options"),
-          tags$code(tags$span(class = "pg-chip-name", paste(arg, "=")), tags$span(class = "pg-chip-value", value))
+          tags$code(tags$span(class = "pg-chip-name", paste(arg, "=")), tags$span(class = "pg-chip-value", value)),
+          chip_pencil()
         ),
         tags$span(class = "pg-call-comma", ",")
       )
     }),
     gesture_chip(gesture),
     tags$span(")")
+  )
+}
+
+# A small editing cue shared by configuration and gesture chips.
+chip_pencil <- function() {
+  tags$svg(
+    class = "pg-chip-pencil",
+    viewBox = "0 0 24 24",
+    width = 12,
+    height = 12,
+    `aria-hidden` = "true",
+    fill = "none",
+    stroke = "currentColor",
+    `stroke-width` = 2,
+    tags$path(d = "M4 16L16 4l4 4L8 20H4Z M14 6l4 4")
   )
 }
 
@@ -1156,15 +1183,23 @@ gesture_chip <- function(name = NULL) {
     `aria-label` = paste("Last played gesture:", value, "options"),
     `aria-expanded` = "false",
     `aria-controls` = "chip_editor",
-    tags$code(tags$span(class = "pg-chip-name", "gesture ="), tags$span(class = "pg-chip-value", value))
+    tags$code(tags$span(class = "pg-chip-name", "gesture ="), tags$span(class = "pg-chip-value", value)),
+    chip_pencil()
   )
 }
 
 function_help <- function(fn) {
   checkmate::assert_choice(fn, names(playground_guide))
   page <- help_page(fn)
+  # Keep Usage outside the card so it stays pinned through Details and Examples too.
+  card <- htmltools::tagQuery(function_card(fn))$find(".pg-help-usage")$remove()$allTags()
   tagList(
-    function_card(fn),
+    div(
+      class = "pg-help-usage",
+      tags$h3(class = "pg-section-title", "Usage"),
+      code_block(signature(fn), "pg-signature")
+    ),
+    card,
     if (!is.null(page$details)) tagList(tags$h3("Details"), page$details),
     tags$h3("Examples"),
     lapply(help_examples(fn), code_block)

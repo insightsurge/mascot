@@ -223,12 +223,13 @@ describe("studio overlays and live controls", {
       "document.querySelector('[data-canvas=preview]').hidden === false && document.querySelector('#preview_frame iframe') !== null"
     )
     expect_match(app$get_value(output = "code_preview"), "mascot_preview(", fixed = TRUE)
-    app$set_inputs(host_mode = "examples")
+    app$run_js("document.getElementById('more_examples').click()")
     app$wait_for_js(
       "document.querySelector('[data-canvas=examples]').hidden === false && document.getElementById('example_code') !== null"
     )
     app$set_inputs(example_name = "form-check")
     app$wait_for_js("document.getElementById('example_code').textContent.includes('mascot(')")
+    app$click(selector = "#back_to_studio")
     app$set_inputs(host_mode = "mascot")
     expect_true(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     select("mascot_theme")
@@ -635,7 +636,7 @@ describe("studio demonstration server routes", {
             initial,
             list(
               tabs = view,
-              host_mode = if (view == "examples") "examples" else "mascot",
+              host_mode = "mascot",
               example_name = "form-check",
               example_run = FALSE
             )
@@ -945,6 +946,10 @@ describe("small current-configuration editors", {
     ))
     for (arg in c("id", "character", "mood", "status", "bubble", "motion", "placement", "theme", "click")) {
       app$click(selector = sprintf('[data-call-arg=%s]', arg))
+      app$wait_for_js(sprintf(
+        "!document.getElementById('chip_editor').hidden && document.getElementById('chip_title').textContent.startsWith('%s')",
+        arg
+      ))
       expect_identical(
         app$get_js("document.getElementById('chip_style').hidden"),
         arg %in% c("id", "character", "mood")
@@ -1758,5 +1763,184 @@ describe("studio inspector rail", {
         "document.getElementById('studio_keys')===studioMenuInput && !studioMenuInput.checked"
       )))
     }
+  })
+})
+
+describe("the next studio review round", {
+  it("offers two host choices, discoverable functions, editable chips and structured Help", {
+    parts <- studio_redesign_parts()
+    page <- parts$page
+    expect_match(page, 'title="Function index (all 24 functions)"', fixed = TRUE)
+    expect_match(page, 'id="function_index_tooltip"', fixed = TRUE)
+    expect_match(page, "More examples", fixed = TRUE)
+    expect_match(page, "Back to studio", fixed = TRUE)
+    expect_match(page, "Click an argument to edit it", fixed = TRUE)
+    expect_false(grepl("Example source", page, fixed = TRUE))
+    expect_match(get("welcome", parts$env), "function index (the m button)", fixed = TRUE)
+    help <- as.character(get("function_help", parts$env)("mascot"))
+    expect_match(help, 'class="pg-help-usage"', fixed = TRUE)
+    expect_match(help, 'class="pg-arg-name"', fixed = TRUE)
+    chips <- as.character(get("call_chips", parts$env)(get("start", parts$env), "short"))
+    expect_match(chips, 'class="pg-chip-pencil"', fixed = TRUE)
+  })
+
+  it("expands only reading tabs, remembers the choice and collapses before closing", {
+    local_shiny_browser()
+    app <- studio_redesign_driver()
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    app$click(selector = "#inspector_view_controls")
+    expect_true(app$get_js("document.getElementById('expand_inspector').hidden"))
+    app$click(selector = "#inspector_tab_help")
+    app$run_js("window.centreBeforeExpansion=document.getElementById('studio_centre').getBoundingClientRect().toJSON()")
+    app$click(selector = "#expand_inspector")
+    expect_true(app$get_js(paste0(
+      "(() => {const p=document.getElementById('inspector_sidebar'),r=document.getElementById('studio_right_rail');",
+      "const b=p.getBoundingClientRect(); return p.classList.contains('is-expanded') && ",
+      "Math.abs(b.width-Math.min(580,innerWidth*.45))<1 && b.top===62 && b.right===r.getBoundingClientRect().left-10 && ",
+      "document.getElementById('expand_inspector').getAttribute('aria-expanded')==='true';})()"
+    )))
+    expect_true(app$get_js(
+      "JSON.stringify(centreBeforeExpansion)===JSON.stringify(document.getElementById('studio_centre').getBoundingClientRect().toJSON())"
+    ))
+    app$click(selector = "#inspector_tab_controls")
+    expect_identical(app$get_js("document.getElementById('inspector_sidebar').getBoundingClientRect().width"), 344L)
+    app$click(selector = "#inspector_tab_guide")
+    expect_true(app$get_js("document.getElementById('inspector_sidebar').classList.contains('is-expanded')"))
+    app$run_js(
+      "document.getElementById('inspector_sidebar').dispatchEvent(new KeyboardEvent('keydown',{key:'E',shiftKey:true,bubbles:true}))"
+    )
+    expect_false(app$get_js("document.getElementById('inspector_sidebar').classList.contains('is-expanded')"))
+    app$click(selector = "#expand_inspector")
+    app$run_js("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
+    expect_true(app$get_js(
+      "!document.getElementById('inspector_sidebar').hidden && !document.getElementById('inspector_sidebar').classList.contains('is-expanded')"
+    ))
+    app$run_js("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
+    expect_true(app$get_js(
+      "document.getElementById('inspector_sidebar').hidden && document.activeElement.id==='inspector_view_guide'"
+    ))
+    browser <- app$get_chromote_session()
+    browser$Emulation$setDeviceMetricsOverride(width = 390L, height = 844L, deviceScaleFactor = 1, mobile = FALSE)
+    app$wait_for_js("document.getElementById('studio_right_rail').parentElement.id==='studio_phone_tools'")
+    app$click(selector = "#open_inspector")
+    app$click(selector = "#expand_inspector")
+    expect_true(app$get_js(
+      "document.getElementById('inspector_sidebar').getBoundingClientRect().height > innerHeight*.95"
+    ))
+  })
+
+  it("matches dock type to the sentence and supplies focus and reduced-motion feedback", {
+    local_shiny_browser()
+    app <- studio_redesign_driver()
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    app$get_chromote_session()$Input$dispatchMouseEvent(type = "mouseMoved", x = 40, y = 40)
+    expect_identical(
+      app$get_js("getComputedStyle(document.getElementById('function_index_tooltip')).visibility"),
+      "visible"
+    )
+    app$run_js("document.getElementById('all_functions').focus()")
+    expect_identical(
+      app$get_js("getComputedStyle(document.getElementById('function_index_tooltip')).visibility"),
+      "visible"
+    )
+    for (width in c(1280L, 390L)) {
+      app$get_chromote_session()$Emulation$setDeviceMetricsOverride(
+        width = width,
+        height = 844L,
+        deviceScaleFactor = 1,
+        mobile = FALSE
+      )
+      app$wait_for_js(sprintf("innerWidth===%d", width))
+      expect_true(app$get_js(paste0(
+        "(() => {const n=parseFloat(getComputedStyle(document.querySelector('.pg-sentence')).fontSize);",
+        "return [...document.querySelectorAll('#studio_dock .pg-eyebrow,#studio_dock label,#studio_dock .btn,#studio_dock .pg-call-name')].every(x=>",
+        "Math.abs(parseFloat(getComputedStyle(x).fontSize)-n)<=1 && parseFloat(getComputedStyle(x).fontSize)>=12);})()"
+      )))
+    }
+    app$run_js("document.querySelector('[data-call-arg=status]').focus()")
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('[data-call-arg=status]')).cursor"), "pointer")
+    expect_identical(
+      app$get_js("getComputedStyle(document.querySelector('[data-call-arg=status] .pg-chip-pencil')).opacity"),
+      "1"
+    )
+    app$run_js(paste0(
+      "window.chipPulses=[]; window.pulseObserver=new MutationObserver(()=>{",
+      "for(const c of document.querySelectorAll('.pg-chip-pulse')) if(!chipPulses.includes(c.dataset.callArg)) chipPulses.push(c.dataset.callArg);});",
+      "pulseObserver.observe(document.getElementById('live_call'),{subtree:true,attributes:true,attributeFilter:['class']});"
+    ))
+    app$set_inputs(mood = "happy")
+    app$wait_for_js("chipPulses.includes('mood')")
+    app$click(selector = "[data-call-arg=status]")
+    app$set_inputs(status_text = "Edited in popover")
+    app$wait_for_js("chipPulses.includes('status')")
+    app$click(selector = "#chip_inspector")
+    app$run_js("chipPulses.length=0")
+    app$set_inputs(status_text = "Edited in inspector")
+    app$wait_for_js("chipPulses.includes('status')")
+    app$wait_for_js("document.querySelector('[data-call-arg=status]').classList.contains('pg-chip-pulse')")
+    app$get_chromote_session()$Emulation$setEmulatedMedia(
+      features = list(list(name = "prefers-reduced-motion", value = "reduce"))
+    )
+    app$set_inputs(status_text = "Static feedback")
+    app$wait_for_js(
+      "document.querySelector('[data-call-arg=status] .pg-chip-value').textContent.includes('Static feedback')"
+    )
+    expect_identical(
+      app$get_js("getComputedStyle(document.querySelector('[data-call-arg=status]')).animationName"),
+      "none"
+    )
+    app$wait_for_js("!document.querySelector('.pg-chip-pulse')")
+    app$run_js("document.querySelector('.pg-index-link[data-value=mascot]').click()")
+    app$click(selector = "#inspector_tab_help")
+    app$wait_for_js("document.querySelector('#function_help .pg-help-usage')?.textContent.includes('mascot(')")
+    expect_identical(
+      app$get_js("getComputedStyle(document.querySelector('#function_help .pg-help-usage')).position"),
+      "sticky"
+    )
+    expect_true(app$get_js("!!document.querySelector('#function_help .pg-arg-name')"))
+    app$run_js("document.getElementById('inspector_help').scrollTop=180")
+    app$wait_for_js("!!document.querySelector('#function_help .pg-help-usage.is-stuck')")
+    app$run_js("pulseObserver.disconnect()")
+  })
+
+  it("browses examples in place and restores mounted state, with index and search exits", {
+    local_shiny_browser()
+    app <- studio_redesign_driver()
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    app$set_inputs(mood = "happy")
+    wait_studio_mood(app, "happy")
+    app$run_js(paste0("window.savedHost=", studio_live, "; window.savedMood=document.getElementById('mood');"))
+    expect_identical(app$get_js("Object.keys(document.getElementById('host_mode').selectize.options).length"), 2L)
+    app$click(selector = "[data-call-arg=status]")
+    app$run_js("document.getElementById('more_examples').click()")
+    expect_true(app$get_js(paste0(
+      "document.getElementById('studio_character_bar').hidden && document.getElementById('studio_dock').hidden && ",
+      "document.getElementById('chip_editor').hidden && !document.getElementById('back_to_studio').hidden && ",
+      "Math.abs(document.getElementById('studio_canvas').getBoundingClientRect().width-document.getElementById('studio_centre').clientWidth)<1 && ",
+      "[...document.querySelectorAll('.pg-rail [data-group]')].every(x=>x.getAttribute('aria-disabled')==='true')"
+    )))
+    app$click(selector = "#inspector_view_help")
+    app$wait_for_js("document.getElementById('function_help').textContent.includes('mascot_example(')")
+    app$click(selector = "#close_inspector")
+    app$click(selector = "#back_to_studio")
+    expect_true(app$get_js(paste0(
+      "!document.getElementById('studio_character_bar').hidden && !document.getElementById('studio_dock').hidden && ",
+      "savedMood===document.getElementById('mood') && savedMood.value==='happy' && savedHost===",
+      studio_live
+    )))
+    app$run_js("document.getElementById('more_examples').click()")
+    app$click(selector = "#all_functions")
+    app$click(selector = '.pg-index-link[data-value="mascot_size"]')
+    expect_identical(app$get_js("document.getElementById('studio_canvas').dataset.mode"), "mascot")
+    app$click(selector = "#close_inspector")
+    app$run_js(
+      "document.getElementById('more_examples').click(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true}))"
+    )
+    app$wait_for_js("!document.getElementById('studio_search').hidden")
+    app$run_js("document.querySelector('[data-search-function=mascot_theme]').click()")
+    expect_identical(app$get_js("document.getElementById('studio_canvas').dataset.mode"), "mascot")
   })
 })

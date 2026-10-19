@@ -726,11 +726,14 @@ describe("studio state and built previews", {
         mistake = "Misspell an argument"
       )
       for (code in c(output$code_ui, output$code_server, output$code_app)) {
-        expect_false(grepl("Hello! Choose a function|About this studio", code))
+        expect_false(grepl("Hello! (Choose a function|Open the function index)|About this studio", code))
       }
       for (fn in c("mascot", "update_mascot")) {
         session$setInputs(select_function = fn)
-        expect_false(grepl("Hello! Choose a function|About this studio", output$code_function))
+        expect_false(grepl(
+          "Hello! (Choose a function|Open the function index)|About this studio",
+          output$code_function
+        ))
       }
       session$setInputs(task_run = 1)
       expect_identical(state$mood$short, "thinking")

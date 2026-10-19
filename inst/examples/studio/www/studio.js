@@ -296,6 +296,8 @@
   let selectedFunction = 'mascot_mood';
   let inspectorView = 'controls';
   let hostMode = 'mascot';
+  let inspectorExpanded = false;
+  let studioReturn = null;
   let moved = [];
   let chipFunction = 'mascot';
   let chipField = 'id';
@@ -463,8 +465,25 @@
       else byId('inspector_sidebar').removeAttribute('aria-modal');
     }
   }
+  function syncExpansion() {
+    const expanded = inspectorExpanded && inspectorView !== 'controls';
+    byId('inspector_sidebar').classList.toggle('is-expanded', expanded);
+    const button = byId('expand_inspector');
+    if (button.hidden === false && inspectorView === 'controls' && document.activeElement === button)
+      byId('inspector_tab_controls').focus();
+    button.hidden = inspectorView === 'controls';
+    button.setAttribute('aria-expanded', String(expanded));
+    button.textContent = expanded ? 'Collapse panel' : 'Expand panel';
+    button.setAttribute('aria-label', button.textContent);
+  }
+  function toggleExpansion() {
+    if (inspectorView === 'controls') return;
+    inspectorExpanded = !inspectorExpanded;
+    syncExpansion();
+  }
   function tab(name) {
     inspectorView = name;
+    syncExpansion();
     for (const button of document.querySelectorAll('[data-inspector-tab]')) {
       const active = button.dataset.inspectorTab === name;
       button.setAttribute('aria-selected', String(active));
@@ -486,15 +505,62 @@
     if (byId('inspector_controls')) byId('inspector_controls').scrollTop = 0;
   }
   function mode(value) {
+    const examples = value === 'examples';
+    const wasExamples = hostMode === 'examples';
+    if (examples && !wasExamples) {
+      studioReturn = {
+        mode: hostMode,
+        fn: selectedFunction,
+        view: inspectorView,
+        open: !byId('inspector_sidebar').hidden,
+        chip: byId('chip_editor').hidden ? null : chipArgument,
+        code: !byId('code_drawer').hidden,
+      };
+      close('chip_editor', false);
+      close('code_drawer', false);
+      close('function_flyout', false);
+    }
     hostMode = value;
-    const select = byId('host_mode');
-    if (select?.selectize) select.selectize.setValue(value, true);
-    else if (select) select.value = value;
-    $(select).trigger('change');
+    const shell = byId('studio_shell');
+    shell.classList.toggle('is-examples', examples);
+    for (const id of ['studio_character_bar', 'studio_dock']) byId(id).hidden = examples;
+    byId('back_to_studio').hidden = !examples;
+    for (const button of document.querySelectorAll('.pg-rail [data-group]'))
+      button.setAttribute('aria-disabled', String(examples));
+    // Keep the two-option selector and its mounted Shiny binding intact while browsing examples.
+    if (!examples) {
+      const select = byId('host_mode');
+      if (select?.selectize) select.selectize.setValue(value, true);
+      else if (select) select.value = value;
+      $(select).trigger('change');
+    }
     const canvas = byId('studio_canvas');
-    if (!canvas) return;
     canvas.dataset.mode = value;
     for (const part of canvas.querySelectorAll('[data-canvas]')) part.hidden = part.dataset.canvas !== value;
+    positionRightRail();
+  }
+  function enterExamples() {
+    mode('examples');
+    if (!['mascot_example', 'mascot_examples'].includes(selectedFunction)) selectedFunction = 'mascot_example';
+    showControls();
+    // Initial ?view=examples runs before Shiny installs its input API.
+    if (window.Shiny.setInputValue) send('select_function', selectedFunction);
+    close('inspector_sidebar', false);
+    byId('back_to_studio').focus();
+  }
+  function backToStudio() {
+    const saved = studioReturn;
+    mode(saved?.mode || 'mascot');
+    selectedFunction = saved?.fn || 'mascot_mood';
+    showControls();
+    send('select_function', selectedFunction);
+    tab(saved?.view || 'controls');
+    if (saved?.open) open('inspector_sidebar');
+    else close('inspector_sidebar', false);
+    if (saved?.code) open('code_drawer', byId('open_code'));
+    const chip = saved?.chip && document.querySelector(`[data-call-arg="${saved.chip}"]`);
+    if (chip) chipOpen(chip);
+    else byId('all_functions').focus();
   }
   // Reveal the mounted field through Shiny's own conditional panels and Bootstrap tabs.
   // This reads the panel's condition, so exported argument names stay in the R control map.
@@ -519,6 +585,7 @@
     for (const trigger of document.querySelectorAll('.pg-index [aria-describedby]')) {
       window.bootstrap?.Tooltip?.getInstance(trigger)?.hide();
     }
+    if (['mascot_example', 'mascot_examples'].includes(fn) && hostMode !== 'examples') mode('examples');
     selectedFunction = fn;
     showControls();
     send('select_function', fn);
@@ -794,6 +861,18 @@
   document.addEventListener(
     'keydown',
     (event) => {
+      if (
+        event.shiftKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey &&
+        event.key.toLowerCase() === 'e' &&
+        byId('inspector_sidebar').contains(event.target)
+      ) {
+        event.preventDefault();
+        toggleExpansion();
+        return;
+      }
       if (event.key === 'Escape') {
         // Shiny owns its modal lifecycle; it sits above all studio surfaces.
         if (document.querySelector('.modal.show')) return;
@@ -819,7 +898,8 @@
         }
         const id = surfaces.at(-1);
         if (id) {
-          close(id);
+          if (id === 'inspector_sidebar' && byId(id).classList.contains('is-expanded')) toggleExpansion();
+          else close(id);
           event.preventDefault();
           event.stopImmediatePropagation();
         }
@@ -905,7 +985,25 @@
     if (menu?.open && !event.target.closest('#studio_menu')) menu.open = false;
     const target = event.target.closest('button, a, #open_search, [data-search-function]');
     if (!target) return;
+    if (target.getAttribute('aria-disabled') === 'true') {
+      event.preventDefault();
+      return;
+    }
     const id = target.id;
+    if (id === 'more_examples') {
+      event.preventDefault();
+      byId('studio_menu').open = false;
+      enterExamples();
+      return;
+    }
+    if (id === 'back_to_studio') {
+      backToStudio();
+      return;
+    }
+    if (id === 'expand_inspector') {
+      toggleExpansion();
+      return;
+    }
     if (id === 'all_functions') flyout('all', target);
     else if (target.dataset.group) flyout(target.dataset.group, target);
     else if (id === 'open_search') searchOpen();
@@ -1061,16 +1159,18 @@
     tooltip.style.left = `${Math.max(left + 8, Math.min(rect.left, right - tooltip.offsetWidth - 8))}px`;
     tooltip.style.top = `${Math.max(top + 8, Math.min(rect.bottom + 8, bottom - tooltip.offsetHeight - 8))}px`;
   }
-  document.addEventListener('pointerover', (event) => positionWordTooltip(event.target.closest('.pg-sentence-word')));
+  document.addEventListener('pointerover', (event) =>
+    positionWordTooltip(event.target.closest('.pg-sentence-word, #all_functions')),
+  );
   document.addEventListener('pointerdown', (event) => {
     if (event.pointerType === 'mouse') return;
-    const word = event.target.closest('.pg-sentence-word');
+    const word = event.target.closest('.pg-sentence-word, #all_functions');
     for (const item of document.querySelectorAll('.pg-sentence-word'))
       item.classList.toggle('is-touch-help', item === word);
     positionWordTooltip(word);
   });
   document.addEventListener('focusin', (event) => {
-    positionWordTooltip(event.target.closest('.pg-sentence-word'));
+    positionWordTooltip(event.target.closest('.pg-sentence-word, #all_functions'));
     if (event.target.id === 'open_search' && !suppressSearchFocus && byId('studio_search').hidden) searchOpen();
   });
   document.addEventListener('focusout', (event) => {
@@ -1084,7 +1184,7 @@
       railHome = document.createComment('desktop right rail');
       rail.before(railHome);
     }
-    const slot = byId('studio_phone_tools');
+    const slot = byId(hostMode === 'examples' ? 'examples_phone_tools' : 'studio_phone_tools');
     const destination = phone() ? slot : railHome.parentElement;
     const active = document.activeElement;
     const focused = rail.contains(active);
@@ -1110,6 +1210,7 @@
       body.style.left = `${Math.max(bounds.left + 8, Math.min(rect.right - body.offsetWidth, bounds.right - body.offsetWidth - 8))}px`;
       body.style.top = `${Math.max(bounds.top + 8, Math.min(rect.bottom + 4, bounds.bottom - body.offsetHeight - 8))}px`;
     }
+    sizeSentenceWords();
     positionDropdowns();
     positionChip();
     for (const word of document.querySelectorAll('.pg-sentence-word')) positionWordTooltip(word);
@@ -1204,6 +1305,28 @@
       }
     }
   }
+  const chipValues = new Map();
+  const pulseUntil = new Map();
+  const pulseTimers = new Map();
+  function rememberChips() {
+    for (const chip of document.querySelectorAll('[data-call-arg]')) {
+      const name = chip.dataset.callArg;
+      const value = chip.querySelector('code')?.textContent;
+      if (chipValues.has(name) && chipValues.get(name) !== value) pulseUntil.set(name, performance.now() + 600);
+      chipValues.set(name, value);
+      const remaining = (pulseUntil.get(name) || 0) - performance.now();
+      if (remaining <= 0) continue;
+      chip.classList.add('pg-chip-pulse');
+      clearTimeout(pulseTimers.get(name));
+      pulseTimers.set(
+        name,
+        setTimeout(() => {
+          document.querySelector(`[data-call-arg="${name}"]`)?.classList.remove('pg-chip-pulse');
+          pulseUntil.delete(name);
+        }, remaining),
+      );
+    }
+  }
   function rememberControls() {
     for (const input of document.querySelectorAll('.pg-field input, .pg-field select, .pg-field textarea')) {
       if (!initialValues.has(input)) initialValues.set(input, inputValue(input));
@@ -1213,6 +1336,12 @@
   // Shiny's receiveMessage() also emits jQuery changes for programmatic updates.
   $(document).on('change', markControls);
   function sizeSentenceWords() {
+    const sentence = document.querySelector('.pg-sentence');
+    if (sentence)
+      byId('studio_dock').style.setProperty(
+        '--studio-call-font',
+        `${Math.max(12, parseFloat(getComputedStyle(sentence).fontSize))}px`,
+      );
     const moodLabel = byId('mood')?.selectedOptions[0]?.textContent || '';
     setText('mood_article', /^[aeiou]/i.test(moodLabel) ? 'in an' : 'in a');
     for (const select of document.querySelectorAll('.pg-sentence select')) {
@@ -1236,8 +1365,8 @@
     showControls();
     tab('controls');
     if (selectedFunction === 'mascot_preview') mode('preview');
-    if (['mascot_example', 'mascot_examples'].includes(selectedFunction)) mode('examples');
-    if (centre.dataset.initialMode) mode(centre.dataset.initialMode);
+    if (centre.dataset.initialMode === 'examples') enterExamples();
+    else if (centre.dataset.initialMode) mode(centre.dataset.initialMode);
     $(document).one('shiny:connected', () => {
       send('initial_function', selectedFunction);
       send('initial_character', centre.dataset.initialCharacter);
@@ -1262,7 +1391,23 @@
     });
     new ResizeObserver(positionChip).observe(byId('chip_editor'));
     byId('studio_menu').addEventListener('toggle', positionSurfaces);
+    const help = byId('inspector_help');
+    function markStickyUsage() {
+      const usage = help.querySelector('.pg-help-usage');
+      usage?.classList.toggle(
+        'is-stuck',
+        help.scrollTop > 0 && usage.getBoundingClientRect().top <= help.getBoundingClientRect().top + 5,
+      );
+    }
+    help.addEventListener('scroll', markStickyUsage);
+    new MutationObserver(markStickyUsage).observe(help, { childList: true, subtree: true });
     rememberControls();
+    rememberChips();
+    new MutationObserver(rememberChips).observe(byId('live_call'), {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
     sizeSentenceWords();
     new MutationObserver(sizeSentenceWords).observe(byId('studio_character_bar'), { childList: true, subtree: true });
     new MutationObserver(rememberControls).observe(byId('studio_shell'), { childList: true, subtree: true });

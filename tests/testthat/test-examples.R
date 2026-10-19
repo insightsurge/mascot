@@ -683,12 +683,28 @@ describe("studio round 4 regression guards", {
     expect_identical(unname(env$studio_characters())[[1L]], formals(mascot)$character)
     expect_identical(names(env$studio_characters()), c("Tessa", "Sela", "Knurl (experimental)", "Neer (experimental)"))
   })
-  it("omits empty colour groups and groups unfamiliar parts", {
-    env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "panels.R"), env)
-    groups <- env$studio_colour_groups(data.frame(role = c("feature", "beak")))
-    expect_named(groups, c("Face", "Other parts"))
-    expect_identical(groups$`Other parts`, "beak")
+  it("opens the main colours and folds the other parts under a heading per group", {
+    skip_if_not_installed("bslib")
+    # studio_parts() is defined further down this file, after this block has run.
+    parts <- list(
+      env = environment(shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))$serverFuncSource())
+    )
+    roles <- mascot_colour_roles("sela")
+    groups <- get("colour_groups", parts$env)(roles, "sela")
+    html <- as.character(get("role_pickers", parts$env)("light", roles, character = "sela"))
+    titles <- regmatches(html, gregexpr('<div class="accordion-title">[^<]*</div>', html))[[1]]
+    expect_identical(gsub("<[^>]+>", "", titles), c("Main colours", "More parts"))
+    expect_match(
+      html,
+      'data-value="Main colours"[^>]*>\\s*<div class="accordion-header">\\s*<button[^>]*aria-expanded="true"'
+    )
+    expect_match(
+      html,
+      'data-value="More parts"[^>]*>\\s*<div class="accordion-header">\\s*<button[^>]*aria-expanded="false"'
+    )
+    headings <- regmatches(html, gregexpr('<h4 class="pg-role-group-title">[^<]*</h4>', html))[[1]]
+    expect_identical(gsub("<[^>]+>", "", headings), names(groups$`More parts`))
+    expect_error(get("role_pickers", parts$env)("light", roles, character = 1), "character")
   })
   it("keeps only explicit shared colour overrides across character palettes", {
     env <- new.env()
@@ -3100,11 +3116,11 @@ describe("studio palette sync (#353)", {
     for (character in unname(get("studio_characters", parts$env)())) {
       for (palette in unname(get("studio_palette_choices", parts$env)(character))) {
         roles <- mascot_colour_roles(character, palette = palette)
-        groups <- get("studio_colour_groups", parts$env)(roles)
+        groups <- get("colour_groups", parts$env)(roles, character)
         expect_setequal(unlist(groups, use.names = FALSE), roles$role)
         expect_length(unlist(groups), nrow(roles))
         for (mode in c("light", "dark")) {
-          html <- as.character(get("role_pickers", parts$env)(mode, roles))
+          html <- as.character(get("role_pickers", parts$env)(mode, roles, character = character))
           for (role in roles$role) {
             expect_match(html, paste0('id="', mode, "_", role, '"'), fixed = TRUE)
           }

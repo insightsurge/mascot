@@ -936,12 +936,12 @@ studio_server <- function(input, output, session) {
   output$theme_light <- renderUI(arg_field(
     "mascot_theme",
     "light",
-    role_pickers("light", roles(), role_values("light"), character_name())
+    role_pickers("light", roles(), role_values("light"), character_name(), current_character())
   ))
   output$theme_dark <- renderUI(arg_field(
     "mascot_theme",
     "dark",
-    role_pickers("dark", roles(), role_values("dark"), character_name())
+    role_pickers("dark", roles(), role_values("dark"), character_name(), current_character())
   ))
   output$theme_css <- renderUI(arg_field(
     "mascot_theme",

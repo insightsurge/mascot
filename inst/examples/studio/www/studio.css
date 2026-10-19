@@ -151,6 +151,19 @@
   font-size: 0.75rem;
 }
 
+/* "More parts" in the colour pickers: one small heading per group of parts (body, body_shade, ...). */
+.pg-role-group + .pg-role-group {
+  margin-top: 0.5rem;
+}
+
+.pg-role-group-title {
+  margin: 0 0 0.25rem;
+  font-family: var(--bs-font-monospace);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+}
+
 .pg-resolved {
   width: 1.1rem;
   height: 1.1rem;

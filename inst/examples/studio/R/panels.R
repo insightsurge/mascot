@@ -2,42 +2,6 @@
 # Shiny sources this before app.R attaches mascot, so everything here is a function, called
 # from app.R once the packages are attached.
 
-# Groups for the colour pickers; parts a future character adds appear under "Other parts".
-studio_colour_groups <- function(roles) {
-  groups <- list(
-    Body = c(
-      "body",
-      "body_shade",
-      "body_highlight",
-      "rim",
-      "rim_light",
-      "rim_shade",
-      "outline",
-      "outline_second",
-      "shadow"
-    ),
-    Face = c(
-      "feature",
-      "eye_white",
-      "shine",
-      "eyelid",
-      "iris",
-      "iris_tint",
-      "teeth",
-      "tongue",
-      "blush",
-      "blush_strong"
-    ),
-    Hair = c("hair", "hair_shade", "hair_light"),
-    `Chest badge` = c("badge", "badge_icon"),
-    `Arms, feet and accessories` = c("limb", "sleeve", "hand", "accessory", "accessory_light", "accessory_detail"),
-    Effects = c("sparkle", "sparkle_outline", "sweat")
-  )
-  groups <- lapply(groups, intersect, roles$role)
-  groups$`Other parts` <- setdiff(roles$role, unlist(groups))
-  Filter(length, groups)
-}
-
 # The palette menu: the character's own colours always carry the value "original" (no palette applied), whatever
 # name the character gives them; the other palettes carry their own names.
 studio_palette_choices <- function(character) {
@@ -73,8 +37,37 @@ role_picker <- function(mode, role, roles, value = NULL) {
   )
 }
 
-role_pickers <- function(mode, roles, values = list(), name = mascot_character()$name) {
-  role_groups <- studio_colour_groups(roles)
+# The pickers for one mode, in the groups of colour_groups(): Main colours open, More parts folded with a heading
+# per group of parts.
+role_pickers <- function(
+  mode,
+  roles,
+  values = list(),
+  name = mascot_character()$name,
+  character = formals(mascot::mascot)$character
+) {
+  checkmate::assert_choice(mode, c("light", "dark"))
+  checkmate::assert_data_frame(roles)
+  checkmate::assert_list(values)
+  checkmate::assert_string(name)
+  checkmate::assert_string(character, min.chars = 1)
+  role_groups <- colour_groups(roles, character)
+  picker <- function(role) role_picker(mode, role, roles, values[[role]])
+  more <- role_groups$`More parts`
+  panels <- c(
+    if (length(role_groups$`Main colours`)) {
+      list(bslib::accordion_panel("Main colours", lapply(role_groups$`Main colours`, picker), value = "Main colours"))
+    },
+    if (length(more)) {
+      list(bslib::accordion_panel(
+        "More parts",
+        lapply(names(more), function(group) {
+          div(class = "pg-role-group", tags$h4(class = "pg-role-group-title", group), lapply(more[[group]], picker))
+        }),
+        value = "More parts"
+      ))
+    }
+  )
   tagList(
     div(
       class = "pg-hint",
@@ -86,16 +79,7 @@ role_pickers <- function(mode, roles, values = list(), name = mascot_character()
     ),
     do.call(
       bslib::accordion,
-      c(
-        lapply(names(Filter(length, role_groups)), function(group) {
-          bslib::accordion_panel(
-            group,
-            lapply(role_groups[[group]], function(role) role_picker(mode, role, roles, values[[role]])),
-            value = group
-          )
-        }),
-        list(open = names(role_groups)[1])
-      )
+      c(panels, list(open = if (length(role_groups$`Main colours`)) "Main colours" else "More parts"))
     ),
     try_button("reset_mode", mode, paste("Reset", mode, "colours"), "btn-outline-primary")
   )

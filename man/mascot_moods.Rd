@@ -13,9 +13,9 @@ an id string such as \code{"tessa"} or a \code{\link[=mascot_character]{mascot_c
 \value{
 A data frame with character columns \code{name} (the value you pass to
 \code{\link[=mascot_mood]{mascot_mood()}}), \code{description}, \code{status} (the text shown beside the mascot
-for that mood), \code{fallback} (the mood used instead when this one is not
-available, or \code{NA}), and a logical column \code{shared} (\code{TRUE} for the five
-shared moods). Shared moods have no \code{fallback}.
+for that mood), a logical column \code{shared} (\code{TRUE} for the five shared
+moods), and a character column \code{fallback} (the mood used instead when this
+one is not available, or \code{NA}). Shared moods have no \code{fallback}.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the value you pass to the matching function.
 }

@@ -161,4 +161,24 @@ describe("B2 reserved palette ids", {
       }
     }
   })
+
+  it("rejects every style alias as the name of the character's own colours", {
+    for (id in c("minimal", "pastel", "vivid", "corporate", "earthy", "night")) {
+      for (fixture in c("study_bot", "study_bot-resolved")) {
+        source <- format_recipe(fixture)
+        source$native_palette <- id
+        error <- format_problem("input_type", "$.native_palette", character_format_resolve(source))
+        expect_match(error$fix, "reserved style alias", fixed = TRUE)
+      }
+    }
+  })
+
+  it("keeps the colon free in palette ids and in the name of the character's own colours", {
+    source <- format_recipe("study_bot")
+    source$palettes[["sela:sea_glass"]] <- source$palettes$sea_glass
+    format_problem("input_type", "$.palettes.sela:sea_glass", character_format_parse(source))
+    source <- format_recipe("study_bot")
+    source$native_palette <- "study_bot:glass_pine"
+    format_problem("input_type", "$.native_palette", character_format_parse(source))
+  })
 })

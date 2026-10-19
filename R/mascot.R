@@ -239,16 +239,19 @@ mascot <- function(
       mascot_state_prepare(list(desired = list(), context = NULL), baseline)
     },
     error = function(error) {
-      cli::cli_abort(
-        "{conditionMessage(error)}",
-        class = unique(c(class(error)[startsWith(class(error), "mascot_error")], "mascot_error")),
-        call = public_call,
-        argument = error$argument,
-        choices = error$choices,
-        value = error$value,
-        code = error$code,
-        path = error$path,
-        fix = error$fix
+      # Keep every field the original condition carries, not a fixed list.
+      standard <- c("message", "trace", "parent", "rlang", "call", "use_cli_format", "body", "footer", "header")
+      fields <- unclass(error)[setdiff(names(error), standard)]
+      do.call(
+        cli::cli_abort,
+        c(
+          list(
+            "{conditionMessage(error)}",
+            class = unique(c(class(error)[startsWith(class(error), "mascot_error")], "mascot_error")),
+            call = public_call
+          ),
+          fields
+        )
       )
     }
   )
@@ -387,7 +390,14 @@ check_arg <- function(x, arg, call, character = NULL) {
   }
   if (arg %in% c("mood", "gesture") && !is.null(character)) {
     valid <- if (arg == "mood") mascot_moods(character)$name else mascot_gestures(character)$name
-    cli::cli_abort(c("{problem}", "i" = "Choose {.or {.val {valid}}}."), call = call, class = "mascot_error")
+    cli::cli_abort(
+      c("{problem}", "i" = "Choose {.or {.val {valid}}}."),
+      call = call,
+      class = c("mascot_error_choice", "mascot_error"),
+      argument = arg,
+      choices = valid,
+      value = x
+    )
   }
   cli::cli_abort("{problem}", call = call, class = "mascot_error")
 }

@@ -524,6 +524,13 @@ describe("internal R4a character argument forms", {
 })
 
 describe("B2 construction diagnostics", {
+  it("keeps the choice class and fields for a malformed mood", {
+    error <- tryCatch(mascot("h", mood = "Happy"), error = identity)
+    expect_s3_class(error, "mascot_error_choice")
+    expect_identical(error$argument, "mood")
+    expect_true("happy" %in% error$choices)
+    expect_identical(error$value, "Happy")
+  })
   it("explains lowercase ids for custom moods and gestures", {
     bot <- mascot_check_character(format_recipe("study_bot"))
     expect_error(mascot("helper", character = bot, mood = "Reviewing"), "lowercase")

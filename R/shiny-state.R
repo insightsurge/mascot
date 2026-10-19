@@ -61,7 +61,6 @@ mascot_id_state <- function(session, id, namespaced = FALSE) {
     # repeated delivered snapshots harmless in ordinary Shiny sessions.
     prefix <- session$ns("")
     local <- if (nzchar(prefix) && startsWith(key, prefix)) substring(key, nchar(prefix) + 1L) else key
-    shiny::setBookmarkExclude(union(session$getBookmarkExclude(), local), session = session)
     # An independent scope contributes exclusions when Shiny collects them,
     # before onBookmark callbacks. App calls cannot replace this scope's list.
     private_scope <- session$makeScope(character(0))

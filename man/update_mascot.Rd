@@ -122,10 +122,20 @@ example, \code{update_mascot("h", size = 200)} also resets a custom \code{small_
 to \code{"auto"}.
 
 Building UI with \code{\link[=mascot]{mascot()}} or helpers errors on invalid values;
-\code{\link[=update_mascot]{update_mascot()}} warns and leaves the mascot unchanged. See
-\link{mascot-package} for condition classes. This includes a helper that raises a
-\code{mascot_error} while an argument is evaluated inside the call, such as
-\code{size = mascot_size(input$px)}; the whole update is ignored.
+\code{\link[=update_mascot]{update_mascot()}} warns with class \code{mascot_update_ignored} and leaves the
+mascot unchanged. An invalid \code{id}, unknown arguments in \code{...} or a missing
+session still raise errors. See \link{mascot-package} for all condition classes.
+This includes a helper that raises a \code{mascot_error} while an argument is
+evaluated inside the call, such as \code{size = mascot_size(input$px)}; the whole
+update is ignored.
+
+An unknown palette id is an error in \code{\link[=mascot]{mascot()}} but only a warning in
+\code{update_mascot()}. \code{\link[=mascot]{mascot()}} runs while the UI is built, where an error shows
+at once. \code{update_mascot()} runs in a live session, where an error would stop
+the app for the visitor, so it warns and the mascot keeps running unchanged.
+The message names any other characters that have a palette of that name. (A
+palette kept from before a character swap is dropped instead, with class
+\code{mascot_palette_dropped}; see the \code{character} argument.)
 
 \strong{Status text and bubbles.} Use the always visible status line for a short
 description of the current state.

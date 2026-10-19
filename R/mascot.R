@@ -8,8 +8,8 @@
 #'   page. In a Shiny module use `ns("helper")` in the UI and `"helper"` in
 #'   the server; [update_mascot()] adds the module namespace once.
 #' @param ... Must be empty. Forces the arguments after it to be named.
-#' @param character A character name or [mascot_character()] object. Defaults
-#'   to `"tessa"`. `NULL` is not accepted.
+#' @param character A character name or [mascot_character()] object (Knurl and
+#'   Neer are experimental). Defaults to `"tessa"`. `NULL` is not accepted.
 #' @param mood A mood name or [mascot_mood()] object. Defaults to `"idle"`.
 #'   See [mascot_moods()] for available choices. `NULL` is not accepted.
 #' @param status A non-empty string or [mascot_status()] object. `NULL` (the

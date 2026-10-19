@@ -95,3 +95,28 @@ describe("B2 condition reference", {
     }
   })
 })
+
+describe("experimental help topic badges (#387)", {
+  it("shows the experimental badge on each experimental help topic", {
+    # Keep this list in step with "Experimental in 0.1.0" in docs/standards.md.
+    topics <- c(
+      "mascot_studio",
+      "mascot_preview",
+      "mascot_theme",
+      "mascot_placement",
+      "mascot_character",
+      "mascot_characters"
+    )
+    root <- test_path("..", "..")
+    db <- if (dir.exists(file.path(root, "man"))) {
+      tools::Rd_db(dir = root)
+    } else {
+      tools::Rd_db("mascot")
+    }
+    for (topic in topics) {
+      rd <- db[[paste0(topic, ".Rd")]]
+      expect_false(is.null(rd), info = topic)
+      expect_match(paste(as.character(rd), collapse = "\n"), "text-bg-warning", fixed = TRUE, info = topic)
+    }
+  })
+})

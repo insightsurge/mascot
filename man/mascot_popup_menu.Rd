@@ -17,7 +17,9 @@ mascot_popup_menu(
 non-empty item IDs without whitespace (for example \code{c(about = "About", help = "Help")}).
 Defaults to \code{NULL}, an empty helper: in \code{\link[=update_mascot]{update_mascot()}}, it removes the
 click, so the mascot is a picture again. An empty vector is not accepted.
-Labels are always escaped.}
+Labels are always escaped. With \code{items = NULL}, explicitly supplying
+\code{direction}, \code{label} or \code{tooltip} is an error; use \code{mascot_popup_menu()}
+without options to remove the click.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
@@ -73,9 +75,8 @@ mascot.
 \strong{Reading the selection in Shiny.} Choosing an item sets \verb{input$<id>_menu} to
 the item ID (for example, \code{input$helper_menu} for \code{mascot("helper")}).
 Choosing the same item twice triggers the input twice. Opening and closing the
-menu also set \verb{input$<id>_click}, as every activation of the mascot does (see
-\code{\link[=mascot_action]{mascot_action()}}); an app that observes it runs its action in addition to the
-menu. In a module, use \code{ns("helper")} in the UI and read \code{input$helper_menu}
+menu never set \verb{input$<id>_click}; that input is only for \code{\link[=mascot_action]{mascot_action()}}.
+In a module, use \code{ns("helper")} in the UI and read \code{input$helper_menu}
 inside that module's server:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{helper_ui <- function(id) \{

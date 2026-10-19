@@ -937,18 +937,13 @@ describe("E1 actions, menus and generated preview in the redesigned UI", {
     studio_colour(app, "preview_rim", "#966600")
     app$set_inputs(
       preview_theme_source = "custom",
-      preview_menu_items = "about = About the preview",
       preview_width = "phone"
     )
     app$wait_for_js(
-      "document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"') && document.getElementById('code_preview').textContent.includes('About the preview')"
+      "document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"')"
     )
     app$wait_for_js("document.querySelector('iframe.pg-preview').classList.contains('is-phone')")
-    expect_match(
-      app$get_value(output = "code_preview"),
-      'click = mascot_popup_menu(c(about = "About the preview"))',
-      fixed = TRUE
-    )
+    expect_false(grepl("click =", app$get_value(output = "code_preview"), fixed = TRUE))
     app$run_js(
       "window.sawBuilding = false; window.buildObserver = new MutationObserver(() => {if (document.querySelector('.pg-building')) window.sawBuilding = true;}); window.buildObserver.observe(document.body, {childList:true, subtree:true});"
     )

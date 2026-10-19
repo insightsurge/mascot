@@ -135,10 +135,7 @@ playground_controls <- list(
     messages = input_id("messages"),
     others = input_id("others")
   ),
-  mascot_gesture = list(
-    ... = fixed_arg("Must be empty: optional arguments are named."),
-    name = input_id("gesture", "gesture_play")
-  ),
+  mascot_gesture = list(name = input_id("gesture", "gesture_play")),
   mascot_size = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     size = input_id("size_px", "size_unit", "size_pct"),
@@ -220,10 +217,8 @@ playground_controls <- list(
     status = input_id("preview_status"),
     bubble = input_id("preview_bubble"),
     size = input_id("preview_size", "preview_width"),
-    placement = input_id("preview_placement"),
     theme = input_id("preview_theme_source"),
-    motion = input_id("preview_motion"),
-    click = input_id("preview_menu_items")
+    motion = input_id("preview_motion")
   ),
   mascot_example = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),

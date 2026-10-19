@@ -1217,7 +1217,7 @@ studio_server <- function(input, output, session) {
     }
   })
   output$menu_last <- renderText(menu_last())
-  click_last <- reactiveVal("Nothing yet: turn on a click, then click or tap the mascot.")
+  click_last <- reactiveVal("Nothing yet: turn on an action, then click or tap the mascot.")
   observeEvent(input$helper_click, {
     click_last(paste(input$helper_click, if (input$helper_click == 1) "click" else "clicks"))
     action <- eval(state$click$helper)
@@ -1228,12 +1228,6 @@ studio_server <- function(input, output, session) {
         paste0("The visitor clicked the mascot: ", action$label, ".")
       )
       send(list(gesture = code_gesture("wave")), force = TRUE, remember = FALSE)
-    } else {
-      add_log(
-        sprintf("input$helper_click  # %s", input$helper_click),
-        "event",
-        "The visitor opened or closed the menu."
-      )
     }
   })
   output$click_last <- renderText(click_last())
@@ -1367,15 +1361,10 @@ studio_server <- function(input, output, session) {
   })
   preview_args <- reactive({
     own <- formals(mascot::mascot_preview)
-    lines <- trimws(strsplit(input$preview_menu_items %||% "", "\n", fixed = TRUE)[[1]])
-    lines <- lines[nzchar(lines)]
-    validate(need(all(grepl("=", lines, fixed = TRUE)), "Write each menu item as id = Label."))
-    items <- stats::setNames(trimws(sub("^[^=]*=", "", lines)), trimws(sub("=.*$", "", lines)))
     mood <- input$preview_mood %||% ""
     status <- input$preview_status %||% ""
     bubble <- input$preview_bubble %||% ""
     size <- input$preview_size %||% own$size
-    placement <- input$preview_placement %||% own$placement
     args <- list(
       character = if (!is.null(uploaded_character())) {
         helper_call("mascot_read_character", uploaded_filename())
@@ -1386,7 +1375,6 @@ studio_server <- function(input, output, session) {
       status = if (nzchar(trimws(status))) status,
       bubble = if (nzchar(trimws(bubble))) bubble,
       size = if (size != own$size) as.numeric(size),
-      placement = if (placement != own$placement) placement,
       theme = if (identical(input$preview_theme_source, "custom") && length(preview_colours())) {
         if (selected_palette() == "original") {
           named_call("list", preview_colours())
@@ -1401,20 +1389,9 @@ studio_server <- function(input, output, session) {
       } else if (selected_palette() != "original") {
         selected_palette()
       },
-      motion = if (isTRUE(input$preview_motion)) TRUE,
-      click = if (length(items)) helper_call("mascot_popup_menu", named_call("c", items))
+      motion = if (isTRUE(input$preview_motion)) TRUE
     )
     Filter(Negate(is.null), args)
-  })
-  output$preview_problem <- renderUI({
-    problem <- tryCatch(
-      {
-        preview_args()
-        NULL
-      },
-      error = function(e) conditionMessage(e)
-    )
-    if (!is.null(problem)) div(class = "pg-note pg-warn", problem)
   })
   prefix <- paste0("studio-preview-", session$token)
   preview_dir <- file.path(tempdir(), prefix)

@@ -4,11 +4,12 @@
 #' The status shows the capitalised mood word until the app sets its own text.
 #' It follows the mood again when [mascot_status()] is supplied without text.
 #'
-#' @param character A character name or [mascot_character()] object. Defaults
-#'   to `"tessa"`. `NULL` is not accepted.
 #' @param id A required non-empty string without whitespace, unique on the
 #'   page. In a Shiny module use `ns("helper")` in the UI and `"helper"` in
 #'   the server; [update_mascot()] adds the module namespace once.
+#' @param ... Must be empty. Forces the arguments after it to be named.
+#' @param character A character name or [mascot_character()] object. Defaults
+#'   to `"tessa"`. `NULL` is not accepted.
 #' @param mood A mood name or [mascot_mood()] object. Defaults to `"idle"`.
 #'   See [mascot_moods()] for available choices. `NULL` is not accepted.
 #' @param status A non-empty string or [mascot_status()] object. `NULL` (the
@@ -50,8 +51,7 @@
 #'   [mascot_action()] object makes it a button for one action of your app.
 #'   A [mascot_popup_menu()] object makes it open a menu, whose choice sets
 #'   `input$<id>_menu`. With a click, every
-#'   activation sets `input$<id>_click` (see Details).
-#' @param ... Must be empty. Forces the arguments after it to be named.
+#'   action activation sets `input$<id>_click` (see Details).
 #' @returns An `htmltools` tag with the mascot's web dependency attached.
 #' @family mascots in Shiny
 #' @seealso [update_mascot()]
@@ -139,12 +139,12 @@
 #' review** again does not rebuild it, so it keeps its mood and position.
 #'
 #' **Clicks.** With `click`, the mascot is a button: an action named by its
-#' label, or a menu. Every activation (a click or tap, Enter or Space while it
-#' has keyboard focus, or a screen reader's activate command) sets
+#' label, or a menu. Every action activation (a click or tap, Enter or Space while
+#' it has keyboard focus, or a screen reader's activate command) sets
 #' `input$<id>_click` to the number of activations since the mascot appeared, so
-#' `shiny::observeEvent(input$helper_click, ...)` runs each time; with a menu,
-#' opening and closing it both count. Dragging a floating mascot never counts as
-#' a click. See [mascot_action()] and [mascot_popup_menu()].
+#' `shiny::observeEvent(input$helper_click, ...)` runs each time for an action.
+#' Opening and closing a menu never sets this input. Dragging a floating mascot
+#' never counts as a click. See [mascot_action()] and [mascot_popup_menu()].
 #' @export
 #' @examples
 #' mascot("helper", mood = "happy")
@@ -183,7 +183,7 @@ mascot <- function(
     checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   })
   character <- as_character_arg(character, environment())
-  mood <- as_mood_arg(mood, environment())
+  mood <- as_mood_arg(mood, environment(), character)
   known_moods <- mascot_moods(if (is.null(character$data)) character$id else character$data)$name
   if (!mood$name %in% known_moods) {
     abort_choice(mood$name, known_moods, "mood", "mood", environment())
@@ -239,7 +239,20 @@ mascot <- function(
       mascot_state_prepare(list(desired = list(), context = NULL), baseline)
     },
     error = function(error) {
-      cli::cli_abort("{conditionMessage(error)}", class = "mascot_error", call = public_call)
+      # Keep every field the original condition carries, not a fixed list.
+      standard <- c("message", "trace", "parent", "rlang", "call", "use_cli_format", "body", "footer", "header")
+      fields <- unclass(error)[setdiff(names(error), standard)]
+      do.call(
+        cli::cli_abort,
+        c(
+          list(
+            "{conditionMessage(error)}",
+            class = unique(c(class(error)[startsWith(class(error), "mascot_error")], "mascot_error")),
+            call = public_call
+          ),
+          fields
+        )
+      )
     }
   )
   token <- mascot_mount_token(id, prepared$desired)
@@ -336,10 +349,13 @@ as_character_arg <- function(x, call) {
 
 #' Accept a mood shortcut or helper
 #' @noRd
-as_mood_arg <- function(x, call) {
+as_mood_arg <- function(x, call, character = NULL) {
   checkmate::assert_environment(call)
+  if (!is.null(character)) {
+    character_catalogue_assert(character)
+  }
   # See as_character_arg(): this argument accepts a union of types.
-  check_arg(x, "mood", call)
+  check_arg(x, "mood", call, character)
   if (inherits(x, "mascot_mood")) x else mascot_mood(x)
 }
 
@@ -354,20 +370,34 @@ as_status_arg <- function(x, call) {
 
 #' Check a build-time argument with the public call attached
 #' @noRd
-check_arg <- function(x, arg, call) {
+check_arg <- function(x, arg, call, character = NULL) {
   checkmate::assert_choice(
     arg,
     c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "click")
   )
   checkmate::assert_environment(call)
+  if (!is.null(character)) {
+    character_catalogue_assert(character)
+  }
   # x is checked by arg_problem(), shared with warning-only runtime validation.
   problem <- arg_problem(x, arg)
   if (is.null(problem)) {
     return(invisible(NULL))
   }
-  if (arg %in% c("character", "mood", "gesture") && isTRUE(checkmate::check_string(x, min.chars = 1))) {
-    valid <- switch(arg, character = builtin_characters()$id, mood = mood_table()$name, gesture = gesture_table()$name)
+  if (arg == "character" && isTRUE(checkmate::check_string(x, min.chars = 1))) {
+    valid <- builtin_characters()$id
     abort_choice(x, valid, arg, arg, call)
+  }
+  if (arg %in% c("mood", "gesture") && !is.null(character)) {
+    valid <- if (arg == "mood") mascot_moods(character)$name else mascot_gestures(character)$name
+    cli::cli_abort(
+      c("{problem}", "i" = "Choose {.or {.val {valid}}}."),
+      call = call,
+      class = c("mascot_error_choice", "mascot_error"),
+      argument = arg,
+      choices = valid,
+      value = x
+    )
   }
   cli::cli_abort("{problem}", call = call, class = "mascot_error")
 }
@@ -380,9 +410,24 @@ abort_dots <- function(extras, n, valid, call) {
   checkmate::assert_character(valid, min.chars = 1, any.missing = FALSE, min.len = 1)
   checkmate::assert_environment(call)
   # Unnamed values have no name; positional values after `...` are the usual slip.
-  extras <- if (is.null(extras)) rep("unnamed", n) else replace(extras, !nzchar(extras), "unnamed")
+  extras <- if (is.null(extras)) rep("", n) else extras
+  unnamed <- sum(!nzchar(extras))
+  labels <- c(
+    if (unnamed == 1L) {
+      "an unnamed argument"
+    } else if (unnamed > 1L) {
+      paste(unnamed, "unnamed arguments")
+    },
+    encodeString(extras[nzchar(extras)], quote = '"')
+  )
+  message <- paste0(
+    "Unexpected arguments: ",
+    paste(labels, collapse = ", "),
+    "."
+  )
+  message <- gsub("}", "}}", gsub("{", "{{", message, fixed = TRUE), fixed = TRUE)
   cli::cli_abort(
-    c("Unexpected arguments: {.val {extras}}.", "i" = "Name the optional arguments: {.arg {valid}}."),
+    c(message, "i" = "Name the optional arguments: {.arg {valid}}."),
     call = call,
     class = c("mascot_error_dots", "mascot_error"),
     names = extras
@@ -471,20 +516,6 @@ arg_problem <- function(x, arg) {
   }
   if (arg %in% c("status", "bubble")) {
     return(NULL)
-  }
-  valid <- switch(arg, character = builtin_characters()$id, mood = mood_table()$name, gesture = gesture_table()$name)
-  if (!x %in% valid) {
-    return(paste0(
-      "`",
-      arg,
-      "` must be one of ",
-      paste(encodeString(valid, quote = '"'), collapse = ", "),
-      "; ",
-      encodeString(x, quote = '"'),
-      " is not a ",
-      arg,
-      "."
-    ))
   }
   NULL
 }

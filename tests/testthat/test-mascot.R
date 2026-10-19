@@ -333,7 +333,7 @@ describe("mascot() click", {
 })
 
 describe("mascot() clicks in a Shiny browser (#257)", {
-  it("counts every activation in a module, menus included, and sends nothing without a click", {
+  it("counts action activations in a module and sends no clicks for menus or pictures", {
     local_shiny_browser()
     app <- app_driver(function() {
       library(mascot)
@@ -366,13 +366,15 @@ describe("mascot() clicks in a Shiny browser (#257)", {
       button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));"
     )
     app$wait_for_js("document.getElementById('module-clicks').textContent === '3'")
-    # With a menu, opening and closing it both count.
+    # Menu toggles do not send action clicks.
     app$click(selector = "#module-menu .mascot-menu-toggle")
     app$wait_for_js("mascot.host.state(document.getElementById('module-menu')).menuOpen")
-    app$wait_for_js("document.getElementById('module-menu_clicks').textContent === '1'")
+    app$wait_for_idle()
+    expect_null(app$get_value(input = "module-menu_click"))
     app$click(selector = "#module-menu .mascot-menu-toggle")
     app$wait_for_js("!mascot.host.state(document.getElementById('module-menu')).menuOpen")
-    app$wait_for_js("document.getElementById('module-menu_clicks').textContent === '2'")
+    app$wait_for_idle()
+    expect_null(app$get_value(input = "module-menu_click"))
     # A picture sends nothing.
     app$click(selector = "#module-picture canvas")
     app$wait_for_idle()
@@ -520,5 +522,86 @@ describe("internal R4a character argument forms", {
     expect_no_warning(update_mascot("helper", theme = "sea", session = session))
     expect_identical(mascot_id_state(session, "helper")$desired$theme$palette, "sea")
     expect_no_error(mascot("helper", character = checked, theme = "sea"))
+  })
+})
+
+describe("B2 construction diagnostics", {
+  it("keeps the choice class and fields for a malformed mood", {
+    error <- tryCatch(mascot("h", mood = "Happy"), error = identity)
+    expect_s3_class(error, "mascot_error_choice")
+    expect_identical(error$argument, "mood")
+    expect_true("happy" %in% error$choices)
+    expect_identical(error$value, "Happy")
+  })
+  it("explains lowercase ids for custom moods and gestures", {
+    bot <- mascot_check_character(format_recipe("study_bot"))
+    expect_error(mascot("helper", character = bot, mood = "Reviewing"), "lowercase")
+    expect_error(check_arg("Greet", "gesture", environment()), "lowercase")
+  })
+  it("preserves a specific condition when baseline preparation fails", {
+    local_mocked_bindings(mascot_state_prepare = function(...) {
+      abort_choice("bad", "good", "mood", "mood", environment())
+    })
+    expect_error(mascot("helper"), class = "mascot_error_choice")
+  })
+  it("describes unnamed arguments as arguments", {
+    expect_error(mascot("helper", 1), "an unnamed argument", fixed = TRUE)
+  })
+})
+
+
+describe("review fixes for construction diagnostics and documentation", {
+  it("lists the chosen character's moods and gestures for malformed ids", {
+    for (character in list(catalogue_alpha_two(), "tessa")) {
+      mood_error <- tryCatch(mascot("helper", character = character, mood = "ha!py"), error = identity)
+      expect_match(conditionMessage(mood_error), "lowercase")
+      for (name in mascot_moods(character)$name) {
+        expect_match(conditionMessage(mood_error), name, fixed = TRUE)
+      }
+      gesture_error <- tryCatch(check_arg("wa!ve", "gesture", environment(), character), error = identity)
+      for (name in mascot_gestures(character)$name) {
+        expect_match(conditionMessage(gesture_error), name, fixed = TRUE)
+      }
+    }
+  })
+
+  it("retains choice fields when baseline preparation re-raises an error", {
+    local_mocked_bindings(mascot_state_prepare = function(...) {
+      abort_choice("bad", c("idle", "happy"), "mood", "mood", environment())
+    })
+    error <- tryCatch(mascot("helper"), mascot_error_choice = identity)
+    expect_identical(error$argument, "mood")
+    expect_identical(error$choices, c("idle", "happy"))
+    expect_identical(error$value, "bad")
+  })
+
+  it("counts unnamed arguments and keeps named arguments listed", {
+    expect_error(mascot("helper", 1, 2, typo = 3), '2 unnamed arguments, "typo"', fixed = TRUE)
+    expect_error(mascot("helper", 1), "Unexpected arguments: an unnamed argument.", fixed = TRUE)
+    expect_snapshot(error = TRUE, mascot("helper", 1, 2, typo = 3))
+    expect_snapshot(error = TRUE, mascot("helper", 1))
+  })
+
+  it("describes the current preview sizes and inline layout", {
+    path <- test_path("..", "..", "vignettes", "mascot.Rmd")
+    skip_if_not(file.exists(path), "Source-only vignette check")
+    text <- paste(readLines(path), collapse = "\n")
+    section <- strsplit(
+      strsplit(text, "## Check a look before using it", fixed = TRUE)[[1]][2],
+      "## Leave unchanged or reset",
+      fixed = TRUE
+    )[[1]][1]
+    expect_match(section, "160, 96 and 24 pixels", fixed = TRUE)
+    expect_match(section, "inline", fixed = TRUE)
+    expect_false(grepl("Floating settings|click menu|32 and 24", section))
+  })
+
+  it("documents dots immediately after the first argument", {
+    skip_if_not(file.exists(test_path("..", "..", "R", "mascot.R")), "Source-only roxygen check")
+    for (file in c("mascot", "bubble", "size", "placement", "theme")) {
+      lines <- readLines(test_path("..", "..", "R", paste0(file, ".R")))
+      params <- grep("^#' @param ", lines, value = TRUE)
+      expect_true(startsWith(params[2], "#' @param ... "), info = file)
+    }
   })
 })

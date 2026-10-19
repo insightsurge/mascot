@@ -60,7 +60,7 @@ playground_guide <- list(
     "Motion",
     c("...", "idle", "mood_change", "gestures", "swap", "minimising", "restoring", "messages", "others")
   ),
-  mascot_gesture = guide_entry("motion", "One-off gestures", c("name", "...")),
+  mascot_gesture = guide_entry("motion", "One-off gestures", "name"),
   mascot_gestures = guide_entry("motion", "One-off gestures", "character"),
   mascot_size = guide_entry("layout", "Size and placement", c("size", "...", "small_screen")),
   mascot_placement = guide_entry("layout", "Size and placement", c("position", "...", "minimise", "drag")),
@@ -125,7 +125,7 @@ playground_guide <- list(
   mascot_preview = guide_entry(
     "preview",
     "Check a look before using it",
-    c("character", "...", "mood", "status", "bubble", "size", "placement", "theme", "motion", "click")
+    c("character", "...", "mood", "status", "bubble", "size", "theme", "motion")
   ),
   mascot_examples = guide_entry("examples", "Open an example"),
   mascot_example = guide_entry("examples", "Open an example", c("name", "...", "run")),

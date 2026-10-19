@@ -3,10 +3,22 @@
 #' [update_mascot()] warns and leaves the mascot unchanged. All errors raised by
 #' mascot, including checkmate assertions, carry class `mascot_error`. Warnings
 #' have class `mascot_warning` and messages have class `mascot_message`. Invalid
-#' update values also carry
-#' `mascot_update_ignored`; low contrast carries `mascot_contrast`, and messages
-#' about inline placement carry `mascot_placement_ignored`. Checkmate assertion
-#' errors keep checkmate's message, line by line.
+#' update values also carry `mascot_update_ignored`; low contrast carries
+#' `mascot_contrast`, and messages about inline placement carry
+#' `mascot_placement_ignored`. Checkmate assertion errors keep checkmate's
+#' message, line by line.
+#'
+#' Specific error classes are `mascot_error_choice` for invalid choices,
+#' `mascot_error_dots` for unexpected arguments, `mascot_error_argument` for
+#' authoring argument errors, `mascot_error_character` for character content
+#' errors, and `mascot_error_file` for character file errors.
+#'
+#' `mascot_palette_dropped` warns when a character swap drops a palette the
+#' incoming character lacks. Development diagnostics use
+#' `mascot_gesture_dropped` when a pending gesture
+#' cannot play, `mascot_click_dropped` when a click needs an unavailable mood or
+#' gesture, and `mascot_template_evicted` when unused UI templates leave the
+#' cache. Each inherits `mascot_warning`.
 #' @section Options:
 #' `options(mascot.contrast_warnings = TRUE)` forces R contrast warnings on;
 #' `FALSE` forces them off everywhere. By default they appear only when

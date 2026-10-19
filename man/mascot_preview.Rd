@@ -11,10 +11,8 @@ mascot_preview(
   status = NULL,
   bubble = NULL,
   size = 160,
-  placement = "inline",
   theme = NULL,
-  motion = FALSE,
-  click = NULL
+  motion = FALSE
 )
 }
 \arguments{
@@ -39,11 +37,6 @@ head content are not supported.}
 percentage string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_size()}} object. Defaults to
 \code{160}. Percentages follow the comparison cell width. \code{NULL} is not accepted.}
 
-\item{placement}{A placement shortcut, named list or \code{\link[=mascot_placement]{mascot_placement()}}
-object, defaulting to \code{"inline"}. Accepted so the same arguments as
-\code{\link[=mascot]{mascot()}} can be passed, and has no effect in a preview (cells stay in
-their grid). \code{NULL} is not accepted.}
-
 \item{theme}{A palette id string from \code{\link[=mascot_palettes]{mascot_palettes()}}, a named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
 colours. A palette supplies the base colours in both modes; \code{"original"}
@@ -52,11 +45,6 @@ selects the character's own colours. Unset roles follow the character's rules.}
 \item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object. Defaults to \code{FALSE}
 for steady faces; \code{TRUE} allows movement subject to the visitor's preference.
 \code{NULL} is not accepted.}
-
-\item{click}{A label, a \code{\link[=mascot_action]{mascot_action()}} object or a \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}
-object, or \code{NULL} (the default) for no click. Accepted so the same arguments
-as \code{\link[=mascot]{mascot()}} can be passed, and has no effect in a preview (clicks need
-Shiny, so every cell stays a picture).}
 }
 \value{
 A browsable \code{htmltools} tag list. Its \code{contrast} attribute is a data
@@ -73,7 +61,7 @@ or Quarto document.
 }
 \details{
 \strong{Comparison grid.} Rows are moods; columns are the requested \code{size}, then
-48, 32 and 24 CSS pixels. The first column preserves percentage and
+160, 96 and 24 CSS pixels. The first column preserves percentage and
 \code{small_screen} settings; fixed comparison columns do not change on narrow
 screens. Every size draws the full character. Each cell keeps its status text,
 since small faces lose fine detail.
@@ -87,11 +75,9 @@ colour roles are checked, using the same contrast calculation as \code{\link[=ma
 Experimental CSS variables are worked out in the browser: their warnings appear
 in its console, outside the R \code{contrast} attribute.
 
-\strong{Placement, menus and bubbles.} Floating \code{placement} is checked, then shown
-inline for comparison, so every cell remains in its grid. A \code{click} is
-checked but has no effect on this static page. Empty bubble space is omitted
-here; a supplied bubble keeps its normal space and timing, and each cell is
-wide enough to hold it, so bubbles never cover neighbouring cells.
+\strong{Bubbles.} Empty bubble space is omitted here; a supplied bubble keeps its
+normal space and timing. Each cell is wide enough to hold it, so bubbles
+never cover neighbouring cells.
 }
 \examples{
 page <- mascot_preview(mood = "happy", size = 96)

@@ -174,13 +174,13 @@ describe("the studio's controls", {
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
     items <- c(`finish-review` = "Finish the review of every row in this table", about = "About this app")
     menu <- code$code_menu(items)
-    theme <- code$code_theme("mascot", c(body = "#1f6feb"), c(body = "#9ec5fe"), "dark", "rim", "", "")
+    theme <- code$code_theme("mascot", c(body = "#1f6feb"), c(body = "#9ec5fe"), "dark", c(rim = "--brand"), "", "")
     call <- code$format_call("mascot", list(id = "helper", click = menu$helper, theme = theme$helper))
     expect_match(call, "`finish-review` = ", fixed = TRUE)
     expect_identical(eval(parse(text = call)[[1]][["click"]]), mascot_popup_menu(items))
     handler <- code$menu_handler_code(items)
     expect_type(parse(text = handler), "expression")
-    app <- code$whole_app_code(call, handler, c("shiny", "mascot"), "#7b4fd6")
+    app <- code$whole_app_code(call, handler, c("shiny", "mascot"), c(`--brand` = "#7b4fd6"))
     expect_type(parse(text = app), "expression")
     # Every helper has live example code in the guide, including the compound controls.
     pairs <- list(
@@ -2608,6 +2608,48 @@ describe("studio phone overlays (#265)", {
   })
 })
 
+describe("studio code builders with a CSS map (#395)", {
+  it("writes each role's own CSS variable, and the value of each variable the app sets", {
+    code <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
+    css <- c(body = "--brand", rim = "--brand-light")
+    theme <- code$code_theme("mascot", c(body = "#1f6feb"), NULL, "auto", css, NULL, NULL)
+    expect_identical(eval(theme$helper), mascot_theme(light = list(body = "#1f6feb"), css = as.list(css)))
+    # A CSS source never becomes the plain-list shortcut, which has no css.
+    expect_identical(theme$short, theme$helper)
+    expect_null(eval(code$code_theme("mascot", c(body = "#1f6feb"), NULL, "auto", NULL, NULL, NULL)$helper)$css)
+    expect_error(code$code_theme("mascot", NULL, NULL, "auto", "--brand", NULL, NULL), "names\\(css\\)")
+    expect_error(code$code_theme("mascot", NULL, NULL, "auto", c(body = ""), NULL, NULL), "css")
+    app <- code$whole_app_code(
+      'mascot("helper")',
+      NULL,
+      c("shiny", "mascot"),
+      c(`--brand` = "#111111", `--brand-light` = "#222222")
+    )
+    expect_match(app, 'tags$style(":root { --brand: #111111; --brand-light: #222222; }"),', fixed = TRUE)
+    expect_type(parse(text = app), "expression")
+    for (none in list(NULL, stats::setNames(character(), character()))) {
+      expect_false(grepl("tags$style", code$whole_app_code('mascot("helper")', NULL, "mascot", none), fixed = TRUE))
+    }
+    expect_error(code$whole_app_code('mascot("helper")', NULL, "mascot", "#111111"), "names\\(css_values\\)")
+  })
+  it("gives the studio the same code as before: its accent variable and that variable's value", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(theme_source = "mascot", `colours-css_roles` = "body", `colours-css_value` = "#663399")
+      session$elapse(400)
+      expect_match(output$code_ui, 'css = list(body = "--studio-accent")', fixed = TRUE)
+      expect_match(output$code_app, 'tags$style(":root { --studio-accent: #663399; }"),', fixed = TRUE)
+      session$setInputs(`colours-css_roles` = character())
+      session$elapse(400)
+      expect_false(grepl("tags$style", output$code_app, fixed = TRUE))
+    })
+  })
+})
+
 describe("studio shared tokens and inputs (#395)", {
   it("loads the shared tokens and inputs before the studio's own files", {
     page <- studio_parts()$page
@@ -2961,7 +3003,7 @@ describe("studio palette controls", {
       light = NULL,
       dark = NULL,
       mode = "auto",
-      css_roles = NULL,
+      css = NULL,
       primary = NULL,
       secondary = NULL,
       palette = "original"
@@ -3127,7 +3169,8 @@ describe("studio palette sync (#353)", {
         }
         # Arbitrary roles travel through all three override fields without an old role allow-list.
         overrides <- stats::setNames(rep("#123456", nrow(roles)), roles$role)
-        theme <- eval(builder("mascot", overrides, overrides, "auto", roles$role, "", "", palette)$helper)
+        css <- stats::setNames(rep("--studio-accent", nrow(roles)), roles$role)
+        theme <- eval(builder("mascot", overrides, overrides, "auto", css, "", "", palette)$helper)
         expect_identical(unlist(theme$light), overrides)
         expect_identical(unlist(theme$dark), overrides)
         expect_setequal(names(theme$css), roles$role)

@@ -156,12 +156,17 @@ code_action <- function(label, tooltip = TRUE, disabled = FALSE) {
   code_pair(if (tooltip && !disabled) label else helper, helper)
 }
 
-code_theme <- function(source, light, dark, mode, css_roles, primary, secondary, palette = "original") {
+# The theme argument as code. css maps roles to the CSS variables they read (c(body = "--brand")); NULL or an empty
+# vector for none.
+code_theme <- function(source, light, dark, mode, css, primary, secondary, palette = "original") {
   checkmate::assert_choice(source, c("own", "mascot", "bslib"))
   checkmate::assert_character(light, any.missing = FALSE, null.ok = TRUE)
   checkmate::assert_character(dark, any.missing = FALSE, null.ok = TRUE)
   checkmate::assert_choice(mode, c("auto", "light", "dark"))
-  checkmate::assert_character(css_roles, any.missing = FALSE, null.ok = TRUE)
+  checkmate::assert_character(css, min.chars = 1, any.missing = FALSE, null.ok = TRUE)
+  if (length(css)) {
+    checkmate::assert_names(names(css), type = "unique", .var.name = "names(css)")
+  }
   checkmate::assert_string(primary, null.ok = TRUE)
   checkmate::assert_string(secondary, null.ok = TRUE)
   checkmate::assert_string(palette, min.chars = 1)
@@ -172,7 +177,6 @@ code_theme <- function(source, light, dark, mode, css_roles, primary, secondary,
   if (source == "bslib") {
     return(code_pair(helper_call("bslib::bs_theme", primary = primary, secondary = secondary)))
   }
-  css <- if (length(css_roles)) stats::setNames(rep("--studio-accent", length(css_roles)), css_roles)
   helper <- helper_call(
     "mascot_theme",
     palette = if (palette != "original") palette,
@@ -301,16 +305,22 @@ indent_code <- function(text, by) {
   paste(lines, collapse = "\n")
 }
 
-# A whole app to paste into app.R: user settings in the UI, one server update to try.
-whole_app_code <- function(ui, click_handler, packages, css_value = NULL) {
+# A whole app to paste into app.R: user settings in the UI, one server update to try. css_values gives the CSS
+# variables the theme reads their values (c(`--brand` = "#7b4fd6")), set on the page.
+whole_app_code <- function(ui, click_handler, packages, css_values = NULL) {
   checkmate::assert_string(ui)
   checkmate::assert_string(click_handler, null.ok = TRUE)
   checkmate::assert_character(packages, min.chars = 1, any.missing = FALSE)
-  checkmate::assert_string(css_value, null.ok = TRUE)
+  checkmate::assert_character(css_values, min.chars = 1, any.missing = FALSE, null.ok = TRUE)
+  if (length(css_values)) {
+    checkmate::assert_names(names(css_values), type = "unique", .var.name = "names(css_values)")
+  }
   paste0(
     paste0("library(", packages, ")", collapse = "\n"),
     "\n\nui <- fluidPage(\n",
-    if (!is.null(css_value)) sprintf("  tags$style(\":root { --studio-accent: %s; }\"),\n", css_value),
+    if (length(css_values)) {
+      sprintf("  tags$style(\":root { %s }\"),\n", paste0(names(css_values), ": ", css_values, ";", collapse = " "))
+    },
     indent_code(ui, 2),
     ",\n",
     "  actionButton(\"celebrate\", \"Celebrate\")\n)\n\n",

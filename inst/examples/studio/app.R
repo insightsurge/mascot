@@ -952,7 +952,7 @@ studio_server <- function(input, output, session) {
       light,
       dark,
       input$theme_mode %||% "auto",
-      names(colours$css()),
+      colours$css(),
       input$bs_primary %||% "#1f6feb",
       input$bs_secondary %||% "#966600",
       selected_palette()
@@ -1521,7 +1521,8 @@ studio_server <- function(input, output, session) {
       ui,
       click_handler_code(current$click$helper),
       c("shiny", if (grepl("bs_theme", theme, fixed = TRUE)) "bslib", "mascot"),
-      if (grepl("--studio-accent", theme, fixed = TRUE)) colours$css_values()[["--studio-accent"]]
+      # The value of each CSS variable the theme reads.
+      colours$css_values()[vapply(names(colours$css_values()), grepl, logical(1), x = theme, fixed = TRUE)]
     )
   })
   output$code_last <- renderText(last_call())

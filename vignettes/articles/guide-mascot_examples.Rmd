@@ -5,9 +5,9 @@ title: "`mascot_examples()`"
 The studio guide for [`mascot_examples()`](../reference/mascot_examples.html). The same page is read in the mascot studio.
 
 ```{r setup, include = FALSE}
-guide <- system.file("examples", "studio", "guide", package = "mascot")
-sys.source(file.path(guide, "guide-helpers.R"), envir = knitr::knit_global())
+guide_dir <- system.file("examples", "studio", "guide", package = "mascot")
+sys.source(file.path(guide_dir, "guide-helpers.R"), envir = knitr::knit_global())
 ```
 
-```{r child = file.path(guide, "mascot_examples.Rmd")}
+```{r child = file.path(guide_dir, "mascot_examples.Rmd")}
 ```

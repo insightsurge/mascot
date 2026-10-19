@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_status-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_status")
+```
+
 ### Status line or speech bubble?
 
 |                | Status line                                  | Speech bubble                           |
@@ -11,3 +15,7 @@ studio_character <- if (exists("studio_character")) studio_character else formal
 | Use it for     | The current state: "Checking 120 rows"       | News: "Three rows were skipped"         |
 | Set it         | `status = "text"`                            | `bubble = "text"`                       |
 | Clear it       | `status = mascot_status()`                   | `bubble = mascot_bubble()`              |
+
+```{r mascot_status-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_status", studio_character)
+```

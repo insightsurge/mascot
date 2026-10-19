@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_character-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_character")
+```
+
 ### Choose a character for the job
 
 A character helper packages a choice for the `character` argument. Use an id from
@@ -41,3 +45,7 @@ if (in_studio()) cat("The studio table follows the Family filter in Controls for
 
 Check these listings for the character you choose before reusing code written
 for another character.
+
+```{r mascot_character-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_character", studio_character)
+```

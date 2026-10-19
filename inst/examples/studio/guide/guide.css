@@ -220,3 +220,16 @@
   margin-right: 0.4rem;
   vertical-align: middle;
 }
+
+/* Tabs of the website pages: one tab per character. */
+:where(.pg-character-tabs) {
+  margin: 0.8rem 0;
+}
+
+:where(.pg-character-tabs .tab-content) {
+  padding-top: 0.75rem;
+}
+
+:where(.pg-log-message) {
+  white-space: pre-wrap;
+}

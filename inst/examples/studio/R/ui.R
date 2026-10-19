@@ -524,110 +524,22 @@ guide_help <- function(fn) {
 guide_mistakes <- function(fn, character) {
   checkmate::assert_string(fn)
   checkmate::assert_string(character)
-  old_contrast <- getOption("mascot.contrast_warnings")
-  on.exit(options(mascot.contrast_warnings = old_contrast), add = TRUE)
-  if (is.null(old_contrast)) {
-    options(mascot.contrast_warnings = TRUE)
-  }
-  cases <- guide_mistake_calls(fn, character)
+  # The calls and what R says come from guide/guide-mistakes.R, shared with the website.
+  cases <- guide_mistake_cases(fn, character)
   div(
     class = "pg-guide-piece pg-guide-mistakes",
     tags$h3(class = "pg-section-title", "Warnings, errors and common mistakes"),
     if (!length(cases)) tags$p("This listing takes no arguments. Use its returned names rather than typing guesses."),
-    lapply(seq_along(cases), function(i) {
-      code <- cases[[i]]
-      mistake <- character_mistakes(character)[[names(cases)[i] %||% ""]]
-      messages <- character()
-      mock <- shiny::MockShinySession$new()
-      on.exit(mock$close(), add = TRUE)
-      env <- new.env(parent = environment())
-      env$session <- mock
-      tryCatch(
-        withCallingHandlers(
-          eval(str2lang(code), env),
-          warning = function(w) {
-            messages <<- c(messages, paste("Warning:", cli::ansi_strip(conditionMessage(w))))
-            invokeRestart("muffleWarning")
-          },
-          message = function(m) {
-            messages <<- c(messages, paste("Message:", trimws(cli::ansi_strip(conditionMessage(m)))))
-            invokeRestart("muffleMessage")
-          }
-        ),
-        error = function(e) messages <<- c(messages, paste("Error:", cli::ansi_strip(conditionMessage(e))))
-      )
+    lapply(cases, function(case) {
       tagList(
-        code_block(code, "pg-code-small"),
-        if (!is.null(mistake)) tags$p(mistake$why),
+        code_block(case$code, "pg-code-small"),
+        if (!is.null(case$why)) tags$p(case$why),
         code_block(
-          if (length(messages)) {
-            paste(messages, collapse = "\n")
-          } else {
-            "No R warning or error. Check the id against your UI; the browser receives updates for that id only."
-          },
+          if (length(case$messages)) paste(case$messages, collapse = "\n") else guide_no_message,
           "pg-log-message"
         )
       )
     })
-  )
-}
-
-guide_mistake_calls <- function(fn, character) {
-  checkmate::assert_string(fn)
-  checkmate::assert_string(character)
-  role <- mascot_colour_roles(character)$role[1]
-  mistakes <- character_mistakes(character)
-  update_cases <- Filter(function(x) startsWith(x$code, "update_mascot("), mistakes)
-  palette_cases <- Filter(function(x) startsWith(x$code, "mascot("), mistakes)
-  switch(
-    fn,
-    update_mascot = vapply(
-      update_cases,
-      function(x) sub(")$", ", session = session)", x$code),
-      character(1)
-    ),
-    mascot = c(
-      'mascot("has spaces")',
-      'mascot("helper", click = c(help = "Help"))',
-      vapply(palette_cases, function(x) x$code, character(1))
-    ),
-    mascot_character = 'mascot_character("unknown-character")',
-    mascot_mood = paste0(
-      'mascot("helper", character = ',
-      encodeString(character, quote = '"'),
-      ', mood = mascot_mood("sleepy"))'
-    ),
-    mascot_status = 'mascot_status(1)',
-    mascot_bubble = 'mascot_bubble("Hi", duration = 0)',
-    mascot_motion_settings = 'mascot_motion_settings(idle = "yes")',
-    mascot_gesture = 'mascot_gesture("unknown-gesture")',
-    mascot_size = 'mascot_size(10)',
-    mascot_placement = c('mascot_placement("unknown-position")', 'mascot_placement("inline", minimise = TRUE)'),
-    mascot_colour_roles = sprintf('mascot_colour_roles(mascot_character(%s))', format_string(character)),
-    mascot_moods = 'mascot_moods("unknown-character")',
-    mascot_gestures = 'mascot_gestures("unknown-character")',
-    mascot_anchors = 'mascot_anchors("unknown-character")',
-    mascot_palettes = 'mascot_palettes("unknown-character")',
-    mascot_characters = 'mascot_characters(family = "unknown-family")',
-    # The palette mistakes belong here too: the palette argument of mascot_theme() is where they start.
-    mascot_theme = c(
-      format_call("mascot_theme", list(light = named_call("list", stats::setNames("not-a-colour", role)))),
-      vapply(palette_cases, function(x) x$code, character(1)),
-      vapply(
-        update_cases[names(update_cases) == "An unknown palette in an update"],
-        function(x) sub(")$", ", session = session)", x$code),
-        character(1)
-      )
-    ),
-    mascot_action = 'mascot_action("Open help", FALSE)',
-    mascot_popup_menu = c(
-      'mascot_popup_menu(c("has spaces" = "Action"))',
-      'mascot_popup_menu(c(about = "About"), "top")'
-    ),
-    mascot_preview = 'mascot_preview(size = 10)',
-    mascot_example = 'mascot_example("unknown-example", run = FALSE)',
-    mascot_studio = 'mascot_studio(view = "unknown-view", run = FALSE)',
-    character()
   )
 }
 

@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_motion_settings-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_motion_settings")
+```
+
 ### What each switch controls
 
 Choose which movement suits the task before adding gestures or changing moods.
@@ -74,4 +78,8 @@ A reduced-motion preference can suppress the nod too.
 
 ```{r mascot_motion_settings-controls, echo = FALSE, results = 'asis'}
 if (in_studio()) cat("In the studio, try the live motion switches in Controls.\n")
+```
+
+```{r mascot_motion_settings-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_motion_settings", studio_character)
 ```

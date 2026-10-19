@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_bubble-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_bubble")
+```
+
 ### How long a bubble stays
 
 ```{r mascot_bubble-timeline, echo = FALSE}
@@ -23,3 +27,7 @@ Bootstrap.
 Options need their main argument; an empty call removes it.
 
 </div>
+
+```{r mascot_bubble-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_bubble", studio_character)
+```

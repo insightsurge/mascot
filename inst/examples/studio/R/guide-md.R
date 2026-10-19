@@ -3,16 +3,6 @@
 # the same file with a knitr child chunk. A function without a page shows only its help and mistakes.
 # Shiny sources this file with the others in R/, so it holds functions only.
 
-# The folder with the pages and their helpers: the app's own guide/ folder (Shiny runs the app from
-# its folder), otherwise the one in the installed package.
-studio_guide_dir <- function() {
-  local <- file.path(getwd(), "guide")
-  if (file.exists(file.path(local, "guide-helpers.R"))) {
-    return(normalizePath(local))
-  }
-  system.file("examples", "studio", "guide", package = "mascot")
-}
-
 # The page of `fn` for `character` as a list of pieces for selected_guide(), or NULL when the function has
 # no page (yet). knitr is required by the app (app.R), so there is no fallback for a missing package.
 studio_guide_page <- function(fn, character, dir = studio_guide_dir()) {

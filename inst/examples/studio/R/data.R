@@ -68,60 +68,19 @@ defaults <- list(
   # The empty helper, so a removal reads as the reset it is (click = NULL in an update changes nothing).
   click = quote(mascot_action())
 )
-mistakes <- list(
-  `Borrow another character's palette` = list(
-    code = NULL,
-    why = "mascot() errors and lists this character's palettes. The hint names another character that has this id; palettes cannot be borrowed between characters yet."
-  ),
-  `A made-up palette id` = list(
-    code = NULL,
-    why = "mascot() errors and lists this character's palettes. No character has this id, so there is no borrowed-palette hint."
-  ),
-  `An unknown palette in an update` = list(
-    code = NULL,
-    why = "update_mascot() warns (class mascot_update_ignored) and ignores the whole update. The mascot and its current palette stay unchanged; nothing is dropped."
-  ),
-  `Leave out an argument name` = list(
-    code = "update_mascot(\"helper\", \"happy\")",
-    why = "Arguments after id must be named. An unnamed argument reports \"an unnamed argument\" and lists the valid names."
-  ),
-  `A mood that does not exist` = list(
-    code = "update_mascot(\"helper\", mood = \"sleepy\")",
-    why = "Displays a warning listing valid moods. The mascot keeps its current mood."
-  ),
-  `Misspell an argument` = list(
-    code = "update_mascot(\"helper\", moood = \"happy\")",
-    why = "... must be empty, so typos produce an error listing the valid argument names."
-  ),
-  `Invalid helper value` = list(
-    code = "update_mascot(\"helper\", size = mascot_size(10))",
-    why = "A helper that errors gives a warning (class mascot_update_ignored); the whole update is ignored and the mascot stays unchanged."
-  ),
-  `Too small` = list(code = "update_mascot(\"helper\", size = 10)", why = "Sizes must be at least 24 pixels."),
-  `Minimise an inline mascot` = list(
-    code = "update_mascot(\"helper\", placement = mascot_placement(\"inline\", minimise = TRUE))",
-    why = "An inline mascot ignores minimise. An informational message explains this, and the mascot sits inline."
-  ),
-  `A bubble that never shows` = list(
-    code = "update_mascot(\"helper\", bubble = mascot_bubble(\"Hi\", duration = 0))",
-    why = "duration must be greater than zero. Use Inf to keep the bubble open."
-  ),
-  `Not a colour` = list(
-    code = "update_mascot(\"helper\", theme = list(body = \"not-a-colour\"))",
-    why = "Colours are validated in R before sending to the browser."
-  ),
-  `Low contrast` = list(
-    code = "update_mascot(\"helper\", theme = list(body = \"#f8f9fa\"))",
-    why = "The colour is applied, with a warning if contrast against the page is low."
-  ),
-  `The wrong id` = list(
-    code = "update_mascot(\"helpr\", mood = \"happy\")",
-    why = paste(
-      "No error and no change: the server cannot see browser elements. With shiny::devmode(TRUE), the browser",
-      "console reports the missing element."
-    )
-  )
-)
+# The calls of the guide's "common mistakes" lists live in guide/guide-mistakes.R, shared with the website;
+# its functions are defined here too, and the studio's names point to them.
+studio_guide_dir <- function() {
+  local <- file.path(getwd(), "guide")
+  if (file.exists(file.path(local, "guide-helpers.R"))) {
+    return(normalizePath(local))
+  }
+  system.file("examples", "studio", "guide", package = "mascot")
+}
+sys.source(file.path(studio_guide_dir(), "guide-mistakes.R"), envir = environment())
+mistakes <- guide_mistake_base
+character_mistakes <- guide_character_mistakes
+studio_mistake_palettes <- guide_mistake_palettes
 
 # Where each argument can be tried: the HTML that must be on the page (an input id, or the
 # data-event of a button), or the reason it has no control. tests/testthat/test-examples.R checks
@@ -286,30 +245,6 @@ studio_brand <- function(character) {
   result
 }
 
-character_mistakes <- function(character) {
-  checkmate::assert_string(character)
-  role <- mascot::mascot_colour_roles(character)$role[1]
-  result <- mistakes
-  palettes <- studio_mistake_palettes(character)
-  for (name in c("Borrow another character's palette", "A made-up palette id", "An unknown palette in an update")) {
-    updating <- identical(name, "An unknown palette in an update")
-    palette <- if (name == "A made-up palette id") palettes$invented else palettes$borrowed
-    if (is.null(palette)) {
-      # No borrowed example is possible if all shipped characters ever share exactly the same ids.
-      result[[name]] <- NULL
-      next
-    }
-    result[[name]]$code <- format_call(
-      if (updating) "update_mascot" else "mascot",
-      list("helper", character = character, theme = palette)
-    )
-  }
-  for (name in c("Not a colour", "Low contrast")) {
-    result[[name]]$code <- sub("body =", paste0(arg_name(role), " ="), result[[name]]$code, fixed = TRUE)
-  }
-  result
-}
-
 # Internal authoring coverage is separate from the exported function map until R4b.
 studio_character_controls <- list(
   mascot_read_character = list(path = input_id("your_character_file", "your_character_example")),
@@ -360,20 +295,6 @@ studio_long_status <- "Review in progress: checking the submitted rows and recor
 # The first two characters share this palette id and the third has none of it. A test fails if a change to the
 # palettes breaks that.
 studio_palette_swap <- c(from = "tessa", kept = "sela", dropped = "knurl", palette = "coral_navy")
-
-# Use a real palette owned by another shipped character, and an id that no character owns.
-studio_mistake_palettes <- function(character) {
-  checkmate::assert_string(character, min.chars = 1)
-  own <- mascot::mascot_palettes(character)$name
-  others <- setdiff(unname(studio_characters()), character)
-  available <- unique(unlist(lapply(others, function(id) mascot::mascot_palettes(id)$name)))
-  borrowed <- setdiff(available, c("original", own))
-  invented <- "zzzzzz"
-  while (invented %in% c(own, available)) {
-    invented <- paste0(invented, "z")
-  }
-  list(borrowed = if (length(borrowed)) borrowed[[1L]], invented = invented)
-}
 
 # The sentence keeps the selector's API value "original" while naming the character's own colours.
 studio_palette_sentence <- function(character, palette = "original") {

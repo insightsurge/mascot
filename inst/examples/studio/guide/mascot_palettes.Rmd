@@ -2,7 +2,13 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
-### `r mascot::mascot_character(studio_character)$name`'s palettes
+```{r mascot_palettes-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_palettes")
+```
+
+```{r mascot_palettes-heading, echo = FALSE, results = "asis"}
+guide_heading(paste0(mascot::mascot_character(studio_character)$name, "'s palettes"), "Palettes")
+```
 
 <div class="pg-muted">
 
@@ -11,7 +17,7 @@ The first row is the character's own colours, with no palette applied; "original
 </div>
 
 ```{r mascot_palettes-table, echo = FALSE}
-guide_table(mascot::mascot_palettes(studio_character), wrap = "pg-palette-table")
+guide_each_character(function(ch) guide_table(mascot::mascot_palettes(ch), wrap = "pg-palette-table"))
 ```
 
 ```{r mascot_palettes-notes, child = file.path(guide_dir, "_palette-notes.Rmd"), echo = FALSE}
@@ -31,4 +37,8 @@ if (in_studio()) palette_roles_demo()
 
 ```{r mascot_palettes-swap-demo, echo = FALSE}
 if (in_studio()) palette_swap_section(studio_character)
+```
+
+```{r mascot_palettes-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_palettes", studio_character)
 ```

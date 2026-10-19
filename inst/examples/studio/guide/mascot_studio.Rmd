@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_studio-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_studio")
+```
+
 ### Open a useful starting point
 
 Launch the studio from an interactive R console:
@@ -55,3 +59,7 @@ to your own app.
 The studio works offline with mascot, Shiny and the optional packages bslib and
 knitr available locally. Its interface is experimental, so revisit the generated
 code when upgrading.
+
+```{r mascot_studio-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_studio", studio_character)
+```

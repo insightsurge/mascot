@@ -33,6 +33,7 @@ describe("mascot_examples()", {
             "R/panels.R",
             "R/ui.R",
             "guide/guide-helpers.R",
+            "guide/guide-mistakes.R",
             "guide/guide.css",
             "guide/mascot_bubble.Rmd",
             "guide/mascot_action.Rmd",
@@ -1209,6 +1210,21 @@ studio_guide_env <- function(frame = parent.frame()) {
 describe("studio guide pages", {
   guide_dir <- function() file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
   page_html <- function(page) paste(vapply(page, as.character, character(1)), collapse = "\n")
+  # The website knit also holds two boxes that speak of the studio by design: "Try it live" and the section of
+  # real warnings and errors. The checks of the page's own content leave them out; they have their own tests.
+  without_site_extras <- function(html) {
+    html <- sub("(?s)<h3[^>]*>Warnings, errors and common mistakes</h3>.*$", "", html, perl = TRUE)
+    gsub("(?s)<div class=\"pg-callout\">\\s*<strong>Try it live\\. </strong>.*?</div>", "", html, perl = TRUE)
+  }
+  # The studio names the selected character in a heading ("Sela's anchors"); the website, which shows every
+  # character in tabs, uses the general title ("Anchors"). NULL where the studio text has no general form.
+  site_title <- function(text) {
+    if (!startsWith(text, "Sela's")) {
+      return(text)
+    }
+    rest <- trimws(sub("^Sela's", "", text))
+    if (nzchar(rest)) paste0(toupper(substring(rest, 1, 1)), substring(rest, 2))
+  }
   batch_pages <- c("mascot_bubble", "mascot_action", "mascot_preview", "update_mascot")
   batch_content <- list(
     mascot_bubble = c(
@@ -1264,7 +1280,7 @@ describe("studio guide pages", {
         envir = standalone,
         quiet = TRUE
       )
-      outside <- page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n")))
+      outside <- without_site_extras(page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n"))))
       for (text in batch_content[[fn]]) {
         expect_match(html, text, fixed = TRUE)
         expect_match(outside, text, fixed = TRUE)
@@ -1327,10 +1343,10 @@ describe("studio guide pages", {
         envir = standalone,
         quiet = TRUE
       )
-      outside <- page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n")))
+      outside <- without_site_extras(page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n"))))
       for (text in interactive_content[[fn]]) {
         expect_match(html, text, fixed = TRUE)
-        expect_match(outside, text, fixed = TRUE)
+        if (!is.null(site_title(text))) expect_match(outside, site_title(text), fixed = TRUE)
       }
       expect_false(grepl("data-event|shiny-html-output|shiny-text-output|data-mascot", outside))
       expect_false(grepl("studio|Controls tab|sentence bar", env$html_text(outside), ignore.case = TRUE))
@@ -1404,7 +1420,7 @@ describe("studio guide pages", {
         envir = standalone,
         quiet = TRUE
       )
-      outside <- page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n")))
+      outside <- without_site_extras(page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n"))))
       for (heading in new_pages[[fn]]) {
         for (text in c(html, outside)) {
           expect_match(text, paste0(">", heading, "</h3>"), fixed = TRUE)
@@ -1533,10 +1549,10 @@ describe("studio guide pages", {
         envir = standalone,
         quiet = TRUE
       )
-      outside <- page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n")))
+      outside <- without_site_extras(page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n"))))
       for (text in data_content[[fn]]) {
         expect_match(html, text, fixed = TRUE)
-        expect_match(outside, text, fixed = TRUE)
+        if (!is.null(site_title(text))) expect_match(outside, site_title(text), fixed = TRUE)
       }
       expect_false(grepl("data-event|shiny-html-output|shiny-text-output|data-mascot", outside))
       expect_false(grepl("studio|sentence|top bar|Controls tab", env$html_text(outside), ignore.case = TRUE))
@@ -1747,15 +1763,135 @@ describe("studio guide pages", {
     for (page in pages) {
       stub <- paste(readLines(file.path(articles, paste0("guide-", page, ".Rmd")), warn = FALSE), collapse = "\n")
       # The stub includes the page by name and sets up the helpers from the installed package.
-      expect_match(stub, paste0('file.path(guide, "', page, '.Rmd")'), fixed = TRUE, info = page)
+      expect_match(stub, paste0('file.path(guide_dir, "', page, '.Rmd")'), fixed = TRUE, info = page)
       expect_match(
         stub,
-        'sys.source(file.path(guide, "guide-helpers.R"), envir = knitr::knit_global())',
+        'sys.source(file.path(guide_dir, "guide-helpers.R"), envir = knitr::knit_global())',
         fixed = TRUE,
         info = page
       )
       expect_match(navbar, paste0("href: articles/guide-", page, ".html"), fixed = TRUE, info = page)
     }
+  })
+  # The website knit of a page: no studio, so no widgets, but every character, the live box and the real messages.
+  knit_for_website <- function(fn) {
+    standalone <- new.env(parent = globalenv())
+    standalone$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), standalone)
+    options <- knitr::opts_chunk$get()
+    withr::defer(knitr::opts_chunk$restore(options))
+    knitr::opts_chunk$set(echo = FALSE, error = FALSE)
+    markdown <- knitr::knit(
+      file.path(guide_dir(), paste0(fn, ".Rmd")),
+      output = file.path(withr::local_tempdir(), "page.md"),
+      envir = standalone,
+      quiet = TRUE
+    )
+    paste(readLines(markdown, warn = FALSE), collapse = "\n")
+  }
+  all_pages <- sub("[.]Rmd$", "", list.files(guide_dir(), pattern = "^[^_].*[.]Rmd$"))
+  tabbed_pages <- c(
+    "mascot_moods",
+    "mascot_gestures",
+    "mascot_anchors",
+    "mascot_palettes",
+    "mascot_colour_roles",
+    "mascot_theme",
+    "mascot_gesture"
+  )
+  it("shows the website reader a live box, every character and the real messages", {
+    names <- mascot_characters()$name
+    for (fn in all_pages) {
+      site <- knit_for_website(fn)
+      expect_match(site, "Try it live", fixed = TRUE, info = fn)
+      expect_match(site, sprintf('mascot::mascot_studio(fn = "%s")', fn), fixed = TRUE, info = fn)
+      expect_match(site, "Warnings, errors and common mistakes", fixed = TRUE, info = fn)
+      # Some calls only work and say nothing; the page then says so.
+      expect_match(site, "Error:|Warning:|Message:|No R warning or error|takes no arguments", info = fn)
+      expect_false(grepl("shiny-html-output|shiny-text-output|data-event=", site), info = fn)
+    }
+    # Calls that do go wrong give the reader the real messages.
+    for (fn in c("mascot_theme", "update_mascot", "mascot_size", "mascot_placement", "mascot_moods")) {
+      expect_match(knit_for_website(fn), "Error:|Warning:", info = fn)
+    }
+    for (fn in tabbed_pages) {
+      site <- knit_for_website(fn)
+      expect_match(site, 'class="nav nav-tabs"', fixed = TRUE, info = fn)
+      for (name in names) {
+        expect_match(site, paste0(">", name, "</button>"), fixed = TRUE, info = paste(fn, name))
+      }
+    }
+  })
+  it("shows every character of the listing on the website, with each character's own data", {
+    site <- knit_for_website("mascot_moods")
+    for (id in mascot_characters()$id) {
+      expect_match(site, paste0('id="guide-character-1-', id, '"'), fixed = TRUE)
+      for (mood in mascot_moods(id)$name) {
+        expect_match(site, paste0("<td>", mood, "</td>"), fixed = TRUE, info = paste(id, mood))
+      }
+    }
+  })
+  it("leaves the studio's pages as they were: no tabs, no live box, no second mistakes section", {
+    env <- studio_guide_env()
+    for (fn in all_pages) {
+      html <- page_html(env$studio_guide_page(fn, "tessa", guide_dir()))
+      expect_false(grepl("nav-tabs|Try it live|Warnings, errors and common mistakes", html), info = fn)
+      selected <- as.character(env$selected_guide(fn, "tessa"))
+      expect_identical(
+        lengths(regmatches(selected, gregexpr("Warnings, errors and common mistakes", selected, fixed = TRUE))),
+        1L,
+        info = fn
+      )
+    }
+    expect_match(
+      page_html(env$studio_guide_page("mascot_moods", "sela", guide_dir())),
+      "Sela's [0-9]+ moods",
+      perl = TRUE
+    )
+  })
+  it("gives the studio and the website the same calls and the same messages", {
+    env <- studio_guide_env()
+    for (fn in c("mascot_theme", "update_mascot", "mascot_size")) {
+      cases <- env$guide_mistake_cases(fn, "tessa")
+      expect_gt(length(cases), 0L)
+      studio <- as.character(env$guide_mistakes(fn, "tessa"))
+      website <- as.character(env$guide_mistakes_html(fn, "tessa"))
+      for (case in cases) {
+        expect_match(studio, htmltools::htmlEscape(case$code), fixed = TRUE, info = fn)
+        expect_match(website, htmltools::htmlEscape(case$code), fixed = TRUE, info = fn)
+        for (message in case$messages) {
+          expect_match(website, htmltools::htmlEscape(message), fixed = TRUE, info = fn)
+        }
+      }
+    }
+    # The studio's own names point to the shared code.
+    expect_identical(env$mistakes, env$guide_mistake_base)
+    expect_identical(env$character_mistakes("sela"), env$guide_character_mistakes("sela"))
+    expect_error(env$guide_mistake_cases(1, "tessa"), "string")
+    expect_error(env$guide_mistakes_html("mascot", 1), "string")
+  })
+  it("draws per-character content as the studio always did, and as tabs on the website", {
+    helpers <- new.env(parent = globalenv())
+    helpers$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), helpers)
+    helpers$studio_character <- "sela"
+    render <- function(id) htmltools::tags$p(id)
+    helpers$in_studio <- function() TRUE
+    expect_identical(as.character(helpers$guide_each_character(render)), "<p>sela</p>")
+    helpers$in_studio <- function() FALSE
+    first <- as.character(helpers$guide_each_character(render))
+    second <- as.character(helpers$guide_each_character(render))
+    expect_match(first, 'id="guide-character-1-sela"', fixed = TRUE)
+    expect_match(second, 'id="guide-character-2-sela"', fixed = TRUE)
+    expect_identical(lengths(regmatches(first, gregexpr('aria-selected="true"', first, fixed = TRUE))), 1L)
+    expect_match(first, 'role="tabpanel"', fixed = TRUE)
+    expect_error(helpers$guide_each_character("no"), "function")
+    expect_error(helpers$guide_each_character(render, id = 1), "string")
+    expect_error(helpers$guide_try_live(1), "string")
+    expect_error(helpers$guide_heading(1), "string")
+    expect_output(helpers$guide_heading("Studio title", "Site title"), "### Site title")
+    helpers$in_studio <- function() TRUE
+    expect_output(helpers$guide_heading("Studio title", "Site title"), "### Studio title")
   })
   it("says so in the guide, and warns, when a page cannot be built", {
     env <- studio_guide_env()
@@ -1862,7 +1998,7 @@ describe("studio guide pages", {
         stub
       )
       output <- knitr::knit(stub, file.path(dir, "stub.md"), envir = new.env(parent = globalenv()), quiet = TRUE)
-      text <- paste(readLines(output, warn = FALSE), collapse = "\n")
+      text <- without_site_extras(paste(readLines(output, warn = FALSE), collapse = "\n"))
       expect_match(text, "###", fixed = TRUE, info = page)
       expect_false(grepl('id="palette_swap_demo"', text, fixed = TRUE), info = page)
       expect_false(grepl("data-event|shiny-html-output|shiny-text-output", text), info = page)

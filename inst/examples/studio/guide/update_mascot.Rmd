@@ -3,6 +3,10 @@ studio_character <- if (exists("studio_character")) studio_character else formal
 knitr::knit_meta_add(list(guide_dependency()))
 ```
 
+```{r update_mascot-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("update_mascot")
+```
+
 ### What each kind of value does in update_mascot()
 
 | You pass | Example | The mascot |
@@ -50,3 +54,7 @@ produces an error.
 | mascot_error_dots | Error | Unexpected arguments in ... (e.g. an unnamed argument or typo) |
 | mascot_contrast | Warning | Colour contrast against background is below 3:1 |
 | mascot_placement_ignored | Message | Inline placement ignores minimise or drag |
+
+```{r update_mascot-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("update_mascot", studio_character)
+```

@@ -2,8 +2,16 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_families-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_families")
+```
+
 ### Character families
 
 ```{r mascot_families-table, echo = FALSE}
 guide_table(mascot::mascot_families())
+```
+
+```{r mascot_families-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_families", studio_character)
 ```

@@ -2,13 +2,25 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
-### `r mascot::mascot_character(studio_character)$name`'s anchors
+```{r mascot_anchors-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_anchors")
+```
+
+```{r mascot_anchors-heading, echo = FALSE, results = "asis"}
+guide_heading(paste0(mascot::mascot_character(studio_character)$name, "'s anchors"), "Anchors")
+```
 
 ```{r mascot_anchors-table, echo = FALSE}
-anchors <- mascot::mascot_anchors(studio_character)
-if (nrow(anchors)) {
-  guide_table(anchors)
-} else {
-  htmltools::tags$p(paste(mascot::mascot_character(studio_character)$name, "has no anchors"))
-}
+guide_each_character(function(ch) {
+  anchors <- mascot::mascot_anchors(ch)
+  if (nrow(anchors)) {
+    guide_table(anchors)
+  } else {
+    htmltools::tags$p(paste(mascot::mascot_character(ch)$name, "has no anchors"))
+  }
+})
+```
+
+```{r mascot_anchors-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_anchors", studio_character)
 ```

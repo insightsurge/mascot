@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot")
+```
+
 ### Two calls, one id
 
 Put `mascot("helper")` in the UI, then use the same id in the server to change its mood.
@@ -9,4 +13,8 @@ In a module, namespace the UI id with `ns()`; the module server uses the local i
 
 ```{r mascot-wiring, echo = FALSE}
 guide_wiring()
+```
+
+```{r mascot-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot", studio_character)
 ```

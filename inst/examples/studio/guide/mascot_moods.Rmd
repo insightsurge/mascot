@@ -2,7 +2,16 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
-### `r mascot::mascot_character(studio_character)$name`'s `r nrow(mascot::mascot_moods(studio_character))` moods
+```{r mascot_moods-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_moods")
+```
+
+```{r mascot_moods-heading, echo = FALSE, results = "asis"}
+guide_heading(
+  paste0(mascot::mascot_character(studio_character)$name, "'s ", nrow(mascot::mascot_moods(studio_character)), " moods"),
+  "Moods"
+)
+```
 
 <div class="pg-muted">
 
@@ -12,5 +21,9 @@ one named in fallback.
 </div>
 
 ```{r mascot_moods-table, echo = FALSE}
-guide_table(mascot::mascot_moods(studio_character))
+guide_each_character(function(ch) guide_table(mascot::mascot_moods(ch)))
+```
+
+```{r mascot_moods-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_moods", studio_character)
 ```

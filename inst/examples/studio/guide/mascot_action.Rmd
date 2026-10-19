@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_action-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_action")
+```
+
 ### From a click to your server
 
 ```{r mascot_action-flow, echo = FALSE}
@@ -27,3 +31,7 @@ label, so screen readers say what a click does.
 Options need their main argument; an empty call removes it.
 
 </div>
+
+```{r mascot_action-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_action", studio_character)
+```

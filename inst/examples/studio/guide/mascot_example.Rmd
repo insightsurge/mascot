@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_example-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_example")
+```
+
 ### Copy an example into your project
 
 Find the names with `r guide_fn_link("mascot_examples")`, then locate an app
@@ -38,4 +42,8 @@ the app closes; locating the file with `run = FALSE` does not launch it.
 
 ```{r mascot_example-host-mode, echo = FALSE, results = 'asis'}
 if (in_studio()) cat("In the studio, selecting this function opens the Examples host mode. Run the launch call you copy there in your R console; the host does not start another app.\n")
+```
+
+```{r mascot_example-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_example", studio_character)
 ```

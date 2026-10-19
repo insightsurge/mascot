@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_size-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_size")
+```
+
 ### Size
 
 The ruler marks 24, 72, 160 and 320 pixels; 160 is the default.
@@ -26,4 +30,8 @@ With `small_screen = "auto"`, a floating mascot shrinks to at most 96 pixels; an
 mascot_size()
 mascot_size(120, small_screen = 72)
 mascot_size("30%", small_screen = NULL)
+```
+
+```{r mascot_size-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_size", studio_character)
 ```

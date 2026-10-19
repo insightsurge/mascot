@@ -8,7 +8,17 @@
 in_studio <- function() FALSE
 
 if (!exists("guide_dir")) {
-  guide_dir <- "."
+  # Without a `guide_dir`, this file's own folder: the working directory when it is there, else the installed one.
+  guide_dir <- if (file.exists("guide-helpers.R")) {
+    "."
+  } else {
+    system.file("examples", "studio", "guide", package = "mascot")
+  }
+}
+
+# The calls and messages of the "common mistakes" sections (also loaded by the studio's R/data.R).
+if (!exists("guide_mistake_cases")) {
+  sys.source(file.path(guide_dir, "guide-mistakes.R"), envir = environment())
 }
 
 # The stylesheet of the diagrams below. Bump the version when guide.css changes.
@@ -17,9 +27,10 @@ guide_dependency <- function(dir = guide_dir) {
   checkmate::assert_file_exists(file.path(dir, "guide.css"))
   htmltools::htmlDependency(
     name = "mascot-guide",
-    version = "1.2.0",
+    version = "1.3.0",
     src = c(file = normalizePath(dir)),
-    stylesheet = "guide.css"
+    stylesheet = "guide.css",
+    all_files = FALSE
   )
 }
 
@@ -223,4 +234,80 @@ guide_fn_link <- function(fn, label = paste0(fn, "()")) {
   } else {
     htmltools::tags$a(href = paste0("guide-", fn, ".html"), htmltools::tags$code(label))
   }
+}
+
+# A short box that tells the website reader how to see the page live; the pages put it behind
+# `if (!in_studio())`, because in the studio they are already there.
+guide_try_live <- function(fn) {
+  checkmate::assert_string(fn, min.chars = 1)
+  tags <- htmltools::tags
+  guide_callout(
+    tags$strong("Try it live. "),
+    "The mascot studio shows this function with live controls and the generated code. In an R session with the optional packages bslib and knitr installed, run:",
+    tags$pre(tags$code(sprintf('mascot::mascot_studio(fn = "%s")', fn))),
+    "It opens on this function's guide; change a control and watch the mascot."
+  )
+}
+
+# A heading written by a chunk (results = "asis"): the studio names the selected character, the website, which
+# has no selector, uses a general title above its tabs.
+guide_heading <- function(studio, site = studio) {
+  checkmate::assert_string(studio, min.chars = 1)
+  checkmate::assert_string(site, min.chars = 1)
+  cat("\n\n### ", if (in_studio()) studio else site, "\n\n", sep = "")
+}
+
+# Per-character content. `render` takes a character id and returns tags. The studio shows the selected
+# character, exactly as the page always did. The website has no selector, so it shows every character in
+# tabs (Bootstrap's own markup, so pkgdown and the studio's theme style them).
+guide_state <- new.env(parent = emptyenv())
+guide_each_character <- function(render, id = "guide-character") {
+  checkmate::assert_function(render)
+  checkmate::assert_string(id, min.chars = 1)
+  if (in_studio()) {
+    return(render(studio_character))
+  }
+  tags <- htmltools::tags
+  listing <- mascot::mascot_characters()
+  guide_state$count <- (if (is.null(guide_state$count)) 0L else guide_state$count) + 1L
+  base <- paste0(id, "-", guide_state$count)
+  ids <- paste0(base, "-", listing$id)
+  nav <- lapply(seq_len(nrow(listing)), function(i) {
+    first <- i == 1L
+    tags$li(
+      class = "nav-item",
+      role = "presentation",
+      tags$button(
+        class = paste("nav-link", if (first) "active"),
+        id = paste0(ids[[i]], "-tab"),
+        type = "button",
+        role = "tab",
+        `data-toggle` = "tab",
+        `data-bs-toggle` = "tab",
+        `data-target` = paste0("#", ids[[i]]),
+        `data-bs-target` = paste0("#", ids[[i]]),
+        `aria-controls` = ids[[i]],
+        `aria-selected` = if (first) "true" else "false",
+        listing$name[[i]]
+      )
+    )
+  })
+  panes <- lapply(seq_len(nrow(listing)), function(i) {
+    tags$div(
+      class = paste("tab-pane fade", if (i == 1L) "show active"),
+      id = ids[[i]],
+      role = "tabpanel",
+      `aria-labelledby` = paste0(ids[[i]], "-tab"),
+      tabindex = "0",
+      render(listing$id[[i]])
+    )
+  })
+  htmltools::attachDependencies(
+    tags$div(
+      class = "pg-character-tabs",
+      tags$ul(class = "nav nav-tabs", role = "tablist", nav),
+      tags$div(class = "tab-content", panes)
+    ),
+    guide_dependency()
+  )
 }

@@ -3,10 +3,16 @@ studio_character <- if (exists("studio_character")) studio_character else formal
 character_name <- mascot::mascot_character(studio_character)$name
 ```
 
-### `r character_name`'s palettes
+```{r mascot_theme-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_theme")
+```
+
+```{r mascot_theme-heading, echo = FALSE, results = "asis"}
+guide_heading(paste0(character_name, "'s palettes"), "Palettes")
+```
 
 ```{r mascot_theme-palettes, echo = FALSE}
-guide_table(mascot::mascot_palettes(studio_character), wrap = "pg-palette-table")
+guide_each_character(function(ch) guide_table(mascot::mascot_palettes(ch), wrap = "pg-palette-table"))
 ```
 
 ```{r mascot_theme-notes, child = file.path(guide_dir, "_palette-notes.Rmd"), echo = FALSE}
@@ -42,14 +48,16 @@ guide_flow(
 ### Brand colours from bslib
 
 ```{r mascot_theme-brand-flow, echo = FALSE}
-brand <- guide_brand_roles(studio_character)
-guide_flow(
-  guide_step(htmltools::tags$code("bs_theme(primary =)")),
-  guide_step(htmltools::tags$code(brand$primary), htmltools::div("and its followers")),
-  guide_gap(),
-  guide_step(htmltools::tags$code("bs_theme(secondary =)")),
-  guide_step(htmltools::tags$code(brand$secondary), htmltools::div("and its followers"))
-)
+guide_each_character(function(ch) {
+  brand <- guide_brand_roles(ch)
+  guide_flow(
+    guide_step(htmltools::tags$code("bs_theme(primary =)")),
+    guide_step(htmltools::tags$code(brand$primary), htmltools::div("and its followers")),
+    guide_gap(),
+    guide_step(htmltools::tags$code("bs_theme(secondary =)")),
+    guide_step(htmltools::tags$code(brand$secondary), htmltools::div("and its followers"))
+  )
+})
 ```
 
 ```{r mascot_theme-bs-theme-note, echo = FALSE}
@@ -57,4 +65,8 @@ guide_callout(
   htmltools::tags$strong("bs_theme(). "),
   'A bs_theme() always uses mode = "auto" and cannot be combined with a forced mode or extra roles.'
 )
+```
+
+```{r mascot_theme-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_theme", studio_character)
 ```

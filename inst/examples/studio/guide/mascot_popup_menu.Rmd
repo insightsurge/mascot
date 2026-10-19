@@ -2,6 +2,10 @@
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 
+```{r mascot_popup_menu-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_popup_menu")
+```
+
 ### From a click to your server
 
 ```{r mascot_popup_menu-flow, echo = FALSE}
@@ -68,3 +72,7 @@ Options need their main argument; an empty call removes it.
 Tab to the mascot's menu button, then Enter or Space opens it; arrow keys move between items; Escape closes it.
 
 </div>
+
+```{r mascot_popup_menu-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_popup_menu", studio_character)
+```

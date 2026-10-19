@@ -1100,15 +1100,16 @@ describe("small current-configuration editors", {
     app$click(selector = '[data-call-arg=status]')
     app$click(selector = "#chip_help")
     app$wait_for_js(
-      "document.getElementById('inspector_tab_help').getAttribute('aria-selected') === 'true' && document.getElementById('function_help').dataset.activeArgument === 'status' && document.activeElement.id === 'inspector_sidebar'"
+      "document.getElementById('inspector_tab_help').getAttribute('aria-selected') === 'true' && !!document.querySelector('#function_help [data-guide-function=mascot_status]') && document.activeElement.id === 'inspector_sidebar'"
     )
+    # The chip's Help opens the helper's own help page, not mascot()'s.
     expect_true(app$get_js(
-      "document.querySelector('#function_help [data-argument=status] .pg-help').textContent.trim().length > 0"
+      "document.querySelector('#function_help [data-guide-function=mascot_status]').textContent.trim().length > 0"
     ))
     app$click(selector = '[data-call-arg=bubble]')
     app$click(selector = "#chip_help")
     app$wait_for_js(
-      "document.activeElement.id === 'inspector_sidebar' && document.getElementById('function_help').dataset.activeArgument === 'bubble' && !document.getElementById('inspector_help').hidden"
+      "document.activeElement.id === 'inspector_sidebar' && !!document.querySelector('#function_help [data-guide-function=mascot_bubble]') && !document.getElementById('inspector_help').hidden"
     )
     app$click(selector = "#close_inspector")
     app$click(selector = '[data-call-arg=size]')
@@ -1466,7 +1467,7 @@ describe("studio sentence controls and overview", {
     app$run_js("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
     app$click(selector = '#chip_help')
     app$wait_for_js(
-      "document.getElementById('function_help').dataset.activeArgument === 'placement' && document.getElementById('inspector_tab_help').getAttribute('aria-selected') === 'true' && document.activeElement.id === 'inspector_sidebar'"
+      "!!document.querySelector('#function_help [data-guide-function=mascot_placement]') && document.getElementById('inspector_tab_help').getAttribute('aria-selected') === 'true' && document.activeElement.id === 'inspector_sidebar'"
     )
   })
 })

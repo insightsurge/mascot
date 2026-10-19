@@ -1450,6 +1450,18 @@ describe("nested modules across tabs", {
 
 
 describe("inline helper errors in update_mascot() (#349)", {
+  it("sends the development overlay text when helpers fail", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    protocol_ready(f)
+    protocol_flush(f)
+    expect_warning(
+      update_mascot("helper", size = mascot_size(-1), session = f$session),
+      class = "mascot_update_ignored"
+    )
+    expect_match(protocol_flush(f)$problem, "^mascot: ")
+  })
   it("lists every failed helper as its own bullet in one warning", {
     local_mocked_bindings(dev_mode = function() FALSE)
     f <- protocol_fixture()

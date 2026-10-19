@@ -60,6 +60,20 @@ guide_each_character(function(ch) {
 })
 ```
 
+```{r mascot_theme-bs-theme-experimental, echo = FALSE}
+# The studio quotes the help page's own sentence; the website points to the help page's section.
+if (in_studio()) {
+  studio_bslib_experimental()
+} else {
+  htmltools::tags$p(
+    htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
+    " Which parts of a character a bslib theme colours may change in a later release; see the experimental colour mapping section of ",
+    htmltools::tags$code("?mascot_theme"),
+    "."
+  )
+}
+```
+
 ```{r mascot_theme-bs-theme-note, echo = FALSE}
 guide_callout(
   htmltools::tags$strong("bs_theme(). "),

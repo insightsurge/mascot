@@ -1893,6 +1893,19 @@ describe("studio guide pages", {
     helpers$in_studio <- function() TRUE
     expect_output(helpers$guide_heading("Studio title", "Site title"), "### Studio title")
   })
+  it("marks the bslib mapping as experimental in the words of the help page", {
+    env <- studio_guide_env()
+    note <- as.character(env$studio_bslib_experimental())
+    expect_match(note, "badge text-bg-warning", fixed = TRUE)
+    expect_match(note, "Experimental", fixed = TRUE)
+    help <- paste(
+      as.character(env$help_page("mascot_theme")$description),
+      as.character(env$help_page("mascot_theme")$details)
+    )
+    if (grepl("Which parts of a character", help, fixed = TRUE)) {
+      expect_match(note, "may change in a later release", fixed = TRUE)
+    }
+  })
   it("says so in the guide, and warns, when a page cannot be built", {
     env <- studio_guide_env()
     dir <- withr::local_tempdir()
@@ -1912,7 +1925,14 @@ describe("studio guide pages", {
   it("does not repeat the description of the help page", {
     env <- studio_guide_env()
     for (fn in c("mascot_status", "mascot_theme", batch_pages, data_pages, interactive_pages, names(new_pages))) {
-      text <- env$html_text(page_html(env$studio_guide_page(fn, "tessa", guide_dir())))
+      # The experimental note quotes the help page at run time (studio_bslib_experimental()); that is not a copy.
+      page <- gsub(
+        '(?s)<div class="pg-note">\\s*<span class="badge text-bg-warning">.*?</div>',
+        "",
+        page_html(env$studio_guide_page(fn, "tessa", guide_dir())),
+        perl = TRUE
+      )
+      text <- env$html_text(page)
       description <- env$html_text(env$help_page(fn)$description)
       sentences <- trimws(strsplit(description, "(?<=[.!?])\\s+", perl = TRUE)[[1]])
       sentences <- sentences[nchar(sentences) >= 30]

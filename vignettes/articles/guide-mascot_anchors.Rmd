@@ -1,0 +1,14 @@
+---
+title: "mascot_anchors()"
+---
+
+The studio guide for [`mascot_anchors()`](../reference/mascot_anchors.html). The same page is read in the mascot studio.
+
+```{r setup, include = FALSE}
+library(mascot)
+guide <- system.file("examples", "studio", "guide", package = "mascot")
+source(file.path(guide, "guide-helpers.R"))
+```
+
+```{r child = file.path(guide, "mascot_anchors.Rmd")}
+```

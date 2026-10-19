@@ -84,6 +84,16 @@ describe("mascot_colour_roles(palette =)", {
     )
     expect_identical(mascot_colour_roles("tessa", palette = "night_teal"), mascot_colour_roles("tessa"))
   })
+  it("treats Sela's own name for her colours, lilac_violet, exactly like original", {
+    expect_identical(
+      mascot_colour_roles("sela", palette = "lilac_violet"),
+      mascot_colour_roles("sela", palette = "original")
+    )
+    expect_identical(mascot_colour_roles("sela", palette = "lilac_violet"), mascot_colour_roles("sela"))
+    roles <- mascot_colour_roles("sela", palette = "original")
+    expect_identical(roles$colour[roles$role == "body"], "#D9C8F5")
+    expect_identical(roles$colour[roles$role == "hair_purple"], "#4B2A8C")
+  })
   it("preserves untouched native colour strings including alpha and hex case", {
     for (id in c("neer", "knurl", "tessa")) {
       palette <- c(neer = "lagoon", knurl = "orbit", tessa = "coral_navy")[[id]]

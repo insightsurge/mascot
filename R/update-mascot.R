@@ -74,10 +74,9 @@
 #' | Bubble | `bubble = mascot_bubble()` removes it |
 #' | Theme | `theme = mascot_theme()` restores character colours |
 #' | Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
-#' | Placement | `placement = mascot_placement()` resets to default bottom-right |
+#' | Placement | `placement = mascot_placement()` resets to default bottom-right; `mascot_placement("inline")` returns inline |
 #' | Motion | `motion = mascot_motion_settings()` allows movement subject to visitor preference |
 #'
-#' `mascot_placement("inline")` returns inline.
 #' Each non-`NULL` argument replaces that whole setting, not part of it. For
 #' example, `update_mascot("h", size = 200)` also resets a custom `small_screen`
 #' to `"auto"`.
@@ -380,6 +379,7 @@ send_update <- function(session, id, patch, replay = FALSE) {
     return(invisible(NULL))
   }
   record <- mascot_id_state(session, key, namespaced = TRUE)
+  problem_before <- mascot_session(session)$problems[[key]]
   next_record <- tryCatch(
     {
       mascot_wire_check(patch)
@@ -414,7 +414,10 @@ send_update <- function(session, id, patch, replay = FALSE) {
     return(invisible(NULL))
   }
   owner <- mascot_session(session)
-  owner$problems[[key]] <- NULL
+  # A settle that failed during this call keeps its overlay; otherwise success clears it.
+  if (identical(owner$problems[[key]], problem_before)) {
+    owner$problems[[key]] <- NULL
+  }
   owner$states[[key]] <- next_record
   mascot_state_schedule(session, key)
   invisible(NULL)

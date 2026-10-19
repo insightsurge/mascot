@@ -1603,3 +1603,19 @@ describe("module warning ids (#350)", {
     expect_match(mascot_session(session)$problems[[session$ns("helper")]], "mascot: helper: ", fixed = TRUE)
   })
 })
+
+
+describe("settle overlay in a cold-start update (#350)", {
+  it("keeps the worried overlay when a buffered update fails as the anchor call settles", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot("helper", mood = "missing", session = f$session)
+    expect_warning(
+      update_mascot("helper", character = "tessa", session = f$session),
+      class = "mascot_update_ignored"
+    )
+    protocol_ready(f)
+    expect_match(protocol_flush(f)$problem, "^mascot: ")
+  })
+})

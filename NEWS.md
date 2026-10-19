@@ -128,7 +128,9 @@
 ## Minor improvements and fixes
 
 * Exported examples assign mascot tags instead of printing the embedded character data (#350).
+
 * `mascot_motion_settings()` reports invalid `messages` panel names with class `mascot_error_choice` (#350).
+
 * `update_mascot()` help lists every helper reset and explains that each supplied setting replaces the whole group. Module warnings consistently name the local mascot id (#350).
 
 * Checked character data gains a compact `format()` method; `print()` assertion failures carry `mascot_error` (#350).

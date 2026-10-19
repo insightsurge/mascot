@@ -432,7 +432,7 @@ mascot_state_schedule <- function(session, key) {
             "Gesture '",
             record$pending$name,
             "' discarded for mascot '",
-            key,
+            substring(key, nchar(session$ns("")) + 1L),
             "': the winning character cannot play it."
           )
         )

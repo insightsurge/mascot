@@ -112,12 +112,11 @@ to reset a setting:\tabular{ll}{
    Bubble \tab \code{bubble = mascot_bubble()} removes it \cr
    Theme \tab \code{theme = mascot_theme()} restores character colours \cr
    Click \tab \code{click = mascot_action()} (or \code{mascot_popup_menu()}) removes it \cr
-   Placement \tab \code{placement = mascot_placement()} resets to default bottom-right \cr
+   Placement \tab \code{placement = mascot_placement()} resets to default bottom-right; \code{mascot_placement("inline")} returns inline \cr
    Motion \tab \code{motion = mascot_motion_settings()} allows movement subject to visitor preference \cr
 }
 
 
-\code{mascot_placement("inline")} returns inline.
 Each non-\code{NULL} argument replaces that whole setting, not part of it. For
 example, \code{update_mascot("h", size = 200)} also resets a custom \code{small_screen}
 to \code{"auto"}.

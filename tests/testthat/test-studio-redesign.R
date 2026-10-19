@@ -1901,6 +1901,7 @@ describe("the next studio review round", {
     sys.source(file.path(dir, "R", "help.R"), envir = env)
     sys.source(file.path(dir, "R", "data.R"), envir = env)
     sys.source(file.path(dir, "R", "ui.R"), envir = env)
+    sys.source(file.path(dir, "R", "guide-md.R"), envir = env)
     sys.source(file.path(dir, "R", "code.R"), envir = env)
     expect_identical(env$code_action("", disabled = TRUE)$helper, quote(mascot_action()))
     expect_identical(env$code_action(NULL, disabled = TRUE)$helper, quote(mascot_action()))

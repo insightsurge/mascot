@@ -1733,6 +1733,25 @@ describe("studio guide pages", {
     expect_match(as.character(helpers$guide_fn_link("mascot_moods")), 'href="guide-mascot_moods.html"', fixed = TRUE)
     expect_error(helpers$guide_fn_link(1), "string")
   })
+  it("has a website article and a navbar link for every guide page", {
+    articles <- test_path("..", "..", "vignettes", "articles")
+    config <- test_path("..", "..", "_pkgdown.yml")
+    skip_if_not(
+      dir.exists(articles) && file.exists(config),
+      "The website sources are not part of the installed package."
+    )
+    pages <- sub("[.]Rmd$", "", list.files(guide_dir(), pattern = "^[^_].*[.]Rmd$"))
+    stubs <- sub("^guide-(.*)[.]Rmd$", "\\1", list.files(articles, pattern = "^guide-.*[.]Rmd$"))
+    expect_setequal(stubs, pages)
+    navbar <- paste(readLines(config, warn = FALSE), collapse = "\n")
+    for (page in pages) {
+      stub <- paste(readLines(file.path(articles, paste0("guide-", page, ".Rmd")), warn = FALSE), collapse = "\n")
+      # The stub includes the page by name and sets up the helpers from the installed package.
+      expect_match(stub, paste0('file.path(guide, "', page, '.Rmd")'), fixed = TRUE, info = page)
+      expect_match(stub, 'source(file.path(guide, "guide-helpers.R"))', fixed = TRUE, info = page)
+      expect_match(navbar, paste0("href: articles/guide-", page, ".html"), fixed = TRUE, info = page)
+    }
+  })
   it("says so in the guide, and warns, when a page cannot be built", {
     env <- studio_guide_env()
     dir <- withr::local_tempdir()

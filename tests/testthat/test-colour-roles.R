@@ -4,10 +4,10 @@ describe("mascot_colour_roles()", {
     expect_identical(value, mascot_colour_roles("tessa"))
     expect_s3_class(value, "data.frame")
     expect_named(value, c("role", "colour", "follows", "shade", "description", "brand"))
-    expect_equal(nrow(value), 20)
+    expect_equal(nrow(value), 33)
     expect_identical(value$role[3], "eye_white")
     expect_identical(value$role[9], "body_highlight")
-    expect_identical(value$colour[value$role == "body"], "#3f8a66")
+    expect_identical(value$colour[value$role == "body"], "#079C9B")
     expect_identical(value$follows[value$role == "limb"], "rim, body")
     expect_identical(value$shade[value$role == "body_highlight"], "lighter")
     expect_identical(value$shade[value$role == "accessory_detail"], "darker")
@@ -67,17 +67,26 @@ describe("public argument error classes", {
 
 describe("mascot_colour_roles(palette =)", {
   it("shows palette leaders and derives followers from them", {
-    roles <- mascot_colour_roles("tessa", palette = "azure")
-    expect_identical(roles$colour[roles$role == "body"], "#E0F2FE")
-    expect_identical(roles$colour[roles$role == "sleeve"], "#E0F2FE")
-    expect_identical(roles$colour[roles$role == "limb"], "#0284C7")
-    expect_identical(roles$colour[roles$role == "feature"], "#0F172A")
+    roles <- mascot_colour_roles("tessa", palette = "mist_navy")
+    expect_identical(roles$colour[roles$role == "body"], "#DCE5EC")
+    # The arms follow the body shade, which this palette supplies; the feet follow the ring.
+    expect_identical(roles$colour[roles$role == "sleeve"], "#C9D1D8")
+    expect_identical(roles$colour[roles$role == "limb"], "#8FAAC0")
+    expect_identical(roles$colour[roles$role == "feature"], "#1A2740")
+    expect_identical(roles$colour[roles$role == "accessory"], "#E9B84A")
     expect_identical(mascot_colour_roles("tessa", palette = "original"), mascot_colour_roles("tessa"))
     expect_error(mascot_colour_roles("knurl", palette = "oribt"), "oribt.*knurl.*orbit.*Did you mean")
   })
+  it("treats Tessa's own name for her colours, night_teal, exactly like original", {
+    expect_identical(
+      mascot_colour_roles("tessa", palette = "night_teal"),
+      mascot_colour_roles("tessa", palette = "original")
+    )
+    expect_identical(mascot_colour_roles("tessa", palette = "night_teal"), mascot_colour_roles("tessa"))
+  })
   it("preserves untouched native colour strings including alpha and hex case", {
     for (id in c("neer", "knurl", "tessa")) {
-      palette <- c(neer = "lagoon", knurl = "orbit", tessa = "coral")[[id]]
+      palette <- c(neer = "lagoon", knurl = "orbit", tessa = "coral_navy")[[id]]
       role <- c(neer = "shell_rib", knurl = "shine_translucent", tessa = "eye_white")[[id]]
       native <- mascot_colour_roles(id)
       themed <- mascot_colour_roles(id, palette = palette)
@@ -85,22 +94,22 @@ describe("mascot_colour_roles(palette =)", {
       expect_true(all(vapply(themed$colour, function(colour) !is.null(theme_channels(colour)), logical(1))))
     }
     data <- character_catalogue_get("tessa")
-    data$palettes$coral$light$body <- "rgba(255,229,217,0.5)"
+    data$palettes$coral_navy$light$body <- "rgba(255,229,217,0.5)"
     # The catalogue is restored after this test, including any caller-owned entries.
     saved <- character_catalogue_cache$tessa
     withr::defer(character_catalogue_cache$tessa <- saved)
     character_catalogue_cache$tessa <- data
-    colours <- mascot_colour_roles("tessa", palette = "coral")
-    sleeve <- colours$colour[colours$role == "sleeve"]
-    expect_match(sleeve, "^rgba\\(")
-    expect_equal(theme_channels(sleeve), c(255, 229, 217, 0.5))
+    colours <- mascot_colour_roles("tessa", palette = "coral_navy")
+    eyelid <- colours$colour[colours$role == "eyelid"]
+    expect_match(eyelid, "^rgba\\(")
+    expect_equal(theme_channels(eyelid), c(255, 229, 217, 0.5))
   })
   it("checks palette types and requires it to be named", {
     expect_identical(names(formals(mascot_colour_roles)), c("character", "...", "palette"))
-    for (value in list(1, "", NA_character_, c("coral", "azure"))) {
+    for (value in list(1, "", NA_character_, c("coral_navy", "peach"))) {
       expect_error(mascot_colour_roles(palette = value), "palette", class = "mascot_error")
     }
-    expect_error(mascot_colour_roles("tessa", "coral"), "Name the optional arguments", class = "mascot_error")
+    expect_error(mascot_colour_roles("tessa", "coral_navy"), "Name the optional arguments", class = "mascot_error")
     expect_error(mascot_colour_roles(typo = 1), "Unexpected arguments", class = "mascot_error")
   })
 })

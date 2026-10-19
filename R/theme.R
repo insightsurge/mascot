@@ -83,7 +83,7 @@
 #' @export
 #' @examples
 #' mascot_theme()
-#' mascot_theme(palette = "coral", light = list(rim = "#b93664"))
+#' mascot_theme(palette = "coral_navy", light = list(rim = "#b93664"))
 #' mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
 #' mascot_theme(css = list(body = "--team-blue"))
 #' mascot("helper", theme = list(body = "#1f6feb"))
@@ -467,8 +467,8 @@ contrast_warnings <- function(always = FALSE) {
 theme_palette_problem <- function(palette, data) {
   checkmate::assert_string(palette, min.chars = 1)
   checkmate::assert_list(data)
-  valid <- c("original", names(character_palettes(data)))
-  if (palette %in% valid) {
+  valid <- character_palette_names(data)
+  if (palette %in% c("original", valid)) {
     return(NULL)
   }
   paste0(
@@ -479,7 +479,30 @@ theme_palette_problem <- function(palette, data) {
     ". Choose ",
     paste(encodeString(valid, quote = '\"'), collapse = ", "),
     ".",
-    theme_role_hint(palette, valid)
+    theme_role_hint(palette, valid),
+    theme_palette_owner_hint(palette, data)
+  )
+}
+
+#' Name the other characters that have a palette of this name
+#'
+#' Palettes cannot be borrowed between characters yet, so an unknown palette
+#' that another character has is worth a pointer.
+#' @noRd
+theme_palette_owner_hint <- function(palette, data) {
+  checkmate::assert_string(palette, min.chars = 1)
+  checkmate::assert_list(data)
+  owners <- character_palette_owners(palette, data$id)
+  if (!length(owners)) {
+    return("")
+  }
+  paste0(
+    if (length(owners) > 1L) " Characters " else " Character ",
+    paste(encodeString(owners, quote = '\"'), collapse = ", "),
+    if (length(owners) > 1L) " have" else " has",
+    " a palette called ",
+    encodeString(palette, quote = '\"'),
+    "; palettes cannot be borrowed between characters yet."
   )
 }
 

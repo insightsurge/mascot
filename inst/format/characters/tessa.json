@@ -3,7 +3,7 @@
   "id": "tessa",
   "name": "Tessa",
   "family": "hexonians",
-  "description": "A calm green-and-gold hexagonal maker.",
+  "description": "A calm teal hexagonal maker with a silver ring, a bow and a chest badge that shows her mood.",
   "resolved": true,
   "family_definition": {
     "id": "hexonians",
@@ -13,37 +13,77 @@
   },
   "requires": [
     "parts",
-    "outline",
+    "paints",
     "clip",
+    "outline",
     "face_kit",
     "tracks",
     "lod"
   ],
   "colours": {
-    "outline": "#26312b",
-    "feature": "#16201b",
-    "eye_white": "#f5f6f4",
-    "shine": "#f5f6f4",
-    "teeth": "#f5f6f4",
-    "eyelid": "#3f8a66",
-    "tongue": "#a33a30",
-    "body": "#3f8a66",
-    "body_highlight": "#7fcba4",
-    "rim": "#d9b35c",
-    "limb": "#d9b35c",
-    "sleeve": "#3f8a66",
-    "blush": "#7fcba4",
-    "blush_strong": "#d9b35c",
-    "accessory": "#d9b35c",
-    "accessory_detail": "#7a5a12",
-    "sparkle": "#f5f6f4",
-    "sparkle_outline": "#d9b35c",
-    "sweat": "#9dc3e6",
-    "shadow": "#a2aea7"
+    "outline": "#14221B",
+    "feature": "#14221B",
+    "eye_white": "#FFFDF4",
+    "shine": "#FFFDF4",
+    "teeth": "#FFFDF4",
+    "tongue": "#F078C1",
+    "eyelid": "#079C9B",
+    "body": "#079C9B",
+    "body_highlight": "#6FC6C5",
+    "rim": "#CCDFE1",
+    "limb": "#CCDFE1",
+    "sleeve": "#047166",
+    "blush": "#F078C1",
+    "blush_strong": "#F078C1",
+    "accessory": "#DD89BA",
+    "accessory_detail": "#9F6386",
+    "sparkle": "#E8F1F2",
+    "sparkle_outline": "#14221B",
+    "sweat": "#9BD8FF",
+    "shadow": "#000000",
+    "outline_second": "#FFFDF4",
+    "hand": "#FFFDF4",
+    "body_shade": "#047166",
+    "rim_light": "#E8F1F2",
+    "rim_shade": "#9FAEB0",
+    "hair": "#1A3A3D",
+    "hair_shade": "#0F2427",
+    "hair_light": "#536B6E",
+    "accessory_light": "#F0CAE0",
+    "badge": "#155A5C",
+    "badge_icon": "#8BEDFF",
+    "iris": "#048B7D",
+    "iris_tint": "#43A89E"
+  },
+  "colour_descriptions": {
+    "outline": "Ink outline of the body, hair and badge",
+    "feature": "Eyes, brows and mouth",
+    "body": "Face colour of the hexagon",
+    "body_shade": "Darker corner of the hexagon and the arms",
+    "body_highlight": "Body highlight",
+    "rim": "Ring inside the hexagon, feet and badge edge",
+    "rim_light": "Light end of the ring and its shimmer",
+    "rim_shade": "Dark end of the ring",
+    "limb": "Feet",
+    "sleeve": "Arms",
+    "hand": "Hands",
+    "hair": "Hair, light end",
+    "hair_shade": "Hair, dark end and the hair behind",
+    "hair_light": "Hair strands",
+    "accessory": "Bow",
+    "accessory_light": "Bow, light parts",
+    "accessory_detail": "Bow ties",
+    "badge": "Chest badge plate",
+    "badge_icon": "Icon on the chest badge, which shows the mood",
+    "iris": "Iris of the eyes",
+    "iris_tint": "Facet on the lower left of the face",
+    "blush": "Cheeks",
+    "outline_second": "Pale line outside the outline"
   },
   "follows": {
     "sleeve": {
       "from": [
+        "body_shade",
         "body"
       ]
     },
@@ -57,16 +97,18 @@
         "body"
       ],
       "shade": "lighter",
-      "amount": 0.2529,
-      "saturation": 0.0491
+      "amount": 0.2863,
+      "saturation": -0.4813
     },
-    "blush": {
+    "blush_strong": {
       "from": [
-        "body"
-      ],
-      "shade": "lighter",
-      "amount": 0.2529,
-      "saturation": 0.0491
+        "blush"
+      ]
+    },
+    "tongue": {
+      "from": [
+        "blush"
+      ]
     },
     "limb": {
       "from": [
@@ -74,21 +116,17 @@
         "body"
       ]
     },
-    "blush_strong": {
+    "sparkle": {
       "from": [
-        "rim",
-        "body"
-      ]
+        "rim"
+      ],
+      "shade": "lighter",
+      "amount": 0.0882,
+      "saturation": 0.0185
     },
     "sparkle_outline": {
       "from": [
-        "rim",
-        "body"
-      ]
-    },
-    "accessory": {
-      "from": [
-        "rim"
+        "outline"
       ]
     },
     "accessory_detail": {
@@ -96,8 +134,48 @@
         "accessory"
       ],
       "shade": "darker",
-      "amount": -0.3314,
-      "saturation": 0.121
+      "amount": -0.1961,
+      "saturation": -0.3145
+    },
+    "accessory_light": {
+      "from": [
+        "accessory"
+      ],
+      "shade": "lighter",
+      "amount": 0.1647,
+      "saturation": 0.0062
+    },
+    "rim_light": {
+      "from": [
+        "rim"
+      ],
+      "shade": "lighter",
+      "amount": 0.0882,
+      "saturation": 0.0185
+    },
+    "rim_shade": {
+      "from": [
+        "rim"
+      ],
+      "shade": "darker",
+      "amount": -0.1843,
+      "saturation": -0.1621
+    },
+    "hair_light": {
+      "from": [
+        "hair"
+      ],
+      "shade": "lighter",
+      "amount": 0.2078,
+      "saturation": -0.2624
+    },
+    "iris_tint": {
+      "from": [
+        "iris"
+      ],
+      "shade": "lighter",
+      "amount": 0.1804,
+      "saturation": -0.5143
     }
   },
   "brand": {
@@ -108,428 +186,1123 @@
     {
       "fg": "feature",
       "bg": "body",
+      "min": 4.5,
+      "where": "eyes, brows and mouth on the face"
+    },
+    {
+      "fg": "hair",
+      "bg": "body",
       "min": 3,
-      "where": "small face details"
+      "where": "hair against the face"
+    },
+    {
+      "fg": "badge_icon",
+      "bg": "badge",
+      "min": 3,
+      "where": "the mood icon on the chest badge"
     }
   ],
   "ground": {
-    "centre_height": 104,
+    "centre_height": 93.15,
     "shadow": {
-      "rx": 62,
-      "ry": 9,
-      "alpha": 0.32,
+      "rx": 57.5,
+      "ry": 5.17,
+      "alpha": 0.15,
       "colour": "shadow"
     }
   },
   "outline": {
-    "width": 3,
+    "width": 0,
     "colour": "outline",
-    "join": "miter",
-    "cap": "butt"
+    "join": "round",
+    "cap": "round",
+    "second": {
+      "width": 4.4,
+      "colour": "outline_second"
+    }
+  },
+  "paints": {
+    "body_gradient": {
+      "type": "linear",
+      "from": [
+        58.7,
+        49.6
+      ],
+      "to": [
+        141.3,
+        157
+      ],
+      "stops": [
+        [
+          0,
+          "body"
+        ],
+        [
+          0.62,
+          "body"
+        ],
+        [
+          1,
+          "body_shade"
+        ]
+      ]
+    },
+    "ring_gradient": {
+      "type": "linear",
+      "from": [
+        40,
+        30
+      ],
+      "to": [
+        160,
+        176
+      ],
+      "stops": [
+        [
+          0,
+          "rim_light"
+        ],
+        [
+          0.5,
+          "rim"
+        ],
+        [
+          1,
+          "rim_shade"
+        ]
+      ]
+    },
+    "hair_lock": {
+      "type": "linear",
+      "from": [
+        -59.8,
+        36.8
+      ],
+      "to": [
+        -20.4,
+        90
+      ],
+      "stops": [
+        [
+          0,
+          "hair"
+        ],
+        [
+          1,
+          "hair_shade"
+        ]
+      ]
+    },
+    "hair_fringe": {
+      "type": "linear",
+      "from": [
+        -43,
+        14.3
+      ],
+      "to": [
+        74.1,
+        82
+      ],
+      "stops": [
+        [
+          0,
+          "hair"
+        ],
+        [
+          1,
+          "hair_shade"
+        ]
+      ]
+    }
   },
   "parts": [
     {
-      "id": "body",
+      "id": "figure",
       "at": [
-        0,
-        -104
+        -115.0,
+        -210.45
       ],
-      "layer": 20,
+      "scale": 1.15,
+      "items": []
+    },
+    {
+      "id": "hair_back",
+      "parent": "figure",
+      "layer": 8,
       "items": [
         {
-          "shape": "hexagon",
-          "r": 92,
-          "corner": 12,
-          "fill": "rim",
+          "id": "silhouette",
+          "shape": "path",
+          "d": "M76 161Q60 161 59 145C54 127 31 129.9 31 92C31 72 40 58 30 48C48 26.8 76 14 100 14C124 14 152 26.8 170 48C160 58 169 72 169 92C169 129.9 146 127 141 145Q140 161 124 161Z",
+          "fill": "hair_shade",
+          "outline": true,
           "stroke": "outline",
-          "width": 3
-        },
-        {
-          "shape": "hexagon",
-          "r": 81,
-          "corner": 8,
-          "fill": "body"
+          "width": 1.9,
+          "join": "round"
         },
         {
           "shape": "path",
-          "d": "M0 -81 L26 -65 L-26 -65 Z",
-          "fill": "body_highlight",
-          "alpha": 0.35
+          "d": "M52 60Q46 92 48 126M148 60Q154 92 152 126",
+          "stroke": "hair_light",
+          "width": 1.6,
+          "cap": "round",
+          "join": "round",
+          "alpha": 0.45,
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "id": "silhouette",
+            "shape": "round_rect",
+            "x": 31,
+            "y": 14,
+            "w": 138,
+            "h": 147,
+            "r": 40,
+            "fill": "hair_shade",
+            "outline": true,
+            "stroke": "outline",
+            "width": 1.9,
+            "join": "round"
+          }
+        ]
+      }
+    },
+    {
+      "id": "feet",
+      "parent": "figure",
+      "layer": 10,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": 72,
+          "y": 167,
+          "w": 20,
+          "h": 12,
+          "r": 6,
+          "fill": "limb",
+          "outline": true,
+          "stroke": "outline",
+          "width": 1.8
+        },
+        {
+          "shape": "round_rect",
+          "x": 108,
+          "y": 167,
+          "w": 20,
+          "h": 12,
+          "r": 6,
+          "fill": "limb",
+          "outline": true,
+          "stroke": "outline",
+          "width": 1.8
         }
       ]
     },
     {
-      "id": "foot_l",
-      "parent": "body",
-      "at": [
-        -23,
-        0
-      ],
-      "layer": 10,
-      "switch": {
-        "channel": "root.lift",
-        "above": 6,
-        "variant": "tuck"
-      },
+      "id": "body",
+      "parent": "figure",
+      "layer": 20,
       "items": [
         {
-          "x": -15,
-          "y": 88,
-          "w": 30,
-          "h": 16,
-          "r": [
-            6,
-            6,
-            8,
-            8
-          ],
-          "shape": "round_rect",
-          "fill": "limb",
+          "id": "silhouette",
+          "shape": "path",
+          "d": "M86.2 40.6Q100 32.4 113.8 40.6L145.2 59.1Q159 67.2 159 83.2L159 120.8Q159 136.8 145.2 144.9L113.8 163.4Q100 171.6 86.2 163.4L54.8 144.9Q41 136.8 41 120.8L41 83.2Q41 67.2 54.8 59.1Z",
+          "fill": {
+            "paint": "body_gradient"
+          },
+          "outline": true,
           "stroke": "outline",
-          "width": 2.5,
+          "width": 1.9,
+          "join": "round"
+        }
+      ]
+    },
+    {
+      "id": "facets",
+      "parent": "figure",
+      "at": [
+        100,
+        102
+      ],
+      "scale": [
+        0.92,
+        0.94
+      ],
+      "layer": 21,
+      "lod": [
+        "full",
+        "small"
+      ],
+      "items": [
+        {
+          "shape": "ellipse",
+          "x": -26,
+          "y": -36,
+          "rx": 46,
+          "ry": 26,
+          "rotate": -0.4189,
+          "fill": "body_highlight",
+          "alpha": 0.28,
+          "clip": "body.silhouette"
+        },
+        {
+          "shape": "path",
+          "d": "M-64 -26L0 -72L64 -26M-64 34L0 74L64 34",
+          "stroke": "body_highlight",
+          "width": 1.2,
+          "alpha": 0.32,
           "cap": "butt",
-          "join": "miter"
+          "join": "miter",
+          "clip": "body.silhouette",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "path",
+          "d": "M-66 24L-14 56L-66 76Z",
+          "fill": "iris_tint",
+          "alpha": 0.22,
+          "clip": "body.silhouette"
+        }
+      ]
+    },
+    {
+      "id": "ring",
+      "parent": "figure",
+      "layer": 22,
+      "items": [
+        {
+          "id": "band",
+          "shape": "path",
+          "d": "M88.7 43.6Q100 37 111.3 43.6L143.8 62.8Q155.1 69.5 155.1 82.6L155.1 121.4Q155.1 134.5 143.8 141.2L111.3 160.4Q100 167 88.7 160.4L56.2 141.2Q44.9 134.5 44.9 121.4L44.9 82.6Q44.9 69.5 56.2 62.8ZM56.4 66.8Q48.4 71.5 48.4 80.8L48.4 123.2Q48.4 132.5 56.4 137.2L92 158.2Q100 162.9 108 158.2L143.6 137.2Q151.6 132.5 151.6 123.2L151.6 80.8Q151.6 71.5 143.6 66.8L108 45.8Q100 41.1 92 45.8Z",
+          "fill": {
+            "paint": "ring_gradient"
+          }
+        }
+      ]
+    },
+    {
+      "id": "shimmer",
+      "parent": "figure",
+      "at": [
+        0,
+        0
+      ],
+      "layer": 23,
+      "opacity": 0,
+      "lod": [
+        "full",
+        "small"
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              -10,
+              0
+            ],
+            [
+              10,
+              0
+            ]
+          ],
+          "stroke": "rim_light",
+          "width": 3,
+          "cap": "round",
+          "join": "round"
+        }
+      ]
+    },
+    {
+      "id": "hair_front",
+      "parent": "figure",
+      "at": [
+        100,
+        0
+      ],
+      "scale": [
+        0.92,
+        1
+      ],
+      "layer": 30,
+      "items": [
+        {
+          "id": "lock",
+          "shape": "path",
+          "d": "M-34 36.8C-52 46 -63 66 -59 90C-41.4 74 -32.2 69.6 -20.4 58.4C-20 50 -26 40 -34 36.8Z",
+          "fill": {
+            "paint": "hair_lock"
+          },
+          "outline": true,
+          "stroke": "outline",
+          "width": 1.9,
+          "join": "round",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "shape": "path",
+          "d": "M-38 46Q-52 64 -54 80",
+          "stroke": "hair_light",
+          "width": 1.6,
+          "cap": "round",
+          "join": "round",
+          "alpha": 0.55,
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "fringe",
+          "shape": "path",
+          "d": "M-42 44.6C-34 23.2 -2 11 28 15C52 19 72 32 74 54C75 66 69 76 60 82C56 71 46 64 32 59C12 53 -10 52 -28 57.5C-38 60 -46 54 -42 44.6Z",
+          "fill": {
+            "paint": "hair_fringe"
+          },
+          "outline": true,
+          "stroke": "outline",
+          "width": 1.9,
+          "join": "round"
+        },
+        {
+          "shape": "path",
+          "d": "M-22 33.6Q18 21.8 60 46",
+          "stroke": "hair_light",
+          "width": 1.8,
+          "cap": "round",
+          "join": "round",
+          "alpha": 0.6,
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "shape": "path",
+          "d": "M-30 44Q12 34 50 58",
+          "stroke": "hair_light",
+          "width": 1.8,
+          "cap": "round",
+          "join": "round",
+          "alpha": 0.6,
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "face_owner",
+      "parent": "figure",
+      "at": [
+        100,
+        98
+      ],
+      "layer": 40,
+      "items": []
+    },
+    {
+      "id": "brows",
+      "parent": "figure",
+      "at": [
+        100,
+        98
+      ],
+      "layer": 41,
+      "lod": [
+        "full",
+        "small"
+      ],
+      "items": [
+        {
+          "shape": "path",
+          "d": "M-33.1 -16Q-22 -22.4 -10.9 -17",
+          "stroke": "feature",
+          "width": 2.5,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "path",
+          "d": "M10.9 -17Q22 -22.4 33.1 -16",
+          "stroke": "feature",
+          "width": 2.5,
+          "cap": "round",
+          "join": "round"
         }
       ],
       "variants": {
-        "tuck": [
+        "thinking": [
           {
-            "x": -12,
-            "y": -6,
-            "w": 24,
-            "h": 14,
-            "r": 7,
-            "shape": "round_rect",
-            "fill": "limb",
-            "stroke": "outline",
+            "shape": "path",
+            "d": "M-33.1 -19Q-22 -27.4 -10.9 -20",
+            "stroke": "feature",
             "width": 2.5,
-            "cap": "butt",
-            "join": "miter",
-            "transform": [
-              -1,
-              78,
-              0.25
-            ]
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "path",
+            "d": "M10.9 -14.5Q22 -19.4 33.1 -16.5",
+            "stroke": "feature",
+            "width": 2.5,
+            "cap": "round",
+            "join": "round"
+          }
+        ],
+        "happy": [
+          {
+            "shape": "path",
+            "d": "M-33.1 -19Q-22 -25.4 -10.9 -19",
+            "stroke": "feature",
+            "width": 2.5,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "path",
+            "d": "M10.9 -19Q22 -25.4 33.1 -19",
+            "stroke": "feature",
+            "width": 2.5,
+            "cap": "round",
+            "join": "round"
+          }
+        ],
+        "worried": [
+          {
+            "shape": "path",
+            "d": "M-33.1 -15Q-22 -19.9 -10.9 -21",
+            "stroke": "feature",
+            "width": 2.5,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "path",
+            "d": "M10.9 -21Q22 -19.9 33.1 -15",
+            "stroke": "feature",
+            "width": 2.5,
+            "cap": "round",
+            "join": "round"
+          }
+        ],
+        "celebrating": [
+          {
+            "shape": "path",
+            "d": "M-33.1 -19Q-22 -25.4 -10.9 -19",
+            "stroke": "feature",
+            "width": 2.5,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "path",
+            "d": "M10.9 -19Q22 -25.4 33.1 -19",
+            "stroke": "feature",
+            "width": 2.5,
+            "cap": "round",
+            "join": "round"
           }
         ]
       }
     },
     {
       "id": "arm_l",
-      "parent": "body",
+      "parent": "figure",
       "at": [
-        -69.67433714816835,
-        8
+        43.4,
+        112
       ],
-      "rotate": 1.85,
       "layer": 60,
       "items": [
         {
-          "shape": "round_rect",
-          "x": 0,
-          "y": -7.5,
-          "w": 42,
-          "h": 15,
-          "r": 7.5,
-          "fill": "sleeve",
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -1.8,
+              25
+            ]
+          ],
+          "stroke": "outline_second",
+          "width": 9.5,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -1.8,
+              25
+            ]
+          ],
+          "stroke": "sleeve",
+          "width": 6.5,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -1.8,
+              25
+            ]
+          ],
           "stroke": "outline",
-          "width": 2.5
+          "width": 1.8,
+          "alpha": 0.9,
+          "cap": "round",
+          "join": "round",
+          "lod": [
+            "full",
+            "small"
+          ]
         },
         {
           "shape": "circle",
-          "x": 39,
-          "y": 0,
-          "r": 6.75,
-          "fill": "limb",
+          "x": -1.8,
+          "y": 25,
+          "r": 5.6,
+          "fill": "hand",
           "stroke": "outline",
-          "width": 2.5
+          "width": 1.8
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "arm_r",
+      "parent": "figure",
+      "at": [
+        156.6,
+        112
+      ],
+      "layer": 60,
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              1.8,
+              25
+            ]
+          ],
+          "stroke": "outline_second",
+          "width": 9.5,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              1.8,
+              25
+            ]
+          ],
+          "stroke": "sleeve",
+          "width": 6.5,
+          "cap": "round",
+          "join": "round"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              1.8,
+              25
+            ]
+          ],
+          "stroke": "outline",
+          "width": 1.8,
+          "alpha": 0.9,
+          "cap": "round",
+          "join": "round",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "shape": "circle",
+          "x": 1.8,
+          "y": 25,
+          "r": 5.6,
+          "fill": "hand",
+          "stroke": "outline",
+          "width": 1.8
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "studs",
+      "parent": "figure",
+      "layer": 71,
+      "items": [
+        {
+          "shape": "hexagon",
+          "x": 39.3,
+          "y": 86,
+          "r": 3.4,
+          "corner": 1,
+          "fill": "limb",
+          "outline": true,
+          "stroke": "outline",
+          "width": 1.1
+        },
+        {
+          "shape": "hexagon",
+          "x": 160.7,
+          "y": 86,
+          "r": 3.4,
+          "corner": 1,
+          "fill": "limb",
+          "outline": true,
+          "stroke": "outline",
+          "width": 1.1
         }
       ]
     },
     {
-      "id": "foot_r",
-      "parent": "body",
-      "at": [
-        23,
-        0
+      "id": "thought",
+      "parent": "figure",
+      "layer": 55,
+      "lod": [
+        "full",
+        "small"
       ],
-      "layer": 10,
-      "switch": {
-        "channel": "root.lift",
-        "above": 6,
-        "variant": "tuck"
-      },
-      "items": [
-        {
-          "x": -15,
-          "y": 88,
-          "w": 30,
-          "h": 16,
-          "r": [
-            6,
-            6,
-            8,
-            8
-          ],
-          "shape": "round_rect",
-          "fill": "limb",
-          "stroke": "outline",
-          "width": 2.5,
-          "cap": "butt",
-          "join": "miter"
-        }
-      ],
+      "items": [],
       "variants": {
-        "tuck": [
+        "thinking": [
           {
-            "x": -12,
-            "y": -6,
-            "w": 24,
-            "h": 14,
-            "r": 7,
-            "shape": "round_rect",
-            "fill": "limb",
+            "shape": "circle",
+            "x": 150,
+            "y": 40,
+            "r": 2.6,
+            "fill": "sparkle",
             "stroke": "outline",
-            "width": 2.5,
-            "cap": "butt",
-            "join": "miter",
-            "transform": [
-              1,
-              78,
-              -0.25
-            ]
+            "width": 0.8
+          },
+          {
+            "shape": "circle",
+            "x": 159,
+            "y": 36,
+            "r": 3.2,
+            "fill": "sparkle",
+            "stroke": "outline",
+            "width": 0.8
+          },
+          {
+            "shape": "circle",
+            "x": 169,
+            "y": 31,
+            "r": 4,
+            "fill": "sparkle",
+            "stroke": "outline",
+            "width": 0.8
           }
         ]
       }
     },
     {
-      "id": "arm_r",
-      "parent": "body",
+      "id": "badge",
+      "parent": "figure",
       "at": [
-        69.67433714816835,
-        8
+        100,
+        150
       ],
-      "rotate": 1.25,
-      "layer": 60,
+      "layer": 80,
       "items": [
         {
-          "shape": "round_rect",
+          "shape": "hexagon",
           "x": 0,
-          "y": -7.5,
-          "w": 42,
-          "h": 15,
-          "r": 7.5,
-          "fill": "sleeve",
+          "y": 0,
+          "r": 21.6,
+          "corner": 5,
+          "fill": "outline_second"
+        },
+        {
+          "shape": "hexagon",
+          "x": 0,
+          "y": 0,
+          "r": 18,
+          "corner": 4,
+          "fill": "badge",
+          "stroke": "rim",
+          "width": 2.6,
+          "join": "round"
+        },
+        {
+          "shape": "hexagon",
+          "x": 0,
+          "y": 0,
+          "r": 21.6,
+          "corner": 5,
           "stroke": "outline",
-          "width": 2.5
+          "width": 1.2,
+          "join": "round"
+        }
+      ]
+    },
+    {
+      "id": "badge_icon",
+      "parent": "figure",
+      "at": [
+        100,
+        150
+      ],
+      "scale": 1.2857,
+      "layer": 81,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 3.4,
+          "fill": "badge_icon"
         },
         {
           "shape": "circle",
-          "x": 39,
+          "x": 0,
           "y": 0,
-          "r": 6.75,
-          "fill": "limb",
-          "stroke": "outline",
-          "width": 2.5
+          "r": 6.6,
+          "stroke": "badge_icon",
+          "width": 1.1,
+          "alpha": 0.6
         }
-      ]
+      ],
+      "variants": {
+        "thinking": [
+          {
+            "shape": "circle",
+            "x": -6.5,
+            "y": 0,
+            "r": 2.1,
+            "fill": "badge_icon"
+          },
+          {
+            "shape": "circle",
+            "x": 0,
+            "y": 0,
+            "r": 2.1,
+            "fill": "badge_icon"
+          },
+          {
+            "shape": "circle",
+            "x": 6.5,
+            "y": 0,
+            "r": 2.1,
+            "fill": "badge_icon"
+          }
+        ],
+        "happy": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                -6,
+                0.5
+              ],
+              [
+                -2,
+                4.5
+              ],
+              [
+                6,
+                -4
+              ]
+            ],
+            "stroke": "badge_icon",
+            "width": 2.8,
+            "cap": "round",
+            "join": "round"
+          }
+        ],
+        "worried": [
+          {
+            "shape": "polyline",
+            "points": [
+              [
+                0,
+                -6.5
+              ],
+              [
+                0,
+                1.5
+              ]
+            ],
+            "stroke": "badge_icon",
+            "width": 2.8,
+            "cap": "round",
+            "join": "round"
+          },
+          {
+            "shape": "circle",
+            "x": 0,
+            "y": 5.6,
+            "r": 1.8,
+            "fill": "badge_icon"
+          }
+        ],
+        "celebrating": [
+          {
+            "shape": "path",
+            "d": "M0 -8L2 -2.8L7.6 -2.5L3.2 1.1L4.7 6.5L0 3.4L-4.7 6.5L-3.2 1.1L-7.6 -2.5L-2 -2.8Z",
+            "fill": "badge_icon"
+          }
+        ]
+      }
     }
   ],
   "anchors": {
     "foot_l": {
-      "part": "foot_l",
+      "part": "feet",
       "at": [
-        0,
-        104
+        82,
+        179
       ],
       "description": "Sole attachment point.",
-      "side": "l",
-      "variants": {
-        "tuck": {
-          "at": [
-            -2.9792316740361837,
-            85.75129937368516
-          ],
-          "rotate": 0.25
-        }
-      }
+      "side": "l"
     },
     "hand_l": {
       "part": "arm_l",
       "at": [
-        39,
-        0
+        -1.8,
+        25
       ],
       "side": "l",
       "description": "Moving hand attachment."
     },
     "foot_r": {
-      "part": "foot_r",
+      "part": "feet",
       "at": [
-        0,
-        104
+        118,
+        179
       ],
       "description": "Sole attachment point.",
-      "side": "r",
-      "variants": {
-        "tuck": {
-          "at": [
-            2.9792316740361837,
-            85.75129937368516
-          ],
-          "rotate": -0.25
-        }
-      }
+      "side": "r"
     },
     "hand_r": {
       "part": "arm_r",
       "at": [
-        39,
-        0
+        1.8,
+        25
       ],
       "side": "r",
       "description": "Moving hand attachment."
     },
     "face": {
-      "part": "body",
+      "part": "face_owner",
       "at": [
         0,
         0
       ],
-      "description": "face attachment.",
+      "description": "Face attachment.",
       "scale": 1
     },
     "sparkle": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        56,
-        -33
+        100,
+        50
       ],
-      "description": "sparkle attachment."
+      "description": "Centre of the sparkles above the head."
     },
     "sweat": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        58,
-        -46
+        148,
+        62
       ],
-      "description": "sweat attachment."
+      "description": "Where the sweat drop forms."
     },
     "hair": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        -47,
-        -54
+        70.6,
+        48
       ],
-      "description": "hair attachment.",
-      "rotate": -0.5,
-      "scale": 1.2
+      "scale": 0.8,
+      "description": "Knot of the bow, top left of the hair."
     },
     "waist": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        60
+        100,
+        140
       ],
-      "description": "waist attachment."
+      "description": "Waist attachment."
     },
     "crown": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        -92
+        100,
+        14
       ],
-      "description": "crown attachment."
+      "description": "Top of the hair."
     },
     "forehead": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        -40
+        100,
+        70
       ],
-      "description": "forehead attachment."
+      "description": "Forehead attachment."
     },
     "eyes": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        -12
+        100,
+        98
       ],
-      "description": "eyes attachment."
+      "description": "Eye line."
     },
     "upper_lip": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        24
+        100,
+        115
       ],
-      "description": "upper_lip attachment."
+      "description": "Mouth line."
     },
     "chin": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        65
+        100,
+        126
       ],
-      "description": "chin attachment."
+      "description": "Chin attachment."
     },
     "neck": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        75
+        100,
+        164
       ],
-      "description": "neck attachment."
+      "description": "Neck attachment."
     },
     "chest": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        30
+        100,
+        150
       ],
-      "description": "chest attachment."
+      "description": "Centre of the chest badge."
     },
     "back": {
-      "part": "body",
+      "part": "figure",
       "at": [
-        0,
-        0
+        100,
+        102
       ],
-      "description": "back attachment."
+      "description": "Back attachment."
+    },
+    "fringe": {
+      "part": "figure",
+      "at": [
+        155.2,
+        82
+      ],
+      "description": "Tip of the side fringe."
+    },
+    "lock": {
+      "part": "figure",
+      "at": [
+        45.7,
+        90
+      ],
+      "description": "Tip of the lock over the left of the forehead."
+    },
+    "stud_l": {
+      "part": "figure",
+      "at": [
+        39.3,
+        86
+      ],
+      "side": "l",
+      "description": "Left hexagonal stud."
+    },
+    "stud_r": {
+      "part": "figure",
+      "at": [
+        160.7,
+        86
+      ],
+      "side": "r",
+      "description": "Right hexagonal stud."
     }
   },
   "face": {
-    "part": "body",
-    "kit": "classic",
+    "part": "face_owner",
+    "kit": "tessa_face",
     "at": [
       0,
       0
     ],
     "eyes": {
-      "y": -12,
-      "spacing": 30,
-      "lashes": true,
-      "iris": null
+      "y": 0,
+      "spacing": 22,
+      "lashes": false,
+      "iris": "iris"
     },
     "mouth": {
-      "y": 24
-    },
-    "caps": {
-      "left": "butt",
-      "right": "round",
-      "join": "miter"
+      "y": 17
     },
     "blush": {
-      "x": 36,
-      "y": 18,
-      "rx": 13,
-      "ry": 7,
-      "alpha": 0.45,
-      "strong_alpha": 0.55
+      "x": 32.5,
+      "y": 12.9,
+      "rx": 7.5,
+      "ry": 4.2,
+      "alpha": 0.3,
+      "strong_alpha": 0.5
     },
     "kit_definition": {
-      "id": "classic",
-      "description": "Painted expressive eyes, brows and mouths.",
+      "id": "tessa_face",
+      "description": "Tessa's soft round eyes, small smile and painted cheeks.",
       "roles": [
         "feature",
         "eye_white",
@@ -537,12 +1310,10 @@
         "eyelid",
         "teeth",
         "tongue",
-        "sweat",
-        "sparkle",
-        "sparkle_outline",
-        "outline",
+        "iris",
         "blush",
-        "blush_strong"
+        "blush_strong",
+        "outline"
       ],
       "defaults": {
         "eyes": "open",
@@ -553,28 +1324,21 @@
       "eye_styles": {
         "open": {
           "op": "eye_ellipse",
-          "rx": 16.5,
-          "ry": 19.5,
+          "rx": 11.7,
+          "ry": 12.9,
           "pupil": {
-            "r": 10,
+            "r": 8.4,
             "look_range": [
-              7,
-              7
+              3.3,
+              3.5
             ],
             "glints": [
               {
                 "at": [
-                  0.35,
-                  -0.35
+                  -0.361,
+                  -0.417
                 ],
-                "r": 0.4
-              },
-              {
-                "at": [
-                  -0.35,
-                  0.35
-                ],
-                "r": 0.22
+                "r": 0.361
               }
             ],
             "at": [
@@ -585,228 +1349,30 @@
           },
           "lid": 0,
           "slant": 0,
-          "lashes": {
-            "angles": [
-              -0.3490658503988659,
-              -0.7853981633974483,
-              -1.2217304763960306
-            ],
-            "length": 7,
-            "width": 3
-          },
           "outline": {
             "colour": "feature",
-            "width": 2.5
+            "width": 1.8
           },
           "lid_edge": {
-            "colour": "outline",
-            "width": 2.2
-          }
-        },
-        "wide": {
-          "op": "eye_ellipse",
-          "rx": 19,
-          "ry": 24,
-          "pupil": {
-            "r": 7.5,
-            "look_range": [
-              7,
-              7
-            ],
-            "glints": [
-              {
-                "at": [
-                  0.35,
-                  -0.35
-                ],
-                "r": 0.4
-              },
-              {
-                "at": [
-                  -0.35,
-                  0.35
-                ],
-                "r": 0.22
-              }
-            ],
-            "at": [
-              0,
-              0
-            ],
-            "mirror_glints": false
-          },
-          "lid": 0,
-          "slant": 0,
-          "lashes": {
-            "angles": [
-              -0.3490658503988659,
-              -0.7853981633974483,
-              -1.2217304763960306
-            ],
-            "length": 7,
-            "width": 3
-          },
-          "outline": {
             "colour": "feature",
-            "width": 2.5
-          },
-          "lid_edge": {
-            "colour": "outline",
-            "width": 2.2
-          }
-        },
-        "worried": {
-          "op": "eye_ellipse",
-          "rx": 16.5,
-          "ry": 21,
-          "pupil": {
-            "r": 8.5,
-            "look_range": [
-              7,
-              7
-            ],
-            "glints": [
-              {
-                "at": [
-                  0.35,
-                  -0.35
-                ],
-                "r": 0.4
-              },
-              {
-                "at": [
-                  -0.35,
-                  0.35
-                ],
-                "r": 0.22
-              }
-            ],
-            "at": [
-              0,
-              -2
-            ],
-            "mirror_glints": false
-          },
-          "lid": 0,
-          "slant": 0,
-          "lashes": {
-            "angles": [
-              -0.3490658503988659,
-              -0.7853981633974483,
-              -1.2217304763960306
-            ],
-            "length": 7,
-            "width": 3
-          },
-          "outline": {
-            "colour": "feature",
-            "width": 2.5
-          },
-          "lid_edge": {
-            "colour": "outline",
-            "width": 2.2
-          }
-        },
-        "focused": {
-          "op": "eye_ellipse",
-          "rx": 16.5,
-          "ry": 19.5,
-          "pupil": {
-            "r": 10,
-            "look_range": [
-              7,
-              7
-            ],
-            "glints": [
-              {
-                "at": [
-                  0.35,
-                  -0.35
-                ],
-                "r": 0.4
-              },
-              {
-                "at": [
-                  -0.35,
-                  0.35
-                ],
-                "r": 0.22
-              }
-            ],
-            "at": [
-              0,
-              0
-            ],
-            "mirror_glints": false
-          },
-          "lid": 0.42,
-          "slant": 3,
-          "lashes": {
-            "angles": [
-              -0.3490658503988659,
-              -0.7853981633974483,
-              -1.2217304763960306
-            ],
-            "length": 7,
-            "width": 3
-          },
-          "outline": {
-            "colour": "feature",
-            "width": 2.5
-          },
-          "lid_edge": {
-            "colour": "outline",
-            "width": 2.2
+            "width": 1.8
           }
         },
         "happy": {
           "op": "eye_arc",
-          "r": 15,
-          "start": 3.6128315516282616,
-          "end": 5.811946409141117,
-          "y": 2,
-          "width": 5.5,
-          "lashes": {
-            "angles": [
-              -0.5585053606381855,
-              -1.0821041362364843
-            ],
-            "radii": [
-              15,
-              6
-            ],
-            "at": [
-              0,
-              9
-            ],
-            "length": 7,
-            "width": 3
-          },
-          "hide_brows": true
+          "r": 11.2,
+          "start": 3.2815,
+          "end": 6.1433,
+          "y": 6.83,
+          "width": 2.9
         },
         "closed": {
           "op": "eye_arc",
-          "r": 14,
-          "start": 0.5654866776461628,
-          "end": 2.57610597594363,
-          "y": -6,
-          "width": 5,
-          "lashes": {
-            "angles": [
-              -0.5585053606381855,
-              -1.0821041362364843
-            ],
-            "radii": [
-              15,
-              3
-            ],
-            "at": [
-              0,
-              2
-            ],
-            "length": 7,
-            "width": 3
-          }
+          "r": 24.3,
+          "start": 1.0685,
+          "end": 2.0731,
+          "y": -21.3,
+          "width": 2.6
         }
       },
       "brow_styles": {
@@ -815,214 +1381,100 @@
           "d": "M0 0",
           "width": 0,
           "stroke": "feature",
-          "y": -25
-        },
-        "neutral": {
-          "op": "brow_path",
-          "d": "M-14 6 Q0 1 14 6",
-          "width": 3.5,
-          "stroke": "feature",
-          "y": -25
-        },
-        "raised": {
-          "op": "brow_path",
-          "d": "M-15 5 Q0 -6 15 5",
-          "width": 5,
-          "stroke": "feature",
-          "y": -25
-        },
-        "determined": {
-          "op": "brow_path",
-          "d": "M-16 10 L18 2",
-          "width": 5,
-          "stroke": "feature",
-          "y": -25
-        },
-        "angry": {
-          "op": "brow_path",
-          "d": "M-16 10 L18 2",
-          "width": 5,
-          "stroke": "feature",
-          "y": -25
-        },
-        "frown": {
-          "op": "brow_path",
-          "d": "M-16 10 L18 2",
-          "width": 5,
-          "stroke": "feature",
-          "y": -25
-        },
-        "worried": {
-          "op": "brow_path",
-          "d": "M-16 2 L18 10",
-          "width": 5,
-          "stroke": "feature",
-          "y": -25
-        },
-        "sad": {
-          "op": "brow_path",
-          "d": "M-16 2 L18 10",
-          "width": 5,
-          "stroke": "feature",
-          "y": -25
+          "y": 0
         }
       },
       "mouth_styles": {
         "smile": {
           "op": "mouth_path",
           "box": [
-            20,
-            20
+            1,
+            1
           ],
           "items": [
             {
               "shape": "path",
-              "d": "M0.5791542407 0.2950938248 C0.4681874861 0.5128783433 0.2444252792 0.65 3.980102097e-17 0.65 C-0.2444252792 0.65 -0.4681874861 0.5128783433 -0.5791542407 0.2950938248",
+              "d": "M-9 0Q0 6 9 0",
               "stroke": "feature",
-              "width": 3.5,
+              "width": 2.4,
               "cap": "round",
               "join": "round"
             }
           ]
         },
-        "smirk": {
+        "thinking": {
           "op": "mouth_path",
           "box": [
-            20,
-            20
+            1,
+            1
           ],
           "items": [
             {
               "shape": "path",
-              "d": "M-0.4 0.1 Q0 0.45 0.45 0",
+              "d": "M-6 1Q1 -1 7 -2",
               "stroke": "feature",
-              "width": 3.5,
+              "width": 2.4,
               "cap": "round",
               "join": "round"
             }
           ]
         },
-        "proud": {
+        "happy": {
           "op": "mouth_path",
           "box": [
-            20,
-            20
+            1,
+            1
           ],
           "items": [
             {
               "shape": "path",
-              "d": "M-0.7 0.15 Q0 0.75 0.75 -0.05",
+              "d": "M-10 -1Q0 10 10 -1",
               "stroke": "feature",
-              "width": 3.5,
-              "cap": "round",
-              "join": "round"
-            },
-            {
-              "shape": "path",
-              "d": "M0.8 -0.3 L0.9 -0.05",
-              "stroke": "feature",
-              "width": 2.5,
+              "width": 2.4,
               "cap": "round",
               "join": "round"
             }
           ]
         },
-        "flat": {
+        "worried": {
           "op": "mouth_path",
           "box": [
-            20,
-            20
+            1,
+            1
           ],
           "items": [
             {
               "shape": "path",
-              "d": "M-0.55 0.4 L0.55 0.4",
+              "d": "M-8 3Q-4 -2 0 1.5Q4 5 8 -0.5",
               "stroke": "feature",
-              "width": 3.5,
+              "width": 2.4,
               "cap": "round",
               "join": "round"
             }
           ]
         },
-        "grit": {
+        "celebrating": {
           "op": "mouth_path",
           "box": [
-            20,
-            20
+            1,
+            1
           ],
           "items": [
             {
               "shape": "path",
-              "d": "M-0.7 0.15 L-0.25 0 L0.25 0.2 L0.7 0.05",
+              "d": "M-10 -2Q0 17 10 -2Z",
+              "fill": "feature",
               "stroke": "feature",
-              "width": 3.5,
-              "cap": "round",
-              "join": "miter"
-            }
-          ]
-        },
-        "o": {
-          "op": "mouth_path",
-          "box": [
-            20,
-            20
-          ],
-          "items": [
-            {
-              "shape": "ellipse",
-              "x": 0,
-              "y": 0.25,
-              "rx": 0.5,
-              "ry": 0.75,
-              "fill": "feature"
+              "width": 1.6,
+              "join": "round"
             },
             {
               "shape": "ellipse",
               "x": 0,
-              "y": 0.65,
-              "rx": 0.35,
-              "ry": 0.25,
+              "y": 5,
+              "rx": 4.6,
+              "ry": 2.2,
               "fill": "tongue"
-            }
-          ]
-        },
-        "grin": {
-          "op": "mouth_path",
-          "box": [
-            20,
-            20
-          ],
-          "items": [
-            {
-              "shape": "path",
-              "d": "M0.8 0 C0.8 0.4418277999 0.4418277999 0.8 4.898587197e-17 0.8 C-0.4418277999 0.8 -0.8 0.4418277999 -0.8 9.797174393e-17 Z",
-              "stroke": "feature",
-              "width": 3.5,
-              "cap": "round",
-              "join": "round",
-              "fill": "feature"
-            },
-            {
-              "shape": "path",
-              "d": "M-0.65 0 L0.65 0 L0.65 0.3 L-0.65 0.3 Z",
-              "fill": "teeth"
-            }
-          ]
-        },
-        "determined": {
-          "op": "mouth_path",
-          "box": [
-            20,
-            20
-          ],
-          "items": [
-            {
-              "shape": "path",
-              "d": "M-0.7 0.15 L-0.25 0 L0.25 0.2 L0.7 0.05",
-              "stroke": "feature",
-              "width": 3.5,
-              "cap": "round",
-              "join": "miter"
             }
           ]
         }
@@ -1034,27 +1486,24 @@
             0,
             0
           ],
+          "mode": "progress",
+          "travel": 12,
+          "sway": 1,
+          "sway_rate": 12,
+          "fade_at": 0.9,
           "items": [
             {
               "shape": "path",
-              "d": "M0 -11 C8 -4 9 6 0 10 C-9 6 -8 -4 0 -11 Z",
+              "d": "M0 -6C3 -1 4.5 2 0 5C-4.5 2 -3 -1 0 -6Z",
               "fill": "sweat",
-              "stroke": "feature",
-              "width": 1.5
-            },
-            {
-              "shape": "circle",
-              "x": 2.5,
-              "y": 2.5,
-              "r": 2.2,
-              "fill": "shine"
+              "stroke": "outline",
+              "width": 0.9,
+              "lod": [
+                "full",
+                "small"
+              ]
             }
-          ],
-          "mode": "progress",
-          "travel": 26,
-          "sway": 2,
-          "sway_rate": 12,
-          "fade_at": 0.9
+          ]
         },
         "sparkle": {
           "op": "sparkle_star",
@@ -1062,106 +1511,205 @@
             0,
             0
           ],
+          "mode": "pulse",
+          "amplitude": 0.12,
+          "rate": 9,
           "items": [
             {
               "shape": "path",
-              "d": "M6.123234e-16 -10 L2.2627417 -2.2627417 L10 0 L2.2627417 2.2627417 L6.123234e-16 10 L-2.2627417 2.2627417 L-10 1.2246468e-15 L-2.2627417 -2.2627417 Z",
+              "d": "M-60 -21L-58.7 -15.3L-53 -14L-58.7 -12.7L-60 -7L-61.3 -12.7L-67 -14L-61.3 -15.3Z",
               "fill": "sparkle",
               "stroke": "sparkle_outline",
-              "width": 1.6
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "path",
+              "d": "M58 -25L59.3 -21.3L63 -20L59.3 -18.7L58 -15L56.7 -18.7L53 -20L56.7 -21.3Z",
+              "fill": "shine",
+              "stroke": "sparkle_outline",
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "path",
+              "d": "M72 27L73.3 32.7L79 34L73.3 35.3L72 41L70.7 35.3L65 34L70.7 32.7Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "path",
+              "d": "M-74 29L-72.7 32.7L-69 34L-72.7 35.3L-74 39L-75.3 35.3L-79 34L-75.3 32.7Z",
+              "fill": "shine",
+              "stroke": "sparkle_outline",
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "path",
+              "d": "M0 -41L1.3 -35.3L7 -34L1.3 -32.7L0 -27L-1.3 -32.7L-7 -34L-1.3 -35.3Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
             }
           ],
           "reduced_items": [
             {
               "shape": "path",
-              "d": "M6.123234e-16 -10 L2.2627417 -2.2627417 L10 0 L2.2627417 2.2627417 L6.123234e-16 10 L-2.2627417 2.2627417 L-10 1.2246468e-15 L-2.2627417 -2.2627417 Z",
+              "d": "M-60 -21L-58.7 -15.3L-53 -14L-58.7 -12.7L-60 -7L-61.3 -12.7L-67 -14L-61.3 -15.3Z",
               "fill": "sparkle",
               "stroke": "sparkle_outline",
-              "width": 1.6
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "path",
+              "d": "M58 -25L59.3 -21.3L63 -20L59.3 -18.7L58 -15L56.7 -18.7L53 -20L56.7 -21.3Z",
+              "fill": "shine",
+              "stroke": "sparkle_outline",
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "path",
+              "d": "M72 27L73.3 32.7L79 34L73.3 35.3L72 41L70.7 35.3L65 34L70.7 32.7Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "path",
+              "d": "M-74 29L-72.7 32.7L-69 34L-72.7 35.3L-74 39L-75.3 35.3L-79 34L-75.3 32.7Z",
+              "fill": "shine",
+              "stroke": "sparkle_outline",
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "path",
+              "d": "M0 -41L1.3 -35.3L7 -34L1.3 -32.7L0 -27L-1.3 -32.7L-7 -34L-1.3 -35.3Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 0.8,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
             }
-          ],
-          "mode": "pulse",
-          "amplitude": 0.18,
-          "rate": 9
+          ]
         }
       }
-    }
-  },
-  "poses": {
-    "idle": {
-      "arm_l.rotate": 1.85,
-      "arm_r.rotate": 1.25
-    },
-    "up": {
-      "arm_l.rotate": -2.25,
-      "arm_r.rotate": -0.85
-    },
-    "shock": {
-      "arm_l.rotate": -2.45,
-      "arm_r.rotate": -0.65
-    },
-    "type": {
-      "arm_l.rotate": 2.55,
-      "arm_r.rotate": 2.35
-    },
-    "hold": {
-      "arm_l.rotate": -2.79,
-      "arm_r.rotate": -0.35
-    },
-    "wave": {
-      "arm_l.rotate": 1.85,
-      "arm_r.rotate": -1.0
-    },
-    "point": {
-      "arm_l.rotate": 1.85,
-      "arm_r.rotate": -0.15
-    },
-    "hips": {
-      "arm_l.rotate": 2.35,
-      "arm_r.rotate": 0.8
     }
   },
   "moods": {
     "idle": {
       "description": "At rest; the starting mood.",
       "status": "Resting, ready for the next piece.",
-      "pose": "idle",
       "face": {
         "eyes": "open",
         "mouth": "smile",
         "brows": "none"
+      },
+      "channels": {
+        "badge_icon.variant": "default",
+        "brows.variant": "default",
+        "thought.variant": "default",
+        "arm_l.rotate": 0.0,
+        "arm_r.rotate": 0.0
       }
     },
     "thinking": {
       "description": "Working on something, such as a long calculation.",
       "status": "Working out how the parts fit.",
-      "pose": "hips",
       "face": {
-        "eyes": "focused",
-        "mouth": "flat",
-        "brows": "raised",
-        "look_x": 0.6,
-        "look_y": -0.6
+        "eyes": "open",
+        "mouth": "thinking",
+        "brows": "none",
+        "look_x": 1,
+        "look_y": -1
+      },
+      "channels": {
+        "badge_icon.variant": "thinking",
+        "brows.variant": "thinking",
+        "thought.variant": "thinking",
+        "arm_l.rotate": 0.0,
+        "arm_r.rotate": -0.6632
       }
     },
     "happy": {
       "description": "Something went well.",
       "status": "That came together nicely.",
-      "pose": "wave",
       "face": {
         "eyes": "happy",
-        "mouth": "grin",
-        "brows": "none"
+        "mouth": "happy",
+        "brows": "none",
+        "blush": "strong"
+      },
+      "channels": {
+        "badge_icon.variant": "happy",
+        "brows.variant": "happy",
+        "thought.variant": "default",
+        "root.lift": 2,
+        "arm_l.rotate": 0.4189,
+        "arm_r.rotate": -0.4189
       }
     },
     "worried": {
       "description": "Something needs attention, such as an invalid field.",
       "status": "One part needs a closer look.",
-      "pose": "idle",
       "face": {
-        "eyes": "worried",
-        "mouth": "flat",
-        "brows": "worried"
+        "eyes": "open",
+        "mouth": "worried",
+        "brows": "none",
+        "look_y": 0.67
+      },
+      "channels": {
+        "badge_icon.variant": "worried",
+        "brows.variant": "worried",
+        "thought.variant": "default",
+        "arm_l.rotate": -0.3142,
+        "arm_r.rotate": 0.3142
       },
       "effects": {
         "sweat": 0.35
@@ -1170,15 +1718,19 @@
     "celebrating": {
       "description": "A big success, such as a finished task.",
       "status": "Finished, and built to last.",
-      "pose": "up",
       "face": {
         "eyes": "happy",
-        "mouth": "grin",
+        "mouth": "celebrating",
         "brows": "none",
         "blush": "strong"
       },
       "channels": {
-        "root.lift": 10
+        "badge_icon.variant": "celebrating",
+        "brows.variant": "celebrating",
+        "thought.variant": "default",
+        "root.lift": 12,
+        "arm_l.rotate": 1.8326,
+        "arm_r.rotate": -1.8326
       },
       "effects": {
         "sparkle": true
@@ -1277,19 +1829,19 @@
             ],
             [
               0.2,
-              -0.9
+              -2.618
             ],
             [
               0.4,
-              -0.3
+              -2.0944
             ],
             [
               0.6,
-              -0.9
+              -2.618
             ],
             [
               0.8,
-              -0.3
+              -2.0944
             ],
             [
               1,
@@ -1316,6 +1868,166 @@
           ]
         ]
       }
+    },
+    "shimmer": {
+      "description": "A glint runs once round the ring.",
+      "frames": 45,
+      "tracks": {
+        "shimmer.x": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.04,
+              100
+            ],
+            [
+              0.1925,
+              153.4
+            ],
+            [
+              0.3475,
+              153.4
+            ],
+            [
+              0.5,
+              100
+            ],
+            [
+              0.6525,
+              46.6
+            ],
+            [
+              0.8075,
+              46.6
+            ],
+            [
+              0.96,
+              100
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "shimmer.y": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.04,
+              39
+            ],
+            [
+              0.1925,
+              70.5
+            ],
+            [
+              0.3475,
+              133.5
+            ],
+            [
+              0.5,
+              165
+            ],
+            [
+              0.6525,
+              133.5
+            ],
+            [
+              0.8075,
+              70.5
+            ],
+            [
+              0.96,
+              39
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "shimmer.rotate": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.04,
+              0.533,
+              "step"
+            ],
+            [
+              0.1925,
+              1.5708,
+              "step"
+            ],
+            [
+              0.3475,
+              2.6086,
+              "step"
+            ],
+            [
+              0.5,
+              -2.6086,
+              "step"
+            ],
+            [
+              0.6525,
+              -1.5708,
+              "step"
+            ],
+            [
+              0.8075,
+              -0.533,
+              "step"
+            ],
+            [
+              0.96,
+              -0.533
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "shimmer.opacity": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              0
+            ],
+            [
+              0.07,
+              0.95
+            ],
+            [
+              0.9,
+              0.95
+            ],
+            [
+              0.97,
+              0
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        }
+      }
     }
   },
   "motion": {
@@ -1332,73 +2044,68 @@
       "blink_jitter": 30,
       "blink_frames": 6,
       "breathe": 0.012,
-      "breathe_period": 90
+      "breathe_period": 90,
+      "extra": "shimmer"
     }
   },
   "effects": {
     "sparkle": {
       "anchor": "sparkle",
-      "layer": 50
+      "layer": 90
     },
     "sweat": {
       "anchor": "sweat",
-      "layer": 50
+      "layer": 90
     }
   },
   "accessories": {
     "bow": {
-      "description": "Bow.",
+      "description": "Small bow.",
       "slot": "hair",
       "anchor": "hair",
       "parts": [
         {
           "id": "ornament",
-          "layer": 40,
+          "layer": 70,
           "items": [
             {
               "shape": "path",
-              "d": "M0 0 Q-10 -13 -21 -8 Q-25 0 -21 8 Q-10 13 0 0 Z",
+              "d": "M0 0C-14.72 -16 -23 -4 -12.88 7C-7.36 11 -1.84 5 0 0Z",
               "fill": "accessory",
               "stroke": "outline",
-              "width": 2.2,
-              "cap": "round",
-              "join": "round"
-            },
-            {
-              "shape": "path",
-              "d": "M-7 -1 L-17 -3 M-7 2 L-17 3",
-              "stroke": "accessory_detail",
               "width": 1.6,
-              "cap": "round",
               "join": "round"
             },
             {
               "shape": "path",
-              "d": "M0 0 Q10 -13 21 -8 Q25 0 21 8 Q10 13 0 0 Z",
-              "fill": "accessory",
+              "d": "M0 0C14.72 -16 23 -4 12.88 7C7.36 11 1.84 5 0 0Z",
+              "fill": "accessory_light",
               "stroke": "outline",
-              "width": 2.2,
-              "cap": "round",
-              "join": "round"
-            },
-            {
-              "shape": "path",
-              "d": "M7 -1 L17 -3 M7 2 L17 3",
-              "stroke": "accessory_detail",
               "width": 1.6,
-              "cap": "round",
               "join": "round"
             },
             {
-              "shape": "circle",
-              "x": 0,
-              "y": 0,
-              "r": 5.5,
-              "fill": "accessory",
+              "shape": "path",
+              "d": "M-3.68 4L-10.12 16L-2.76 13M3.68 4L10.12 16L2.76 13",
+              "fill": "accessory_detail",
               "stroke": "outline",
-              "width": 2.2,
-              "cap": "round",
-              "join": "round"
+              "width": 1.3,
+              "join": "round",
+              "lod": [
+                "full",
+                "small"
+              ]
+            },
+            {
+              "shape": "round_rect",
+              "x": -4.14,
+              "y": -4.5,
+              "w": 8.28,
+              "h": 9,
+              "r": 3,
+              "fill": "accessory_light",
+              "stroke": "outline",
+              "width": 1.6
             }
           ]
         }
@@ -1411,7 +2118,7 @@
       "parts": [
         {
           "id": "ornament",
-          "layer": 40,
+          "layer": 70,
           "items": [
             {
               "shape": "round_rect",
@@ -1460,50 +2167,206 @@
     "bow"
   ],
   "lod": {
+    "small": {
+      "hide": []
+    },
     "micro": {
       "hide": [
         "wear__bow__ornament",
-        "wear__clip__ornament"
+        "wear__clip__ornament",
+        "facets",
+        "shimmer",
+        "brows",
+        "thought",
+        "studs",
+        "badge",
+        "badge_icon",
+        "ring"
       ],
       "face": {
         "lashes": false,
         "brows": false,
         "iris": false
       },
-      "glow": false
+      "glow": false,
+      "variants": {
+        "hair_back": "micro"
+      }
     }
   },
+  "native_palette": "night_teal",
   "palette_sources": {
-    "nordic": "character",
-    "coral": "character",
-    "azure": "character"
+    "sea_green": "character",
+    "forest": "character",
+    "spring": "character",
+    "peach": "character",
+    "coral_navy": "character",
+    "desert_coral": "character",
+    "rose_soft": "character",
+    "lilac_soft": "character",
+    "mist_navy": "character"
   },
   "palettes": {
-    "nordic": {
-      "description": "Pale grey face with a slate rim.",
+    "sea_green": {
+      "description": "Sea-green face, silver ring, dark navy hair and a coral bow.",
+      "group": "teal",
       "light": {
-        "body": "#E2E8F0",
-        "rim": "#475569",
-        "feature": "#1E293B",
-        "outline": "#181828"
+        "body": "#3AAE94",
+        "body_shade": "#0F8B74",
+        "rim": "#C9D6DA",
+        "outline": "#14221B",
+        "feature": "#14221B",
+        "hair": "#113241",
+        "hair_shade": "#041E29",
+        "accessory": "#F08A7A",
+        "badge_icon": "#D5F3EA",
+        "badge": "#04483B",
+        "iris": "#127A66",
+        "blush": "#FF8F86"
       }
     },
-    "coral": {
-      "description": "Peach face with a coral rim.",
+    "forest": {
+      "description": "Forest-green face, gold ring and bow, deep pine hair.",
+      "group": "green",
+      "light": {
+        "body": "#2FA567",
+        "body_shade": "#1E7A4B",
+        "rim": "#F2C94C",
+        "outline": "#14221B",
+        "feature": "#14221B",
+        "hair": "#123524",
+        "hair_shade": "#0A1F15",
+        "accessory": "#F2C94C",
+        "badge_icon": "#BFF0C9",
+        "badge": "#0F4A30",
+        "iris": "#1E8A55",
+        "blush": "#FF8F86"
+      }
+    },
+    "spring": {
+      "description": "Light spring-green face, gold ring, forest hair and a pink bow.",
+      "group": "green",
+      "light": {
+        "body": "#86D489",
+        "body_shade": "#67AF6A",
+        "rim": "#F2C94C",
+        "outline": "#14221B",
+        "feature": "#14221B",
+        "hair": "#1B351C",
+        "hair_shade": "#0B200D",
+        "accessory": "#F2A3B5",
+        "badge_icon": "#DCF3DC",
+        "badge": "#1F4822",
+        "iris": "#3B793F",
+        "blush": "#F59AA8"
+      }
+    },
+    "peach": {
+      "description": "Peach face, amber ring, plum-brown hair and a red-coral bow.",
+      "group": "peach and sand",
+      "light": {
+        "body": "#FFD3B5",
+        "body_shade": "#F5B08A",
+        "rim": "#E9A23B",
+        "outline": "#2A1616",
+        "feature": "#2A1616",
+        "hair": "#5B3A3A",
+        "hair_shade": "#2A1616",
+        "accessory": "#E8604A",
+        "badge_icon": "#FFD27A",
+        "badge": "#7A3426",
+        "iris": "#A8561C",
+        "blush": "#F2706B"
+      }
+    },
+    "coral_navy": {
+      "description": "Pale peach face, coral ring, navy hair and a teal bow.",
+      "group": "peach and sand",
       "light": {
         "body": "#FFE5D9",
+        "body_shade": "#DBC5BB",
         "rim": "#FF6B6B",
-        "feature": "#1D3557",
-        "outline": "#181828"
+        "outline": "#181828",
+        "feature": "#181828",
+        "hair": "#1D3557",
+        "hair_shade": "#1D3557",
+        "accessory": "#2A9D8F",
+        "badge_icon": "#FFB703",
+        "badge": "#1D3557",
+        "iris": "#2A9D8F",
+        "blush": "#2A9D8F"
       }
     },
-    "azure": {
-      "description": "Pale blue face with a blue rim.",
+    "desert_coral": {
+      "description": "Sand face, coral ring, terracotta hair and a gold bow.",
+      "group": "peach and sand",
       "light": {
-        "body": "#E0F2FE",
-        "rim": "#0284C7",
-        "feature": "#0F172A",
-        "outline": "#181828"
+        "body": "#EEDBC9",
+        "body_shade": "#DAC8B6",
+        "rim": "#E6807D",
+        "outline": "#3D2018",
+        "feature": "#3D2018",
+        "hair": "#54281E",
+        "hair_shade": "#3D130A",
+        "accessory": "#E9B84A",
+        "badge_icon": "#8EB69B",
+        "badge": "#3D2018",
+        "iris": "#8EB69B",
+        "blush": "#E26D46"
+      }
+    },
+    "rose_soft": {
+      "description": "Soft rose face, rose-gold ring, berry-brown hair and a pale gold bow.",
+      "group": "rose and plum",
+      "light": {
+        "body": "#F7DEE5",
+        "body_shade": "#E7BBC8",
+        "rim": "#DDB3AC",
+        "outline": "#2A0F1B",
+        "feature": "#2A0F1B",
+        "hair": "#7B4558",
+        "hair_shade": "#3B212C",
+        "accessory": "#EBCA90",
+        "badge_icon": "#FDD7E4",
+        "badge": "#744052",
+        "iris": "#B96484",
+        "blush": "#E58091"
+      }
+    },
+    "lilac_soft": {
+      "description": "Soft lilac face, mauve ring, dusky violet hair and a pale gold bow.",
+      "group": "lilac and violet",
+      "light": {
+        "body": "#E1D8F1",
+        "body_shade": "#BFB2DA",
+        "rim": "#A68CA5",
+        "outline": "#1D1236",
+        "feature": "#1D1236",
+        "hair": "#574A7E",
+        "hair_shade": "#2B2643",
+        "accessory": "#EFD59D",
+        "badge_icon": "#D5C9F4",
+        "badge": "#443B6A",
+        "iris": "#735EB1",
+        "blush": "#EFABC3"
+      }
+    },
+    "mist_navy": {
+      "description": "Pale blue-grey face, steel-blue ring, navy hair and a gold bow.",
+      "group": "blue",
+      "light": {
+        "body": "#DCE5EC",
+        "body_shade": "#C9D1D8",
+        "rim": "#8FAAC0",
+        "outline": "#1A2740",
+        "feature": "#1A2740",
+        "hair": "#1A2740",
+        "hair_shade": "#08142B",
+        "accessory": "#E9B84A",
+        "badge_icon": "#4388A6",
+        "badge": "#23333F",
+        "iris": "#4388A6",
+        "blush": "#D97959"
       }
     }
   }

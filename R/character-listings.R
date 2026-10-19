@@ -63,7 +63,7 @@ mascot_characters <- function(..., family = NULL) {
     ),
     palettes = vapply(
       items,
-      function(item) paste(c("original", names(character_palettes(item))), collapse = ", "),
+      function(item) paste(character_palette_names(item), collapse = ", "),
       character(1)
     )
   )
@@ -151,15 +151,17 @@ mascot_anchors <- function(character = "tessa") {
 #' List a character's colour palettes
 #'
 #' A palette is a ready-made set of colours for a character, in light and dark
-#' mode. The first row, `"original"`, stands for the character's own colours
-#' with no palette applied.
+#' mode. The first row stands for the character's own colours with no palette
+#' applied. It is called `"original"`, unless the character names its own
+#' colours (Tessa's are `"night_teal"`); `"original"` then still selects the
+#' same colours.
 #' @param character An id string or [mascot_character()] helper. `NULL`
 #'   (the default) lists every character, with a `character` column at the end.
 #' @returns A data frame with character columns `name` (the palette id),
-#'   `description` and `source`: `"native"` for `"original"`, `"character"` for
-#'   a palette the character defines and `"family"` for one it takes from its
-#'   family. The character's own palettes follow in the order its author wrote
-#'   them. With `character = NULL`, a final `character` column names each id.
+#'   `description` and `source`: `"native"` for the character's own colours,
+#'   `"character"` for a palette the character defines and `"family"` for one
+#'   it takes from its family. The character's own palettes follow in the
+#'   order its author wrote them. With `character = NULL`, a final `character` column names each id.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers
@@ -168,7 +170,7 @@ mascot_anchors <- function(character = "tessa") {
 #' @examples
 #' mascot_palettes()
 #' mascot_palettes("tessa")
-#' mascot("helper", character = "tessa", theme = "coral")
+#' mascot("helper", character = "tessa", theme = "coral_navy")
 mascot_palettes <- function(character = NULL) {
   with_mascot_asserts({
     character_catalogue_assert(character, nullable = TRUE)
@@ -185,7 +187,7 @@ mascot_palettes <- function(character = NULL) {
   palettes <- character_palettes(data)
   ids <- as.character(names(palettes))
   data.frame(
-    name = c("original", ids),
+    name = c(character_palette_names(data)[[1L]], ids),
     description = c(
       "The character's own colours, with no palette applied.",
       vapply(ids, function(id) palettes[[id]]$description, character(1), USE.NAMES = FALSE)

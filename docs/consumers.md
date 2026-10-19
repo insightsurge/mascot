@@ -10,6 +10,13 @@ package starts using mascot, with a way to check it still works. A PR that may a
 | The founder's Shiny apps | to be added, one row per app | Planned: `mascot()` in the UI and `update_mascot()` in the server, busy mood, light/dark | none yet | The app starts, the mascot renders, a mood change works (a shinytest2 smoke test) | planned |
 | Tanmay (R package author, outside trial) | to be added | Trial of 0.1.0 before CRAN (#43) | GitHub | Their feedback issues are closed | planned |
 
+## Visible changes to the built-in characters
+- 2026-10-19, Tessa's new look (#359): a slimmer teal hexagon, hair, a small bow and studs, a chest badge showing the
+  mood, arms hanging down; her own colours are called `night_teal` (`"original"` still works) and her palettes are
+  `sea_green`, `forest`, `spring`, `peach`, `coral_navy`, `desert_coral`, `rose_soft`, `lilac_soft` and `mist_navy`.
+  Her old palettes `nordic`, `coral` and `azure` are gone. A known user that picks Tessa and no palette sees the new look;
+  one that names an old palette now gets an error (or a warning from `update_mascot()`) that lists the new ones.
+
 ## Rules
 - The playbook site switches from `tools/animate/` to this package only after its output has been compared
   and approved, first installed from GitHub, later from CRAN, pinned by version.

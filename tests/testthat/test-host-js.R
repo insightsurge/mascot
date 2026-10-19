@@ -1035,7 +1035,7 @@ describe("mascot.host floating placement", {
     expect_identical(result$current, "happy")
     expect_match(result$label, "Restore Tessa, That came together nicely.", fixed = TRUE)
     expect_identical(result$status, "That came together nicely.")
-    expect_identical(result$colour, "rgb(63, 138, 102)")
+    expect_identical(result$colour, "rgb(7, 156, 155)")
     js("el.querySelector('.mascot-restore').click()")
     result <- host_layout(
       js,
@@ -1340,12 +1340,12 @@ describe("mascot.host themes", {
       return {own,branded,replaced,reset,state:mascot.host.state(el)};
     })()"
     )
-    expect_identical(result$own$body, "#3f8a66")
+    expect_identical(result$own$body, "#079C9B")
     expect_identical(result$branded$colours$body, "#1f6feb")
     expect_identical(result$branded$colours$rim, "#ffa500")
-    expect_identical(result$replaced$colours$rim, "#d9b35c")
+    expect_identical(result$replaced$colours$rim, "#CCDFE1")
     expect_null(result$replaced$overrides$rim)
-    expect_identical(result$reset$colours$body, "#3f8a66")
+    expect_identical(result$reset$colours$body, "#079C9B")
     expect_length(result$reset$overrides, 0)
     expect_identical(result$state$current$mood, "idle")
   })
@@ -1366,11 +1366,12 @@ describe("mascot.host themes", {
     expect_identical(result$pink$eyelid, "#c2185b")
     expect_identical(result$pink$limb, "#c2185b")
     expect_gt(mean(grDevices::col2rgb(result$pink$bodyHighlight)), mean(grDevices::col2rgb("#c2185b")))
-    expect_identical(result$pink$outline, "#26312b")
-    expect_identical(result$pink$accessory, "#d9b35c")
+    expect_identical(result$pink$outline, "#14221B")
+    # The bow has its own colour now: a supplied body or rim does not reach it.
+    expect_identical(result$pink$accessory, "#DD89BA")
     expect_identical(result$supplied$sleeve, "#123456")
     expect_identical(result$supplied$limb, "#966600")
-    expect_identical(result$supplied$accessory, "#966600")
+    expect_identical(result$supplied$accessory, "#DD89BA")
     expect_identical(result$swapped$sleeve, "#123456")
     expect_identical(result$swapped$limb, "#966600")
     dark <- host_layout(js, "return themeDraws.at(-1).colours;")
@@ -1383,6 +1384,7 @@ describe("mascot.host themes", {
     js <- suppressWarnings(local_host_page(
       theme = list(
         body = description$colours$body,
+        body_shade = description$colours$body_shade,
         rim = description$colours$rim,
         accessory = description$colours$accessory
       ),
@@ -1482,7 +1484,7 @@ describe("mascot.host themes", {
     })()"
     )
     expect_identical(result$initial$colours$body, "#1F6FEB")
-    expect_identical(result$initial$colours$accessory, "#FFA500")
+    expect_identical(result$initial$colours$accessory, "#DD89BA")
     expect_identical(result$initial$colours$limb, "#FFA500")
     expect_identical(result$initial$colours$sleeve, "#1F6FEB")
     expect_identical(result$remapped$colours$outline, "#1F6FEB")
@@ -1504,7 +1506,7 @@ describe("mascot.host themes", {
     })()"
     )
     expect_identical(result$draw$colours$body, "#ffa500")
-    expect_identical(result$draw$colours$rim, "#d9b35c")
+    expect_identical(result$draw$colours$rim, "#CCDFE1")
     expect_true(any(grepl("--missing", unlist(result$warnings), fixed = TRUE)))
     expect_true(any(grepl("below 3:1", unlist(result$warnings), fixed = TRUE)))
     css_colour <- function(value) {
@@ -1512,8 +1514,8 @@ describe("mascot.host themes", {
       host_layout(js, "return themeDraws.at(-1).colours.body;")
     }
     expect_identical(css_colour("#1f6feb"), "#1f6feb")
-    expect_identical(css_colour("not-a-colour"), "#3f8a66")
-    expect_identical(css_colour("initial"), "#3f8a66")
+    expect_identical(css_colour("not-a-colour"), "#079C9B")
+    expect_identical(css_colour("initial"), "#079C9B")
     expect_true(js("cssWarnings.filter(x=>x.includes('--missing')).length === 1"))
   })
   it("T4 preserves source CSS and mode when floating and themes restore controls without recolouring the bubble", {

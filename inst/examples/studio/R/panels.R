@@ -5,14 +5,45 @@
 # Groups for the colour pickers; parts a future character adds appear under "Other parts".
 colour_groups <- function(roles) {
   groups <- list(
-    Body = c("body", "body_highlight", "rim", "shadow", "outline"),
-    Face = c("feature", "eye_white", "shine", "eyelid", "teeth", "tongue", "blush", "blush_strong"),
-    `Arms and accessories` = c("limb", "sleeve", "accessory", "accessory_detail"),
+    Body = c(
+      "body",
+      "body_shade",
+      "body_highlight",
+      "rim",
+      "rim_light",
+      "rim_shade",
+      "outline",
+      "outline_second",
+      "shadow"
+    ),
+    Face = c(
+      "feature",
+      "eye_white",
+      "shine",
+      "eyelid",
+      "iris",
+      "iris_tint",
+      "teeth",
+      "tongue",
+      "blush",
+      "blush_strong"
+    ),
+    Hair = c("hair", "hair_shade", "hair_light"),
+    `Chest badge` = c("badge", "badge_icon"),
+    `Arms, feet and accessories` = c("limb", "sleeve", "hand", "accessory", "accessory_light", "accessory_detail"),
     Effects = c("sparkle", "sparkle_outline", "sweat")
   )
   groups <- lapply(groups, intersect, roles$role)
   groups$`Other parts` <- setdiff(roles$role, unlist(groups))
   Filter(length, groups)
+}
+
+# The palette menu: the character's own colours always carry the value "original" (no palette applied), whatever
+# name the character gives them; the other palettes carry their own names.
+studio_palette_choices <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  listed <- mascot_palettes(character)$name
+  stats::setNames(c("original", listed[-1L]), listed)
 }
 
 # ---- Inspector controls, grouped by function -----------------------------------------------
@@ -79,7 +110,7 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
     div(
       class = "d-flex flex-wrap align-items-end gap-2 w-100 pg-character-bar-controls",
       selectInput("character", "Character", studio_characters(), selected = character),
-      selectInput("palette", "Palette", mascot_palettes(character)$name, selected = "original"),
+      selectInput("palette", "Palette", studio_palette_choices(character), selected = "original"),
       selectInput("mood", "Mood", stats::setNames(moods$name, tools::toTitleCase(moods$name)), selected = "idle"),
       selectInput("gesture", "Gesture", mascot_gestures(character)$name, selected = "nod"),
       actionButton("gesture_play", "Play", class = "btn-outline-primary btn-sm"),

@@ -110,6 +110,15 @@ describe("character_format_resolve()", {
     source$palettes$original <- list(description = "Original", light = list(body = "#ffffff"))
     format_problem("input_type", "$.palettes.original", character_format_resolve(source))
 
+    # A name for the character's own colours must differ from original and from every palette
+    source <- format_recipe("study_bot")
+    source$native_palette <- "original"
+    format_problem("duplicate_id", "$.native_palette", character_format_resolve(source))
+    source$native_palette <- "sea_glass"
+    format_problem("duplicate_id", "$.native_palette", character_format_resolve(source))
+    source$native_palette <- "glass_pine"
+    expect_identical(character_format_resolve(source)$native_palette, "glass_pine")
+
     # Palette sources provenance must match palettes exactly
     snap <- format_recipe("study_bot-resolved")
     snap$palette_sources$extraneous <- "character"

@@ -1528,6 +1528,53 @@ describe("studio phone layout", {
     withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$wait_for_js("document.querySelectorAll('#live_call [data-call-arg]').length > 1")
+    browser <- app$get_chromote_session()
+    for (width in c(360L, 375L, 430L, 390L)) {
+      browser$Emulation$setDeviceMetricsOverride(
+        width = width,
+        height = 844L,
+        deviceScaleFactor = 1,
+        mobile = FALSE
+      )
+      app$wait_for_js(sprintf("innerWidth === %d", width))
+      expect_true(
+        app$get_js(paste0(
+          "(() => {const t=document.querySelector('.pg-toolbar');",
+          "const buttons=[...t.querySelectorAll('button,summary'),t.querySelector('bslib-input-dark-mode').shadowRoot.querySelector('button')];",
+          "return t.scrollWidth<=t.clientWidth && buttons.filter(b=>b.getClientRects().length).every(b=>{",
+          "const r=b.getBoundingClientRect();return r.width>0 && r.left>=0 && r.right<=innerWidth;});})()"
+        )),
+        info = paste("utility controls at", width)
+      )
+      expect_true(
+        app$get_js(paste0(
+          "(() => {const f=document.getElementById('live_frame'),w=f.contentWindow,d=w.document;",
+          "const s=d.querySelector('.mascot-status'),r=s.getBoundingClientRect(),range=d.createRange();",
+          "range.selectNodeContents(s);const text=range.getBoundingClientRect(),frame=f.getBoundingClientRect(),host=document.getElementById('studio_canvas').getBoundingClientRect();",
+          "return s.textContent.trim().length>0 && r.left>=0 && r.top>=0 && r.right<=w.innerWidth && r.bottom<=w.innerHeight &&",
+          "text.left>=r.left && text.top>=r.top && text.right<=r.right && text.bottom<=r.bottom &&",
+          "frame.top+r.top>=host.top && frame.top+r.bottom<=host.bottom;})()"
+        )),
+        info = paste("complete host status at", width)
+      )
+      expect_true(
+        app$get_js(paste0(
+          "(() => {const labels=[...document.querySelectorAll('#code_style .radio-inline')];",
+          "return labels.length===2 && labels.every(label=>{const dot=label.querySelector('input').getBoundingClientRect(),",
+          "text=label.querySelector('span').getBoundingClientRect();return Math.abs((dot.top+dot.bottom-text.top-text.bottom)/2)<4;});})()"
+        )),
+        info = paste("radio alignment at", width)
+      )
+      expect_true(
+        app$get_js(paste0(
+          "(() => {const chip=document.querySelector('[data-call-arg=bubble]'),code=chip.querySelector('code'),",
+          "value=chip.querySelector('.pg-chip-value'),range=document.createRange();range.selectNodeContents(value);",
+          "const text=range.getBoundingClientRect(),r=chip.getBoundingClientRect();",
+          "return value.textContent.includes('mascot_bubble(') && getComputedStyle(code).overflow==='visible' && text.top>=r.top && text.bottom<=r.bottom;})()"
+        )),
+        info = paste("bubble helper descenders at", width)
+      )
+    }
     expect_true(app$get_js("document.documentElement.scrollWidth <= innerWidth"))
     expect_true(app$get_js(paste0(
       "(() => {const boxes=['.pg-sentence','.pg-search-field','#open_inspector'].map(s=>document.querySelector(s).getBoundingClientRect());",

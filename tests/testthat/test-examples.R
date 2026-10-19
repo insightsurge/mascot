@@ -1685,7 +1685,7 @@ describe("studio phone overlays (#265)", {
     css <- paste(readLines(system.file("examples", "studio", "www", "studio.css", package = "mascot")), collapse = "\n")
     expect_match(css, "background: var(--studio-panel)", fixed = TRUE)
     expect_match(css, "@media (max-width: 860px)", fixed = TRUE)
-    expect_match(css, "height: 76dvh", fixed = TRUE)
+    expect_match(css, "min(76dvh", fixed = TRUE)
     expect_match(css, ".pg-inspector-shell", fixed = TRUE)
   })
 })

@@ -9,12 +9,12 @@
 #' text carries the meaning.
 #' @param size A finite number of CSS pixels (at least `24`), or a positive
 #'   percentage string such as `"20%"`. Defaults to `160`; `NULL` is not accepted.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param small_screen An optional size for small screens (at most 575.98 CSS
 #'   pixels wide). `"auto"` (the default) scales floating mascots down on phones
 #'   to at most 96 pixels while leaving inline mascots unchanged. `NULL` keeps
 #'   the same size on every screen. A number of pixels or a percentage string
 #'   sets the phone size explicitly for both floating and inline mascots.
-#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_size` object with `size` and `small_screen` elements.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers

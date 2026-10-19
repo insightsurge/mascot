@@ -24,13 +24,13 @@
 #'   error. `NULL` (the default) clears the bubble. With `text = NULL`, explicitly
 #'   supplying `duration` or `closable` is an error; use `mascot_bubble()` without
 #'   options to clear the bubble.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param duration How long the bubble stays visible: a number greater than zero,
 #'   in seconds. Defaults to `5`. Use `Inf` to keep the bubble until it
 #'   is closed, replaced or cleared.
 #' @param closable A logical flag, defaulting to `TRUE`, to show a close button.
 #'   `FALSE` hides the button; the Escape key still closes the bubble. `NULL`
 #'   is not accepted.
-#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_bubble` object with `text`, `html`, `duration`, and
 #'   `closable` elements. `text` is a plain string or `NULL`; `html` is a flag.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.

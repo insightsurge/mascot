@@ -621,7 +621,6 @@ panel_preview <- function(moods = mascot_moods()) {
       ),
       note = div(class = "pg-note", "Phone width narrows the page; the mascot pixel size stays unchanged.")
     ),
-    arg_field(fn, "placement", selectInput("preview_placement", "Placement", c("inline", corners))),
     arg_field(
       fn,
       "theme",
@@ -635,12 +634,6 @@ panel_preview <- function(moods = mascot_moods()) {
       )
     ),
     arg_field(fn, "motion", input_switch("preview_motion", "Animate", FALSE)),
-    arg_field(
-      fn,
-      "click",
-      textAreaInput("preview_menu_items", "Menu items, one per line: id = Label", "", rows = 3),
-      note = uiOutput("preview_problem")
-    ),
     actionButton("preview_build", "Rebuild now", class = "btn-outline-primary btn-sm")
   )
 }

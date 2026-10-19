@@ -2,6 +2,8 @@
 
 ## Breaking changes
 
+* `mascot_preview()` removes the inert `placement` and `click` arguments. Remove them from preview calls; comparison columns now use 160, 96 and 24 pixels after the requested size (#350).
+
 * `mascot_popup_menu()` no longer sets `input$<id>_click` when its menu opens or closes. Handle choices through `input$<id>_menu`; use `mascot_action()` for a single action that sets the click count (#349).
 
 * `mascot_gesture(name)` accepts only `name`; its unused `...` is removed (#349).
@@ -95,7 +97,7 @@
   * While the menu is open, the mascot looks towards it: up, down, left or right, on the side where the menu actually opened, after any fallback. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208, #241).
 
 * `mascot_preview(character = "tessa", ...)` (*experimental*) names its options and shows an offline page that compares moods, sizes and light and dark colours, with contrast findings on the page and in R (#175, #213). It starts no Shiny app and writes no files; printing the page opens the Viewer or a browser.
-  * Rows are moods; columns are the requested size, then 48, 32 and 24 CSS pixels (#175).
+  * Rows are moods; columns are the requested size, then 160, 96 and 24 CSS pixels (#175, #350).
   * Light and dark backgrounds are checked separately. Contrast warnings have the class `mascot_contrast` (#213).
   * Each cell is wide enough for its bubble, so bubbles no longer cover neighbouring cells at any size (#244).
 
@@ -122,6 +124,25 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* Checked character data gains a compact `format()` method; `print()` assertion failures carry `mascot_error` (#350).
+
+* `mascot()` preserves specific error classes and their choice fields for handlers.
+  Malformed mood ids list the chosen character's moods as well as the lowercase
+  rule; unexpected arguments count unnamed values and list named ones (#350).
+
+* `mascot_placement()` prints logical drag values without quotes and explains
+  the `"none"`, `"snap"` and `"free"` modes in errors (#350).
+
+* Mascot conditions are listed in the package help, including choice, authoring and development diagnostics (#350).
+
+* Palette ids reserve `minimal`, `pastel`, `vivid`, `corporate`, `earthy` and `night` for style aliases (#350).
+
+* Shiny excludes private mascot state inputs from bookmarks even when the app
+  later replaces its exclusions, including inside modules, and shows the
+  development problem overlay when a buffered update fails at mount (#350).
+
+* Theme errors list valid roles, invalid contrast-warning options warn once, and theme mode, drag and studio choices carry `mascot_error_choice` (#350).
 
 * `mascot_motion_settings(others = FALSE)` uses the same reduced-motion poses and instant drag transitions as `motion = FALSE` when no named switch enables movement (#349).
 

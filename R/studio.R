@@ -30,7 +30,7 @@
 #' inherits(app, "shiny.appobj")
 mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", run = TRUE) {
   with_mascot_asserts({
-    checkmate::assert_choice(view, c("studio", "examples"))
+    checkmate::assert_string(view)
     checkmate::assert_string(fn, min.chars = 1, null.ok = TRUE)
     checkmate::assert_string(character, min.chars = 1)
     checkmate::assert_flag(run)
@@ -44,10 +44,16 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
   data <- new.env(parent = baseenv())
   sys.source(file.path(path, "R", "data.R"), envir = data)
   # These choices are available only after loading the studio data.
-  with_mascot_asserts({
-    checkmate::assert_choice(fn, names(guide$playground_guide), null.ok = TRUE)
-    checkmate::assert_choice(character, unname(data$studio_characters()))
-  })
+  for (arg in c("view", "fn", "character")) {
+    value <- get(arg)
+    valid <- switch(
+      arg,
+      view = c("studio", "examples"),
+      fn = names(guide$playground_guide),
+      character = unname(data$studio_characters())
+    )
+    if (!is.null(value) && !value %in% valid) abort_choice(value, valid, arg, arg, environment())
+  }
   app <- shiny::shinyAppDir(path)
   handler <- app$httpHandler
   initial <- list(view = view, fn = if (is.null(fn)) "mascot_mood" else fn, character = character)

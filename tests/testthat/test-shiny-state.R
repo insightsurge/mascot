@@ -611,3 +611,70 @@ describe("palette wire assertions", {
     expect_error(mascot_wire_check(list(theme = list(palette = "not-an-id"))), "palette")
   })
 })
+
+describe("B2 mount diagnostics and private inputs", {
+  it("adds the development overlay when a buffered update fails at mount", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot("helper", mood = "missing", session = f$session)
+    expect_warning(protocol_ready(f), class = "mascot_update_ignored")
+    latest <- protocol_flush(f)
+    expect_match(latest$problem, "mascot: .*missing")
+    expect_identical(latest$state$mood, "idle")
+  })
+  it("keeps private inputs visible to reactiveValuesToList but excludes them from bookmarks", {
+    shiny::testServer(
+      function(input, output, session) {
+        shiny::setBookmarkExclude("existing", session)
+        mascot_id_state(session, "helper")
+        session$setInputs(helper = list(version = 1L), ordinary = "kept")
+        values <- shiny::isolate(shiny::reactiveValuesToList(input))
+        expect_true("helper" %in% names(values))
+        expect_equal(values$ordinary, "kept")
+        expect_true(all(c("existing", "helper") %in% session$getBookmarkExclude()))
+        expect_false("ordinary" %in% session$getBookmarkExclude())
+      },
+      {}
+    )
+  })
+})
+
+
+describe("private bookmark exclusions", {
+  it("survives later app exclusions at root and in nested modules", {
+    shiny::testServer(
+      function(input, output, session) {
+        nested <- session$makeScope("outer")$makeScope("inner")
+        update_mascot("helper", mood = "happy", session = session)
+        update_mascot("helper", mood = "happy", session = nested)
+        shiny::setBookmarkExclude("x", session = session)
+        shiny::setBookmarkExclude("password", session = nested)
+        # Shiny doBookmark() collects this list before running onBookmark callbacks.
+        excluded <- session$getBookmarkExclude()
+        expect_true(all(c("helper", "outer-inner-helper", "x", "outer-inner-password") %in% excluded))
+        expect_false("ordinary" %in% excluded)
+      },
+      {}
+    )
+  })
+})
+
+
+describe("real Shiny bookmark collection", {
+  it("collects private exclusions after later app and module replacements", {
+    # Only the transport is inert; scope and exclusion collection use ShinySession.
+    session <- getFromNamespace("ShinySession", "shiny")$new(list(
+      request = list(),
+      send = function(...) NULL,
+      close = function(...) NULL
+    ))
+    withr::defer(session$close())
+    nested <- session$makeScope("outer")$makeScope("inner")
+    update_mascot("helper", mood = "happy", session = session)
+    update_mascot("helper", mood = "happy", session = nested)
+    shiny::setBookmarkExclude("x", session = session)
+    shiny::setBookmarkExclude("password", session = nested)
+    expect_true(all(c("helper", "outer-inner-helper", "x", "outer-inner-password") %in% session$getBookmarkExclude()))
+  })
+})

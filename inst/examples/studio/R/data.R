@@ -217,10 +217,8 @@ playground_controls <- list(
     status = input_id("preview_status"),
     bubble = input_id("preview_bubble"),
     size = input_id("preview_size", "preview_width"),
-    placement = input_id("preview_placement"),
     theme = input_id("preview_theme_source"),
-    motion = input_id("preview_motion"),
-    click = input_id("preview_menu_items")
+    motion = input_id("preview_motion")
   ),
   mascot_example = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),

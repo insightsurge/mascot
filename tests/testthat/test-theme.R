@@ -56,7 +56,7 @@ describe("mascot_theme()", {
       }
     }
     for (x in list(NULL, "missing", c("light", "dark"), 1, NA_character_)) {
-      expect_error(mascot_theme(mode = x), "'mode'")
+      expect_error(mascot_theme(mode = x), "mode")
     }
     for (x in list(NULL, 1, "team-blue", "--", "--bad name", NA_character_)) {
       expect_error(mascot_theme(css = list(body = x)), "CSS variable")
@@ -301,5 +301,22 @@ describe("cold-start palette validation", {
         expect_length(f$messages$values, 0L)
       }
     }
+  })
+})
+
+describe("B2 theme diagnostics", {
+  it("lists valid roles and classifies invalid mode choices", {
+    problem <- theme_map_problem(list(typo = "red"), "theme", c("body", "rim"))
+    expect_match(problem, "body", fixed = TRUE)
+    expect_match(problem, "rim", fixed = TRUE)
+    expect_error(mascot_theme(mode = "night"), class = "mascot_error_choice")
+  })
+  it("warns once for a non-flag contrast option and uses the default", {
+    old <- contrast_warning_state$warned
+    withr::defer(contrast_warning_state$warned <- old)
+    contrast_warning_state$warned <- FALSE
+    withr::local_options(mascot.contrast_warnings = "yes")
+    expect_warning(expect_true(contrast_warnings(always = TRUE)), "mascot.contrast_warnings", class = "mascot_warning")
+    expect_no_warning(expect_true(contrast_warnings(always = TRUE)))
   })
 })

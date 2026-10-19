@@ -519,7 +519,7 @@ The Quarto `shortcode` and fuller static-site guidance are separate upcoming wor
 ## Check a look before using it
 
 `mascot_preview()` makes one offline page with every mood in light and dark,
-then compares your requested size with 48, 32 and 24 pixels. Motion is off by
+then compares your requested size with 160, 96 and 24 pixels. Motion is off by
 default so you can inspect the faces. Assign the result to build it without
 opening a Viewer; print it when you want to look:
 
@@ -539,9 +539,8 @@ Supplied colours below 3:1 against the panel background
 are kept and listed above the grids, with one combined warning in R of class `mascot_contrast`.
 `attr(page, "contrast")` returns their role, colour, background, ratio and mode.
 Experimental CSS values are only known in the browser; look in its console for
-those warnings. Floating settings appear inline for comparison, and static
-previews do not activate the Shiny click menu. Status text remains beside each
-mascot; fine face details are harder to read at 32 and 24 pixels.
+those warnings. Previews show mascots inline for comparison. Status text
+remains beside each mascot; fine face details are harder to read at 24 pixels.
 
 ## Leave unchanged or reset
 

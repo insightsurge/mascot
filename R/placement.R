@@ -45,6 +45,7 @@
 #' @param position A corner to float the mascot (`"bottom-right"`, the default;
 #'   `"top-left"`, `"top-right"` or `"bottom-left"`), or `"inline"` to sit
 #'   where the mascot is placed in the UI. `NULL` is not accepted.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param minimise A logical flag, defaulting to `TRUE`, to show a minimise
 #'   control on a floating mascot. Has no effect inline: an explicitly supplied
 #'   value gives an informational message; the default stays silent.
@@ -59,7 +60,6 @@
 #'   may change (issue #224). Has no effect inline: an
 #'   explicitly supplied value gives an informational message. `TRUE`, `FALSE` and
 #'   `NULL` are not accepted. See the Dragging section.
-#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_placement` object with `position`, `minimise` and `drag`
 #'   elements.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
@@ -134,19 +134,18 @@ abort_drag <- function(drag, call) {
   checkmate::assert_environment(call)
   cli::cli_abort(
     c(
-      "{.arg drag} must be {.val none}, {.val snap} or {.val free}.",
-      "x" = if (isTRUE(drag)) {
-        "{.code TRUE} is not accepted: choose how the mascot behaves when dropped."
-      } else {
-        "{.val {drag}} is not a drag mode."
-      },
-      "i" = paste(
-        "Use {.code drag = \"none\"} for no dragging, {.val snap} to move to the nearest",
-        "corner or {.val free} to stay where dropped."
+      "{.arg drag} must be one of {.or {.val {placement_drags()}}}.",
+      "x" = "{.val {drag}} is not a drag mode{if (isTRUE(drag)) ' (TRUE is not accepted)' else ''}.",
+      "i" = paste0(
+        'Use drag = "none" for no dragging: "none" disables dragging, ',
+        '"snap" moves to the nearest corner, and "free" stays where dropped.'
       )
     ),
     call = call,
-    class = "mascot_error"
+    class = c("mascot_error_choice", "mascot_error"),
+    argument = "drag",
+    choices = placement_drags(),
+    value = drag
   )
 }
 

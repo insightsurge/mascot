@@ -13,9 +13,9 @@
       mascot_placement("bottom-right", drag = TRUE)
     Condition
       Error in `mascot_placement()`:
-      ! `drag` must be "none", "snap" or "free".
-      x `TRUE` is not accepted: choose how the mascot behaves when dropped.
-      i Use `drag = "none"` for no dragging, "snap" to move to the nearest corner or "free" to stay where dropped.
+      ! `drag` must be one of "none", "snap", or "free".
+      x TRUE is not a drag mode (TRUE is not accepted).
+      i Use drag = "none" for no dragging: "none" disables dragging, "snap" moves to the nearest corner, and "free" stays where dropped.
 
 ---
 
@@ -23,9 +23,9 @@
       mascot_placement("bottom-right", drag = "fixed")
     Condition
       Error in `mascot_placement()`:
-      ! `drag` must be "none", "snap" or "free".
+      ! `drag` must be one of "none", "snap", or "free".
       x "fixed" is not a drag mode.
-      i Use `drag = "none"` for no dragging, "snap" to move to the nearest corner or "free" to stay where dropped.
+      i Use drag = "none" for no dragging: "none" disables dragging, "snap" moves to the nearest corner, and "free" stays where dropped.
 
 ---
 

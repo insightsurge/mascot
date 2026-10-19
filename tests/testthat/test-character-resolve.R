@@ -147,3 +147,18 @@ describe("character_format_resolve()", {
     ))
   })
 })
+
+describe("B2 reserved palette ids", {
+  it("rejects every style alias in source and resolved characters", {
+    for (id in c("minimal", "pastel", "vivid", "corporate", "earthy", "night")) {
+      for (fixture in c("study_bot", "study_bot-resolved")) {
+        source <- format_recipe(fixture)
+        source$palettes[[id]] <- list(description = "Reserved", light = list(body = "#ffffff"))
+        if (isTRUE(source$resolved)) {
+          source$palette_sources[[id]] <- "character"
+        }
+        format_problem("input_type", paste0("$.palettes.", id), character_format_resolve(source))
+      }
+    }
+  })
+})

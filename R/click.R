@@ -10,7 +10,9 @@
 #'   character that says what a click does, such as `"Open help"`. Screen readers
 #'   announce the mascot as a button with this name, and the tooltip shows it.
 #'   `NULL` (the default) makes an empty helper: in [update_mascot()], it removes
-#'   the click, so the mascot is a picture again.
+#'   the click, so the mascot is a picture again. With `label = NULL`, explicitly
+#'   supplying `tooltip` or `disabled` is an error; use `mascot_action()` without
+#'   options to remove the click.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param tooltip A flag. `TRUE` (the default) shows the label in a tooltip when
 #'   the pointer rests on the mascot or the keyboard focuses it. `FALSE` hides the
@@ -29,7 +31,8 @@
 #' `input$<id>_click` to the number of activations since the mascot appeared, so
 #' `shiny::observeEvent()` runs each time. An activation is a click or tap, Enter
 #' or Space while the mascot has keyboard focus, or a screen reader's activate
-#' command. Holding a key down counts once. Dragging a floating mascot, clicking
+#' command. Holding a key down counts once. Opening and closing a
+#' [mascot_popup_menu()] never sets this input. Dragging a floating mascot, clicking
 #' elsewhere, pressing Escape, the minimise and restore buttons and updates from
 #' the server never count. In a module, use `ns("helper")` in the UI and read
 #' `input$helper_click` in that module's server.
@@ -66,6 +69,15 @@ mascot_action <- function(label = NULL, ..., tooltip = TRUE, disabled = FALSE) {
   })
   if (...length() > 0L) {
     abort_dots(names(substitute(list(...)))[-1L], ...length(), c("tooltip", "disabled"), environment())
+  }
+  if (is.null(label) && (!missing(tooltip) || !missing(disabled))) {
+    cli::cli_abort(
+      c(
+        "{.arg label} cannot be NULL when options are supplied.",
+        "i" = "Use {.code mascot_action()} without options to remove it."
+      ),
+      class = "mascot_error"
+    )
   }
   structure(list(label = label, tooltip = tooltip, disabled = disabled), class = "mascot_action")
 }

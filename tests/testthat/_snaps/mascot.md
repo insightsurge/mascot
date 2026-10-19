@@ -30,8 +30,8 @@
       mascot(id = "a", mood = "ha!py")
     Condition
       Error in `mascot()`:
-      ! `mood` must be one of "idle", "thinking", "happy", "worried", or "celebrating".
-      x "ha!py" is not a mood.
+      ! `mood` must be a lowercase id; "ha!py" is not a mood.
+      i Choose "idle", "thinking", "happy", "worried", or "celebrating".
 
 ---
 
@@ -102,7 +102,7 @@
       mascot(id = "bad", theme = list(bdoy = "blue"))
     Condition
       Error in `mascot()`:
-      ! `theme` has unknown or reserved colour roles: "bdoy". Did you mean "body"? See `mascot_colour_roles()` for each character's roles.
+      ! `theme` has unknown or reserved colour roles: "bdoy". Did you mean "body"? Valid roles: "outline", "feature", "eye_white", "shine", "teeth", "eyelid", "tongue", "body", "body_highlight", "rim", "limb", "sleeve", "blush", "blush_strong", "accessory", "accessory_detail", "sparkle", "sparkle_outline", "sweat", "shadow". See `mascot_colour_roles()` for each character's roles.
 
 # with_mascot_asserts() / keeps the original assertion message once and adds mascot_error
 
@@ -110,4 +110,22 @@
       conditionMessage(wrapped)
     Output
       [1] "Assertion on 'value' failed: Must be of type 'string', not 'double'."
+
+# review fixes for construction diagnostics and documentation / counts unnamed arguments and keeps named arguments listed
+
+    Code
+      mascot("helper", 1, 2, typo = 3)
+    Condition
+      Error in `mascot()`:
+      ! Unexpected arguments: 2 unnamed arguments, "typo".
+      i Name the optional arguments: `character`, `mood`, `status`, `bubble`, `size`, `placement`, `theme`, `motion`, and `click`.
+
+---
+
+    Code
+      mascot("helper", 1)
+    Condition
+      Error in `mascot()`:
+      ! Unexpected arguments: an unnamed argument.
+      i Name the optional arguments: `character`, `mood`, `status`, `bubble`, `size`, `placement`, `theme`, `motion`, and `click`.
 

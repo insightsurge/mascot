@@ -84,7 +84,6 @@ mascot_gestures <- function(character = NULL) {
 #'   `"wave"` greets (characters without arms rock instead). See
 #'   [mascot_gestures()] for descriptions. There is no default; `NULL` is not
 #'   accepted.
-#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_gesture` object with a `name` element.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @details
@@ -97,13 +96,10 @@ mascot_gestures <- function(character = NULL) {
 #' @examples
 #' mascot_gesture("nod")
 #' mascot_gesture("wave")
-mascot_gesture <- function(name, ...) {
+mascot_gesture <- function(name) {
   with_mascot_asserts({
     checkmate::assert_string(name, min.chars = 1, pattern = "^[a-z][a-z0-9_]*$")
   })
-  if (...length() > 0L) {
-    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("name"), environment())
-  }
   structure(list(name = name), class = "mascot_gesture")
 }
 

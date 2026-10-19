@@ -115,3 +115,13 @@ describe("mascot_motion_settings()", {
     expect_error(print.mascot_motion_settings(1), "x", class = "mascot_error")
   })
 })
+
+
+describe("motion shortcut equivalence (#349)", {
+  it("uses reduced poses and drag transitions when all movement follows others off", {
+    expect_identical(
+      as_motion_arg(mascot_motion_settings(others = FALSE), environment()),
+      as_motion_arg(FALSE, environment())
+    )
+  })
+})

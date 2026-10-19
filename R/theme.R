@@ -7,7 +7,8 @@
 #' roles for a character. A plain named list passed to [mascot()] or
 #' [update_mascot()] uses one set of colours in every mode. A [bslib::bs_theme()]
 #' fills the character's declared brand leaders with its primary and secondary
-#' colours; `_brand.yml` can be supplied through `bs_theme(brand =)`.
+#' colours; `_brand.yml` can be supplied through `bs_theme(brand = )`. A
+#' `bs_theme()` always uses `mode = "auto"`.
 #'
 #' After a character swap, follow rules are applied again and roles absent from
 #' the incoming character are ignored. A palette is kept if the new character
@@ -31,7 +32,8 @@
 #'
 #' R warnings appear only when [shiny::in_devmode()] is `TRUE`, and always in
 #' [mascot_preview()] and the studio. Set `options(mascot.contrast_warnings = TRUE)`
-#' or `FALSE` to force them on or off everywhere. Visitors never see R warnings.
+#' or `FALSE` to force them on or off everywhere. A non-flag value warns once
+#' per R session and uses the default. Visitors never see R warnings.
 #' CSS-variable colours (`css =`) are checked and warn in the browser console.
 #'
 #' These warnings have the class `mascot_contrast`. To silence only these
@@ -48,6 +50,7 @@
 #'   used. `"original"` also chooses its own colours. A palette is applied first,
 #'   then `light` and `dark` roles, then `css`. Without a dark map, a palette uses
 #'   its light colours in both modes. A `bs_theme()` is a separate alternative.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param light,dark Named lists of colour roles, or `NULL` (the default) to keep
 #'   the palette's colours (or the character's own colours) in that mode.
 #'   Values can be colour names, hex
@@ -66,7 +69,6 @@
 #'   colour and warn in the browser console; low contrast also warns there and
 #'   keeps the colour. Variables are read from the original source context,
 #'   including when the mascot floats.
-#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_theme` object describing colours, CSS sources and mode.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers
@@ -94,7 +96,7 @@ mascot_theme <- function(..., palette = NULL, light = NULL, dark = NULL, mode = 
     checkmate::assert_string(palette, min.chars = 1, null.ok = TRUE)
     checkmate::assert_list(light, names = "unique", null.ok = TRUE)
     checkmate::assert_list(dark, names = "unique", null.ok = TRUE)
-    checkmate::assert_choice(mode, c("light", "dark", "auto"))
+    checkmate::assert_string(mode)
     checkmate::assert_list(css, names = "unique", null.ok = TRUE)
   })
   if (...length() > 0L) {
@@ -104,6 +106,9 @@ mascot_theme <- function(..., palette = NULL, light = NULL, dark = NULL, mode = 
       c("palette", "light", "dark", "mode", "css"),
       environment()
     )
+  }
+  if (!mode %in% c("light", "dark", "auto")) {
+    abort_choice(mode, c("light", "dark", "auto"), "mode", "mode", environment())
   }
   value <- structure(
     list(palette = palette, light = light, dark = dark, mode = mode, css = css),
@@ -135,7 +140,9 @@ theme_map_problem <- function(x, arg, roles, css = FALSE) {
       paste(encodeString(wrong, quote = '"'), collapse = ", "),
       ".",
       theme_role_hint(wrong, roles),
-      " See `mascot_colour_roles()` for each character's roles."
+      " Valid roles: ",
+      paste(encodeString(roles, quote = '"'), collapse = ", "),
+      ". See `mascot_colour_roles()` for each character's roles."
     ))
   }
   for (role in names(x)) {
@@ -459,8 +466,18 @@ contrast_warnings <- function(always = FALSE) {
   if (isTRUE(override) || identical(override, FALSE)) {
     return(override)
   }
+  if (!is.null(override) && !isTRUE(contrast_warning_state$warned)) {
+    contrast_warning_state$warned <- TRUE
+    cli::cli_warn(
+      "Option {.code mascot.contrast_warnings} must be TRUE or FALSE; using the default.",
+      class = "mascot_warning"
+    )
+  }
   always || shiny::in_devmode()
 }
+
+# Session-local diagnostic state; no warning or option changes on load.
+contrast_warning_state <- new.env(parent = emptyenv())
 
 #' Explain an unavailable palette against a known character
 #' @noRd

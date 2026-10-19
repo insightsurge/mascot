@@ -15,7 +15,9 @@
 #'   non-empty item IDs without whitespace (for example `c(about = "About", help = "Help")`).
 #'   Defaults to `NULL`, an empty helper: in [update_mascot()], it removes the
 #'   click, so the mascot is a picture again. An empty vector is not accepted.
-#'   Labels are always escaped.
+#'   Labels are always escaped. With `items = NULL`, explicitly supplying
+#'   `direction`, `label` or `tooltip` is an error; use `mascot_popup_menu()`
+#'   without options to remove the click.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
 #'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
@@ -53,9 +55,8 @@
 #' **Reading the selection in Shiny.** Choosing an item sets `input$<id>_menu` to
 #' the item ID (for example, `input$helper_menu` for `mascot("helper")`).
 #' Choosing the same item twice triggers the input twice. Opening and closing the
-#' menu also set `input$<id>_click`, as every activation of the mascot does (see
-#' [mascot_action()]); an app that observes it runs its action in addition to the
-#' menu. In a module, use `ns("helper")` in the UI and read `input$helper_menu`
+#' menu never set `input$<id>_click`; that input is only for [mascot_action()].
+#' In a module, use `ns("helper")` in the UI and read `input$helper_menu`
 #' inside that module's server:
 #' ```r
 #' helper_ui <- function(id) {
@@ -113,10 +114,19 @@ mascot_popup_menu <- function(items = NULL, ..., direction = "auto", label = NUL
     checkmate::assert_flag(tooltip)
   })
   if (...length() > 0L) {
-    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("direction", "label"), environment())
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("direction", "label", "tooltip"), environment())
   }
   if (!direction %in% popup_menu_directions()) {
     abort_choice(direction, popup_menu_directions(), "direction", "direction", environment())
+  }
+  if (is.null(items) && (!missing(direction) || !missing(label) || !missing(tooltip))) {
+    cli::cli_abort(
+      c(
+        "{.arg items} cannot be NULL when options are supplied.",
+        "i" = "Use {.code mascot_popup_menu()} without options to remove it."
+      ),
+      class = "mascot_error"
+    )
   }
   value <- structure(
     list(items = items, direction = direction, label = label, tooltip = tooltip),

@@ -17,9 +17,9 @@ Tessa can look worried while a form needs attention, think while work runs,
 and celebrate when it finishes. Status text carries the meaning even when
 someone cannot see the drawing or prefers less movement.
 
-The package works offline. It is built for `GxP` work: the app supplies the
-state and the words, and no AI service is involved. A mascot complements
-field errors and results; it does not replace them.
+The package works offline. It is built for good practice (`GxP`) work: the app
+supplies the state and the words, and no AI service is involved. A mascot
+complements field errors and results; it does not replace them.
 
 If the Shiny connection drops, the mascot shows its worried face and a
 connection message until the app reconnects.
@@ -420,7 +420,7 @@ Try each switch and the panel multi-select in `mascot_studio(fn = "mascot_motion
 
 By default a mascot is a picture: clicking it does nothing, and the keyboard
 skips it. `click` makes it a button, for one action of your app or for a menu.
-Every activation (a click or tap, Enter or Space) sets `input$helper_click`, a
+Every action activation (a click or tap, Enter or Space) sets `input$helper_click`, a
 count, so your server can answer it:
 
 ```{r action, eval=FALSE}
@@ -473,7 +473,7 @@ Reset above clears the feedback and keeps the selected colours.
 
 Click or touch the drawing, or focus it and press Enter/Space with keyboard
 opening enabled. Escape closes the menu. Repeated choices trigger repeated
-events; opening and closing the menu also count in `input$helper_click`. An
+events. Opening and closing the menu never set `input$helper_click`. An
 empty helper, `mascot_action()` or `mascot_popup_menu()`, removes the click when
 sent in an update. On static pages the mascot remains an image; clicks need
 Shiny.
@@ -523,7 +523,7 @@ The Quarto `shortcode` and fuller static-site guidance are separate upcoming wor
 ## Check a look before using it
 
 `mascot_preview()` makes one offline page with every mood in light and dark,
-then compares your requested size with 48, 32 and 24 pixels. Motion is off by
+then compares your requested size with 160, 96 and 24 pixels. Motion is off by
 default so you can inspect the faces. Assign the result to build it without
 opening a Viewer; print it when you want to look:
 
@@ -543,9 +543,8 @@ Supplied colours below 3:1 against the panel background
 are kept and listed above the grids, with one combined warning in R of class `mascot_contrast`.
 `attr(page, "contrast")` returns their role, colour, background, ratio and mode.
 Experimental CSS values are only known in the browser; look in its console for
-those warnings. Floating settings appear inline for comparison, and static
-previews do not activate the Shiny click menu. Status text remains beside each
-mascot; fine face details are harder to read at 32 and 24 pixels.
+those warnings. Previews show mascots inline for comparison. Status text
+remains beside each mascot; fine face details are harder to read at 24 pixels.
 
 ## Leave unchanged or reset
 
@@ -554,12 +553,17 @@ when the setting has a clear/reset action:
 
 | Setting | Reset sent to `update_mascot()` |
 |---|---|
+| Character | `character = mascot_character()` (back to `"tessa"`) |
+| Mood | `mood = mascot_mood()` (back to `"idle"`) |
+| Size | `size = mascot_size()` (160, `small_screen = "auto"`) |
 | Custom status | `status = mascot_status()` follows the mood |
 | Bubble | `bubble = mascot_bubble()` removes it |
 | Theme | `theme = mascot_theme()` restores character colours |
 | Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
 | Placement | `placement = mascot_placement()` resets to default bottom-right; `mascot_placement("inline")` returns inline |
 | Motion | `motion = mascot_motion_settings()` allows movement subject to visitor preference |
+
+Each non-`NULL` argument replaces that whole setting, not part of it (example: `update_mascot("h", size = 200)` also resets a custom `small_screen` to `"auto"`).
 
 An invalid update warns and leaves the complete update unchanged. During app
 construction, invalid arguments stop with an error. This helps catch a typo

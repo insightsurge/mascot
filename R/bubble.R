@@ -21,14 +21,16 @@
 #' @param text A non-empty string, optionally marked with [htmltools::HTML()],
 #'   or an `htmltools` tag or tag list. HTML-marked strings and tags are shown as
 #'   HTML. Tags with dependencies or head content are not supported and give an
-#'   error. `NULL` (the default) clears the bubble.
+#'   error. `NULL` (the default) clears the bubble. With `text = NULL`, explicitly
+#'   supplying `duration` or `closable` is an error; use `mascot_bubble()` without
+#'   options to clear the bubble.
+#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param duration How long the bubble stays visible: a number greater than zero,
 #'   in seconds. Defaults to `5`. Use `Inf` to keep the bubble until it
 #'   is closed, replaced or cleared.
 #' @param closable A logical flag, defaulting to `TRUE`, to show a close button.
 #'   `FALSE` hides the button; the Escape key still closes the bubble. `NULL`
 #'   is not accepted.
-#' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns A `mascot_bubble` object with `text`, `html`, `duration`, and
 #'   `closable` elements. `text` is a plain string or `NULL`; `html` is a flag.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
@@ -63,6 +65,15 @@ mascot_bubble <- function(text = NULL, ..., duration = 5, closable = TRUE) {
   }
   if (duration == 0) {
     cli::cli_abort("{.arg duration} must be greater than zero; got {.val {duration}}.", class = "mascot_error")
+  }
+  if (is.null(text) && (!missing(duration) || !missing(closable))) {
+    cli::cli_abort(
+      c(
+        "{.arg text} cannot be NULL when options are supplied.",
+        "i" = "Use {.code mascot_bubble()} without options to remove it."
+      ),
+      class = "mascot_error"
+    )
   }
   if (inherits(text, c("shiny.tag", "shiny.tag.list"))) {
     text <- render_bubble_text(text)

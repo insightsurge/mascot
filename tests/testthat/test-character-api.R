@@ -415,3 +415,16 @@ describe("one character resolver at all authoring consumers", {
     expect_true("mascot_character_format.Rd" %in% names(db))
   })
 })
+
+describe("B2 checked character display", {
+  it("formats compactly and wraps print assertion failures", {
+    x <- mascot_check_character(format_recipe("study_bot"))
+    text <- format(x)
+    expect_type(text, "character")
+    expect_length(text, 5)
+    expect_match(text[[1]], "study_bot: Study Bot", fixed = TRUE)
+    expect_identical(capture.output(print(x)), text)
+    expect_error(print.mascot_character_data(list()), class = "mascot_error")
+    expect_error(format.mascot_character_data(list()), class = "mascot_error")
+  })
+})

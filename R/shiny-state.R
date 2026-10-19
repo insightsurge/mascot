@@ -61,6 +61,10 @@ mascot_id_state <- function(session, id, namespaced = FALSE) {
     # repeated delivered snapshots harmless in ordinary Shiny sessions.
     prefix <- session$ns("")
     local <- if (nzchar(prefix) && startsWith(key, prefix)) substring(key, nchar(prefix) + 1L) else key
+    # An independent scope contributes exclusions when Shiny collects them,
+    # before onBookmark callbacks. App calls cannot replace this scope's list.
+    private_scope <- session$makeScope(character(0))
+    shiny::setBookmarkExclude(local, session = private_scope)
     shiny::observeEvent(
       session$input[[local]],
       {
@@ -377,14 +381,18 @@ mascot_state_buffer <- function(record, patch) {
 
 #' Settle the bounded retained prefix against one declared startup context
 #' @noRd
-mascot_state_settle <- function(record) {
+mascot_state_settle <- function(record, session = NULL) {
   checkmate::assert_list(record, names = "unique")
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"), null.ok = TRUE)
   calls <- unlist(lapply(record$cold, function(bucket) unname(bucket$calls)), recursive = FALSE)
   if (length(calls)) {
     calls <- calls[order(vapply(calls, function(call) call$sequence, numeric(1)))]
     for (call in calls) {
       record <- tryCatch(mascot_state_accept(record, call$patch), error = function(error) {
         mascot_update_warning(record$id, conditionMessage(error))
+        if (dev_mode() && !is.null(session)) {
+          mascot_problem(session, record$id, paste0("mascot: ", conditionMessage(error)))
+        }
         record
       })
     }
@@ -657,7 +665,7 @@ mascot_snapshot <- function(data, session, name) {
     candidate$sent <- NULL
     candidate$restore <- TRUE
     previous_token <- record$baseline_token
-    record <- mascot_state_settle(candidate)
+    record <- mascot_state_settle(candidate, session)
     if (isTRUE(entry$recovered)) {
       owner <- mascot_session(session)
       owner$mounts[[data$mount_token]] <- entry

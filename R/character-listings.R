@@ -119,7 +119,7 @@ mascot_families <- function() {
 #'   A character with no anchors returns a zero-row data frame with the same
 #'   columns and column types.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
-#'   names and types. The first column is the value you pass to the matching function.
+#'   names and types. The first column is the anchor name.
 #' @family mascot helpers
 #' @seealso [mascot_characters()]
 #' @export

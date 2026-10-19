@@ -47,9 +47,9 @@ describe("gesture help", {
 
 describe("mascot_gesture() named arguments", {
   it("keeps the agreed signature and rejects both forms of extra argument", {
-    expect_identical(names(formals(mascot_gesture)), c("name", "..."))
-    expect_error(mascot_gesture("nod", typo = 1), "Unexpected arguments", class = "mascot_error")
-    expect_error(mascot_gesture("nod", 1), "Name the optional arguments", class = "mascot_error")
+    expect_identical(names(formals(mascot_gesture)), "name")
+    expect_error(mascot_gesture("nod", typo = 1), "unused argument")
+    expect_error(mascot_gesture("nod", 1), "unused argument")
   })
 })
 

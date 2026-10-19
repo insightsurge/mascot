@@ -268,3 +268,23 @@ describe("public argument error classes", {
     expect_error(print.mascot_placement(1), "x", class = "mascot_error")
   })
 })
+
+describe("B2 drag choices", {
+  it("uses the choice class for unknown strings and logical migration errors", {
+    expect_error(mascot_placement(drag = "wrong"), class = "mascot_error_choice")
+    expect_error(mascot_placement(drag = TRUE), class = "mascot_error_choice")
+  })
+})
+
+
+describe("drag mode guidance", {
+  it("prints logical values without quotes and explains every mode", {
+    error <- tryCatch(mascot_placement(drag = TRUE), error = identity)
+    message <- conditionMessage(error)
+    expect_match(message, "TRUE is not a drag mode", fixed = TRUE)
+    expect_match(message, '"none" disables dragging', fixed = TRUE)
+    expect_match(message, '"snap" moves to the nearest corner', fixed = TRUE)
+    expect_match(message, '"free" stays where dropped', fixed = TRUE)
+    expect_identical(error$value, TRUE)
+  })
+})

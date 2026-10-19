@@ -11,7 +11,9 @@ mascot_action(label = NULL, ..., tooltip = TRUE, disabled = FALSE)
 character that says what a click does, such as \code{"Open help"}. Screen readers
 announce the mascot as a button with this name, and the tooltip shows it.
 \code{NULL} (the default) makes an empty helper: in \code{\link[=update_mascot]{update_mascot()}}, it removes
-the click, so the mascot is a picture again.}
+the click, so the mascot is a picture again. With \code{label = NULL}, explicitly
+supplying \code{tooltip} or \code{disabled} is an error; use \code{mascot_action()} without
+options to remove the click.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
@@ -41,7 +43,8 @@ use \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} instead.
 \verb{input$<id>_click} to the number of activations since the mascot appeared, so
 \code{shiny::observeEvent()} runs each time. An activation is a click or tap, Enter
 or Space while the mascot has keyboard focus, or a screen reader's activate
-command. Holding a key down counts once. Dragging a floating mascot, clicking
+command. Holding a key down counts once. Opening and closing a
+\code{\link[=mascot_popup_menu]{mascot_popup_menu()}} never sets this input. Dragging a floating mascot, clicking
 elsewhere, pressing Escape, the minimise and restore buttons and updates from
 the server never count. In a module, use \code{ns("helper")} in the UI and read
 \code{input$helper_click} in that module's server.

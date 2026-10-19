@@ -193,8 +193,17 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
     result$resolved <- TRUE
   }
   palettes <- if (is.null(result$palettes)) character_object() else result$palettes
-  if ("original" %in% names(palettes)) {
-    character_format_abort("input_type", "$.palettes.original", NULL, "Reserve original for the native palette.")
+  reserved <- intersect(names(palettes), c("original", "minimal", "pastel", "vivid", "corporate", "earthy", "night"))
+  if (length(reserved)) {
+    character_format_abort(
+      "input_type",
+      paste0("$.palettes.", reserved[[1]]),
+      reserved[[1]],
+      paste(
+        "Choose a palette id other than original or a reserved style alias",
+        "(minimal, pastel, vivid, corporate, earthy, night)."
+      )
+    )
   }
   if (
     !is.null(result$native_palette) &&

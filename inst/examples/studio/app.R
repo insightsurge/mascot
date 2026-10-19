@@ -579,51 +579,21 @@ studio_server <- function(input, output, session) {
     log(utils::head(c(list(entry), log()), 30))
   }
 
-  # Evaluates a call and logs it with any warning or error. Returns TRUE when the mascot changed:
-  # a wrong value warns and leaves the mascot unchanged; a low-contrast colour warns and is kept.
+  # Runs a call with run_real_call(), then logs it and shows any error, warning or message. Returns TRUE when the
+  # mascot changed: a wrong value warns and leaves the mascot unchanged; a low-contrast colour warns and is kept.
   run_logged <- function(call, code) {
-    # Show development feedback here without changing the caller's option.
-    old_contrast <- getOption("mascot.contrast_warnings")
-    on.exit(options(mascot.contrast_warnings = old_contrast), add = TRUE)
-    if (is.null(getOption("mascot.contrast_warnings"))) {
-      options(mascot.contrast_warnings = TRUE)
-    }
-    messages <- character()
-    warnings <- character()
-    unchanged <- FALSE
-    error <- NULL
-    tryCatch(
-      withCallingHandlers(
-        eval(call),
-        warning = function(w) {
-          warnings <<- c(warnings, cli::ansi_strip(conditionMessage(w)))
-          if (!inherits(w, "mascot_contrast")) {
-            unchanged <<- TRUE
-          }
-          invokeRestart("muffleWarning")
-        },
-        message = function(m) {
-          messages <<- c(messages, trimws(cli::ansi_strip(conditionMessage(m))))
-          invokeRestart("muffleMessage")
-        }
-      ),
-      error = function(e) error <<- cli::ansi_strip(conditionMessage(e))
-    )
-    if (!is.null(error)) {
-      add_log(code, "error", error)
-      showNotification(error, type = "error", duration = 8)
-      return(FALSE)
-    }
-    if (length(warnings)) {
-      add_log(code, "warning", paste(warnings, collapse = "\n"))
-      showNotification(paste(warnings, collapse = "\n"), type = "warning", duration = 8)
-    } else if (length(messages)) {
-      add_log(code, "message", paste(messages, collapse = "\n"))
-      showNotification(paste(messages, collapse = "\n"), duration = 8)
-    } else {
+    result <- run_real_call(call, environment())
+    if (result$class == "ok") {
       add_log(code, "ok")
+    } else {
+      add_log(code, result$class, result$message)
+      showNotification(
+        result$message,
+        type = switch(result$class, error = "error", warning = "warning", "default"),
+        duration = 8
+      )
     }
-    !unchanged
+    result$ok
   }
 
   sync_bubble_controls <- function(pair) {

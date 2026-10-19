@@ -31,6 +31,7 @@ describe("mascot_examples()", {
             "R/guide.R",
             "R/help.R",
             "R/panels.R",
+            "R/shared-run.R",
             "R/ui.R",
             "R/views.R",
             "guide/guide-helpers.R",

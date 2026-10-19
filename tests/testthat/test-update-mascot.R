@@ -952,7 +952,14 @@ describe("update_mascot() popup menu", {
       update_mascot("helper", click = mascot_popup_menu(c(about = "About"), direction = "right"))
       expect_identical(
         captured$patches[[4]]$patch$click,
-        list(type = "menu", items = list(about = "About"), direction = "right", label = NULL, tooltip = TRUE)
+        list(
+          type = "menu",
+          items = list(about = "About"),
+          direction = "right",
+          label = NULL,
+          tooltip = TRUE,
+          disabled = FALSE
+        )
       )
       update_mascot("helper", click = mascot_action("Open help", disabled = TRUE))
       expect_true(captured$patches[[5]]$patch$click$disabled)
@@ -1522,5 +1529,93 @@ describe("inline helper errors in update_mascot() (#349)", {
     }
     expect_error(update_mascot("helper", size = stop("unrelated error"), session = f$session), "unrelated error")
     expect_error(update_mascot("helper", size = f$session, session = f$session), "session.*must be named")
+  })
+})
+
+describe("update documentation (#350)", {
+  it("lists every helper reset and whole-setting replacement", {
+    skip_if_not(file.exists(test_path("..", "..", "R", "update-mascot.R")), "Source-only roxygen check")
+    lines <- readLines(test_path("..", "..", "R", "update-mascot.R"))
+    text <- paste(lines, collapse = "\n")
+    for (setting in c(
+      "Character",
+      "Mood",
+      "Size",
+      "Custom status",
+      "Bubble",
+      "Theme",
+      "Click",
+      "Placement",
+      "Motion"
+    )) {
+      expect_match(text, paste0("| ", setting, " |"), fixed = TRUE)
+    }
+    expect_match(text, "Each non-`NULL` argument replaces that whole setting", fixed = TRUE)
+  })
+  it("keeps interactive examples with the running-app reason above the roxygen block", {
+    skip_if_not(file.exists(test_path("..", "..", "R", "update-mascot.R")), "Source-only roxygen check")
+    lines <- readLines(test_path("..", "..", "R", "update-mascot.R"))
+    expect_match(lines[1], "^# .*running.*app")
+    expect_true(any(lines == "#' @examplesIf interactive()"))
+    expect_false(any(lines == "#' @examples"))
+  })
+})
+
+describe("module warning ids (#350)", {
+  it("uses the local id for early and state validation warnings and overlays", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    root <- shiny::MockShinySession$new()
+    withr::defer(root$close())
+    session <- root$makeScope("outer")$makeScope("inner")
+    update_mascot("helper", character = "tessa", session = session)
+    for (mood in list(1, "not_a_mood")) {
+      warning <- expect_warning(
+        update_mascot("helper", mood = mood, session = session),
+        class = "mascot_update_ignored"
+      )
+      text <- conditionMessage(warning)
+      expect_match(text, 'mascot "helper" unchanged', fixed = TRUE)
+      expect_false(grepl("outer-inner-helper", text, fixed = TRUE))
+      problem <- mascot_session(session)$problems[[session$ns("helper")]]
+      expect_match(problem, "mascot: helper: ", fixed = TRUE)
+      expect_false(grepl("outer-inner-helper", problem, fixed = TRUE))
+    }
+    warning <- expect_warning(
+      update_mascot(session$ns("helper"), size = mascot_size(-1), session = session),
+      class = "mascot_update_ignored"
+    )
+    expect_match(conditionMessage(warning), 'mascot "helper" unchanged', fixed = TRUE)
+    expect_match(mascot_session(session)$problems[[session$ns("helper")]], "mascot: helper: ", fixed = TRUE)
+  })
+  it("uses the local id when a buffered module update is rejected on mount", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    root <- shiny::MockShinySession$new()
+    withr::defer(root$close())
+    session <- root$makeScope("outer")$makeScope("inner")
+    update_mascot("helper", mood = "not_a_mood", session = session)
+    state <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
+    token <- mascot_mount_token(session$ns("helper"), state, session)
+    warning <- expect_warning(
+      mascot_snapshot(protocol_snapshot(token), session, session$ns("helper")),
+      class = "mascot_update_ignored"
+    )
+    expect_match(conditionMessage(warning), 'mascot "helper" unchanged', fixed = TRUE)
+    expect_match(mascot_session(session)$problems[[session$ns("helper")]], "mascot: helper: ", fixed = TRUE)
+  })
+})
+
+
+describe("settle overlay in a cold-start update (#350)", {
+  it("keeps the worried overlay when a buffered update fails as the anchor call settles", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot("helper", mood = "missing", session = f$session)
+    expect_warning(
+      update_mascot("helper", character = "tessa", session = f$session),
+      class = "mascot_update_ignored"
+    )
+    protocol_ready(f)
+    expect_match(protocol_flush(f)$problem, "^mascot: ")
   })
 })

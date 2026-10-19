@@ -313,6 +313,7 @@ panel_messages <- function() {
       note = div(class = "pg-note", "Click or tap the mascot to open its menu, then choose an item.")
     ),
     arg_field("mascot_popup_menu", "...", NULL),
+    arg_field("mascot_popup_menu", "disabled", input_switch("menu_disabled", "Disabled: menu opens nothing", FALSE)),
     arg_field(
       "mascot_popup_menu",
       "direction",

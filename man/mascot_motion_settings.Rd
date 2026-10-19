@@ -64,7 +64,7 @@ named switches always win.
 mascot_motion_settings()
 mascot_motion_settings(idle = FALSE)
 mascot_motion_settings(messages = "menu", others = FALSE)
-mascot("still", motion = FALSE)
+ui <- mascot("still", motion = FALSE)
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   shiny::fluidPage(

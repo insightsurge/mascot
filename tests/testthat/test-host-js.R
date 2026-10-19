@@ -1871,7 +1871,7 @@ describe("mascot.host popup menu", {
       let button=el.querySelector('.mascot-menu-toggle');
       const key=(target,key)=>target.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
       button.focus();key(button,'Enter');const opened=mascot.host.state(el).menuOpen;key(button,'Enter');const closed=!mascot.host.state(el).menuOpen;
-      send({click:{type:'menu',items:{about:'About',help:'Help',more:'More'},direction:'auto',label:null,tooltip:true}});
+      send({click:{type:'menu',items:{about:'About',help:'Help',more:'More'},direction:'auto',label:null,tooltip:true,disabled:false}});
       button=el.querySelector('.mascot-menu-toggle');key(document.body,'Enter');const global=!mascot.host.state(el).menuOpen;
       button.focus();key(button,' ');button.focus();key(button,' ');const spaceClosed=!mascot.host.state(el).menuOpen;
       key(button,' ');const first=document.activeElement.dataset.itemId;
@@ -1902,8 +1902,8 @@ describe("mascot.host popup menu", {
     r <- js(
       "(async()=>{const el=document.getElementById('a'),state=()=>mascot.host.state(el),send=patch=>mascot.host.receive({id:'a',patch});
       el.querySelector('.mascot-menu-toggle').click();const cleared=state().bubble===null&&el.querySelector('.mascot-bubble').hidden;
-      send({mood:'happy',click:{type:'menu',items:{bad:''},direction:'auto',label:null,tooltip:true}});const atomic=state().mood==='idle'&&state().menuOpen;
-      el.querySelector('[role=menuitem]').focus();send({click:{type:'menu',items:{replacement:'Replacement'},direction:'auto',label:null,tooltip:true}});
+      send({mood:'happy',click:{type:'menu',items:{bad:''},direction:'auto',label:null,tooltip:true,disabled:false}});const atomic=state().mood==='idle'&&state().menuOpen;
+      el.querySelector('[role=menuitem]').focus();send({click:{type:'menu',items:{replacement:'Replacement'},direction:'auto',label:null,tooltip:true,disabled:false}});
       const replacementFocus=document.activeElement===el.querySelector('.mascot-menu-toggle');
       el.querySelector('.mascot-menu-toggle').click();el.querySelector('[role=menuitem]').focus();send({click:{type:'none'}});
       return {cleared,atomic,replacementFocus,open:state().menuOpen,button:!!el.querySelector('.mascot-menu-toggle'),
@@ -1957,7 +1957,7 @@ describe("mascot.host popup menu", {
       const menu=el.querySelector('.mascot-menu'),below=menu.getBoundingClientRect().top>=el.querySelector('canvas').getBoundingClientRect().top;
       el.querySelector('.mascot-menu-toggle').click();
       el.querySelector('.mascot-minimise').click();const closed=!mascot.host.state(el).menuOpen;
-      mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{new:'New'},direction:'auto',label:null,tooltip:true}}});
+      mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{new:'New'},direction:'auto',label:null,tooltip:true,disabled:false}}});
       const hiddenWhileMinimised=el.querySelector('.mascot-menu-toggle').hidden;
       el.querySelector('.mascot-restore').click();return {below,closed,hiddenWhileMinimised,open:mascot.host.state(el).menuOpen,
         hidden:el.querySelector('.mascot-menu-toggle').hidden};})()"
@@ -2437,7 +2437,7 @@ describe("mascot.host click (#257)", {
         for (const label of ['   ',' \\t\\r\\n ']) {
           for (const click of [
             {type:'action',label,tooltip:true,disabled:false},
-            {type:'menu',items:{help:'Help'},direction:'auto',label,tooltip:true}
+            {type:'menu',items:{help:'Help'},direction:'auto',label,tooltip:true,disabled:false}
           ]) {
             mascot.host.receive({id:'a',patch:{mood:'happy',click}});
             unchanged.push(JSON.stringify(state())===before);
@@ -2626,7 +2626,7 @@ describe("mascot.host click (#257)", {
     expect_identical(js(paste0(clicks, ".length")), 0L)
     expect_identical(js("document.querySelector('#a .mascot-menu-toggle').getAttribute('aria-label')"), "Tessa, menu")
     js(
-      "mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{a:'A'},direction:'auto',label:'Help and settings',tooltip:true}}})"
+      "mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{a:'A'},direction:'auto',label:'Help and settings',tooltip:true,disabled:false}}})"
     )
     expect_identical(
       js("document.querySelector('#a .mascot-menu-toggle').getAttribute('aria-label')"),
@@ -2884,7 +2884,7 @@ describe("mascot.host action tooltip (#257)", {
       const withoutLabel=!el.querySelector('.mascot-tooltip');
       mascot.host.receive({
         id:'a',
-        patch:{click:{type:'menu',items:{about:'About'},direction:'auto',label:'Help menu',tooltip:false}}
+        patch:{click:{type:'menu',items:{about:'About'},direction:'auto',label:'Help menu',tooltip:false,disabled:false}}
       });
       const tooltipFalse=!el.querySelector('.mascot-tooltip');
       return {withoutLabel,tooltipFalse};})()"
@@ -3985,5 +3985,44 @@ describe("detail bands on the host", {
     shown <- host_layout(js, "return {band: mascot.host.state(el).band, rendered: mascot.host.state(el).renderedSize};")
     expect_identical(shown$band, "micro")
     expect_equal(shown$rendered, 40)
+  })
+})
+
+describe("disabled menu activation (#350)", {
+  it("keeps keyboard focus and aria-disabled while refusing pointer and keyboard activation", {
+    skip_without_chrome()
+    js <- local_runtime_page(
+      tags = list(mascot("helper", motion = FALSE, click = mascot_popup_menu(c(help = "Help"), disabled = TRUE))),
+      shiny_stub = TRUE
+    )
+    result <- js(
+      "(() => {
+      const el = document.getElementById('helper');
+      let button = el.querySelector('.mascot-menu-toggle');
+      button.focus();
+      button.dispatchEvent(new MouseEvent('click', {bubbles:true, detail:1})); button.click();
+      el.querySelector('[role=menuitem]').click();
+      for (const key of ['Enter', ' ', 'ArrowDown', 'ArrowUp'])
+        button.dispatchEvent(new KeyboardEvent('keydown', {key, bubbles:true, cancelable:true}));
+      const disabled = {focused: document.activeElement === button, tab: button.tabIndex,
+        aria: button.getAttribute('aria-disabled'), native: button.disabled,
+        open: mascot.host.state(el).menuOpen, events: menuEvents.filter(e => ['helper_menu', 'helper_click'].includes(e[0])).length};
+      mascot.host.receive({id:'helper', patch:{click:{type:'menu', items:{help:'Help'},
+        direction:'auto', label:null, tooltip:true, disabled:false}}});
+      button = el.querySelector('.mascot-menu-toggle'); button.click();
+      const enabled = mascot.host.state(el).menuOpen;
+      mascot.host.receive({id:'helper', patch:{click:{type:'menu', items:{help:'Help'},
+        direction:'auto', label:null, tooltip:true, disabled:true}}});
+      return {disabled, enabled, closed: !mascot.host.state(el).menuOpen};
+    })()"
+    )
+    expect_true(result$disabled$focused)
+    expect_identical(result$disabled$tab, 0L)
+    expect_identical(result$disabled$aria, "true")
+    expect_false(result$disabled$native)
+    expect_false(result$disabled$open)
+    expect_identical(result$disabled$events, 0L)
+    expect_true(result$enabled)
+    expect_true(result$closed)
   })
 })

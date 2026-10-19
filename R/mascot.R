@@ -147,11 +147,11 @@
 #' never counts as a click. See [mascot_action()] and [mascot_popup_menu()].
 #' @export
 #' @examples
-#' mascot("helper", mood = "happy")
-#' mascot("small", size = 96, placement = "bottom-right")
-#' mascot("responsive", size = mascot_size(120, small_screen = 48))
-#' mascot("still", motion = FALSE)
-#' mascot("helpful", click = "Open help")
+#' ui <- mascot("helper", mood = "happy")
+#' ui <- mascot("small", size = 96, placement = "bottom-right")
+#' ui <- mascot("responsive", size = mascot_size(120, small_screen = 48))
+#' ui <- mascot("still", motion = FALSE)
+#' ui <- mascot("helpful", click = "Open help")
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   ui = shiny::fluidPage(mascot("helper")),

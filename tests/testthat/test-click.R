@@ -80,11 +80,11 @@ describe("the click argument", {
     )
     expect_identical(
       as_click_arg(mascot_popup_menu(c(a = "A"), direction = "left", label = "Menu"), environment()),
-      list(type = "menu", items = list(a = "A"), direction = "left", label = "Menu", tooltip = TRUE)
+      list(type = "menu", items = list(a = "A"), direction = "left", label = "Menu", tooltip = TRUE, disabled = FALSE)
     )
     expect_identical(
       as_click_arg(mascot_popup_menu(c(a = "A"), direction = "left", label = "Menu", tooltip = FALSE), environment()),
-      list(type = "menu", items = list(a = "A"), direction = "left", label = "Menu", tooltip = FALSE)
+      list(type = "menu", items = list(a = "A"), direction = "left", label = "Menu", tooltip = FALSE, disabled = FALSE)
     )
   })
   it("rejects a named vector, the old menu shortcut, with a hint to wrap it", {

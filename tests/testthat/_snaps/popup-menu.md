@@ -13,7 +13,7 @@
     Condition
       Error in `mascot_popup_menu()`:
       ! Unexpected arguments: an unnamed argument, "extra".
-      i Name the optional arguments: `direction`, `label`, and `tooltip`.
+      i Name the optional arguments: `disabled`, `direction`, `label`, and `tooltip`.
 
 # mascot_popup_menu() / rejects invalid directions and malformed helpers with snapshots
 

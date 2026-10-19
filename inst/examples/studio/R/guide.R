@@ -72,7 +72,11 @@ playground_guide <- list(
     c("...", "palette", "light", "dark", "mode", "css")
   ),
   mascot_action = guide_entry("messages", "Clicks and menus", c("label", "...", "tooltip", "disabled")),
-  mascot_popup_menu = guide_entry("messages", "Clicks and menus", c("items", "...", "direction", "label", "tooltip")),
+  mascot_popup_menu = guide_entry(
+    "messages",
+    "Clicks and menus",
+    c("items", "...", "disabled", "direction", "label", "tooltip")
+  ),
   mascot = guide_entry(
     "wiring",
     "Your first app",

@@ -557,23 +557,6 @@ panel_layout <- function() {
   )
 }
 
-# The experimental status of the bslib mapping, in the words of ?mascot_theme (so the two cannot drift), with the
-# same badge as the help page's other experimental sections.
-studio_bslib_experimental <- function() {
-  help <- help_page("mascot_theme")
-  text <- paste(
-    vapply(list(help$description, help$details), function(x) paste(as.character(x), collapse = ""), ""),
-    collapse = " "
-  )
-  tail <- studio_help_tail(text, "Which parts of a character")
-  sentence <- if (!is.null(tail)) sub("(?s)(release\\.).*$", "\\1", tail, perl = TRUE)
-  div(
-    class = "pg-note",
-    tags$span(class = "badge text-bg-warning", "Experimental"),
-    if (!is.null(sentence)) tagList(" ", HTML(sentence))
-  )
-}
-
 panel_colours <- function() {
   styling <- help_rd("mascot_styling")
   tagList(

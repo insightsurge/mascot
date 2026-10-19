@@ -106,3 +106,90 @@ describe("run_real_call()", {
     expect_error(studio_shared("shared-run.R")$call_silencer(quote(mascot()), "x"), "conditions")
   })
 })
+
+describe("changed_colours()", {
+  it("keeps only the values that differ from each role's listed colour, by role and in lower case", {
+    changed <- studio_shared("shared-colours.R")$changed_colours
+    roles <- data.frame(role = c("body", "rim", "shine"), colour = c("#AABBCC", "#112233", "rgba(0, 0, 0, 0.5)"))
+    values <- list(shine = "rgba(0, 0, 0, 0.5)", body = "#aabbcc", rim = "#FF0000", beak = "#123456")
+    expect_identical(changed(values, roles), c(rim = "#ff0000"))
+    # A role with no picker yet has not changed.
+    expect_identical(changed(list(body = NULL, rim = "#112233"), roles), stats::setNames(character(), character()))
+    expect_identical(changed(list(), roles), stats::setNames(character(), character()))
+  })
+  it("checks its arguments", {
+    changed <- studio_shared("shared-colours.R")$changed_colours
+    roles <- data.frame(role = "body", colour = "#ffffff")
+    expect_error(changed(list(body = 1), roles), "values")
+    expect_error(changed(list("#ffffff", "#000000"), roles), "names")
+    expect_error(changed(list(), data.frame(role = "body")), "colour")
+  })
+})
+
+describe("colour_groups()", {
+  it("puts the brand roles and the leaders a palette changes first, then the rest grouped by name", {
+    shared <- studio_shared("shared-colours.R")
+    for (id in mascot_characters()$id) {
+      roles <- mascot_colour_roles(id)
+      groups <- shared$colour_groups(roles, id)
+      expect_named(groups, c("Main colours", "More parts"))
+      main <- groups$`Main colours`
+      brand <- roles$role[!is.na(roles$brand)]
+      # Brand roles lead, in the listing's order.
+      expect_identical(main[seq_along(brand)], brand, info = id)
+      # Every other main role is a leader that at least one of the character's palettes colours differently.
+      listed <- mascot_palettes(id)
+      listings <- lapply(listed$name[listed$source != "native"], function(p) mascot_colour_roles(id, palette = p))
+      for (role in setdiff(main, brand)) {
+        expect_true(is.na(roles$follows[roles$role == role]), info = paste(id, role))
+        colours <- vapply(listings, function(palette) tolower(palette$colour[palette$role == role]), character(1))
+        expect_true(any(colours != tolower(roles$colour[roles$role == role])), info = paste(id, role))
+      }
+      # Every role appears once; the rest are grouped by the name before the first underscore.
+      more <- groups$`More parts`
+      expect_setequal(c(main, unlist(more, use.names = FALSE)), roles$role)
+      expect_false(anyDuplicated(c(main, unlist(more, use.names = FALSE))) > 0)
+      for (group in names(more)) {
+        expect_identical(sub("_.*$", "", more[[group]]), rep(group, length(more[[group]])), info = paste(id, group))
+      }
+    }
+  })
+  it("groups parts a character adds by their own name, and checks its arguments", {
+    shared <- studio_shared("shared-colours.R")
+    roles <- rbind(
+      mascot_colour_roles("neer")[, c("role", "colour")],
+      data.frame(role = c("beak", "beak_tip"), colour = "#000000")
+    )
+    expect_identical(shared$colour_groups(roles, "neer")$`More parts`$beak, c("beak", "beak_tip"))
+    expect_error(shared$colour_groups(list(), "neer"), "roles")
+    expect_error(shared$colour_groups(roles, 1), "character")
+  })
+})
+
+describe("palette_cards()", {
+  it("gives one card per palette with its value, description and swatches from the listings", {
+    cards <- studio_shared("shared-colours.R")$palette_cards
+    for (id in mascot_characters()$id) {
+      listed <- mascot_palettes(id)
+      result <- cards(id)
+      expect_identical(vapply(result, `[[`, "", "name"), listed$name, info = id)
+      expect_identical(vapply(result, `[[`, "", "description"), listed$description, info = id)
+      expect_identical(result[[1]]$value, "original")
+      own <- mascot_colour_roles(id)
+      brand <- own$role[!is.na(own$brand)]
+      for (card in result[-1]) {
+        roles <- mascot_colour_roles(id, palette = card$value)
+        expect_identical(card$value, card$name)
+        # Brand roles first, then leaders whose colour the palette changes, each with the palette's colour.
+        expect_identical(names(card$swatches)[seq_along(brand)], brand, info = card$name)
+        expect_identical(unname(card$swatches), roles$colour[match(names(card$swatches), roles$role)])
+        for (role in setdiff(names(card$swatches), brand)) {
+          expect_true(is.na(own$follows[own$role == role]))
+          expect_false(identical(tolower(card$swatches[[role]]), tolower(own$colour[own$role == role])))
+        }
+      }
+      expect_gt(length(result[[1]]$swatches), 0)
+    }
+    expect_error(cards(1), "character")
+  })
+})

@@ -31,6 +31,7 @@ describe("mascot_examples()", {
             "R/guide.R",
             "R/help.R",
             "R/panels.R",
+            "R/shared-colours.R",
             "R/shared-run.R",
             "R/ui.R",
             "R/views.R",
@@ -685,7 +686,7 @@ describe("studio round 4 regression guards", {
   it("omits empty colour groups and groups unfamiliar parts", {
     env <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "panels.R"), env)
-    groups <- env$colour_groups(data.frame(role = c("feature", "beak")))
+    groups <- env$studio_colour_groups(data.frame(role = c("feature", "beak")))
     expect_named(groups, c("Face", "Other parts"))
     expect_identical(groups$`Other parts`, "beak")
   })
@@ -3099,7 +3100,7 @@ describe("studio palette sync (#353)", {
     for (character in unname(get("studio_characters", parts$env)())) {
       for (palette in unname(get("studio_palette_choices", parts$env)(character))) {
         roles <- mascot_colour_roles(character, palette = palette)
-        groups <- get("colour_groups", parts$env)(roles)
+        groups <- get("studio_colour_groups", parts$env)(roles)
         expect_setequal(unlist(groups, use.names = FALSE), roles$role)
         expect_length(unlist(groups), nrow(roles))
         for (mode in c("light", "dark")) {

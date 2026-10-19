@@ -3,7 +3,7 @@
 # from app.R once the packages are attached.
 
 # Groups for the colour pickers; parts a future character adds appear under "Other parts".
-colour_groups <- function(roles) {
+studio_colour_groups <- function(roles) {
   groups <- list(
     Body = c(
       "body",
@@ -74,7 +74,7 @@ role_picker <- function(mode, role, roles, value = NULL) {
 }
 
 role_pickers <- function(mode, roles, values = list(), name = mascot_character()$name) {
-  role_groups <- colour_groups(roles)
+  role_groups <- studio_colour_groups(roles)
   tagList(
     div(
       class = "pg-hint",

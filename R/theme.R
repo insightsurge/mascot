@@ -57,7 +57,9 @@
 #'   strings, [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or
 #'   three RGB numbers (red, green and blue) in 0--255. Single numeric palette
 #'   indices are not accepted. Roles use snake case; `light`, `dark` and
-#'   `default` are reserved.
+#'   `default` are reserved. Built-in characters keep one outline colour in
+#'   both modes; their light outer band keeps them readable on any dark page.
+#'   To use your own dark-mode outline, set `dark = list(outline = "#FFC93C")`.
 #' @param mode Mode selection: `"auto"` (the default), `"light"` or `"dark"`.
 #'   `"auto"` follows the nearest valid `data-bs-theme` in the original source
 #'   context, then Quarto's body classes. With no page signal it uses light mode.

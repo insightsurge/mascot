@@ -1401,7 +1401,7 @@ describe("nested modules across tabs", {
     app$wait_for_js("JSON.parse(document.getElementById('first-review-events').textContent).menu === 'about'")
     events <- jsonlite::fromJSON(app$get_value(output = "first-review-events"))
     expect_identical(events$menu, "about")
-    expect_equal(events$click, 1)
+    expect_null(events$click)
     expect_null(jsonlite::fromJSON(app$get_value(output = "second-review-events"))$menu)
     # A real pointer drop is received by the nested module's local input.
     app$run_js(
@@ -1445,5 +1445,82 @@ describe("nested modules across tabs", {
       expect_equal(app$get_js(sprintf("document.querySelectorAll('script[src$=\"/%s\"]').length", file)), 1)
     }
     expect_equal(app$get_js("document.querySelectorAll('link[href$=\"/mascot.css\"]').length"), 1)
+  })
+})
+
+
+describe("inline helper errors in update_mascot() (#349)", {
+  it("sends the development overlay text when helpers fail", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    protocol_ready(f)
+    protocol_flush(f)
+    expect_warning(
+      update_mascot("helper", size = mascot_size(-1), session = f$session),
+      class = "mascot_update_ignored"
+    )
+    expect_match(protocol_flush(f)$problem, "^mascot: ")
+  })
+  it("lists every failed helper as its own bullet in one warning", {
+    local_mocked_bindings(dev_mode = function() FALSE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    warning <- expect_warning(
+      update_mascot("helper", size = mascot_size(-1), bubble = mascot_bubble(""), session = f$session),
+      class = "mascot_update_ignored"
+    )
+    expect_equal(sum(grepl("^x ", strsplit(cli::ansi_strip(conditionMessage(warning)), "\n")[[1]])), 2)
+  })
+  it("warns without accepting any fields and lets the observer run again", {
+    local_mocked_bindings(dev_mode = function() FALSE)
+    shiny::testServer(
+      function(input, output, session) {
+        shiny::observeEvent(input$px, {
+          update_mascot("helper", mood = "happy", size = mascot_size(input$px))
+          session$userData$completed <- input$px
+        })
+      },
+      {
+        expect_warning(session$setInputs(px = -1), class = "mascot_update_ignored")
+        expect_identical(session$userData$completed, -1)
+        expect_null(session$userData$mascot_protocol)
+        session$setInputs(px = 96)
+        expect_identical(session$userData$completed, 96)
+        expect_identical(
+          session$userData$mascot_protocol$states[[session$ns("helper")]]$cold$free$calls[[1]]$patch$size$size,
+          96
+        )
+      }
+    )
+  })
+  it("catches mascot errors from every update argument without altering accepted state", {
+    local_mocked_bindings(dev_mode = function() FALSE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    protocol_ready(f)
+    protocol_flush(f)
+    before <- protocol_record(f)
+    for (arg in c(
+      "character",
+      "mood",
+      "status",
+      "bubble",
+      "size",
+      "placement",
+      "theme",
+      "motion",
+      "click",
+      "gesture"
+    )) {
+      call <- as.call(c(
+        list(quote(update_mascot), "helper", session = f$session),
+        setNames(list(quote(mascot_size(-1))), arg)
+      ))
+      expect_warning(eval(call), class = "mascot_update_ignored")
+      expect_identical(protocol_record(f), before, info = arg)
+    }
+    expect_error(update_mascot("helper", size = stop("unrelated error"), session = f$session), "unrelated error")
+    expect_error(update_mascot("helper", size = f$session, session = f$session), "session.*must be named")
   })
 })

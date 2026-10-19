@@ -206,11 +206,11 @@ panel_messages <- function() {
     div(
       class = "pg-field",
       id = "click_field",
-      div(class = "pg-field-head", tags$strong("Every click reaches your server")),
+      div(class = "pg-field-head", tags$strong("Action clicks reach your server")),
       div(
         class = "pg-hint",
-        "With a click, each activation sets input$helper_click: a click or tap, Enter or Space, ",
-        "and opening or closing a menu. Without one, the mascot is a picture and sends nothing."
+        "With an action, each activation sets input$helper_click: a click or tap, Enter or Space. ",
+        "Menu toggles send no clicks; choosing an item sets input$helper_menu. Without a click, the mascot is a picture."
       ),
       div(class = "pg-live", tags$code("input$helper_click"), textOutput("click_last"))
     ),
@@ -307,9 +307,16 @@ panel_motion <- function(gestures = mascot_gestures()) {
         multiple = TRUE
       )
     ),
-    arg_field("mascot_motion_settings", "others", input_switch("others", "Other movement", TRUE)),
+    arg_field(
+      "mascot_motion_settings",
+      "others",
+      input_switch("others", "Other movement", TRUE),
+      note = div(
+        class = "pg-note",
+        "Turn this off with all switches following it to try motion = FALSE, including reduced poses and instant drag transitions."
+      )
+    ),
     fn_heading("mascot_gesture"),
-    arg_field("mascot_gesture", "...", NULL),
     arg_field(
       "mascot_gesture",
       "name",

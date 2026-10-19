@@ -60,7 +60,7 @@ playground_guide <- list(
     "Motion",
     c("...", "idle", "mood_change", "gestures", "swap", "minimising", "restoring", "messages", "others")
   ),
-  mascot_gesture = guide_entry("motion", "One-off gestures", c("name", "...")),
+  mascot_gesture = guide_entry("motion", "One-off gestures", "name"),
   mascot_gestures = guide_entry("motion", "One-off gestures", "character"),
   mascot_size = guide_entry("layout", "Size and placement", c("size", "...", "small_screen")),
   mascot_placement = guide_entry("layout", "Size and placement", c("position", "...", "minimise", "drag")),

@@ -24,7 +24,6 @@ describe("mascot_popup_menu()", {
   })
   it("is an empty helper without items, which removes the click", {
     expect_identical(as_click_arg(mascot_popup_menu(), environment()), list(type = "none"))
-    expect_identical(as_click_arg(mascot_popup_menu(direction = "top"), environment()), list(type = "none"))
     expect_null(click_tag(as_click_arg(mascot_popup_menu(), environment())))
   })
   it("rejects every invalid item, id, label and tooltip value with the argument named", {
@@ -135,5 +134,64 @@ describe("public argument error classes", {
   it("adds mascot_error to the registered format and print methods", {
     expect_error(format.mascot_popup_menu(1), "x", class = "mascot_error")
     expect_error(print.mascot_popup_menu(1), "x", class = "mascot_error")
+  })
+})
+
+
+describe("mascot_popup_menu() safeguards (#349)", {
+  it("requires items whenever direction, label or tooltip is explicitly supplied", {
+    for (options in list(
+      list(direction = "auto"),
+      list(direction = "top"),
+      list(label = NULL),
+      list(label = "Help"),
+      list(tooltip = TRUE),
+      list(tooltip = FALSE)
+    )) {
+      expect_error(do.call(mascot_popup_menu, options), "items.*NULL", class = "mascot_error")
+      expect_error(do.call(mascot_popup_menu, c(list(items = NULL), options)), "items.*NULL", class = "mascot_error")
+    }
+    expect_identical(as_click_arg(mascot_popup_menu(NULL), environment()), list(type = "none"))
+  })
+  it("includes tooltip among the valid names in an unexpected argument error", {
+    expect_error(
+      mascot_popup_menu(c(help = "Help"), tooltp = FALSE),
+      "Name the optional arguments.*tooltip",
+      class = "mascot_error"
+    )
+  })
+})
+
+describe("popup menu input contract (#349)", {
+  it("toggles by pointer and keyboard without clicks and sends each item choice", {
+    js <- local_runtime_page(
+      tags = list(mascot("helper", placement = "inline", motion = FALSE, click = mascot_popup_menu(c(help = "Help")))),
+      shiny_stub = TRUE
+    )
+    result <- js(
+      "(() => {
+      const el = document.getElementById('helper'), button = el.querySelector('.mascot-menu-toggle');
+      button.click();
+      const pointerOpened = mascot.host.state(el).menuOpen;
+      button.click();
+      const pointerClosed = !mascot.host.state(el).menuOpen;
+      const key = (type, repeat = false) => button.dispatchEvent(new KeyboardEvent(type,
+        {key: 'Enter', bubbles: true, cancelable: true, repeat}));
+      key('keydown'); key('keydown', true); key('keyup');
+      const keyboardOpened = mascot.host.state(el).menuOpen;
+      el.querySelector('[role=menuitem]').click();
+      button.click(); el.querySelector('[role=menuitem]').click();
+      key('keydown'); key('keyup'); key('keydown'); key('keyup');
+      return {pointerOpened, pointerClosed, keyboardOpened, closed: !mascot.host.state(el).menuOpen,
+        clicks: menuEvents.filter(e => e[0] === 'helper_click'),
+        choices: menuEvents.filter(e => e[0] === 'helper_menu')};
+    })()"
+    )
+    expect_true(result$pointerOpened)
+    expect_true(result$pointerClosed)
+    expect_true(result$keyboardOpened)
+    expect_true(result$closed)
+    expect_identical(result$clicks, list())
+    expect_identical(result$choices, rep(list(list("helper_menu", "help", list(priority = "event"))), 2))
   })
 })

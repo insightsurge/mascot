@@ -43,12 +43,12 @@
  * { type: 'menu', items: {id: label}, direction, label: string|null, tooltip: boolean }; a new click replaces the old one whole.
  * Clicks are Shiny-only. Without one the canvas is an image and no keyboard stop. With one, a native button wraps
  * the canvas (hidden from assistive technology inside it), named by the action's label or the menu's label (else
- * "<character>, menu"); mood changes never rename it. Every activation of that button (pointer, Enter, Space or an
+ * "<character>, menu"); mood changes never rename it. Every activation of an action button (pointer, Enter, Space or an
  * assistive technology's click; a held key counts once) sets the namespaced id + '_click' to a count since mounting,
  * with priority 'event'; the count survives click changes. A disabled action (aria-disabled) sends nothing.
  * Drags, outside clicks, Escape, minimise/restore and server updates never count.
- * Menu choices set id + '_menu' with priority 'event'. Labels always use textContent. Opening and closing count as
- * activations; navigation stays within the focused menu. No global keyboard listeners for menus.
+ * Menu choices set id + '_menu' with priority 'event'. Labels always use textContent. Opening and closing never set
+ * id + '_click'; navigation stays within the focused menu. No global keyboard listeners for menus.
  * A shared outside-pointer listener exists only while a menu is open; teardown removes it when unused.
  * A tooltip (for an action, or a menu with a label and tooltip: true) shows the label on hover (not touch) and
  * keyboard focus, stays while the pointer is over the mascot or the tooltip, and Escape dismisses it without
@@ -1733,12 +1733,12 @@
 
   function activate(record, keyboard) {
     if (record.click.disabled) return;
-    record.clicks += 1;
-    window.Shiny.setInputValue(`${record.el.id}_click`, record.clicks, { priority: 'event' });
     if (record.click.type === 'menu') {
       if (record.menuOpen) closeMenu(record, keyboard);
       else openMenu(record, keyboard);
     } else {
+      record.clicks += 1;
+      window.Shiny.setInputValue(`${record.el.id}_click`, record.clicks, { priority: 'event' });
       // The app's answer (a panel, a dialog) takes over; the tooltip returns on the next hover or focus.
       record.tooltipDismissed = true;
       hideTooltip(record);

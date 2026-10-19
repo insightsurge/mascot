@@ -1036,7 +1036,7 @@ studio_server <- function(input, output, session) {
     }
   })
   output$menu_last <- renderText(menu_last())
-  click_last <- reactiveVal("Nothing yet: turn on a click, then click or tap the mascot.")
+  click_last <- reactiveVal("Nothing yet: turn on an action, then click or tap the mascot.")
   observeEvent(input$helper_click, {
     click_last(paste(input$helper_click, if (input$helper_click == 1) "click" else "clicks"))
     action <- eval(state$click$helper)
@@ -1047,12 +1047,6 @@ studio_server <- function(input, output, session) {
         paste0("The visitor clicked the mascot: ", action$label, ".")
       )
       send(list(gesture = code_gesture("wave")), force = TRUE, remember = FALSE)
-    } else {
-      add_log(
-        sprintf("input$helper_click  # %s", input$helper_click),
-        "event",
-        "The visitor opened or closed the menu."
-      )
     }
   })
   output$click_last <- renderText(click_last())

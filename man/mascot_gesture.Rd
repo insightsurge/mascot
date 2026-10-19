@@ -4,7 +4,7 @@
 \alias{mascot_gesture}
 \title{Choose a one-off mascot gesture}
 \usage{
-mascot_gesture(name, ...)
+mascot_gesture(name)
 }
 \arguments{
 \item{name}{A required non-empty gesture id: a lowercase letter followed by
@@ -12,8 +12,6 @@ lowercase letters, digits or underscores. \code{"nod"} acknowledges an action;
 \code{"wave"} greets (characters without arms rock instead). See
 \code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions. There is no default; \code{NULL} is not
 accepted.}
-
-\item{...}{Must be empty. Forces the arguments after it to be named.}
 }
 \value{
 A \code{mascot_gesture} object with a \code{name} element.

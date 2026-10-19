@@ -42,7 +42,10 @@ restore button. \code{NULL} follows \code{others}.}
 of names from \code{c("bubble", "tooltip", "menu")} for only those panels.
 \code{NULL} (default) follows \code{others}. Panels still appear and work.}
 
-\item{others}{Logical flag, default \code{TRUE}, for every unnamed switch.}
+\item{others}{Logical flag, default \code{TRUE}, for every unnamed switch.
+With \code{others = FALSE} and no movement enabled by a named switch, this is
+equivalent to \code{motion = FALSE}: reduced-motion poses and instant drag
+transitions apply too.}
 }
 \value{
 A \code{mascot_motion_settings} object. Its fields are internal; pass the

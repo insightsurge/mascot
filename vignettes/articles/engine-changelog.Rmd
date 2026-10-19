@@ -9,6 +9,11 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-18 — Menu toggles no longer send action clicks (#349)
+
+`mascot-host.js` sends `input$<id>_click` only for action buttons. Opening or closing a menu by pointer or keyboard
+leaves the click count unchanged; choosing an item still sends `input$<id>_menu` with event priority.
+
 ## 2026-10-18 — Named palettes resolved in R (#336)
 
 The host receives a palette id and its light and dark leader colours separately

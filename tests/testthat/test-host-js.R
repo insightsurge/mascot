@@ -1762,8 +1762,8 @@ describe("mascot.host popup menu", {
     for (event in r$events) {
       expect_identical(event, list("a_menu", "about", list(priority = "event")))
     }
-    # Every toggle of the menu is an activation; choices and Escape are not.
-    expect_identical(r$clicks, 4L)
+    # Menu toggles, choices and Escape never send action clicks.
+    expect_identical(r$clicks, 0L)
   })
   it("opens eight pixels from the painted character above it, or from the status below it", {
     skip_without_chrome()
@@ -2585,7 +2585,7 @@ describe("mascot.host click (#257)", {
     expect_identical(r$modified, 0L)
     expect_identical(r$shift, 1L)
   })
-  it("counts opening and closing a menu but never Escape or a choice, and keeps counting across click changes", {
+  it("sends no action clicks for menu toggles, Escape or choices, and counts a subsequent action", {
     skip_without_chrome()
     js <- local_host_page(shiny_menu = TRUE, click = mascot_popup_menu(c(about = "About")), placement = "inline")
     r <- js(paste0(
@@ -2608,10 +2608,10 @@ describe("mascot.host click (#257)", {
     ))
     expect_true(r$open)
     expect_true(r$focusedItem)
-    expect_identical(r$withMenu, 4L)
+    expect_identical(r$withMenu, 0L)
     expect_identical(r$choice, list("a_menu", "about", list(priority = "event")))
-    expect_identical(r$action, list("a_click", 5L, list(priority = "event")))
-    expect_identical(r$after, 5L)
+    expect_identical(r$action, list("a_click", 1L, list(priority = "event")))
+    expect_identical(r$after, 1L)
     expect_true(r$picture)
   })
   it("toggles a menu once while Enter is held, and names it by its label or the character", {
@@ -2623,7 +2623,7 @@ describe("mascot.host click (#257)", {
     press_key(js, "Enter", repeat_key = TRUE)
     press_key(js, "Enter", repeat_key = TRUE)
     expect_true(js("mascot.host.state(document.getElementById('a')).menuOpen"))
-    expect_identical(js(paste0(clicks, ".length")), 1L)
+    expect_identical(js(paste0(clicks, ".length")), 0L)
     expect_identical(js("document.querySelector('#a .mascot-menu-toggle').getAttribute('aria-label')"), "Tessa, menu")
     js(
       "mascot.host.receive({id:'a',patch:{click:{type:'menu',items:{a:'A'},direction:'auto',label:'Help and settings',tooltip:true}}})"
@@ -3163,14 +3163,10 @@ describe("mascot.host dragging", {
     expect_true(result$dragging)
     expect_identical(result$placed, "true")
     expect_false(result$afterClick)
-    # The two still presses opened and closed the menu; the drag's ending click counts for nothing.
+    # Menu toggles and the drag's ending click send no action clicks.
     expect_identical(
       result$events,
-      list(
-        list("a_click", 1L, list(priority = "event")),
-        list("a_click", 2L, list(priority = "event")),
-        list("a_position", "top-left", list(priority = "event"))
-      )
+      list(list("a_position", "top-left", list(priority = "event")))
     )
     result <- host_layout(
       js,

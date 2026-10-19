@@ -1,5 +1,5 @@
 ---
-title: "`mascot_popup_menu()`"
+title: "mascot_popup_menu()"
 ---
 
 The studio guide for [`mascot_popup_menu()`](../reference/mascot_popup_menu.html). The same page is read in the mascot studio.

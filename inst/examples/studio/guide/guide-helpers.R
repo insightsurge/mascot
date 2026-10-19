@@ -212,3 +212,15 @@ guide_wiring <- function() {
     guide_dependency()
   )
 }
+
+# A link to another function's guide: in the studio it opens that function, on the website it goes to the
+# function's page (guide-<function>.html, written by the site build).
+guide_fn_link <- function(fn, label = paste0(fn, "()")) {
+  checkmate::assert_string(fn, min.chars = 1)
+  checkmate::assert_string(label, min.chars = 1)
+  if (in_studio()) {
+    htmltools::tags$a(href = "#", `data-event` = "select_function", `data-value` = fn, htmltools::tags$code(label))
+  } else {
+    htmltools::tags$a(href = paste0("guide-", fn, ".html"), htmltools::tags$code(label))
+  }
+}

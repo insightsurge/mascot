@@ -2,6 +2,8 @@
 
 * The redesigned studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).
 
+* The studio's Guide is written once, as R Markdown pages in `inst/examples/studio/guide/` (one per function, 24 in all), and the website shows the same pages in a new Studio guide menu. The studio now needs the optional package `knitr` (#353).
+
 * The studio updates its Guide and code builders for recent API changes: `mascot_popup_menu()` explains that clicks never fire, option-only helper calls are prevented, `update_mascot()` documents its reset table and ignored-helper warnings, `mascot_preview()` aligns with its remaining arguments and 160, 96 and 24 pixel comparison columns, and `mascot_theme()` documents `bs_theme()` constraints (#353).
 
 * The studio search shows one result per function with matching argument badges, and Help and Guide cards offer a corner icon to widen the docked inspector (#353).

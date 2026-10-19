@@ -228,3 +228,87 @@ describe("theme_view_server()", {
     })
   })
 })
+
+describe("the Your colours tab", {
+  it("has a starting palette, the forced mode, Light, Dark and CSS tabs, and a link to the studio", {
+    page <- theme_parts()$page
+    for (id in c("start_from", "mode", "colour_modes", "colours-light", "colours-dark", "colours-css")) {
+      expect_match(page, paste0('id="', id, '"'), fixed = TRUE, info = id)
+    }
+    expect_match(page, "Force the mascot", fixed = TRUE)
+    expect_match(page, 'href="?view=studio&amp;fn=mascot_theme"', fixed = TRUE)
+    # The CSS source is marked experimental in the help page's own words.
+    expect_match(page, "Experimental</span>\\s*This source is experimental\\.")
+  })
+  it("draws a picker for every role, saying own colour rather than leader", {
+    env <- theme_parts()$env
+    roles <- mascot_colour_roles("knurl")
+    html <- as.character(env$role_pickers("light", roles, character = "knurl", resolved = FALSE, leader = "own colour"))
+    for (role in roles$role) {
+      expect_match(html, paste0('id="light_', role, '"'), fixed = TRUE, info = role)
+    }
+    expect_match(html, "own colour", fixed = TRUE)
+    expect_false(grepl(">leader<", html, fixed = TRUE))
+    expect_match(html, "Use × to go back to the character's colour.", fixed = TRUE)
+    expect_false(grepl("round swatch", html, fixed = TRUE))
+    # A translucent role keeps a text box.
+    expect_match(html, 'id="light_shine_translucent" type="text"', fixed = TRUE)
+    expect_error(env$role_pickers("light", roles, character = "knurl", leader = ""), "leader")
+  })
+  it("writes the shortest mascot_theme() call for the colours, the CSS parts and the mode", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "tessa", mood = "idle", code_style = "short", mode = "auto")
+      roles <- mascot_colour_roles("tessa")
+      # Given the pickers as the browser reports them
+      do.call(session$setInputs, stats::setNames(as.list(roles$colour), paste0("colours-light_", roles$role)))
+      do.call(session$setInputs, stats::setNames(as.list(roles$colour), paste0("colours-dark_", roles$role)))
+      expect_identical(output$theme_code, 'mascot("helper")')
+      # The same colour in both modes is a plain list
+      session$setInputs(`colours-light_body` = "#C2185B", `colours-dark_body` = "#c2185b")
+      expect_identical(output$theme_code, 'mascot("helper", theme = list(body = "#c2185b"))')
+      # A palette to start from, a dark-only colour and a forced mode need mascot_theme()
+      session$setInputs(start_from = "coral_navy", `colours-dark_rim` = "#ffcc00", mode = "dark")
+      expected <- mascot_theme(
+        palette = "coral_navy",
+        light = list(body = "#c2185b"),
+        dark = list(body = "#c2185b", rim = "#ffcc00"),
+        mode = "dark"
+      )
+      expect_identical(eval(parse(text = output$theme_code))$attribs$id, "helper")
+      expect_match(output$theme_code, 'palette = "coral_navy"', fixed = TRUE)
+      expect_match(output$theme_code, 'mode = "dark"', fixed = TRUE)
+      code_theme <- eval(str2lang(output$theme_code)[["theme"]])
+      expect_identical(code_theme, expected)
+      expect_match(output$theme_stack$html, "Your colours:\\s*<code>1 light, 2 dark</code>")
+      # A part that reads the CSS variable comes with the line that sets it on the page
+      session$setInputs(`colours-css_roles` = "body", `colours-css_value` = "#7b4fd6")
+      expect_match(output$theme_code, 'css = list(body = "--app-accent")', fixed = TRUE)
+      expect_match(output$theme_code, '# tags$style(":root { --app-accent: #7b4fd6; }")', fixed = TRUE)
+      expect_match(output$theme_stack$html, "CSS:\\s*<code>1 part</code>")
+      # Clearing the mode from the stack line puts the control back to auto
+      updates <- list()
+      session$sendInputMessage <- function(id, message) updates[[id]] <<- message
+      session$setInputs(stack_clear = "mode")
+      expect_identical(updates$mode$value, "auto")
+      session$setInputs(stack_clear = "css")
+      expect_length(updates$`colours-css_roles`$value, 0L)
+      # Clearing your colours resets every picker: the code keeps only the palette and the CSS part
+      session$setInputs(stack_clear = "colours")
+      expect_false(grepl("light =|dark =", output$theme_code))
+      expect_match(output$theme_code, 'palette = "coral_navy"', fixed = TRUE)
+    })
+  })
+  it("keeps the starting palette, the header menu and the cards on one value", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      updates <- list()
+      session$sendInputMessage <- function(id, message) updates[[id]] <<- message
+      session$setInputs(character = "tessa", mood = "idle")
+      session$setInputs(start_from = "forest")
+      expect_identical(output$theme_code, 'mascot("helper", theme = "forest")')
+      expect_identical(updates$palette$value, "forest")
+      expect_identical(updates$palette_grid$value, "forest")
+    })
+  })
+})

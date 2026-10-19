@@ -24,19 +24,30 @@ theme_view_theme <- function(
   if (identical(pair$helper, quote(mascot_theme()))) NULL else pair
 }
 
-# The mascot() call the preview shows, with only the arguments that differ from mascot()'s defaults.
-theme_view_call <- function(character, mood, theme = NULL, style = "short") {
+# The mascot() call the preview shows, with only the arguments that differ from mascot()'s defaults. css_values
+# names the CSS variables the theme reads with their values (c(`--app-accent` = "#7b4fd6")): a comment then says
+# how a page sets them.
+theme_view_call <- function(character, mood, theme = NULL, style = "short", css_values = character()) {
   checkmate::assert_string(character, min.chars = 1)
   checkmate::assert_string(mood, min.chars = 1)
   checkmate::assert_list(theme, null.ok = TRUE)
   checkmate::assert_choice(style, c("short", "helper"))
+  checkmate::assert_character(css_values, min.chars = 1, any.missing = FALSE)
+  if (length(css_values)) {
+    checkmate::assert_names(names(css_values), type = "unique", .var.name = "names(css_values)")
+  }
   pairs <- list(
     character = if (character != formals(mascot::mascot)$character) code_character(character),
     mood = if (mood != formals(mascot::mascot)$mood) code_mood(mood),
     theme = theme
   )
   pairs <- Filter(Negate(is.null), pairs)
-  format_call("mascot", c(list("helper"), pick_style(pairs, style)))
+  code <- format_call("mascot", c(list("helper"), pick_style(pairs, style)))
+  if (!length(css_values)) {
+    return(code)
+  }
+  style_tag <- sprintf('tags$style(":root { %s }")', paste0(names(css_values), ": ", css_values, ";", collapse = " "))
+  paste0("# Your page sets the CSS variable, for example in its UI:\n# ", style_tag, "\n", code)
 }
 
 # The theme stack line: what each layer adds, in the order the package applies them (palette, own colours, CSS),
@@ -56,7 +67,8 @@ theme_stack_parts <- function(
   checkmate::assert_character(css, any.missing = FALSE)
   checkmate::assert_choice(mode, c("auto", "light", "dark"))
   counts <- c(light = length(light), dark = length(dark))
-  colours <- if (any(counts > 0L)) paste(counts, names(counts), collapse = ", ") else "none"
+  used <- counts[counts > 0L]
+  colours <- if (length(used)) paste(used, names(used), collapse = ", ") else "none"
   if (source == "bslib") {
     return(data.frame(
       key = c("bslib", "mode"),
@@ -134,8 +146,11 @@ theme_view_server <- function(input, output, session) {
   }
   shiny::observeEvent(input$palette, pick_palette(input$palette))
   shiny::observeEvent(input$palette_grid, pick_palette(input$palette_grid))
+  shiny::observeEvent(input$start_from, pick_palette(input$start_from))
   shiny::observeEvent(character(), {
-    shiny::updateSelectInput(session, "palette", choices = studio_palette_labels(character()), selected = palette())
+    for (id in c("palette", "start_from")) {
+      shiny::updateSelectInput(session, id, choices = studio_palette_labels(character()), selected = palette())
+    }
     shiny::updateSelectInput(
       session,
       "mood",
@@ -146,6 +161,7 @@ theme_view_server <- function(input, output, session) {
   })
   shiny::observeEvent(palette(), {
     shiny::updateSelectInput(session, "palette", selected = palette())
+    shiny::updateSelectInput(session, "start_from", selected = palette())
     shiny::updateRadioButtons(session, "palette_grid", selected = palette())
   })
   output$palette_grid_ui <- shiny::bindEvent(
@@ -153,15 +169,53 @@ theme_view_server <- function(input, output, session) {
     character()
   )
 
-  theme <- shiny::reactive(theme_view_theme("mascot", palette()))
-  stack <- shiny::reactive(theme_stack_parts("mascot", palette()))
+  # Your colours: a picker for every role, light and dark, and the parts that read the CSS variable.
+  colours <- colour_roles_server(
+    "colours",
+    character,
+    palette,
+    css = theme_css_variable,
+    resolved = FALSE,
+    leader = "own colour"
+  )
+  mode <- shiny::reactive(if (isTRUE(input$mode %in% c("auto", "light", "dark"))) input$mode else "auto")
+
+  theme <- shiny::reactive(theme_view_theme(
+    "mascot",
+    palette(),
+    colours$light(),
+    colours$dark(),
+    mode(),
+    colours$css()
+  ))
+  # The values of the CSS variables the theme reads; none when no part reads one.
+  css_values <- shiny::reactive(if (length(colours$css())) colours$css_values() else base::character())
+  stack <- shiny::reactive(theme_stack_parts(
+    "mascot",
+    palette(),
+    colours$light(),
+    colours$dark(),
+    colours$css(),
+    mode()
+  ))
   output$theme_stack <- shiny::renderUI(theme_stack_ui(stack()))
   shiny::observeEvent(input$stack_clear, {
-    switch(input$stack_clear, palette = palette_now("original"), NULL)
+    switch(
+      input$stack_clear,
+      palette = palette_now("original"),
+      colours = {
+        colours$reset("light")
+        colours$reset("dark")
+      },
+      css = shiny::updateCheckboxGroupInput(session, "colours-css_roles", selected = base::character()),
+      mode = shiny::updateRadioButtons(session, "mode", selected = "auto"),
+      NULL
+    )
   })
 
   output$theme_code <- shiny::renderText({
-    theme_view_call(character(), mood(), theme(), if (identical(input$code_style, "helper")) "helper" else "short")
+    style <- if (identical(input$code_style, "helper")) "helper" else "short"
+    theme_view_call(character(), mood(), theme(), style, css_values())
   })
 
   # The live mascot: each change is sent with update_mascot(), as an app would, and only the parts that changed.
@@ -171,7 +225,11 @@ theme_view_server <- function(input, output, session) {
   sent$mood <- "idle"
   sent$theme <- NULL
   last_update <- shiny::reactiveVal(NULL)
-  drawn <- shiny::debounce(shiny::reactive(list(character = character(), mood = mood(), theme = theme())), 250)
+  sent$css <- base::character()
+  drawn <- shiny::debounce(
+    shiny::reactive(list(character = character(), mood = mood(), theme = theme(), css = css_values())),
+    250
+  )
   shiny::observeEvent(drawn(), {
     now <- drawn()
     changes <- list()
@@ -181,7 +239,8 @@ theme_view_server <- function(input, output, session) {
     if (!identical(now$mood, sent$mood) || length(changes)) {
       changes$mood <- now$mood
     }
-    if (!identical(now$theme$helper, sent$theme$helper) || length(changes)) {
+    # The browser reads a CSS variable again only when the theme is sent, so a new value sends it again.
+    if (!identical(now$theme$helper, sent$theme$helper) || !identical(now$css, sent$css) || length(changes)) {
       changes$theme <- if (is.null(now$theme)) quote(mascot_theme()) else now$theme$helper
     }
     shiny::req(length(changes) > 0L)
@@ -191,6 +250,7 @@ theme_view_server <- function(input, output, session) {
       sent$character <- now$character
       sent$mood <- now$mood
       sent$theme <- now$theme
+      sent$css <- now$css
     }
     last_update(result)
   })

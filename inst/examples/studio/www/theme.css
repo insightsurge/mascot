@@ -199,6 +199,27 @@
   overflow-wrap: anywhere;
 }
 
+/* Your colours: the starting palette and the forced mode side by side, then the Light, Dark and CSS tabs. */
+.theme-colours-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.25rem 1.5rem;
+}
+
+.theme-colours-head .shiny-input-container {
+  width: auto;
+  margin-bottom: 0.25rem;
+}
+
+.theme-tab .nav {
+  margin-bottom: 0.5rem;
+}
+
+.theme-tab .accordion {
+  margin: 0.5rem 0;
+}
+
 /* Palette cards: a radio group; the chosen card has the primary colour's border. */
 .theme-palette-grid {
   display: grid;

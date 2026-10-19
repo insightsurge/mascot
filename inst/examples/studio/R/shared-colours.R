@@ -119,16 +119,18 @@ colour_input <- function(id, value, label, ...) {
 
 # One role's picker with its name, what it follows and a reset button. ns() names the picker and the reset event
 # for a module. resolved adds the round swatch that shows the colour in use now; only a page that reads the drawn
-# mascot's state can fill it (the studio does, from its live frame).
-role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = shiny::NS(NULL)) {
+# mascot's state can fill it (the studio does, from its live frame). leader is the word for a role that follows no
+# other: the studio uses the help pages' "leader"; a page for app authors can say "own colour".
+role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = shiny::NS(NULL), leader = "leader") {
   checkmate::assert_choice(mode, c("light", "dark"))
   checkmate::assert_data_frame(roles)
   checkmate::assert_choice(role, roles$role)
   checkmate::assert_string(value, null.ok = TRUE)
   checkmate::assert_flag(resolved)
   checkmate::assert_function(ns)
+  checkmate::assert_string(leader, min.chars = 1)
   row <- roles[roles$role == role, ]
-  follows <- if (is.na(row$follows)) "leader" else paste0("follows ", row$follows, " (", row$shade, ")")
+  follows <- if (is.na(row$follows)) leader else paste0("follows ", row$follows, " (", row$shade, ")")
   shiny::div(
     class = "pg-role",
     colour_input(
@@ -158,7 +160,7 @@ role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = s
 }
 
 # The pickers for one mode, in the groups of colour_groups(): Main colours open, More parts folded with a heading
-# per group of parts. resolved and ns as in role_picker().
+# per group of parts. resolved, ns and leader as in role_picker().
 role_pickers <- function(
   mode,
   roles,
@@ -166,7 +168,8 @@ role_pickers <- function(
   name = mascot::mascot_character()$name,
   character = formals(mascot::mascot)$character,
   resolved = TRUE,
-  ns = shiny::NS(NULL)
+  ns = shiny::NS(NULL),
+  leader = "leader"
 ) {
   checkmate::assert_choice(mode, c("light", "dark"))
   checkmate::assert_data_frame(roles)
@@ -175,8 +178,11 @@ role_pickers <- function(
   checkmate::assert_string(character, min.chars = 1)
   checkmate::assert_flag(resolved)
   checkmate::assert_function(ns)
+  checkmate::assert_string(leader, min.chars = 1)
   role_groups <- colour_groups(roles, character)
-  picker <- function(role) role_picker(mode, role, roles, values[[role]], resolved = resolved, ns = ns)
+  picker <- function(role) {
+    role_picker(mode, role, roles, values[[role]], resolved = resolved, ns = ns, leader = leader)
+  }
   more <- role_groups$`More parts`
   panels <- c(
     if (length(role_groups$`Main colours`)) {
@@ -202,7 +208,7 @@ role_pickers <- function(
       paste0(
         "Each picker starts at ",
         name,
-        "'s colour. Change one to add it to the theme. Click \u00d7 to remove it.",
+        "'s colour. Change one to add it to the theme. Use \u00d7 to go back to the character's colour.",
         if (resolved) " The round swatch shows the colour in use now."
       )
     ),
@@ -257,16 +263,17 @@ colour_roles_ui <- function(id, modes = c("light", "dark"), css = TRUE) {
 # Colour pickers for every role of a character, in light and dark mode, and the parts that read a CSS variable.
 # character and palette are reactives (a character id and a palette value, "original" for its own colours). css is
 # the variable the CSS part offers, named with its starting value (c(`--brand` = "#7b4fd6")), or NULL for none.
-# resolved shows each role's colour in use now (see role_picker()).
+# resolved shows each role's colour in use now, and leader names a role that follows no other (see role_picker()).
 # Returns light, dark and css: reactives of the changed values (role = colour, role = variable), css_values: a
 # reactive of the variable's value, and two functions: reset(mode = NULL, role = NULL) puts pickers back to the
 # listed colours (with no arguments, every picker, and no part reads the variable); set(mode, role, value) sets one.
-colour_roles_server <- function(id, character, palette, css = NULL, resolved = FALSE) {
+colour_roles_server <- function(id, character, palette, css = NULL, resolved = FALSE, leader = "leader") {
   checkmate::assert_string(id, min.chars = 1)
   checkmate::assert_class(character, "reactive")
   checkmate::assert_class(palette, "reactive")
   checkmate::assert_character(css, len = 1, any.missing = FALSE, names = "unique", null.ok = TRUE)
   checkmate::assert_flag(resolved)
+  checkmate::assert_string(leader, min.chars = 1)
   shiny::moduleServer(id, function(input, output, session) {
     modes <- c("light", "dark")
     roles <- shiny::reactive(palette_roles(character(), palette()))
@@ -316,7 +323,8 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
         mascot::mascot_character(shiny::isolate(character()))$name,
         shiny::isolate(character()),
         resolved = resolved,
-        ns = session$ns
+        ns = session$ns,
+        leader = leader
       )
     }
     output$light <- shiny::bindEvent(shiny::renderUI(pickers("light")), drawn())

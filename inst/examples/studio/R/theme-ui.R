@@ -15,6 +15,7 @@ theme_view_ui <- function(query) {
   shiny::tagList(
     shiny::tags$head(
       shiny::tags$link(rel = "stylesheet", href = "tokens.css"),
+      shiny::tags$link(rel = "stylesheet", href = "shared.css"),
       shiny::tags$link(rel = "stylesheet", href = "theme.css"),
       shiny::tags$script(src = "inputs.js")
     ),
@@ -120,7 +121,7 @@ theme_tabs <- function(character) {
     bslib::navset_underline(
       id = "theme_tabs",
       bslib::nav_panel("Palette", value = "palette", theme_palette_tab()),
-      bslib::nav_panel("Your colours", value = "colours", theme_colours_tab()),
+      bslib::nav_panel("Your colours", value = "colours", theme_colours_tab(character)),
       bslib::nav_panel("Brand colours", value = "brand", theme_brand_tab()),
       bslib::nav_panel("Check", value = "check", theme_check_tab())
     )
@@ -138,8 +139,76 @@ theme_palette_tab <- function() {
   )
 }
 
-theme_colours_tab <- function() {
-  shiny::div(class = "theme-tab", shiny::tags$p(class = "theme-lead", "Change any part's colour."))
+# Your colours: a starting palette, a picker for every role in light and dark mode, the parts that read a CSS
+# variable, and the mode the mascot is forced into. The pickers are the colour_roles_server("colours") module's.
+theme_colours_tab <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  pickers <- colour_roles_ui("colours")
+  shiny::div(
+    class = "theme-tab",
+    shiny::tags$p(
+      class = "theme-lead",
+      "Change any part's colour. A part marked \"follows body\" takes a lighter or darker shade of that colour until",
+      "you set it."
+    ),
+    shiny::div(
+      class = "theme-colours-head",
+      shiny::selectInput(
+        "start_from",
+        "Start from",
+        studio_palette_labels(character),
+        selected = "original",
+        selectize = FALSE
+      ),
+      shiny::radioButtons(
+        "mode",
+        "Force the mascot",
+        c("auto (follow the page)" = "auto", light = "light", dark = "dark"),
+        inline = TRUE
+      )
+    ),
+    shiny::tags$p(
+      class = "theme-muted",
+      "Start from sets the palette, as the Palette tab does. Force the mascot sets mode =; the page switch above is",
+      "your app's own light/dark switch.",
+      shiny::tags$a(
+        href = "?view=studio&fn=mascot_theme",
+        target = "_blank",
+        rel = "noopener",
+        "Full reference in the studio"
+      )
+    ),
+    bslib::navset_underline(
+      id = "colour_modes",
+      bslib::nav_panel("Light", value = "light", pickers$light),
+      bslib::nav_panel("Dark", value = "dark", pickers$dark),
+      bslib::nav_panel(
+        "CSS variables",
+        value = "css",
+        theme_css_experimental(),
+        shiny::tags$p(
+          class = "theme-muted",
+          "Parts you tick read the variable ",
+          shiny::tags$code(names(theme_css_variable)),
+          " from your page, after the palette and your light and dark colours. The picker sets it on this page."
+        ),
+        pickers$css
+      )
+    )
+  )
+}
+
+# The experimental status of the CSS source, in the words of ?mascot_theme (its css argument), so the two cannot
+# drift apart, with the badge the studio uses for experimental parts.
+theme_css_experimental <- function() {
+  # The help text wraps lines anywhere, so spaces are made single before the sentence is found.
+  text <- gsub("\\s+", " ", paste(as.character(help_arg("mascot_theme", "css")), collapse = " "))
+  tail <- studio_help_tail(text, "This source is experimental")
+  shiny::div(
+    class = "pg-note",
+    shiny::tags$span(class = "badge text-bg-warning", "Experimental"),
+    if (!is.null(tail)) paste0(" ", sub("[.].*$", ".", html_text(tail)))
+  )
 }
 
 theme_brand_tab <- function() {

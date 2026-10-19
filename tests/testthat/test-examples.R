@@ -67,6 +67,7 @@ describe("mascot_examples()", {
             "guide/mascot_status.Rmd",
             "guide/mascot_theme.Rmd",
             "www/inputs.js",
+            "www/shared.css",
             "www/studio.css",
             "www/studio.js",
             "www/theme.css",
@@ -2657,10 +2658,11 @@ describe("studio shared tokens and inputs (#395)", {
   it("loads the shared tokens and inputs before the studio's own files", {
     page <- studio_parts()$page
     at <- function(file) regexpr(paste0('"', file, '"'), page, fixed = TRUE)[[1]]
-    for (file in c("tokens.css", "studio.css", "inputs.js", "studio.js")) {
+    for (file in c("tokens.css", "shared.css", "studio.css", "inputs.js", "studio.js")) {
       expect_gt(at(file), 0)
     }
-    expect_lt(at("tokens.css"), at("studio.css"))
+    expect_lt(at("tokens.css"), at("shared.css"))
+    expect_lt(at("shared.css"), at("studio.css"))
     expect_lt(at("inputs.js"), at("studio.js"))
   })
   it("keeps the colour and spacing tokens in one file", {

@@ -1,32 +1,8 @@
 /* The studio's own layout and diagrams. Colours come from Bootstrap's variables, so the page
    follows its light/dark switch. */
-.pg-muted {
-  color: var(--bs-secondary-color);
-}
 
 .pg-lead {
   font-size: 1.05rem;
-}
-
-.pg-hint {
-  color: var(--bs-secondary-color);
-  font-size: 0.85rem;
-  margin: 0.25rem 0 0.5rem;
-}
-
-.pg-note {
-  border-left: 3px solid var(--bs-info);
-  padding: 0.25rem 0.6rem;
-  font-size: 0.85rem;
-  margin: 0.4rem 0;
-}
-
-.pg-note.pg-warn {
-  border-left-color: var(--bs-warning);
-}
-
-.pg-note.pg-ok {
-  border-left-color: var(--bs-success);
 }
 
 .pg-section-title {
@@ -120,74 +96,6 @@
   padding: 0.4rem 0.5rem;
   margin: 0.25rem 0;
   white-space: pre-wrap;
-}
-
-/* Colour pickers */
-.pg-role,
-.pg-css {
-  display: grid;
-  grid-template-columns: 2.4rem 1fr auto auto;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.15rem 0;
-}
-
-.pg-css {
-  grid-template-columns: 2.4rem 1fr;
-}
-
-.pg-colour.form-control-color {
-  width: 2.4rem;
-  height: 2rem;
-  padding: 0.15rem;
-}
-
-.pg-role-text {
-  line-height: 1.1;
-  font-size: 0.85rem;
-}
-
-.pg-role-text .pg-muted {
-  font-size: 0.75rem;
-}
-
-/* "More parts" in the colour pickers: one small heading per group of parts (body, body_shade, ...). */
-.pg-role-group + .pg-role-group {
-  margin-top: 0.5rem;
-}
-
-.pg-role-group-title {
-  margin: 0 0 0.25rem;
-  font-family: var(--bs-font-monospace);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--bs-secondary-color);
-}
-
-.pg-resolved {
-  width: 1.1rem;
-  height: 1.1rem;
-  border-radius: 50%;
-  border: 1px solid var(--bs-border-color);
-}
-
-.pg-resolved.is-idle {
-  border-style: dashed;
-}
-
-.pg-role-reset {
-  padding: 0 0.3rem;
-  text-decoration: none;
-}
-
-.pg-swatch {
-  display: inline-block;
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 0.2rem;
-  border: 1px solid var(--bs-border-color);
-  vertical-align: middle;
-  margin-right: 0.35rem;
 }
 
 /* Stage and code */
@@ -2383,14 +2291,6 @@ button.pg-call-name:focus-visible {
   font-size: 0.8rem;
   overflow-wrap: anywhere;
   text-align: center;
-}
-
-/* A translucent colour role has a text box, not a colour picker (a picker cannot hold transparency). */
-.pg-colour-text {
-  width: 11rem;
-  min-width: 0;
-  font-family: var(--bs-font-monospace, ui-monospace, monospace);
-  font-size: 0.75rem;
 }
 
 /* The welcome bubble and menu are the studio's own demonstration; the copied code leaves them out. */

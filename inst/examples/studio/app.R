@@ -383,6 +383,7 @@ studio_view_ui <- function(query, view) {
   tagList(
     tags$head(
       tags$link(rel = "stylesheet", href = "tokens.css"),
+      tags$link(rel = "stylesheet", href = "shared.css"),
       tags$link(rel = "stylesheet", href = "studio.css"),
       tags$script(src = "inputs.js"),
       tags$script(src = "studio.js")
@@ -1637,7 +1638,7 @@ studio_server <- function(input, output, session) {
       "1.0.0",
       src = c(href = ".."),
       script = "studio.js",
-      stylesheet = c("tokens.css", "studio.css")
+      stylesheet = c("tokens.css", "shared.css", "studio.css")
     )
     live <- htmltools::attachDependencies(live, c(list(bridge), htmltools::htmlDependencies(live)))
     page <- htmltools::tags$html(

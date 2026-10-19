@@ -50,6 +50,17 @@ theme_view_call <- function(character, mood, theme = NULL, style = "short", css_
   paste0("# Your page sets the CSS variable, for example in its UI:\n# ", style_tag, "\n", code)
 }
 
+# The parts each brand colour colours, by slot (list(primary = "body", secondary = "rim")), from the character's
+# colour roles; a role listed for both slots is in both. A character with no brand parts gets empty slots.
+theme_brand_roles <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  roles <- mascot::mascot_colour_roles(character)
+  slots <- strsplit(ifelse(is.na(roles$brand), "", roles$brand), ",\\s*")
+  lapply(c(primary = "primary", secondary = "secondary"), function(slot) {
+    roles$role[vapply(slots, function(each) slot %in% each, logical(1))]
+  })
+}
+
 # The theme stack line: what each layer adds, in the order the package applies them (palette, own colours, CSS),
 # and the mode. Returns one row per layer: its key, label, value and whether it can be cleared.
 theme_stack_parts <- function(
@@ -178,30 +189,86 @@ theme_view_server <- function(input, output, session) {
     resolved = FALSE,
     leader = "own colour"
   )
-  mode <- shiny::reactive(if (isTRUE(input$mode %in% c("auto", "light", "dark"))) input$mode else "auto")
+  # Brand colours. source is the one record of how the theme is written: "mascot" (palette, your colours, CSS) or
+  # "bslib" (a bs_theme(), which replaces them). Only the Brand colours buttons and the stack line change it; opening
+  # a tab never does.
+  source <- shiny::reactiveVal("mascot")
+  shiny::observeEvent(input$brand_source, {
+    if (isTRUE(input$brand_source %in% c("mascot", "bslib"))) source(input$brand_source)
+  })
+  brand_roles <- shiny::reactive(theme_brand_roles(character()))
+  brand <- shiny::reactive(list(
+    primary = input$brand_primary %||% theme_brand_samples[[1]][[1]],
+    secondary = input$brand_secondary %||% theme_brand_samples[[1]][[2]]
+  ))
+  # Written as your own colours, a brand colour sets its parts in both modes, as a plain list does. The pickers'
+  # starting values set nothing: only a colour the user chooses does.
+  for (slot in c("primary", "secondary")) {
+    local({
+      slot <- slot
+      shiny::observeEvent(
+        input[[paste0("brand_", slot)]],
+        {
+          for (role in brand_roles()[[slot]]) {
+            for (each in c("light", "dark")) {
+              colours$set(each, role, input[[paste0("brand_", slot)]])
+            }
+          }
+        },
+        ignoreInit = TRUE
+      )
+    })
+  }
+  shiny::observeEvent(input$brand_sample, {
+    pair <- strsplit(input$brand_sample, ",", fixed = TRUE)[[1]]
+    shiny::req(length(pair) == 2L, all(grepl("^#[0-9a-fA-F]{6}$", pair)))
+    session$sendInputMessage("brand_primary", list(value = pair[[1]]))
+    session$sendInputMessage("brand_secondary", list(value = pair[[2]]))
+  })
+  output$brand_parts <- shiny::renderUI(theme_brand_parts_ui(brand_roles(), mascot::mascot_character(character())$name))
+  output$brand_source <- shiny::renderUI(theme_brand_source_ui(source(), brand_roles()))
+  output$source_note <- shiny::renderUI({
+    shiny::req(source() == "bslib")
+    shiny::div(
+      class = "pg-note pg-warn",
+      "The mascot uses your bs_theme() from Brand colours: the palette, your own colours and the forced mode are kept",
+      "but not used. ",
+      shiny::tags$button(
+        type = "button",
+        class = "btn btn-link btn-sm p-0 align-baseline",
+        `data-event` = "brand_source",
+        `data-value` = "mascot",
+        "Use mascot_theme() again"
+      )
+    )
+  })
 
-  theme <- shiny::reactive(theme_view_theme(
-    "mascot",
-    palette(),
-    colours$light(),
-    colours$dark(),
-    mode(),
-    colours$css()
-  ))
+  mode <- shiny::reactive({
+    if (source() == "bslib" || !isTRUE(input$mode %in% c("auto", "light", "dark"))) "auto" else input$mode
+  })
+  output$mode_ui <- shiny::renderUI(theme_mode_input(shiny::isolate(mode()), source() == "bslib"))
+  for (name in c("mode_ui", "brand_parts", "brand_source")) {
+    shiny::outputOptions(output, name, suspendWhenHidden = FALSE)
+  }
+
+  theme <- shiny::reactive({
+    if (source() == "bslib") {
+      return(theme_view_theme("bslib", primary = brand()$primary, secondary = brand()$secondary))
+    }
+    theme_view_theme("mascot", palette(), colours$light(), colours$dark(), mode(), colours$css())
+  })
   # The values of the CSS variables the theme reads; none when no part reads one.
-  css_values <- shiny::reactive(if (length(colours$css())) colours$css_values() else base::character())
-  stack <- shiny::reactive(theme_stack_parts(
-    "mascot",
-    palette(),
-    colours$light(),
-    colours$dark(),
-    colours$css(),
-    mode()
-  ))
+  css_values <- shiny::reactive({
+    if (source() == "mascot" && length(colours$css())) colours$css_values() else base::character()
+  })
+  stack <- shiny::reactive({
+    theme_stack_parts(source(), palette(), colours$light(), colours$dark(), colours$css(), mode())
+  })
   output$theme_stack <- shiny::renderUI(theme_stack_ui(stack()))
   shiny::observeEvent(input$stack_clear, {
     switch(
       input$stack_clear,
+      bslib = source("mascot"),
       palette = palette_now("original"),
       colours = {
         colours$reset("light")

@@ -232,7 +232,7 @@ describe("theme_view_server()", {
 describe("the Your colours tab", {
   it("has a starting palette, the forced mode, Light, Dark and CSS tabs, and a link to the studio", {
     page <- theme_parts()$page
-    for (id in c("start_from", "mode", "colour_modes", "colours-light", "colours-dark", "colours-css")) {
+    for (id in c("start_from", "mode_ui", "colour_modes", "colours-light", "colours-dark", "colours-css")) {
       expect_match(page, paste0('id="', id, '"'), fixed = TRUE, info = id)
     }
     expect_match(page, "Force the mascot", fixed = TRUE)
@@ -309,6 +309,78 @@ describe("the Your colours tab", {
       expect_identical(output$theme_code, 'mascot("helper", theme = "forest")')
       expect_identical(updates$palette$value, "forest")
       expect_identical(updates$palette_grid$value, "forest")
+    })
+  })
+})
+
+describe("the Brand colours tab", {
+  it("lists the parts each brand colour colours, from the character's colour roles", {
+    env <- theme_parts()$env
+    for (character in c("tessa", "sela", "knurl", "neer")) {
+      roles <- mascot_colour_roles(character)
+      slots <- env$theme_brand_roles(character)
+      expect_named(slots, c("primary", "secondary"))
+      expect_setequal(unlist(slots, use.names = FALSE), roles$role[!is.na(roles$brand)])
+    }
+    expect_identical(env$theme_brand_roles("neer"), list(primary = character(), secondary = character()))
+    html <- as.character(env$theme_brand_parts_ui(env$theme_brand_roles("tessa"), "Tessa"))
+    expect_match(html, "Primary colours\\s*<code>body</code>")
+    neer <- as.character(env$theme_brand_parts_ui(env$theme_brand_roles("neer"), "Neer"))
+    expect_match(neer, "Neer\\s*has no parts that take brand colours. Use Your colours to colour any part.")
+    expect_error(env$theme_brand_roles(""), "character")
+    expect_error(env$theme_brand_parts_ui(list(1), "Tessa"), "roles")
+    expect_error(env$theme_brand_parts_ui(list(), ""), "name")
+  })
+  it("offers bs_theme() as a button that warns it replaces the palette and your colours", {
+    env <- theme_parts()$env
+    roles <- env$theme_brand_roles("tessa")
+    mascot_form <- as.character(env$theme_brand_source_ui("mascot", roles))
+    expect_match(mascot_form, 'data-event="brand_source" data-value="bslib"', fixed = TRUE)
+    expect_match(mascot_form, "It replaces the palette and your own colours.", fixed = TRUE)
+    bslib_form <- as.character(env$theme_brand_source_ui("bslib", roles))
+    expect_match(bslib_form, "Experimental", fixed = TRUE)
+    expect_match(bslib_form, 'data-value="mascot"', fixed = TRUE)
+    expect_error(env$theme_brand_source_ui("css", roles), "source")
+    expect_error(env$theme_mode_input("dim"), "selected")
+    expect_match(as.character(env$theme_mode_input("dark", TRUE)), "<fieldset disabled>", fixed = TRUE)
+  })
+  it("writes chosen brand colours as a plain list, and as bs_theme() only after the button", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "tessa", mood = "idle", mode = "dark")
+      # Given the brand pickers: opening the tab changes nothing
+      session$setInputs(theme_tabs = "brand")
+      expect_identical(output$theme_code, 'mascot("helper", theme = mascot_theme(mode = "dark"))')
+      session$setInputs(mode = "auto", brand_primary = "#0f766e", brand_secondary = "#c2410c")
+      # Then the brand parts take the colours in both modes, which is a plain list
+      expect_identical(output$theme_code, 'mascot("helper", theme = list(body = "#0f766e", rim = "#c2410c"))')
+      # When the user switches to bs_theme()
+      session$setInputs(palette = "coral_navy", mode = "dark", brand_source = "bslib")
+      expect_identical(
+        output$theme_code,
+        'mascot(\n  "helper",\n  theme = bslib::bs_theme(primary = "#0f766e", secondary = "#c2410c")\n)'
+      )
+      expect_match(output$theme_stack$html, "Brand:\\s*<code>bslib::bs_theme\\(\\)</code>")
+      expect_match(output$theme_stack$html, "mode:\\s*<code>auto</code>")
+      expect_match(output$source_note$html, "kept\\s+but not used")
+      # And back: the palette and colours were kept
+      session$setInputs(stack_clear = "bslib")
+      expect_match(output$theme_code, 'palette = "coral_navy"', fixed = TRUE)
+      expect_match(output$theme_code, 'light = list(body = "#0f766e", rim = "#c2410c")', fixed = TRUE)
+      expect_match(output$theme_code, 'mode = "dark"', fixed = TRUE)
+    })
+  })
+  it("sends a sample pair to both pickers", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      updates <- list()
+      session$sendInputMessage <- function(id, message) updates[[id]] <<- message
+      session$setInputs(brand_sample = "#7c3aed,#db2777")
+      expect_identical(updates$brand_primary$value, "#7c3aed")
+      expect_identical(updates$brand_secondary$value, "#db2777")
+      updates <- list()
+      session$setInputs(brand_sample = "red,blue")
+      expect_length(updates, 0)
     })
   })
 })

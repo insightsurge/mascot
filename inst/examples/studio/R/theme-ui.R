@@ -8,6 +8,14 @@ theme_preview_id <- "theme_mascot"
 # The variable the CSS part of Your colours offers, with its starting value.
 theme_css_variable <- c(`--app-accent` = "#7b4fd6")
 
+# Brand colour pairs to try (primary, secondary); the pickers start with the first.
+theme_brand_samples <- list(
+  c("#1f6feb", "#966600"),
+  c("#0f766e", "#c2410c"),
+  c("#7c3aed", "#db2777"),
+  c("#b91c1c", "#1e3a8a")
+)
+
 # The page: a header, the preview with its code on the left, the tabs on the right (stacked on a phone).
 theme_view_ui <- function(query) {
   checkmate::assert_list(query)
@@ -118,6 +126,7 @@ theme_tabs <- function(character) {
       class = "theme-route",
       "Start with a palette. Have brand colours? Use Brand colours. Seen a warning? Use Check."
     ),
+    shiny::uiOutput("source_note"),
     bslib::navset_underline(
       id = "theme_tabs",
       bslib::nav_panel("Palette", value = "palette", theme_palette_tab()),
@@ -160,12 +169,7 @@ theme_colours_tab <- function(character) {
         selected = "original",
         selectize = FALSE
       ),
-      shiny::radioButtons(
-        "mode",
-        "Force the mascot",
-        c("auto (follow the page)" = "auto", light = "light", dark = "dark"),
-        inline = TRUE
-      )
+      shiny::uiOutput("mode_ui")
     ),
     shiny::tags$p(
       class = "theme-muted",
@@ -211,10 +215,138 @@ theme_css_experimental <- function() {
   )
 }
 
+# Force the mascot: mode =. A bs_theme() always follows the page, so the control is disabled for it.
+theme_mode_input <- function(selected = "auto", disabled = FALSE) {
+  checkmate::assert_choice(selected, c("auto", "light", "dark"))
+  checkmate::assert_flag(disabled)
+  shiny::tags$fieldset(
+    disabled = if (disabled) NA,
+    shiny::radioButtons(
+      "mode",
+      "Force the mascot",
+      c("auto (follow the page)" = "auto", light = "light", dark = "dark"),
+      selected = if (disabled) "auto" else selected,
+      inline = TRUE
+    )
+  )
+}
+
+# Brand colours: primary and secondary pickers with sample pairs, the parts they colour (output$brand_parts) and
+# how the code writes them (output$brand_source).
 theme_brand_tab <- function() {
+  slots <- c("primary", "secondary")
   shiny::div(
     class = "theme-tab",
-    shiny::tags$p(class = "theme-lead", "Colour the mascot with your app's brand colours.")
+    shiny::tags$p(
+      class = "theme-lead",
+      "Colour the mascot with your app's brand colours: a primary and a secondary colour for the character's brand",
+      "parts."
+    ),
+    shiny::uiOutput("brand_parts"),
+    shiny::div(
+      class = "theme-brand-pickers",
+      lapply(seq_along(slots), function(i) {
+        label <- paste(tools::toTitleCase(slots[[i]]), "colour")
+        shiny::tags$label(
+          class = "pg-css",
+          colour_input(paste0("brand_", slots[[i]]), theme_brand_samples[[1]][[i]], label),
+          shiny::tags$span(label)
+        )
+      })
+    ),
+    shiny::div(
+      class = "theme-brand-samples",
+      role = "group",
+      `aria-label` = "Sample brand colours",
+      shiny::tags$span(class = "theme-muted", "Try a pair:"),
+      lapply(theme_brand_samples, function(pair) {
+        shiny::tags$button(
+          type = "button",
+          class = "btn btn-outline-secondary btn-sm theme-brand-sample",
+          `data-event` = "brand_sample",
+          `data-value` = paste(pair, collapse = ","),
+          `aria-label` = paste("Primary", pair[[1]], "and secondary", pair[[2]]),
+          lapply(pair, function(colour) shiny::tags$span(class = "theme-swatch", style = paste0("background:", colour)))
+        )
+      })
+    ),
+    shiny::uiOutput("brand_source")
+  )
+}
+
+# How the Brand colours tab writes the colours: as your own colours (a plain list, stable) or, after the button, as a
+# bslib::bs_theme() (experimental), which replaces the palette and your own colours.
+theme_brand_source_ui <- function(source, roles) {
+  checkmate::assert_choice(source, c("mascot", "bslib"))
+  checkmate::assert_list(roles, types = "character", names = "unique")
+  if (source == "bslib") {
+    return(shiny::tagList(
+      shiny::tags$h3(class = "theme-section-title", "Written as bslib::bs_theme()"),
+      studio_bslib_experimental(),
+      shiny::tags$p(
+        class = "theme-muted",
+        "The palette, your own colours and the forced mode are kept here but not used: a bs_theme() replaces them and",
+        "always follows the page (mode = \"auto\")."
+      ),
+      shiny::tags$button(
+        type = "button",
+        class = "btn btn-outline-primary btn-sm",
+        `data-event` = "brand_source",
+        `data-value` = "mascot",
+        "Use mascot_theme() again"
+      )
+    ))
+  }
+  shiny::tagList(
+    shiny::tags$h3(class = "theme-section-title", "Written as your own colours"),
+    shiny::tags$p(
+      class = "theme-muted",
+      if (length(unlist(roles))) {
+        "A colour you choose here goes into Your colours, the same in light and dark mode; the code is a plain list."
+      } else {
+        "This character has no brand parts, so the colours here change nothing."
+      }
+    ),
+    shiny::tags$p(
+      class = "theme-muted",
+      "Your app uses bslib? Its bs_theme() can colour the same parts. It replaces the palette and your own colours."
+    ),
+    shiny::tags$button(
+      type = "button",
+      class = "btn btn-outline-primary btn-sm",
+      `data-event` = "brand_source",
+      `data-value` = "bslib",
+      "Use bs_theme() instead"
+    )
+  )
+}
+
+# The parts each brand colour colours, from mascot_colour_roles()$brand; a character with none says so.
+theme_brand_parts_ui <- function(roles, name) {
+  checkmate::assert_list(roles, types = "character", names = "unique")
+  checkmate::assert_string(name, min.chars = 1)
+  if (!length(unlist(roles))) {
+    return(shiny::div(
+      class = "pg-note",
+      name,
+      " has no parts that take brand colours. Use Your colours to colour any part."
+    ))
+  }
+  shiny::tags$ul(
+    class = "theme-brand-parts",
+    lapply(names(roles), function(slot) {
+      shiny::tags$li(
+        paste(tools::toTitleCase(slot), "colours "),
+        if (length(roles[[slot]])) {
+          lapply(seq_along(roles[[slot]]), function(i) {
+            shiny::tagList(if (i > 1L) ", ", shiny::tags$code(roles[[slot]][[i]]))
+          })
+        } else {
+          "no part"
+        },
+        paste0(" (", name, ").")
+      )
+    })
   )
 }
 

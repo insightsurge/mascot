@@ -220,6 +220,39 @@
   margin: 0.5rem 0;
 }
 
+/* Brand colours */
+.theme-brand-parts {
+  padding-left: 1.1rem;
+  margin: 0 0 0.5rem;
+}
+
+.theme-brand-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+}
+
+.theme-brand-samples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.theme-brand-sample {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.theme-tab .theme-section-title {
+  margin: 0.75rem 0 0.35rem;
+}
+
+fieldset[disabled] .shiny-input-container {
+  opacity: 0.6;
+}
+
 /* Palette cards: a radio group; the chosen card has the primary colour's border. */
 .theme-palette-grid {
   display: grid;
@@ -332,11 +365,18 @@
   .theme-right .nav {
     flex-wrap: nowrap;
     overflow-x: auto;
-    font-size: 0.9rem;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+  }
+
+  .theme-right {
+    padding: 10px 12px 12px;
   }
 
   .theme-right .nav-link {
     white-space: nowrap;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
   }
 
   .theme-preview .theme-note {

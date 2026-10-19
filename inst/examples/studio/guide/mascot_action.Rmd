@@ -1,0 +1,29 @@
+```{r setup-mascot_action, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### From a click to your server
+
+```{r mascot_action-flow, echo = FALSE}
+guide_flow(
+  guide_step("The visitor clicks", htmltools::div(htmltools::tags$strong("Open help"))),
+  guide_step(htmltools::tags$code("input$helper_click"), htmltools::div("counts up")),
+  guide_step("Your", htmltools::tags$code("observeEvent()"), htmltools::div("opens your help")),
+  guide_step(htmltools::tags$code("update_mascot()"), htmltools::div("can answer too"))
+)
+```
+
+<div class="pg-callout">
+
+<strong>A picture or a button.</strong>
+Without click, the mascot is a picture: no keyboard stop, no events. With one, it is a button named by its
+label, so screen readers say what a click does.
+
+</div>
+
+<div class="pg-callout">
+
+<strong>Options need their main argument.</strong>
+Options need their main argument; an empty call removes it.
+
+</div>

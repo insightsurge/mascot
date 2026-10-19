@@ -1,0 +1,25 @@
+```{r setup-mascot_bubble, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### How long a bubble stays
+
+```{r mascot_bubble-timeline, echo = FALSE}
+guide_timeline("shown", "duration = 5: hides", "Inf: stays")
+```
+
+<div class="pg-callout pg-callout-warn">
+
+<strong>HTML is trusted as it is.</strong>
+Plain text is escaped and always safe. Wrap only your own content in HTML(), never untrusted visitor
+input. Bootstrap classes such as badge, table, and progress work inside the bubble because bslib includes
+Bootstrap.
+
+</div>
+
+<div class="pg-callout">
+
+<strong>Options need their main argument.</strong>
+Options need their main argument; an empty call removes it.
+
+</div>

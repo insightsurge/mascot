@@ -34,6 +34,10 @@ describe("mascot_examples()", {
             "R/ui.R",
             "guide/guide-helpers.R",
             "guide/guide.css",
+            "guide/mascot_bubble.Rmd",
+            "guide/mascot_action.Rmd",
+            "guide/mascot_preview.Rmd",
+            "guide/update_mascot.Rmd",
             "guide/mascot_status.Rmd",
             "guide/mascot_theme.Rmd",
             "www/studio.css",
@@ -1184,16 +1188,102 @@ studio_guide_env <- function(frame = parent.frame()) {
 describe("studio guide pages", {
   guide_dir <- function() file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
   page_html <- function(page) paste(vapply(page, as.character, character(1)), collapse = "\n")
-  it("returns NULL for a function without a page, so its R builder is used", {
+  batch_pages <- c("mascot_bubble", "mascot_action", "mascot_preview", "update_mascot")
+  batch_content <- list(
+    mascot_bubble = c(
+      "How long a bubble stays",
+      "duration = 5: hides",
+      "Inf: stays",
+      "HTML is trusted as it is.",
+      "Options need their main argument.",
+      "pg-timeline",
+      "pg-callout-warn"
+    ),
+    mascot_action = c(
+      "From a click to your server",
+      "Open help",
+      "input$helper_click",
+      "counts up",
+      "observeEvent()",
+      "can answer too",
+      "A picture or a button.",
+      "Options need their main argument."
+    ),
+    mascot_preview = c("Offline comparison", "160, 96 and 24 px columns", "no placement or click arguments"),
+    update_mascot = c(
+      "What each kind of value does in update_mascot()",
+      "Reset table: what each argument resets to",
+      "Condition classes",
+      "Whole setting.",
+      "All or nothing.",
+      "mascot_update_ignored",
+      "mascot_error_choice",
+      "mascot_error_dots",
+      "mascot_contrast",
+      "mascot_placement_ignored"
+    )
+  )
+  for (fn in batch_pages) {
+    it(paste("knits", fn, "with its existing guide content and no live widgets in either context"), {
+      env <- studio_guide_env()
+      pieces <- env$studio_guide_page(fn, "sela", guide_dir())
+      html <- page_html(pieces)
+      if (fn %in% c("mascot_bubble", "mascot_action", "update_mascot")) {
+        expect_true("mascot-guide" %in% vapply(htmltools::findDependencies(pieces), function(d) d$name, character(1)))
+      }
+      standalone <- new.env(parent = globalenv())
+      standalone$guide_dir <- guide_dir()
+      sys.source(file.path(guide_dir(), "guide-helpers.R"), standalone)
+      standalone$studio_character <- "sela"
+      options <- knitr::opts_chunk$get()
+      withr::defer(knitr::opts_chunk$restore(options))
+      markdown <- knitr::knit(
+        file.path(guide_dir(), paste0(fn, ".Rmd")),
+        output = file.path(withr::local_tempdir(), "page.md"),
+        envir = standalone,
+        quiet = TRUE
+      )
+      outside <- page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n")))
+      for (text in batch_content[[fn]]) {
+        expect_match(html, text, fixed = TRUE)
+        expect_match(outside, text, fixed = TRUE)
+      }
+      for (text in c(html, outside)) {
+        expect_false(grepl("data-event|shiny-html-output|shiny-text-output|data-mascot", text))
+        expect_false(grepl("studio", env$html_text(text), ignore.case = TRUE))
+      }
+      builder <- switch(
+        fn,
+        mascot_bubble = "visual_bubble",
+        mascot_action = "visual_action",
+        mascot_preview = "visual_preview",
+        update_mascot = "visual_update_mascot"
+      )
+      expect_false(exists(builder, envir = env, inherits = FALSE))
+      if (fn == "update_mascot") {
+        expect_match(env$html_text(html), paste0('back to "', formals(mascot::mascot)$character, '"'), fixed = TRUE)
+        # Resetting a character uses the package default, even when another character is selected.
+        expect_identical(html, page_html(env$studio_guide_page(fn, "tessa", guide_dir())))
+        expect_identical(
+          lengths(regmatches(html, gregexpr('<table class="table table-sm pg-table">', html, fixed = TRUE))),
+          3L
+        )
+      }
+      selected <- as.character(env$selected_guide(fn, "sela"))
+      expect_match(selected, paste0("Help page: ", fn, "()"), fixed = TRUE)
+      expect_match(selected, "Warnings, errors and common mistakes", fixed = TRUE)
+    })
+  }
+  it("returns NULL for a function without a page, so only its help and mistakes are shown", {
     env <- studio_guide_env()
-    expect_null(env$studio_guide_page("mascot_mood", "tessa", guide_dir()))
+    expect_null(env$studio_guide_page("mascot_motion_settings", "tessa", guide_dir()))
     expect_null(env$studio_guide_page("../mascot_theme", "tessa", guide_dir()))
     expect_null(env$studio_guide_page("mascot_theme", "tessa", withr::local_tempdir()))
     expect_error(env$studio_guide_page(1, "tessa"), "string")
     expect_error(env$studio_guide_page("mascot_theme", "", guide_dir()), "character")
     expect_error(env$studio_guide_page("mascot_theme", "tessa", 1), "string")
-    # The Guide of such a function is built as before.
-    expect_match(as.character(env$selected_guide("mascot_mood")), "pg-guide-piece", fixed = TRUE)
+    # The Guide of such a function still shows its help page and the live mistakes.
+    expect_match(as.character(env$selected_guide("mascot_motion_settings")), "pg-guide-help", fixed = TRUE)
   })
   it("knits mascot_status into its table of status line and speech bubble", {
     env <- studio_guide_env()
@@ -1294,7 +1384,7 @@ describe("studio guide pages", {
   })
   it("does not repeat the description of the help page", {
     env <- studio_guide_env()
-    for (fn in c("mascot_status", "mascot_theme")) {
+    for (fn in c("mascot_status", "mascot_theme", batch_pages)) {
       text <- env$html_text(page_html(env$studio_guide_page(fn, "tessa", guide_dir())))
       description <- env$html_text(env$help_page(fn)$description)
       sentences <- trimws(strsplit(description, "(?<=[.!?])\\s+", perl = TRUE)[[1]])
@@ -1363,7 +1453,7 @@ describe("studio guide pages", {
   it("knits on its own as a child of another document, with the live demos hidden", {
     skip_if_not_installed("knitr")
     skip_if_not_installed("bslib")
-    for (page in c("mascot_status", "mascot_theme")) {
+    for (page in c("mascot_status", "mascot_theme", batch_pages)) {
       dir <- withr::local_tempdir()
       stub <- file.path(dir, "stub.Rmd")
       writeLines(
@@ -1382,7 +1472,8 @@ describe("studio guide pages", {
       text <- paste(readLines(output, warn = FALSE), collapse = "\n")
       expect_match(text, "###", fixed = TRUE, info = page)
       expect_false(grepl('id="palette_swap_demo"', text, fixed = TRUE), info = page)
-      expect_false(grepl("data-event", text, fixed = TRUE), info = page)
+      expect_false(grepl("data-event|shiny-html-output|shiny-text-output", text), info = page)
+      expect_false(grepl("studio", text, ignore.case = TRUE), info = page)
     }
   })
 })

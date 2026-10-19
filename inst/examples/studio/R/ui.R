@@ -399,18 +399,13 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_families = visual_families(),
     mascot_anchors = visual_anchors(character),
     mascot_palettes = visual_palettes(character),
-    mascot_bubble = visual_bubble(),
-    mascot_motion_settings = visual_motion(),
     mascot_gesture = visual_gesture(character),
     mascot_gestures = visual_gestures(character),
     mascot_size = visual_size(),
     mascot_placement = visual_placement(),
     mascot_colour_roles = visual_colour_roles(character),
-    mascot_action = visual_action(),
     mascot_popup_menu = visual_menu(),
     mascot = visual_mascot(),
-    update_mascot = visual_update_mascot(),
-    mascot_preview = visual_preview(),
     NULL
   )
 }
@@ -495,34 +490,6 @@ visual_palettes <- function(character = formals(mascot::mascot)$character) {
     palette_table(character),
     palette_guide_demo(character)
   )
-}
-
-visual_bubble <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", "How long a bubble stays"),
-    div(
-      class = "pg-timeline",
-      div(class = "pg-timeline-bar", div(class = "pg-timeline-fill")),
-      div(class = "pg-timeline-labels", tags$span("shown"), tags$span("duration = 5: hides"), tags$span("Inf: stays"))
-    ),
-    div(
-      class = "pg-callout pg-callout-warn",
-      tags$strong("HTML is trusted as it is. "),
-      "Plain text is escaped and always safe. Wrap only your own content in HTML(), never untrusted visitor
-      input. Bootstrap classes such as badge, table, and progress work inside the bubble because bslib includes
-      Bootstrap."
-    ),
-    div(
-      class = "pg-callout",
-      tags$strong("Options need their main argument. "),
-      "Options need their main argument; an empty call removes it."
-    )
-  )
-}
-
-visual_motion <- function() {
-  # selected_guide() reads the explanation from the helper's help page.
-  NULL
 }
 
 visual_gesture <- function(character = formals(mascot::mascot)$character) {
@@ -694,35 +661,6 @@ visual_colour_roles <- function(character) {
   )
 }
 
-visual_action <- function() {
-  step <- function(...) div(class = "pg-flow-step", ...)
-  arrow <- div(class = "pg-flow-arrow", "\u2192")
-  tagList(
-    tags$h3(class = "pg-section-title", "From a click to your server"),
-    div(
-      class = "pg-flow",
-      step("The visitor clicks", div(tags$strong("Open help"))),
-      arrow,
-      step(tags$code("input$helper_click"), div("counts up")),
-      arrow,
-      step("Your", tags$code("observeEvent()"), div("opens your help")),
-      arrow,
-      step(tags$code("update_mascot()"), div("can answer too"))
-    ),
-    div(
-      class = "pg-callout",
-      tags$strong("A picture or a button. "),
-      "Without click, the mascot is a picture: no keyboard stop, no events. With one, it is a button named by its ",
-      "label, so screen readers say what a click does."
-    ),
-    div(
-      class = "pg-callout",
-      tags$strong("Options need their main argument. "),
-      "Options need their main argument; an empty call removes it."
-    )
-  )
-}
-
 visual_menu <- function() {
   step <- function(...) div(class = "pg-flow-step", ...)
   arrow <- div(class = "pg-flow-arrow", "\u2192")
@@ -801,86 +739,6 @@ visual_mascot <- function() {
         div(class = "pg-muted", "module server"),
         code_block("update_mascot(\"helper\", mood = \"happy\")")
       )
-    )
-  )
-}
-
-visual_update_mascot <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", "What each kind of value does in update_mascot()"),
-    data_table(data.frame(
-      `You pass` = c("nothing (NULL)", "an empty helper", "a value"),
-      Example = c("mood = NULL", "bubble = mascot_bubble()", "mood = \"happy\""),
-      `The mascot` = c("keeps it as it is", "clears it or goes back to the default", "changes it"),
-      check.names = FALSE
-    )),
-    tags$h3(class = "pg-section-title", "Reset table: what each argument resets to"),
-    data_table(data.frame(
-      Setting = c(
-        "Character",
-        "Mood",
-        "Size",
-        "Status",
-        "Bubble",
-        "Theme",
-        "Click",
-        "Placement",
-        "Motion"
-      ),
-      `Reset sent to update_mascot()` = c(
-        paste0("character = mascot_character() (back to \"", formals(mascot::mascot)$character, "\")"),
-        "mood = mascot_mood() (back to \"idle\")",
-        "size = mascot_size() (160, small_screen = \"auto\")",
-        "status = mascot_status() (follows the mood)",
-        "bubble = mascot_bubble() (removes it)",
-        "theme = mascot_theme() (restores character colours)",
-        "click = mascot_action() (or mascot_popup_menu(), removes it)",
-        "placement = mascot_placement() (resets to bottom-right; mascot_placement(\"inline\") returns inline)",
-        "motion = mascot_motion_settings() (allows movement subject to visitor preference)"
-      ),
-      check.names = FALSE
-    )),
-    div(
-      class = "pg-callout",
-      tags$strong("Whole setting. "),
-      "Each non-NULL argument replaces its whole setting (update_mascot(\"h\", size = 200) also resets small_screen)."
-    ),
-    div(
-      class = "pg-callout",
-      tags$strong("All or nothing. "),
-      "update_mascot() validates all values first. If any value is invalid, it warns, reports the issue, and sends
-      nothing, preventing partial updates. Calling with an invalid argument name or outside a server session
-      produces an error."
-    ),
-    tags$h3(class = "pg-section-title", "Condition classes"),
-    data_table(data.frame(
-      Class = c(
-        "mascot_update_ignored",
-        "mascot_error_choice",
-        "mascot_error_dots",
-        "mascot_contrast",
-        "mascot_placement_ignored"
-      ),
-      Type = c("Warning", "Error", "Error", "Warning", "Message"),
-      `When it occurs` = c(
-        "A helper in update_mascot() errors; the update is ignored",
-        "An invalid choice (the message lists valid options)",
-        "Unexpected arguments in ... (e.g. an unnamed argument or typo)",
-        "Colour contrast against background is below 3:1",
-        "Inline placement ignores minimise or drag"
-      ),
-      check.names = FALSE
-    ))
-  )
-}
-
-visual_preview <- function() {
-  tagList(
-    tags$h3(class = "pg-section-title", "Offline comparison"),
-    tags$p(
-      class = "pg-muted",
-      "mascot_preview() draws your character offline across light and dark modes, comparing your chosen size ",
-      "with 160, 96 and 24 px columns. Previews are always inline and accept no placement or click arguments."
     )
   )
 }
@@ -1381,7 +1239,6 @@ function_help <- function(fn) {
     lapply(help_examples(fn), code_block)
   )
 }
-
 
 # Shared inputs stay in the top bar; these buttons explicitly focus them.
 shared_input_button <- function(fn, arg) {

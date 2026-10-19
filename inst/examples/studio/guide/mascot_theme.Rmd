@@ -1,4 +1,4 @@
-```{r setup-mascot_theme, include = FALSE}
+```{r setup-mascot_theme, include = FALSE, echo = FALSE}
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 character_name <- mascot::mascot_character(studio_character)$name
 ```
@@ -15,7 +15,7 @@ In `update_mascot()`, `theme = "original"` restores the character's own colours;
 
 A palette without a dark version uses its light colours in both modes; this applies to all shipped palettes today.
 
-Native and built-in palette colours give no contrast warnings. Your own colours warn below 3:1 contrast in this studio and are kept.
+Native and built-in palette colours give no contrast warnings. Your own colours warn below 3:1 contrast in development mode and previews; the colours are kept.
 
 ```{r mascot_theme-base-demo, echo = FALSE}
 if (in_studio()) palette_base_demo(studio_character)

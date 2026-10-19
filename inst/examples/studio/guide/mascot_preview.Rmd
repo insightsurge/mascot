@@ -1,0 +1,8 @@
+```{r setup-mascot_preview, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### Offline comparison
+
+mascot_preview() draws your character offline across light and dark modes, comparing your chosen size
+with 160, 96 and 24 px columns. Previews are always inline and accept no placement or click arguments.

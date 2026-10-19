@@ -1,4 +1,4 @@
-```{r setup-mascot_status, include = FALSE}
+```{r setup-mascot_status, include = FALSE, echo = FALSE}
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
 ```
 

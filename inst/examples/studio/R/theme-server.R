@@ -20,6 +20,8 @@ theme_view_theme <- function(
   checkmate::assert_character(dark, any.missing = FALSE)
   checkmate::assert_choice(mode, c("auto", "light", "dark"))
   checkmate::assert_character(css, any.missing = FALSE)
+  checkmate::assert_string(primary, pattern = "^#[0-9a-fA-F]{6}$", null.ok = TRUE)
+  checkmate::assert_string(secondary, pattern = "^#[0-9a-fA-F]{6}$", null.ok = TRUE)
   pair <- code_theme(source, light, dark, mode, css, primary, secondary, palette)
   if (identical(pair$helper, quote(mascot_theme()))) NULL else pair
 }
@@ -243,10 +245,14 @@ theme_view_server <- function(input, output, session) {
     )
   })
 
-  mode <- shiny::reactive({
-    if (source() == "bslib" || !isTRUE(input$mode %in% c("auto", "light", "dark"))) "auto" else input$mode
+  # The mode the user forced. Only the radio changes it, and only while the theme is written with mascot_theme(), so
+  # a round trip through bs_theme() (which always uses auto) gives the same choice back.
+  chosen_mode <- shiny::reactiveVal("auto")
+  shiny::observeEvent(input$mode, {
+    if (source() == "mascot" && isTRUE(input$mode %in% c("auto", "light", "dark"))) chosen_mode(input$mode)
   })
-  output$mode_ui <- shiny::renderUI(theme_mode_input(shiny::isolate(mode()), source() == "bslib"))
+  mode <- shiny::reactive(if (source() == "bslib") "auto" else chosen_mode())
+  output$mode_ui <- shiny::renderUI(theme_mode_input(shiny::isolate(chosen_mode()), source() == "bslib"))
   for (name in c("mode_ui", "brand_parts", "brand_source")) {
     shiny::outputOptions(output, name, suspendWhenHidden = FALSE)
   }
@@ -275,7 +281,10 @@ theme_view_server <- function(input, output, session) {
         colours$reset("dark")
       },
       css = shiny::updateCheckboxGroupInput(session, "colours-css_roles", selected = base::character()),
-      mode = shiny::updateRadioButtons(session, "mode", selected = "auto"),
+      mode = {
+        chosen_mode("auto")
+        shiny::updateRadioButtons(session, "mode", selected = "auto")
+      },
       NULL
     )
   })

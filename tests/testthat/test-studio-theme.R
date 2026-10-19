@@ -112,6 +112,8 @@ describe("theme_view_theme()", {
     expect_error(env$theme_view_theme(dark = 1), "dark")
     expect_error(env$theme_view_theme(mode = "dim"), "mode")
     expect_error(env$theme_view_theme(css = 1), "css")
+    expect_error(env$theme_view_theme("bslib", primary = "blue"), "primary")
+    expect_error(env$theme_view_theme("bslib", secondary = 1), "secondary")
   })
 })
 
@@ -342,7 +344,10 @@ describe("the Brand colours tab", {
     expect_match(bslib_form, 'data-value="mascot"', fixed = TRUE)
     expect_error(env$theme_brand_source_ui("css", roles), "source")
     expect_error(env$theme_mode_input("dim"), "selected")
-    expect_match(as.character(env$theme_mode_input("dark", TRUE)), "<fieldset disabled>", fixed = TRUE)
+    kept <- as.character(env$theme_mode_input("dark", TRUE))
+    expect_match(kept, "<fieldset disabled>", fixed = TRUE)
+    expect_match(kept, 'value="dark" checked', fixed = TRUE)
+    expect_match(kept, "This choice comes back with mascot_theme().", fixed = TRUE)
   })
   it("writes chosen brand colours as a plain list, and as bs_theme() only after the button", {
     env <- theme_parts()$env
@@ -608,5 +613,31 @@ describe("the theme view in a browser", {
     app$wait_for_js("document.querySelector('.theme-page').scrollTop > 0")
     expect_lt(abs(top(".theme-preview")), 2)
     expect_identical(app$get_js("getComputedStyle(document.querySelector('.theme-preview')).position"), "sticky")
+  })
+})
+
+describe("the forced mode in a browser", {
+  it("comes back after a round trip through bs_theme()", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    withr::defer(app$stop())
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    app$run_js("document.querySelector('#theme_tabs a[data-value=colours]').click()")
+    app$wait_for_js("!!document.querySelector('input[name=mode][value=dark]')")
+    # Given Force the mascot: dark
+    app$click(selector = "input[name=mode][value=dark]")
+    app$wait_for_js("document.getElementById('theme_code').textContent.includes('mode = \"dark\"')")
+    # When the theme goes to bs_theme() and back
+    app$run_js("document.querySelector('#theme_tabs a[data-value=brand]').click()")
+    app$click(selector = "[data-event=brand_source][data-value=bslib]")
+    app$wait_for_js("document.getElementById('theme_code').textContent.includes('bs_theme')")
+    expect_true(app$get_js("document.querySelector('input[name=mode][value=dark]').checked"))
+    app$click(selector = "#brand_source [data-event=brand_source][data-value=mascot]")
+    # Then the radio and the code say dark again
+    app$wait_for_js("document.getElementById('theme_code').textContent.includes('mode = \"dark\"')")
+    app$wait_for_js("!document.querySelector('#mode_ui fieldset').disabled")
+    expect_true(app$get_js("document.querySelector('input[name=mode][value=dark]').checked"))
+    expect_identical(app$get_value(input = "mode"), "dark")
   })
 })

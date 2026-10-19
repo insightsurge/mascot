@@ -215,7 +215,8 @@ theme_css_experimental <- function() {
   )
 }
 
-# Force the mascot: mode =. A bs_theme() always follows the page, so the control is disabled for it.
+# Force the mascot: mode =. A bs_theme() always follows the page, so the control is disabled for it and still shows
+# the choice that comes back with mascot_theme().
 theme_mode_input <- function(selected = "auto", disabled = FALSE) {
   checkmate::assert_choice(selected, c("auto", "light", "dark"))
   checkmate::assert_flag(disabled)
@@ -225,9 +226,15 @@ theme_mode_input <- function(selected = "auto", disabled = FALSE) {
       "mode",
       "Force the mascot",
       c("auto (follow the page)" = "auto", light = "light", dark = "dark"),
-      selected = if (disabled) "auto" else selected,
+      selected = selected,
       inline = TRUE
-    )
+    ),
+    if (disabled) {
+      shiny::tags$p(
+        class = "theme-muted",
+        "A bs_theme() always follows the page (auto). This choice comes back with mascot_theme()."
+      )
+    }
   )
 }
 

@@ -39,7 +39,7 @@ navbar:
       text: Get started
       href: articles/mascot.html
     changelog:
-      text: Changelog
+      text: Engine changelog
       href: articles/engine-changelog.html
     guide:
       text: Studio guide

@@ -83,6 +83,17 @@ describe("studio signature routes", {
         expect_match(page, paste0('id="search_', fn, '_', gsub("[.]", "dot", arg), '"'), fixed = TRUE)
       }
     }
+    search <- as.character(get("studio_search", studio_redesign_parts()$env)())
+    expect_length(
+      regmatches(search, gregexpr('role="option"', search, fixed = TRUE))[[1]],
+      length(getNamespaceExports("mascot"))
+    )
+    for (fn in getNamespaceExports("mascot")) {
+      expect_match(search, paste0('id="search_', fn, '_function"'), fixed = TRUE)
+      for (arg in names(formals(getExportedValue("mascot", fn)))) {
+        expect_match(search, paste0('aria-label="Open ', fn, ' at ', arg, '"'), fixed = TRUE)
+      }
+    }
     ids <- regmatches(page, gregexpr(' id="[^"]+"', page))[[1]]
     expect_identical(anyDuplicated(ids), 0L)
     for (text in c('role="combobox"', 'role="listbox"', 'aria-modal="true"', 'id="studio_keys"')) {
@@ -93,6 +104,78 @@ describe("studio signature routes", {
 })
 
 describe("studio overlays and live controls", {
+  it("counts functions, ranks names before titles and arguments, and limits badges", {
+    local_shiny_browser()
+    app <- studio_redesign_driver()
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    app$click(selector = "#open_search")
+    expect_identical(
+      app$get_js("document.getElementById('search_count').textContent"),
+      paste(length(getNamespaceExports("mascot")), "functions")
+    )
+    app$run_js(
+      "window.queryStudio = q => {const input=document.getElementById('function_search'); input.value=q; input.dispatchEvent(new Event('input',{bubbles:true}));}; queryStudio('update_mascot')"
+    )
+    expect_identical(app$get_js("document.querySelectorAll('#search_results [role=option]:not([hidden])').length"), 1L)
+    expect_identical(app$get_js("document.getElementById('search_count').textContent"), "1 function")
+    expect_true(app$get_js(
+      "[...document.querySelectorAll('#search_results [role=option]')].every(r=>r.hidden ? r.getClientRects().length===0 : r.getClientRects().length>0)"
+    ))
+    app$run_js(
+      "document.getElementById('function_search').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}))"
+    )
+    app$wait_for_js(
+      "!document.getElementById('inspector_sidebar').hidden && !document.querySelector('[data-function=update_mascot]').hidden"
+    )
+    expect_identical(app$get_js("document.activeElement.id"), "inspector_sidebar")
+    app$click(selector = "#close_inspector")
+    app$click(selector = "#open_search")
+    app$run_js("queryStudio('character')")
+    expect_true(app$get_js(paste0(
+      "(() => {const rows=[...document.querySelectorAll('#search_results [role=option]:not([hidden])')];",
+      "const ranks=rows.map(r=>r.dataset.searchFunction.includes('character')?0:r.dataset.searchTitle.toLowerCase().includes('character')?1:2);",
+      "return ranks.includes(0)&&ranks.includes(1)&&ranks.includes(2)&&ranks.every((r,i)=>!i||r>=ranks[i-1]) && ",
+      "rows.every(r=>new Set(rows.map(x=>x.dataset.searchFunction)).size===rows.length) && ",
+      "[...document.querySelectorAll('#search_results .pg-search-group')].every(h=>h.textContent.trim().length>0);})()"
+    )))
+    app$run_js("queryStudio('mood')")
+    expect_true(app$get_js(
+      "!document.getElementById('search_update_mascot_mood').hidden && !document.getElementById('search_mascot_motion_settings_mood_change').hidden"
+    ))
+    app$run_js(
+      "document.getElementById('function_search').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}))"
+    )
+    expect_identical(
+      app$get_js("document.getElementById('function_search').getAttribute('aria-activedescendant')"),
+      app$get_js("document.querySelectorAll('#search_results [role=option]:not([hidden])')[1].id")
+    )
+    app$run_js("queryStudio('s')")
+    expect_true(app$get_js(paste0(
+      "(() => {const row=document.getElementById('search_mascot_motion_settings_function');",
+      "const n=[...row.querySelectorAll('[data-search-argument]')].filter(b=>b.dataset.searchArgument.includes('s')).length;",
+      "return n>4 && row.querySelectorAll('button:not([hidden])').length===4 && row.querySelector('.pg-search-more').textContent==='+'+(n-4);})()"
+    )))
+    app$run_js("queryStudio('no_such_function_or_argument')")
+    expect_identical(app$get_js("document.getElementById('search_count').textContent"), "0 functions")
+    expect_null(app$get_js("document.getElementById('function_search').getAttribute('aria-activedescendant')"))
+    app$run_js("queryStudio('dark')")
+    app$click(selector = "#search_mascot_theme_dark")
+    app$wait_for_js(
+      "!document.querySelector('[data-function=mascot_theme]').hidden && document.querySelector('[data-function=mascot_theme] [data-argument=dark]').contains(document.activeElement)"
+    )
+    expect_true(app$get_js(
+      "document.activeElement.getClientRects().length>0 && !!document.activeElement.closest('.tab-pane.active')"
+    ))
+    app$click(selector = "#close_inspector")
+    app$click(selector = "#open_search")
+    app$run_js("queryStudio('tooltip')")
+    app$click(selector = "#search_mascot_action_tooltip")
+    app$wait_for_js(
+      "document.getElementById('action_tooltip').getClientRects().length>0 && document.getElementById('action_tooltip').contains(document.activeElement)"
+    )
+  })
+
   it("keeps search modal, routes argument results, and moves one mounted chip editor", {
     local_shiny_browser()
     app <- studio_redesign_driver()
@@ -105,22 +188,40 @@ describe("studio overlays and live controls", {
       "const q = document.getElementById('function_search'); q.value = 'duration'; q.dispatchEvent(new Event('input', {bubbles:true}));"
     )
     app$wait_for_js(
-      "document.getElementById('function_search').getAttribute('aria-activedescendant') === 'search_mascot_bubble_duration'"
+      "document.getElementById('function_search').getAttribute('aria-activedescendant') === 'search_mascot_bubble_function'"
     )
     expect_true(app$get_js("document.getElementById('studio_centre').inert"))
-    app$run_js(
-      "document.getElementById('function_search').focus(); document.dispatchEvent(new KeyboardEvent('keydown', {key:'Tab', bubbles:true}));"
+    app$get_chromote_session()$Input$dispatchKeyEvent(
+      type = "keyDown",
+      key = "Tab",
+      code = "Tab",
+      windowsVirtualKeyCode = 9L
     )
-    expect_identical(app$get_js("document.activeElement.id"), "close_search")
-    app$run_js(
-      "document.getElementById('function_search').dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', bubbles:true}));"
+    app$get_chromote_session()$Input$dispatchKeyEvent(
+      type = "keyUp",
+      key = "Tab",
+      code = "Tab",
+      windowsVirtualKeyCode = 9L
+    )
+    expect_identical(app$get_js("document.activeElement.id"), "search_mascot_bubble_duration")
+    app$get_chromote_session()$Input$dispatchKeyEvent(
+      type = "keyDown",
+      key = "Enter",
+      code = "Enter",
+      windowsVirtualKeyCode = 13L
+    )
+    app$get_chromote_session()$Input$dispatchKeyEvent(
+      type = "keyUp",
+      key = "Enter",
+      code = "Enter",
+      windowsVirtualKeyCode = 13L
     )
     app$wait_for_js(
       "!document.getElementById('inspector_sidebar').hidden && !document.querySelector('[data-function=mascot_bubble]').hidden"
     )
-    expect_true(app$get_js(
-      "document.activeElement.id === 'inspector_sidebar' && document.querySelector('[data-function=mascot_bubble] [data-argument=duration]').getClientRects().length > 0"
-    ))
+    app$wait_for_js(
+      "document.querySelector('[data-function=mascot_bubble] [data-argument=duration]').contains(document.activeElement) && document.activeElement.matches('.irs-handle')"
+    )
     expect_identical(
       app$get_js("document.getElementById('inspector_view_controls').getAttribute('aria-pressed')"),
       "true"
@@ -1780,6 +1881,15 @@ describe("the next studio review round", {
     help <- as.character(get("function_help", parts$env)("mascot"))
     expect_match(help, 'class="pg-help-usage"', fixed = TRUE)
     expect_match(help, 'class="pg-arg-name"', fixed = TRUE)
+    expect_match(help, 'id="expand_inspector"', fixed = TRUE)
+    expect_match(help, 'class="pg-card-expand"', fixed = TRUE)
+    expect_match(help, 'aria-label="Expand panel"', fixed = TRUE)
+    expect_error(get("studio_expand_icon", parts$env)(NULL), "Assertion on 'id' failed")
+    expect_error(get("function_card", parts$env)("mascot", expand = "wide"), "Assertion on 'expand' failed")
+    expect_false(grepl('id="expand_inspector"', page, fixed = TRUE))
+    guide <- as.character(get("selected_guide", parts$env)("mascot"))
+    expect_match(guide, 'id="expand_inspector_guide"', fixed = TRUE)
+    expect_false(grepl("bslib-full-screen-enter", guide, fixed = TRUE))
     chips <- as.character(get("call_chips", parts$env)(get("start", parts$env), "short"))
     expect_match(chips, 'class="pg-chip-pencil"', fixed = TRUE)
   })
@@ -1790,8 +1900,12 @@ describe("the next studio review round", {
     withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = "#inspector_view_controls")
-    expect_true(app$get_js("document.getElementById('expand_inspector').hidden"))
+    expect_true(app$get_js(
+      "!document.querySelector('#inspector_controls [data-expand-inspector], #inspector_sidebar > .pg-surface-head [data-expand-inspector]')"
+    ))
     app$click(selector = "#inspector_tab_help")
+    app$wait_for_js("!!document.querySelector('#function_help .card-header #expand_inspector svg')")
+    expect_identical(app$get_js("document.getElementById('expand_inspector').textContent.trim()"), "")
     app$run_js("window.centreBeforeExpansion=document.getElementById('studio_centre').getBoundingClientRect().toJSON()")
     app$click(selector = "#expand_inspector")
     expect_true(app$get_js(paste0(
@@ -1811,7 +1925,8 @@ describe("the next studio review round", {
       "document.getElementById('inspector_sidebar').dispatchEvent(new KeyboardEvent('keydown',{key:'E',shiftKey:true,bubbles:true}))"
     )
     expect_false(app$get_js("document.getElementById('inspector_sidebar').classList.contains('is-expanded')"))
-    app$click(selector = "#expand_inspector")
+    app$wait_for_js("!!document.getElementById('expand_inspector_guide')?.getClientRects().length")
+    app$click(selector = "#expand_inspector_guide")
     app$run_js("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
     expect_true(app$get_js(
       "!document.getElementById('inspector_sidebar').hidden && !document.getElementById('inspector_sidebar').classList.contains('is-expanded')"
@@ -1824,7 +1939,7 @@ describe("the next studio review round", {
     browser$Emulation$setDeviceMetricsOverride(width = 390L, height = 844L, deviceScaleFactor = 1, mobile = FALSE)
     app$wait_for_js("document.getElementById('studio_right_rail').parentElement.id==='studio_phone_tools'")
     app$click(selector = "#open_inspector")
-    app$click(selector = "#expand_inspector")
+    app$click(selector = "#expand_inspector_guide")
     expect_true(app$get_js(
       "document.getElementById('inspector_sidebar').getBoundingClientRect().height > innerHeight*.95"
     ))

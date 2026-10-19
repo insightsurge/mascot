@@ -106,7 +106,9 @@ studio_page <- function(character, fn, view = "studio") {
             hidden = NA,
             "Reset anchors"
           ),
-          tags$span(id = "reduced_motion", role = "status")
+          tags$span(id = "reduced_motion", role = "status"),
+          if (!is.null(studio_character_hint())) tags$span(class = "pg-hint", studio_character_hint()),
+          uiOutput("stage_note", inline = TRUE, class = "pg-stage-note")
         ),
         div(class = "pg-stage", `data-canvas` = "mascot", uiOutput("live_host", class = "pg-live-host")),
         div(
@@ -152,16 +154,6 @@ studio_page <- function(character, fn, view = "studio") {
       div(
         class = "pg-surface-head",
         tags$strong(id = "inspector_title", paste0(fn, "()")),
-        tags$button(
-          id = "expand_inspector",
-          type = "button",
-          class = "btn btn-sm",
-          hidden = NA,
-          `aria-expanded` = "false",
-          `aria-controls` = "inspector_sidebar",
-          `aria-label` = "Expand panel",
-          "Expand panel"
-        ),
         studio_button("close_inspector", "Close", "Close inspector")
       ),
       div(
@@ -535,7 +527,6 @@ studio_server <- function(input, output, session) {
   })
   character_name <- reactive(mascot_character(current_character())$name)
   roles <- reactive(mascot_colour_roles(current_character(), palette = selected_palette()))
-  output$character_caption <- renderText(paste(character_name(), "follows the arguments in Controls."))
   output$code_caption <- renderText(paste("Code for", character_name(), "with the current settings."))
   observeEvent(input$initial_function, selected_function(input$initial_function), once = TRUE)
   observeEvent(

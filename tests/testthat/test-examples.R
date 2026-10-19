@@ -839,7 +839,12 @@ describe("studio state and built previews", {
         expect_match(html, "Warnings, errors and common mistakes", fixed = TRUE)
         expect_false(grepl("<(input|select|textarea)\\b|data-event=", html, perl = TRUE), info = fn)
         buttons <- regmatches(html, gregexpr("<button\\b[^>]*>", html, perl = TRUE))[[1]]
-        expect_true(all(grepl("data-copy=", buttons, fixed = TRUE)), info = fn)
+        # The card's docked expand icon is the only new Guide action; all other
+        # buttons still copy code rather than changing the live mascot.
+        expand <- grepl('data-expand-inspector="true"', buttons, fixed = TRUE)
+        expect_identical(sum(expand), 1L, info = fn)
+        expect_true(all(grepl('aria-controls="inspector_sidebar"', buttons[expand], fixed = TRUE)), info = fn)
+        expect_true(all(grepl("data-copy=", buttons[!expand], fixed = TRUE)), info = fn)
         # Verify no Guide contains a visual belonging to another function
         if (fn == "mascot_size") {
           expect_match(html, 'id="size_ruler"', fixed = TRUE)

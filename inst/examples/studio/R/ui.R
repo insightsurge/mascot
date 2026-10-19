@@ -252,15 +252,49 @@ arg_block <- function(fn, arg) {
   )
 }
 
-function_card <- function(fn, example = FALSE) {
+studio_expand_icon <- function(id) {
+  checkmate::assert_string(id)
+  tags$button(
+    id = id,
+    type = "button",
+    class = "pg-card-expand",
+    `data-expand-inspector` = "true",
+    `aria-label` = "Expand panel",
+    `aria-expanded` = "false",
+    `aria-controls` = "inspector_sidebar",
+    title = "Expand panel",
+    tags$svg(
+      xmlns = "http://www.w3.org/2000/svg",
+      viewBox = "0 0 24 24",
+      width = "16",
+      height = "16",
+      fill = "none",
+      stroke = "currentColor",
+      `stroke-width` = "1.5",
+      `aria-hidden` = "true",
+      focusable = "false",
+      tags$path(
+        class = "pg-expand-path",
+        d = "M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M3 3l6 6m12-6-6 6M3 21l6-6m12 6-6-6"
+      ),
+      tags$path(
+        class = "pg-collapse-path",
+        d = "M3 8h5V3m8 0v5h5M8 21v-5H3m13 5v-5h5M8 8 3 3m13 5 5-5M8 16l-5 5m13-5 5 5"
+      )
+    )
+  )
+}
+
+function_card <- function(fn, example = FALSE, expand = FALSE) {
   checkmate::assert_string(fn)
   checkmate::assert_flag(example)
+  checkmate::assert_flag(expand)
   help <- help_page(fn)
   arguments <- names(formals(get(fn, envir = asNamespace("mascot"))))
   bslib::card(
     full_screen = FALSE,
     `data-guide-function` = fn,
-    bslib::card_header(tags$code(paste0(fn, "()"))),
+    bslib::card_header(tags$code(paste0(fn, "()")), if (expand) studio_expand_icon("expand_inspector")),
     tags$h3(class = "pg-section-title", "Description"),
     div(class = "pg-help", help$description),
     div(
@@ -309,8 +343,10 @@ selected_guide <- function(fn, character = formals(mascot::mascot)$character) {
   if (length(content)) {
     sections <- c(sections, list(div(class = "pg-guide-piece", content)))
   }
-  div(
+  bslib::card(
+    full_screen = FALSE,
     `data-guide-function` = fn,
+    bslib::card_header(tags$code(paste0(fn, "()")), studio_expand_icon("expand_inspector_guide")),
     tagAppendAttributes(
       div(
         div(class = "pg-guide-visual", sections),
@@ -1063,26 +1099,42 @@ studio_search <- function() {
         id = "search_results",
         role = "listbox",
         `aria-label` = "Search results",
-        unlist(
-          lapply(names(playground_guide), function(fn) {
-            args <- names(formals(getExportedValue("mascot", fn)))
-            lapply(c("", args), function(arg) {
-              fragments <- playground_controls[[fn]][[arg]]
-              ids <- if (is.character(fragments)) sub('^id="([^"]+)"$', "\\1", fragments[startsWith(fragments, 'id="')])
-              tags$li(
-                id = paste0("search_", fn, "_", if (nzchar(arg)) gsub("[.]", "dot", arg) else "function"),
-                role = "option",
-                `aria-selected` = "false",
-                `data-search-function` = fn,
-                `data-search-argument` = arg,
-                `data-search-input` = if (length(ids)) ids[1] else "",
-                tags$code(paste0(fn, "(", if (nzchar(arg)) paste0(arg, " ="), ")")),
-                tags$small(help_page(fn)$title)
-              )
-            })
-          }),
-          recursive = FALSE
-        )
+        lapply(names(playground_guide), function(fn) {
+          args <- names(formals(getExportedValue("mascot", fn)))
+          tags$li(
+            id = paste0("search_", fn, "_function"),
+            role = "option",
+            `aria-selected` = "false",
+            `data-search-function` = fn,
+            `data-search-title` = help_page(fn)$title,
+            `data-search-group` = playground_categories[[playground_guide[[fn]]$category]]$title,
+            tags$code(paste0(fn, "()")),
+            tags$small(help_page(fn)$title),
+            div(
+              class = "pg-search-matches",
+              hidden = NA,
+              tags$span("matches:"),
+              lapply(args, function(arg) {
+                fragments <- playground_controls[[fn]][[arg]]
+                ids <- if (is.character(fragments)) {
+                  sub('^id="([^"]+)"$', "\\1", fragments[startsWith(fragments, 'id="')])
+                }
+                tags$button(
+                  id = paste0("search_", fn, "_", gsub("[.]", "dot", arg)),
+                  type = "button",
+                  class = "pg-search-badge",
+                  hidden = NA,
+                  `data-search-function` = fn,
+                  `data-search-argument` = arg,
+                  `data-search-input` = if (length(ids)) ids[1] else "",
+                  `aria-label` = paste("Open", fn, "at", arg),
+                  arg
+                )
+              }),
+              tags$span(class = "pg-search-more", hidden = NA)
+            )
+          )
+        })
       )
     )
   )
@@ -1192,7 +1244,7 @@ function_help <- function(fn) {
   checkmate::assert_choice(fn, names(playground_guide))
   page <- help_page(fn)
   # Keep Usage outside the card so it stays pinned through Details and Examples too.
-  card <- htmltools::tagQuery(function_card(fn))$find(".pg-help-usage")$remove()$allTags()
+  card <- htmltools::tagQuery(function_card(fn, expand = TRUE))$find(".pg-help-usage")$remove()$allTags()
   tagList(
     div(
       class = "pg-help-usage",

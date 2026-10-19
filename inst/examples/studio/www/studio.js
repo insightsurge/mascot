@@ -365,7 +365,11 @@
   function focusInput(id) {
     const target = byId(id);
     if (!target) return;
-    if (target.selectize) {
+    const slider = target.classList.contains('js-range-slider') && target.parentElement.querySelector('.irs-handle');
+    if (slider) {
+      slider.tabIndex = 0;
+      slider.focus();
+    } else if (target.selectize) {
       target.selectize.$control_input[0].focus();
       target.selectize.close();
     } else {
@@ -468,13 +472,12 @@
   function syncExpansion() {
     const expanded = inspectorExpanded && inspectorView !== 'controls';
     byId('inspector_sidebar').classList.toggle('is-expanded', expanded);
-    const button = byId('expand_inspector');
-    if (button.hidden === false && inspectorView === 'controls' && document.activeElement === button)
-      byId('inspector_tab_controls').focus();
-    button.hidden = inspectorView === 'controls';
-    button.setAttribute('aria-expanded', String(expanded));
-    button.textContent = expanded ? 'Collapse panel' : 'Expand panel';
-    button.setAttribute('aria-label', button.textContent);
+    for (const button of document.querySelectorAll('[data-expand-inspector]')) {
+      const label = expanded ? 'Collapse panel' : 'Expand panel';
+      button.setAttribute('aria-expanded', String(expanded));
+      button.setAttribute('aria-label', label);
+      button.title = label;
+    }
   }
   function toggleExpansion() {
     if (inspectorView === 'controls') return;
@@ -581,7 +584,9 @@
       }
     }
   }
-  function selectFunction(fn, input = '', arg = '') {
+  let argumentFocusObserver;
+  function selectFunction(fn, input = '', arg = '', focusArgument = false) {
+    argumentFocusObserver?.disconnect();
     for (const trigger of document.querySelectorAll('.pg-index [aria-describedby]')) {
       window.bootstrap?.Tooltip?.getInstance(trigger)?.hide();
     }
@@ -595,23 +600,65 @@
     if (byId('function_flyout').dataset.group !== 'all') close('function_flyout', false);
     open('inspector_sidebar');
     tab('controls');
-    if (!input && ['mascot_character', 'mascot_mood'].includes(fn)) {
+    if (!input && !arg && ['mascot_character', 'mascot_mood'].includes(fn)) {
       input = fn === 'mascot_character' ? 'character' : 'mood';
       arg = fn === 'mascot_character' ? 'id' : 'name';
     }
     const sharedButton = document.querySelector(`[data-function="${fn}"] [data-focus-input]`);
-    if (!input && sharedButton) {
+    if (!input && !arg && sharedButton) {
       input = sharedButton.dataset.focusInput;
       arg = sharedButton.closest('.pg-field').dataset.argument;
     }
-    const field = document.querySelector(`[data-function="${fn}"] [data-argument="${arg}"]`);
-    revealField(field);
+    let field = document.querySelector(`[data-function="${fn}"] [data-argument="${arg}"]`);
+    revealField(focusArgument ? byId(input) || field : field);
     field?.scrollIntoView({ block: 'nearest' });
     closeSelects();
     byId('inspector_sidebar').focus({ preventScroll: true });
     requestAnimationFrame(() => {
       if (byId('inspector_sidebar').hidden || selectedFunction !== fn) return;
       field?.scrollIntoView({ block: 'nearest' });
+      if (focusArgument) {
+        // Conditional panels update after Shiny receives their controlling input.
+        // Wait for the routed control itself to become visible before focusing it.
+        const focusArgumentControl = () => {
+          if (byId('inspector_sidebar').hidden || selectedFunction !== fn || inspectorView !== 'controls') {
+            argumentFocusObserver?.disconnect();
+            return;
+          }
+          if (!field) {
+            field = document.querySelector(`[data-function="${fn}"] [data-argument="${arg}"]`);
+            revealField(field);
+          }
+          const target = byId(input);
+          const visibleTarget = target?.selectize
+            ? target.selectize.$control[0]
+            : target?.classList.contains('js-range-slider')
+              ? target.parentElement.querySelector('.irs-handle')
+              : target;
+          if (field && !visible(field)) return;
+          if (target?.closest('.shiny-panel-conditional') && !visible(visibleTarget)) return;
+          if (visible(visibleTarget) && !target.closest('[inert]')) focusInput(input);
+          else {
+            const fallback =
+              [...(field?.querySelectorAll('input, select, textarea, button, [tabindex]') || [])].find(
+                (element) => visible(element) && !element.disabled && !element.closest('.pg-field-head'),
+              ) || field;
+            if (!fallback) return;
+            if (!fallback.matches('button, input, select, textarea')) fallback.tabIndex = -1;
+            fallback.focus({ preventScroll: true });
+          }
+          field?.scrollIntoView({ block: 'nearest' });
+          argumentFocusObserver?.disconnect();
+        };
+        argumentFocusObserver = new MutationObserver(focusArgumentControl);
+        argumentFocusObserver.observe(byId('studio_shell'), {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ['style', 'class', 'hidden'],
+        });
+        focusArgumentControl();
+      }
     });
   }
 
@@ -638,20 +685,55 @@
 
   let searchIndex = 0;
   let results = [];
+  let searchOptions;
   function searchResults() {
     const query = byId('function_search').value.trim().toLowerCase();
+    const list = byId('search_results');
+    for (const heading of list.querySelectorAll('.pg-search-group')) heading.remove();
+    searchOptions ||= [...list.querySelectorAll('[role="option"]')];
+    const options = searchOptions;
+    const ranks = new Map();
     results = [];
-    for (const option of byId('search_results').children) {
-      const match = option.textContent.toLowerCase().includes(query);
-      option.hidden = !match;
-      if (match) results.push(option);
+    for (const option of options) {
+      const badges = [...option.querySelectorAll('[data-search-argument]')];
+      const matching = badges.filter((badge) => query && badge.dataset.searchArgument.toLowerCase().includes(query));
+      for (const badge of badges) badge.hidden = true;
+      for (const badge of matching.slice(0, 4)) badge.hidden = false;
+      option.querySelector('.pg-search-matches').hidden = !matching.length;
+      const more = option.querySelector('.pg-search-more');
+      more.hidden = matching.length <= 4;
+      more.textContent = matching.length > 4 ? `+${matching.length - 4}` : '';
+      const rank = option.dataset.searchFunction.toLowerCase().includes(query)
+        ? 0
+        : option.dataset.searchTitle.toLowerCase().includes(query)
+          ? 1
+          : matching.length
+            ? 2
+            : 3;
+      ranks.set(option, rank);
+      option.hidden = rank === 3;
+      if (!option.hidden) results.push(option);
+    }
+    results.sort((a, b) => ranks.get(a) - ranks.get(b) || options.indexOf(a) - options.indexOf(b));
+    let group;
+    for (const option of results) {
+      if (group !== option.dataset.searchGroup) {
+        group = option.dataset.searchGroup;
+        const heading = document.createElement('li');
+        heading.className = 'pg-search-group';
+        heading.setAttribute('role', 'presentation');
+        heading.textContent = group;
+        list.append(heading);
+      }
+      list.append(option);
     }
     searchIndex = 0;
-    byId('search_count').textContent = `${results.length} results`;
+    byId('search_count').textContent = `${results.length} ${results.length === 1 ? 'function' : 'functions'}`;
     searchSelection();
   }
   function searchSelection() {
-    for (const option of byId('search_results').children) option.setAttribute('aria-selected', 'false');
+    for (const option of byId('search_results').querySelectorAll('[role=option]'))
+      option.setAttribute('aria-selected', 'false');
     const active = results[searchIndex];
     if (active) {
       active.setAttribute('aria-selected', 'true');
@@ -672,7 +754,12 @@
   }
   function chooseResult(option) {
     close('studio_search', false);
-    selectFunction(option.dataset.searchFunction, option.dataset.searchInput, option.dataset.searchArgument);
+    selectFunction(
+      option.dataset.searchFunction,
+      option.dataset.searchInput,
+      option.dataset.searchArgument,
+      !!option.dataset.searchArgument,
+    );
   }
 
   // Move bound containers, never a function panel or a clone of its inputs.
@@ -923,11 +1010,16 @@
         searchOpen();
         return;
       }
-      if (event.target.id === 'function_search') {
+      if (event.target.id === 'function_search' || event.target.closest?.('#search_results')) {
         if (['ArrowDown', 'ArrowUp'].includes(event.key) && results.length) {
           event.preventDefault();
           searchIndex = (searchIndex + (event.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length;
           searchSelection();
+          byId('function_search').focus();
+        } else if (event.key === 'Enter' && event.target.matches?.('button')) {
+          // A badge opens its argument; click it ourselves so synthetic key events behave like real ones.
+          event.preventDefault();
+          event.target.click();
         } else if (event.key === 'Enter' && results[searchIndex]) {
           event.preventDefault();
           chooseResult(results[searchIndex]);
@@ -1000,7 +1092,7 @@
       backToStudio();
       return;
     }
-    if (id === 'expand_inspector') {
+    if (target.dataset.expandInspector) {
       toggleExpansion();
       return;
     }
@@ -1335,6 +1427,7 @@
   }
   // Shiny's receiveMessage() also emits jQuery changes for programmatic updates.
   $(document).on('change', markControls);
+  window.addEventListener('resize', () => sizeSentenceWords());
   function sizeSentenceWords() {
     const sentence = document.querySelector('.pg-sentence');
     if (sentence)
@@ -1401,6 +1494,8 @@
     }
     help.addEventListener('scroll', markStickyUsage);
     new MutationObserver(markStickyUsage).observe(help, { childList: true, subtree: true });
+    syncExpansion();
+    new MutationObserver(syncExpansion).observe(byId('inspector_sidebar'), { childList: true, subtree: true });
     rememberControls();
     rememberChips();
     new MutationObserver(rememberChips).observe(byId('live_call'), {

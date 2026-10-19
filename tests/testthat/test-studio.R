@@ -1,14 +1,14 @@
 describe("mascot_studio()", {
   it("validates each argument and requires later arguments to be named", {
     for (bad in list(NULL, NA_character_, 42, "unknown", "preview", c("studio", "examples"))) {
-      expect_error(mascot_studio(view = bad, run = FALSE), "Assertion on 'view' failed")
+      expect_error(mascot_studio(view = bad, run = FALSE), "view")
     }
     expect_error(mascot_studio("studio", "mascot_theme", run = FALSE), "Unexpected arguments", class = "mascot_error")
     for (bad in list(NA_character_, "", 42, c("mascot", "update_mascot"), "unknown")) {
-      expect_error(mascot_studio(fn = bad, run = FALSE), "Assertion on 'fn' failed")
+      expect_error(mascot_studio(fn = bad, run = FALSE), "fn")
     }
     for (bad in list(NULL, NA_character_, "", 42, "unknown", c("a", "b"))) {
-      expect_error(mascot_studio(character = bad, run = FALSE), "Assertion on 'character' failed")
+      expect_error(mascot_studio(character = bad, run = FALSE), "character")
     }
     for (bad in list(NULL, NA, 42, "FALSE", c(TRUE, FALSE))) {
       expect_error(mascot_studio(run = bad), "Assertion on 'run' failed")
@@ -132,5 +132,13 @@ describe("public argument error classes", {
     expect_error(mascot_studio(run = 1), "run", class = "mascot_error")
     expect_error(mascot_studio(fn = "not_a_function", run = FALSE), "fn", class = "mascot_error")
     expect_error(mascot_studio(character = "not_a_character", run = FALSE), "character", class = "mascot_error")
+  })
+})
+
+describe("B2 studio choices", {
+  it("classifies unknown view, function and character choices", {
+    expect_error(mascot_studio(view = "wrong", run = FALSE), class = "mascot_error_choice")
+    expect_error(mascot_studio(fn = "wrong", run = FALSE), class = "mascot_error_choice")
+    expect_error(mascot_studio(character = "wrong", run = FALSE), class = "mascot_error_choice")
   })
 })

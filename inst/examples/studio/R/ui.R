@@ -920,15 +920,59 @@ studio_rail <- function() {
   )
 }
 
-# Top right: the inspector shortcut and a menu for the links and the keyboard-shortcut switch.
+# The mobile utility slot receives the same mounted right rail at the phone breakpoint.
 studio_topright <- function() {
+  div(id = "studio_phone_tools", class = "pg-topright")
+}
+
+studio_inspector_icon <- function(name) {
+  checkmate::assert_choice(name, c("controls", "help", "guide", "more"))
+  paths <- c(
+    controls = paste(
+      "m9 3-.5 3-2 1-2.8-1-2 4 2.3 2v2L2.7 16l2 4 2.8-1 2 1 .5 3h6l.5-3 2-1 2.8 1 2-4-2.3-2v-2l2.3-2-2-4-2.8 1-2-1L15 3Z",
+      "M15 13a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+    ),
+    help = "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5 M12 17h.01",
+    guide = "M12 5C9 3 5 3 2 4v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Z M12 5v15"
+  )
+  tags$svg(
+    viewBox = "0 0 24 24",
+    `aria-hidden` = "true",
+    if (name == "more") {
+      lapply(c(4, 12, 20), function(y) tags$circle(cx = 12, cy = y, r = 1, fill = "currentColor"))
+    } else {
+      tags$path(d = paths[[name]])
+    }
+  )
+}
+
+studio_right_rail <- function() {
   div(
-    class = "pg-topright",
-    studio_button("open_inspector", "Inspector", "Open the inspector"),
+    id = "studio_right_rail",
+    class = "pg-right-rail pg-float",
+    tags$button(
+      id = "open_inspector",
+      type = "button",
+      class = "btn pg-phone-inspector",
+      title = "Inspector",
+      `aria-label` = "Inspector",
+      `aria-controls` = "inspector_sidebar",
+      `aria-expanded` = "false",
+      studio_inspector_icon("controls"),
+      "Inspector"
+    ),
     tags$details(
       id = "studio_menu",
       class = "pg-menu",
-      tags$summary(class = "btn btn-sm btn-outline-primary", "More"),
+      tags$summary(
+        class = "pg-rail-button",
+        role = "button",
+        title = "More",
+        `aria-label` = "More",
+        `aria-haspopup` = "menu",
+        `aria-expanded` = "false",
+        studio_inspector_icon("more")
+      ),
       div(
         class = "pg-menu-body pg-float",
         tags$a(href = "?view=studio", "Studio"),
@@ -941,6 +985,27 @@ studio_topright <- function() {
           "Keyboard shortcuts (/, 1-5, w, n)"
         )
       )
+    ),
+    div(class = "pg-rail-divider", `aria-hidden` = "true"),
+    div(
+      class = "pg-inspector-views",
+      role = "toolbar",
+      `aria-label` = "Inspector views",
+      `aria-orientation` = "vertical",
+      lapply(c("Controls", "Help", "Guide"), function(label) {
+        name <- tolower(label)
+        tags$button(
+          id = paste0("inspector_view_", name),
+          type = "button",
+          class = "pg-rail-button",
+          title = label,
+          `aria-label` = label,
+          `aria-pressed` = "false",
+          `aria-controls` = "inspector_sidebar",
+          `data-inspector-view` = name,
+          studio_inspector_icon(name)
+        )
+      })
     )
   )
 }

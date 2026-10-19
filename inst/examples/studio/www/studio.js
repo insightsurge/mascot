@@ -294,6 +294,7 @@
   };
   const send = (name, value) => window.Shiny.setInputValue(name, value, { priority: 'event' });
   let selectedFunction = 'mascot_mood';
+  let inspectorView = 'controls';
   let hostMode = 'mascot';
   let moved = [];
   let chipFunction = 'mascot';
@@ -392,6 +393,16 @@
     if (chipArgument !== null) send('chip_argument', '');
     for (const chip of document.querySelectorAll('[data-call-arg]')) chip.setAttribute('aria-expanded', 'false');
   }
+  function inspectorButton() {
+    return byId(phone() ? 'open_inspector' : `inspector_view_${inspectorView}`);
+  }
+  function syncInspector() {
+    const expanded = !byId('inspector_sidebar').hidden;
+    for (const button of document.querySelectorAll('[data-inspector-view]')) {
+      button.setAttribute('aria-pressed', String(expanded && button.dataset.inspectorView === inspectorView));
+    }
+    byId('open_inspector').setAttribute('aria-expanded', String(expanded));
+  }
   function close(id, returnFocus = true) {
     const surface = byId(id);
     if (!surface || surface.hidden) return false;
@@ -401,6 +412,7 @@
     }
     if (id === 'inspector_sidebar') closeSelects();
     surface.hidden = true;
+    if (id === 'inspector_sidebar') syncInspector();
     const index = surfaces.indexOf(id);
     if (index >= 0) surfaces.splice(index, 1);
     const opener = openers.get(id);
@@ -410,9 +422,14 @@
     }
     syncModal();
     if (returnFocus) {
-      const replacement = id === 'chip_editor' ? document.querySelector(`[data-call-arg="${chipArgument}"]`) : opener;
+      const replacement =
+        id === 'chip_editor'
+          ? document.querySelector(`[data-call-arg="${chipArgument}"]`)
+          : id === 'inspector_sidebar'
+            ? inspectorButton()
+            : opener;
       if (id === 'studio_search') suppressSearchFocus = true;
-      (visible(replacement) ? replacement : byId('open_inspector'))?.focus();
+      (visible(replacement) ? replacement : inspectorButton())?.focus();
       suppressSearchFocus = false;
     }
     return true;
@@ -422,6 +439,7 @@
     if (!surface) return;
     openers.set(id, opener);
     surface.hidden = false;
+    if (id === 'inspector_sidebar') syncInspector();
     const index = surfaces.indexOf(id);
     if (index >= 0) surfaces.splice(index, 1);
     surfaces.push(id);
@@ -435,6 +453,7 @@
       if (byId(id)) byId(id).inert = !!modal;
     }
     document.querySelector('.pg-rail')?.toggleAttribute('inert', !!modal);
+    byId('studio_right_rail')?.toggleAttribute('inert', !!modal);
     if (byId('inspector_sidebar')) {
       byId('inspector_sidebar').inert = search;
       byId('inspector_sidebar').setAttribute('role', inspector ? 'dialog' : 'region');
@@ -445,12 +464,14 @@
     }
   }
   function tab(name) {
+    inspectorView = name;
     for (const button of document.querySelectorAll('[data-inspector-tab]')) {
       const active = button.dataset.inspectorTab === name;
       button.setAttribute('aria-selected', String(active));
       button.tabIndex = active ? 0 : -1;
       byId(`inspector_${button.dataset.inspectorTab}`).hidden = !active;
     }
+    syncInspector();
   }
   function showControls() {
     restoreEditor();
@@ -788,6 +809,14 @@
           event.stopImmediatePropagation();
           return;
         }
+        const menu = byId('studio_menu');
+        if (menu?.open) {
+          menu.open = false;
+          menu.querySelector('summary').focus();
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
         const id = surfaces.at(-1);
         if (id) {
           close(id);
@@ -881,10 +910,16 @@
     else if (target.dataset.group) flyout(target.dataset.group, target);
     else if (id === 'open_search') searchOpen();
     else if (id === 'gesture_play') send('gesture_play', 'play');
-    else if (id === 'open_inspector') {
-      closeSelects();
-      open('inspector_sidebar', target);
-      byId('inspector_sidebar').focus();
+    else if (id === 'open_inspector' || target.dataset.inspectorView) {
+      const name = target.dataset.inspectorView || inspectorView;
+      if (!byId('inspector_sidebar').hidden && name === inspectorView) close('inspector_sidebar');
+      else {
+        closeSelects();
+        close('chip_editor', false);
+        tab(name);
+        open('inspector_sidebar', target);
+        byId('inspector_sidebar').focus({ preventScroll: true });
+      }
     } else if (id === 'open_code') {
       open('code_drawer', target);
       focusables(byId('code_drawer'))[0]?.focus();
@@ -1041,11 +1076,34 @@
   document.addEventListener('focusout', (event) => {
     event.target.closest?.('.pg-topbar-highlight')?.classList.remove('pg-topbar-highlight');
   });
+  let railHome = null;
+  function positionRightRail() {
+    const rail = byId('studio_right_rail');
+    if (!rail) return;
+    if (!railHome) {
+      railHome = document.createComment('desktop right rail');
+      rail.before(railHome);
+    }
+    const slot = byId('studio_phone_tools');
+    const destination = phone() ? slot : railHome.parentElement;
+    const active = document.activeElement;
+    const focused = rail.contains(active);
+    if (rail.parentElement !== destination) {
+      if (phone()) slot.append(rail);
+      else railHome.after(rail);
+    }
+    if (focused) {
+      const target = visible(active) ? active : inspectorButton();
+      if (document.activeElement !== target) target.focus({ preventScroll: true });
+    }
+  }
   function positionSurfaces() {
+    positionRightRail();
     const bounds = viewportBounds();
     for (const name of ['left', 'top', 'width', 'height'])
       document.documentElement.style.setProperty(`--studio-viewport-${name}`, `${bounds[name]}px`);
     const menu = byId('studio_menu');
+    menu?.querySelector('summary').setAttribute('aria-expanded', String(menu.open));
     if (menu?.open) {
       const body = menu.querySelector('.pg-menu-body');
       const rect = menu.querySelector('summary').getBoundingClientRect();
@@ -1176,6 +1234,7 @@
     if (!centre) return;
     selectedFunction = centre.dataset.initialFunction || selectedFunction;
     showControls();
+    tab('controls');
     if (selectedFunction === 'mascot_preview') mode('preview');
     if (['mascot_example', 'mascot_examples'].includes(selectedFunction)) mode('examples');
     if (centre.dataset.initialMode) mode(centre.dataset.initialMode);

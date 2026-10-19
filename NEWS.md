@@ -8,6 +8,8 @@
 
 * The studio gives phone search its own row, shares the utility buttons evenly, keeps the live status inside a taller host, aligns code-style radios and leaves room for underscores in call chips (#353).
 
+* The studio separates its Inspector views and More menu into a right-hand rail, with matching rail buttons and a compact Inspector entry on phones (#353).
+
 ## Breaking changes
 
 * `mascot_character(id = "tessa")` names its argument `id`, as every other function that addresses a character does; `name =` is no longer accepted and has no alias. Pass the id positionally or as `id =` (#296).

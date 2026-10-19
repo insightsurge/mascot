@@ -121,7 +121,12 @@ describe("studio overlays and live controls", {
     expect_true(app$get_js(
       "document.activeElement.id === 'inspector_sidebar' && document.querySelector('[data-function=mascot_bubble] [data-argument=duration]').getClientRects().length > 0"
     ))
+    expect_identical(
+      app$get_js("document.getElementById('inspector_view_controls').getAttribute('aria-pressed')"),
+      "true"
+    )
     app$click(selector = "#inspector_tab_help")
+    expect_identical(app$get_js("document.getElementById('inspector_view_help').getAttribute('aria-pressed')"), "true")
     app$wait_for_js("document.getElementById('function_help').textContent.includes('duration')")
     expect_match(app$get_js("document.getElementById('function_help').textContent"), "Examples", fixed = TRUE)
     app$click(selector = "#inspector_tab_guide")
@@ -129,6 +134,7 @@ describe("studio overlays and live controls", {
     expect_match(app$get_js("document.getElementById('guide').textContent"), "Inf", fixed = TRUE)
     app$run_js("document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape', bubbles:true}));")
     expect_true(app$get_js("document.getElementById('inspector_sidebar').hidden"))
+    expect_identical(app$get_js("document.activeElement.id"), "inspector_view_guide")
     # The pinned function list did not swallow Escape from the inspector.
     app$run_js("window.studioStatus = document.getElementById('status_text')")
     app$click(selector = '[data-call-arg=status]')
@@ -238,6 +244,8 @@ describe("studio overlays and live controls", {
     for (size in list(
       c(1280L, 720L),
       c(1366L, 768L),
+      c(1440L, 900L),
+      c(360L, 720L),
       c(375L, 667L),
       c(390L, 844L),
       c(430L, 932L),
@@ -252,7 +260,7 @@ describe("studio overlays and live controls", {
       )
       app$wait_for_js(sprintf("window.innerWidth === %d", size[1]))
       before <- app$get_js("document.getElementById('studio_centre').getBoundingClientRect().width")
-      app$click(selector = "#open_inspector")
+      app$click(selector = if (size[1] <= 860) "#open_inspector" else "#inspector_view_controls")
       expect_equal(app$get_js("document.getElementById('studio_centre').getBoundingClientRect().width"), before)
       expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
       expect_identical(
@@ -1121,6 +1129,7 @@ describe("studio review follow-ups", {
     )
     app$click(selector = '[data-call-arg=placement]')
     app$click(selector = '#chip_guide')
+    expect_identical(app$get_js("document.getElementById('inspector_view_guide').getAttribute('aria-pressed')"), "true")
     app$wait_for_js(
       "!document.getElementById('inspector_guide').hidden && !!document.querySelector('#guide [data-guide-function=mascot_placement]')"
     )
@@ -1529,7 +1538,7 @@ describe("studio phone layout", {
     wait_studio_mood(app, "idle")
     app$wait_for_js("document.querySelectorAll('#live_call [data-call-arg]').length > 1")
     browser <- app$get_chromote_session()
-    for (width in c(360L, 375L, 430L, 390L)) {
+    for (width in c(360L, 375L, 430L, 390L, 768L)) {
       browser$Emulation$setDeviceMetricsOverride(
         width = width,
         height = 844L,
@@ -1545,6 +1554,15 @@ describe("studio phone layout", {
           "const r=b.getBoundingClientRect();return r.width>0 && r.left>=0 && r.right<=innerWidth;});})()"
         )),
         info = paste("utility controls at", width)
+      )
+      expect_true(
+        app$get_js(paste0(
+          "document.documentElement.scrollWidth <= innerWidth && ",
+          "document.getElementById('open_inspector').getClientRects().length > 0 && ",
+          "document.getElementById('open_inspector').closest('#studio_character_bar') !== null && ",
+          "getComputedStyle(document.querySelector('.pg-inspector-views')).display === 'none'"
+        )),
+        info = paste("phone inspector and overflow at", width)
       )
       expect_true(
         app$get_js(paste0(
@@ -1604,5 +1622,141 @@ describe("studio phone layout", {
     expect_true(app$get_js(
       "(() => {const c=document.getElementById('chip_editor_scroll');return getComputedStyle(c).overflowY==='auto' && [...document.querySelectorAll('#chip_editor button')].filter(b=>b.getClientRects().length).every(b=>b.getBoundingClientRect().height>=40);})()"
     ))
+  })
+})
+
+
+describe("studio inspector rail", {
+  it("renders three labelled toolbar buttons and keeps the mobile opener out of the top strip", {
+    parts <- studio_redesign_parts()
+    rail <- as.character(get("studio_right_rail", parts$env)())
+    expect_match(rail, 'role="toolbar" aria-label="Inspector views"', fixed = TRUE)
+    expect_false(grepl('role="tab', rail, fixed = TRUE))
+    for (name in c("controls", "help", "guide")) {
+      expect_match(rail, paste0('id="inspector_view_', name, '"'), fixed = TRUE)
+      expect_match(rail, paste0('title="', tools::toTitleCase(name), '"'), fixed = TRUE)
+      expect_match(rail, paste0('aria-label="', tools::toTitleCase(name), '"'), fixed = TRUE)
+    }
+    expect_length(regmatches(rail, gregexpr('aria-pressed="false"', rail, fixed = TRUE))[[1]], 3L)
+    expect_length(regmatches(rail, gregexpr('aria-controls="inspector_sidebar"', rail, fixed = TRUE))[[1]], 4L)
+    expect_match(rail, 'aria-label="More" aria-haspopup="menu" aria-expanded="false"', fixed = TRUE)
+    expect_match(rail, 'id="open_inspector"', fixed = TRUE)
+    expect_match(rail, 'id="studio_keys"', fixed = TRUE)
+    expect_match(as.character(get("studio_topright", parts$env)()), 'id="studio_phone_tools"', fixed = TRUE)
+    for (bad in list(NULL, NA_character_, 1, "unknown", c("help", "guide"))) {
+      expect_error(get("studio_inspector_icon", parts$env)(bad), "Assertion on 'name' failed")
+    }
+  })
+
+  it("toggles modes, synchronises panel tabs and returns Escape focus to the active mode", {
+    local_shiny_browser()
+    app <- studio_redesign_driver()
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    expect_identical(app$get_js("document.querySelectorAll('[data-inspector-view]').length"), 3L)
+    for (name in c("controls", "help", "guide")) {
+      selector <- paste0("#inspector_view_", name)
+      app$click(selector = selector)
+      expect_true(app$get_js(sprintf(
+        paste0(
+          "!document.getElementById('inspector_sidebar').hidden && ",
+          "document.querySelectorAll('[data-inspector-view][aria-pressed=true]').length === 1 && ",
+          "document.getElementById('inspector_view_%1$s').getAttribute('aria-pressed') === 'true' && ",
+          "document.getElementById('inspector_tab_%1$s').getAttribute('aria-selected') === 'true' && ",
+          "!document.getElementById('inspector_%1$s').hidden"
+        ),
+        name
+      )))
+      app$click(selector = selector)
+      expect_true(app$get_js(paste0(
+        "document.getElementById('inspector_sidebar').hidden && ",
+        "document.querySelectorAll('[data-inspector-view][aria-pressed=true]').length === 0"
+      )))
+    }
+    app$click(selector = "#inspector_view_controls")
+    app$click(selector = "#inspector_view_help")
+    expect_identical(app$get_js("document.getElementById('inspector_tab_help').getAttribute('aria-selected')"), "true")
+    app$click(selector = "#inspector_tab_guide")
+    expect_identical(app$get_js("document.getElementById('inspector_view_guide').getAttribute('aria-pressed')"), "true")
+    app$run_js("document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',bubbles:true}))")
+    expect_true(app$get_js("document.getElementById('inspector_sidebar').hidden"))
+    expect_identical(app$get_js("document.activeElement.id"), "inspector_view_guide")
+    app$click(selector = "#studio_menu summary")
+    app$wait_for_js("document.querySelector('#studio_menu summary').getAttribute('aria-expanded') === 'true'")
+    expect_true(app$get_js(
+      "document.getElementById('studio_menu').open && document.getElementById('studio_keys').getClientRects().length > 0"
+    ))
+    app$run_js("document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',bubbles:true}))")
+    app$wait_for_js("document.querySelector('#studio_menu summary').getAttribute('aria-expanded') === 'false'")
+  })
+
+  it("shares rail dimensions and reserves room beside the inspector on desktop and tablet", {
+    local_shiny_browser()
+    app <- studio_redesign_driver()
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    browser <- app$get_chromote_session()
+    for (size in list(c(1280L, 720L), c(1366L, 768L), c(1440L, 900L), c(861L, 768L), c(999L, 768L), c(1100L, 768L))) {
+      browser$Emulation$setDeviceMetricsOverride(
+        width = size[1],
+        height = size[2],
+        deviceScaleFactor = 1,
+        mobile = FALSE
+      )
+      app$wait_for_js(sprintf(
+        "innerWidth === %d && document.getElementById('studio_right_rail').parentElement.id === 'studio_shell'",
+        size[1]
+      ))
+      expect_true(
+        app$get_js(paste0(
+          "(() => {const l=document.querySelector('.pg-rail'),r=document.getElementById('studio_right_rail'),",
+          "a=l.getBoundingClientRect(),b=r.getBoundingClientRect(),t=document.getElementById('studio_character_bar').getBoundingClientRect();",
+          "return a.width===56 && b.width===a.width && a.top===14 && b.top===a.top && ",
+          "getComputedStyle(l).borderRadius==='14px' && getComputedStyle(r).borderRadius===getComputedStyle(l).borderRadius && ",
+          "t.right<=b.left-14 && !document.getElementById('open_inspector').getClientRects().length && ",
+          "[...r.querySelectorAll('[data-inspector-view]')].every(x=>{const c=x.getBoundingClientRect();",
+          "return c.width===40 && c.height===40 && getComputedStyle(x).borderRadius==='10px';});})()"
+        )),
+        info = paste("rail geometry at", size[1])
+      )
+      app$click(selector = "#inspector_view_controls")
+      expect_true(
+        app$get_js(paste0(
+          "(() => {const p=document.getElementById('inspector_sidebar').getBoundingClientRect(),",
+          "r=document.getElementById('studio_right_rail').getBoundingClientRect();",
+          "return p.right===r.left-10 && p.top===62 && p.bottom===innerHeight-14 && p.width===344;})()"
+        )),
+        info = paste("inspector beside rail at", size[1])
+      )
+      app$click(selector = "#close_inspector")
+    }
+  })
+
+  it("keeps one mobile Inspector entry and preserves the mounted menu across breakpoints", {
+    local_shiny_browser()
+    app <- studio_redesign_driver(width = 390, height = 844)
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    app$run_js("window.studioMenuInput = document.getElementById('studio_keys'); studioMenuInput.checked = false")
+    app$click(selector = "#open_inspector")
+    app$click(selector = "#inspector_tab_help")
+    app$run_js("document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',bubbles:true}))")
+    expect_identical(app$get_js("document.activeElement.id"), "open_inspector")
+    app$click(selector = "#open_inspector")
+    expect_true(app$get_js("!document.getElementById('inspector_help').hidden"))
+    app$click(selector = "#close_inspector")
+    browser <- app$get_chromote_session()
+    for (width in c(1280L, 375L, 1440L, 768L)) {
+      browser$Emulation$setDeviceMetricsOverride(width = width, height = 844L, deviceScaleFactor = 1, mobile = FALSE)
+      app$wait_for_js(sprintf(
+        "innerWidth === %d && document.getElementById('studio_right_rail').parentElement.id === '%s'",
+        width,
+        if (width <= 860) "studio_phone_tools" else "studio_shell"
+      ))
+      expect_true(app$get_js(paste0(
+        "document.querySelectorAll('#studio_keys').length===1 && ",
+        "document.getElementById('studio_keys')===studioMenuInput && !studioMenuInput.checked"
+      )))
+    }
   })
 })

@@ -7,7 +7,7 @@ describe("the internal Your character studio panel in Chrome", {
       mascot_studio(run = FALSE)
     })
     withr::defer(app$stop())
-    app$click(selector = "#open_inspector")
+    app$click(selector = "#inspector_view_controls")
     app$run_js("document.querySelector('details:has(#your_character_example)').open = true")
     app$click("your_character_example")
     app$wait_for_js("document.getElementById('your_character_check').textContent === 'Checked: Study Bot'")

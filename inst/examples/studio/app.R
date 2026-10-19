@@ -139,6 +139,7 @@ studio_page <- function(character, fn, view = "studio") {
         uiOutput("live_call", class = "pg-live-call")
       )
     ),
+    studio_right_rail(),
     div(
       id = "inspector_sidebar",
       class = "pg-inspector-shell pg-float",

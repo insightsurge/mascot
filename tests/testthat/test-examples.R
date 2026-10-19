@@ -2150,18 +2150,18 @@ describe("studio palette controls", {
       }
       do.call(session$setInputs, start)
       studio_go_live(session)
-      session$setInputs(palette = "peach")
+      session$setInputs(palette = "coral_navy")
       session$elapse(301)
-      expect_match(output$code_ui, 'theme = "peach"', fixed = TRUE)
+      expect_match(output$code_ui, 'theme = "coral_navy"', fixed = TRUE)
       session$setInputs(character = "sela")
-      expect_match(output$code_ui, 'theme = "peach"', fixed = TRUE)
-      expect_match(messages$palette$options, 'value="peach"', fixed = TRUE)
-      expect_identical(messages$palette$value, "peach")
+      expect_match(output$code_ui, 'theme = "coral_navy"', fixed = TRUE)
+      expect_match(messages$palette$options, 'value="coral_navy"', fixed = TRUE)
+      expect_identical(messages$palette$value, "coral_navy")
       expect_match(choices$mood, 'value="happy"', fixed = TRUE)
       expect_match(choices$gesture, 'value="wave"', fixed = TRUE)
       session$setInputs(character = "knurl")
       expect_identical(messages$palette$value, "original")
-      expect_false(grepl('theme = "peach"', output$code_ui, fixed = TRUE))
+      expect_false(grepl('theme = "coral_navy"', output$code_ui, fixed = TRUE))
       updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
       previous <- updates()$revision
       session$setInputs(gesture = "wave")
@@ -2243,10 +2243,10 @@ describe("studio palette sync (#353)", {
       protocol_ready(list(session = session, id = session$ns("palette_swap_demo")))
       session$flushReact()
       session$setInputs(palette_swap = "kept")
-      expect_identical(output$palette_swap_result, "Palette peach kept for Sela")
+      expect_identical(output$palette_swap_result, "Palette coral_navy kept for Sela")
       expect_identical(
         session$userData$mascot_updates[[session$ns("palette_swap_demo")]]$desired$theme$palette,
-        "peach"
+        "coral_navy"
       )
       session$setInputs(palette_swap = "dropped")
       expect_match(output$palette_swap_result, "mascot_palette_dropped:", fixed = TRUE)
@@ -2312,11 +2312,11 @@ describe("studio palette sync (#353)", {
       "document.querySelector('[data-event=palette_swap]') && document.getElementById('palette_swap_demo')?.dataset.shownCharacter"
     )
     app$run_js("document.querySelector('[data-event=palette_swap][data-value=kept]').click()")
-    app$wait_for_js("document.getElementById('palette_swap_result').textContent.includes('peach kept for Sela')")
+    app$wait_for_js("document.getElementById('palette_swap_result').textContent.includes('coral_navy kept for Sela')")
     app$wait_for_js("document.getElementById('palette_swap_demo').dataset.shownCharacter === 'sela'")
     expect_identical(
       app$get_js("mascot.host.state(document.getElementById('palette_swap_demo')).theme.palette"),
-      "peach"
+      "coral_navy"
     )
     app$run_js("document.querySelector('[data-event=palette_swap][data-value=dropped]').click()")
     app$wait_for_js("document.getElementById('palette_swap_result').textContent.includes('mascot_palette_dropped:')")
@@ -2425,6 +2425,13 @@ describe("studio palette follow-up (#353)", {
     }
     expect_error(get("studio_mistake_palettes", parts$env)(1), "character")
   })
+  it("uses a swap example whose palette Tessa and Sela share and Knurl lacks", {
+    parts <- studio_parts()
+    example <- get("studio_palette_swap", parts$env)
+    expect_true(example[["palette"]] %in% mascot_palettes(example[["from"]])$name)
+    expect_true(example[["palette"]] %in% mascot_palettes(example[["kept"]])$name)
+    expect_false(example[["palette"]] %in% mascot_palettes(example[["dropped"]])$name)
+  })
   it("builds a palette base demo with one explicit role that wins in light mode", {
     parts <- studio_parts()
     for (id in builtin_characters()$id) {
@@ -2504,7 +2511,9 @@ describe("studio palette follow-up (#353)", {
     parts <- studio_parts()
     sentence <- get("studio_palette_sentence", parts$env)
     expect_identical(sentence("tessa")$label, "Tessa's own colours (night_teal)")
-    expect_identical(sentence("sela")$label, "Sela's own colours")
+    expect_identical(sentence("sela")$label, "Sela's own colours (lilac_violet)")
+    # A character without a native palette name reads without one.
+    expect_identical(sentence("knurl")$label, "Knurl's own colours")
     expect_identical(sentence("tessa")$prefix, "in")
     expect_identical(sentence("tessa")$suffix, ",")
     expect_identical(sentence("tessa")$id, "night_teal")
@@ -2527,7 +2536,7 @@ describe("studio palette follow-up (#353)", {
       do.call(session$setInputs, studio_start_values(parts$page))
       studio_go_live(session)
       session$setInputs(character = "sela")
-      expect_identical(messages[["studio:palette"]]$label, "Sela's own colours")
+      expect_identical(messages[["studio:palette"]]$label, "Sela's own colours (lilac_violet)")
       session$setInputs(character = "tessa", palette = "sea_green")
       expect_identical(messages[["studio:palette"]]$id, "sea_green")
       session$setInputs(palette = "original")

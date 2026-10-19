@@ -224,14 +224,14 @@ describe("public argument error classes", {
 
 describe("named palette themes", {
   it("resolves a reusable palette only when it meets a character and prints its id", {
-    value <- mascot_theme(palette = "peach")
-    expect_identical(capture.output(print(value)), 'mascot_theme(palette = "peach")')
+    value <- mascot_theme(palette = "coral_navy")
+    expect_identical(capture.output(print(value)), 'mascot_theme(palette = "coral_navy")')
     expect_identical(eval(parse(text = format(value))), value)
-    expect_identical(as_theme_arg(value, environment(), "tessa")$palette_colours$light$body, "#FFD3B5")
-    expect_identical(as_theme_arg(value, environment(), "sela")$palette_colours$light$hair_purple, "#2B305C")
+    expect_identical(as_theme_arg(value, environment(), "tessa")$palette_colours$light$body, "#FFE5D9")
+    expect_identical(as_theme_arg(value, environment(), "sela")$palette_colours$light$hair_purple, "#1D3557")
     expect_identical(as_theme_arg("orbit", environment(), "knurl")$palette, "orbit")
     expect_identical(as_theme_arg("original", environment(), "knurl")$palette_colours, list(light = NULL, dark = NULL))
-    expect_identical(as_theme_arg(value, environment())$palette, "peach")
+    expect_identical(as_theme_arg(value, environment())$palette, "coral_navy")
     expect_error(
       mascot("helper", character = "knurl", theme = "oribt"),
       'oribt.*knurl.*original.*orbit.*carbon.*cobalt_droid.*crimson.*Did you mean "orbit"',
@@ -246,8 +246,15 @@ describe("named palette themes", {
     )
     message <- tryCatch(mascot("helper", character = "tessa", theme = "zzzzzz"), error = conditionMessage)
     expect_false(grepl("has a palette called", message, fixed = TRUE))
-    both <- theme_palette_problem("peach", character_catalogue_get("knurl"))
-    expect_match(both, 'Characters "tessa", "sela" have a palette called "peach"', fixed = TRUE)
+    expect_error(
+      mascot("helper", character = "tessa", theme = "orchid"),
+      'Unknown palette "orchid" for character "tessa".*Character "sela" has a palette called "orchid"',
+      class = "mascot_error"
+    )
+    peach <- theme_palette_problem("peach", character_catalogue_get("knurl"))
+    expect_match(peach, 'Character "tessa" has a palette called "peach"', fixed = TRUE)
+    both <- theme_palette_problem("coral_navy", character_catalogue_get("knurl"))
+    expect_match(both, 'Characters "tessa", "sela" have a palette called "coral_navy"', fixed = TRUE)
     expect_no_error(mascot("helper", character = "knurl", theme = "original"))
   })
   it("accepts Tessa's own name for her colours, night_teal, and original alike", {

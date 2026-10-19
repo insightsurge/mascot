@@ -975,7 +975,8 @@ studio_server <- function(input, output, session) {
         menu_parsed()$items,
         input$menu_direction %||% "auto",
         input$menu_label %||% "",
-        isTRUE(input$menu_tooltip)
+        isTRUE(input$menu_tooltip),
+        isTRUE(input$menu_disabled)
       ),
       code_pair(defaults$click)
     )
@@ -992,7 +993,8 @@ studio_server <- function(input, output, session) {
       input$menu_items,
       input$menu_direction,
       input$menu_label,
-      input$menu_tooltip
+      input$menu_tooltip,
+      input$menu_disabled
     )),
     600
   )
@@ -1457,7 +1459,8 @@ studio_server <- function(input, output, session) {
         menu_parsed()$items,
         input$menu_direction %||% "auto",
         input$menu_label %||% "",
-        isTRUE(input$menu_tooltip)
+        isTRUE(input$menu_tooltip),
+        isTRUE(input$menu_disabled)
       ),
       NULL
     )

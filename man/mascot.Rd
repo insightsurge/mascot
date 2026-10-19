@@ -178,11 +178,11 @@ Opening and closing a menu never sets this input. Dragging a floating mascot
 never counts as a click. See \code{\link[=mascot_action]{mascot_action()}} and \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}.
 }
 \examples{
-mascot("helper", mood = "happy")
-mascot("small", size = 96, placement = "bottom-right")
-mascot("responsive", size = mascot_size(120, small_screen = 48))
-mascot("still", motion = FALSE)
-mascot("helpful", click = "Open help")
+ui <- mascot("helper", mood = "happy")
+ui <- mascot("small", size = 96, placement = "bottom-right")
+ui <- mascot("responsive", size = mascot_size(120, small_screen = 48))
+ui <- mascot("still", motion = FALSE)
+ui <- mascot("helpful", click = "Open help")
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   ui = shiny::fluidPage(mascot("helper")),

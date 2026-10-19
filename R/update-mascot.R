@@ -1,3 +1,4 @@
+# Examples need a running Shiny app, so they remain interactive.
 #' Update a mascot in a Shiny app
 #'
 #' Update any combination of character, mood, status, bubble, size, placement,
@@ -60,10 +61,25 @@
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.
 #' @details
-#' `NULL` means none or the default in [mascot()] and helpers where accepted,
-#' and unchanged in [update_mascot()]. An empty helper (`mascot_bubble()`,
-#' `mascot_status()`, `mascot_theme()`, `mascot_action()` or
-#' `mascot_popup_menu()`) resets that setting.
+#' `NULL` means none or the default in [mascot()] and helpers where accepted.
+#' In `update_mascot()`, `NULL` leaves a setting unchanged. Use an empty helper
+#' to reset a setting:
+#'
+#' | Setting | Reset sent to `update_mascot()` |
+#' |---|---|
+#' | Character | `character = mascot_character()` (back to `"tessa"`) |
+#' | Mood | `mood = mascot_mood()` (back to `"idle"`) |
+#' | Size | `size = mascot_size()` (160, `small_screen = "auto"`) |
+#' | Custom status | `status = mascot_status()` follows the mood |
+#' | Bubble | `bubble = mascot_bubble()` removes it |
+#' | Theme | `theme = mascot_theme()` restores character colours |
+#' | Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
+#' | Placement | `placement = mascot_placement()` (bottom-right); `mascot_placement("inline")` for inline |
+#' | Motion | `motion = mascot_motion_settings()` allows movement subject to visitor preference |
+#'
+#' Each non-`NULL` argument replaces that whole setting, not part of it. For
+#' example, `update_mascot("h", size = 200)` also resets a custom `small_screen`
+#' to `"auto"`.
 #'
 #' Building UI with [mascot()] or helpers errors on invalid values;
 #' [update_mascot()] warns and leaves the mascot unchanged. See
@@ -211,11 +227,12 @@ update_mascot <- function(
       class = "mascot_error"
     )
   }
+  warning_id <- substring(mascot_binding_id(session, id), nchar(session$ns("")) + 1L)
   if (length(helper_problems)) {
     # One bullet per failed helper, as for the ordinary problems below.
     cli::cli_warn(
       c(
-        "{.fn update_mascot} left mascot {.val {id}} unchanged.",
+        "{.fn update_mascot} left mascot {.val {warning_id}} unchanged.",
         structure(
           paste0("{helper_problems[[", seq_along(helper_problems), "]]}"),
           names = rep("x", length(helper_problems))
@@ -224,7 +241,11 @@ update_mascot <- function(
       class = c("mascot_update_ignored", "mascot_warning")
     )
     if (dev_mode()) {
-      send_update(session, id, list(problem = paste0("mascot: ", paste(helper_problems, collapse = "; "))))
+      send_update(
+        session,
+        id,
+        list(problem = paste0("mascot: ", warning_id, ": ", paste(helper_problems, collapse = "; ")))
+      )
     }
     return(invisible(NULL))
   }
@@ -284,13 +305,13 @@ update_mascot <- function(
   if (length(problems)) {
     cli::cli_warn(
       c(
-        "{.fn update_mascot} left mascot {.val {id}} unchanged.",
+        "{.fn update_mascot} left mascot {.val {warning_id}} unchanged.",
         structure(paste0("{problems[[", seq_along(problems), "]]}"), names = rep("x", length(problems)))
       ),
       class = c("mascot_update_ignored", "mascot_warning")
     )
     if (dev_mode()) {
-      send_update(session, id, list(problem = paste0("mascot: ", paste(problems, collapse = "; "))))
+      send_update(session, id, list(problem = paste0("mascot: ", warning_id, ": ", paste(problems, collapse = "; "))))
     }
     return(invisible(NULL))
   }
@@ -351,12 +372,14 @@ send_update <- function(session, id, patch, replay = FALSE) {
   checkmate::assert_list(patch, names = "unique")
   checkmate::assert_flag(replay)
   key <- mascot_binding_id(session, id)
+  warning_id <- substring(key, nchar(session$ns("")) + 1L)
   # Development overlays are diagnostics, not accepted desired state/actions.
   if (identical(names(patch), "problem")) {
     mascot_problem(session, key, patch$problem)
     return(invisible(NULL))
   }
   record <- mascot_id_state(session, key, namespaced = TRUE)
+  problem_before <- mascot_session(session)$problems[[key]]
   next_record <- tryCatch(
     {
       mascot_wire_check(patch)
@@ -370,7 +393,7 @@ send_update <- function(session, id, patch, replay = FALSE) {
           prepared <- mascot_state_prepare(record, patch)
           record$context <- prepared$context
           record$desired <- mascot_state_defaults(prepared$context$wire)
-          record <- mascot_state_settle(record)
+          record <- mascot_state_settle(record, session)
         }
         accepted <- mascot_state_accept(record, patch)
         if (startup) {
@@ -380,9 +403,9 @@ send_update <- function(session, id, patch, replay = FALSE) {
       }
     },
     error = function(error) {
-      mascot_update_warning(key, conditionMessage(error))
+      mascot_update_warning(warning_id, conditionMessage(error))
       if (dev_mode()) {
-        send_update(session, id, list(problem = paste0("mascot: ", conditionMessage(error))))
+        send_update(session, id, list(problem = paste0("mascot: ", warning_id, ": ", conditionMessage(error))))
       }
       NULL
     }
@@ -391,7 +414,10 @@ send_update <- function(session, id, patch, replay = FALSE) {
     return(invisible(NULL))
   }
   owner <- mascot_session(session)
-  owner$problems[[key]] <- NULL
+  # A settle that failed during this call keeps its overlay; otherwise success clears it.
+  if (identical(owner$problems[[key]], problem_before)) {
+    owner$problems[[key]] <- NULL
+  }
   owner$states[[key]] <- next_record
   mascot_state_schedule(session, key)
   invisible(NULL)

@@ -302,7 +302,8 @@ mascot_baseline_check <- function(state) {
       unlist(click$items),
       direction = click$direction,
       label = click$label,
-      tooltip = click$tooltip
+      tooltip = click$tooltip,
+      disabled = click$disabled
     ))
   )
   checkmate::assert_true(identical(character_format_identity(click), character_format_identity(checked)))

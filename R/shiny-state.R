@@ -387,9 +387,10 @@ mascot_state_settle <- function(record, session = NULL) {
     calls <- calls[order(vapply(calls, function(call) call$sequence, numeric(1)))]
     for (call in calls) {
       record <- tryCatch(mascot_state_accept(record, call$patch), error = function(error) {
-        mascot_update_warning(record$id, conditionMessage(error))
+        warning_id <- if (is.null(session)) record$id else substring(record$id, nchar(session$ns("")) + 1L)
+        mascot_update_warning(warning_id, conditionMessage(error))
         if (dev_mode() && !is.null(session)) {
-          mascot_problem(session, record$id, paste0("mascot: ", conditionMessage(error)))
+          mascot_problem(session, record$id, paste0("mascot: ", warning_id, ": ", conditionMessage(error)))
         }
         record
       })
@@ -431,7 +432,7 @@ mascot_state_schedule <- function(session, key) {
             "Gesture '",
             record$pending$name,
             "' discarded for mascot '",
-            key,
+            substring(key, nchar(session$ns("")) + 1L),
             "': the winning character cannot play it."
           )
         )

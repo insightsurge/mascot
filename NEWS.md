@@ -18,6 +18,8 @@
 
 ## New features
 
+* `mascot_popup_menu()` gains `disabled = FALSE`. With `TRUE`, the button stays reachable by keyboard and screen readers announce it as unavailable; it opens nothing and sends no input (#350).
+
 * `mascot()`, `update_mascot()` and `mascot_preview()` accept palette id strings
   through `theme`; `mascot_theme()` gains `palette`, with role and CSS overrides
   applied on top. Character swaps keep shared palette ids or warn and restore
@@ -124,6 +126,12 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* Exported examples assign mascot tags instead of printing the embedded character data (#350).
+
+* `mascot_motion_settings()` reports invalid `messages` panel names with class `mascot_error_choice` (#350).
+
+* `update_mascot()` help lists every helper reset and explains that each supplied setting replaces the whole group. Module warnings consistently name the local mascot id (#350).
 
 * Checked character data gains a compact `format()` method; `print()` assertion failures carry `mascot_error` (#350).
 

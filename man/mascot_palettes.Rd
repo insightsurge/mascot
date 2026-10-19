@@ -27,7 +27,7 @@ with no palette applied.
 \examples{
 mascot_palettes()
 mascot_palettes("tessa")
-mascot("helper", character = "tessa", theme = "coral")
+ui <- mascot("helper", character = "tessa", theme = "coral")
 }
 \seealso{
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot_theme]{mascot_theme()}}

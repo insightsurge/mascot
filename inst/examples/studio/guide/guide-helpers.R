@@ -20,6 +20,10 @@ if (!exists("guide_dir")) {
 if (!exists("guide_mistake_cases")) {
   sys.source(file.path(guide_dir, "guide-mistakes.R"), envir = environment())
 }
+# Small functions the studio and the pages both use (also loaded by the studio's R/data.R).
+if (!exists("guide_brand_roles")) {
+  sys.source(file.path(guide_dir, "guide-shared.R"), envir = environment())
+}
 
 # The stylesheet of the diagrams below. Bump the version when guide.css changes.
 guide_dependency <- function(dir = guide_dir) {
@@ -45,7 +49,7 @@ guide_gap <- function() {
 }
 
 # Steps with an arrow between each two neighbours (not across a gap).
-guide_flow <- function(..., arrow = "→") {
+guide_flow <- function(..., arrow = "\u2192") {
   checkmate::assert_string(arrow, min.chars = 1)
   items <- list(...)
   is_step <- vapply(items, function(item) identical(item$attribs$class, "pg-flow-step"), logical(1))
@@ -93,20 +97,6 @@ guide_table <- function(df, wrap = NULL) {
     }))
   )
   htmltools::attachDependencies(if (is.null(wrap)) table else htmltools::div(class = wrap, table), guide_dependency())
-}
-
-# Which bslib colour slots (primary, secondary, ...) a character's colour roles feed, as slot = role.
-guide_brand_roles <- function(character) {
-  checkmate::assert_string(character, min.chars = 1)
-  roles <- mascot::mascot_colour_roles(character)
-  roles <- roles[!is.na(roles$brand), ]
-  result <- list()
-  for (i in seq_len(nrow(roles))) {
-    for (slot in strsplit(roles$brand[i], ", ", fixed = TRUE)[[1]]) {
-      result[[slot]] <- roles$role[i]
-    }
-  }
-  result
 }
 
 # Gesture cards use the same classes as the studio, without requiring bslib on a website.

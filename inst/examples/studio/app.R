@@ -42,9 +42,10 @@ server_args <- function(state, style) {
 
 # ---- Pages -------------------------------------------------------------------------------
 
-studio_page <- function(character, fn, view = "studio") {
+studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
   checkmate::assert_string(character)
   checkmate::assert_string(fn)
+  checkmate::assert_flag(open_guide)
   checkmate::assert_choice(view, c("studio", "examples"))
   div(
     id = "studio_shell",
@@ -74,6 +75,7 @@ studio_page <- function(character, fn, view = "studio") {
         "mascot"
       },
       `data-initial-character` = character,
+      `data-initial-open` = if (open_guide) "guide",
       panel_character_bar(character = character),
       div(
         id = "studio_canvas",
@@ -134,14 +136,21 @@ studio_page <- function(character, fn, view = "studio") {
           tags$span(class = "pg-call-hint", "Click an argument to edit it"),
           div(
             class = "pg-actions",
-            radioButtons(
-              "code_style",
-              "Style",
-              c(Shortcuts = "short", Helpers = "helper"),
-              selected = "short",
-              inline = TRUE
+            div(
+              title = paste(
+                "Shortcuts are plain values, for example mood = \"happy\".",
+                "Helpers are mascot_*() calls, for example mood = mascot_mood(\"happy\").",
+                "Both give the same mascot."
+              ),
+              radioButtons(
+                "code_style",
+                "Style",
+                c(Shortcuts = "short", Helpers = "helper"),
+                selected = "short",
+                inline = TRUE
+              )
             ),
-            copy_button("code_ui", "Copy R code"),
+            copy_button("code_ui", "Copy your settings"),
             studio_button("open_code", "Code views")
           )
         ),
@@ -380,7 +389,7 @@ ui <- function(request) {
     padding = 0,
     tags$head(tags$link(rel = "stylesheet", href = "studio.css"), tags$script(src = "studio.js")),
     div(class = "pg-routing", selectInput("tabs", NULL, c("studio", "examples"), selected = view)),
-    studio_page(character, fn, view)
+    studio_page(character, fn, view, identical(query$open, "guide"))
   )
 }
 
@@ -742,10 +751,14 @@ studio_server <- function(input, output, session) {
     sentence <- studio_palette_sentence(character, selected_palette())
     session$sendCustomMessage("studio:palette", c(sentence, list(ids = names(studio_palette_choices(character)))))
   })
+  # The character before the current switch. A low-priority observer updates it after the switch has been handled.
+  previous_character <- reactiveVal(NULL)
+  observeEvent(input$character, previous_character(input$character), priority = -10)
   observeEvent(
     input$character,
     {
       character <- current_character()
+      previous <- previous_character() %||% character
       moods <- mascot_moods(character)$name
       gestures <- mascot_gestures(character)$name
       mood <- if (isTRUE(input$mood %in% moods)) input$mood else "idle"
@@ -763,7 +776,16 @@ studio_server <- function(input, output, session) {
         choices = studio_gesture_choices(character),
         selected = gesture
       )
-      send(list(character = code_character(character), theme = theme_now(), mood = code_mood(mood)), force = TRUE)
+      # The pickers still show the previous character's colours until they are rebuilt: carry only the roles the
+      # user changed, as the rebuild does, so the new character is not sent the old character's colours.
+      send(
+        list(
+          character = code_character(character),
+          theme = theme_with(carried_colours("light", previous), carried_colours("dark", previous)),
+          mood = code_mood(mood)
+        ),
+        force = TRUE
+      )
     },
     ignoreInit = TRUE
   )
@@ -914,7 +936,7 @@ studio_server <- function(input, output, session) {
       character_name(),
       " is floating in the ",
       sub("-", " ", input$position, fixed = TRUE),
-      " corner of the window. Choose Inline to bring the mascot back here."
+      " corner of the preview. Choose Inline to bring the mascot back here."
     )
   })
 
@@ -966,7 +988,14 @@ studio_server <- function(input, output, session) {
   output$theme_brand <- renderUI({
     brand <- studio_brand(current_character())
     tagList(lapply(c("primary", "secondary"), function(slot) {
-      label <- paste(tools::toTitleCase(slot), "colours", brand[[slot]] %||% "no mapped part", "for", character_name())
+      label <- paste0(
+        tools::toTitleCase(slot),
+        " colours: ",
+        brand[[slot]] %||% "no mapped part",
+        " (",
+        character_name(),
+        ")"
+      )
       div(
         class = "pg-css",
         colour_input(
@@ -995,18 +1024,35 @@ studio_server <- function(input, output, session) {
     keep <- !is.na(values) & tolower(values) != tolower(roles()$colour)
     stats::setNames(tolower(values[keep]), roles()$role[keep])
   }
-  theme_now <- reactive({
+  theme_with <- function(light, dark) {
     code_theme(
       input$theme_source %||% "own",
-      picked("light"),
-      picked("dark"),
+      light,
+      dark,
       input$theme_mode %||% "auto",
       intersect(input$css_roles, roles()$role),
       input$bs_primary %||% "#1f6feb",
       input$bs_secondary %||% "#966600",
       selected_palette()
     )
-  })
+  }
+  theme_now <- reactive(theme_with(picked("light"), picked("dark")))
+  # The colours a user changed, read before the pickers follow a new character: the pickers still hold the previous
+  # character's values, so only a role the previous character had, whose value differs from the colour that
+  # character listed, counts as changed (the same rule as role_values()).
+  carried_colours <- function(mode, previous) {
+    palette <- isolate(input$palette)
+    listed <- mascot_colour_roles(
+      previous,
+      palette = if (isTRUE(palette %in% studio_palette_choices(previous))) palette else "original"
+    )
+    values <- stats::setNames(
+      lapply(roles()$role, function(role) isolate(input[[paste0(mode, "_", role)]])),
+      roles()$role
+    )
+    kept <- Filter(Negate(is.null), reconcile_colour_values(listed, roles(), values))
+    vapply(kept, tolower, character(1))
+  }
   observeEvent(
     input$theme_source,
     {
@@ -1319,7 +1365,9 @@ studio_server <- function(input, output, session) {
       } else if (input$mistake == "Low contrast") {
         role <- roles()$role[1]
         light <- stats::setNames("#f8f9fa", role)
-        state$theme <- code_theme("mascot", light, light, "auto", NULL, NULL, NULL, selected_palette())
+        # The call replaced the whole theme (a plain list has no palette), so the palette is cleared as well.
+        state$theme <- code_theme("mascot", light, light, "auto", NULL, NULL, NULL, "original")
+        updateSelectInput(session, "palette", selected = "original")
         updateSelectInput(session, "theme_source", selected = "mascot")
         updateRadioButtons(session, "theme_mode", selected = "auto")
         updateCheckboxGroupInput(session, "css_roles", selected = character())
@@ -1681,7 +1729,12 @@ studio_server <- function(input, output, session) {
     # configuration. Retain the last accepted value when a draft is invalid.
     current$click <- live_demo$click
     current$bubble <- live_demo$bubble
-    call_chips(current, style(), last_gesture())
+    # The welcome bubble and menu are the studio's own demonstration; copied code leaves them out.
+    demo <- c(
+      if (!identical(live_demo$bubble$short, state$bubble$short)) "bubble",
+      if (!identical(live_demo$click$short, state$click$short)) "click"
+    )
+    call_chips(current, style(), last_gesture(), demo)
   })
   # Readiness and events come from the isolated engine, not a second Shiny session.
   output$live_host <- renderUI({

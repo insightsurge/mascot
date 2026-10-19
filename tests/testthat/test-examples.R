@@ -34,6 +34,7 @@ describe("mascot_examples()", {
             "R/ui.R",
             "guide/guide-helpers.R",
             "guide/guide-mistakes.R",
+            "guide/guide-shared.R",
             "guide/guide.css",
             "guide/mascot_bubble.Rmd",
             "guide/mascot_action.Rmd",
@@ -2378,7 +2379,10 @@ describe("studio safeguards (#248)", {
       preview_width = "the width the preview page is shown at, not an argument",
       example_name = "the Examples view, not the mascot",
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
-      example_run = "the Examples view, not the mascot"
+      example_run = "the Examples view, not the mascot",
+      theme_light = "container of the role pickers, built from the character; tested through the picker rows",
+      theme_dark = "container of the role pickers, built from the character; tested through the picker rows",
+      theme_css = "container of the CSS role controls, built from the character; tested with css_roles"
     )
     controls <- unlist(get("playground_controls", parts$env))
     format_call <- get("format_call", parts$env)
@@ -2939,7 +2943,7 @@ describe("studio palette controls", {
       quote(bslib::bs_theme(primary = "blue", secondary = "orange"))
     )
   })
-  it("shows colour-role argument controls and keeps the palette in the low-contrast demonstration", {
+  it("shows colour-role argument controls and clears the palette in the low-contrast demonstration", {
     parts <- studio_parts()
     controls <- Filter(
       function(tag) {
@@ -2957,8 +2961,10 @@ describe("studio palette controls", {
       session$setInputs(palette = "coral_navy")
       session$elapse(301)
       session$setInputs(mistake = "Low contrast", mistake_run = 1)
-      expect_identical(eval(state$theme$short)$palette, "coral_navy")
-      expect_match(output$code_ui, 'palette = "coral_navy"', fixed = TRUE)
+      # A plain list replaces the whole theme, so the drawing has no palette: the code must say the same.
+      expect_null(eval(state$theme$short)$palette)
+      expect_false(grepl("coral_navy", output$code_ui, fixed = TRUE))
+      expect_match(output$code_ui, 'theme = list(outline = "#f8f9fa")', fixed = TRUE)
     })
   })
   it("keeps palette selection, theme sources, previews, resets and live anchor listings in step", {
@@ -3416,5 +3422,146 @@ describe("studio palette follow-up (#353)", {
       expect_identical(messages[["studio:palette"]]$label, "Tessa's own colours (night_teal)")
       expect_identical(selected_palette(), "original")
     })
+  })
+})
+
+describe("studio review fixes (#353)", {
+  it("gives a translucent colour role a text box, so it is never sent as a solid override", {
+    parts <- studio_parts()
+    for (id in c("knurl", "neer")) {
+      roles <- mascot_colour_roles(id)
+      alpha <- roles$role[!grepl("^#[0-9a-fA-F]{6}$", roles$colour)]
+      expect_gt(length(alpha), 0L)
+      for (role in alpha) {
+        html <- as.character(get("role_picker", parts$env)("light", role, roles))
+        expect_match(html, 'type="text"', fixed = TRUE, info = paste(id, role))
+        expect_false(grepl('type="color"', html, fixed = TRUE), info = paste(id, role))
+      }
+    }
+    expect_match(as.character(get("colour_input", parts$env)("x", "#112233", "label")), 'type="color"', fixed = TRUE)
+    expect_error(get("colour_input", parts$env)("x", 1, "label"), "string")
+    start <- studio_start_values(parts$page)
+    for (who in c("knurl", "neer")) {
+      shiny::testServer(get("studio_server", parts$env), {
+        do.call(session$setInputs, start)
+        studio_go_live(session)
+        session$setInputs(character = who)
+        session$elapse(400)
+        roles <- mascot_colour_roles(who)
+        # What the browser reports for untouched pickers: each role's listed colour.
+        untouched <- stats::setNames(as.list(roles$colour), paste0("light_", roles$role))
+        do.call(session$setInputs, c(list(theme_source = "mascot"), untouched))
+        session$elapse(400)
+        expect_false(grepl("theme =", output$code_ui, fixed = TRUE), info = who)
+        sent <- session$userData$mascot_updates[[session$ns("helper")]]$desired$theme
+        expect_length(sent$light, 0L)
+      })
+    }
+  })
+  it("does not send the previous character's colours to the new one when the character changes", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      tessa <- mascot_colour_roles("tessa")
+      untouched <- stats::setNames(as.list(tessa$colour), paste0("light_", tessa$role))
+      do.call(session$setInputs, c(list(theme_source = "mascot"), untouched))
+      session$elapse(400)
+      session$setInputs(character = "sela")
+      sent <- session$userData$mascot_updates[[session$ns("helper")]]$desired$theme
+      expect_length(sent$light, 0L)
+      # A colour the user did change is carried over, for a role Sela has too.
+      shared <- intersect(tessa$role, mascot_colour_roles("sela")$role)[[1L]]
+      session$setInputs(character = "tessa")
+      session$elapse(400)
+      do.call(session$setInputs, stats::setNames(list("#123456"), paste0("light_", shared)))
+      session$setInputs(character = "sela")
+      carried <- session$userData$mascot_updates[[session$ns("helper")]]$desired$theme
+      expect_identical(tolower(unlist(carried$light)[[1L]]), "#123456")
+    })
+  })
+  it("marks the welcome bubble and menu as the studio's demonstration and names the button for what it copies", {
+    parts <- studio_parts()
+    expect_match(parts$page, "Copy your settings", fixed = TRUE)
+    expect_false(grepl("Copy R code", parts$page, fixed = TRUE))
+    expect_match(parts$page, "Shortcuts are plain values", fixed = TRUE)
+    state <- list(
+      bubble = get("code_pair", parts$env)(quote(mascot_bubble())),
+      click = get("code_pair", parts$env)(quote(mascot_action()))
+    )
+    chips <- as.character(get("call_chips", parts$env)(state, "short", demo = c("bubble", "click")))
+    expect_identical(lengths(regmatches(chips, gregexpr('data-call-demo="true"', chips, fixed = TRUE))), 2L)
+    expect_match(chips, "studio demo, not copied", fixed = TRUE)
+    plain <- as.character(get("call_chips", parts$env)(state, "short"))
+    expect_false(grepl("data-call-demo", plain, fixed = TRUE))
+    expect_error(get("call_chips", parts$env)(state, "short", demo = 1), "character")
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      # At the start the call bar shows the welcome bubble and menu; the copied code leaves them out.
+      expect_identical(
+        lengths(regmatches(
+          output$live_call$html,
+          gregexpr('data-call-demo="true"', output$live_call$html, fixed = TRUE)
+        )),
+        2L
+      )
+      expect_false(grepl("bubble =", output$code_ui, fixed = TRUE))
+    })
+  })
+  it("shows a warning for the unknown-mood mistake and lists every documented condition class", {
+    parts <- studio_parts()
+    for (id in mascot_characters()$id) {
+      cases <- get("guide_mistake_cases", parts$env)("update_mascot", id)
+      mood <- Filter(function(case) grepl("sleepy", case$code, fixed = TRUE), cases)[[1L]]
+      expect_true(any(grepl("^Warning:", mood$messages)), info = id)
+    }
+    guide <- paste(
+      readLines(file.path(dirname(mascot_example("studio", run = FALSE)), "guide", "update_mascot.Rmd")),
+      collapse = "\n"
+    )
+    for (class in c(
+      "mascot_error",
+      "mascot_warning",
+      "mascot_message",
+      "mascot_update_ignored",
+      "mascot_error_choice",
+      "mascot_error_dots",
+      "mascot_error_argument",
+      "mascot_error_character",
+      "mascot_error_file",
+      "mascot_contrast",
+      "mascot_placement_ignored",
+      "mascot_palette_dropped",
+      "mascot_gesture_dropped",
+      "mascot_click_dropped",
+      "mascot_template_evicted"
+    )) {
+      expect_match(guide, class, fixed = TRUE)
+    }
+  })
+  it("says so in the bslib flow when a character has no brand parts", {
+    env <- studio_guide_env()
+    expect_length(env$studio_brand("neer"), 0L)
+    page <- paste(
+      vapply(
+        env$studio_guide_page(
+          "mascot_theme",
+          "neer",
+          file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+        ),
+        as.character,
+        character(1)
+      ),
+      collapse = "\n"
+    )
+    expect_match(page, "has no brand parts", fixed = TRUE)
+  })
+  it("counts the built-in characters from the package listing", {
+    env <- studio_guide_env()
+    expect_null(env$studio_character_hint())
+    expect_error(env$studio_character_hint(1), "directory")
   })
 })

@@ -444,9 +444,7 @@
           : id === 'inspector_sidebar'
             ? inspectorButton()
             : opener;
-      if (id === 'studio_search') suppressSearchFocus = true;
       (visible(replacement) ? replacement : inspectorButton())?.focus();
-      suppressSearchFocus = false;
     }
     return true;
   }
@@ -970,6 +968,12 @@
         toggleExpansion();
         return;
       }
+      // The search field is a button in disguise: it opens only when asked (WCAG 2.2 "On Focus"), never on focus.
+      if (event.target.id === 'open_search' && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        if (byId('studio_search').hidden) searchOpen();
+        return;
+      }
       if (event.key === 'Escape') {
         // Shiny owns its modal lifecycle; it sits above all studio surfaces.
         if (document.querySelector('.modal.show')) return;
@@ -1218,10 +1222,15 @@
       else fallback();
     }
   });
+  let bubbleTimer = null;
   document.addEventListener('input', (event) => {
     if (event.target.id === 'function_search') searchResults();
-    if (event.target.id === 'bubble_text' && !byId('chip_editor').hidden && chipArgument === 'bubble')
-      send('chip_bubble', event.target.value);
+    if (event.target.id === 'bubble_text' && !byId('chip_editor').hidden && chipArgument === 'bubble') {
+      // One update when typing pauses, not one per keystroke (each restarts the bubble and is announced).
+      clearTimeout(bubbleTimer);
+      const text = event.target.value;
+      bubbleTimer = setTimeout(() => send('chip_bubble', text), 600);
+    }
   });
   $(document).on('change', '#size_unit', () => {
     if (byId('chip_editor').hidden || chipArgument !== 'size') return;
@@ -1262,7 +1271,6 @@
       }
   }
   document.addEventListener('scroll', positionDropdowns, true);
-  let suppressSearchFocus = false;
   function positionWordTooltip(word) {
     const tooltip = word?.querySelector('.pg-word-tooltip');
     if (!tooltip) return;
@@ -1283,7 +1291,6 @@
   });
   document.addEventListener('focusin', (event) => {
     positionWordTooltip(event.target.closest('.pg-sentence-word, #all_functions'));
-    if (event.target.id === 'open_search' && !suppressSearchFocus && byId('studio_search').hidden) searchOpen();
   });
   document.addEventListener('focusout', (event) => {
     event.target.closest?.('.pg-topbar-highlight')?.classList.remove('pg-topbar-highlight');
@@ -1505,6 +1512,11 @@
     $(document).one('shiny:connected', () => {
       send('initial_function', selectedFunction);
       send('initial_character', centre.dataset.initialCharacter);
+      // mascot_studio(fn = ) opens that function on its Guide, as its help promises.
+      if (centre.dataset.initialOpen === 'guide') {
+        selectFunction(selectedFunction);
+        tab('guide');
+      }
     });
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
     const reduced = () => {

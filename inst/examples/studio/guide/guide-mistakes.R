@@ -43,11 +43,11 @@ guide_mistake_base <- list(
   ),
   `Not a colour` = list(
     code = "update_mascot(\"helper\", theme = list(body = \"not-a-colour\"))",
-    why = "Colours are validated in R before sending to the browser."
+    why = "Colours are checked in R before sending to the browser."
   ),
   `Low contrast` = list(
     code = "update_mascot(\"helper\", theme = list(body = \"#f8f9fa\"))",
-    why = "The colour is applied, with a warning if contrast against the page is low."
+    why = "The colour is applied, with a warning if contrast against the page is low. A plain list replaces the whole theme, so a selected palette is cleared."
   ),
   `The wrong id` = list(
     code = "update_mascot(\"helpr\", mood = \"happy\")",
@@ -92,6 +92,11 @@ guide_character_mistakes <- function(character) {
       encodeString(palette, quote = '"')
     )
   }
+  # The mock session knows no character, so an update only queues; naming the character lets R check the mood.
+  result[["A mood that does not exist"]]$code <- sprintf(
+    'update_mascot("helper", character = %s, mood = "sleepy")',
+    encodeString(character, quote = '"')
+  )
   for (name in c("Not a colour", "Low contrast")) {
     result[[name]]$code <- sub(
       "body =",

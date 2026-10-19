@@ -198,13 +198,24 @@ wiring_links <- function(fn) {
 }
 
 colour_input <- function(id, value, label, ...) {
+  checkmate::assert_string(id, min.chars = 1)
+  checkmate::assert_string(value)
+  checkmate::assert_string(label)
+  # A colour picker holds only #rrggbb. A role listed with transparency (rgba(...)) gets a text box with the
+  # listed value instead, so it is never turned into a solid colour that would be sent as an override.
+  solid <- grepl("^#[0-9a-fA-F]{6}$", value)
   tags$input(
     id = id,
-    type = "color",
-    class = "pg-colour form-control form-control-color",
+    type = if (solid) "color" else "text",
+    class = if (solid) {
+      "pg-colour form-control form-control-color"
+    } else {
+      "pg-colour pg-colour-text form-control form-control-sm"
+    },
     value = value,
-    title = label,
+    title = if (solid) label else paste0(label, " (translucent: edit the text, for example ", value, ")"),
     `aria-label` = label,
+    spellcheck = if (!solid) "false",
     ...
   )
 }
@@ -570,6 +581,7 @@ studio_rail <- function() {
     wiring = "m8 6-6 6 6 6 m8-12 6 6-6 6 m-3-15-2 18",
     examples = "M4 3h12l4 4v14H4Z M8 11h8 M8 15h8"
   )
+  index_label <- sprintf("Function index (all %d functions)", length(playground_guide))
   tags$nav(
     class = "pg-rail pg-float",
     `aria-label` = "Function groups",
@@ -577,8 +589,8 @@ studio_rail <- function() {
       id = "all_functions",
       type = "button",
       class = "pg-logo",
-      `aria-label` = "Function index (all 24 functions)",
-      title = "Function index (all 24 functions)",
+      `aria-label` = index_label,
+      title = index_label,
       `aria-describedby` = "function_index_tooltip",
       `aria-expanded` = "false",
       `aria-controls` = "function_flyout",
@@ -588,7 +600,7 @@ studio_rail <- function() {
         id = "function_index_tooltip",
         class = "pg-word-tooltip",
         role = "tooltip",
-        "Function index (all 24 functions)"
+        index_label
       )
     ),
     lapply(groups, function(group) {
@@ -778,8 +790,9 @@ studio_search <- function() {
   )
 }
 
-call_chips <- function(state, style, gesture = NULL) {
+call_chips <- function(state, style, gesture = NULL, demo = character()) {
   checkmate::assert_string(gesture, null.ok = TRUE)
+  checkmate::assert_character(demo, any.missing = FALSE)
   checkmate::assert_list(state, names = "unique")
   checkmate::assert_character(style, any.missing = FALSE)
   checkmate::assert_subset(unname(style), c("short", "helper"), .var.name = "style")
@@ -833,11 +846,13 @@ call_chips <- function(state, style, gesture = NULL) {
           `data-call-style` = chosen,
           `data-call-hint` = arg_hint("mascot", arg),
           `data-call-default` = argument_default("mascot", arg),
-          title = paste(arg, "=", value),
+          `data-call-demo` = if (arg %in% demo) "true",
+          title = paste(arg, "=", value, if (arg %in% demo) "(studio demo, not copied)"),
           `aria-expanded` = "false",
           `aria-controls` = "chip_editor",
-          `aria-label` = paste(arg, "=", value, "options"),
+          `aria-label` = paste(arg, "=", value, if (arg %in% demo) "(studio demo, not copied)", "options"),
           tags$code(tags$span(class = "pg-chip-name", paste(arg, "=")), tags$span(class = "pg-chip-value", value)),
+          if (arg %in% demo) tags$span(class = "pg-chip-demo", "demo"),
           chip_pencil()
         ),
         tags$span(class = "pg-call-comma", ",")

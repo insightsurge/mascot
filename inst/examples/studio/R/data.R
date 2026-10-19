@@ -83,6 +83,7 @@ studio_guide_dir <- function() {
   system.file("examples", "studio", "guide", package = "mascot")
 }
 sys.source(file.path(studio_guide_dir(), "guide-mistakes.R"), envir = environment())
+sys.source(file.path(studio_guide_dir(), "guide-shared.R"), envir = environment())
 mistakes <- guide_mistake_base
 character_mistakes <- guide_character_mistakes
 studio_mistake_palettes <- guide_mistake_palettes
@@ -144,10 +145,11 @@ playground_controls <- list(
   mascot_theme = list(
     palette = input_id("palette"),
     ... = fixed_arg("Must be empty: optional arguments are named."),
-    light = fixed_arg("Pickers are built from the selected character roles in theme_light."),
-    dark = fixed_arg("Pickers are built from the selected character roles in theme_dark."),
+    # The pickers and checkboxes are built from the selected character's roles; their containers are on the page.
+    light = input_id("theme_light"),
+    dark = input_id("theme_dark"),
     mode = input_id("theme_mode"),
-    css = fixed_arg("CSS role checkboxes are built from the selected character; css_accent sets their variable.")
+    css = input_id("theme_css")
   ),
   mascot_action = list(
     label = input_id("action_on", "action_label"),
@@ -224,31 +226,27 @@ studio_families <- function() {
 }
 
 # Count shipped characters rather than the selector's current discovery adapter.
-studio_character_hint <- function(
-  directory = system.file("format", "characters", package = "mascot", mustWork = TRUE)
-) {
-  checkmate::assert_directory_exists(directory)
-  files <- list.files(directory, pattern = "[.]json$")
-  if (length(files) != 1) {
+studio_character_hint <- function(directory = NULL) {
+  checkmate::assert(
+    checkmate::check_null(directory),
+    checkmate::check_directory_exists(directory),
+    .var.name = "directory"
+  )
+  # The built-in characters come from the package's own listing; a folder of character files can stand in for it.
+  ids <- if (is.null(directory)) {
+    listing <- mascot::mascot_characters()
+    listing$id[listing$built_in]
+  } else {
+    sub("[.]json$", "", list.files(directory, pattern = "[.]json$"))
+  }
+  if (length(ids) != 1L) {
     return(NULL)
   }
-  id <- sub("[.]json$", "", files)
-  paste(mascot::mascot_character(id)$name, "is the only built-in character so far.")
+  paste(mascot::mascot_character(ids)$name, "is the only built-in character so far.")
 }
 
-# The brand slots of a character, read from the public colour-role listing: slot name to role.
-studio_brand <- function(character) {
-  checkmate::assert_string(character)
-  roles <- mascot::mascot_colour_roles(character)
-  roles <- roles[!is.na(roles$brand), ]
-  result <- list()
-  for (i in seq_len(nrow(roles))) {
-    for (slot in strsplit(roles$brand[i], ", ", fixed = TRUE)[[1]]) {
-      result[[slot]] <- roles$role[i]
-    }
-  }
-  result
-}
+# The brand slots of a character: slot name to role (the same function the guide pages use).
+studio_brand <- guide_brand_roles
 
 # Internal authoring coverage is separate from the exported function map until R4b.
 studio_character_controls <- list(

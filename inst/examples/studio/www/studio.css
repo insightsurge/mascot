@@ -2411,3 +2411,23 @@ button.pg-call-name:focus-visible {
   overflow-wrap: anywhere;
   text-align: center;
 }
+
+/* A translucent colour role has a text box, not a colour picker (a picker cannot hold transparency). */
+.pg-colour-text {
+  width: 11rem;
+  min-width: 0;
+  font-family: var(--bs-font-monospace, ui-monospace, monospace);
+  font-size: 0.75rem;
+}
+
+/* The welcome bubble and menu are the studio's own demonstration; the copied code leaves them out. */
+.pg-chip-demo {
+  margin-left: 0.35rem;
+  padding: 0 0.3rem;
+  border: 1px dashed var(--studio-line);
+  border-radius: 999px;
+  color: var(--studio-muted);
+  font-size: 0.65rem;
+  line-height: 1.3;
+  vertical-align: middle;
+}

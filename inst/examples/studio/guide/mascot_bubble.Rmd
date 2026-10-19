@@ -24,7 +24,7 @@ Bootstrap.
 <div class="pg-callout">
 
 <strong>Options need their main argument.</strong>
-Options need their main argument; an empty call removes it.
+An empty call removes it.
 
 </div>
 

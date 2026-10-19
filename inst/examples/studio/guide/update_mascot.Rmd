@@ -45,15 +45,36 @@ produces an error.
 
 </div>
 
+### What else update_mascot() does
+
+- In Shiny development mode, an invalid value also shows a worried mascot with the problem as its status; the next valid update clears it.
+- Updates sent before a mascot appears are kept, one whole call at a time, and applied once it does, also when the first mascot is made by `renderUI()` or `insertUI()`. Only the latest pending gesture plays.
+- A character or mood change applies before a gesture. During a character swap the gesture is skipped.
+- A new placement replaces any position the visitor dragged the mascot to. With dragging on, the minimised restore button can be dragged too.
+- The click count (`input$<id>_click`) continues across changes of the click.
+- Bubbles survive mood changes and character swaps.
+
 ### Condition classes
+
+The classes are documented in `?"mascot-package"`. Errors carry `mascot_error`, warnings `mascot_warning` and messages `mascot_message`; the specific classes below come in addition.
 
 | Class | Type | When it occurs |
 |-------|------|----------------|
-| mascot_update_ignored | Warning | A helper in update_mascot() errors; the update is ignored |
+| mascot_error | Error | Any error raised by mascot, including checkmate assertions |
+| mascot_warning | Warning | Any warning raised by mascot |
+| mascot_message | Message | Any message raised by mascot |
+| mascot_update_ignored | Warning | An invalid value in update_mascot(); the whole update is ignored |
 | mascot_error_choice | Error | An invalid choice (the message lists valid options) |
 | mascot_error_dots | Error | Unexpected arguments in ... (e.g. an unnamed argument or typo) |
+| mascot_error_argument | Error | An argument error in character authoring |
+| mascot_error_character | Error | A character's content is invalid |
+| mascot_error_file | Error | A character file is invalid |
 | mascot_contrast | Warning | Colour contrast against background is below 3:1 |
 | mascot_placement_ignored | Message | Inline placement ignores minimise or drag |
+| mascot_palette_dropped | Warning | A character swap drops a palette the incoming character lacks |
+| mascot_gesture_dropped | Warning | Development diagnostic: a pending gesture cannot play |
+| mascot_click_dropped | Warning | Development diagnostic: a click needs an unavailable mood or gesture |
+| mascot_template_evicted | Warning | Development diagnostic: unused UI templates leave the cache |
 
 ```{r update_mascot-mistakes, echo = FALSE}
 if (!in_studio()) guide_mistakes_html("update_mascot", studio_character)

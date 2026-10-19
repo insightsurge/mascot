@@ -71,6 +71,10 @@ describe("mascot_studio()", {
       "document.querySelector('.pg-index-link[data-value=mascot_theme]').getAttribute('aria-current') === 'true'"
     )
     expect_false(app$get_js("document.querySelector('[data-function=mascot_theme]').hidden"))
+    # A named function opens on its Guide, as ?mascot_studio promises.
+    app$wait_for_js(
+      "!document.getElementById('inspector_sidebar').hidden && document.getElementById('inspector_tab_guide').getAttribute('aria-selected') === 'true'"
+    )
     expect_identical(app$get_value(input = "character"), formals(mascot)$character)
     # Starting on mascot_preview() shows its page on the canvas in place of the live mascot.
     preview <- app_driver(
@@ -114,6 +118,31 @@ describe("the studio on older R", {
     expect_true(exists("%||%", envir = data, inherits = FALSE))
     expect_identical(data$`%||%`(NULL, "b"), "b")
     expect_identical(data$`%||%`("a", "b"), "a")
+  })
+})
+
+describe("mascot_studio() opening on a function", {
+  it("asks the page to open the Guide only when a function is named", {
+    skip_if_not_installed("bslib")
+    page <- function(app, query = "") {
+      as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
+    }
+    expect_match(page(mascot_studio(fn = "mascot_theme", run = FALSE)), 'data-initial-open="guide"', fixed = TRUE)
+    expect_false(grepl("data-initial-open", page(mascot_studio(run = FALSE)), fixed = TRUE))
+    expect_false(grepl(
+      "data-initial-open",
+      page(mascot_studio("examples", fn = "mascot_theme", run = FALSE)),
+      fixed = TRUE
+    ))
+  })
+})
+
+describe("the studio and its guide files on older R", {
+  it("use no %||%, which base R has only from R 4.4, in the files the website also reads", {
+    guide <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    for (file in c("guide-mistakes.R", "guide-shared.R", "guide-helpers.R")) {
+      expect_false(any(grepl("%||%", readLines(file.path(guide, file), warn = FALSE), fixed = TRUE)), info = file)
+    }
   })
 })
 

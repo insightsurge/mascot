@@ -62,7 +62,7 @@ Menus never set `input$<id>_click`; only `mascot_action()` does. Choosing an ite
 <div class="pg-callout">
 
 <strong>Options need their main argument.</strong>
-Options need their main argument; an empty call removes it.
+An empty call removes it.
 
 </div>
 

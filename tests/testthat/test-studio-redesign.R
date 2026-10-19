@@ -1386,7 +1386,7 @@ describe("studio sentence controls and overview", {
     }
   })
 
-  it("groups four labelled selects, plays and replays a gesture, and opens search on focus", {
+  it("groups four labelled selects, plays and replays a gesture, and opens search only when asked", {
     local_shiny_browser()
     app <- studio_redesign_driver()
     withr::defer(app$stop())
@@ -1441,7 +1441,13 @@ describe("studio sentence controls and overview", {
     expect_true(app$get_js(
       "document.getElementById('open_search').matches('input[type=search]') && document.getElementById('open_search').placeholder === 'Search functions and arguments'"
     ))
+    # Focus alone changes nothing (WCAG 2.2 On Focus); Enter, a click or Ctrl K ask for the search.
     app$run_js("document.getElementById('open_search').focus()")
+    Sys.sleep(0.5)
+    expect_true(app$get_js("document.getElementById('studio_search').hidden"))
+    app$run_js(
+      "document.getElementById('open_search').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}))"
+    )
     app$wait_for_js(
       "!document.getElementById('studio_search').hidden && document.activeElement.id === 'function_search'"
     )
@@ -1871,7 +1877,11 @@ describe("the next studio review round", {
   it("offers two host choices, discoverable functions, editable chips and structured Help", {
     parts <- studio_redesign_parts()
     page <- parts$page
-    expect_match(page, 'title="Function index (all 24 functions)"', fixed = TRUE)
+    expect_match(
+      page,
+      sprintf('title="Function index (all %d functions)"', length(get("playground_guide", parts$env))),
+      fixed = TRUE
+    )
     expect_match(page, 'id="function_index_tooltip"', fixed = TRUE)
     expect_match(page, "More examples", fixed = TRUE)
     expect_match(page, "Back to studio", fixed = TRUE)
@@ -1916,14 +1926,17 @@ describe("the next studio review round", {
     expect_identical(eval(env$code_bubble("", FALSE, 10, FALSE)$helper), mascot_bubble())
 
     action_guide <- as.character(env$selected_guide("mascot_action"))
-    expect_match(action_guide, "Options need their main argument; an empty call removes it.", fixed = TRUE)
+    expect_match(action_guide, "Options need their main argument.", fixed = TRUE)
+    expect_match(action_guide, "An empty call removes it.", fixed = TRUE)
 
     menu_guide <- as.character(env$selected_guide("mascot_popup_menu"))
     expect_match(menu_guide, "input$&lt;id&gt;_menu vs input$&lt;id&gt;_click", fixed = TRUE)
-    expect_match(menu_guide, "Options need their main argument; an empty call removes it.", fixed = TRUE)
+    expect_match(menu_guide, "Options need their main argument.", fixed = TRUE)
+    expect_match(menu_guide, "An empty call removes it.", fixed = TRUE)
 
     bubble_guide <- as.character(env$selected_guide("mascot_bubble"))
-    expect_match(bubble_guide, "Options need their main argument; an empty call removes it.", fixed = TRUE)
+    expect_match(bubble_guide, "Options need their main argument.", fixed = TRUE)
+    expect_match(bubble_guide, "An empty call removes it.", fixed = TRUE)
 
     theme_guide <- as.character(env$selected_guide("mascot_theme"))
     expect_match(theme_guide, "A bs_theme() always uses mode = \"auto\"", fixed = TRUE)

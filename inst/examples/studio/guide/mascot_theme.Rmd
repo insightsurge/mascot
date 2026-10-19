@@ -45,11 +45,21 @@ guide_flow(
 )
 ```
 
+### Panels and the restore button
+
+The panels (bubble, menu, tooltip) and the restore button can also be styled with CSS: see `?mascot_styling`.
+
 ### Brand colours from bslib
 
 ```{r mascot_theme-brand-flow, echo = FALSE}
 guide_each_character(function(ch) {
   brand <- guide_brand_roles(ch)
+  if (!length(brand)) {
+    return(htmltools::tags$p(
+      mascot::mascot_character(ch)$name,
+      " has no brand parts: a bslib theme leaves it unchanged."
+    ))
+  }
   guide_flow(
     guide_step(htmltools::tags$code("bs_theme(primary =)")),
     guide_step(htmltools::tags$code(brand$primary), htmltools::div("and its followers")),

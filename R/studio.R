@@ -59,7 +59,13 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
   }
   app <- shiny::shinyAppDir(path)
   handler <- app$httpHandler
-  initial <- list(view = view, fn = if (is.null(fn)) "mascot_mood" else fn, character = character)
+  # A function the caller named opens on its Guide; without one the studio starts on the canvas.
+  initial <- list(
+    view = view,
+    fn = if (is.null(fn)) "mascot_mood" else fn,
+    character = character,
+    open = if (is.null(fn) || view != "studio") "" else "guide"
+  )
   # The page request carries per-app defaults to its UI. Explicit navigation links
   # override them; the mounted inputs carry them to the WebSocket session.
   app$httpHandler <- function(request) {

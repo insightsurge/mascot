@@ -611,6 +611,10 @@ panel_colours <- function() {
         "input.theme_source == 'bslib'",
         div(class = "pg-note", "mascot(theme = ) also accepts a bslib theme; it colours the character's brand parts."),
         studio_bslib_experimental(),
+        div(
+          class = "pg-note",
+          "The colour mode below does not apply here: a bs_theme() always follows the page switch."
+        ),
         uiOutput("theme_brand")
       ),
       conditionalPanel(

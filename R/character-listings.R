@@ -11,7 +11,7 @@
 #'   character [mascot()] uses when you name none) and `built_in` (`TRUE` for
 #'   characters shipped with the package), and `lifecycle` (`"stable"` or
 #'   `"experimental"` for built-in characters, or `NA` for a registered
-#'   custom character).
+#'   custom character), and `palettes` (comma-separated palette ids).
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @details Stable built-ins keep their id, name, five shared moods, gesture
@@ -60,6 +60,11 @@ mascot_characters <- function(..., family = NULL) {
       },
       character(1),
       USE.NAMES = FALSE
+    ),
+    palettes = vapply(
+      items,
+      function(item) paste(c("original", names(character_palettes(item))), collapse = ", "),
+      character(1)
     )
   )
 }
@@ -103,13 +108,16 @@ mascot_families <- function() {
 
 #' List a character's anchors
 #'
-#' Anchors are the named attachment points on a character, such as a hand or a
-#' badge position. They are listed in the order the author wrote them.
+#' Anchors are named points on a character where effects such as sweat and
+#' sparkles, gesture effects and accessories attach. They are listed in the
+#' order the author wrote them. A character may have no anchors.
 #' @param character A character, defaulting to `"tessa"`: an id string or a
 #'   [mascot_character()] helper. `NULL` is not accepted.
 #' @returns A data frame with character columns `name` (the anchor id),
 #'   `description`, `part` (the body part the anchor belongs to) and `side`
 #'   (`"l"` or `"r"`, or `NA` for an anchor on neither side).
+#'   A character with no anchors returns a zero-row data frame with the same
+#'   columns and column types.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers
@@ -145,13 +153,13 @@ mascot_anchors <- function(character = "tessa") {
 #' A palette is a ready-made set of colours for a character, in light and dark
 #' mode. The first row, `"original"`, stands for the character's own colours
 #' with no palette applied.
-#' @param character A character, defaulting to `"tessa"`: an id string or a
-#'   [mascot_character()] helper. `NULL` is not accepted.
+#' @param character An id string or [mascot_character()] helper. `NULL`
+#'   (the default) lists every character, with a `character` column at the end.
 #' @returns A data frame with character columns `name` (the palette id),
 #'   `description` and `source`: `"native"` for `"original"`, `"character"` for
 #'   a palette the character defines and `"family"` for one it takes from its
 #'   family. The character's own palettes follow in the order its author wrote
-#'   them.
+#'   them. With `character = NULL`, a final `character` column names each id.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers
@@ -160,17 +168,27 @@ mascot_anchors <- function(character = "tessa") {
 #' @examples
 #' mascot_palettes()
 #' mascot_palettes("tessa")
-mascot_palettes <- function(character = "tessa") {
+#' mascot("helper", character = "tessa", theme = "coral")
+mascot_palettes <- function(character = NULL) {
   with_mascot_asserts({
-    character_catalogue_assert(character)
+    character_catalogue_assert(character, nullable = TRUE)
   })
+  if (is.null(character)) {
+    rows <- lapply(character_catalogue_ids(), function(id) {
+      value <- mascot_palettes(id)
+      value$character <- id
+      value
+    })
+    return(do.call(rbind, rows))
+  }
   data <- character_catalogue_resolve(character, environment())
-  ids <- as.character(names(data$palettes))
+  palettes <- character_palettes(data)
+  ids <- as.character(names(palettes))
   data.frame(
     name = c("original", ids),
     description = c(
       "The character's own colours, with no palette applied.",
-      vapply(ids, function(id) data$palettes[[id]]$description, character(1), USE.NAMES = FALSE)
+      vapply(ids, function(id) palettes[[id]]$description, character(1), USE.NAMES = FALSE)
     ),
     source = c(
       "native",

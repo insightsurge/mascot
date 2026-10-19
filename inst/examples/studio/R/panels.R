@@ -70,7 +70,7 @@ role_pickers <- function(mode, roles, values = list(), name = mascot_character()
   )
 }
 
-panel_character_bar <- function(moods = mascot_moods(), character = formals(mascot::mascot)$character) {
+panel_character_bar <- function(moods = mascot_moods(character), character = formals(mascot::mascot)$character) {
   checkmate::assert_data_frame(moods)
   checkmate::assert_string(character)
   bar <- div(
@@ -81,9 +81,18 @@ panel_character_bar <- function(moods = mascot_moods(), character = formals(masc
     div(
       class = "pg-sentence",
       role = "group",
-      `aria-label` = "Character, mood and one-off gesture",
+      `aria-label` = "Character, palette, mood and one-off gesture",
       "Showing",
       selectInput("character", NULL, studio_characters(), selected = character, selectize = FALSE),
+      "in the",
+      selectInput(
+        "palette",
+        NULL,
+        stats::setNames(mascot_palettes(character)$name, tools::toTitleCase(mascot_palettes(character)$name)),
+        selected = "original",
+        selectize = FALSE
+      ),
+      tags$span("palette,"),
       tags$span(id = "mood_article", "in an"),
       selectInput(
         "mood",
@@ -110,7 +119,7 @@ panel_character_bar <- function(moods = mascot_moods(), character = formals(masc
           selectize = FALSE
         ),
         tags$span(class = "pg-sentence-stop", "."),
-        studio_button("replay_gesture", "Play it again", "Replay the selected gesture, or wave when none is selected")
+        studio_button("gesture_play", "Play it again", "Replay the selected gesture, or wave when none is selected")
       )
     ),
     div(
@@ -137,11 +146,11 @@ panel_character_bar <- function(moods = mascot_moods(), character = formals(masc
     actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm"),
     studio_topright()
   )
-  for (id in c("character", "mood", "gesture")) {
+  for (id in c("character", "palette", "mood", "gesture")) {
     bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(`aria-label` = tools::toTitleCase(id))$allTags()
   }
-  for (id in c("character", "mood", "gesture")) {
-    fn <- paste0("mascot_", id)
+  for (id in c("character", "palette", "mood", "gesture")) {
+    fn <- if (id == "palette") "mascot_palettes" else paste0("mascot_", id)
     bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$parent()$addClass("pg-sentence-word")$append(
       tags$span(
         id = paste0(id, "_tooltip"),
@@ -386,7 +395,7 @@ panel_motion <- function(gestures = mascot_gestures()) {
       "mascot_gesture",
       "name",
       tagList(
-        div(class = "pg-note", "Change it in the top bar."),
+        div(class = "pg-note", "Choose a gesture in the top bar to play it, then use Play it again to repeat it."),
         tags$button(type = "button", class = "btn btn-sm", `data-focus-input` = "quick_gestures", "Focus gestures")
       )
     ),
@@ -508,11 +517,12 @@ panel_colours <- function() {
         )
       ),
       arg_field("mascot_theme", "...", NULL),
+      arg_field("mascot_theme", "palette", div(class = "pg-note", "Choose a palette in the top bar.")),
       selectInput(
         "theme_source",
         "Palette source",
         c(
-          "Character's own colours" = "own",
+          "Palette from the top bar" = "own",
           "Your colours" = "mascot",
           "Your app's brand: bslib::bs_theme() instead of mascot_theme()" = "bslib"
         )
@@ -532,7 +542,7 @@ panel_colours <- function() {
       ),
       conditionalPanel(
         "input.theme_source == 'own'",
-        div(class = "pg-note", "Uses the character's own colours in light and dark mode.")
+        div(class = "pg-note", "Uses the palette from the top bar; original keeps the character's own colours.")
       ),
       conditionalPanel(
         "input.theme_source == 'mascot'",
@@ -555,6 +565,8 @@ panel_colours <- function() {
     ),
     inspector_function(
       "mascot_colour_roles",
+      arg_field("mascot_colour_roles", "...", NULL),
+      arg_field("mascot_colour_roles", "palette", div(class = "pg-note", "Choose a palette in the top bar.")),
       arg_field(
         "mascot_colour_roles",
         "character",
@@ -702,7 +714,7 @@ panel_preview <- function(moods = mascot_moods()) {
         radioButtons(
           "preview_theme_source",
           "Colours",
-          c("Character's own colours" = "own", "Your colours" = "custom")
+          c("Palette from the top bar" = "own", "Your colours" = "custom")
         ),
         conditionalPanel("input.preview_theme_source == 'custom'", uiOutput("preview_pickers"))
       )

@@ -308,7 +308,18 @@ mascot_baseline_check <- function(state) {
   checkmate::assert_true(identical(character_format_identity(click), character_format_identity(checked)))
   theme <- state$theme
   checkmate::assert_list(theme, names = "unique")
-  checkmate::assert_names(names(theme), permutation.of = names(mascot_empty_theme()))
+  checkmate::assert_subset(names(mascot_empty_theme()), names(theme))
+  checkmate::assert_subset(names(theme), c(names(mascot_empty_theme()), "palette", "palette_colours"))
+  if (!is.null(theme$palette)) {
+    problem <- theme_palette_problem(theme$palette, context$data)
+    if (!is.null(problem)) {
+      cli::cli_abort("{problem}", class = "mascot_error")
+    }
+    checkmate::assert_true(is.null(theme$brand))
+    checkmate::assert_true(identical(theme$palette_colours, theme_palette_colours(theme$palette, context$data)))
+  } else {
+    checkmate::assert_true(is.null(theme$palette_colours))
+  }
   checkmate::assert_choice(theme$mode, c("auto", "light", "dark"), null.ok = TRUE)
   for (field in c("light", "dark", "css")) {
     map <- theme[[field]]

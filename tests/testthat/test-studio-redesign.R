@@ -1162,6 +1162,10 @@ describe("studio review follow-ups", {
     app$wait_for_js(paste0(studio_live, ".dataset.character === 'sela'"))
     app$wait_for_js(paste0(overlay, ".querySelectorAll('g[data-anchor]').length === ", nrow(mascot_anchors("sela"))))
     verify("sela")
+    app$set_inputs(character = "neer")
+    app$wait_for_js(paste0(studio_live, ".dataset.character === 'neer'"))
+    app$wait_for_js(paste0(overlay, ".querySelectorAll('g[data-anchor]').length === ", nrow(mascot_anchors("neer"))))
+    verify("neer")
     app$click(selector = '#show_anchors')
     expect_true(app$get_js(paste0(overlay, ".hidden")))
   })
@@ -1204,29 +1208,30 @@ describe("studio review follow-ups", {
 describe("studio sentence controls and overview", {
   it("renders inline sentence words with help-page tooltips and per-argument Rd overviews", {
     parts <- studio_redesign_parts()
-    for (id in c("character", "mood", "gesture")) {
+    for (id in c("character", "palette", "mood", "gesture")) {
       expect_match(parts$page, paste0('<select[^>]*aria-label="', tools::toTitleCase(id), '"[^>]*id="', id, '"'))
     }
     expect_match(
       parts$page,
-      'class="pg-sentence" role="group" aria-label="Character, mood and one-off gesture"',
+      'class="pg-sentence" role="group" aria-label="Character, palette, mood and one-off gesture"',
       fixed = TRUE
     )
     expect_match(parts$page, 'placeholder="Search functions and arguments"', fixed = TRUE)
-    expect_match(parts$page, 'id="replay_gesture"', fixed = TRUE)
+    expect_match(parts$page, 'id="gesture_play"', fixed = TRUE)
     expect_match(parts$page, 'id="mood_article">in an', fixed = TRUE)
     expect_match(parts$page, "mood, with", fixed = TRUE)
     expect_match(parts$page, "Play it again", fixed = TRUE)
-    for (id in c("character", "mood", "gesture")) {
+    for (id in c("character", "palette", "mood", "gesture")) {
+      fn <- if (id == "palette") "mascot_palettes" else paste0("mascot_", id)
       expect_match(parts$page, paste0('aria-describedby="', id, '_tooltip"'), fixed = TRUE)
-      expect_match(parts$page, paste0("mascot_", id, "()"), fixed = TRUE)
+      expect_match(parts$page, paste0(fn, "()"), fixed = TRUE)
       expect_match(
         parts$page,
-        htmltools::htmlEscape(get("help_page", parts$env)(paste0("mascot_", id))$title),
+        htmltools::htmlEscape(get("help_page", parts$env)(fn)$title),
         fixed = TRUE
       )
     }
-    expect_equal(nrow(mascot_anchors("neer")), 0L)
+    expect_equal(nrow(mascot_anchors("neer")), 14L)
     for (id in c("reset_anchors", "no_anchors")) {
       expect_match(parts$page, paste0('id="', id, '"'), fixed = TRUE)
     }
@@ -1241,14 +1246,14 @@ describe("studio sentence controls and overview", {
     }
   })
 
-  it("groups three labelled selects, plays and replays a gesture, and opens search on focus", {
+  it("groups four labelled selects, plays and replays a gesture, and opens search on focus", {
     local_shiny_browser()
     app <- studio_redesign_driver()
     withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     expect_identical(
       app$get_js("[...document.querySelectorAll('.pg-sentence[role=group] select')].map(s=>s.id).join('|')"),
-      "character|mood|gesture"
+      "character|palette|mood|gesture"
     )
     expect_true(app$get_js(
       "[...document.querySelectorAll('.pg-sentence select')].every(s=>s.getAttribute('aria-label')?.length>0) && !!document.querySelector('.pg-sentence[aria-label]')"
@@ -1267,11 +1272,11 @@ describe("studio sentence controls and overview", {
     app$wait_for_js(
       "window.gestureCalls.length === 1 && document.getElementById('code_last').textContent.includes('wave')"
     )
-    app$click(selector = "#replay_gesture")
+    app$click(selector = "#gesture_play")
     app$wait_for_js("window.gestureCalls.length === 2")
     app$set_inputs(gesture = "")
     app$wait_for_js("document.getElementById('gesture').value === ''")
-    app$click(selector = "#replay_gesture")
+    app$click(selector = "#gesture_play")
     app$wait_for_js("window.gestureCalls.length === 3 && window.gestureCalls[2] === 'wave'")
     for (character in c("sela", "neer", "tessa")) {
       app$set_inputs(character = character)
@@ -1463,7 +1468,21 @@ describe("studio inline help and movable anchors", {
     app$wait_for_js("document.getElementById('reset_anchors').hidden")
     app$set_inputs(character = "neer")
     app$wait_for_js(
-      "document.getElementById('show_anchors').disabled && !document.getElementById('no_anchors').hidden && document.getElementById('no_anchors').textContent === 'Neer has no anchors'"
+      "!document.getElementById('show_anchors').disabled && document.getElementById('no_anchors').hidden"
+    )
+    app$wait_for_js(paste0(
+      studio_frame,
+      ".document.querySelectorAll('.pg-anchor-overlay g[data-anchor]').length === ",
+      nrow(mascot_anchors("neer"))
+    ))
+    expect_setequal(
+      app$get_js(paste0(
+        studio_frame,
+        ".document.querySelector('.pg-anchor-overlay') && [...",
+        studio_frame,
+        ".document.querySelectorAll('.pg-anchor-overlay g[data-anchor]')].map(g => g.dataset.anchor)"
+      )),
+      mascot_anchors("neer")$name
     )
     app$set_inputs(character = "tessa")
     app$wait_for_js("!document.getElementById('show_anchors').disabled && document.getElementById('no_anchors').hidden")

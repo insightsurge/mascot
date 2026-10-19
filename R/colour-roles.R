@@ -1,12 +1,15 @@
 #' List a character's colour roles
 #'
 #' Lists a character's colour roles (its colour parts) with their own colours,
-#' before any theme is applied. Roles are written in snake case in R. Follow
+#' with an optional named palette applied. Roles are written in snake case in R. Follow
 #' rules list leaders in priority order. A colour you supply for a role always
 #' wins; otherwise the role follows the first supplied or filled leader. With no
 #' available leader, the role keeps its original colour.
 #' @param character A character, defaulting to `"tessa"`: an id string or a
 #'   [mascot_character()] helper. `NULL` is not accepted.
+#' @param ... Must be empty. Forces the arguments after it to be named.
+#' @param palette A palette id from [mascot_palettes()], or `NULL` (the default)
+#'   for the character's own colours. Followers are derived from palette leaders.
 #' @returns A data frame with character columns `role`, `colour`, `follows`
 #'   (comma-separated leaders), `shade` (`same`, `lighter` or `darker`),
 #'   `description` (what the role colours) and `brand` (the brand slots the role
@@ -20,12 +23,31 @@
 #' @export
 #' @examples
 #' mascot_colour_roles()
-#' mascot_colour_roles("tessa")
-mascot_colour_roles <- function(character = "tessa") {
+#' mascot_colour_roles("tessa", palette = "coral")
+mascot_colour_roles <- function(character = "tessa", ..., palette = NULL) {
   with_mascot_asserts({
     character_catalogue_assert(character)
+    checkmate::assert_string(palette, min.chars = 1, null.ok = TRUE)
   })
+  if (...length() > 0L) {
+    abort_dots(names(substitute(list(...)))[-1L], ...length(), c("palette"), environment())
+  }
   data <- character_catalogue_resolve(character, environment())
+  colours <- data$colours
+  if (!is.null(palette) && palette != "original") {
+    problem <- theme_palette_problem(palette, data)
+    if (!is.null(problem)) {
+      cli::cli_abort("{problem}", class = "mascot_error")
+    }
+    resolved <- character_format_colours(data, preset = palette)
+    for (role in names(colours)) {
+      colour <- resolved[[role]]
+      if (!identical(colour, character_colour(colours[[role]]))) {
+        rgba <- paste(c(colour[1:3] * 255, colour[[4]]), collapse = ",")
+        colours[[role]] <- theme_colour(paste0("rgba(", rgba, ")"), role)
+      }
+    }
+  }
   roles <- names(data$colours)
   follows <- shade <- brand <- rep(NA_character_, length(roles))
   for (role in names(data$follows)) {
@@ -48,7 +70,7 @@ mascot_colour_roles <- function(character = "tessa") {
   )
   data.frame(
     role = colour_role_names(roles),
-    colour = unname(unlist(data$colours)),
+    colour = unname(unlist(colours)),
     follows = follows,
     shade = shade,
     description = described,
@@ -68,9 +90,6 @@ colour_role_description <- function(role) {
 #' @noRd
 character_colour_data <- function(id) {
   character_catalogue_assert(id)
-  if (is.character(id) && id %in% builtin_characters()$id) {
-    return(jsonlite::fromJSON(character_json(id), simplifyVector = FALSE))
-  }
   character_catalogue_resolve(id, environment())
 }
 

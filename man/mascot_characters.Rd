@@ -19,7 +19,7 @@ family \code{id}), and logical columns \code{is_default} (\code{TRUE} only for t
 character \code{\link[=mascot]{mascot()}} uses when you name none) and \code{built_in} (\code{TRUE} for
 characters shipped with the package), and \code{lifecycle} (\code{"stable"} or
 \code{"experimental"} for built-in characters, or \code{NA} for a registered
-custom character).
+custom character), and \code{palettes} (comma-separated palette ids).
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the value you pass to the matching function.
 }

@@ -152,9 +152,18 @@ code_action <- function(label, tooltip = TRUE, disabled = FALSE) {
   code_pair(if (tooltip && !disabled) label else helper, helper)
 }
 
-code_theme <- function(source, light, dark, mode, css_roles, primary, secondary) {
+code_theme <- function(source, light, dark, mode, css_roles, primary, secondary, palette = "original") {
+  checkmate::assert_choice(source, c("own", "mascot", "bslib"))
+  checkmate::assert_character(light, any.missing = FALSE, null.ok = TRUE)
+  checkmate::assert_character(dark, any.missing = FALSE, null.ok = TRUE)
+  checkmate::assert_choice(mode, c("auto", "light", "dark"))
+  checkmate::assert_character(css_roles, any.missing = FALSE, null.ok = TRUE)
+  checkmate::assert_string(primary, null.ok = TRUE)
+  checkmate::assert_string(secondary, null.ok = TRUE)
+  checkmate::assert_string(palette, min.chars = 1)
   if (source == "own") {
-    return(code_pair(helper_call("mascot_theme", mode = if (mode != "auto") mode)))
+    helper <- helper_call("mascot_theme", palette = if (palette != "original") palette, mode = if (mode != "auto") mode)
+    return(code_pair(if (palette != "original" && mode == "auto") palette else helper, helper))
   }
   if (source == "bslib") {
     return(code_pair(helper_call("bslib::bs_theme", primary = primary, secondary = secondary)))
@@ -162,6 +171,7 @@ code_theme <- function(source, light, dark, mode, css_roles, primary, secondary)
   css <- if (length(css_roles)) stats::setNames(rep("--studio-accent", length(css_roles)), css_roles)
   helper <- helper_call(
     "mascot_theme",
+    palette = if (palette != "original") palette,
     light = if (length(light)) named_call("list", light),
     dark = if (length(dark)) named_call("list", dark),
     mode = if (mode != "auto") mode,
@@ -169,7 +179,17 @@ code_theme <- function(source, light, dark, mode, css_roles, primary, secondary)
   )
   # A plain named list uses one set of colours in both modes.
   same <- length(light) && identical(light, dark) && mode == "auto" && !length(css)
-  code_pair(if (same) named_call("list", light) else helper, helper)
+  plain_palette <- palette != "original" && !length(light) && !length(dark) && mode == "auto" && !length(css)
+  code_pair(
+    if (plain_palette) {
+      palette
+    } else if (same && palette == "original") {
+      named_call("list", light)
+    } else {
+      helper
+    },
+    helper
+  )
 }
 
 # Raw strings avoid escaped quotes in copied HTML and other user text. R permits

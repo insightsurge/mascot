@@ -2037,3 +2037,94 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     expect_identical(res$path, "$.clip")
   })
 })
+
+describe("palette wire validation", {
+  it("rejects malformed palette metadata and keeps CSS and explicit roles above the palette", {
+    js <- local_runtime_page(list(mascot(
+      "a",
+      character = "tessa",
+      theme = "coral",
+      motion = FALSE,
+      placement = "inline"
+    )))
+    result <- js(
+      r"(
+      (() => {
+        const el = document.getElementById('a');
+        const theme = mascot.host.state(el).theme;
+        const errors = [];
+        const variants = [
+          { ...theme, palette: 1 },
+          { ...theme, palette_colours: { light: null } },
+          { ...theme, brand: { primary: '#000000', secondary: '#ffffff' } },
+          { light: null, dark: null, mode: 'light', css: null, brand: null, palette_colours: theme.palette_colours },
+          { ...theme, palette_colours: { light: { body: 'invalid' }, dark: null } },
+        ];
+        const warn = console.warn;
+        console.warn = (...args) => errors.push(args.join(' '));
+        try { for (const value of variants) mascot.host.receive({ id: 'a', patch: { theme: value } }); }
+        finally { console.warn = warn; }
+        document.documentElement.style.setProperty('--test-body', '#123456');
+        mascot.host.receive({ id: 'a', patch: { theme: {
+          ...theme, light: { body: '#654321', rim: '#112233' }, mode: 'light', css: { body: '--test-body' },
+        } } });
+        return { errors, colours: mascot.host.state(el).colours };
+      })()
+    )"
+    )
+    expect_match(result$errors[[1]], "theme.palette needs a palette id", fixed = TRUE)
+    expect_match(result$errors[[2]], "theme.palette_colours needs light and dark maps", fixed = TRUE)
+    expect_match(result$errors[[3]], "theme needs either a palette or brand colours", fixed = TRUE)
+    expect_match(result$errors[[4]], "theme.palette_colours needs a palette id", fixed = TRUE)
+    expect_match(result$errors[[5]], "invalid colour", fixed = TRUE)
+    expect_identical(result$colours$body, "#123456")
+    expect_identical(result$colours$rim, "#112233")
+    expect_identical(result$colours$feature, "#1D3557")
+  })
+})
+
+
+describe("standalone palette swaps", {
+  it("drops unavailable palette colours and retains explicit theme settings across later refreshes", {
+    js <- local_runtime_page(list(mascot(
+      "a",
+      character = "knurl",
+      motion = FALSE,
+      placement = "inline",
+      theme = mascot_theme(palette = "orbit", light = list(outline = "#112233"), mode = "light")
+    )))
+    js(sprintf(
+      "mascot.host.receive({id: 'a', patch: {character: %s}})",
+      jsonlite::toJSON(list(id = "neer", name = "Neer", json = character_json("neer")), auto_unbox = TRUE)
+    ))
+    result <- js("mascot.host.state(document.getElementById('a'))")
+    expect_identical(result$character, "neer")
+    expect_null(result$theme$palette)
+    expect_null(result$theme$palette_colours)
+    expect_null(result$colours$body)
+    expect_identical(result$colours$outline, "#112233")
+    expect_identical(result$theme$mode, "light")
+    js("mascot.host.receive({id: 'a', patch: {mood: 'happy'}})")
+    expect_null(js("mascot.host.state(document.getElementById('a')).colours.body"))
+  })
+  it("resolves a shared palette from the incoming character instead of retaining the old map", {
+    js <- local_runtime_page(list(mascot(
+      "a",
+      character = "tessa",
+      theme = "coral",
+      motion = FALSE,
+      placement = "inline"
+    )))
+    js(sprintf(
+      "mascot.host.receive({id: 'a', patch: {character: %s}})",
+      jsonlite::toJSON(list(id = "sela", name = "Sela", json = character_json("sela")), auto_unbox = TRUE)
+    ))
+    result <- js("mascot.host.state(document.getElementById('a'))")
+    expect_identical(result$character, "sela")
+    expect_identical(result$theme$palette, "coral")
+    expect_identical(result$theme$palette_colours$light$hair_purple, "#1D3557")
+    expect_identical(result$colours$hair_purple, "#1D3557")
+    # Tessa's coral sets `feature`; Sela's does not, so its absence shows the old map was dropped.
+    expect_null(result$theme$palette_colours$light$feature)
+  })
+})

@@ -107,3 +107,22 @@ character_catalogue_status <- function(data, mood) {
   }
   data$moods[[mood]]$status
 }
+
+
+#' Palette definitions shared by listings, themes and checked-format consumers
+#'
+#' Ids use the in-memory catalogue. Internal format checks may supply their
+#' not-yet-classed data directly, avoiding recursion through the checker.
+#' @noRd
+character_palettes <- function(character) {
+  checkmate::assert(
+    checkmate::check_string(character, min.chars = 1),
+    checkmate::check_list(character, names = "unique")
+  )
+  data <- if (is.character(character) || inherits(character, "mascot_character")) {
+    character_catalogue_resolve(character, environment())
+  } else {
+    character
+  }
+  if (is.null(data$palettes)) character_object() else data$palettes
+}

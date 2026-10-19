@@ -11,8 +11,8 @@ describe("mascot_characters()", {
     value <- mascot_characters()
     is_listing(
       value,
-      c("id", "name", "description", "family", "is_default", "built_in", "lifecycle"),
-      c("character", "character", "character", "character", "logical", "logical", "character")
+      c("id", "name", "description", "family", "is_default", "built_in", "lifecycle", "palettes"),
+      c("character", "character", "character", "character", "logical", "logical", "character", "character")
     )
     expect_identical(value$id, c("tessa", "sela", "knurl", "neer"))
     expect_identical(value$name, c("Tessa", "Sela", "Knurl", "Neer"))
@@ -101,6 +101,29 @@ describe("mascot_anchors()", {
     expect_identical(value$part[value$name == "hand_l"], "arm_l")
     expect_false(anyNA(value$description))
   })
+  it("lists Neer's fourteen anchors in authored order", {
+    value <- mascot_anchors("neer")
+    is_listing(value, c("name", "description", "part", "side"), rep("character", 4))
+    expect_identical(
+      value$name,
+      c(
+        "crown",
+        "crest",
+        "forehead",
+        "eyes",
+        "face",
+        "chest",
+        "hand_l",
+        "hand_r",
+        "foot_l",
+        "foot_r",
+        "shell",
+        "sweat",
+        "sparkle",
+        "wave_base"
+      )
+    )
+  })
   it("lists a registered character by id and checked data alike, in authored order", {
     local_empty_registry()
     custom <- catalogue_alpha_two()
@@ -142,12 +165,27 @@ describe("built-in character listings", {
 })
 
 describe("mascot_palettes()", {
-  it("lists only the native original row for a character without palettes", {
+  it("lists every character with its id last and retains single-character columns", {
+    local_empty_registry()
     value <- mascot_palettes()
-    is_listing(value, c("name", "description", "source"), rep("character", 3))
-    expect_identical(value$name, "original")
-    expect_identical(value$source, "native")
-    expect_identical(value, mascot_palettes("tessa"))
+    is_listing(value, c("name", "description", "source", "character"), rep("character", 4))
+    expect_identical(unique(value$character), c("tessa", "sela", "knurl", "neer"))
+    expected <- list(
+      tessa = c("original", "nordic", "coral", "azure"),
+      sela = c("original", "coral", "azure", "peach"),
+      knurl = c("original", "orbit", "carbon", "cobalt_droid", "crimson"),
+      neer = c("original", "lagoon", "glacier", "coral_reef", "night_bay", "monsoon")
+    )
+    characters <- mascot_characters()
+    for (id in names(expected)) {
+      one <- mascot_palettes(id)
+      expect_named(one, c("name", "description", "source"))
+      expect_identical(one$name, expected[[id]])
+      expect_identical(one$source, c("native", rep("character", length(expected[[id]]) - 1L)))
+      expect_identical(characters$palettes[characters$id == id], paste(expected[[id]], collapse = ", "))
+      expect_false(anyNA(one$description))
+      expect_true(all(nzchar(one$description)))
+    }
   })
   it("adds the character's palettes after original, with their checked origin", {
     value <- mascot_palettes(character_format_check(format_recipe("study_bot")))
@@ -165,7 +203,9 @@ describe("mascot_palettes()", {
   })
   it("names unknown characters and rejects other types", {
     expect_error(mascot_palettes("missing"), "must be one of", class = "mascot_error")
-    expect_error(mascot_palettes(NULL), "Assertion on 'character' failed")
+    for (value in list(1, "", NA_character_, c("tessa", "sela"))) {
+      expect_error(mascot_palettes(value), "character", class = "mascot_error")
+    }
   })
 })
 

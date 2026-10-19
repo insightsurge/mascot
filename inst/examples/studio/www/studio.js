@@ -874,7 +874,7 @@
     if (id === 'all_functions') flyout('all', target);
     else if (target.dataset.group) flyout(target.dataset.group, target);
     else if (id === 'open_search') searchOpen();
-    else if (id === 'replay_gesture') send('gesture_replay', byId('gesture').value || 'wave');
+    else if (id === 'gesture_play') send('gesture_play', 'play');
     else if (id === 'open_inspector') {
       closeSelects();
       open('inspector_sidebar', target);

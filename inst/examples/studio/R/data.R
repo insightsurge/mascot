@@ -135,7 +135,10 @@ playground_controls <- list(
     messages = input_id("messages"),
     others = input_id("others")
   ),
-  mascot_gesture = list(... = fixed_arg("Must be empty: optional arguments are named."), name = input_id("gesture")),
+  mascot_gesture = list(
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    name = input_id("gesture", "gesture_play")
+  ),
   mascot_size = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     size = input_id("size_px", "size_unit", "size_pct"),
@@ -147,7 +150,11 @@ playground_controls <- list(
     minimise = input_id("minimise"),
     drag = input_id("drag")
   ),
-  mascot_colour_roles = list(character = input_id("character")),
+  mascot_colour_roles = list(
+    character = input_id("character"),
+    ... = fixed_arg("Must be empty: the palette is named."),
+    palette = input_id("palette")
+  ),
   mascot_palettes = list(character = input_id("character")),
   mascot_moods = list(character = input_id("character")),
   mascot_gestures = list(character = input_id("character")),
@@ -158,6 +165,7 @@ playground_controls <- list(
   ),
   mascot_families = list(),
   mascot_theme = list(
+    palette = input_id("palette"),
     ... = fixed_arg("Must be empty: optional arguments are named."),
     light = fixed_arg("Pickers are built from the selected character roles in theme_light."),
     dark = fixed_arg("Pickers are built from the selected character roles in theme_dark."),
@@ -202,7 +210,7 @@ playground_controls <- list(
     motion = input_id("idle"),
     click = input_id("action_on", "menu_on"),
     ... = input_id("mistake", "mistake_run"),
-    gesture = input_id("gesture"),
+    gesture = input_id("gesture", "gesture_play"),
     session = input_id("task_run")
   ),
   mascot_preview = list(

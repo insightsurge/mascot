@@ -1646,7 +1646,7 @@ body:has(.pg-studio),
 }
 
 .pg-sentence select,
-.pg-sentence #replay_gesture {
+.pg-sentence #gesture_play {
   appearance: none;
   min-height: 30px;
   padding: 0 2px;
@@ -1660,7 +1660,7 @@ body:has(.pg-studio),
   cursor: pointer;
 }
 .pg-sentence select:focus-visible,
-.pg-sentence #replay_gesture:focus-visible {
+.pg-sentence #gesture_play:focus-visible {
   outline: 2px solid var(--studio-primary);
   outline-offset: 3px;
 }

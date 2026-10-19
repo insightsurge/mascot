@@ -4,13 +4,27 @@
 \alias{mascot_theme}
 \title{Set a mascot's colours and light or dark mode}
 \usage{
-mascot_theme(..., light = NULL, dark = NULL, mode = "auto", css = NULL)
+mascot_theme(
+  ...,
+  palette = NULL,
+  light = NULL,
+  dark = NULL,
+  mode = "auto",
+  css = NULL
+)
 }
 \arguments{
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
+\item{palette}{A palette id from \code{\link[=mascot_palettes]{mascot_palettes()}}, or \code{NULL} (the default)
+for the character's own colours. Checked against the chosen character when
+used. \code{"original"} also chooses its own colours. A palette is applied first,
+then \code{light} and \code{dark} roles, then \code{css}. Without a dark map, a palette uses
+its light colours in both modes. A \code{bs_theme()} is a separate alternative.}
+
 \item{light, dark}{Named lists of colour roles, or \code{NULL} (the default) to keep
-the character's own colours in that mode. Values can be colour names, hex
+the palette's colours (or the character's own colours) in that mode.
+Values can be colour names, hex
 strings, \code{\link[grDevices:rgb]{grDevices::rgb()}} output, CSS \code{rgb()} or \code{rgba()} strings, or
 three RGB numbers (red, green and blue) in 0--255. Single numeric palette
 indices are not accepted. Roles use snake case; \code{light}, \code{dark} and
@@ -44,8 +58,10 @@ fills the character's declared brand leaders with its primary and secondary
 colours; \verb{_brand.yml} can be supplied through \code{bs_theme(brand =)}.
 }
 \details{
-A theme survives a character swap: follow rules are applied again, and roles
-absent from the incoming character are ignored. An empty \code{mascot_theme()}
+After a character swap, follow rules are applied again and roles absent from
+the incoming character are ignored. A palette is kept if the new character
+has the same id; otherwise R warns and restores its own colours, keeping
+explicit role colours where they exist. An empty \code{mascot_theme()}
 restores the character's own colours. A chosen colour below 3:1 contrast
 gives a warning and is kept (see "Contrast warnings" below). Supplied colours
 are kept exactly.
@@ -60,7 +76,7 @@ A warning appears when a colour chosen by the developer (light, dark, or a
 background (white in light mode, \verb{#212529} in dark mode, or the \code{bslib}
 theme's backgrounds). Contrast is checked when \code{\link[=mascot]{mascot()}} builds the UI,
 when \code{\link[=update_mascot]{update_mascot()}} applies colours with \verb{theme = }, and collected into the
-contrast table by \code{\link[=mascot_preview]{mascot_preview()}}; the character's own colours never warn;
+contrast table by \code{\link[=mascot_preview]{mascot_preview()}}; native and built-in palette colours never warn;
 the colour is always kept.
 
 R warnings appear only when \code{\link[shiny:in_devmode]{shiny::in_devmode()}} is \code{TRUE}, and always in
@@ -82,6 +98,7 @@ Note that \code{suppressWarnings()} also works but hides every warning.
 
 \examples{
 mascot_theme()
+mascot_theme(palette = "coral", light = list(rim = "#b93664"))
 mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
 mascot_theme(css = list(body = "--team-blue"))
 mascot("helper", theme = list(body = "#1f6feb"))

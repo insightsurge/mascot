@@ -1470,7 +1470,214 @@
       }
     }
   ],
-  "anchors": {},
+  "anchors": {
+    "crown": {
+      "part": "body",
+      "at": [
+        250,
+        126
+      ],
+      "description": "Top summit of the wave crest.",
+      "variants": {
+        "thinking": {
+          "at": [
+            252,
+            124
+          ]
+        },
+        "happy": {
+          "at": [
+            254,
+            120
+          ]
+        },
+        "worried": {
+          "at": [
+            248,
+            132
+          ]
+        },
+        "celebrating": {
+          "at": [
+            258,
+            114
+          ]
+        }
+      }
+    },
+    "crest": {
+      "part": "body",
+      "at": [
+        308,
+        204
+      ],
+      "side": "r",
+      "description": "Curling tip of the wave crest.",
+      "variants": {
+        "thinking": {
+          "at": [
+            309,
+            204
+          ]
+        },
+        "happy": {
+          "at": [
+            311,
+            203
+          ]
+        },
+        "worried": {
+          "at": [
+            306,
+            205
+          ]
+        },
+        "celebrating": {
+          "at": [
+            314,
+            202
+          ]
+        }
+      }
+    },
+    "forehead": {
+      "part": "body",
+      "at": [
+        156,
+        195
+      ],
+      "description": "Forehead centre above the brows."
+    },
+    "eyes": {
+      "part": "body",
+      "at": [
+        156,
+        236
+      ],
+      "description": "Midpoint between the eyes."
+    },
+    "face": {
+      "part": "body",
+      "at": [
+        156,
+        260
+      ],
+      "description": "Centre of the face between eyes and mouth."
+    },
+    "chest": {
+      "part": "body",
+      "at": [
+        165,
+        305
+      ],
+      "description": "Chest area on the front wave surface below the mouth."
+    },
+    "hand_l": {
+      "part": "arm_l",
+      "at": [
+        59.48,
+        3.61
+      ],
+      "side": "l",
+      "description": "Left hand attachment point."
+    },
+    "hand_r": {
+      "part": "arm_r",
+      "at": [
+        59.48,
+        -3.61
+      ],
+      "side": "r",
+      "description": "Right hand attachment point."
+    },
+    "foot_l": {
+      "part": "feet",
+      "at": [
+        116,
+        327
+      ],
+      "side": "l",
+      "description": "Left foot attachment point."
+    },
+    "foot_r": {
+      "part": "feet",
+      "at": [
+        214,
+        327
+      ],
+      "side": "r",
+      "description": "Right foot attachment point."
+    },
+    "shell": {
+      "part": "shell",
+      "at": [
+        0,
+        0
+      ],
+      "side": "l",
+      "description": "Scallop shell hair clip on the left."
+    },
+    "sweat": {
+      "part": "body",
+      "at": [
+        298,
+        204
+      ],
+      "side": "r",
+      "description": "Sweat drop anchor on the upper right wave flank.",
+      "variants": {
+        "worried": {
+          "at": [
+            296,
+            204
+          ]
+        }
+      }
+    },
+    "sparkle": {
+      "part": "body",
+      "at": [
+        288,
+        140
+      ],
+      "side": "r",
+      "description": "Sparkle effect anchor on the sunlit crest curve.",
+      "variants": {
+        "thinking": {
+          "at": [
+            289,
+            138
+          ]
+        },
+        "happy": {
+          "at": [
+            291,
+            134
+          ]
+        },
+        "worried": {
+          "at": [
+            285,
+            145
+          ]
+        },
+        "celebrating": {
+          "at": [
+            294,
+            128
+          ]
+        }
+      }
+    },
+    "wave_base": {
+      "part": "body",
+      "at": [
+        156,
+        322
+      ],
+      "description": "Base waterline of the wave where it meets the ground."
+    }
+  },
   "face": {
     "part": "face_owner",
     "kit": "neer_face",
@@ -2151,8 +2358,114 @@
       "glow": false
     }
   },
-  "palettes": {},
-  "palette_sources": {},
+  "palettes": {
+    "lagoon": {
+      "description": "Turquoise water with a pink shell.",
+      "light": {
+        "body": "#06B6D4",
+        "eyelid": "#06B6D4",
+        "iris": "#06B6D4",
+        "water_top": "#06B6D4",
+        "body_light": "#67E8F9",
+        "band": "#67E8F9",
+        "hand": "#67E8F9",
+        "body_deep": "#0E7490",
+        "water_bottom": "#0E7490",
+        "shell_base": "#FDA4AF",
+        "shell_foot": "#FDA4AF",
+        "blush": "#F472B6",
+        "blush_strong": "#F472B6",
+        "outline": "#181828",
+        "brow": "#0E2240"
+      }
+    },
+    "glacier": {
+      "description": "Pale blue water with a purple shell.",
+      "light": {
+        "body": "#BAE6FD",
+        "eyelid": "#BAE6FD",
+        "iris": "#BAE6FD",
+        "water_top": "#BAE6FD",
+        "body_light": "#E0F2FE",
+        "band": "#E0F2FE",
+        "hand": "#E0F2FE",
+        "body_deep": "#0284C7",
+        "water_bottom": "#0284C7",
+        "shell_base": "#C084FC",
+        "shell_foot": "#C084FC",
+        "blush": "#93C5FD",
+        "blush_strong": "#93C5FD",
+        "outline": "#181828",
+        "brow": "#0E2240"
+      }
+    },
+    "coral_reef": {
+      "description": "Green water with a coral shell.",
+      "light": {
+        "body": "#2DD4BF",
+        "eyelid": "#2DD4BF",
+        "iris": "#2DD4BF",
+        "water_top": "#2DD4BF",
+        "body_light": "#5EEAD4",
+        "band": "#5EEAD4",
+        "hand": "#5EEAD4",
+        "body_deep": "#0F766E",
+        "water_bottom": "#0F766E",
+        "shell_base": "#FB7185",
+        "shell_foot": "#FB7185",
+        "blush": "#FDA4AF",
+        "blush_strong": "#FDA4AF",
+        "outline": "#181828",
+        "brow": "#0E2240"
+      }
+    },
+    "night_bay": {
+      "description": "Deep blue water with a yellow shell and glowing cheeks.",
+      "light": {
+        "body": "#2563EB",
+        "eyelid": "#2563EB",
+        "iris": "#2563EB",
+        "water_top": "#2563EB",
+        "body_light": "#38BDF8",
+        "band": "#38BDF8",
+        "hand": "#38BDF8",
+        "body_deep": "#1E1B4B",
+        "water_bottom": "#1E1B4B",
+        "shell_base": "#FDE047",
+        "shell_foot": "#FDE047",
+        "blush": "#00F0FF",
+        "blush_strong": "#00F0FF",
+        "outline": "#181828"
+      }
+    },
+    "monsoon": {
+      "description": "Rain blue water with a golden shell.",
+      "light": {
+        "body": "#93C5FD",
+        "eyelid": "#93C5FD",
+        "iris": "#93C5FD",
+        "water_top": "#93C5FD",
+        "body_light": "#BFDBFE",
+        "band": "#BFDBFE",
+        "hand": "#BFDBFE",
+        "body_deep": "#1D4ED8",
+        "water_bottom": "#1D4ED8",
+        "shell_base": "#FBBF24",
+        "shell_foot": "#FBBF24",
+        "blush": "#A5B4FC",
+        "blush_strong": "#A5B4FC",
+        "outline": "#181828",
+        "brow": "#0E2240"
+      }
+    }
+  },
+  "palette_sources": {
+    "lagoon": "character",
+    "glacier": "character",
+    "coral_reef": "character",
+    "night_bay": "character",
+    "monsoon": "character"
+  },
   "note": "Source: the picked drawing improved.md and recovered drawNeer in the report. Crest variants preserve exact cubic controls at each held mood; no background wave. Slim outline follows founder preference. Gaps: continuous numeric flex/body rebuilding between held moods; animated screen caustics; particles; radial iris gradient and original pupil ratio; shell spring; open-mouth inner tongue/teeth clipping. Only static supported geometry is included. Nod/wave are explicitly root-tilt fallbacks, not the unsupported crest-flex gesture. Source Canvas arc in shell converted to cubic within 0.006 source units. Micro omits the inner band to retain the two eye clips within the cap; this is an explicit detail simplification. Body y coordinates bake the picked drawing’s exact 0.88 path-only compression; sheen/surface remain in their original source space. Authored figure scale is 0.60 with a raised origin so the complete arm rotation envelopes fit the frame; source geometry and all held arm angles are unchanged. Fidelity correction: restored the source dark water-depth fill and local white gleam, and paint a slim dark contour after the inner band. The flat role-only band uses the source middle-stop blue/alpha; the source gradient stroke remains approximated, without extending v1 stroke typing.",
   "contrast": [
     {
@@ -2160,6 +2473,18 @@
       "bg": "eye_white",
       "min": 3,
       "where": "dark pupils on the opaque eye whites"
+    },
+    {
+      "fg": "brow",
+      "bg": "body",
+      "min": 3,
+      "where": "brows, closed eyes and mouths against the body"
+    },
+    {
+      "fg": "outline",
+      "bg": "page_light",
+      "min": 3,
+      "where": "outline against a light page"
     }
   ]
 }

@@ -513,3 +513,21 @@ describe("public argument error classes", {
     expect_error(mascot_preview(character = 1), "character", class = "mascot_error")
   })
 })
+
+describe("palette previews", {
+  it("accepts a string shortcut without contrast warnings and checks added role colours", {
+    withr::local_options(mascot.contrast_warnings = TRUE)
+    expect_no_warning(page <- mascot_preview(character = "knurl", theme = "orbit"))
+    expect_equal(nrow(attr(page, "contrast")), 0)
+    expect_match(as.character(page), '"palette":"orbit"', fixed = TRUE)
+    expect_warning(
+      page <- mascot_preview(
+        character = "knurl",
+        theme = mascot_theme(palette = "orbit", light = list(body = "white"))
+      ),
+      class = "mascot_contrast"
+    )
+    expect_identical(attr(page, "contrast")$role, "body")
+    expect_error(mascot_preview(character = "knurl", theme = "oribt"), "oribt.*knurl.*orbit.*Did you mean")
+  })
+})

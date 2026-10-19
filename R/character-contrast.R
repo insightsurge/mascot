@@ -78,7 +78,7 @@ character_format_colours <- function(x, mode = "light", preset = "original", rec
   names(colours) <- names(baseline)
   supplied <- character_object()
   if (preset != "original") {
-    palette <- x$palettes[[preset]]
+    palette <- character_palettes(x)[[preset]]
     if (is.null(palette)) {
       character_format_abort("missing_reference", "$.palettes", preset, "Select a declared palette.")
     }
@@ -171,7 +171,7 @@ character_format_contrast <- function(x, builtin = FALSE) {
   }
   rows <- list()
   for (mode in c("light", "dark")) {
-    for (preset in c("original", names(x$palettes))) {
+    for (preset in c("original", names(character_palettes(x)))) {
       for (mood_id in names(x$moods)) {
         mood <- x$moods[[mood_id]]
         selections <- c(list(mood$recolour), list(mood$reduced$recolour))

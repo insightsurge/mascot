@@ -25,6 +25,9 @@
 #'   of names from `c("bubble", "tooltip", "menu")` for only those panels.
 #'   `NULL` (default) follows `others`. Panels still appear and work.
 #' @param others Logical flag, default `TRUE`, for every unnamed switch.
+#'   With `others = FALSE` and no movement enabled by a named switch, this is
+#'   equivalent to `motion = FALSE`: reduced-motion poses and instant drag
+#'   transitions apply too.
 #' @returns A `mascot_motion_settings` object. Its fields are internal; pass the
 #'   object on rather than reading its fields.
 #' @family mascot helpers
@@ -165,7 +168,7 @@ as_motion_arg <- function(x, call) {
     messages
   }
   c(
-    list(reduced = if (identical(x, FALSE)) TRUE else NULL),
+    list(reduced = if (!value$others && !any(unlist(switches)) && !length(panels)) TRUE else NULL),
     switches,
     list(messages = as.list(unique(panels)), others = value$others)
   )

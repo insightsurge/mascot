@@ -96,3 +96,14 @@ describe("public argument error classes", {
     expect_error(print.mascot_bubble(1), "x", class = "mascot_error")
   })
 })
+
+
+describe("mascot_bubble() removal safeguards (#349)", {
+  it("requires text whenever duration or closable is explicitly supplied", {
+    for (options in list(list(duration = 5), list(duration = 10), list(closable = TRUE), list(closable = FALSE))) {
+      expect_error(do.call(mascot_bubble, options), "text.*NULL", class = "mascot_error")
+      expect_error(do.call(mascot_bubble, c(list(text = NULL), options)), "text.*NULL", class = "mascot_error")
+    }
+    expect_null(mascot_bubble(NULL)$text)
+  })
+})

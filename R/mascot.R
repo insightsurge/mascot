@@ -50,7 +50,7 @@
 #'   [mascot_action()] object makes it a button for one action of your app.
 #'   A [mascot_popup_menu()] object makes it open a menu, whose choice sets
 #'   `input$<id>_menu`. With a click, every
-#'   activation sets `input$<id>_click` (see Details).
+#'   action activation sets `input$<id>_click` (see Details).
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @returns An `htmltools` tag with the mascot's web dependency attached.
 #' @family mascots in Shiny
@@ -139,12 +139,12 @@
 #' review** again does not rebuild it, so it keeps its mood and position.
 #'
 #' **Clicks.** With `click`, the mascot is a button: an action named by its
-#' label, or a menu. Every activation (a click or tap, Enter or Space while it
-#' has keyboard focus, or a screen reader's activate command) sets
+#' label, or a menu. Every action activation (a click or tap, Enter or Space while
+#' it has keyboard focus, or a screen reader's activate command) sets
 #' `input$<id>_click` to the number of activations since the mascot appeared, so
-#' `shiny::observeEvent(input$helper_click, ...)` runs each time; with a menu,
-#' opening and closing it both count. Dragging a floating mascot never counts as
-#' a click. See [mascot_action()] and [mascot_popup_menu()].
+#' `shiny::observeEvent(input$helper_click, ...)` runs each time for an action.
+#' Opening and closing a menu never sets this input. Dragging a floating mascot
+#' never counts as a click. See [mascot_action()] and [mascot_popup_menu()].
 #' @export
 #' @examples
 #' mascot("helper", mood = "happy")

@@ -11,7 +11,6 @@ describe("mascot_action()", {
   it("is an empty helper without a label, which removes the click", {
     expect_null(mascot_action()$label)
     expect_identical(as_click_arg(mascot_action(), environment()), list(type = "none"))
-    expect_identical(as_click_arg(mascot_action(tooltip = FALSE), environment()), list(type = "none"))
   })
   it("rejects every invalid label, tooltip and disabled value", {
     for (bad in list("", NA_character_, c("a", "b"), 1, TRUE)) {
@@ -142,5 +141,16 @@ describe("public argument error classes", {
   it("adds mascot_error to the registered format and print methods", {
     expect_error(format.mascot_action(1), "x", class = "mascot_error")
     expect_error(print.mascot_action(1), "x", class = "mascot_error")
+  })
+})
+
+
+describe("mascot_action() removal safeguards (#349)", {
+  it("requires a label whenever tooltip or disabled is explicitly supplied", {
+    for (options in list(list(tooltip = TRUE), list(tooltip = FALSE), list(disabled = FALSE), list(disabled = TRUE))) {
+      expect_error(do.call(mascot_action, options), "label.*NULL", class = "mascot_error")
+      expect_error(do.call(mascot_action, c(list(label = NULL), options)), "label.*NULL", class = "mascot_error")
+    }
+    expect_identical(as_click_arg(mascot_action(NULL), environment()), list(type = "none"))
   })
 })

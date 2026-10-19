@@ -241,12 +241,12 @@ describe("the studio's controls", {
     for (items in list(c(about = "About this app"), character())) {
       for (direction in c("auto", "top", "bottom", "left", "right")) {
         pair <- code$code_menu(items, direction)
-        expected <- mascot_popup_menu(if (length(items)) items else NULL, direction = direction)
+        expected <- if (length(items)) mascot_popup_menu(items, direction = direction) else mascot_popup_menu()
         expect_identical(eval(pair$helper), expected)
         for (style in c("short", "helper")) {
           text <- code$format_expr(pair[[style]])
           expect_type(parse(text = text), "expression")
-          if (direction != "auto") {
+          if (length(items) && direction != "auto") {
             expect_identical(eval(parse(text = text)[[1]]), expected)
             expect_match(text, paste0('direction = "', direction, '"'), fixed = TRUE)
           } else {
@@ -2347,7 +2347,7 @@ describe("studio engine behaviours", {
     expect_gt(note, regexpr('id="menu_direction"', page, fixed = TRUE)[[1]])
     expect_match(page, "It also looks towards a bubble.", fixed = TRUE)
   })
-  it("shows input$helper_click live, answers an action with a wave and only logs menu toggles (#257)", {
+  it("shows action clicks live and answers an action with a wave (#349)", {
     parts <- studio_parts()
     start <- studio_start_values(parts$page)
     expect_match(parts$page, 'id="click_last"', fixed = TRUE)
@@ -2356,22 +2356,17 @@ describe("studio engine behaviours", {
       studio_go_live(session)
       expect_match(output$click_last, "Nothing yet", fixed = TRUE)
       updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
-      # With the menu, a toggle is logged and gets no wave.
-      session$setInputs(helper_click = 1)
-      expect_identical(output$click_last, "1 click")
-      expect_identical(log()[[1]]$code, "input$helper_click  # 1")
-      expect_match(log()[[1]]$message, "opened or closed the menu", fixed = TRUE)
       # Turning the action on sends it, and the switches take turns.
       session$setInputs(action_on = TRUE)
       session$elapse(700)
       expect_identical(updates()$desired$click$type, "action")
       expect_identical(updates()$desired$click$label, "Open help")
       expect_match(output$code_app, "observeEvent(input$helper_click", fixed = TRUE)
-      session$setInputs(helper_click = 2)
-      expect_identical(output$click_last, "2 clicks")
+      session$setInputs(helper_click = 1)
+      expect_identical(output$click_last, "1 click")
       expect_match(last_call(), 'gesture = "wave"', fixed = TRUE)
       # The log is newest first: the click event, then the studio's wave in answer.
-      expect_identical(log()[[2]]$code, "input$helper_click  # 2")
+      expect_identical(log()[[2]]$code, "input$helper_click  # 1")
       expect_identical(log()[[1]]$code, 'update_mascot("helper", gesture = "wave")')
       # A blank label is a problem in the code, never sent; switching off sends the empty helper.
       session$setInputs(action_label = " ")

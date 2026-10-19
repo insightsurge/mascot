@@ -686,7 +686,7 @@ visual_menu <- function() {
       class = "pg-callout",
       tags$strong("Keyboard. "),
       "Tab to the mascot's menu button, then Enter or Space opens it; arrow keys move between items; Escape
-      closes it. Opening and closing it also set input$helper_click."
+      closes it. Opening and closing it never set input$helper_click; choosing an item sets input$helper_menu."
     )
   )
 }

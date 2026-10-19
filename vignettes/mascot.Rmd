@@ -416,7 +416,7 @@ Try each switch and the panel multi-select in `mascot_studio(fn = "mascot_motion
 
 By default a mascot is a picture: clicking it does nothing, and the keyboard
 skips it. `click` makes it a button, for one action of your app or for a menu.
-Every activation (a click or tap, Enter or Space) sets `input$helper_click`, a
+Every action activation (a click or tap, Enter or Space) sets `input$helper_click`, a
 count, so your server can answer it:
 
 ```{r action, eval=FALSE}
@@ -469,7 +469,7 @@ Reset above clears the feedback and keeps the selected colours.
 
 Click or touch the drawing, or focus it and press Enter/Space with keyboard
 opening enabled. Escape closes the menu. Repeated choices trigger repeated
-events; opening and closing the menu also count in `input$helper_click`. An
+events. Opening and closing the menu never set `input$helper_click`. An
 empty helper, `mascot_action()` or `mascot_popup_menu()`, removes the click when
 sent in an update. On static pages the mascot remains an image; clicks need
 Shiny.

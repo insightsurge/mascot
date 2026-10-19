@@ -1,5 +1,5 @@
 ---
-title: "`mascot_preview()`"
+title: "mascot_preview()"
 ---
 
 The studio guide for [`mascot_preview()`](../reference/mascot_preview.html). The same page is read in the mascot studio.

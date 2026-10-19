@@ -1,5 +1,5 @@
 ---
-title: "`mascot_status()`"
+title: "mascot_status()"
 ---
 
 The studio guide for [`mascot_status()`](../reference/mascot_status.html). The same page is read in the mascot studio.

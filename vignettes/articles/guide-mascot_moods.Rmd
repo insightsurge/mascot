@@ -1,5 +1,5 @@
 ---
-title: "`mascot_moods()`"
+title: "mascot_moods()"
 ---
 
 The studio guide for [`mascot_moods()`](../reference/mascot_moods.html). The same page is read in the mascot studio.

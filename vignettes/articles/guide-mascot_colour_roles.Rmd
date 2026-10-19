@@ -1,5 +1,5 @@
 ---
-title: "`mascot_colour_roles()`"
+title: "mascot_colour_roles()"
 ---
 
 The studio guide for [`mascot_colour_roles()`](../reference/mascot_colour_roles.html). The same page is read in the mascot studio.

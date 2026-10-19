@@ -1,5 +1,5 @@
 ---
-title: "`mascot_families()`"
+title: "mascot_families()"
 ---
 
 The studio guide for [`mascot_families()`](../reference/mascot_families.html). The same page is read in the mascot studio.

@@ -1,5 +1,5 @@
 ---
-title: "`mascot_motion_settings()`"
+title: "mascot_motion_settings()"
 ---
 
 The studio guide for [`mascot_motion_settings()`](../reference/mascot_motion_settings.html). The same page is read in the mascot studio.

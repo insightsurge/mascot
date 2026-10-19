@@ -1,5 +1,5 @@
 ---
-title: "`mascot_bubble()`"
+title: "mascot_bubble()"
 ---
 
 The studio guide for [`mascot_bubble()`](../reference/mascot_bubble.html). The same page is read in the mascot studio.

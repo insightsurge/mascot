@@ -1,5 +1,5 @@
 ---
-title: "`mascot()`"
+title: "mascot()"
 ---
 
 The studio guide for [`mascot()`](../reference/mascot.html). The same page is read in the mascot studio.

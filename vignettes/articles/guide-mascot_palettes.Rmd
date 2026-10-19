@@ -1,5 +1,5 @@
 ---
-title: "`mascot_palettes()`"
+title: "mascot_palettes()"
 ---
 
 The studio guide for [`mascot_palettes()`](../reference/mascot_palettes.html). The same page is read in the mascot studio.

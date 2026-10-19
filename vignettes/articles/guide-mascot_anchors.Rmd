@@ -1,5 +1,5 @@
 ---
-title: "`mascot_anchors()`"
+title: "mascot_anchors()"
 ---
 
 The studio guide for [`mascot_anchors()`](../reference/mascot_anchors.html). The same page is read in the mascot studio.

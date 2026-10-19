@@ -1,5 +1,5 @@
 ---
-title: "`mascot_gesture()`"
+title: "mascot_gesture()"
 ---
 
 The studio guide for [`mascot_gesture()`](../reference/mascot_gesture.html). The same page is read in the mascot studio.

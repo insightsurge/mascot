@@ -145,11 +145,10 @@ playground_controls <- list(
   mascot_theme = list(
     palette = input_id("palette"),
     ... = fixed_arg("Must be empty: optional arguments are named."),
-    # The pickers and checkboxes are built from the selected character's roles; their containers are on the page.
-    light = input_id("theme_light"),
-    dark = input_id("theme_dark"),
+    light = fixed_arg("Pickers are built from the selected character roles in theme_light."),
+    dark = fixed_arg("Pickers are built from the selected character roles in theme_dark."),
     mode = input_id("theme_mode"),
-    css = input_id("theme_css")
+    css = fixed_arg("CSS role checkboxes are built from the selected character; css_accent sets their variable.")
   ),
   mascot_action = list(
     label = input_id("action_on", "action_label"),

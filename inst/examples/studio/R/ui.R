@@ -847,10 +847,13 @@ call_chips <- function(state, style, gesture = NULL, demo = character()) {
           `data-call-hint` = arg_hint("mascot", arg),
           `data-call-default` = argument_default("mascot", arg),
           `data-call-demo` = if (arg %in% demo) "true",
-          title = paste(arg, "=", value, if (arg %in% demo) "(studio demo, not copied)"),
+          title = paste(c(arg, "=", value, if (arg %in% demo) "(studio demo, not copied)"), collapse = " "),
           `aria-expanded` = "false",
           `aria-controls` = "chip_editor",
-          `aria-label` = paste(arg, "=", value, if (arg %in% demo) "(studio demo, not copied)", "options"),
+          `aria-label` = paste(
+            c(arg, "=", value, if (arg %in% demo) "(studio demo, not copied)", "options"),
+            collapse = " "
+          ),
           tags$code(tags$span(class = "pg-chip-name", paste(arg, "=")), tags$span(class = "pg-chip-value", value)),
           if (arg %in% demo) tags$span(class = "pg-chip-demo", "demo"),
           chip_pencil()

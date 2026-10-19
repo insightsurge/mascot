@@ -2379,10 +2379,7 @@ describe("studio safeguards (#248)", {
       preview_width = "the width the preview page is shown at, not an argument",
       example_name = "the Examples view, not the mascot",
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
-      example_run = "the Examples view, not the mascot",
-      theme_light = "container of the role pickers, built from the character; tested through the picker rows",
-      theme_dark = "container of the role pickers, built from the character; tested through the picker rows",
-      theme_css = "container of the CSS role controls, built from the character; tested with css_roles"
+      example_run = "the Examples view, not the mascot"
     )
     controls <- unlist(get("playground_controls", parts$env))
     format_call <- get("format_call", parts$env)

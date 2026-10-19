@@ -141,3 +141,7 @@ Other mascot helpers:
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
 CSS variables are worked out by the browser, so R cannot check their values.
 }
+\section{Experimental colour mapping for \code{bs_theme()}}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+\code{theme = bslib::bs_theme()} is accepted, but which parts of a character it colours may change in a later release.
+}

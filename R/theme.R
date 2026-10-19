@@ -85,6 +85,14 @@
 #'       lifecycle::badge("experimental"), fixed = TRUE),
 #'   "\nCSS variables are worked out by the browser, so R cannot check their values.\n}"
 #' )
+#' @evalRd paste0(
+#'   "\\section{Experimental colour mapping for \\code{bs_theme()}}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\n\\code{theme = bslib::bs_theme()} is accepted, but which parts of a character ",
+#'   "it colours may change in a later release.\n}"
+#' )
 #' @export
 #' @examples
 #' mascot_theme()

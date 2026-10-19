@@ -384,3 +384,90 @@ describe("the Brand colours tab", {
     })
   })
 })
+
+describe("the Check tab", {
+  it("offers the four scenarios as buttons beside their own mascot", {
+    parts <- theme_parts()
+    scenarios <- parts$env$theme_check_scenarios()
+    expect_named(scenarios, c("kept", "dropped", "contrast", "missing"))
+    for (key in names(scenarios)) {
+      expect_match(parts$page, sprintf('data-event="check_scenario" data-value="%s"', key), fixed = TRUE, info = key)
+    }
+    expect_match(parts$page, 'id="check_demo"', fixed = TRUE)
+    for (id in c("check_preview", "check_contrast")) {
+      expect_match(parts$page, paste0('id="', id, '"'), fixed = TRUE)
+    }
+    expect_match(parts$page, "at least 3:1 contrast", fixed = TRUE)
+  })
+  it("shows each scenario's call, outcome, class, message and silencing line, as the package gives them", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "tessa", mood = "idle")
+      session$setInputs(check_scenario = "kept")
+      html <- output$check_scenario_ui$html
+      expect_match(html, 'update_mascot("check_demo", character = "sela")', fixed = TRUE)
+      expect_match(html, "Outcome:\\s*<code>ok</code>")
+      expect_match(html, "Palette coral_navy kept for Sela.", fixed = TRUE)
+      session$setInputs(check_scenario = "dropped")
+      html <- output$check_scenario_ui$html
+      expect_match(html, "Class:\\s*<code>mascot_palette_dropped</code>")
+      expect_match(html, 'Palette "coral_navy" dropped for character "knurl"', fixed = TRUE)
+      expect_match(html, 'mascot_palette_dropped = function(w) invokeRestart("muffleWarning")', fixed = TRUE)
+      session$setInputs(check_scenario = "contrast")
+      html <- output$check_scenario_ui$html
+      expect_match(html, "Class:\\s*<code>mascot_contrast</code>")
+      expect_match(html, "contrast below 3:1", fixed = TRUE)
+      expect_match(html, "mascot_contrast = function(w)", fixed = TRUE)
+      session$setInputs(check_scenario = "missing")
+      html <- output$check_scenario_ui$html
+      expect_match(html, "Outcome:\\s*<code>error</code>")
+      expect_match(html, 'Characters "tessa", "sela" have', fixed = TRUE)
+      expect_false(grepl("To silence", html, fixed = TRUE))
+    })
+  })
+  it("checks contrast for the settings at the click, and says when they changed", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "tessa", mood = "idle")
+      roles <- mascot_colour_roles("tessa")
+      # The pickers as the browser reports them, then one changed
+      do.call(session$setInputs, stats::setNames(as.list(roles$colour), paste0("colours-light_", roles$role)))
+      session$setInputs(`colours-light_rim` = "#f5e6c8")
+      session$setInputs(check_contrast = 1)
+      expect_match(output$check_contrast_ui$html, "hard to see", fixed = TRUE)
+      expect_match(output$check_contrast_ui$html, "<code>#F5E6C8</code>", fixed = TRUE)
+      session$setInputs(`colours-light_rim` = "#123456")
+      expect_match(output$check_contrast_ui$html, "The settings changed since the last check.", fixed = TRUE)
+      session$setInputs(check_contrast = 2)
+      expect_match(output$check_contrast_ui$html, "Every colour you chose", fixed = TRUE)
+    })
+  })
+  it("builds the every-mood page into the session's own folder when asked", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      folder <- file.path(tempdir(), paste0("theme-preview-", session$token))
+      session$setInputs(character = "sela", mood = "idle", palette = "coral_navy")
+      expect_false(dir.exists(folder))
+      session$setInputs(check_preview = 1)
+      html <- output$check_preview_ui$html
+      expect_match(html, 'mascot_preview(character = "sela", theme = "coral_navy")', fixed = TRUE)
+      expect_match(html, sprintf('src="theme-preview-%s/preview-1.html"', session$token), fixed = TRUE)
+      expect_true(file.exists(file.path(folder, "preview-1.html")))
+      session$setInputs(palette = "forest")
+      expect_match(output$check_preview_ui$html, "The settings changed since this page was built.", fixed = TRUE)
+    })
+  })
+  it("checks the arguments of its result card", {
+    env <- theme_parts()$env
+    result <- list(ok = TRUE, class = "ok", message = NULL, silencer = NULL, condition_classes = NULL)
+    expect_match(
+      as.character(env$theme_check_result_ui("Title", "x()", result)),
+      "The package says nothing",
+      fixed = TRUE
+    )
+    expect_error(env$theme_check_result_ui("", "x()", result), "title")
+    expect_error(env$theme_check_result_ui("Title", "", result), "code")
+    expect_error(env$theme_check_result_ui("Title", "x()", list()), "names")
+    expect_error(env$theme_check_result_ui("Title", "x()", result, ""), "outcome")
+  })
+})

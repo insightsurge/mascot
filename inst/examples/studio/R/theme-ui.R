@@ -350,13 +350,122 @@ theme_brand_parts_ui <- function(roles, name) {
   )
 }
 
+# The four scenarios of the Check tab, by the value their button sends: a title and the call that runs.
+# kept and dropped are character swaps (palette_swap_run()); the others are one call each.
+theme_check_scenarios <- function() {
+  swap <- studio_palette_swap
+  name <- function(id) mascot::mascot_character(id)$name
+  list(
+    kept = list(title = paste(name(swap[["from"]]), "in", swap[["palette"]], "becomes", name(swap[["kept"]]))),
+    dropped = list(title = paste(name(swap[["from"]]), "in", swap[["palette"]], "becomes", name(swap[["dropped"]]))),
+    contrast = list(
+      title = "A colour that is hard to see",
+      call = call("update_mascot", "check_demo", character = swap[["from"]], theme = list(rim = "#f5e6c8"))
+    ),
+    missing = list(
+      title = paste("A palette", name(swap[["dropped"]]), "does not have"),
+      call = call("mascot", "helper", character = swap[["dropped"]], theme = swap[["palette"]])
+    )
+  )
+}
+
+# Check: every mood in light and dark (mascot_preview()), the contrast check, and what the package says in four
+# common cases, run as real calls.
 theme_check_tab <- function() {
+  scenarios <- theme_check_scenarios()
   shiny::div(
     class = "theme-tab",
     shiny::tags$p(
       class = "theme-lead",
       "See what the package does when you swap characters or choose a colour that is hard to see."
-    )
+    ),
+    shiny::tags$h3(class = "theme-section-title", "Every mood, light and dark"),
+    shiny::tags$p(
+      class = "theme-muted",
+      shiny::tags$span(class = "badge text-bg-warning", "Experimental"),
+      " The page mascot_preview() builds for this theme: every mood in light and dark, at your size and smaller.",
+      " It checks only colours you supplied; palette colours never warn."
+    ),
+    shiny::actionButton("check_preview", "Show every mood", class = "btn-outline-primary btn-sm"),
+    shiny::uiOutput("check_preview_ui"),
+    shiny::tags$h3(class = "theme-section-title", "Contrast"),
+    shiny::tags$p(
+      class = "theme-muted",
+      "Each colour you chose is compared with the page background: white in light mode and #212529 in dark mode, or",
+      "your bs_theme()'s backgrounds. A colour needs at least 3:1 contrast to be easy to see."
+    ),
+    shiny::actionButton("check_contrast", "Check contrast", class = "btn-outline-primary btn-sm"),
+    shiny::uiOutput("check_contrast_ui"),
+    shiny::tags$h3(class = "theme-section-title", "When you swap characters or pick a hard-to-see colour"),
+    shiny::tags$p(
+      class = "theme-muted",
+      "Each button runs real package calls on the mascot below and shows what the package says, in its own words."
+    ),
+    shiny::div(
+      class = "theme-check-demo",
+      shiny::div(
+        class = "theme-check-mascot",
+        mascot::mascot(
+          "check_demo",
+          character = studio_palette_swap[["from"]],
+          theme = studio_palette_swap[["palette"]],
+          size = 96,
+          placement = "inline",
+          motion = FALSE
+        )
+      ),
+      shiny::div(
+        class = "theme-check-buttons",
+        lapply(names(scenarios), function(key) {
+          shiny::tags$button(
+            type = "button",
+            class = "btn btn-outline-primary btn-sm",
+            `data-event` = "check_scenario",
+            `data-value` = key,
+            scenarios[[key]]$title
+          )
+        })
+      )
+    ),
+    shiny::div(role = "status", shiny::uiOutput("check_scenario_ui"))
+  )
+}
+
+# What a scenario's calls did: the code that ran, the outcome, the package's message and the classes of its
+# conditions, and the line that silences it when there is one. outcome adds what happened when the package says
+# nothing (a palette kept over a swap).
+theme_check_result_ui <- function(title, code, result, outcome = NULL) {
+  checkmate::assert_string(title, min.chars = 1)
+  checkmate::assert_string(code, min.chars = 1)
+  checkmate::assert_list(result)
+  checkmate::assert_string(outcome, min.chars = 1, null.ok = TRUE)
+  checkmate::assert_names(names(result), must.include = c("ok", "class", "message", "silencer", "condition_classes"))
+  specific <- setdiff(
+    grep("^mascot_", result$condition_classes, value = TRUE),
+    c("mascot_warning", "mascot_message", "mascot_error")
+  )
+  shiny::div(
+    class = paste("theme-check-result", if (result$class %in% c("error", "warning")) "is-warn"),
+    shiny::tags$h4(class = "theme-check-title", title),
+    shiny::tags$pre(class = "theme-code-text", code),
+    shiny::tags$p(class = "theme-check-outcome", "Outcome: ", shiny::tags$code(result$class)),
+    if (length(specific)) {
+      shiny::tags$p(class = "theme-check-outcome", "Class: ", shiny::tags$code(paste(specific, collapse = ", ")))
+    },
+    if (!result$ok) {
+      shiny::tags$p(
+        class = "theme-check-outcome",
+        if (result$class == "error") "The call stopped with an error." else "The mascot is unchanged."
+      )
+    },
+    if (!is.null(result$message)) shiny::tags$pre(class = "theme-message", result$message),
+    if (is.null(result$message)) shiny::tags$p("The package says nothing: the call ran as written.", outcome),
+    if (!is.null(result$silencer)) {
+      shiny::tagList(
+        shiny::tags$p(class = "theme-muted", "To silence only this warning:"),
+        shiny::tags$pre(class = "theme-code-text", result$silencer)
+      )
+    }
   )
 }
 

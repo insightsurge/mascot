@@ -626,7 +626,7 @@ describe("E1 studio behaviour in the redesigned UI", {
     app$click(selector = "#contrast_check")
     app$wait_for_js("document.getElementById('contrast').textContent.includes('hard to see')")
     studio_colour(app, "colours-light_body", "#1f6feb")
-    app$wait_for_js("document.getElementById('contrast').textContent.includes('Stale contrast result')")
+    app$wait_for_js("document.getElementById('contrast').textContent.includes('settings changed since the last check')")
     app$run_js("document.querySelector('[data-event=\"colours-reset_mode\"][data-value=light]').click()")
     app$wait_for_js("!document.getElementById('code_ui').textContent.includes('#1f6feb')")
     studio_select_function(app, "mascot_characters")

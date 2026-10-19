@@ -363,5 +363,83 @@ describe("colour_roles_server()", {
     expect_error(server("colours", shiny::reactiveVal("tessa"), "original"), "palette")
     expect_error(server("colours", shiny::reactiveVal("tessa"), shiny::reactiveVal("original"), css = "#fff"), "css")
     expect_error(server(1, shiny::reactiveVal("tessa"), shiny::reactiveVal("original")), "id")
+    expect_error(
+      server("colours", shiny::reactiveVal("tessa"), shiny::reactiveVal("original"), leader = ""),
+      "leader"
+    )
+  })
+})
+
+describe("preview_folder()", {
+  it("makes a served folder for the session and removes both when the session ends", {
+    folder_for <- studio_shared("shared-check.R")$preview_folder
+    session <- shiny::MockShinySession$new()
+    folder <- folder_for(session, "theme-preview")
+    expect_identical(folder$prefix, paste0("theme-preview-", session$token))
+    expect_identical(folder$dir, file.path(tempdir(), folder$prefix))
+    expect_true(dir.exists(folder$dir))
+    expect_true(folder$prefix %in% names(shiny::resourcePaths()))
+    session$close()
+    expect_false(dir.exists(folder$dir))
+    expect_false(folder$prefix %in% names(shiny::resourcePaths()))
+    expect_error(folder_for(session, "Theme preview"), "prefix")
+  })
+})
+
+describe("contrast_check() and contrast_result_ui()", {
+  it("finds no hard-to-see colour in a palette, and lists a chosen one with its ratio", {
+    env <- studio_shared("shared-check.R")
+    expect_identical(nrow(env$contrast_check("tessa", "coral_navy")$findings), 0L)
+    result <- env$contrast_check("tessa", list(rim = "#f5e6c8"))
+    expect_null(result$error)
+    expect_identical(result$findings$role, "rim")
+    expect_identical(result$findings$mode, "light")
+    html <- as.character(env$contrast_result_ui(result))
+    expect_match(html, "These colours are hard to see on the page background. They are kept.", fixed = TRUE)
+    expect_match(html, "<code>#F5E6C8</code>", fixed = TRUE)
+    expect_match(html, format(round(result$findings$ratio, 2), nsmall = 2), fixed = TRUE)
+  })
+  it("says when every colour passes, names the parts tied to a CSS variable, and reports a theme that fails", {
+    env <- studio_shared("shared-check.R")
+    pass <- env$contrast_check("tessa", NULL)
+    expect_match(
+      as.character(env$contrast_result_ui(pass, NULL)),
+      "Every colour you chose has at least 3:1 contrast against the page, in light and dark mode.",
+      fixed = TRUE
+    )
+    expect_match(as.character(env$contrast_result_ui(pass, "body")), "\\(\\s*body\\s*\\) are not checked here")
+    failed <- env$contrast_check("knurl", "coral_navy")
+    expect_match(failed$error, 'Unknown palette "coral_navy"', fixed = TRUE)
+    expect_match(as.character(env$contrast_result_ui(failed)), "The check failed:", fixed = TRUE)
+    expect_match(as.character(env$contrast_stale_ui()), "The settings changed since the last check.", fixed = TRUE)
+    expect_error(env$contrast_check(""), "character")
+    expect_error(env$contrast_result_ui(list()), "names")
+    expect_error(env$contrast_result_ui(pass, 1), "css")
+  })
+})
+
+describe("palette_swap_run()", {
+  it("keeps a palette the next character has and drops one it lacks, with the package's warning", {
+    env <- studio_shared("shared-run.R", "shared-check.R")
+    shiny::testServer(function(input, output, session) NULL, {
+      here <- environment()
+      kept <- env$palette_swap_run("demo", "tessa", "sela", "coral_navy", here)
+      expect_true(kept$ok)
+      expect_identical(kept$class, "ok")
+      expect_identical(
+        kept$code,
+        paste(
+          'update_mascot("demo", character = "tessa", theme = "coral_navy", motion = FALSE)',
+          'update_mascot("demo", character = "sela")',
+          sep = "\n"
+        )
+      )
+      dropped <- env$palette_swap_run("demo", "tessa", "knurl", "coral_navy", here)
+      expect_true(dropped$ok)
+      expect_true("mascot_palette_dropped" %in% dropped$condition_classes)
+      expect_match(dropped$message, 'Palette "coral_navy" dropped for character "knurl"', fixed = TRUE)
+      expect_error(env$palette_swap_run("", "tessa", "sela", "coral_navy", here), "id")
+      expect_error(env$palette_swap_run("demo", "tessa", "sela", "coral_navy", list()), "envir")
+    })
   })
 })

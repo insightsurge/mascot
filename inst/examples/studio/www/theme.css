@@ -87,7 +87,8 @@
 /* An inline mascot keeps room above it for a speech bubble. This view shows no bubble, so the stage shows only the
    drawing and its status text, bottom-aligned. */
 .theme-preview-stage,
-.theme-card-mascot {
+.theme-card-mascot,
+.theme-check-mascot {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -251,6 +252,63 @@
 
 fieldset[disabled] .shiny-input-container {
   opacity: 0.6;
+}
+
+/* Check */
+.theme-preview-page {
+  width: 100%;
+  height: 32rem;
+  border: 1px solid var(--studio-line);
+  border-radius: 8px;
+  background: var(--bs-body-bg);
+}
+
+.theme-check-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.theme-check-mascot {
+  width: 112px;
+  height: calc(96px + 4.5rem);
+}
+
+.theme-check-mascot .mascot-status {
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.theme-check-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.theme-check-result {
+  border-left: 3px solid var(--bs-success);
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.theme-check-result.is-warn {
+  border-left-color: var(--bs-warning);
+}
+
+.theme-check-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.theme-check-outcome {
+  margin: 0 0 0.25rem;
+}
+
+.theme-tab > .btn {
+  margin-bottom: 0.25rem;
 }
 
 /* Palette cards: a radio group; the chosen card has the primary colour's border. */

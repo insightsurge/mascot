@@ -31,6 +31,7 @@ describe("mascot_examples()", {
             "R/guide.R",
             "R/help.R",
             "R/panels.R",
+            "R/shared-check.R",
             "R/shared-colours.R",
             "R/shared-run.R",
             "R/theme-server.R",
@@ -848,9 +849,9 @@ describe("studio state and built previews", {
       session$setInputs(bubble_text = "<b>Saved</b>", bubble_html = TRUE, bubble_show = 1)
       expect_true(messages$bubble_html$value)
       session$setInputs(contrast_check = 1)
-      expect_match(output$contrast$html, "Every colour checked")
+      expect_match(output$contrast$html, "Every colour you chose")
       session$setInputs(theme_source = "mascot", theme_mode = "dark")
-      expect_match(output$contrast$html, "[Ss]tale")
+      expect_match(output$contrast$html, "The settings changed since the last check")
       session$setInputs(theme_source = "own", theme_mode = "auto")
       session$elapse(400)
       bubble <- state$bubble

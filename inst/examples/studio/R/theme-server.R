@@ -332,6 +332,96 @@ theme_view_server <- function(input, output, session) {
     )
   })
 
+  # ---- Check -----------------------------------------------------------------------------------------------------
+  # The theme as a value, for the checks: what the code shows, evaluated.
+  theme_value <- function(pair) if (is.null(pair)) NULL else eval(pair$helper)
+
+  # Every mood, light and dark: the mascot_preview() page for the current settings, built when asked into a folder
+  # of this session's (made on the first build).
+  folder <- NULL
+  built <- shiny::reactiveVal(NULL)
+  shiny::observeEvent(input$check_preview, {
+    if (is.null(folder)) {
+      folder <<- preview_folder(session, "theme-preview")
+    }
+    # The call in the code's style: theme = "coral_navy" or theme = mascot_theme(palette = "coral_navy").
+    style <- if (identical(input$code_style, "helper")) "helper" else "short"
+    args <- Filter(Negate(is.null), list(character = character(), theme = theme()[[style]]))
+    code <- format_call("mascot_preview", args)
+    page <- tryCatch(
+      suppressWarnings(mascot::mascot_preview(character = character(), theme = theme_value(theme()))),
+      error = function(e) e
+    )
+    if (inherits(page, "error")) {
+      built(list(code = code, error = cli::ansi_strip(conditionMessage(page))))
+      return()
+    }
+    file <- sprintf("preview-%d.html", input$check_preview)
+    htmltools::save_html(page, file.path(folder$dir, file), libdir = "lib")
+    # The page before stays until the new one has loaded.
+    unlink(file.path(folder$dir, sprintf("preview-%d.html", seq_len(max(0L, input$check_preview - 2L)))))
+    built(list(code = code, src = paste0(folder$prefix, "/", file), settings = list(character(), theme())))
+  })
+  output$check_preview_ui <- shiny::renderUI({
+    page <- built()
+    shiny::req(page)
+    shiny::tagList(
+      shiny::tags$pre(class = "theme-code-text", page$code),
+      if (!is.null(page$error)) {
+        shiny::div(class = "pg-note pg-warn", "The page could not be built: ", page$error)
+      } else {
+        shiny::tagList(
+          if (!identical(page$settings, list(character(), theme()))) {
+            shiny::div(class = "pg-note", "The settings changed since this page was built. Show every mood again.")
+          },
+          shiny::tags$iframe(class = "theme-preview-page", src = page$src, title = "Every mood, light and dark")
+        )
+      }
+    )
+  })
+
+  # The contrast check, on demand, for the settings at the time of the click.
+  contrast_settings <- shiny::reactive(list(
+    character = character(),
+    theme = theme(),
+    css = css_values(),
+    roles = if (source() == "mascot") names(colours$css()) else base::character()
+  ))
+  checked <- shiny::eventReactive(input$check_contrast, contrast_settings())
+  output$check_contrast_ui <- shiny::renderUI({
+    settings <- checked()
+    if (!identical(settings, contrast_settings())) {
+      return(contrast_stale_ui())
+    }
+    contrast_result_ui(contrast_check(settings$character, theme_value(settings$theme)), settings$roles)
+  })
+
+  # The four scenarios, run as real calls on the Check tab's own mascot.
+  scenario <- shiny::reactiveVal(NULL)
+  shiny::observeEvent(input$check_scenario, {
+    scenarios <- theme_check_scenarios()
+    key <- input$check_scenario
+    shiny::req(key %in% names(scenarios))
+    swap <- studio_palette_swap
+    if (key %in% c("kept", "dropped")) {
+      result <- palette_swap_run("check_demo", swap[["from"]], swap[[key]], swap[["palette"]], environment())
+      code <- result$code
+      outcome <- if (key == "kept") {
+        paste0("Palette ", swap[["palette"]], " kept for ", mascot::mascot_character(swap[[key]])$name, ".")
+      }
+    } else {
+      result <- run_real_call(scenarios[[key]]$call, environment())
+      code <- format_expr(scenarios[[key]]$call)
+      outcome <- NULL
+    }
+    scenario(list(title = scenarios[[key]]$title, code = code, result = result, outcome = outcome))
+  })
+  output$check_scenario_ui <- shiny::renderUI({
+    shown <- scenario()
+    shiny::req(shown)
+    theme_check_result_ui(shown$title, shown$code, shown$result, shown$outcome)
+  })
+
   shiny::observeEvent(input$start_again, session$reload())
   invisible(NULL)
 }

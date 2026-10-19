@@ -995,41 +995,12 @@ studio_server <- function(input, output, session) {
     req(input$contrast_check)
     checked <- checked_contrast()
     if (!identical(checked, contrast_settings())) {
-      return(div(class = "pg-note", "Stale contrast result: settings changed. Check contrast again."))
+      return(contrast_stale_ui())
     }
-    theme <- checked$theme
-    preview <- tryCatch(
-      suppressWarnings(mascot_preview(character = checked$character, theme = eval(theme$short))),
-      error = function(e) e
-    )
-    if (inherits(preview, "error")) {
-      return(div(class = "pg-note pg-warn", "The check failed: ", cli::ansi_strip(conditionMessage(preview))))
-    }
-    css_note <- if (length(colours$css()) && input$theme_source == "mascot") {
-      div(
-        class = "pg-note",
-        "Parts tied to a CSS variable (",
-        paste(names(colours$css()), collapse = ", "),
-        ") are not checked here: only the browser knows their value. It warns in its console."
-      )
-    }
-    findings <- attr(preview, "contrast")
-    if (!nrow(findings)) {
-      return(tagList(
-        div(class = "pg-note pg-ok", "Every colour checked in R has at least 3:1 contrast in light and dark."),
-        css_note
-      ))
-    }
-    findings$ratio <- format(round(findings$ratio, 2), nsmall = 2)
-    tagList(
-      div(class = "pg-note pg-warn", "These colours are hard to see on the page background. They are kept."),
-      css_note,
-      data_table(
-        findings,
-        cells = list(colour = function(value) {
-          tagList(tags$span(class = "pg-swatch", style = paste0("background:", value)), tags$code(value))
-        })
-      )
+    # The check and its result are shared with the theme view (R/shared-check.R).
+    contrast_result_ui(
+      contrast_check(checked$character, eval(checked$theme$short)),
+      if (input$theme_source == "mascot") names(colours$css()) else character()
     )
   })
 
@@ -1342,14 +1313,9 @@ studio_server <- function(input, output, session) {
     )
     Filter(Negate(is.null), args)
   })
-  prefix <- paste0("studio-preview-", session$token)
-  preview_dir <- file.path(tempdir(), prefix)
-  dir.create(preview_dir, showWarnings = FALSE)
-  addResourcePath(prefix, preview_dir)
-  session$onSessionEnded(function() {
-    removeResourcePath(prefix)
-    unlink(preview_dir, recursive = TRUE)
-  })
+  folder <- preview_folder(session, "studio-preview")
+  prefix <- folder$prefix
+  preview_dir <- folder$dir
   preview_request <- reactiveVal(0)
   preview_count <- reactiveVal(0)
   is_building <- reactiveVal(FALSE)
@@ -1562,22 +1528,20 @@ studio_server <- function(input, output, session) {
   observeEvent(input$palette_swap, {
     target <- unname(studio_palette_swap[input$palette_swap])
     req(input$palette_swap %in% c("kept", "dropped"))
-    warning_text <- NULL
-    update_mascot(
+    # The swap is shared with the theme view's Check tab (R/shared-check.R).
+    result <- palette_swap_run(
       "palette_swap_demo",
-      character = unname(studio_palette_swap["from"]),
-      theme = unname(studio_palette_swap["palette"]),
-      motion = FALSE
-    )
-    withCallingHandlers(
-      update_mascot("palette_swap_demo", character = target),
-      mascot_palette_dropped = function(w) {
-        warning_text <<- paste("mascot_palette_dropped:", cli::ansi_strip(conditionMessage(w)))
-        invokeRestart("muffleWarning")
-      }
+      studio_palette_swap[["from"]],
+      target,
+      studio_palette_swap[["palette"]],
+      environment()
     )
     palette_swap_result(
-      warning_text %||% paste("Palette", studio_palette_swap[["palette"]], "kept for", mascot_character(target)$name)
+      if ("mascot_palette_dropped" %in% result$condition_classes) {
+        paste("mascot_palette_dropped:", result$message)
+      } else {
+        paste("Palette", studio_palette_swap[["palette"]], "kept for", mascot_character(target)$name)
+      }
     )
   })
   observeEvent(input$menu_long_status, {

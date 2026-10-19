@@ -487,3 +487,126 @@ describe("opening the theme view", {
     expect_match(page("view=examples"), '<option value="theme">Theme a mascot (theme)</option>', fixed = TRUE)
   })
 })
+
+describe("the theme view's drawing and code", {
+  it("draws what the code shows, tab by tab", {
+    env <- theme_parts()$env
+    # A recorder in place of update_mascot(), in the app's own environment (a fresh one for this test).
+    calls <- list()
+    assign("update_mascot", function(id, ...) calls[[length(calls) + 1L]] <<- list(...), envir = env)
+    shiny::testServer(env$theme_view_server, {
+      # The theme the code shows, evaluated, and the theme last sent to the mascot.
+      shown <- function() {
+        call <- str2lang(sub("^(#[^\n]*\n)+", "", output$theme_code))
+        if (is.null(call$theme)) mascot_theme() else eval(call$theme)
+      }
+      drawn <- function() {
+        session$elapse(300)
+        calls[[length(calls)]]$theme
+      }
+      session$setInputs(character = "tessa", mood = "idle", code_style = "helper", mode = "auto")
+      roles <- mascot_colour_roles("tessa")
+      do.call(session$setInputs, stats::setNames(as.list(roles$colour), paste0("colours-light_", roles$role)))
+      do.call(session$setInputs, stats::setNames(as.list(roles$colour), paste0("colours-dark_", roles$role)))
+      # Palette
+      session$setInputs(palette_grid = "coral_navy")
+      expect_identical(drawn(), shown())
+      expect_identical(drawn(), mascot_theme(palette = "coral_navy"))
+      # Your colours
+      session$setInputs(`colours-light_body` = "#c2185b", mode = "dark")
+      expect_identical(drawn(), shown())
+      # Brand colours, as your own colours and then as bs_theme()
+      session$setInputs(brand_primary = "#0f766e")
+      expect_identical(drawn(), shown())
+      session$setInputs(brand_source = "bslib")
+      expect_s3_class(drawn(), "bs_theme")
+      expect_identical(
+        bslib::bs_get_variables(drawn(), c("primary", "secondary")),
+        bslib::bs_get_variables(shown(), c("primary", "secondary"))
+      )
+      # Clearing back to the character's own colours sends the empty theme the code leaves out.
+      session$setInputs(stack_clear = "bslib")
+      for (layer in c("palette", "colours", "mode")) {
+        session$setInputs(stack_clear = layer)
+      }
+      expect_identical(drawn(), shown())
+    })
+  })
+})
+
+# The theme view in Chrome, started the way mascot_studio(view = "theme") starts it.
+theme_driver <- function(width = 1280, height = 800) {
+  checkmate::assert_number(width, lower = 1)
+  checkmate::assert_number(height, lower = 1)
+  app <- function() NULL
+  body(app) <- quote({
+    library(mascot)
+    mascot::mascot_studio("theme", run = FALSE)
+  })
+  app_driver(app, width = width, height = height)
+}
+
+describe("the theme view in a browser", {
+  it("switches tabs, draws the chosen palette, copies its code and links back from the studio", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    withr::defer(app$stop())
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    # Each tab shows its own panel.
+    for (tab in c("colours", "brand", "check", "palette")) {
+      app$run_js(sprintf("document.querySelector('#theme_tabs a[data-value=\"%s\"]').click()", tab))
+      app$wait_for_js(sprintf(
+        "document.querySelector('#theme_tabs + .tab-content > .tab-pane[data-value=\"%s\"]')?.classList.contains('active')",
+        tab
+      ))
+    }
+    # A palette card recolours the live mascot and the code.
+    coral <- mascot_colour_roles("tessa", palette = "coral_navy")
+    app$click(selector = "label.theme-palette-card:has(input[value=coral_navy])")
+    app$wait_for_js("mascot.host.state(document.getElementById('theme_mascot')).theme.palette === 'coral_navy'")
+    expect_identical(
+      tolower(app$get_js("mascot.host.state(document.getElementById('theme_mascot')).colours.body")),
+      tolower(coral$colour[coral$role == "body"])
+    )
+    app$wait_for_value(output = "theme_code", ignore = list(NULL, 'mascot("helper")'))
+    expect_identical(app$get_value(output = "theme_code"), 'mascot("helper", theme = "coral_navy")')
+    expect_identical(app$get_js("document.getElementById('palette').value"), "coral_navy")
+    # Copy puts the code shown on the clipboard.
+    app$run_js(
+      "window.copied = null; navigator.clipboard.writeText = (text) => { window.copied = text; return Promise.resolve(); };"
+    )
+    app$click(selector = "[data-copy=theme_code]")
+    app$wait_for_js("window.copied !== null")
+    expect_identical(app$get_js("window.copied"), app$get_value(output = "theme_code"))
+    # The studio's More menu opens this view in a new tab.
+    link <- app$get_js(paste0(
+      "fetch('?view=studio').then((r) => r.text()).then((html) => {",
+      "const a = new DOMParser().parseFromString(html, 'text/html').getElementById('more_theme');",
+      "return a ? [a.getAttribute('href'), a.target, a.textContent] : null; })"
+    ))
+    expect_identical(unlist(link), c("?view=theme", "_blank", "Theme a mascot"))
+  })
+  it("stacks the preview, the code and the tabs on a phone, and keeps the preview in view", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver(width = 375, height = 812)
+    withr::defer(app$stop())
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    top <- function(selector) app$get_js(sprintf("document.querySelector('%s').getBoundingClientRect().top", selector))
+    expect_lt(top(".theme-preview"), top(".theme-code"))
+    expect_lt(top(".theme-code"), top(".theme-right"))
+    expect_true(app$get_js(
+      "document.querySelector('.theme-page').scrollWidth <= document.querySelector('.theme-page').clientWidth"
+    ))
+    # The four tabs fit on one line.
+    expect_true(app$get_js(
+      "(() => { const n = document.querySelector('#theme_tabs'); return n.scrollWidth <= n.clientWidth; })()"
+    ))
+    # Scrolled down to the tabs, the preview stays at the top.
+    app$run_js("document.querySelector('.theme-page').scrollTop = 900")
+    app$wait_for_js("document.querySelector('.theme-page').scrollTop > 0")
+    expect_lt(abs(top(".theme-preview")), 2)
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('.theme-preview')).position"), "sticky")
+  })
+})

@@ -123,8 +123,8 @@ came from.
 ## Workflow
 - **Every change starts with an issue** (goal + "done when" checklist, labels, milestone) placed in the epic tree:
   root **#1** → epics (M0 Setup #10, M1 Characters and themes #11, M2 Shiny #12, M3 Quarto #13, M4 Gallery and
-  docs #14, M5 AI skills #15, M6 Release #16; Pharma #17, Static assets #18, Builder #19, Trailers #20, Theme
-  packs #21) → issues. A new request mid-session gets its issue first. Link a child with
+  docs #14, M5 AI skills #15, M6 Release #16; Pharma #17, Static assets #18, Builder #19, Trailers #20, Palettes
+  and packs #21) → issues. A new request mid-session gets its issue first. Link a child with
   `gh api -X POST repos/insightsurge/mascot/issues/<parent>/sub_issues -F sub_issue_id=<child id>`
   (the id is `gh api repos/insightsurge/mascot/issues/<n> --jq .id`); a child has one parent.
 - Labels: one type (`enhancement`, `bug`, `documentation`, `chore`, `idea`, `question`, `Epic`), one or more

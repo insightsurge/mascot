@@ -130,6 +130,8 @@
 
 ## Minor improvements and fixes
 
+* `?mascot_theme` and the Get started article say that which parts of a character a `bslib::bs_theme()` colours is experimental and may change in a later release (#385).
+
 * `?mascot_theme` explains that built-in characters keep one outline colour in both modes, and how to set your own dark-mode outline with `dark = list(outline = )` (#380).
 
 * Exported examples assign mascot tags instead of printing the embedded character data (#350).

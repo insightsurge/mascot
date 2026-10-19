@@ -100,7 +100,7 @@ Note that \code{suppressWarnings()} also works but hides every warning.
 
 \examples{
 mascot_theme()
-mascot_theme(palette = "coral", light = list(rim = "#b93664"))
+mascot_theme(palette = "coral_navy", light = list(rim = "#b93664"))
 mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
 mascot_theme(css = list(body = "--team-blue"))
 ui <- mascot("helper", theme = list(body = "#1f6feb"))

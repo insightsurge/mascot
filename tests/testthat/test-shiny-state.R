@@ -582,14 +582,26 @@ describe("palette state across public updates", {
     protocol_ready(f)
     expect_identical(protocol_flush(f)$state$theme, theme)
   })
+  it("adds the characters that have a dropped palette to the warning", {
+    withr::local_options(mascot.contrast_warnings = FALSE)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    update_mascot("helper", character = "sela", theme = "azure", session = f$session)
+    expect_warning(
+      update_mascot("helper", character = "tessa", session = f$session),
+      'Palette "azure" dropped for character "tessa".*Character "sela" has a palette called "azure"',
+      class = "mascot_palette_dropped"
+    )
+    expect_null(protocol_record(f)$desired$theme$palette)
+  })
   it("keeps a shared id using the incoming character's palette and accepts a palette with a swap", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
-    update_mascot("helper", character = "tessa", theme = "coral", session = f$session)
+    update_mascot("helper", character = "tessa", theme = "peach", session = f$session)
     expect_no_warning(update_mascot("helper", character = "sela", session = f$session))
     theme <- protocol_record(f)$desired$theme
-    expect_identical(theme$palette, "coral")
-    expect_identical(theme$palette_colours$light$hair_purple, "#1D3557")
+    expect_identical(theme$palette, "peach")
+    expect_identical(theme$palette_colours$light$hair_purple, "#2B305C")
     expect_null(theme$palette_colours$light$accessory)
     expect_no_warning(update_mascot("helper", character = "neer", theme = "lagoon", session = f$session))
     expect_identical(protocol_record(f)$desired$theme$palette, "lagoon")

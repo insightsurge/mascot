@@ -383,7 +383,7 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_status = visual_status(),
     mascot_bubble = visual_bubble(),
     mascot_motion_settings = visual_motion(),
-    mascot_gesture = visual_gesture(),
+    mascot_gesture = visual_gesture(character),
     mascot_gestures = visual_gestures(character),
     mascot_size = visual_size(),
     mascot_placement = visual_placement(),
@@ -454,15 +454,29 @@ visual_families <- function() {
 visual_anchors <- function(character = formals(mascot::mascot)$character) {
   tagList(
     tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s anchors")),
-    data_table(mascot_anchors(character))
+    if (nrow(mascot_anchors(character))) {
+      data_table(mascot_anchors(character))
+    } else {
+      tags$p(paste(mascot_character(character)$name, "has no anchors"))
+    }
   )
+}
+
+# Only descriptions wrap; the wrapper contains any horizontal overflow on narrow screens.
+palette_table <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  div(class = "pg-palette-table", data_table(mascot_palettes(character)))
 }
 
 visual_palettes <- function(character = formals(mascot::mascot)$character) {
   tagList(
     tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s palettes")),
-    tags$p(class = "pg-muted", "original is the character's own colours, with no palette applied."),
-    data_table(mascot_palettes(character))
+    tags$p(
+      class = "pg-muted",
+      "The first row is the character's own colours, with no palette applied; \"original\" always selects them."
+    ),
+    palette_table(character),
+    palette_guide_demo(character)
   )
 }
 
@@ -519,10 +533,21 @@ visual_motion <- function() {
   NULL
 }
 
-visual_gesture <- function() {
-  gestures <- mascot_gestures()
+visual_gesture <- function(character = formals(mascot::mascot)$character) {
+  checkmate::assert_string(character)
+  gestures <- mascot_gestures(character)
+  resting <- gestures$name %in% studio_resting_gestures[character]
+  gestures <- gestures[!resting, ]
   tagList(
     tags$h3(class = "pg-section-title", "Gestures"),
+    if (any(resting)) {
+      tags$p(paste(
+        studio_resting_gestures[[character]],
+        "is",
+        paste0(mascot_character(character)$name, "'s"),
+        "idle animation; choose its resting animation entry in the sentence to try it."
+      ))
+    },
     div(
       class = "pg-cards",
       lapply(seq_len(nrow(gestures)), function(i) {
@@ -639,12 +664,29 @@ roles_table <- function(character, palette = NULL) {
   }
   follows <- function(value) if (is.na(value)) tags$span(class = "pg-muted", "leader") else paste("\u2190", value)
   shade <- function(value) if (is.na(value)) "" else value
+  roles <- mascot_colour_roles(character, palette = palette)
+  # The outline row points to the dark-mode outline tip under mascot_theme()'s dark argument.
+  outline_text <- roles$description[roles$role == "outline"]
+  description <- function(value) {
+    if (length(outline_text) == 1L && identical(value, outline_text)) {
+      tagList(
+        value,
+        " ",
+        tags$a(
+          href = "#",
+          class = "pg-role-tip",
+          `data-event` = "select_function",
+          `data-value` = "mascot_theme",
+          "Dark-mode outline tip"
+        )
+      )
+    } else {
+      value
+    }
+  }
   tagList(
     code_block(format_call("mascot_colour_roles", list(character = character, palette = palette)), "pg-code-small"),
-    data_table(
-      mascot_colour_roles(character, palette = palette),
-      cells = list(colour = swatch, follows = follows, shade = shade)
-    )
+    data_table(roles, cells = list(colour = swatch, follows = follows, shade = shade, description = description))
   )
 }
 
@@ -663,7 +705,9 @@ visual_colour_roles <- function(character) {
 visual_theme <- function(character = formals(mascot::mascot)$character) {
   brand <- studio_brand(character)
   tagList(
-    tags$h3(class = "pg-section-title", "Which colour applies"),
+    palette_table(character),
+    palette_guide_demo(character),
+    tags$h3(class = "pg-section-title", "Which mode applies"),
     div(
       class = "pg-flow",
       div(class = "pg-flow-step", tags$code("mode = \"light\""), " or ", tags$code("\"dark\""), div("always wins")),
@@ -738,6 +782,12 @@ visual_menu <- function() {
       step(tags$code("update_mascot()"), div("answers"))
     ),
     div(class = "pg-live", tags$span(class = "pg-muted", "Last choice here: "), textOutput("menu_last", inline = TRUE)),
+    tags$h3(class = "pg-section-title", "Long status"),
+    tags$p(
+      "The menu opens from the mascot's position on the screen and falls back to the opposite side when the chosen side has no room. A long status makes the mascot taller, so choose a corner, then open the live mascot's menu to see where it lands."
+    ),
+    try_button("menu_long_status", "top-right", "Try top corner with long status"),
+    try_button("menu_long_status", "bottom-right", "Try bottom corner with long status"),
     tags$h3(class = "pg-section-title", "Your server code for these items"),
     div(class = "pg-code-wrap", code_output("menu_code"), copy_button("menu_code")),
     div(
@@ -919,7 +969,9 @@ guide_mistakes <- function(fn, character) {
     class = "pg-guide-piece pg-guide-mistakes",
     tags$h3(class = "pg-section-title", "Warnings, errors and common mistakes"),
     if (!length(cases)) tags$p("This listing takes no arguments. Use its returned names rather than typing guesses."),
-    lapply(cases, function(code) {
+    lapply(seq_along(cases), function(i) {
+      code <- cases[[i]]
+      mistake <- character_mistakes(character)[[names(cases)[i] %||% ""]]
       messages <- character()
       mock <- shiny::MockShinySession$new()
       on.exit(mock$close(), add = TRUE)
@@ -941,6 +993,7 @@ guide_mistakes <- function(fn, character) {
       )
       tagList(
         code_block(code, "pg-code-small"),
+        if (!is.null(mistake)) tags$p(mistake$why),
         code_block(
           if (length(messages)) {
             paste(messages, collapse = "\n")
@@ -958,14 +1011,21 @@ guide_mistake_calls <- function(fn, character) {
   checkmate::assert_string(fn)
   checkmate::assert_string(character)
   role <- mascot_colour_roles(character)$role[1]
+  mistakes <- character_mistakes(character)
+  update_cases <- Filter(function(x) startsWith(x$code, "update_mascot("), mistakes)
+  palette_cases <- Filter(function(x) startsWith(x$code, "mascot("), mistakes)
   switch(
     fn,
     update_mascot = vapply(
-      character_mistakes(character),
+      update_cases,
       function(x) sub(")$", ", session = session)", x$code),
       character(1)
     ),
-    mascot = c('mascot("has spaces")', 'mascot("helper", click = c(help = "Help"))'),
+    mascot = c(
+      'mascot("has spaces")',
+      'mascot("helper", click = c(help = "Help"))',
+      vapply(palette_cases, function(x) x$code, character(1))
+    ),
     mascot_character = 'mascot_character("unknown-character")',
     mascot_mood = paste0(
       'mascot("helper", character = ',
@@ -1366,4 +1426,125 @@ shared_input_button <- function(fn, arg) {
     return(NULL)
   }
   tags$button(type = "button", class = "btn btn-sm", `data-focus-input` = ids[[1]], paste("Edit", arg))
+}
+
+# These calls use a separate mascot so the sentence and the live host keep their current settings.
+palette_guide_demo <- function(character) {
+  checkmate::assert_string(character)
+  example <- studio_palette_swap
+  from <- mascot_character(example[["from"]])$name
+  kept <- mascot_character(example[["kept"]])$name
+  dropped <- mascot_character(example[["dropped"]])$name
+  initial <- list("palette_swap_demo", character = example[["from"]], theme = example[["palette"]], motion = FALSE)
+  tagList(
+    tags$p(
+      "Colour precedence: the character's own colours, then palette, then light/dark colours, then css (later wins)."
+    ),
+    tags$p(
+      'In update_mascot(), theme = "original" restores the character\'s own colours; theme = NULL leaves colours as they are.'
+    ),
+    tags$p(
+      "A palette without a dark version uses its light colours in both modes; this applies to all shipped palettes today."
+    ),
+    tags$p(
+      "Native and built-in palette colours give no contrast warnings. Your own colours warn below 3:1 contrast in this studio and are kept."
+    ),
+    palette_base_demo(character),
+    dark_outline_demo(character),
+    tags$h3(class = "pg-section-title", "Palette roles on the live mascot"),
+    tags$p("Choose a palette in the sentence to recolour the live mascot and this table."),
+    uiOutput("roles_table"),
+    tags$h3(class = "pg-section-title", "Character swap"),
+    tags$p(paste(
+      "Both examples start with",
+      from,
+      "in",
+      paste0(example[["palette"]], "."),
+      kept,
+      "keeps the palette;",
+      dropped,
+      "drops it and returns to its own colours."
+    )),
+    do.call(mascot, c(initial, list(placement = "inline"))),
+    code_block(paste(
+      format_call("update_mascot", initial),
+      format_call("update_mascot", list("palette_swap_demo", character = example[["kept"]])),
+      format_call("update_mascot", list("palette_swap_demo", character = example[["dropped"]])),
+      sep = "\n"
+    )),
+    try_button("palette_swap", "kept", paste("Swap and keep", example[["palette"]])),
+    try_button("palette_swap", "dropped", paste("Swap and drop", example[["palette"]])),
+    tags$div(role = "status", textOutput("palette_swap_result"))
+  )
+}
+
+# The founder's decision (#335): built-in characters keep one outline colour in both modes; an app that
+# wants a different dark-mode outline sets it. Both mascots below are forced into dark mode, so the
+# comparison reads on any page.
+studio_dark_outline_colour <- "#FFC93C"
+
+dark_outline_demo <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  roles <- mascot_colour_roles(character)
+  if (!"outline" %in% roles$role) {
+    return(NULL)
+  }
+  custom <- helper_call(
+    "mascot_theme",
+    dark = named_call("list", c(outline = studio_dark_outline_colour))
+  )
+  default_theme <- mascot_theme(mode = "dark")
+  custom_theme <- mascot_theme(dark = list(outline = studio_dark_outline_colour), mode = "dark")
+  figure <- function(id, theme, caption) {
+    tags$figure(
+      mascot(id, character = character, theme = theme, size = 100, placement = "inline", motion = FALSE),
+      tags$figcaption(caption)
+    )
+  }
+  div(
+    id = "dark_outline_tip",
+    class = "pg-dark-outline",
+    tags$h3(class = "pg-section-title", "Tip: the outline in dark mode"),
+    tags$p(
+      "Built-in characters keep one outline colour in both modes. Every app's dark theme differs, and each character's light outer band keeps its silhouette readable on any dark page. An app that wants a different dark-mode outline sets it itself:"
+    ),
+    code_block(paste(deparse1(helper_call("mascot_theme")), deparse1(custom), sep = "\n")),
+    div(
+      class = "pg-dark-panel",
+      figure("dark_outline_default", default_theme, "Default outline"),
+      figure("dark_outline_custom", custom_theme, "Custom dark outline")
+    ),
+    tags$p(
+      class = "pg-muted",
+      "Both examples are forced into dark mode with mode = \"dark\", so they look the same on any page."
+    )
+  )
+}
+
+# Build the example from the selected character's current palette and role listings.
+studio_palette_base <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  palettes <- mascot_palettes(character)$name
+  palette <- palettes[[if (length(palettes) > 1L) 2L else 1L]]
+  roles <- mascot_colour_roles(character, palette = palette)
+  colour <- if (tolower(roles$colour[[1L]]) == "#b93664") "#2563eb" else "#b93664"
+  list(palette = palette, role = roles$role[[1L]], base = roles$colour[[1L]], colour = colour)
+}
+
+palette_base_demo <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  example <- studio_palette_base(character)
+  theme <- helper_call(
+    "mascot_theme",
+    palette = example$palette,
+    light = named_call("list", stats::setNames(example$colour, example$role))
+  )
+  div(
+    class = "pg-palette-base",
+    tags$h3(class = "pg-section-title", "Use a palette as a base"),
+    tags$p("The explicit light role wins over the palette. Other roles keep the palette or follow the changed leader."),
+    code_block(deparse1(theme)),
+    data_table(data.frame(role = example$role, palette = example$base, light = example$colour)),
+    mascot("palette_base_demo", character = character, theme = eval(theme), placement = "inline", motion = FALSE)
+  )
 }

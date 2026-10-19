@@ -821,7 +821,7 @@ describe("E4a format-v1 tracks", {
       "typo: fail(() => t.compile(typo)), ghost: fail(() => t.compile(ghost)), long: fail(() => t.compile(long)),",
       "zero: fail(() => t.compile(zero)) };"
     )))
-    expect_identical(r$own, list(rock = "rock", nod = "nod", wave = "wave"))
+    expect_identical(r$own, list(rock = "rock", nod = "nod", wave = "wave", shimmer = "shimmer"))
     expect_identical(r$absent$wave, "rock")
     expect_identical(r$cycle, list(code = "missing_reference", path = "$.gestures.rock.fallback"))
     expect_identical(r$noNod, list(code = "missing_reference", path = "$.gestures.nod"))
@@ -852,8 +852,9 @@ describe("E4a format-v1 tracks", {
     expect_length(nod[[6]], 0)
     wave <- r$wave
     expect_equal(wave[[1]][["arm_r.rotate"]], 1.25)
-    expect_equal(wave[[2]][["arm_r.rotate"]], -0.9)
-    expect_equal(wave[[3]][["arm_r.rotate"]], -0.3)
+    # The hanging arm lifts to 150 degrees at a fifth of the wave and eases back to 120 degrees at two fifths.
+    expect_equal(wave[[2]][["arm_r.rotate"]], -150 * pi / 180, tolerance = 1e-3)
+    expect_equal(wave[[3]][["arm_r.rotate"]], -120 * pi / 180, tolerance = 1e-3)
     expect_equal(wave[[2]][["root.rotate"]], -0.025)
     expect_length(wave[[5]], 0)
   })

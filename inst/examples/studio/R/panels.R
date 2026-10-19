@@ -5,14 +5,45 @@
 # Groups for the colour pickers; parts a future character adds appear under "Other parts".
 colour_groups <- function(roles) {
   groups <- list(
-    Body = c("body", "body_highlight", "rim", "shadow", "outline"),
-    Face = c("feature", "eye_white", "shine", "eyelid", "teeth", "tongue", "blush", "blush_strong"),
-    `Arms and accessories` = c("limb", "sleeve", "accessory", "accessory_detail"),
+    Body = c(
+      "body",
+      "body_shade",
+      "body_highlight",
+      "rim",
+      "rim_light",
+      "rim_shade",
+      "outline",
+      "outline_second",
+      "shadow"
+    ),
+    Face = c(
+      "feature",
+      "eye_white",
+      "shine",
+      "eyelid",
+      "iris",
+      "iris_tint",
+      "teeth",
+      "tongue",
+      "blush",
+      "blush_strong"
+    ),
+    Hair = c("hair", "hair_shade", "hair_light"),
+    `Chest badge` = c("badge", "badge_icon"),
+    `Arms, feet and accessories` = c("limb", "sleeve", "hand", "accessory", "accessory_light", "accessory_detail"),
     Effects = c("sparkle", "sparkle_outline", "sweat")
   )
   groups <- lapply(groups, intersect, roles$role)
   groups$`Other parts` <- setdiff(roles$role, unlist(groups))
   Filter(length, groups)
+}
+
+# The palette menu: the character's own colours always carry the value "original" (no palette applied), whatever
+# name the character gives them; the other palettes carry their own names.
+studio_palette_choices <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  listed <- mascot_palettes(character)$name
+  stats::setNames(c("original", listed[-1L]), listed)
 }
 
 # ---- Inspector controls, grouped by function -----------------------------------------------
@@ -84,15 +115,15 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
       `aria-label` = "Character, palette, mood and one-off gesture",
       "Showing",
       selectInput("character", NULL, studio_characters(), selected = character, selectize = FALSE),
-      "in the",
+      tags$span(id = "palette_prefix", "in"),
       selectInput(
         "palette",
         NULL,
-        stats::setNames(mascot_palettes(character)$name, tools::toTitleCase(mascot_palettes(character)$name)),
+        studio_palette_labels(character),
         selected = "original",
         selectize = FALSE
       ),
-      tags$span("palette,"),
+      tags$span(id = "palette_suffix", ","),
       tags$span(id = "mood_article", "in an"),
       selectInput(
         "mood",
@@ -108,13 +139,7 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
         selectInput(
           "gesture",
           NULL,
-          c(
-            "no gesture" = "",
-            stats::setNames(
-              mascot_gestures(character)$name,
-              paste("a", tools::toTitleCase(mascot_gestures(character)$name))
-            )
-          ),
+          studio_gesture_choices(character),
           selected = "",
           selectize = FALSE
         ),
@@ -146,6 +171,16 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
     actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm"),
     studio_topright()
   )
+  choices <- studio_palette_choices(character)
+  labels <- studio_palette_labels(character)
+  bar <- htmltools::tagQuery(bar)$find("#palette")$empty()$append(lapply(seq_along(choices), function(i) {
+    tags$option(
+      value = choices[[i]],
+      title = names(choices)[[i]],
+      selected = if (choices[[i]] == "original") NA,
+      names(labels)[[i]]
+    )
+  }))$addAttrs(title = studio_palette_sentence(character)$id)$allTags()
   for (id in c("character", "palette", "mood", "gesture")) {
     bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(`aria-label` = tools::toTitleCase(id))$allTags()
   }
@@ -157,7 +192,8 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
         class = "pg-word-tooltip",
         role = "tooltip",
         tags$code(paste0(fn, "()")),
-        tags$span(help_page(fn)$title)
+        tags$span(help_page(fn)$title),
+        if (id == "palette") tags$code(id = "palette_id", studio_palette_sentence(character)$id)
       )
     )$allTags()
     bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(

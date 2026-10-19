@@ -12,22 +12,24 @@ mascot_palettes(character = NULL)
 }
 \value{
 A data frame with character columns \code{name} (the palette id),
-\code{description} and \code{source}: \code{"native"} for \code{"original"}, \code{"character"} for
-a palette the character defines and \code{"family"} for one it takes from its
-family. The character's own palettes follow in the order its author wrote
-them. With \code{character = NULL}, a final \code{character} column names each id.
+\code{description} and \code{source}: \code{"native"} for the character's own colours,
+\code{"character"} for a palette the character defines and \code{"family"} for one
+it takes from its family. The character's own palettes follow in the
+order its author wrote them. With \code{character = NULL}, a final \code{character} column names each id.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the value you pass to the matching function.
 }
 \description{
 A palette is a ready-made set of colours for a character, in light and dark
-mode. The first row, \code{"original"}, stands for the character's own colours
-with no palette applied.
+mode. The first row stands for the character's own colours with no palette
+applied. It is called \code{"original"}, unless the character names its own
+colours (Tessa's are \code{"night_teal"}); \code{"original"} then still selects the
+same colours.
 }
 \examples{
 mascot_palettes()
 mascot_palettes("tessa")
-ui <- mascot("helper", character = "tessa", theme = "coral")
+ui <- mascot("helper", character = "tessa", theme = "coral_navy")
 }
 \seealso{
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot_theme]{mascot_theme()}}

@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The redesigned studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).
+
 * The studio updates its Guide and code builders for recent API changes: `mascot_popup_menu()` explains that clicks never fire, option-only helper calls are prevented, `update_mascot()` documents its reset table and ignored-helper warnings, `mascot_preview()` aligns with its remaining arguments and 160, 96 and 24 pixel comparison columns, and `mascot_theme()` documents `bs_theme()` constraints (#353).
 
 * The studio search shows one result per function with matching argument badges, and Help and Guide cards offer a corner icon to widen the docked inspector (#353).
@@ -34,8 +36,10 @@
 
 ## New features
 
+* Tessa has a new look: a slimmer teal hexagon with a silver ring that shimmers now and then, hair with a side fringe, a small bow, small studs, arms that hang down and a chest badge whose icon shows her mood. She keeps her five moods, her wave and nod, her status lines and every anchor name, and gains anchors for her fringe, lock and studs. Her colours gain roles for the hair (`hair`, `hair_shade`, `hair_light`), the badge (`badge`, `badge_icon`), the iris, the body shade and the ring's light and dark ends, and the bow now has its own `accessory` colour instead of following the rim. Her old palettes `nordic`, `coral` and `azure` are replaced (#359).
+* Tessa's own colours are named `night_teal`, with `"original"` still selecting them; `mascot_palettes("tessa")` lists `night_teal` first, and her other palettes are `sea_green`, `forest`, `spring`, `peach`, `coral_navy`, `desert_coral`, `rose_soft`, `lilac_soft` and `mist_navy`. A character file may name its own colours with `native_palette`, and a palette may carry a `group` for sorting in documentation (#358, #359).
+* An unknown palette in `mascot()` (an error) or `update_mascot()` (a warning) now names the other characters that have a palette of that name (#358).
 * `mascot_popup_menu()` gains `disabled = FALSE`. With `TRUE`, the button stays reachable by keyboard and screen readers announce it as unavailable; it opens nothing and sends no input (#350).
-
 * `mascot()`, `update_mascot()` and `mascot_preview()` accept palette id strings
   through `theme`; `mascot_theme()` gains `palette`, with role and CSS overrides
   applied on top. Character swaps keep shared palette ids or warn and restore

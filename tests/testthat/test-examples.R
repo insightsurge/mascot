@@ -589,7 +589,8 @@ describe("bundled example apps", {
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("document.documentElement.dataset.bsTheme==='light'")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#b53d78'")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.accessory"), "#A94A82")
+    # The bow has its own colour now, so a brand's rim no longer reaches it.
+    expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).colours.accessory"))
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.sleeve"), "#B53D78")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#A94A82")
     app$click("personalise")
@@ -636,7 +637,10 @@ describe("studio round 4 regression guards", {
   it("gets character labels and defaults from the package", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     for (file in list.files(dir, recursive = TRUE, full.names = TRUE)) {
-      expect_false(any(grepl("tessa", readLines(file, warn = FALSE), ignore.case = TRUE)), info = file)
+      lines <- readLines(file, warn = FALSE)
+      # Explicit named demos and the temporary #375 workaround are independent of defaults.
+      lines <- lines[!grepl("^studio_(resting_gestures|palette_swap) <-", lines)]
+      expect_false(any(grepl("tessa", lines, ignore.case = TRUE)), info = file)
     }
     env <- new.env()
     sys.source(file.path(dir, "R", "data.R"), env)
@@ -838,14 +842,36 @@ describe("studio state and built previews", {
         session$setInputs(select_function = fn)
         html <- output$guide$html
         expect_match(html, "Warnings, errors and common mistakes", fixed = TRUE)
-        expect_false(grepl("<(input|select|textarea)\\b|data-event=", html, perl = TRUE), info = fn)
+        expect_false(grepl("<(input|select|textarea)\\b", html, perl = TRUE), info = fn)
         buttons <- regmatches(html, gregexpr("<button\\b[^>]*>", html, perl = TRUE))[[1]]
-        # The card's docked expand icon is the only new Guide action; all other
-        # buttons still copy code rather than changing the live mascot.
+        # Only these named demonstrations may change state; other Guide actions copy code or expand it.
+        allowed_events <- switch(
+          fn,
+          mascot_theme = "palette_swap",
+          mascot_palettes = "palette_swap",
+          mascot_popup_menu = "menu_long_status",
+          character()
+        )
+        events <- regmatches(html, gregexpr('data-event="[^"]+"', html))[[1]]
+        expect_setequal(events, paste0('data-event="', allowed_events, '"')[seq_along(allowed_events)])
+        demo <- grepl('data-event="', buttons, fixed = TRUE)
+        if (length(allowed_events)) {
+          expect_identical(sum(demo), 2L, info = fn)
+          expect_match(
+            html,
+            if (fn == "mascot_popup_menu") 'data-value="top-right"' else 'data-value="kept"',
+            fixed = TRUE
+          )
+          expect_match(
+            html,
+            if (fn == "mascot_popup_menu") 'data-value="bottom-right"' else 'data-value="dropped"',
+            fixed = TRUE
+          )
+        }
         expand <- grepl('data-expand-inspector="true"', buttons, fixed = TRUE)
         expect_identical(sum(expand), 1L, info = fn)
         expect_true(all(grepl('aria-controls="inspector_sidebar"', buttons[expand], fixed = TRUE)), info = fn)
-        expect_true(all(grepl("data-copy=", buttons[!expand], fixed = TRUE)), info = fn)
+        expect_true(all(grepl("data-copy=", buttons[!expand & !demo], fixed = TRUE)), info = fn)
         # Verify no Guide contains a visual belonging to another function
         if (fn == "mascot_size") {
           expect_match(html, 'id="size_ruler"', fixed = TRUE)
@@ -858,7 +884,7 @@ describe("studio state and built previews", {
           expect_false(grepl("pg-flow", html, fixed = TRUE))
         } else if (fn == "mascot_theme") {
           expect_match(html, "pg-flow", fixed = TRUE)
-          expect_false(grepl('id="roles_table"', html, fixed = TRUE))
+          expect_match(html, 'id="roles_table"', fixed = TRUE)
         } else if (fn == "mascot_status") {
           expect_match(html, "Status line or speech bubble?", fixed = TRUE)
           expect_false(grepl("pg-timeline", html, fixed = TRUE))
@@ -1255,9 +1281,15 @@ describe("studio safeguards (#248)", {
     }
     show <- function(...) list(list(...), list(bubble_show = 1))
     rows <- list(
-      palette = row(list(list(palette = "coral")), "theme", 'theme = "coral"', wait = 300, sent = function(p) {
-        identical(p$theme$palette, "coral")
-      }),
+      palette = row(
+        list(list(palette = "coral_navy")),
+        "theme",
+        'theme = "coral_navy"',
+        wait = 300,
+        sent = function(p) {
+          identical(p$theme$palette, "coral_navy")
+        }
+      ),
       mood = row(list(list(mood = "happy")), "mood", 'mood = "happy"', sent = function(p) identical(p$mood, "happy")),
       status_text = row(
         list(list(status_text = "Saving")),
@@ -1993,14 +2025,20 @@ describe("studio palette controls", {
       for (input in c("character", "palette", "mood", "gesture")) {
         expect_match(bar, paste0('<select[^>]*id="', input, '"'))
       }
-      for (palette in mascot_palettes(id)$name) {
+      # The character's own colours always carry the value "original", whatever name they are listed under.
+      for (palette in c("original", mascot_palettes(id)$name[-1L])) {
         expect_match(bar, paste0('value="', palette, '"'), fixed = TRUE)
       }
+      expect_match(
+        tolower(bar),
+        paste0(">", tolower(get("studio_palette_sentence", parts$env)(id)$label), "</option>"),
+        fixed = TRUE
+      )
       expect_match(bar, 'id="gesture_play"', fixed = TRUE)
       expect_false(grepl("try_mood", bar, fixed = TRUE))
     }
     table <- get("roles_table", parts$env)
-    expect_match(as.character(table("tessa", "coral")), "#FFE5D9", fixed = TRUE)
+    expect_match(as.character(table("tessa", "coral_navy")), "#FFE5D9", fixed = TRUE)
     expect_error(table(1), "character")
     expect_error(table("tessa", 1), "palette")
     builder <- get("code_theme", parts$env)
@@ -2050,11 +2088,11 @@ describe("studio palette controls", {
     shiny::testServer(get("studio_server", parts$env), {
       do.call(session$setInputs, start)
       studio_go_live(session)
-      session$setInputs(palette = "coral")
+      session$setInputs(palette = "coral_navy")
       session$elapse(301)
       session$setInputs(mistake = "Low contrast", mistake_run = 1)
-      expect_identical(eval(state$theme$short)$palette, "coral")
-      expect_match(output$code_ui, 'palette = "coral"', fixed = TRUE)
+      expect_identical(eval(state$theme$short)$palette, "coral_navy")
+      expect_match(output$code_ui, 'palette = "coral_navy"', fixed = TRUE)
     })
   })
   it("keeps palette selection, theme sources, previews, resets and live anchor listings in step", {
@@ -2073,17 +2111,17 @@ describe("studio palette controls", {
       }
       do.call(session$setInputs, start)
       studio_go_live(session)
-      session$setInputs(palette = "coral")
+      session$setInputs(palette = "coral_navy")
       session$elapse(301)
-      expect_identical(roles(), mascot_colour_roles("tessa", palette = "coral"))
-      expect_identical(preview_args()$theme, "coral")
+      expect_identical(roles(), mascot_colour_roles("tessa", palette = "coral_navy"))
+      expect_identical(preview_args()$theme, "coral_navy")
       session$setInputs(preview_theme_source = "custom", preview_body = "#123456")
-      expect_identical(eval(preview_args()$theme)$palette, "coral")
+      expect_identical(eval(preview_args()$theme)$palette, "coral_navy")
       expect_identical(eval(preview_args()$theme)$light$body, "#123456")
       session$setInputs(theme_source = "bslib")
       expect_identical(messages$palette$value, "original")
       session$setInputs(palette = "original")
-      session$setInputs(palette = "coral")
+      session$setInputs(palette = "coral_navy")
       expect_identical(messages$theme_source$value, "own")
       session$setInputs(theme_source = "own", chip_reset = "theme")
       expect_identical(messages$palette$value, "original")
@@ -2112,18 +2150,18 @@ describe("studio palette controls", {
       }
       do.call(session$setInputs, start)
       studio_go_live(session)
-      session$setInputs(palette = "coral")
+      session$setInputs(palette = "peach")
       session$elapse(301)
-      expect_match(output$code_ui, 'theme = "coral"', fixed = TRUE)
+      expect_match(output$code_ui, 'theme = "peach"', fixed = TRUE)
       session$setInputs(character = "sela")
-      expect_match(output$code_ui, 'theme = "coral"', fixed = TRUE)
+      expect_match(output$code_ui, 'theme = "peach"', fixed = TRUE)
       expect_match(messages$palette$options, 'value="peach"', fixed = TRUE)
-      expect_identical(messages$palette$value, "coral")
+      expect_identical(messages$palette$value, "peach")
       expect_match(choices$mood, 'value="happy"', fixed = TRUE)
       expect_match(choices$gesture, 'value="wave"', fixed = TRUE)
       session$setInputs(character = "knurl")
       expect_identical(messages$palette$value, "original")
-      expect_false(grepl('theme = "coral"', output$code_ui, fixed = TRUE))
+      expect_false(grepl('theme = "peach"', output$code_ui, fixed = TRUE))
       updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
       previous <- updates()$revision
       session$setInputs(gesture = "wave")
@@ -2151,6 +2189,332 @@ describe("studio disabled menus (#350)", {
       session$elapse(700)
       expect_true(eval(click_code()$helper)$disabled)
       expect_match(output$code_app, "disabled = TRUE", fixed = TRUE)
+    })
+  })
+})
+
+describe("studio palette sync (#353)", {
+  it("maps every listed role to light, dark, CSS and generated theme overrides", {
+    parts <- studio_parts()
+    builder <- get("code_theme", parts$env)
+    for (character in unname(get("studio_characters", parts$env)())) {
+      for (palette in unname(get("studio_palette_choices", parts$env)(character))) {
+        roles <- mascot_colour_roles(character, palette = palette)
+        groups <- get("colour_groups", parts$env)(roles)
+        expect_setequal(unlist(groups, use.names = FALSE), roles$role)
+        expect_length(unlist(groups), nrow(roles))
+        for (mode in c("light", "dark")) {
+          html <- as.character(get("role_pickers", parts$env)(mode, roles))
+          for (role in roles$role) {
+            expect_match(html, paste0('id="', mode, "_", role, '"'), fixed = TRUE)
+          }
+        }
+        # Arbitrary roles travel through all three override fields without an old role allow-list.
+        overrides <- stats::setNames(rep("#123456", nrow(roles)), roles$role)
+        theme <- eval(builder("mascot", overrides, overrides, "auto", roles$role, "", "", palette)$helper)
+        expect_identical(unlist(theme$light), overrides)
+        expect_identical(unlist(theme$dark), overrides)
+        expect_setequal(names(theme$css), roles$role)
+        table <- as.character(get("roles_table", parts$env)(character, palette))
+        for (role in roles$role) {
+          expect_match(table, paste0("<td>", role, "</td>"), fixed = TRUE)
+        }
+      }
+    }
+    choices <- get("studio_palette_choices", parts$env)("tessa")
+    expect_identical(unname(choices[["night_teal"]]), "original")
+    gestures <- get("studio_gesture_choices", parts$env)("tessa")
+    expect_identical(tail(unname(gestures), 1L), "shimmer")
+    expect_identical(tail(names(gestures), 1L), "shimmer (resting animation)")
+    expect_error(get("studio_palette_labels", parts$env)(1), "character")
+    expect_error(get("studio_gesture_choices", parts$env)(1), "character")
+  })
+  it("runs real kept and dropped palette swaps and sets the live long-status controls", {
+    parts <- studio_parts()
+    shiny::testServer(get("studio_server", parts$env), {
+      messages <- list()
+      session$sendInputMessage <- function(id, message) messages[[id]] <<- message
+      do.call(session$setInputs, studio_start_values(parts$page))
+      studio_go_live(session)
+      # Evaluate the guide to initialise its separate drawn mascot with the public UI call.
+      session$setInputs(select_function = "mascot_theme")
+      expect_match(output$guide$html, "Colour precedence", fixed = TRUE)
+      expect_match(output$guide$html, 'id="palette_swap_demo"', fixed = TRUE)
+      protocol_ready(list(session = session, id = session$ns("palette_swap_demo")))
+      session$flushReact()
+      session$setInputs(palette_swap = "kept")
+      expect_identical(output$palette_swap_result, "Palette peach kept for Sela")
+      expect_identical(
+        session$userData$mascot_updates[[session$ns("palette_swap_demo")]]$desired$theme$palette,
+        "peach"
+      )
+      session$setInputs(palette_swap = "dropped")
+      expect_match(output$palette_swap_result, "mascot_palette_dropped:", fixed = TRUE)
+      expect_match(output$palette_swap_result, "own colours are used", fixed = TRUE)
+      expect_null(session$userData$mascot_updates[[session$ns("palette_swap_demo")]]$desired$theme$palette)
+      for (corner in c("top-right", "bottom-right")) {
+        session$setInputs(menu_long_status = corner)
+        expect_identical(messages$position$value, corner)
+        expect_match(messages$status_text$value, "Review in progress", fixed = TRUE)
+        expect_identical(eval(state$placement$helper)$position, corner)
+        expect_identical(eval(state$status$helper)$text, get("studio_long_status", parts$env))
+        expect_s3_class(eval(state$click$helper), "mascot_popup_menu")
+      }
+      session$setInputs(character = "tessa")
+      expect_match(messages$palette$options, 'value="original"', fixed = TRUE)
+      expect_match(messages$palette$options, ">Tessa's own colours (night_teal)</option>", fixed = TRUE)
+      expect_match(messages$gesture$options, '>shimmer (resting animation)</option>', fixed = TRUE)
+    })
+  })
+  it("uses live anchor listings including empty characters", {
+    parts <- studio_parts()
+    expect_true(all(c("fringe", "lock", "stud_l", "stud_r") %in% mascot_anchors("tessa")$name))
+    expect_equal(nrow(mascot_anchors("neer")), 14L)
+    fixture <- format_recipe("study_bot")
+    fixture$anchors <- NULL
+    character <- character_format_check(fixture)
+    local_empty_registry()
+    character_data_register(character)
+    html <- as.character(get("visual_anchors", parts$env)(character$id))
+    expect_match(html, paste(character$name, "has no anchors"), fixed = TRUE)
+  })
+  it("shows native palette labels, new roles, resting gestures and guide demonstrations in the browser", {
+    local_shiny_browser()
+    app <- example_driver("studio")
+    withr::defer(app$stop())
+    app$wait_for_js(
+      "document.querySelector('#palette option[value=original]')?.textContent === \"Tessa's own colours (night_teal)\""
+    )
+    expect_identical(app$get_js("document.getElementById('palette').value"), "original")
+    expect_identical(app$get_js("document.querySelector('#gesture option:last-child').value"), "shimmer")
+    expect_identical(
+      app$get_js("document.querySelector('#gesture option:last-child').textContent"),
+      "shimmer (resting animation)"
+    )
+    select_function <- function(fn) {
+      if (isTRUE(app$get_js("document.getElementById('function_flyout').hidden"))) {
+        app$click(selector = "#all_functions")
+      }
+      app$click(selector = sprintf('.pg-index-link[data-value="%s"]', fn))
+      app$wait_for_js(sprintf("!document.querySelector('#studio_inspector [data-function=%s]').hidden", fn))
+    }
+    select_function("mascot_theme")
+    app$wait_for_js("document.getElementById('light_hair') && document.getElementById('dark_badge')")
+    for (role in c("hair", "badge", "iris", "body_shade", "hand")) {
+      expect_true(app$get_js(sprintf(
+        "!!document.getElementById('light_%s') && !!document.getElementById('dark_%s')",
+        role,
+        role
+      )))
+    }
+    app$run_js("document.querySelector('[data-inspector-tab=guide]').click()")
+    app$wait_for_js(
+      "document.querySelector('[data-event=palette_swap]') && document.getElementById('palette_swap_demo')?.dataset.shownCharacter"
+    )
+    app$run_js("document.querySelector('[data-event=palette_swap][data-value=kept]').click()")
+    app$wait_for_js("document.getElementById('palette_swap_result').textContent.includes('peach kept for Sela')")
+    app$wait_for_js("document.getElementById('palette_swap_demo').dataset.shownCharacter === 'sela'")
+    expect_identical(
+      app$get_js("mascot.host.state(document.getElementById('palette_swap_demo')).theme.palette"),
+      "peach"
+    )
+    app$run_js("document.querySelector('[data-event=palette_swap][data-value=dropped]').click()")
+    app$wait_for_js("document.getElementById('palette_swap_result').textContent.includes('mascot_palette_dropped:')")
+    app$wait_for_js("document.getElementById('palette_swap_demo').dataset.shownCharacter === 'knurl'")
+    expect_null(app$get_js("mascot.host.state(document.getElementById('palette_swap_demo')).theme.palette"))
+    select_function("mascot_popup_menu")
+    app$wait_for_js("!!document.querySelector('[data-event=menu_long_status]')")
+    for (corner in c("top-right", "bottom-right")) {
+      app$run_js(sprintf("document.querySelector('[data-event=menu_long_status][data-value=\"%s\"]').click()", corner))
+      app$wait_for_js(sprintf("document.querySelector('input[name=position]:checked')?.value === '%s'", corner))
+      app$wait_for_js("document.getElementById('status_text').value.startsWith('Review in progress')")
+      app$wait_for_js(sprintf(
+        "document.getElementById('live_frame').contentDocument.getElementById('helper')?.dataset.position === '%s'",
+        corner
+      ))
+      app$run_js(
+        "document.getElementById('live_frame').contentDocument.querySelector('#helper button[aria-haspopup=menu]').click()"
+      )
+      # Real rectangles: the open menu is visible and stays inside the frame, wherever the corner puts it.
+      app$wait_for_js(
+        paste0(
+          "(() => { const d = document.getElementById('live_frame').contentDocument; ",
+          "const menu = d.getElementById('helper_popup_menu'); if (!menu || menu.hidden) return false; ",
+          "const r = menu.getBoundingClientRect(); const w = d.documentElement; ",
+          "return r.top >= 0 && r.left >= 0 && r.bottom <= w.clientHeight && r.right <= w.clientWidth; })()"
+        )
+      )
+      app$run_js(
+        "document.getElementById('live_frame').contentDocument.querySelector('#helper button[aria-haspopup=menu]').click()"
+      )
+    }
+    app$set_inputs(character = "neer")
+    app$run_js("document.getElementById('show_anchors').click()")
+    app$wait_for_js(
+      "document.getElementById('live_frame').contentDocument.querySelectorAll('.pg-anchor-label').length === 14"
+    )
+    app$set_inputs(character = "tessa")
+    for (anchor in c("fringe", "lock", "stud_l", "stud_r")) {
+      app$wait_for_js(sprintf(
+        "!!document.getElementById('live_frame').contentDocument.querySelector('[data-anchor=\"%s\"]')",
+        anchor
+      ))
+    }
+  })
+})
+
+
+describe("studio palette follow-up (#353)", {
+  it("derives borrowed and made-up ids and shows the messages from real calls", {
+    parts <- studio_parts()
+    withr::local_options(list(cli.width = 1000, cli.num_colors = 1))
+    for (id in unname(get("studio_characters", parts$env)())) {
+      palettes <- get("studio_mistake_palettes", parts$env)(id)
+      expect_false(palettes$borrowed %in% mascot_palettes(id)$name)
+      other_ids <- setdiff(builtin_characters()$id, id)
+      other_palettes <- unlist(lapply(other_ids, function(other) mascot_palettes(other)$name))
+      expect_true(palettes$borrowed %in% other_palettes)
+      expect_false(palettes$invented %in% c(mascot_palettes(id)$name, other_palettes))
+      mistakes <- get("character_mistakes", parts$env)(id)
+      codes <- get("guide_mistake_calls", parts$env)("mascot", id)
+      guide <- as.character(get("guide_mistakes", parts$env)("mascot", id))
+      for (name in c("Borrow another character's palette", "A made-up palette id")) {
+        code <- mistakes[[name]]$code
+        expect_identical(codes[[name]], code)
+        call <- str2lang(code)
+        expect_identical(call[["character"]], id)
+        expect_identical(call[["theme"]], if (name == "A made-up palette id") palettes$invented else palettes$borrowed)
+        error <- tryCatch(eval(call, parts$env), mascot_error = identity)
+        expect_s3_class(error, "mascot_error")
+        message <- cli::ansi_strip(conditionMessage(error))
+        expect_match(message, paste0('Unknown palette "', call[["theme"]], '" for character "', id, '"'), fixed = TRUE)
+        expect_match(message, paste0('Choose "', mascot_palettes(id)$name[[1L]], '"'), fixed = TRUE)
+        expect_identical(grepl("palettes cannot be borrowed", message, fixed = TRUE), name != "A made-up palette id")
+        expect_match(guide, as.character(htmltools::htmlEscape(paste("Error:", message))), fixed = TRUE)
+        expect_match(guide, as.character(htmltools::htmlEscape(mistakes[[name]]$why)), fixed = TRUE)
+      }
+      mock <- shiny::MockShinySession$new()
+      shiny::withReactiveDomain(mock, {
+        mascot("helper", character = id, theme = mascot_palettes(id)$name[[1L]])
+        protocol_ready(
+          list(session = mock, id = mock$ns("helper")),
+          state = mascot_state_defaults(list(id = id, name = mascot_character(id)$name, json = character_json(id)))
+        )
+        update_mascot("helper", theme = mascot_palettes(id)$name[[2L]], session = mock)
+        before <- serialize(mock$userData$mascot_updates, NULL)
+        env <- new.env(parent = parts$env)
+        env$session <- mock
+        code <- get("guide_mistake_calls", parts$env)("update_mascot", id)[["An unknown palette in an update"]]
+        warning <- NULL
+        withCallingHandlers(eval(str2lang(code), env), warning = function(w) {
+          warning <<- w
+          invokeRestart("muffleWarning")
+        })
+        expect_s3_class(warning, "mascot_update_ignored")
+        expect_s3_class(warning, "mascot_warning")
+        message <- cli::ansi_strip(conditionMessage(warning))
+        expect_match(message, '`update_mascot()` left mascot "helper" unchanged.', fixed = TRUE)
+        expect_match(message, paste0('Unknown palette "', palettes$borrowed, '"'), fixed = TRUE)
+        expect_match(message, "palettes cannot be borrowed between characters yet.", fixed = TRUE)
+        expect_false(inherits(warning, "mascot_palette_dropped"))
+        expect_identical(serialize(mock$userData$mascot_updates, NULL), before)
+        guide <- as.character(get("guide_mistakes", parts$env)("update_mascot", id))
+        expect_match(guide, as.character(htmltools::htmlEscape(paste("Warning:", message))), fixed = TRUE)
+      })
+      mock$close()
+    }
+    expect_error(get("studio_mistake_palettes", parts$env)(1), "character")
+  })
+  it("builds a palette base demo with one explicit role that wins in light mode", {
+    parts <- studio_parts()
+    for (id in builtin_characters()$id) {
+      example <- get("studio_palette_base", parts$env)(id)
+      expect_true(example$palette %in% mascot_palettes(id)$name)
+      roles <- mascot_colour_roles(id, palette = example$palette)
+      expect_true(example$role %in% roles$role)
+      expect_identical(example$base, roles$colour[match(example$role, roles$role)])
+      expect_false(tolower(example$base) == tolower(example$colour))
+      html <- as.character(get("palette_base_demo", parts$env)(id))
+      theme <- mascot_theme(palette = example$palette, light = stats::setNames(list(example$colour), example$role))
+      expect_match(html, 'id="palette_base_demo"', fixed = TRUE)
+      theme_json <- regmatches(html, regexpr('(?s)(?<=data-mascot-theme="">).*?(?=</script>)', html, perl = TRUE))
+      expect_equal(jsonlite::fromJSON(theme_json, simplifyVector = FALSE), as_theme_arg(theme, environment(), id))
+      expect_match(html, paste0('palette = "', example$palette, '"'), fixed = TRUE)
+      expect_match(html, paste0(example$role, ' = "', example$colour, '"'), fixed = TRUE)
+      # The wire keeps the palette base separate from the explicit role; the host applies explicit roles last.
+      wire <- as_theme_arg(theme, environment(), id)
+      engine_role <- names(character_colour_data(id)$colours)[match(
+        example$role,
+        colour_role_names(names(character_colour_data(id)$colours))
+      )]
+      expect_identical(tolower(wire$light[[engine_role]]), example$colour)
+      expect_false(
+        tolower(
+          if (is.null(wire$palette_colours$light[[engine_role]])) {
+            example$base
+          } else {
+            wire$palette_colours$light[[engine_role]]
+          }
+        ) ==
+          example$colour
+      )
+    }
+    expect_error(get("studio_palette_base", parts$env)(1), "character")
+    expect_error(get("palette_base_demo", parts$env)(1), "character")
+  })
+  it("shows the dark-mode outline tip with a live default and custom example and points to it from the roles table", {
+    parts <- studio_parts()
+    for (id in builtin_characters()$id) {
+      html <- as.character(get("dark_outline_demo", parts$env)(id))
+      expect_match(html, 'id="dark_outline_tip"', fixed = TRUE)
+      expect_match(html, "Built-in characters keep one outline colour in both modes.", fixed = TRUE)
+      expect_match(html, "mascot_theme(dark = list(outline = \"#FFC93C\"))", fixed = TRUE)
+      expect_match(html, 'id="dark_outline_default"', fixed = TRUE)
+      expect_match(html, 'id="dark_outline_custom"', fixed = TRUE)
+      themes <- regmatches(html, gregexpr('(?s)(?<=data-mascot-theme="">).*?(?=</script>)', html, perl = TRUE))[[1]]
+      expect_length(themes, 2L)
+      custom <- jsonlite::fromJSON(themes[[2]], simplifyVector = FALSE)
+      expect_identical(custom$mode, "dark")
+      expect_true(any(tolower(unlist(custom$dark)) == "#ffc93c"))
+      roles <- as.character(get("roles_table", parts$env)(id))
+      expect_match(roles, 'data-value="mascot_theme"', fixed = TRUE)
+      expect_match(roles, "Dark-mode outline tip", fixed = TRUE)
+    }
+    expect_error(get("dark_outline_demo", parts$env)(1), "character")
+  })
+  it("names native colours exactly and keeps the original API value and generated code", {
+    parts <- studio_parts()
+    sentence <- get("studio_palette_sentence", parts$env)
+    expect_identical(sentence("tessa")$label, "Tessa's own colours (night_teal)")
+    expect_identical(sentence("sela")$label, "Sela's own colours")
+    expect_identical(sentence("tessa")$prefix, "in")
+    expect_identical(sentence("tessa")$suffix, ",")
+    expect_identical(sentence("tessa")$id, "night_teal")
+    expect_identical(sentence("tessa", "sea_green")$prefix, "in the")
+    expect_identical(sentence("tessa", "sea_green")$suffix, "palette,")
+    expect_identical(sentence("tessa", "sea_green")$id, "sea_green")
+    bar <- as.character(get("panel_character_bar", parts$env)(character = "tessa"))
+    expect_match(bar, 'title="night_teal"', fixed = TRUE)
+    expect_match(bar, 'title="sea_green"', fixed = TRUE)
+    expect_match(bar, 'value="original"[^>]*selected')
+    expect_identical(
+      get("code_theme", parts$env)("own", NULL, NULL, "auto", NULL, "", "", "original")$helper,
+      quote(mascot_theme())
+    )
+    expect_error(sentence(1), "character")
+    expect_error(sentence("tessa", 1), "palette")
+    shiny::testServer(get("studio_server", parts$env), {
+      messages <- list()
+      session$sendCustomMessage <- function(type, message) messages[[type]] <<- message
+      do.call(session$setInputs, studio_start_values(parts$page))
+      studio_go_live(session)
+      session$setInputs(character = "sela")
+      expect_identical(messages[["studio:palette"]]$label, "Sela's own colours")
+      session$setInputs(character = "tessa", palette = "sea_green")
+      expect_identical(messages[["studio:palette"]]$id, "sea_green")
+      session$setInputs(palette = "original")
+      expect_identical(messages[["studio:palette"]]$label, "Tessa's own colours (night_teal)")
+      expect_identical(selected_palette(), "original")
     })
   })
 })

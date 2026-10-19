@@ -171,7 +171,19 @@ describe("mascot_palettes()", {
     is_listing(value, c("name", "description", "source", "character"), rep("character", 4))
     expect_identical(unique(value$character), c("tessa", "sela", "knurl", "neer"))
     expected <- list(
-      tessa = c("original", "nordic", "coral", "azure"),
+      # Tessa's own colours lead the list under their own name, night_teal; "original" still selects them (#358).
+      tessa = c(
+        "night_teal",
+        "sea_green",
+        "forest",
+        "spring",
+        "peach",
+        "coral_navy",
+        "desert_coral",
+        "rose_soft",
+        "lilac_soft",
+        "mist_navy"
+      ),
       sela = c("original", "coral", "azure", "peach"),
       knurl = c("original", "orbit", "carbon", "cobalt_droid", "crimson"),
       neer = c("original", "lagoon", "glacier", "coral_reef", "night_bay", "monsoon")
@@ -185,6 +197,18 @@ describe("mascot_palettes()", {
       expect_identical(characters$palettes[characters$id == id], paste(expected[[id]], collapse = ", "))
       expect_false(anyNA(one$description))
       expect_true(all(nzchar(one$description)))
+    }
+  })
+  it("lists Tessa's own colours as night_teal, not original, and still accepts original", {
+    value <- mascot_palettes("tessa")
+    expect_identical(value$name[[1]], "night_teal")
+    expect_identical(value$source[[1]], "native")
+    expect_false("original" %in% value$name)
+    expect_length(value$name, 10L)
+    expect_identical(sort(character_palettes("tessa") |> names()), sort(value$name[-1]))
+    expect_identical(character_catalogue_builtin("tessa")$native_palette, "night_teal")
+    for (id in c("sela", "knurl", "neer")) {
+      expect_identical(mascot_palettes(id)$name[[1]], "original")
     }
   })
   it("adds the character's palettes after original, with their checked origin", {

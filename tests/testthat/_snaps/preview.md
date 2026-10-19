@@ -31,5 +31,5 @@
       mascot_preview(theme = list(eye_whit = "red"))
     Condition
       Error in `mascot_preview()`:
-      ! `theme` has unknown or reserved colour roles: "eye_whit". Did you mean "eye_white"? Valid roles: "outline", "feature", "eye_white", "shine", "teeth", "eyelid", "tongue", "body", "body_highlight", "rim", "limb", "sleeve", "blush", "blush_strong", "accessory", "accessory_detail", "sparkle", "sparkle_outline", "sweat", "shadow". See `mascot_colour_roles()` for each character's roles.
+      ! `theme` has unknown or reserved colour roles: "eye_whit". Did you mean "eye_white"? Valid roles: "outline", "feature", "eye_white", "shine", "teeth", "eyelid", "tongue", "body", "body_highlight", "rim", "limb", "sleeve", "blush", "blush_strong", "accessory", "accessory_detail", "sparkle", "sparkle_outline", "sweat", "shadow", "outline_second", "hand", "body_shade", "rim_light", "rim_shade", "hair", "hair_shade", "hair_light", "accessory_light", "badge", "badge_icon", "iris", "iris_tint". See `mascot_colour_roles()` for each character's roles.
 

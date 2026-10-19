@@ -350,12 +350,12 @@ describe("named palettes through the real Shiny host", {
       library(mascot)
       ui <- shiny::fluidPage(
         mascot("helper", character = "tessa", motion = FALSE, placement = "inline"),
-        shiny::actionButton("palette", "Coral"),
+        shiny::actionButton("palette", "Peach"),
         shiny::actionButton("shared", "Sela"),
         shiny::actionButton("drop", "Neer")
       )
       server <- function(input, output, session) {
-        shiny::observeEvent(input$palette, update_mascot("helper", theme = "coral"))
+        shiny::observeEvent(input$palette, update_mascot("helper", theme = "peach"))
         shiny::observeEvent(input$shared, update_mascot("helper", character = "sela"))
         shiny::observeEvent(input$drop, update_mascot("helper", character = "neer"))
       }
@@ -368,18 +368,18 @@ describe("named palettes through the real Shiny host", {
     app$wait_for_js("state()?.character === 'tessa' && state().renderedSize > 0")
     before <- app$get_js("helper().querySelector('canvas').toDataURL()")
     app$click("palette")
-    app$wait_for_js("state().theme.palette === 'coral' && state().colours.body === '#FFE5D9'")
+    app$wait_for_js("state().theme.palette === 'peach' && state().colours.body === '#FFD3B5'")
     # Read pixels as well as retained state: a wire-only test misses an unchanged drawing.
     app$wait_for_js(sprintf(
       "helper().querySelector('canvas').toDataURL() !== %s",
       jsonlite::toJSON(before, auto_unbox = TRUE)
     ))
-    expect_identical(app$get_js("state().colours.rim"), "#FF6B6B")
+    expect_identical(app$get_js("state().colours.rim"), "#E9A23B")
     app$click("shared")
     app$wait_for_js(
-      "state().character === 'sela' && state().theme.palette === 'coral' && state().colours.hair_purple === '#1D3557'"
+      "state().character === 'sela' && state().theme.palette === 'peach' && state().colours.hair_purple === '#2B305C'"
     )
-    expect_identical(app$get_js("state().colours.body"), "#FFE5D9")
+    expect_identical(app$get_js("state().colours.body"), "#FFE4D6")
     app$click("drop")
     app$wait_for_js("state().character === 'neer' && !state().theme.palette")
     expect_null(app$get_js("state().colours.body"))

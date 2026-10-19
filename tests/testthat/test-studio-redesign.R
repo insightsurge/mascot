@@ -434,7 +434,7 @@ describe("E1 studio behaviour in the redesigned UI", {
       app$wait_for_js(sprintf("document.querySelector('#guide [data-guide-function=%s]') !== null", fn))
       expect_identical(
         app$get_js(
-          "document.querySelectorAll('#guide input, #guide select, #guide textarea, #guide [data-event]').length"
+          "document.querySelectorAll('#guide input, #guide select, #guide textarea, #guide [data-event]:not([data-event=palette_swap]):not([data-event=menu_long_status])').length"
         ),
         0L
       )
@@ -2005,11 +2005,22 @@ describe("the next studio review round", {
         mobile = FALSE
       )
       app$wait_for_js(sprintf("innerWidth===%d", width))
-      expect_true(app$get_js(paste0(
+      # The dock type is fitted on the next animation frames after a resize, so give it a moment.
+      offenders_js <- paste0(
         "(() => {const n=parseFloat(getComputedStyle(document.querySelector('.pg-sentence')).fontSize);",
-        "return [...document.querySelectorAll('#studio_dock .pg-eyebrow,#studio_dock label,#studio_dock .btn,#studio_dock .pg-call-name')].every(x=>",
-        "Math.abs(parseFloat(getComputedStyle(x).fontSize)-n)<=1 && parseFloat(getComputedStyle(x).fontSize)>=12);})()"
-      )))
+        "return [...document.querySelectorAll('#studio_dock .pg-eyebrow,#studio_dock label,#studio_dock .btn,#studio_dock .pg-call-name')]",
+        ".filter(x=>!(Math.abs(parseFloat(getComputedStyle(x).fontSize)-n)<=1 && parseFloat(getComputedStyle(x).fontSize)>=12))",
+        ".map(x=>(x.className||x.tagName)+' '+getComputedStyle(x).fontSize+' vs '+n).join(' | ');})()"
+      )
+      offenders <- app$get_js(offenders_js)
+      for (attempt in 1:20) {
+        if (identical(offenders, "")) {
+          break
+        }
+        Sys.sleep(0.25)
+        offenders <- app$get_js(offenders_js)
+      }
+      expect_identical(offenders, "")
     }
     app$run_js("document.querySelector('[data-call-arg=status]').focus()")
     expect_identical(app$get_js("getComputedStyle(document.querySelector('[data-call-arg=status]')).cursor"), "pointer")
@@ -2094,5 +2105,68 @@ describe("the next studio review round", {
     app$wait_for_js("!document.getElementById('studio_search').hidden")
     app$run_js("document.querySelector('[data-search-function=mascot_theme]').click()")
     expect_identical(app$get_js("document.getElementById('studio_canvas').dataset.mode"), "mascot")
+  })
+})
+
+
+describe("studio palette follow-up (#353)", {
+  it("names original colours, preserves exact palette ids and contains tables at 390 pixels", {
+    local_shiny_browser()
+    app <- studio_redesign_driver(width = 390, height = 844)
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    # Read selected words only: a native select's textContent also contains all unselected options.
+    sentence <- "(() => {const root=document.querySelector('.pg-sentence'); return [...root.childNodes].map(n=>n.nodeType===3?n.textContent.trim():n.querySelector('select')?.selectedOptions[0].textContent || n.textContent.trim()).filter(Boolean).slice(0,5).join(' ').replace(/\\s+,/g,',');})()"
+    app$wait_for_js(
+      "document.querySelector('#palette').selectedOptions[0].textContent === \"Tessa's own colours (night_teal)\""
+    )
+    expect_match(app$get_js(sentence), "Showing Tessa in Tessa's own colours (night_teal)", fixed = TRUE)
+    expect_identical(app$get_js("document.getElementById('palette').title"), "night_teal")
+    expect_false(grepl('theme =', app$get_value(output = "code_ui"), fixed = TRUE))
+    app$set_inputs(palette = "sea_green")
+    app$wait_for_js("document.getElementById('palette').title === 'sea_green'")
+    expect_match(app$get_js(sentence), "Showing Tessa in the Sea green palette,", fixed = TRUE)
+    expect_identical(app$get_js("document.querySelector('#palette option[value=sea_green]').title"), "sea_green")
+    app$wait_for_js("document.getElementById('code_ui').textContent.includes('theme = \"sea_green\"')")
+    expect_match(app$get_value(output = "code_ui"), 'theme = "sea_green"', fixed = TRUE)
+    app$set_inputs(character = "sela", palette = "original")
+    app$wait_for_js("document.querySelector('#palette').selectedOptions[0].textContent === \"Sela's own colours\"")
+    expect_match(app$get_js(sentence), "Showing Sela in Sela's own colours", fixed = TRUE)
+    studio_select_function(app, "mascot_palettes")
+    app$click(selector = "#inspector_tab_guide")
+    app$wait_for_js("document.querySelector('#guide .pg-palette-table td')?.getBoundingClientRect().width > 0")
+    expect_true(app$get_js(
+      "[...document.querySelectorAll('#guide .pg-palette-table td:not(:nth-child(2))')].every(n=>getComputedStyle(n).whiteSpace==='nowrap')"
+    ))
+    expect_true(app$get_js(
+      "[...document.querySelectorAll('#guide .pg-palette-table')].every(n=>getComputedStyle(n).overflowX==='auto' && n.getBoundingClientRect().right<=innerWidth)"
+    ))
+    expect_true(app$get_js("document.documentElement.scrollWidth <= innerWidth"))
+  })
+  it("logs an unknown-palette warning without changing or dropping the live palette", {
+    local_shiny_browser()
+    app <- studio_redesign_driver()
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    app$set_inputs(palette = "sea_green", mood = "happy")
+    wait_studio_mood(app, "happy")
+    app$wait_for_js(paste0(studio_frame, ".mascot.host.state(", studio_live, ").theme.palette === 'sea_green'"))
+    studio_select_function(app, "update_mascot")
+    app$set_inputs(mistake = "An unknown palette in an update")
+    app$wait_for_js("document.getElementById('mistake_code').textContent.includes('nothing is dropped')")
+    before <- app$get_value(output = "code_ui")
+    app$click(selector = "#mistake_run")
+    app$wait_for_js("document.querySelector('#wiring_log .is-warning')?.textContent.includes('Unknown palette')")
+    log <- app$get_js("document.querySelector('#wiring_log .is-warning').textContent")
+    expect_match(log, "left mascot", fixed = TRUE)
+    expect_match(log, "unchanged", fixed = TRUE)
+    expect_match(log, "palettes cannot be borrowed between characters yet", fixed = TRUE)
+    expect_false(grepl("mascot_palette_dropped", log, fixed = TRUE))
+    expect_identical(app$get_value(output = "code_ui"), before)
+    expect_identical(
+      app$get_js(paste0(studio_frame, ".mascot.host.state(", studio_live, ").theme.palette")),
+      "sea_green"
+    )
+    wait_studio_mood(app, "happy")
   })
 })

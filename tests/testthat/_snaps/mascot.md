@@ -102,7 +102,7 @@
       mascot(id = "bad", theme = list(bdoy = "blue"))
     Condition
       Error in `mascot()`:
-      ! `theme` has unknown or reserved colour roles: "bdoy". Did you mean "body"? Valid roles: "outline", "feature", "eye_white", "shine", "teeth", "eyelid", "tongue", "body", "body_highlight", "rim", "limb", "sleeve", "blush", "blush_strong", "accessory", "accessory_detail", "sparkle", "sparkle_outline", "sweat", "shadow". See `mascot_colour_roles()` for each character's roles.
+      ! `theme` has unknown or reserved colour roles: "bdoy". Did you mean "body"? Valid roles: "outline", "feature", "eye_white", "shine", "teeth", "eyelid", "tongue", "body", "body_highlight", "rim", "limb", "sleeve", "blush", "blush_strong", "accessory", "accessory_detail", "sparkle", "sparkle_outline", "sweat", "shadow", "outline_second", "hand", "body_shade", "rim_light", "rim_shade", "hair", "hair_shade", "hair_light", "accessory_light", "badge", "badge_icon", "iris", "iris_tint". See `mascot_colour_roles()` for each character's roles.
 
 # with_mascot_asserts() / keeps the original assertion message once and adds mascot_error
 

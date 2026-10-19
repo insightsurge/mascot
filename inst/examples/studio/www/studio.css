@@ -2350,3 +2350,47 @@ body:has(.pg-studio),
   font-size: 12px;
   color: var(--studio-muted);
 }
+
+/* Palette ids and sources stay whole; scroll the table, never the phone page. */
+.pg-palette-table {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+.pg-palette-table th:not(:nth-child(2)),
+.pg-palette-table td:not(:nth-child(2)) {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.pg-palette-table td:nth-child(2) {
+  min-width: 12rem;
+  overflow-wrap: normal;
+}
+
+/* Dark-mode outline tip: two mascots forced into dark mode on a dark panel */
+.pg-dark-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-around;
+  padding: 1rem;
+  border-radius: 0.6rem;
+  background: #14181f;
+  color: #e8ecf2;
+}
+
+.pg-dark-panel figure {
+  flex: 1 1 7rem;
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.pg-dark-panel figcaption {
+  font-family: var(--bs-font-monospace);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  text-align: center;
+}

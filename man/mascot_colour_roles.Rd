@@ -34,7 +34,7 @@ available leader, the role keeps its original colour.
 }
 \examples{
 mascot_colour_roles()
-mascot_colour_roles("tessa", palette = "coral")
+mascot_colour_roles("tessa", palette = "coral_navy")
 }
 \seealso{
 \code{\link[=mascot_theme]{mascot_theme()}}, \code{\link[=mascot]{mascot()}}

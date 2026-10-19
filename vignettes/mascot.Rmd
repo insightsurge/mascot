@@ -105,7 +105,7 @@ to copy, plus the last call and an event log; collapse it from its header, drag
 its top edge to resize it, or open it full screen. Both side panels collapse.
 The four other apps each show one scenario.
 
-![Mascot studio: a function index on the left, Tessa above the Code tray in the centre, and the selected function's controls on the right.](figures/studio-light.png)
+![Mascot studio: a function index on the left, Tessa with a checklist bubble above the Code tray in the centre, and the selected function's controls on the right.](figures/studio-light.png)
 
 ```{r catalogue}
 mascot_examples()
@@ -280,6 +280,8 @@ list choices, then `mascot("helper", character = "knurl", theme = "orbit")`.
 Use `mascot_theme(palette = "orbit", light = list(body = "#d0d8e0"))` to put your
 role colours on top; CSS variables win last. `theme = "original"` restores the
 character's own colours in an update, while `NULL` leaves them unchanged. A
+character may also name its own colours: Tessa's are `night_teal`, listed first
+by `mascot_palettes("tessa")`, and `"original"` selects the same colours. A
 character swap keeps a palette with the same id when available; otherwise R
 warns, restores the incoming character's colours and keeps your explicit colours
 for shared roles. Built-in palettes do not give contrast warnings; your added
@@ -287,18 +289,20 @@ colours are checked as usual. `mascot_colour_roles("knurl", palette = "orbit")`
 shows the palette's colours, including derived followers.
 A named list supplies selected roles in every mode. Unset roles follow the
 character's declared leaders: `list(body = "#c2185b")` gives pink sleeves,
-eyelids and hands, plus lighter pink highlights and blush. Hands follow a
-supplied rim before the body. The bow follows the rim, and its detail becomes
-a darker shade. A supplied sleeve or other role always wins. With no supplied
-or filled leader, the original colour stays. Outline, face lines, eye whites,
-shine, teeth, sparkle, tongue, sweat and shadow keep their colours.
+eyelids and feet, plus lighter pink highlights. Feet follow a supplied rim
+before the body, and sleeves follow a supplied body shade before the body. The
+bow, the hair, the badge and the iris have their own colours (`accessory`,
+`hair`, `badge`, `iris`), and the detail of the bow becomes a darker shade. A
+supplied sleeve or other role always wins. With no supplied or filled leader,
+the original colour stays. Outline, face lines, eye whites, shine, teeth,
+hands, sweat and shadow keep their colours.
 
 `mascot_colour_roles()` lists `follows` (leaders in priority order) and `shade`
 (`same`, `lighter` or `darker`); `NA` means there is no follow rule. Its
 `description` column says what each role colours, and `brand` marks the roles
 that take a `bslib` primary or secondary colour. Derived
 shades preserve hue using calibrated lightness and saturation shifts.
-Feeding Tessa's own body, rim and bow colours back reproduces her derived
+Feeding Tessa's own body, body shade, rim and bow colours back reproduces her derived
 colours within 3 units per RGB channel (0--255). Supplied colours stay exact.
 
 ```{r roles}
@@ -319,7 +323,7 @@ update_mascot("helper", theme = mascot_theme()) # Restore original colours.
 ```
 
 With `bslib` installed, primary supplies Tessa's body and secondary supplies
-her rim. Her follow rules also colour sleeves, eyelids, hands, feet and bow.
+her rim. Her follow rules also colour sleeves, eyelids and feet.
 
 ```{r bslib-theme, eval=FALSE}
 if (requireNamespace("bslib", quietly = TRUE)) {
@@ -361,9 +365,9 @@ mascot("helper", theme = pink_theme)
 update_mascot("helper", theme = pink_theme)
 ```
 
-![Branding app with Pink and lilac selected: Tessa has a coordinated rose body, sleeves, hands, feet and bow on a light background.](figures/branding-pink-light.png)
+![Branding app with Pink and lilac selected: Tessa has a coordinated rose body, sleeves and feet on a light background.](figures/branding-pink-light.png)
 
-![Branding app in dark mode: Tessa has a light pink body and sleeves with lilac hands, feet, rim and bow.](figures/branding-pink-dark.png)
+![Branding app in dark mode: Tessa has a light pink body and sleeves with a lilac rim and feet.](figures/branding-pink-dark.png)
 
 CSS variables are an **experimental** source:
 

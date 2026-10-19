@@ -1846,6 +1846,10 @@
         "dark": {
           "ref": "colour_map"
         },
+        "group": {
+          "type": "string",
+          "min_chars": 1
+        },
         "note": {
           "type": "string"
         }
@@ -3572,6 +3576,9 @@
             ]
           },
           "key_pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*_?$"
+        },
+        "native_palette": {
+          "ref": "id"
         },
         "pronouns": {
           "type": "string"

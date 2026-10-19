@@ -69,6 +69,18 @@ defaults <- list(
   click = quote(mascot_action())
 )
 mistakes <- list(
+  `Borrow another character's palette` = list(
+    code = NULL,
+    why = "mascot() errors and lists this character's palettes. The hint names another character that has this id; palettes cannot be borrowed between characters yet."
+  ),
+  `A made-up palette id` = list(
+    code = NULL,
+    why = "mascot() errors and lists this character's palettes. No character has this id, so there is no borrowed-palette hint."
+  ),
+  `An unknown palette in an update` = list(
+    code = NULL,
+    why = "update_mascot() warns (class mascot_update_ignored) and ignores the whole update. The mascot and its current palette stay unchanged; nothing is dropped."
+  ),
   `Leave out an argument name` = list(
     code = "update_mascot(\"helper\", \"happy\")",
     why = "Arguments after id must be named. An unnamed argument reports \"an unnamed argument\" and lists the valid names."
@@ -278,6 +290,20 @@ character_mistakes <- function(character) {
   checkmate::assert_string(character)
   role <- mascot::mascot_colour_roles(character)$role[1]
   result <- mistakes
+  palettes <- studio_mistake_palettes(character)
+  for (name in c("Borrow another character's palette", "A made-up palette id", "An unknown palette in an update")) {
+    updating <- identical(name, "An unknown palette in an update")
+    palette <- if (name == "A made-up palette id") palettes$invented else palettes$borrowed
+    if (is.null(palette)) {
+      # No borrowed example is possible if all shipped characters ever share exactly the same ids.
+      result[[name]] <- NULL
+      next
+    }
+    result[[name]]$code <- format_call(
+      if (updating) "update_mascot" else "mascot",
+      list("helper", character = character, theme = palette)
+    )
+  }
   for (name in c("Not a colour", "Low contrast")) {
     result[[name]]$code <- sub("body =", paste0(arg_name(role), " ="), result[[name]]$code, fixed = TRUE)
   }
@@ -296,3 +322,69 @@ studio_character_controls <- list(
     overwrite = fixed_arg("Download replaces only Shiny's supplied temporary destination.")
   )
 )
+
+# Temporary until #375 removes resting-only animations from the gesture listing.
+studio_resting_gestures <- c(tessa = "shimmer")
+
+studio_gesture_choices <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  gestures <- mascot::mascot_gestures(character)$name
+  resting <- gestures %in% studio_resting_gestures[character]
+  gestures <- c(gestures[!resting], gestures[resting])
+  labels <- ifelse(
+    gestures %in% studio_resting_gestures[character],
+    paste(gestures, "(resting animation)"),
+    paste("a", tools::toTitleCase(gestures))
+  )
+  c("no gesture" = "", stats::setNames(gestures, labels))
+}
+
+# Keep the API names in studio_palette_choices(); humanise only the sentence's labels.
+studio_palette_labels <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  choices <- studio_palette_choices(character)
+  labels <- gsub("_", " ", names(choices), fixed = TRUE)
+  names(choices) <- paste0(toupper(substr(labels, 1L, 1L)), substring(labels, 2L))
+  native <- names(studio_palette_choices(character))[[1L]]
+  names(choices)[[1L]] <- paste0(
+    mascot::mascot_character(character)$name,
+    "'s own colours",
+    if (native != "original") paste0(" (", native, ")")
+  )
+  choices
+}
+
+studio_long_status <- "Review in progress: checking the submitted rows and recording the results before the next step."
+
+# Named examples, independent of the studio default character.
+studio_palette_swap <- c(from = "tessa", kept = "sela", dropped = "knurl", palette = "peach")
+
+# Use a real palette owned by another shipped character, and an id that no character owns.
+studio_mistake_palettes <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  own <- mascot::mascot_palettes(character)$name
+  others <- setdiff(unname(studio_characters()), character)
+  available <- unique(unlist(lapply(others, function(id) mascot::mascot_palettes(id)$name)))
+  borrowed <- setdiff(available, c("original", own))
+  invented <- "zzzzzz"
+  while (invented %in% c(own, available)) {
+    invented <- paste0(invented, "z")
+  }
+  list(borrowed = if (length(borrowed)) borrowed[[1L]], invented = invented)
+}
+
+# The sentence keeps the selector's API value "original" while naming the character's own colours.
+studio_palette_sentence <- function(character, palette = "original") {
+  checkmate::assert_string(character, min.chars = 1)
+  checkmate::assert_string(palette, min.chars = 1)
+  choices <- studio_palette_choices(character)
+  native <- names(choices)[match("original", choices)]
+  labels <- studio_palette_labels(character)
+  original <- identical(palette, "original")
+  list(
+    prefix = if (original) "in" else "in the",
+    label = names(labels)[match(palette, choices)],
+    suffix = if (original) "," else "palette,",
+    id = if (original) native else palette
+  )
+}

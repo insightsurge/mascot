@@ -731,13 +731,17 @@ studio_server <- function(input, output, session) {
   # Keep each top-bar choice when the incoming character supports it.
   selected_palette <- reactive({
     value <- input$palette %||% "original"
-    if (value %in% mascot_palettes(current_character())$name) value else "original"
+    if (value %in% studio_palette_choices(current_character())) value else "original"
+  })
+  observe({
+    character <- current_character()
+    sentence <- studio_palette_sentence(character, selected_palette())
+    session$sendCustomMessage("studio:palette", c(sentence, list(ids = names(studio_palette_choices(character)))))
   })
   observeEvent(
     input$character,
     {
       character <- current_character()
-      palettes <- mascot_palettes(character)$name
       moods <- mascot_moods(character)$name
       gestures <- mascot_gestures(character)$name
       mood <- if (isTRUE(input$mood %in% moods)) input$mood else "idle"
@@ -745,14 +749,14 @@ studio_server <- function(input, output, session) {
       updateSelectInput(
         session,
         "palette",
-        choices = stats::setNames(palettes, tools::toTitleCase(palettes)),
+        choices = studio_palette_labels(character),
         selected = selected_palette()
       )
       updateSelectInput(session, "mood", choices = stats::setNames(moods, tools::toTitleCase(moods)), selected = mood)
       updateSelectInput(
         session,
         "gesture",
-        choices = c("no gesture" = "", stats::setNames(gestures, paste("a", tools::toTitleCase(gestures)))),
+        choices = studio_gesture_choices(character),
         selected = gesture
       )
       send(list(character = code_character(character), theme = theme_now(), mood = code_mood(mood)), force = TRUE)
@@ -1607,6 +1611,56 @@ studio_server <- function(input, output, session) {
   output$wiring_log <- renderUI(activity_log())
   outputOptions(output, "log", suspendWhenHidden = FALSE)
   outputOptions(output, "wiring_log", suspendWhenHidden = FALSE)
+
+  # A separate drawn example exercises retained palettes without changing the live host's controls.
+  palette_swap_result <- reactiveVal("Choose a swap to run the calls below.")
+  output$palette_swap_result <- renderText(palette_swap_result())
+  observeEvent(input$palette_swap, {
+    target <- unname(studio_palette_swap[input$palette_swap])
+    req(input$palette_swap %in% c("kept", "dropped"))
+    warning_text <- NULL
+    update_mascot(
+      "palette_swap_demo",
+      character = unname(studio_palette_swap["from"]),
+      theme = unname(studio_palette_swap["palette"]),
+      motion = FALSE
+    )
+    withCallingHandlers(
+      update_mascot("palette_swap_demo", character = target),
+      mascot_palette_dropped = function(w) {
+        warning_text <<- paste("mascot_palette_dropped:", cli::ansi_strip(conditionMessage(w)))
+        invokeRestart("muffleWarning")
+      }
+    )
+    palette_swap_result(
+      warning_text %||% paste("Palette", studio_palette_swap[["palette"]], "kept for", mascot_character(target)$name)
+    )
+  })
+  observeEvent(input$menu_long_status, {
+    req(input$menu_long_status %in% c("top-right", "bottom-right"))
+    updateRadioButtons(session, "position", selected = input$menu_long_status)
+    updateTextInput(session, "status_text", value = studio_long_status)
+    updateSelectInput(session, "click_type", selected = "menu")
+    click_kind("menu")
+    update_switch("menu_on", value = TRUE, session = session)
+    update_switch("menu_disabled", value = FALSE, session = session)
+    updateRadioButtons(session, "menu_direction", selected = "auto")
+    updateTextAreaInput(session, "menu_items", value = paste(names(default_menu), "=", default_menu, collapse = "\n"))
+    updateTextInput(session, "menu_label", value = "")
+    update_switch("menu_tooltip", value = TRUE, session = session)
+    send(
+      list(
+        placement = code_placement(
+          input$menu_long_status,
+          minimise = isTRUE(input$minimise),
+          drag = input$drag %||% "none"
+        ),
+        status = code_status(studio_long_status),
+        click = code_menu(default_menu, direction = "auto")
+      ),
+      force = TRUE
+    )
+  })
 
   # A reference for the selected function, with code made from its current controls.
   output$guide <- renderUI(selected_guide(selected_function(), current_character()))

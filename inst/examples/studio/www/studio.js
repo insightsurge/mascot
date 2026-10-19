@@ -340,8 +340,18 @@
     );
   }
   // The normal complete-state messages and real engine events cross the same-origin frame boundary.
-  window.Shiny.addCustomMessageHandler('mascot:update', (message) => {
-    liveWindow()?.mascot?.host.receive(message);
+  // A drawn demo in the guide loads the engine into this page, and the engine registers its own
+  // 'mascot:update' handler. Keep the studio's router in place and hand it the engine's handler, so
+  // a demo's id is updated here and every other id goes to the live frame.
+  let engineUpdate = null;
+  const registerHandler = window.Shiny.addCustomMessageHandler.bind(window.Shiny);
+  window.Shiny.addCustomMessageHandler = (type, handler) => {
+    if (type === 'mascot:update') engineUpdate = handler;
+    else registerHandler(type, handler);
+  };
+  registerHandler('mascot:update', (message) => {
+    if (engineUpdate && typeof message?.id === 'string' && byId(message.id)) engineUpdate(message);
+    else liveWindow()?.mascot?.host.receive(message);
   });
   window.Shiny.addCustomMessageHandler('studio:anchors', (listing) => {
     anchorListing = listing;
@@ -1439,6 +1449,16 @@
         '--studio-call-font',
         `${Math.max(12, parseFloat(getComputedStyle(sentence).fontSize))}px`,
       );
+    const palette = byId('palette');
+    if (palette) {
+      for (const option of palette.options) {
+        option.title = option.value === 'original' ? palette.dataset.nativePalette || option.title : option.value;
+      }
+      palette.title = palette.selectedOptions[0]?.title || palette.value;
+      setText('palette_id', palette.title);
+      setText('palette_prefix', palette.value === 'original' ? 'in' : 'in the');
+      setText('palette_suffix', palette.value === 'original' ? ',' : 'palette,');
+    }
     const moodLabel = byId('mood')?.selectedOptions[0]?.textContent || '';
     setText('mood_article', /^[aeiou]/i.test(moodLabel) ? 'in an' : 'in a');
     for (const select of document.querySelectorAll('.pg-sentence select')) {
@@ -1454,6 +1474,14 @@
       if (select.style.width !== width) select.style.width = width;
     }
   }
+  window.Shiny.addCustomMessageHandler('studio:palette', (sentence) => {
+    const select = byId('palette');
+    if (!select) return;
+    setText('palette_prefix', sentence.prefix);
+    setText('palette_suffix', sentence.suffix);
+    select.dataset.nativePalette = sentence.ids[0];
+    sizeSentenceWords();
+  });
   $(document).on('change', '.pg-sentence select', sizeSentenceWords);
   function initialise() {
     const centre = byId('studio_centre');

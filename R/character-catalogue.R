@@ -126,3 +126,48 @@ character_palettes <- function(character) {
   }
   if (is.null(data$palettes)) character_object() else data$palettes
 }
+
+#' The palette ids of a character as listed: its own colours first, then its palettes
+#'
+#' A character's own colours answer to `"original"`; a character may also name
+#' them (`native_palette`), and then that name leads the list. `"original"`
+#' still selects the same colours, so the list shows one name for them.
+#' @noRd
+character_palette_names <- function(data) {
+  checkmate::assert_list(data)
+  c(
+    if (is.null(data$native_palette)) "original" else data$native_palette,
+    as.character(names(character_palettes(data)))
+  )
+}
+
+#' Whether a palette id selects the character's own colours
+#'
+#' Both `"original"` and the character's `native_palette` name do.
+#' @noRd
+character_palette_is_native <- function(data, palette) {
+  checkmate::assert_list(data)
+  checkmate::assert_string(palette, min.chars = 1)
+  palette == "original" || identical(palette, data$native_palette)
+}
+
+#' Ids of the other characters that have a palette of this name
+#'
+#' Used for the hint in an unknown-palette message: palettes cannot be
+#' borrowed between characters yet, so a palette can exist on another
+#' character only. A character's own-colours name counts as a palette name.
+#' @noRd
+character_palette_owners <- function(palette, own_id) {
+  checkmate::assert_string(palette, min.chars = 1)
+  checkmate::assert_string(own_id, null.ok = TRUE)
+  others <- setdiff(character_catalogue_ids(), own_id)
+  owners <- vapply(
+    others,
+    function(id) {
+      data <- character_catalogue_get(id)
+      palette %in% setdiff(character_palette_names(data), "original")
+    },
+    logical(1)
+  )
+  others[owners]
+}

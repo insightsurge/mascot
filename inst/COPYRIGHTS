@@ -26,6 +26,7 @@ vignettes/figures/*.png
 inst/examples/studio/www/inputs.js
 inst/examples/studio/www/studio.css
 inst/examples/studio/www/studio.js
+inst/examples/studio/www/theme.css
 inst/examples/studio/www/tokens.css
 inst/examples/studio/guide/*.Rmd
 inst/examples/studio/guide/guide-helpers.R

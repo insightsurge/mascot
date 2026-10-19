@@ -41,20 +41,4 @@ view_character <- function(query) {
   if (isTRUE(query$character %in% unname(studio_characters()))) query$character else defaults$character
 }
 
-# ---- Theme a mascot ----------------------------------------------------------------------------
-
-# A placeholder page until the view's own tabs arrive: its title and the chosen character.
-theme_view_ui <- function(query) {
-  checkmate::assert_list(query)
-  div(
-    class = "container py-4",
-    tags$h1(studio_view_titles[["theme"]]),
-    mascot::mascot("theme_mascot", character = view_character(query), placement = "inline")
-  )
-}
-
-theme_view_server <- function(input, output, session) {
-  checkmate::assert_class(input, "reactivevalues")
-  checkmate::assert_class(output, "shinyoutput")
-  invisible(NULL)
-}
+# The theme view's page and server are in theme-ui.R and theme-server.R.

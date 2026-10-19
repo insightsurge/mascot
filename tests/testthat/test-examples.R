@@ -33,6 +33,8 @@ describe("mascot_examples()", {
             "R/panels.R",
             "R/shared-colours.R",
             "R/shared-run.R",
+            "R/theme-server.R",
+            "R/theme-ui.R",
             "R/ui.R",
             "R/views.R",
             "guide/guide-helpers.R",
@@ -67,6 +69,7 @@ describe("mascot_examples()", {
             "www/inputs.js",
             "www/studio.css",
             "www/studio.js",
+            "www/theme.css",
             "www/tokens.css"
           )
         )

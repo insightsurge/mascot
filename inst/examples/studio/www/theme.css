@@ -1,0 +1,328 @@
+/* The "Theme a mascot" view of the studio app. Tokens come from tokens.css; the preview sits on Bootstrap's plain
+   page colour (white, or #212529 in dark mode), the surfaces the contrast check uses. Below 860px the preview comes
+   first, stays in view while the tabs scroll under it, and the tabs stack below the code. */
+.theme-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--studio-bg);
+  color: var(--studio-ink);
+  padding: 0 16px 24px;
+}
+
+.theme-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 12px 0;
+}
+
+.theme-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.theme-header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.75rem;
+}
+
+.theme-header-controls .form-group,
+.theme-header-controls .shiny-input-container {
+  width: auto;
+  margin: 0;
+}
+
+.theme-header-controls label,
+.theme-label {
+  font-size: 0.75rem;
+  color: var(--studio-muted);
+  margin-bottom: 0.15rem;
+}
+
+.theme-header-controls select {
+  max-width: 17rem;
+}
+
+.theme-page-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.theme-main {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.theme-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 12px;
+}
+
+.theme-preview,
+.theme-code,
+.theme-right {
+  background: var(--studio-panel);
+  border: 1px solid var(--studio-line);
+  border-radius: var(--studio-surface-radius);
+  min-width: 0;
+}
+
+.theme-preview {
+  background: var(--bs-body-bg);
+  padding: 16px;
+}
+
+/* An inline mascot keeps room above it for a speech bubble. This view shows no bubble, so the stage shows only the
+   drawing and its status text, bottom-aligned. */
+.theme-preview-stage,
+.theme-card-mascot {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: hidden;
+}
+
+.theme-preview-stage {
+  width: 180px;
+  height: calc(180px + 5rem);
+  margin: 0 auto;
+}
+
+.theme-code {
+  padding: 12px;
+}
+
+.theme-code-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.theme-code-head .shiny-input-container {
+  width: auto;
+  margin: 0;
+}
+
+.theme-code-head .pg-copy {
+  margin-left: auto;
+}
+
+.theme-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.theme-code-text {
+  background: var(--studio-code);
+  color: var(--studio-ink);
+  border: 1px solid var(--studio-line);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  margin: 0.5rem 0;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.theme-stack-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.35rem;
+  font-size: 0.8rem;
+  color: var(--studio-muted);
+}
+
+.theme-stack-clear {
+  padding: 0 0.25rem;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.theme-right {
+  padding: 12px 16px 16px;
+}
+
+.theme-route,
+.theme-lead {
+  margin: 0 0 0.5rem;
+}
+
+.theme-route {
+  font-size: 0.9rem;
+  color: var(--studio-muted);
+}
+
+.theme-tab {
+  padding-top: 12px;
+}
+
+.theme-muted {
+  color: var(--studio-muted);
+  font-size: 0.8rem;
+}
+
+.theme-note {
+  border-left: 3px solid var(--bs-info);
+  padding: 0.25rem 0.6rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+.theme-note.is-warn {
+  border-left-color: var(--bs-warning);
+}
+
+.theme-note.is-ok {
+  border-left-color: var(--bs-success);
+}
+
+.theme-message {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Palette cards: a radio group; the chosen card has the primary colour's border. */
+.theme-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.theme-palette-card {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--bs-body-bg);
+  cursor: pointer;
+}
+
+.theme-palette-card > input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.theme-palette-card:has(input:checked) {
+  border-color: var(--studio-primary);
+  box-shadow: 0 0 0 2px var(--studio-primary);
+}
+
+.theme-palette-card:has(input:focus-visible) {
+  outline: 2px solid var(--studio-primary);
+  outline-offset: 2px;
+}
+
+.theme-card-mascot {
+  width: 88px;
+  height: calc(88px + 3.25rem);
+}
+
+/* .mascot-status is one of the package's public styling hooks (?mascot_styling). */
+.theme-card-mascot .mascot-status {
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.theme-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.theme-card-name {
+  font-weight: 600;
+}
+
+.theme-card-description {
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.theme-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.theme-swatch {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 0.2rem;
+  border: 1px solid var(--studio-line);
+}
+
+@media (max-width: 859.98px) {
+  .theme-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The preview stays at the top, small, while the code and tabs scroll under it. */
+  .theme-left {
+    display: contents;
+  }
+
+  .theme-preview {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    box-shadow: var(--studio-shadow);
+  }
+
+  .theme-preview-stage {
+    width: 88px;
+    height: calc(88px + 4.5rem);
+    flex: 0 0 auto;
+    margin: 0;
+  }
+
+  .theme-preview-stage .mascot-status {
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  /* The four tabs stay on one line and scroll sideways if the screen is too narrow. */
+  .theme-right .nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    font-size: 0.9rem;
+  }
+
+  .theme-right .nav-link {
+    white-space: nowrap;
+  }
+
+  .theme-preview .theme-note {
+    margin: 0;
+  }
+
+  .theme-header-controls select {
+    max-width: 10rem;
+  }
+}

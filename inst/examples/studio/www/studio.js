@@ -253,38 +253,6 @@
   }
   if (!window.Shiny) return;
   const $ = window.jQuery;
-  // input type="color" as a Shiny input. CSS-variable pickers also set their variable on the page.
-  class ColourBinding extends window.Shiny.InputBinding {
-    find(scope) {
-      return $(scope).find('input.pg-colour');
-    }
-    getValue(el) {
-      return el.value;
-    }
-    setValue(el, value) {
-      el.value = value;
-    }
-    subscribe(el, callback) {
-      if (el.dataset.cssVar) document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
-      $(el).on('input.pgColour change.pgColour', () => {
-        if (el.dataset.cssVar) document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
-        callback(true);
-      });
-    }
-    unsubscribe(el) {
-      $(el).off('.pgColour');
-    }
-    receiveMessage(el, data) {
-      if (typeof data.value === 'string') {
-        el.value = data.value;
-        $(el).trigger('change');
-      }
-    }
-    getRatePolicy() {
-      return { policy: 'debounce', delay: 250 };
-    }
-  }
-  window.Shiny.inputBindings.register(new ColourBinding(), 'mascotStudio.colour');
 
   const byId = (id) => document.getElementById(id);
   // Avoid feeding unchanged text replacements back into the shell's MutationObserver.
@@ -1185,43 +1153,10 @@
     } else if (target.dataset.inspectorTab) tab(target.dataset.inspectorTab);
     else if (target.dataset.callArg) chipOpen(target);
     else if (target.dataset.searchFunction) chooseResult(target);
-    else if (target.dataset.event) {
-      if (target.tagName === 'A') event.preventDefault();
-      if (target.dataset.event === 'select_function') selectFunction(target.dataset.value);
-      else send(target.dataset.event, target.dataset.value || 'click');
-    } else if (target.dataset.copy) {
-      const source = byId(target.dataset.copy)?.textContent || '';
-      if (!target.dataset.label) target.dataset.label = target.textContent;
-      const label = target.dataset.label;
-      const done = (ok) => {
-        target.textContent = ok ? 'Copied' : 'Copy failed';
-        setTimeout(() => {
-          target.textContent = label;
-        }, 1500);
-      };
-      // The clipboard API needs a secure page; a studio opened by a network address falls back to a selection copy.
-      const fallback = () => {
-        const field = document.createElement('textarea');
-        field.value = source;
-        field.setAttribute('readonly', '');
-        field.style.position = 'fixed';
-        field.style.opacity = '0';
-        document.body.append(field);
-        field.select();
-        let ok = false;
-        try {
-          ok = document.execCommand('copy');
-        } catch {
-          ok = false;
-        }
-        field.remove();
-        done(ok);
-      };
-      if (navigator.clipboard && window.isSecureContext)
-        navigator.clipboard.writeText(source).then(() => done(true), fallback);
-      else fallback();
-    }
   });
+  // Buttons with data-event and copy buttons are inputs.js's. The function index and its links open a function
+  // here instead of only sending the event.
+  window.mascotStudioInputs.on('select_function', (fn) => selectFunction(fn));
   let bubbleTimer = null;
   document.addEventListener('input', (event) => {
     if (event.target.id === 'function_search') searchResults();

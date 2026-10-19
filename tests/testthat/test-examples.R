@@ -62,8 +62,10 @@ describe("mascot_examples()", {
             "guide/mascot_studio.Rmd",
             "guide/mascot_status.Rmd",
             "guide/mascot_theme.Rmd",
+            "www/inputs.js",
             "www/studio.css",
-            "www/studio.js"
+            "www/studio.js",
+            "www/tokens.css"
           )
         )
       } else if (name == "rhino") {
@@ -2588,6 +2590,29 @@ describe("studio phone overlays (#265)", {
   })
 })
 
+describe("studio shared tokens and inputs (#395)", {
+  it("loads the shared tokens and inputs before the studio's own files", {
+    page <- studio_parts()$page
+    at <- function(file) regexpr(paste0('"', file, '"'), page, fixed = TRUE)[[1]]
+    for (file in c("tokens.css", "studio.css", "inputs.js", "studio.js")) {
+      expect_gt(at(file), 0)
+    }
+    expect_lt(at("tokens.css"), at("studio.css"))
+    expect_lt(at("inputs.js"), at("studio.js"))
+  })
+  it("keeps the colour and spacing tokens in one file", {
+    www <- file.path(dirname(mascot_example("studio", run = FALSE)), "www")
+    read <- function(file) paste(readLines(file.path(www, file), warn = FALSE), collapse = "\n")
+    tokens <- read("tokens.css")
+    studio <- read("studio.css")
+    for (token in c("--studio-accent", "--studio-panel", "--studio-ink", "--studio-primary", "--studio-shadow")) {
+      expect_match(tokens, paste0(token, ":"), fixed = TRUE, info = token)
+      expect_false(grepl(paste0(token, ":"), studio, fixed = TRUE), info = token)
+    }
+    expect_false(grepl("body:has(.pg-studio)", tokens, fixed = TRUE))
+  })
+})
+
 describe("studio bubble controls (#249)", {
   it("shows the chosen example even when Show arrives before the browser fills the inputs", {
     parts <- studio_parts()
@@ -2874,6 +2899,9 @@ describe("studio isolated host", {
       expect_match(page, 'role="status"', fixed = TRUE)
       expect_match(page, 'name="viewport"', fixed = TRUE)
       expect_lt(regexpr("/studio.js", page, fixed = TRUE)[[1]], regexpr("mascot-host.js", page, fixed = TRUE)[[1]])
+      # The frame's page colours come from the shared tokens.
+      expect_lt(regexpr("/tokens.css", page, fixed = TRUE)[[1]], regexpr("/studio.css", page, fixed = TRUE)[[1]])
+      expect_gt(regexpr("/tokens.css", page, fixed = TRUE)[[1]], 0)
       expect_false(grepl("shiny.min.js", page, fixed = TRUE))
       token <- regmatches(page, regexec('data-mount-token="([^"]+)"', page))[[1]][[2]]
       fixture <- list(session = session, id = "helper")

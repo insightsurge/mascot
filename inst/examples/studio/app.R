@@ -381,7 +381,12 @@ studio_view_ui <- function(query, view) {
   }
   fn <- if (!is.null(query$fn) && query$fn %in% names(playground_guide)) query$fn else "mascot_mood"
   tagList(
-    tags$head(tags$link(rel = "stylesheet", href = "studio.css"), tags$script(src = "studio.js")),
+    tags$head(
+      tags$link(rel = "stylesheet", href = "tokens.css"),
+      tags$link(rel = "stylesheet", href = "studio.css"),
+      tags$script(src = "inputs.js"),
+      tags$script(src = "studio.js")
+    ),
     studio_page(view_character(query), fn, view, identical(query$open, "guide"))
   )
 }
@@ -1752,7 +1757,7 @@ studio_server <- function(input, output, session) {
       "1.0.0",
       src = c(href = ".."),
       script = "studio.js",
-      stylesheet = "studio.css"
+      stylesheet = c("tokens.css", "studio.css")
     )
     live <- htmltools::attachDependencies(live, c(list(bridge), htmltools::htmlDependencies(live)))
     page <- htmltools::tags$html(

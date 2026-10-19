@@ -1,12 +1,5 @@
 /* The studio's own layout and diagrams. Colours come from Bootstrap's variables, so the page
    follows its light/dark switch. */
-:root {
-  --studio-accent: #7b4fd6;
-  --studio-traffic-red: #e8443a;
-  --studio-traffic-yellow: #e6a817;
-  --studio-traffic-green: #20a342;
-}
-
 .pg-muted {
   color: var(--bs-secondary-color);
 }
@@ -630,39 +623,6 @@
 }
 
 /* Spatial studio, adapted from the approved direction D. System fonts and local assets only. */
-:root {
-  --studio-surface-radius: 14px;
-  --studio-rail-w: 56px;
-  --studio-btn-size: 40px;
-  --studio-btn-radius: 10px;
-  --studio-icon-size: 22px;
-  --studio-icon-stroke: 1.7;
-  --studio-bg: #eef0f4;
-  --studio-panel: #ffffff;
-  --studio-ink: #1b1f2a;
-  --studio-muted: #566074;
-  --studio-line: #d9dde6;
-  --studio-primary: #3b5bdb;
-  --studio-note: #eef1fd;
-  --studio-grid: #cfd4de;
-  --studio-code: #f5f6fa;
-  --studio-shadow: 0 6px 24px rgb(20 30 60 / 12%);
-}
-[data-bs-theme="dark"] {
-  --studio-bg: #0f1218;
-  --studio-panel: #181c25;
-  --studio-ink: #e7eaf2;
-  --studio-muted: #a5aec0;
-  --studio-traffic-red: #ff6058;
-  --studio-traffic-yellow: #febc2e;
-  --studio-traffic-green: #28c840;
-  --studio-line: #394255;
-  --studio-primary: #9db0ff;
-  --studio-note: #1c2236;
-  --studio-grid: #272c39;
-  --studio-code: #11141b;
-  --studio-shadow: 0 6px 24px rgb(0 0 0 / 50%);
-}
 body:has(.pg-studio),
 [data-studio-host] body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;

@@ -362,7 +362,11 @@ describe("studio overlays and live controls", {
       )
       app$wait_for_js(sprintf("window.innerWidth === %d", size[1]))
       before <- app$get_js("document.getElementById('studio_centre').getBoundingClientRect().width")
-      app$click(selector = if (size[1] <= 860) "#open_inspector" else "#inspector_view_controls")
+      # Click in the page: the node can be replaced between Chrome resolving it and clicking it.
+      app$run_js(sprintf(
+        "document.querySelector('%s').click()",
+        if (size[1] <= 860) "#open_inspector" else "#inspector_view_controls"
+      ))
       expect_equal(app$get_js("document.getElementById('studio_centre').getBoundingClientRect().width"), before)
       expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
       expect_identical(
@@ -434,7 +438,7 @@ describe("E1 studio behaviour in the redesigned UI", {
       app$wait_for_js(sprintf("document.querySelector('#guide [data-guide-function=%s]') !== null", fn))
       expect_identical(
         app$get_js(
-          "document.querySelectorAll('#guide input, #guide select, #guide textarea, #guide [data-event]:not([data-event=palette_swap]):not([data-event=menu_long_status])').length"
+          "document.querySelectorAll('#guide input, #guide select, #guide textarea, #guide [data-event]:not([data-event=palette_swap]):not([data-event=menu_long_status]):not([data-event=select_function])').length"
         ),
         0L
       )
@@ -2110,6 +2114,26 @@ describe("the next studio review round", {
 
 
 describe("studio palette follow-up (#353)", {
+  it("opens the helper's own help from a chip and the mascot() inspector from the call name", {
+    local_shiny_browser()
+    app <- studio_redesign_driver(width = 1440, height = 900)
+    withr::defer(app$stop())
+    wait_studio_mood(app, "idle")
+    app$click(selector = "[data-call-arg=status]")
+    app$wait_for_js("!document.getElementById('chip_editor').hidden")
+    app$click(selector = "#chip_help")
+    app$wait_for_js("!!document.querySelector('#function_help [data-guide-function=mascot_status]')")
+    expect_identical(app$get_js("document.getElementById('function_help').dataset.activeArgument || ''"), "")
+    expect_identical(
+      app$get_js("document.getElementById('inspector_tab_help').getAttribute('aria-selected')"),
+      "true"
+    )
+    app$click(selector = "button.pg-call-name")
+    app$wait_for_js("!!document.querySelector('#function_help [data-guide-function=mascot]')")
+    expect_true(app$get_js(
+      "!document.querySelector('#studio_inspector [data-function=mascot]').hidden && !document.getElementById('inspector_sidebar').hidden"
+    ))
+  })
   it("names original colours, preserves exact palette ids and contains tables at 390 pixels", {
     local_shiny_browser()
     app <- studio_redesign_driver(width = 390, height = 844)

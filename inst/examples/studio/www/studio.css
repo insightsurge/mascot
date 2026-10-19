@@ -1098,6 +1098,21 @@ body:has(.pg-studio),
     700 18px ui-monospace,
     monospace;
 }
+/* mascot( opens the mascot() inspector, so it is a button that looks like the name. */
+button.pg-call-name {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+button.pg-call-name:hover {
+  text-decoration: underline;
+}
+button.pg-call-name:focus-visible {
+  outline: 2px solid var(--studio-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 .pg-call-chip {
   border: 1px solid var(--studio-line);
   border-radius: 9px;

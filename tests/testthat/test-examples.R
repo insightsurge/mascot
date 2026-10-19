@@ -2462,6 +2462,17 @@ describe("studio palette follow-up (#353)", {
     expect_error(get("studio_palette_base", parts$env)(1), "character")
     expect_error(get("palette_base_demo", parts$env)(1), "character")
   })
+  it("lists the palette mistakes under mascot_theme() as well as mascot() and update_mascot()", {
+    parts <- studio_parts()
+    for (id in builtin_characters()$id) {
+      cases <- get("guide_mistake_calls", parts$env)("mascot_theme", id)
+      expect_true(any(grepl("not-a-colour", cases, fixed = TRUE)))
+      expect_true(all(
+        c("Borrow another character's palette", "A made-up palette id", "An unknown palette in an update") %in%
+          names(cases)
+      ))
+    }
+  })
   it("shows the dark-mode outline tip with a live default and custom example and points to it from the roles table", {
     parts <- studio_parts()
     for (id in builtin_characters()$id) {

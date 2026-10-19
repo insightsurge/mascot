@@ -1132,10 +1132,20 @@
       close('chip_editor', false);
       selectFunction(chipFunction, chipInput, chipField);
     } else if (id === 'chip_help') {
-      argumentHelp(
-        chipArgument === 'gesture' ? 'mascot_gesture' : 'mascot',
-        chipArgument === 'gesture' ? 'name' : chipArgument,
-      );
+      // The helper's own help page, as Controls and Guide open it. Arguments of mascot() itself
+      // and the gesture's name keep their argument-level help.
+      if (chipFunction === 'mascot' || chipArgument === 'gesture') {
+        argumentHelp(
+          chipArgument === 'gesture' ? 'mascot_gesture' : 'mascot',
+          chipArgument === 'gesture' ? 'name' : chipArgument,
+        );
+      } else {
+        close('chip_editor', false);
+        selectFunction(chipFunction);
+        tab('help');
+      }
+    } else if (target.dataset.callOpen) {
+      selectFunction(target.dataset.callOpen);
     } else if (id === 'chip_guide') {
       close('chip_editor', false);
       selectFunction(chipFunction);

@@ -1044,7 +1044,16 @@ guide_mistake_calls <- function(fn, character) {
     mascot_anchors = 'mascot_anchors("unknown-character")',
     mascot_palettes = 'mascot_palettes("unknown-character")',
     mascot_characters = 'mascot_characters(family = "unknown-family")',
-    mascot_theme = format_call("mascot_theme", list(light = named_call("list", stats::setNames("not-a-colour", role)))),
+    # The palette mistakes belong here too: the palette argument of mascot_theme() is where they start.
+    mascot_theme = c(
+      format_call("mascot_theme", list(light = named_call("list", stats::setNames("not-a-colour", role)))),
+      vapply(palette_cases, function(x) x$code, character(1)),
+      vapply(
+        update_cases[names(update_cases) == "An unknown palette in an update"],
+        function(x) sub(")$", ", session = session)", x$code),
+        character(1)
+      )
+    ),
     mascot_action = 'mascot_action("Open help", FALSE)',
     mascot_popup_menu = c(
       'mascot_popup_menu(c("has spaces" = "Action"))',
@@ -1303,7 +1312,13 @@ call_chips <- function(state, style, gesture = NULL) {
   signature <- formals(mascot::mascot)
   args <- names(signature)
   tagList(
-    tags$strong(class = "pg-call-name", "mascot("),
+    tags$button(
+      type = "button",
+      class = "pg-call-name",
+      `data-call-open` = "mascot",
+      title = "Open mascot() in the inspector",
+      "mascot("
+    ),
     lapply(args, function(arg) {
       if (arg == "...") {
         return(tags$span(

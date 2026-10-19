@@ -77,7 +77,7 @@ character_format_colours <- function(x, mode = "light", preset = "original", rec
   colours <- lapply(names(baseline), function(id) character_colour(baseline[[id]], paste0("$.colours.", id)))
   names(colours) <- names(baseline)
   supplied <- character_object()
-  if (preset != "original") {
+  if (!character_palette_is_native(x, preset)) {
     palette <- character_palettes(x)[[preset]]
     if (is.null(palette)) {
       character_format_abort("missing_reference", "$.palettes", preset, "Select a declared palette.")

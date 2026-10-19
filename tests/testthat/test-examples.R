@@ -1187,7 +1187,8 @@ describe("bundled example apps", {
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("document.documentElement.dataset.bsTheme==='light'")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#b53d78'")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.accessory"), "#A94A82")
+    # The bow has its own colour now, so a brand's rim no longer reaches it.
+    expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).colours.accessory"))
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.sleeve"), "#B53D78")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#A94A82")
     app$click("personalise")
@@ -1841,9 +1842,15 @@ describe("studio safeguards (#248)", {
     }
     show <- function(...) list(list(...), list(bubble_show = 1))
     rows <- list(
-      palette = row(list(list(palette = "coral")), "theme", 'theme = "coral"', wait = 300, sent = function(p) {
-        identical(p$theme$palette, "coral")
-      }),
+      palette = row(
+        list(list(palette = "coral_navy")),
+        "theme",
+        'theme = "coral_navy"',
+        wait = 300,
+        sent = function(p) {
+          identical(p$theme$palette, "coral_navy")
+        }
+      ),
       mood = row(list(list(mood = "happy")), "mood", 'mood = "happy"', sent = function(p) identical(p$mood, "happy")),
       status_text = row(
         list(list(status_text = "Saving")),
@@ -2563,14 +2570,16 @@ describe("studio palette controls", {
       for (input in c("character", "palette", "mood", "gesture")) {
         expect_match(bar, paste0('<select id="', input, '"'), fixed = TRUE)
       }
-      for (palette in mascot_palettes(id)$name) {
+      # The character's own colours always carry the value "original", whatever name they are listed under.
+      for (palette in c("original", mascot_palettes(id)$name[-1L])) {
         expect_match(bar, paste0('value="', palette, '"'), fixed = TRUE)
       }
+      expect_match(bar, paste0(">", mascot_palettes(id)$name[[1L]], "</option>"), fixed = TRUE)
       expect_match(bar, 'id="gesture_play"', fixed = TRUE)
       expect_false(grepl("try_mood", bar, fixed = TRUE))
     }
     table <- get("roles_table", parts$env)
-    expect_match(as.character(table("tessa", "coral")), "#FFE5D9", fixed = TRUE)
+    expect_match(as.character(table("tessa", "coral_navy")), "#FFE5D9", fixed = TRUE)
     expect_error(table(1), "character")
     expect_error(table("tessa", 1), "palette")
     builder <- get("code_theme", parts$env)
@@ -2614,11 +2623,11 @@ describe("studio palette controls", {
     shiny::testServer(get("studio_server", parts$env), {
       do.call(session$setInputs, start)
       studio_go_live(session)
-      session$setInputs(palette = "coral")
+      session$setInputs(palette = "coral_navy")
       session$elapse(301)
       session$setInputs(mistake = "Low contrast", mistake_run = 1)
-      expect_identical(eval(state$theme$short)$palette, "coral")
-      expect_match(output$code_ui, 'palette = "coral"', fixed = TRUE)
+      expect_identical(eval(state$theme$short)$palette, "coral_navy")
+      expect_match(output$code_ui, 'palette = "coral_navy"', fixed = TRUE)
     })
   })
   it("refreshes choices and sends a gesture only when Play is pressed", {
@@ -2634,18 +2643,18 @@ describe("studio palette controls", {
       }
       do.call(session$setInputs, start)
       studio_go_live(session)
-      session$setInputs(palette = "coral")
+      session$setInputs(palette = "peach")
       session$elapse(301)
-      expect_match(output$code_ui, 'theme = "coral"', fixed = TRUE)
+      expect_match(output$code_ui, 'theme = "peach"', fixed = TRUE)
       session$setInputs(character = "sela")
-      expect_match(output$code_ui, 'theme = "coral"', fixed = TRUE)
+      expect_match(output$code_ui, 'theme = "peach"', fixed = TRUE)
       expect_match(messages$palette$options, 'value="peach"', fixed = TRUE)
-      expect_identical(messages$palette$value, "coral")
+      expect_identical(messages$palette$value, "peach")
       expect_match(choices$mood, 'value="happy"', fixed = TRUE)
       expect_match(choices$gesture, 'value="wave"', fixed = TRUE)
       session$setInputs(character = "knurl")
       expect_identical(messages$palette$value, "original")
-      expect_false(grepl('theme = "coral"', output$code_ui, fixed = TRUE))
+      expect_false(grepl('theme = "peach"', output$code_ui, fixed = TRUE))
       previous <- session$userData$mascot_updates[[session$ns("helper")]]$revision
       session$setInputs(gesture = "wave")
       expect_identical(session$userData$mascot_updates[[session$ns("helper")]]$revision, previous)

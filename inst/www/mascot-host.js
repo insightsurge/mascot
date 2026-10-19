@@ -2455,7 +2455,7 @@
       // Resolved palette colours belong to one character; never carry them across a swap.
       nextTheme = { ...theme };
       const palette = has(candidate.palettes || {}, theme.palette) ? candidate.palettes[theme.palette] : null;
-      if (palette || theme.palette === 'original') {
+      if (palette || theme.palette === 'original' || theme.palette === candidate.native_palette) {
         nextTheme.palette_colours = {
           light: palette?.light || null,
           dark: palette?.dark || palette?.light || null,

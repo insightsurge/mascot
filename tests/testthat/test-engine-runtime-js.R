@@ -2043,7 +2043,7 @@ describe("palette wire validation", {
     js <- local_runtime_page(list(mascot(
       "a",
       character = "tessa",
-      theme = "coral",
+      theme = "peach",
       motion = FALSE,
       placement = "inline"
     )))
@@ -2079,7 +2079,7 @@ describe("palette wire validation", {
     expect_match(result$errors[[5]], "invalid colour", fixed = TRUE)
     expect_identical(result$colours$body, "#123456")
     expect_identical(result$colours$rim, "#112233")
-    expect_identical(result$colours$feature, "#1D3557")
+    expect_identical(result$colours$feature, "#2A1616")
   })
 })
 
@@ -2111,7 +2111,7 @@ describe("standalone palette swaps", {
     js <- local_runtime_page(list(mascot(
       "a",
       character = "tessa",
-      theme = "coral",
+      theme = "peach",
       motion = FALSE,
       placement = "inline"
     )))
@@ -2121,10 +2121,29 @@ describe("standalone palette swaps", {
     ))
     result <- js("mascot.host.state(document.getElementById('a'))")
     expect_identical(result$character, "sela")
-    expect_identical(result$theme$palette, "coral")
-    expect_identical(result$theme$palette_colours$light$hair_purple, "#1D3557")
-    expect_identical(result$colours$hair_purple, "#1D3557")
-    # Tessa's coral sets `feature`; Sela's does not, so its absence shows the old map was dropped.
+    expect_identical(result$theme$palette, "peach")
+    expect_identical(result$theme$palette_colours$light$hair_purple, "#2B305C")
+    expect_identical(result$colours$hair_purple, "#2B305C")
+    # Tessa's peach sets `feature`; Sela's does not, so its absence shows the old map was dropped.
     expect_null(result$theme$palette_colours$light$feature)
+  })
+  it("keeps the name of a character's own colours across a swap only to a character that uses the same name", {
+    own_name <- list(mascot("a", character = "tessa", theme = "night_teal", motion = FALSE, placement = "inline"))
+    swap <- function(js, id, json) {
+      js(sprintf(
+        "mascot.host.receive({id: 'a', patch: {character: %s}})",
+        jsonlite::toJSON(list(id = id, name = id, json = json), auto_unbox = TRUE)
+      ))
+      js("mascot.host.state(document.getElementById('a'))")
+    }
+    # Another character that also names its own colours night_teal keeps the palette and applies no palette colours.
+    twin <- sub('"id": "tessa"', '"id": "tessa_two"', character_json("tessa"), fixed = TRUE)
+    kept <- swap(local_runtime_page(own_name), "tessa_two", twin)
+    expect_identical(kept$theme$palette, "night_teal")
+    expect_null(kept$theme$palette_colours$light)
+    expect_null(kept$colours$body)
+    # Sela has no palette of that name, so it is dropped.
+    dropped <- swap(local_runtime_page(own_name), "sela", character_json("sela"))
+    expect_null(dropped$theme$palette)
   })
 })

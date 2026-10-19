@@ -23,7 +23,7 @@
 #' @export
 #' @examples
 #' mascot_colour_roles()
-#' mascot_colour_roles("tessa", palette = "coral")
+#' mascot_colour_roles("tessa", palette = "coral_navy")
 mascot_colour_roles <- function(character = "tessa", ..., palette = NULL) {
   with_mascot_asserts({
     character_catalogue_assert(character)
@@ -34,12 +34,19 @@ mascot_colour_roles <- function(character = "tessa", ..., palette = NULL) {
   }
   data <- character_catalogue_resolve(character, environment())
   colours <- data$colours
-  if (!is.null(palette) && palette != "original") {
+  if (!is.null(palette)) {
     problem <- theme_palette_problem(palette, data)
     if (!is.null(problem)) {
       cli::cli_abort("{problem}", class = "mascot_error")
     }
-    resolved <- character_format_colours(data, preset = palette)
+    # The character's own colours (by either name) need no resolving.
+    resolved <- if (character_palette_is_native(data, palette)) {
+      NULL
+    } else {
+      character_format_colours(data, preset = palette)
+    }
+  }
+  if (!is.null(palette) && !is.null(resolved)) {
     for (role in names(colours)) {
       colour <- resolved[[role]]
       if (!identical(colour, character_colour(colours[[role]]))) {

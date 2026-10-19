@@ -612,13 +612,13 @@ studio_server <- function(input, output, session) {
   # Keep each top-bar choice when the incoming character supports it.
   selected_palette <- reactive({
     value <- input$palette %||% "original"
-    if (value %in% mascot_palettes(current_character())$name) value else "original"
+    if (value %in% studio_palette_choices(current_character())) value else "original"
   })
   observeEvent(
     input$character,
     {
       character <- current_character()
-      palettes <- mascot_palettes(character)$name
+      palettes <- studio_palette_choices(character)
       moods <- mascot_moods(character)$name
       gestures <- mascot_gestures(character)$name
       mood <- if (isTRUE(input$mood %in% moods)) input$mood else "idle"

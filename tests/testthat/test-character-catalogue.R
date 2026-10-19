@@ -111,6 +111,26 @@ describe("character_catalogue_assert()", {
 })
 
 
+describe("Tessa's shipped recipe", {
+  it("passes the format checker with every palette, and her face features reach 4.5:1 on every body colour", {
+    path <- system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE)
+    checked <- character_format_check(path, from = "file", builtin = TRUE)
+    expect_identical(checked$id, "tessa")
+    expect_identical(names(checked$palettes), setdiff(mascot_palettes("tessa")$name, "night_teal"))
+    ratio <- function(a, b) {
+      lights <- c(character_luminance(a[1:3]), character_luminance(b[1:3]))
+      (max(lights) + 0.05) / (min(lights) + 0.05)
+    }
+    for (palette in mascot_palettes("tessa")$name) {
+      colours <- character_format_colours(checked, preset = palette)
+      expect_gte(ratio(colours$feature, colours$body), 4.5)
+      expect_gte(ratio(colours$hair, colours$body), 3)
+      expect_gte(ratio(colours$badge_icon, colours$badge), 3)
+    }
+    expect_true(all(vapply(checked$palettes, function(x) nzchar(x$group) && nzchar(x$description), logical(1))))
+  })
+})
+
 describe("character_palettes()", {
   it("shares cached definitions between every public palette consumer without reading files again", {
     data <- character_catalogue_get("knurl")

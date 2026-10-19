@@ -194,10 +194,12 @@ mascot_state_theme <- function(theme, data, strict = TRUE, roles = names(data$co
       if (strict) {
         cli::cli_abort("{problem}", class = "mascot_error")
       }
+      hint <- theme_palette_owner_hint(palette, data)
       cli::cli_warn(
         paste0(
           "Palette {.val {palette}} dropped for character {.val {data$id}}; ",
-          "its own colours are used and explicit colours for shared roles are kept."
+          "its own colours are used and explicit colours for shared roles are kept.",
+          hint
         ),
         class = c("mascot_palette_dropped", "mascot_warning")
       )

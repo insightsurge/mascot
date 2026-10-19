@@ -205,6 +205,17 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
       )
     )
   }
+  if (
+    !is.null(result$native_palette) &&
+      (result$native_palette == "original" || result$native_palette %in% names(palettes))
+  ) {
+    character_format_abort(
+      "duplicate_id",
+      "$.native_palette",
+      result$native_palette,
+      "Name the character's own colours differently from \"original\" and from every palette."
+    )
+  }
   if (!setequal(names(result$palette_sources), names(palettes)) || any(vapply(palettes, is.null, logical(1)))) {
     character_format_abort(
       "input_type",

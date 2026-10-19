@@ -418,7 +418,10 @@ visual_anchors <- function(character = formals(mascot::mascot)$character) {
 visual_palettes <- function(character = formals(mascot::mascot)$character) {
   tagList(
     tags$h3(class = "pg-section-title", paste0(mascot_character(character)$name, "'s palettes")),
-    tags$p(class = "pg-muted", "original is the character's own colours, with no palette applied."),
+    tags$p(
+      class = "pg-muted",
+      "The first row is the character's own colours, with no palette applied; \"original\" always selects them."
+    ),
     data_table(mascot_palettes(character))
   )
 }

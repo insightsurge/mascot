@@ -9,6 +9,11 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-19 — Palette kept on a swap when it names the incoming character's own colours (#358)
+
+When a mascot swaps to a character whose own colours carry the selected palette id (its `native_palette`), the host
+keeps that palette id and applies no palette colours, as it does for `original`.
+
 ## 2026-10-19 — Disabled menus (#350)
 
 Menu click settings carry a `disabled` flag through validation and replacement.

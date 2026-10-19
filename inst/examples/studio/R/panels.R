@@ -73,17 +73,89 @@ role_pickers <- function(mode, roles, values = list(), name = mascot_character()
 panel_character_bar <- function(moods = mascot_moods(), character = formals(mascot::mascot)$character) {
   checkmate::assert_data_frame(moods)
   checkmate::assert_string(character)
-  div(
+  bar <- div(
     id = "studio_character_bar",
-    class = "pg-toolbar pg-card-head pg-character-bar",
+    class = "pg-toolbar pg-float",
+    role = "toolbar",
+    `aria-label` = "Quick controls",
     div(
-      class = "d-flex flex-wrap align-items-end gap-2 w-100 pg-character-bar-controls",
-      selectInput("character", "Character", studio_characters(), selected = character),
-      mood_cards(moods),
-      if (!is.null(studio_character_hint())) div(class = "pg-hint", studio_character_hint())
+      class = "pg-sentence",
+      role = "group",
+      `aria-label` = "Character, mood and one-off gesture",
+      "Showing",
+      selectInput("character", NULL, studio_characters(), selected = character, selectize = FALSE),
+      tags$span(id = "mood_article", "in an"),
+      selectInput(
+        "mood",
+        NULL,
+        stats::setNames(moods$name, tools::toTitleCase(moods$name)),
+        selected = "idle",
+        selectize = FALSE
+      ),
+      tags$span("mood, with"),
+      div(
+        id = "quick_gestures",
+        class = "pg-quick-gestures",
+        selectInput(
+          "gesture",
+          NULL,
+          c(
+            "no gesture" = "",
+            stats::setNames(
+              mascot_gestures(character)$name,
+              paste("a", tools::toTitleCase(mascot_gestures(character)$name))
+            )
+          ),
+          selected = "",
+          selectize = FALSE
+        ),
+        tags$span(class = "pg-sentence-stop", "."),
+        studio_button("replay_gesture", "Play it again", "Replay the selected gesture, or wave when none is selected")
+      )
     ),
-    actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm")
+    div(
+      class = "pg-search-field",
+      tags$svg(
+        viewBox = "0 0 20 20",
+        width = 16,
+        height = 16,
+        `aria-hidden` = "true",
+        tags$circle(cx = 8, cy = 8, r = 5, fill = "none", stroke = "currentColor", `stroke-width` = 1.5),
+        tags$path(d = "M12 12L17 17", stroke = "currentColor", `stroke-width` = 1.5)
+      ),
+      tags$input(
+        id = "open_search",
+        type = "search",
+        readonly = NA,
+        placeholder = "Search functions and arguments",
+        `aria-label` = "Search functions and arguments",
+        `aria-haspopup` = "dialog"
+      ),
+      tags$kbd(`aria-hidden` = "true", "Ctrl K")
+    ),
+    bslib::input_dark_mode(id = "dark_mode", mode = "light"),
+    actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm"),
+    studio_topright()
   )
+  for (id in c("character", "mood", "gesture")) {
+    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(`aria-label` = tools::toTitleCase(id))$allTags()
+  }
+  for (id in c("character", "mood", "gesture")) {
+    fn <- paste0("mascot_", id)
+    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$parent()$addClass("pg-sentence-word")$append(
+      tags$span(
+        id = paste0(id, "_tooltip"),
+        class = "pg-word-tooltip",
+        role = "tooltip",
+        tags$code(paste0(fn, "()")),
+        tags$span(help_page(fn)$title)
+      )
+    )$allTags()
+    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(
+      `aria-describedby` = paste0(id, "_tooltip")
+    )$allTags()
+  }
+  bar
 }
 
 panel_look <- function() {
@@ -120,7 +192,7 @@ panel_look <- function() {
       "mascot_characters",
       "family",
       selectInput("list_family", "Family", studio_families()),
-      note = div(class = "pg-hint", "The table of characters appears in the Guide.")
+      note = uiOutput("family_listing")
     ),
     fn_heading("mascot_families"),
     div(class = "pg-hint", "No arguments. See its table in the Guide."),
@@ -178,6 +250,8 @@ panel_messages <- function() {
     ),
     arg_field("mascot_bubble", "closable", input_switch("bubble_closable", "Show a close button", TRUE)),
     fn_heading("mascot_action"),
+    selectInput("click_type", "Click", c(None = "none", Action = "action", Menu = "menu"), selected = "menu"),
+    try_button("select_function", "mascot_popup_menu", "Use a popup menu instead"),
     arg_field(
       "mascot_action",
       "label",
@@ -274,6 +348,7 @@ panel_motion <- function(gestures = mascot_gestures()) {
     playground_categories$motion$title,
     value = "motion",
     fn_heading("mascot_motion_settings"),
+    input_switch("motion_on", "Animate", TRUE),
     arg_field("mascot_motion_settings", "...", NULL),
     lapply(c("idle", "mood_change", "gestures", "swap", "minimising", "restoring"), function(name) {
       arg_field(
@@ -310,9 +385,9 @@ panel_motion <- function(gestures = mascot_gestures()) {
     arg_field(
       "mascot_gesture",
       "name",
-      div(
-        class = "pg-actions",
-        lapply(gestures$name, function(name) try_button("gesture", name, tools::toTitleCase(name)))
+      tagList(
+        div(class = "pg-note", "Change it in the top bar."),
+        tags$button(type = "button", class = "btn btn-sm", `data-focus-input` = "quick_gestures", "Focus gestures")
       )
     ),
     div(
@@ -376,7 +451,7 @@ panel_layout <- function() {
     arg_field("mascot_placement", "...", NULL),
     div(
       class = "pg-note",
-      "A floating mascot sits above the page, so here it can cover the Controls panel; ",
+      "A floating mascot stays inside this contained preview; ",
       "turn on dragging to move it aside."
     ),
     arg_field(
@@ -409,7 +484,10 @@ panel_layout <- function() {
           "input.position == 'inline'",
           div(class = "pg-note", "An inline mascot ignores drag. Pick a corner position to try it.")
         ),
-        div(class = "pg-live", tags$code("input$helper_position"), textOutput("position_last"))
+        tagList(
+          div(class = "pg-live", tags$code("input$helper_position"), textOutput("position_last")),
+          div(class = "pg-live", tags$code("input$helper_minimised"), textOutput("minimised_last"))
+        )
       )
     )
   )
@@ -430,9 +508,9 @@ panel_colours <- function() {
         )
       ),
       arg_field("mascot_theme", "...", NULL),
-      radioButtons(
+      selectInput(
         "theme_source",
-        "Where the colours come from",
+        "Palette source",
         c(
           "Character's own colours" = "own",
           "Your colours" = "mascot",
@@ -443,21 +521,21 @@ panel_colours <- function() {
         class = "pg-hint",
         "The settings below change with your choice: pick a source to see only the controls for it."
       ),
+      arg_field(
+        "mascot_theme",
+        "mode",
+        radioButtons(
+          "theme_mode",
+          "Colour mode",
+          c("Follow the page switch (auto)" = "auto", "Always light" = "light", "Always dark" = "dark")
+        )
+      ),
       conditionalPanel(
         "input.theme_source == 'own'",
         div(class = "pg-note", "Uses the character's own colours in light and dark mode.")
       ),
       conditionalPanel(
         "input.theme_source == 'mascot'",
-        arg_field(
-          "mascot_theme",
-          "mode",
-          radioButtons(
-            "theme_mode",
-            "Colour mode",
-            c("Follow the page switch (auto)" = "auto", "Always light" = "light", "Always dark" = "dark")
-          )
-        ),
         bslib::navset_tab(
           bslib::nav_panel("Light", uiOutput("theme_light")),
           bslib::nav_panel("Dark", uiOutput("theme_dark")),
@@ -549,6 +627,11 @@ panel_wiring <- function() {
         input_switch("task_fail", "Make the task fail", FALSE),
         actionButton("task_run", "Run a 2-second task", class = "btn-outline-primary btn-sm")
       )
+    ),
+    tags$details(
+      open = NA,
+      tags$summary("Activity log: calls, warnings, errors and visitor events"),
+      uiOutput("wiring_log")
     )
   )
 }

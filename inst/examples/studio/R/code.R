@@ -89,7 +89,7 @@ code_motion <- function(
     args$others <- FALSE
   }
   helper <- do.call(helper_call, c(list("mascot_motion_settings"), args))
-  code_pair(helper, helper)
+  code_pair(if (length(helper) == 1L) TRUE else helper, helper)
 }
 
 code_size <- function(size, small_screen = "auto") {
@@ -154,7 +154,7 @@ code_action <- function(label, tooltip = TRUE, disabled = FALSE) {
 
 code_theme <- function(source, light, dark, mode, css_roles, primary, secondary) {
   if (source == "own") {
-    return(code_pair(quote(mascot_theme())))
+    return(code_pair(helper_call("mascot_theme", mode = if (mode != "auto") mode)))
   }
   if (source == "bslib") {
     return(code_pair(helper_call("bslib::bs_theme", primary = primary, secondary = secondary)))
@@ -226,7 +226,13 @@ format_call <- function(fn, args) {
 
 # Picks the shortcut or helper form of every setting.
 pick_style <- function(pairs, style) {
-  lapply(pairs, function(pair) pair[[style]])
+  if (length(style) > 1L) {
+    style <- as.list(style)
+  }
+  lapply(names(pairs), function(arg) {
+    pairs[[arg]][[if (length(style) == 1L) style else style[[arg]] %||% style[[".default"]]]]
+  }) |>
+    stats::setNames(names(pairs))
 }
 
 # The observeEvent() that answers a click: the action's, or one branch per menu item, for the app to fill in.

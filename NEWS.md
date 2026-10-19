@@ -1,5 +1,9 @@
 # mascot (development version)
 
+* `mascot_studio()` puts function controls and searchable help over a live canvas, with single-value call-chip editors, sentence-style controls, a last-gesture chip, draggable anchor labels and leader lines, help tooltips on inline sentence words, per-argument code styles and resets, phone-width previews, a family-filtered character listing and an activity log beside the update demonstrations (#353).
+
+* The studio wraps its configuration and top controls on phones, keeps floating editors inside the viewport, and limits anchor focus rings to keyboard-focused labels (#353).
+
 ## Breaking changes
 
 * `mascot_character(id = "tessa")` names its argument `id`, as every other function that addresses a character does; `name =` is no longer accepted and has no alias. Pass the id positionally or as `id =` (#296).

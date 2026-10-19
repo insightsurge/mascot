@@ -146,6 +146,8 @@ describe("public CSS styling hooks", {
 
   it("shows the styling help and honours panel colours in the studio in both modes", {
     local_shiny_browser()
+    studio_frame <- "document.getElementById('live_frame').contentWindow"
+    studio_live <- paste0(studio_frame, ".document.getElementById('helper')")
     skip_if_not_installed("bslib")
     app <- app_driver(
       function() {
@@ -157,14 +159,15 @@ describe("public CSS styling hooks", {
       height = 900
     )
     withr::defer(app$stop())
-    app$wait_for_js("!!window.mascot?.host?.state(document.getElementById('helper'))")
+    app$wait_for_js(sprintf("!!%s?.mascot?.host?.state(%s)", studio_frame, studio_live))
+    app$click(selector = "#all_functions")
     app$click(selector = '.pg-index-link[data-value="mascot_theme"]')
     app$wait_for_js("!document.querySelector('#studio_inspector [data-function=mascot_theme]').hidden")
     app$run_js(
       "const help=[...document.querySelectorAll('#studio_inspector details')].find(el=>
         el.querySelector('summary')?.textContent==='Styling panels and the restore button with CSS');
       help.open=true;window.stylingHelp=help;
-      const css=document.createElement('style');css.textContent='#helper {--mascot-panel-bg:#153448;--mascot-panel-color:#ffffff;--mascot-panel-border:#8fc7e8;}';document.head.append(css);"
+      const css=document.createElement('style');css.textContent='#helper {--mascot-panel-bg:#153448;--mascot-panel-color:#ffffff;--mascot-panel-border:#8fc7e8;}';document.getElementById('live_frame').contentDocument.head.append(css);"
     )
     app$wait_for_js("stylingHelp.getClientRects().length > 0")
     expect_true(app$get_js(
@@ -175,10 +178,10 @@ describe("public CSS styling hooks", {
     ))
     for (mode in c("light", "dark")) {
       app$run_js(sprintf("document.documentElement.dataset.bsTheme='%s'", mode))
-      app$wait_for_js(sprintf("mascot.host.state(document.getElementById('helper')).mode === '%s'", mode))
+      app$wait_for_js(sprintf("%s.mascot.host.state(%s).mode === '%s'", studio_frame, studio_live, mode))
       expect_identical(
         app$get_js(
-          "(() => {const s=getComputedStyle(document.querySelector('#helper .mascot-bubble'));return [s.backgroundColor,s.color,s.borderTopColor];})()"
+          "(() => {const f=document.getElementById('live_frame').contentWindow;const s=f.getComputedStyle(f.document.querySelector('#helper .mascot-bubble'));return [s.backgroundColor,s.color,s.borderTopColor];})()"
         ),
         list("rgb(21, 52, 72)", "rgb(255, 255, 255)", "rgb(143, 199, 232)")
       )

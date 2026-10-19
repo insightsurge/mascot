@@ -29,6 +29,7 @@ describe("mascot_studio()", {
     expect_match(page(studio), 'id="preview_build"', fixed = TRUE)
     expect_match(page(studio), 'id="preview_card"', fixed = TRUE)
     expect_match(page(studio), 'data-full-screen="false"', fixed = TRUE)
+    expect_match(page(studio), 'data-bslib-card-init', fixed = TRUE)
     expect_match(page(studio), 'id="studio_example_call"', fixed = TRUE)
     expect_match(page(studio), 'data-copy="studio_example_call"', fixed = TRUE)
     expect_false(grepl('id="studio_view"', page(studio), fixed = TRUE))
@@ -38,9 +39,11 @@ describe("mascot_studio()", {
     examples <- mascot_studio("examples", run = FALSE)
     expect_match(page(examples), 'id="example_name"', fixed = TRUE)
     expect_match(page(examples), 'href="?view=studio"', fixed = TRUE)
-    expect_false(grepl('id="helper"', page(examples), fixed = TRUE))
-    expect_match(page(examples, "view=studio"), 'id="helper"', fixed = TRUE)
-    expect_false(grepl('id="example_name"', page(examples, "view=studio"), fixed = TRUE))
+    # Views select the initial host mode; the mounted live engine arrives via renderUI in its iframe.
+    expect_match(page(examples), 'data-initial-mode="examples"', fixed = TRUE)
+    expect_match(page(examples, "view=studio"), 'data-initial-mode="mascot"', fixed = TRUE)
+    expect_match(page(examples, "view=studio"), 'id="example_name"', fixed = TRUE)
+    expect_match(page(examples, "view=studio"), 'id="live_host"', fixed = TRUE)
     expect_identical(options(), before)
   })
   it("passes its app to Shiny when launched interactively", {
@@ -89,10 +92,15 @@ describe("mascot_studio()", {
     })
     withr::defer(examples$stop())
     examples$wait_for_js("!!document.getElementById('example_name')")
+    expect_identical(examples$get_js("document.getElementById('studio_canvas').dataset.mode"), "examples")
+    examples$click(selector = "#studio_menu > summary")
     examples$click(selector = 'a[href="?view=studio"]')
-    examples$wait_for_js("!!document.getElementById('helper') && !!document.getElementById('studio_inspector')")
+    examples$wait_for_js(
+      "!!document.getElementById('live_frame')?.contentDocument?.getElementById('helper') && !!document.getElementById('studio_inspector')"
+    )
     expect_identical(examples$get_js("new URLSearchParams(location.search).get('view')"), "studio")
-    expect_identical(examples$get_js("document.querySelectorAll('#example_name').length"), 0L)
+    expect_identical(examples$get_js("document.querySelectorAll('#example_name').length"), 1L)
+    expect_identical(examples$get_js("document.getElementById('studio_canvas').dataset.mode"), "mascot")
   })
 })
 

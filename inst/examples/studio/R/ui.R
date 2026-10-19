@@ -64,11 +64,20 @@ arg_chip <- function(fn, arg) {
     class = "pg-arg-chip",
     `aria-label` = paste("About the", arg, "argument of", fn),
     tags$code(arg),
-    tags$span(class = "pg-info", "i")
+    tags$span(class = "pg-info", "?")
   )
   popover(
     trigger,
-    arg_popover_body(fn, arg),
+    tagList(
+      arg_popover_body(fn, arg),
+      tags$button(
+        type = "button",
+        class = "btn btn-link btn-sm",
+        `data-argument-help` = arg,
+        `data-help-function` = fn,
+        "Open this argument in inspector Help"
+      )
+    ),
     title = tags$code(paste0(fn, "(", arg, " =)")),
     options = list(customClass = "pg-help-popover")
   )
@@ -78,15 +87,21 @@ arg_chip <- function(fn, arg) {
 arg_field <- function(fn, arg, input, note = NULL) {
   checkmate::assert_string(fn)
   checkmate::assert_string(arg)
+  controls <- playground_controls[[fn]][[arg]]
+  ids <- if (is.character(controls)) sub('^id="([^"]+)"$', "\\1", controls[startsWith(controls, 'id="')])
   div(
     class = "pg-field",
     `data-argument` = arg,
+    `data-owner` = fn,
+    `data-package-default` = argument_default(fn, arg),
+    `data-default-input` = if (length(ids)) ids[[1]],
     div(
       class = "pg-field-head",
       arg_chip(fn, arg),
       tags$span(class = "pg-default", "default ", argument_default(fn, arg))
     ),
     div(class = "pg-hint", arg_hint(fn, arg)),
+    shared_input_button(fn, arg),
     input,
     note
   )
@@ -104,13 +119,7 @@ inspector_function <- function(fn, ...) {
     hidden = if (fn != "mascot_mood") NA,
     tags$h2(class = "pg-function-name", tags$code(paste0(fn, "()"))),
     div(class = "pg-fn-what", help_page(fn)$title),
-    bslib::popover(
-      tags$button(type = "button", class = "btn btn-outline-primary btn-sm", "Usage"),
-      code_block(signature(fn), "pg-signature"),
-      title = paste0(fn, "()")
-    ),
-    try_button("open_guide", fn, paste0("Guide: ", fn, "()")),
-    div(class = "pg-returns", tags$strong("Returns: "), div(class = "pg-help", help_page(fn)$value)),
+
     div(class = "pg-function-controls", ...)
   )
 }
@@ -145,7 +154,7 @@ function_index <- function() {
     `aria-label` = "Functions by category",
     lapply(names(playground_categories), function(category) {
       tagList(
-        tags$h2(playground_categories[[category]]$title),
+        tags$h2(`data-category` = category, playground_categories[[category]]$title),
         lapply(category_functions(category), function(fn) {
           bslib::tooltip(
             tags$button(
@@ -167,9 +176,9 @@ function_index <- function() {
 }
 
 wiring_links <- function(fn) {
-  shared <- setdiff(names(the_guide(fn)$args), c("id", "...", "session"))
+  shared <- setdiff(names(formals(getExportedValue("mascot", fn))), c("id", "...", "session"))
   lapply(shared, function(arg) {
-    helper <- if (arg == "motion") "mascot_motion_settings" else paste0("mascot_", arg)
+    helper <- switch(arg, motion = "mascot_motion_settings", click = "mascot_action", paste0("mascot_", arg))
     arg_field(
       fn,
       arg,
@@ -209,8 +218,8 @@ code_output <- function(id) {
   tagAppendAttributes(verbatimTextOutput(id), class = "pg-code")
 }
 
-copy_button <- function(target) {
-  tags$button(type = "button", class = "btn btn-sm btn-outline-primary pg-copy", `data-copy` = target, "Copy")
+copy_button <- function(target, label = "Copy") {
+  tags$button(type = "button", class = "btn btn-sm btn-outline-primary pg-copy", `data-copy` = target, label)
 }
 
 # ---- The guide card -------------------------------------------------------------------------
@@ -300,13 +309,7 @@ selected_guide <- function(fn, character = formals(mascot::mascot)$character) {
   div(
     `data-guide-function` = fn,
     tagAppendAttributes(
-      bslib::layout_columns(
-        col_widths = bslib::breakpoints(sm = 12, lg = c(6, 6)),
-        div(
-          class = "pg-guide-example",
-          tags$h3(class = "pg-section-title", paste0("Example: how to call ", fn, "()")),
-          div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
-        ),
+      div(
         div(class = "pg-guide-visual", sections),
         guide_help(fn),
         guide_mistakes(fn, character)
@@ -399,7 +402,7 @@ visual_mood <- function() {
       class = "pg-callout",
       tags$strong("The mood never speaks alone. "),
       "The status line under the mascot names the mood (or displays your custom text), providing clear meaning for
-      screen readers and anyone who cannot distinguish facial expressions. Try moods with the cards in the top bar."
+      screen readers and anyone who cannot distinguish facial expressions. Try moods with the selector in the top bar."
     )
   )
 }
@@ -420,7 +423,7 @@ visual_moods <- function(character = formals(mascot::mascot)$character) {
 visual_characters <- function() {
   tagList(
     tags$h3(class = "pg-section-title", "Characters this session knows"),
-    data_table(mascot_characters())
+    uiOutput("characters_table")
   )
 }
 
@@ -780,7 +783,7 @@ guide_help <- function(fn) {
     div(class = "pg-help", help$value),
     tags$p(
       class = "pg-hint",
-      "Each argument's help text is available via the i icon beside its control. Read more in the Get started article: ",
+      "Each argument's help text is available via the ? icon beside its control. Read more in the Get started article: ",
       tags$a(href = vignette_url(heading), target = "_blank", rel = "noopener", heading),
       ". Offline: ",
       tags$code('vignette("mascot", package = "mascot")'),
@@ -879,4 +882,259 @@ guide_mistake_calls <- function(fn, character) {
     mascot_studio = 'mascot_studio(view = "unknown-view", run = FALSE)',
     character()
   )
+}
+
+# Studio navigation comes from the same function/control map as completeness checks.
+studio_button <- function(id, label, aria_label = label, pressed = NULL) {
+  checkmate::assert_string(id)
+  checkmate::assert_string(label)
+  checkmate::assert_string(aria_label)
+  checkmate::assert_flag(pressed, null.ok = TRUE)
+  tags$button(
+    id = id,
+    type = "button",
+    class = "btn btn-sm btn-outline-primary",
+    `aria-label` = aria_label,
+    `aria-pressed` = if (!is.null(pressed)) tolower(as.character(pressed)),
+    label
+  )
+}
+
+studio_rail <- function() {
+  groups <- setdiff(names(playground_categories), "preview")
+  icons <- c(
+    look = "M6 9a6 6 0 0 1 12 0v6H6Z M9 18h6",
+    messages = "M4 4h16v12H9l-5 4Z",
+    motion = "m13 2-8 12h6l-1 8 9-13h-7Z",
+    layout = "M3 3h18v18H3Z M3 9h18 M9 9v12",
+    colours = "M12 3a9 9 0 1 0 0 18h2a3 3 0 0 0 0-6h-1a2 2 0 0 1 0-4h4a4 4 0 0 0-5-8Z",
+    wiring = "m8 6-6 6 6 6 m8-12 6 6-6 6 m-3-15-2 18",
+    examples = "M4 3h12l4 4v14H4Z M8 11h8 M8 15h8"
+  )
+  tags$nav(
+    class = "pg-rail pg-float",
+    `aria-label` = "Function groups",
+    tags$button(
+      id = "all_functions",
+      type = "button",
+      class = "pg-logo",
+      `aria-label` = "Functions: show all by category",
+      `aria-expanded` = "false",
+      `aria-controls` = "function_flyout",
+      "m",
+      tags$span(class = "pg-phone-label", "Functions")
+    ),
+    lapply(groups, function(group) {
+      tags$button(
+        type = "button",
+        `data-group` = group,
+        title = playground_categories[[group]]$title,
+        `aria-label` = playground_categories[[group]]$title,
+        `aria-expanded` = "false",
+        `aria-controls` = "function_flyout",
+        tags$svg(viewBox = "0 0 24 24", `aria-hidden` = "true", tags$path(d = icons[[group]]))
+      )
+    }),
+  )
+}
+
+# Top right: the inspector shortcut and a menu for the links and the keyboard-shortcut switch.
+studio_topright <- function() {
+  div(
+    class = "pg-topright",
+    studio_button("open_inspector", "Inspector", "Open the inspector"),
+    tags$details(
+      id = "studio_menu",
+      class = "pg-menu",
+      tags$summary(class = "btn btn-sm btn-outline-primary", "More"),
+      div(
+        class = "pg-menu-body pg-float",
+        tags$a(href = "?view=studio", "Studio"),
+        tags$a(href = "?view=examples", "Examples"),
+        tags$a(href = "https://github.com/insightsurge/mascot", target = "_blank", rel = "noopener", "GitHub"),
+        tags$a(href = "https://mascot-pkg.web.app/", target = "_blank", rel = "noopener", "Package website"),
+        tags$label(
+          class = "pg-key-switch",
+          tags$input(id = "studio_keys", type = "checkbox", checked = NA),
+          "Keyboard shortcuts (/, 1-5, w, n)"
+        )
+      )
+    )
+  )
+}
+
+# Resolve a field using the existing map; a renamed helper needs just this route changed.
+studio_route <- function(arg) {
+  checkmate::assert_string(arg)
+  checkmate::assert_choice(arg, setdiff(names(formals(mascot::mascot)), "..."))
+  fn <- switch(arg, id = "mascot", motion = "mascot_motion_settings", click = "mascot_action", paste0("mascot_", arg))
+  fields <- playground_controls[[fn]]
+  targets <- unlist(Filter(is.character, fields), use.names = FALSE)
+  ids <- sub('^id="([^"]+)"$', "\\1", targets[startsWith(targets, 'id="')])
+  list(fn = fn, input = if (arg != "id" && length(ids)) ids[[1]] else "")
+}
+
+studio_search <- function() {
+  div(
+    id = "studio_search",
+    class = "pg-search-backdrop",
+    role = "dialog",
+    `aria-modal` = "true",
+    `aria-label` = "Search functions and arguments",
+    hidden = NA,
+    div(
+      class = "pg-search-box pg-float",
+      div(
+        class = "pg-surface-head",
+        tags$strong("Find a function or argument"),
+        studio_button("close_search", "Close")
+      ),
+      tags$input(
+        id = "function_search",
+        type = "search",
+        role = "combobox",
+        autocomplete = "off",
+        placeholder = "Function, title or argument",
+        `aria-label` = "Search functions and arguments",
+        `aria-controls` = "search_results",
+        `aria-expanded` = "true",
+        `aria-autocomplete` = "list"
+      ),
+      tags$div(id = "search_count", role = "status"),
+      tags$ul(
+        id = "search_results",
+        role = "listbox",
+        `aria-label` = "Search results",
+        unlist(
+          lapply(names(playground_guide), function(fn) {
+            args <- names(formals(getExportedValue("mascot", fn)))
+            lapply(c("", args), function(arg) {
+              fragments <- playground_controls[[fn]][[arg]]
+              ids <- if (is.character(fragments)) sub('^id="([^"]+)"$', "\\1", fragments[startsWith(fragments, 'id="')])
+              tags$li(
+                id = paste0("search_", fn, "_", if (nzchar(arg)) gsub("[.]", "dot", arg) else "function"),
+                role = "option",
+                `aria-selected` = "false",
+                `data-search-function` = fn,
+                `data-search-argument` = arg,
+                `data-search-input` = if (length(ids)) ids[1] else "",
+                tags$code(paste0(fn, "(", if (nzchar(arg)) paste0(arg, " ="), ")")),
+                tags$small(help_page(fn)$title)
+              )
+            })
+          }),
+          recursive = FALSE
+        )
+      )
+    )
+  )
+}
+
+call_chips <- function(state, style, gesture = NULL) {
+  checkmate::assert_string(gesture, null.ok = TRUE)
+  checkmate::assert_list(state, names = "unique")
+  checkmate::assert_character(style, any.missing = FALSE)
+  checkmate::assert_subset(unname(style), c("short", "helper"), .var.name = "style")
+  if (length(style) > 1L) {
+    style <- as.list(style)
+  }
+  signature <- formals(mascot::mascot)
+  args <- names(signature)
+  tagList(
+    tags$strong(class = "pg-call-name", "mascot("),
+    lapply(args, function(arg) {
+      if (arg == "...") {
+        return(tagList(
+          tags$code(class = "pg-call-dots", title = "Additional unnamed arguments are not accepted", "..."),
+          tags$span(class = "pg-call-comma", ",")
+        ))
+      }
+      route <- studio_route(arg)
+      if (arg == "click") {
+        route <- if (inherits(eval(state$click$helper), "mascot_popup_menu")) {
+          list(fn = "mascot_popup_menu", input = "menu_items")
+        } else {
+          list(fn = "mascot_action", input = "action_label")
+        }
+      }
+      chosen <- if (length(style) == 1L) style else style[[arg]] %||% style[[".default"]]
+      value <- if (arg == "id") {
+        '"helper"'
+      } else if (chosen == "short" && identical(state[[arg]]$short, defaults[[arg]])) {
+        format_expr(signature[[arg]])
+      } else {
+        format_expr(state[[arg]][[chosen]])
+      }
+      tagList(
+        tags$button(
+          type = "button",
+          class = "pg-call-chip",
+          `data-call-arg` = arg,
+          `data-call-changed` = if (arg != "id") tolower(as.character(!identical(state[[arg]]$short, defaults[[arg]]))),
+          `data-call-function` = route$fn,
+          `data-call-input` = route$input,
+          `data-call-style` = chosen,
+          `data-call-hint` = arg_hint("mascot", arg),
+          `data-call-default` = argument_default("mascot", arg),
+          title = paste(arg, "=", value),
+          `aria-expanded` = "false",
+          `aria-controls` = "chip_editor",
+          `aria-label` = paste(arg, "=", value, "options"),
+          tags$code(tags$span(class = "pg-chip-name", paste(arg, "=")), tags$span(class = "pg-chip-value", value))
+        ),
+        tags$span(class = "pg-call-comma", ",")
+      )
+    }),
+    gesture_chip(gesture),
+    tags$span(")")
+  )
+}
+
+# A one-off event is demonstrated inside mascot(...) and never enters copied configuration code.
+gesture_chip <- function(name = NULL) {
+  checkmate::assert_string(name, null.ok = TRUE)
+  value <- if (is.null(name)) "none yet" else format_expr(code_gesture(name)$helper)
+  tags$button(
+    type = "button",
+    class = "pg-call-chip pg-gesture-chip",
+    title = "demo only, not an argument of mascot()",
+    `data-call-arg` = "gesture",
+    `data-call-function` = "mascot_gesture",
+    `data-call-input` = "gesture",
+    `data-call-hint` = arg_hint("mascot_gesture", "name"),
+    `data-call-default` = "none yet",
+    `aria-label` = paste("Last played gesture:", value, "options"),
+    `aria-expanded` = "false",
+    `aria-controls` = "chip_editor",
+    tags$code(tags$span(class = "pg-chip-name", "gesture ="), tags$span(class = "pg-chip-value", value))
+  )
+}
+
+function_help <- function(fn) {
+  checkmate::assert_choice(fn, names(playground_guide))
+  page <- help_page(fn)
+  tagList(
+    function_card(fn),
+    if (!is.null(page$details)) tagList(tags$h3("Details"), page$details),
+    tags$h3("Examples"),
+    lapply(help_examples(fn), code_block)
+  )
+}
+
+
+# Shared inputs stay in the top bar; these buttons explicitly focus them.
+shared_input_button <- function(fn, arg) {
+  checkmate::assert_string(fn)
+  checkmate::assert_string(arg)
+  controls <- playground_controls[[fn]][[arg]]
+  shared <- c("character", "mood", "example_name", "example_run")
+  if (!is.character(controls)) {
+    return(NULL)
+  }
+  ids <- sub('^id="([^"]+)"$', "\\1", controls[startsWith(controls, 'id="')])
+  ids <- intersect(ids, shared)
+  if (!length(ids)) {
+    return(NULL)
+  }
+  tags$button(type = "button", class = "btn btn-sm", `data-focus-input` = ids[[1]], paste("Edit", arg))
 }

@@ -356,8 +356,9 @@ describe("the studio's controls", {
       "update_mascot"
     )) {
       html <- as.character(ui$selected_guide(fn))
-      expect_match(html, paste0("Example: how to call ", fn, "()"), fixed = TRUE)
-      expect_match(html, 'id="code_function"', fixed = TRUE)
+      expect_match(html, paste0('data-guide-function="', fn, '"'), fixed = TRUE)
+      # Function code now has one pinned output outside the Guide; no duplicate id.
+      expect_false(grepl('id="code_function"', html, fixed = TRUE))
       expect_match(html, "pg-guide-piece", fixed = TRUE)
       # The Guide shows the help page's description, details and value; each argument's text is in Controls.
       expect_true(grepl(as.character(ui$help_page(fn)$description), html, fixed = TRUE), info = fn)
@@ -395,7 +396,7 @@ describe("the studio's controls", {
     expect_match(pages[[1]], 'href="?view=examples"', fixed = TRUE)
     expect_match(pages[[1]], 'href="https://github.com/insightsurge/mascot"', fixed = TRUE)
     expect_match(pages[[1]], 'href="https://mascot-pkg.web.app/"', fixed = TRUE)
-    expect_match(pages[[1]], "Links", fixed = TRUE)
+    expect_match(pages[[1]], "Package website", fixed = TRUE)
     # mascot_preview() is in the studio page: its canvas part and its controls.
     expect_match(pages[[1]], 'data-canvas="preview"', fixed = TRUE)
     expect_match(pages[[1]], 'id="preview_card"', fixed = TRUE)
@@ -512,611 +513,6 @@ wait_example_mood <- function(app, id, mood) {
 }
 
 describe("bundled example apps", {
-  it("E1 studio selects functions and changes Tessa with code and an event log", {
-    local_shiny_browser()
-    app <- example_driver("studio", width = 1440)
-    withr::defer(app$stop())
-    state <- "mascot.host.state(document.getElementById('helper'))"
-    wait_example_mood(app, "helper", "idle")
-    expect_identical(app$get_js("document.querySelectorAll('.mascot').length"), 1L)
-    expect_identical(app$get_value(input = "position"), "inline")
-    expect_identical(app$get_js("document.getElementById('helper').dataset.floating"), "false")
-    app$wait_for_js("document.getElementById('code_ui').textContent.includes('placement = \"inline\"')")
-    expect_match(app$get_value(output = "code_server"), 'placement = "inline"', fixed = TRUE)
-    expect_match(app$get_value(output = "code_app"), 'placement = "inline"', fixed = TRUE)
-    select_function <- function(fn) {
-      checkmate::assert_string(fn)
-      app$click(selector = sprintf('.pg-index-link[data-value="%s"]', fn))
-      app$wait_for_js(sprintf(
-        "!document.querySelector('#studio_inspector [data-function=\"%s\"]').hidden && document.querySelectorAll('#studio_inspector [data-function]:not([hidden])').length === 1",
-        fn
-      ))
-    }
-    code_panel <- "#code_tray_body"
-    expect_identical(app$get_js("document.querySelectorAll('#studio_dock .accordion').length"), 0L)
-    expect_true(app$get_js(
-      "document.getElementById('code_tray_body').contains(document.getElementById('studio_panels_card')) && !document.getElementById('code_tray_header').contains(document.querySelector('.bslib-full-screen-enter')) && document.querySelector('#studio_panels_card .bslib-full-screen-enter') !== null"
-    ))
-    # E1: the code itself is visible in the open tray at 1440 x 900 without scrolling.
-    app$wait_for_js("document.getElementById('studio_dock').getAnimations().length === 0")
-    expect_true(app$get_js(
-      "(() => {
-      const tray = document.getElementById('code_tray_body');
-      const code = document.getElementById('code_ui').getBoundingClientRect();
-      const visible = tray.getBoundingClientRect();
-      return tray.scrollTop === 0 && code.top >= visible.top &&
-        code.top + 20 < Math.min(visible.bottom, window.innerHeight);
-    })()"
-    ))
-    # The tray's own header bar is the only Code control: there is no toolbar button.
-    expect_identical(app$get_js("document.querySelectorAll('#code_toggle').length"), 0L)
-    expect_identical(app$get_js("document.getElementById('code_tray_toggle').textContent.trim()"), "Code")
-    expect_true(app$get_js(
-      "document.getElementById('code_tray_body').contains(document.getElementById('code_style')) && !document.querySelector('.pg-toolbar #code_style')"
-    ))
-    expect_true(app$get_js(
-      "document.querySelector('.pg-code-style').compareDocumentPosition(document.getElementById('code_tabs')) & Node.DOCUMENT_POSITION_FOLLOWING ? true : false"
-    ))
-    # No accordion wraps a whole function; the colour pickers keep theirs, folded by group.
-    expect_true(app$get_js(
-      "![...document.querySelectorAll('#studio_inspector .accordion-item')].some(item => /^(mascot|update_mascot)/.test(item.dataset.value || ''))"
-    ))
-    expect_identical(
-      app$get_js("document.querySelectorAll('#studio_inspector [data-event=select_function]').length"),
-      19L
-    )
-    select_function("mascot")
-    app$click(selector = '[data-function=mascot] a[data-event=select_function][data-value=mascot_status]')
-    app$wait_for_js(
-      "Shiny.shinyapp.$inputValues.select_function === 'mascot_status' &&
-      !document.querySelector('#studio_inspector [data-function=mascot_status]').hidden"
-    )
-    select_function("mascot_mood")
-    expect_identical(app$get_js("document.querySelectorAll('#status_text').length"), 1L)
-    app$run_js("window.studioStatusInput = document.getElementById('status_text')")
-    expect_match(
-      app$get_js("document.querySelector('.pg-code-purpose').textContent"),
-      "Code for Tessa with the current settings.",
-      fixed = TRUE
-    )
-    # A fully readable description does not open a tooltip, even when Bootstrap requests one.
-    app$run_js(
-      "(() => {
-      const button = document.querySelectorAll('.pg-index-link')[0];
-      button.querySelector('span').style.width = '1000px';
-      const tooltip = bootstrap.Tooltip.getInstance(button) || bootstrap.Tooltip.getInstance(button.closest('bslib-tooltip'));
-      tooltip.show();
-    })()"
-    )
-    expect_identical(app$get_js("document.querySelectorAll('.tooltip.show').length"), 0L)
-    # Narrow two descriptions to exercise real truncation independently of their wording.
-    app$run_js(
-      "for (const button of [...document.querySelectorAll('.pg-index-link')].slice(0, 2)) button.querySelector('span').style.width = '3rem'"
-    )
-    # Focus does not keep an index tooltip open after the pointer leaves.
-    index_tooltip_shown <- "(() => {
-      const button = document.querySelectorAll('.pg-index-link')[%d];
-      const trigger = button.hasAttribute('aria-describedby') ? button : button.closest('bslib-tooltip');
-      return document.getElementById(trigger?.getAttribute('aria-describedby'))?.classList.contains('show') === true;
-    })()"
-    app$run_js("document.querySelectorAll('.pg-index-link')[0].focus()")
-    app$run_js(
-      "document.querySelectorAll('.pg-index-link')[0].dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))"
-    )
-    app$wait_for_js(sprintf(index_tooltip_shown, 0))
-    app$run_js(
-      "document.querySelectorAll('.pg-index-link')[0].dispatchEvent(new MouseEvent('mouseout', {bubbles: true}))"
-    )
-    app$wait_for_js("document.querySelectorAll('.tooltip.show').length === 0")
-    # A new hover also hides the previous tooltip, even before its mouseout arrives.
-    app$run_js(
-      "document.querySelectorAll('.pg-index-link')[0].dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))"
-    )
-    app$wait_for_js(sprintf(index_tooltip_shown, 0))
-    app$run_js(
-      "document.querySelectorAll('.pg-index-link')[1].dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))"
-    )
-    app$wait_for_js(sprintf(index_tooltip_shown, 1))
-    expect_true(app$get_js(
-      "document.querySelectorAll('.tooltip.show').length === 1 && document.activeElement === document.querySelectorAll('.pg-index-link')[0]"
-    ))
-    app$run_js(
-      "for (const button of document.querySelectorAll('.pg-index-link')) button.dispatchEvent(new MouseEvent('mouseout', {bubbles: true}))"
-    )
-    app$wait_for_js("document.querySelectorAll('.tooltip.show').length === 0")
-    app$run_js(
-      "for (const button of [...document.querySelectorAll('.pg-index-link')].slice(0, 2)) button.querySelector('span').style.removeProperty('width')"
-    )
-    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "true")
-    # The canvas includes the reserved bubble space and status with either panel open.
-    canvas_fits <- "(() => {
-      const canvas = document.getElementById('studio_canvas').getBoundingClientRect();
-      return ['.mascot-canvas', '.mascot-status', '.mascot-bubble-region'].every(selector => {
-        const item = document.querySelector('#helper ' + selector).getBoundingClientRect();
-        return item.top >= canvas.top && item.bottom <= canvas.bottom;
-      });
-    })()"
-    app$wait_for_js(canvas_fits)
-    expect_true(app$get_js(canvas_fits))
-    app$run_js(
-      "window.studioGuideOpener = document.querySelector('[data-function=mascot_mood] [data-event=open_guide]');
-      window.studioGuideOpener.focus();"
-    )
-    app$click(selector = '[data-function="mascot_mood"] [data-event="open_guide"]')
-    app$wait_for_js("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=mascot_mood]')")
-    guide_read_only <- "(() => {
-      const modal = document.querySelector('.pg-guide-modal.show');
-      return !!modal && modal.querySelectorAll('input, select, textarea, [contenteditable=true], [data-event]').length === 0 &&
-        modal.querySelectorAll('button:not(#close_guide):not([data-copy])').length === 0;
-    })()"
-    expect_true(app$get_js(guide_read_only))
-    expect_identical(
-      app$get_js("document.querySelector('.pg-guide-example .pg-section-title').textContent"),
-      "Example: how to call mascot_mood()"
-    )
-    expect_true(app$get_js(
-      "document.querySelector('.pg-guide-mistakes').textContent.includes('sleepy') && document.querySelector('.pg-guide-mistakes').textContent.includes('Error:')"
-    ))
-    app$wait_for_js(
-      "getComputedStyle(document.querySelector('.pg-guide-columns')).gridTemplateColumns.split(' ').length >= 3"
-    )
-    expect_true(app$get_js(
-      "(() => { const example = document.querySelector('.pg-guide-example').getBoundingClientRect(); const table = document.querySelector('.pg-guide-visual .pg-table').getBoundingClientRect(); const callout = document.querySelector('.pg-guide-visual .pg-callout').getBoundingClientRect(); return table.left > example.left && callout.left > table.left && Math.abs(table.top - example.top) < 80; })()"
-    ))
-    expect_true(app$get_js(
-      "(() => {
-        const code = document.getElementById('code_function').getBoundingClientRect();
-        const copy = document.querySelector('[data-copy=code_function]').getBoundingClientRect();
-        return copy.top >= code.top && copy.right <= code.right;
-      })()"
-    ))
-    guide_removed <- "!document.querySelector('.pg-guide-modal') && !document.getElementById('shiny-modal-wrapper') && !document.querySelector('.modal-backdrop') && !document.body.classList.contains('modal-open')"
-    app$click("close_guide")
-    app$wait_for_js(guide_removed)
-    expect_true(app$get_js(guide_removed))
-    app$wait_for_js("document.activeElement === window.studioGuideOpener")
-    expect_true(app$get_js("document.activeElement === window.studioGuideOpener"))
-    # Usage popover opens, closes on Escape, and closes before opening Guide.
-    usage_btn <- '[data-function="mascot_mood"] > bslib-popover > button'
-    app$click(selector = usage_btn)
-    app$wait_for_js("!!document.querySelector('.popover.show')")
-    expect_true(app$get_js("!!document.querySelector('.popover.show')"))
-    # Escape closes the popover
-    app$get_chromote_session()$Input$dispatchKeyEvent(
-      type = "keyDown",
-      key = "Escape",
-      code = "Escape",
-      windowsVirtualKeyCode = 27
-    )
-    app$get_chromote_session()$Input$dispatchKeyEvent(
-      type = "keyUp",
-      key = "Escape",
-      code = "Escape",
-      windowsVirtualKeyCode = 27
-    )
-    app$wait_for_js("!document.querySelector('.popover.show')")
-    expect_true(app$get_js("!document.querySelector('.popover.show')"))
-    # Reopen popover; opening Guide closes it first so nothing floats above the modal
-    app$click(selector = usage_btn)
-    app$wait_for_js("!!document.querySelector('.popover.show')")
-    app$click(selector = '[data-function="mascot_mood"] [data-event="open_guide"]')
-    app$wait_for_js("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=mascot_mood]')")
-    expect_true(app$get_js("!document.querySelector('.popover.show')"))
-    app$click("close_guide")
-    app$wait_for_js(guide_removed)
-
-    # Every Guide is read-only, showing only its own visuals.
-    for (fn in setdiff(getNamespaceExports("mascot"), "mascot_mood")) {
-      select_function(fn)
-      app$click(selector = sprintf('[data-function="%s"] [data-event="open_guide"]', fn))
-      app$wait_for_js(sprintf("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=%s]')", fn))
-      if (fn == "mascot_size") {
-        app$wait_for_js("!!document.querySelector('.pg-guide-modal #size_ruler .pg-ruler')")
-        expect_true(app$get_js("!document.querySelector('.pg-guide-modal #placement_map')"))
-      }
-      if (fn == "mascot_placement") {
-        app$wait_for_js("!!document.querySelector('.pg-guide-modal #placement_map .pg-map')")
-        expect_true(app$get_js("!document.querySelector('.pg-guide-modal #size_ruler')"))
-      }
-      if (fn == "mascot_colour_roles") {
-        app$wait_for_js("!!document.querySelector('.pg-guide-modal #roles_table .pg-table')")
-        expect_true(app$get_js("!document.querySelector('.pg-guide-modal .pg-flow')"))
-      }
-      if (fn == "mascot_theme") {
-        app$wait_for_js("!!document.querySelector('.pg-guide-modal .pg-flow')")
-        expect_true(app$get_js("!document.querySelector('.pg-guide-modal #roles_table')"))
-      }
-      if (fn == "mascot_studio") {
-        expect_identical(
-          app$get_js(
-            "document.querySelectorAll('#studio_inspector [data-function=mascot_studio] input, #studio_inspector [data-function=mascot_studio] select, #studio_inspector [data-function=mascot_studio] textarea').length"
-          ),
-          0L
-        )
-        expect_identical(
-          app$get_js(
-            "document.querySelectorAll('#studio_inspector [data-function=mascot_studio] .pg-function-controls button:not([data-copy])').length"
-          ),
-          0L
-        )
-        expect_identical(
-          app$get_js(
-            "document.querySelectorAll('#studio_inspector [data-function=mascot_studio] button[data-copy]').length"
-          ),
-          1L
-        )
-      }
-      expect_true(app$get_js(guide_read_only))
-      app$click("close_guide")
-      app$wait_for_js(guide_removed)
-    }
-    select_function("mascot_mood")
-    # Reopen the same Guide and exercise a real keyboard Escape, including cleanup.
-    app$click(selector = '[data-function="mascot_mood"] [data-event="open_guide"]')
-    app$wait_for_js("!!document.querySelector('.pg-guide-modal.show #guide [data-guide-function=mascot_mood]')")
-    app$get_chromote_session()$Input$dispatchKeyEvent(
-      type = "keyDown",
-      key = "Escape",
-      code = "Escape",
-      windowsVirtualKeyCode = 27
-    )
-    app$get_chromote_session()$Input$dispatchKeyEvent(
-      type = "keyUp",
-      key = "Escape",
-      code = "Escape",
-      windowsVirtualKeyCode = 27
-    )
-    app$wait_for_js(guide_removed)
-    expect_true(app$get_js(guide_removed))
-    app$wait_for_js("document.activeElement === window.studioGuideOpener")
-    expect_true(app$get_js("document.activeElement === window.studioGuideOpener"))
-    app$click(selector = "#studio_panels_card .bslib-full-screen-enter")
-    app$wait_for_js("document.getElementById('studio_panels_card').getAttribute('data-full-screen') === 'true'")
-    app$wait_for_js("document.getElementById('studio_panels_card').getBoundingClientRect().height > 300")
-    app$run_js(
-      "document.getElementById('studio_panels_card').dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))"
-    )
-    app$wait_for_js("document.getElementById('studio_panels_card').getAttribute('data-full-screen') === 'false'")
-    app$wait_for_js(canvas_fits)
-    expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-index-link code')).whiteSpace"), "nowrap")
-    # The dock's height transitions after full screen ends: measure it only once the transition has finished.
-    app$wait_for_js("document.getElementById('studio_dock').getAnimations().length === 0")
-    grip_height <- app$get_js("document.getElementById('studio_dock').getBoundingClientRect().height")
-    app$run_js(
-      "document.getElementById('dock_grip').dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}))"
-    )
-    app$wait_for_js(sprintf("document.getElementById('studio_dock').getBoundingClientRect().height < %f", grip_height))
-    app$wait_for_js(canvas_fits)
-    expect_true(app$get_js(canvas_fits))
-    expect_identical(
-      app$get_js(
-        "[...document.querySelectorAll('#code_tabs .nav-link')].filter(el => el.getClientRects().length > 0)
-        .map(el => el.textContent.trim()).join('|')"
-      ),
-      "UI|Server|App|Last|Log"
-    )
-    # There is no Static preview view: mascot_preview() is an entry of the function index.
-    expect_identical(app$get_js("document.querySelectorAll('a[href=\"?view=preview\"]').length"), 0L)
-    expect_identical(app$get_js("document.querySelectorAll('.pg-index-link[data-value=mascot_preview]').length"), 1L)
-    expect_true(app$get_js("document.querySelector('a[href=\"?view=examples\"]').target === '_blank'"))
-    app$run_js(
-      "[...document.querySelectorAll('.dropdown-toggle')].find(el => el.textContent.includes('Links')).click()"
-    )
-    expect_true(app$get_js(
-      "(() => {
-      const links = [...document.querySelectorAll('.dropdown-menu a')].filter(el =>
-        ['GitHub', 'Package website'].includes(el.textContent.trim()));
-      return links.length === 2 && links.every(el => el.target === '_blank' && el.rel === 'noopener');
-    })()"
-    ))
-    app$run_js(
-      "[...document.querySelectorAll('.dropdown-toggle')].find(el => el.textContent.includes('Links')).click()"
-    )
-    # The mood cards are the studio's only mood input.
-    expect_identical(app$get_js("document.querySelectorAll('#mood input[type=radio]').length"), 0L)
-    app$run_js("document.querySelector('[data-event=try_mood][data-value=happy]').click()")
-    wait_example_mood(app, "helper", "happy")
-    app$wait_for_js("document.getElementById('code_last').textContent.includes('mood = \"happy\"')")
-    select_function("mascot_status")
-    # The selected function owns the inspector header, controls and Learn example.
-    expect_true(app$get_js(
-      "!document.querySelector('#studio_inspector [data-function=mascot_status]').hidden && document.getElementById('status_text').getClientRects().length > 0"
-    ))
-    expect_true(app$get_js("document.querySelector('#studio_inspector [data-function=mascot_mood]').hidden"))
-    # Its title and return value are the help page's own words.
-    status_help <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), envir = status_help)
-    status_page <- status_help$help_page("mascot_status")
-    expect_true(app$get_js(sprintf(
-      "(() => {
-      const panel = document.querySelector('#studio_inspector [data-function=mascot_status]');
-      const text = panel.textContent.replace(/\\s+/g, ' ');
-      return text.includes('Usage') && text.includes('Returns:') &&
-        text.includes(%s) && text.includes(%s);
-    })()",
-      jsonlite::toJSON(status_page$title, auto_unbox = TRUE),
-      jsonlite::toJSON(status_help$html_text(status_page$value), auto_unbox = TRUE)
-    )))
-    app$set_inputs(status_text = "Checking 120 rows")
-    app$wait_for_js(paste0(state, ".status.text === 'Checking 120 rows'"))
-    select_function("mascot_bubble")
-    app$set_inputs(bubble_forever = TRUE)
-    app$wait_for_js(
-      "document.getElementById('bubble_seconds').getAttribute('aria-disabled') === 'true' && $('#bubble_duration').data('ionRangeSlider').options.disable === true"
-    )
-    app$set_inputs(bubble_forever = FALSE)
-    app$wait_for_js("$('#bubble_duration').data('ionRangeSlider').options.disable === false")
-    app$set_inputs(bubble_example = "Small table")
-    app$click("bubble_show")
-    app$wait_for_js("!!document.querySelector('#helper .mascot-bubble table')")
-    app$set_inputs(bubble_text = '<p class="notice">Saved</p>', bubble_html = TRUE)
-    app$click("bubble_show")
-    app$wait_for_js("document.getElementById('code_ui').textContent.includes('r\"(')")
-    expect_type(parse(text = app$get_value(output = "code_ui")), "expression")
-    expect_false(grepl('\\"', app$get_value(output = "code_ui"), fixed = TRUE))
-    select_function("mascot_motion_settings")
-    app$set_inputs(idle = "false")
-    app$wait_for_js(paste0(state, ".motion.idle === false"))
-    select_function("mascot_size")
-    app$set_inputs(size_px = 120)
-    app$wait_for_js(paste0(state, ".size.size === 120"))
-    select_function("mascot_placement")
-    app$set_inputs(position = "bottom-right")
-    app$wait_for_js("document.getElementById('helper').dataset.position === 'bottom-right'")
-    app$wait_for_js("!document.getElementById('code_ui').textContent.includes('placement =')")
-    app$set_inputs(position = "top-left")
-    app$wait_for_js(paste0(state, ".placement.floating && ", state, ".placement.minimise"))
-    app$set_inputs(minimise = FALSE)
-    app$wait_for_js(paste0("!", state, ".placement.minimise"))
-    app$wait_for_js("document.getElementById('code_ui').textContent.includes('minimise = FALSE')")
-    app$set_inputs(minimise = TRUE)
-    app$wait_for_js(paste0(state, ".placement.minimise"))
-    app$set_inputs(drag = "snap", position = "bottom-right")
-    app$wait_for_js(paste0(state, ".placement.drag === 'snap'"))
-    app$run_js(
-      "(() => {
-      const canvas = document.querySelector('#helper canvas'), r = canvas.getBoundingClientRect();
-      const x = r.left + r.width / 2, y = r.top + r.height / 2;
-      const press = (type, x, y) => canvas.dispatchEvent(new PointerEvent(type, {
-        bubbles: true, cancelable: true, pointerId: 1, button: 0, isPrimary: true, clientX: x, clientY: y
-      }));
-      press('pointerdown', x, y); press('pointermove', 80, 80); press('pointerup', 80, 80);
-    })()"
-    )
-    app$wait_for_js("document.getElementById('position_last').textContent.includes('top-left')")
-    expect_identical(app$get_value(input = "helper_position"), "top-left")
-    app$wait_for_js("document.querySelector('#position input:checked').value === 'top-left'")
-    app$wait_for_js("document.getElementById('code_ui').textContent.includes('top-left')")
-    app$wait_for_js("document.getElementById('log').textContent.includes('input$helper_position')")
-    # Disable dragging for later menu clicks, then return to inline to test disabled controls.
-    app$set_inputs(drag = "none", position = "inline")
-    app$wait_for_js("document.getElementById('drag').disabled && document.getElementById('minimise').disabled")
-    select_function("mascot_theme")
-    app$set_inputs(theme_source = "mascot")
-    app$run_js(
-      "const p = document.getElementById('light_body'); p.value = '#1f6feb'; p.dispatchEvent(new Event('input'))"
-    )
-    app$wait_for_js(paste0(state, ".colours.body?.toLowerCase() === '#1f6feb'"))
-    app$wait_for_js("document.getElementById('code_ui').textContent.includes('mascot_theme(light = list(body')")
-    # A followed highlight and an explicit highlight both use the engine's key: snake_case since Tessa moved to the
-    # format-v1 engine (M1); the studio maps either spelling to the public role name.
-    highlight_swatch_matches <- paste0(
-      "(() => {
-      const swatch = document.querySelector('.pg-resolved[data-mode=light][data-role=body_highlight]');
-      const expected = document.createElement('span'); expected.style.background = ",
-      state,
-      ".colours.body_highlight;
-      return !!swatch && swatch.style.background === expected.style.background && !swatch.classList.contains('is-idle');
-    })()"
-    )
-    app$wait_for_js(highlight_swatch_matches)
-    expect_true(app$get_js(highlight_swatch_matches))
-    app$run_js(
-      "(() => { const p = document.getElementById('light_body_highlight'); p.value = '#abcdef';
-      p.dispatchEvent(new Event('input')); })()"
-    )
-    app$wait_for_js(paste0(state, ".colours.body_highlight?.toLowerCase() === '#abcdef'"))
-    app$wait_for_js(highlight_swatch_matches)
-    expect_true(app$get_js(highlight_swatch_matches))
-    select_function("mascot_popup_menu")
-    # The controls start with the mascot's own menu, so changing only the direction keeps every item (#256).
-    app$set_inputs(menu_direction = "top")
-    app$wait_for_js(paste0(state, ".click.direction === 'top'"))
-    expect_identical(
-      app$get_js(paste0("Object.keys(", state, ".click.items).join()")),
-      "finish,reset,about"
-    )
-    app$set_inputs(menu_on = TRUE, menu_items = "finish = Finish review", menu_direction = "right")
-    app$wait_for_js("document.getElementById('code_ui').textContent.includes('direction = \"right\"')")
-    app$wait_for_js(paste0(state, ".click.direction === 'right'"))
-    app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper .mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=finish]")
-    app$wait_for_js("document.querySelector('#helper .mascot-bubble')?.textContent.includes('Finish review')")
-    expect_false(grepl("You chose", app$get_value(output = "code_ui"), fixed = TRUE))
-    # A mistake is an error in the log, and the mascot keeps its settings.
-    select_function("update_mascot")
-    app$set_inputs(mistake = "Misspell an argument")
-    app$click("mistake_run")
-    app$wait_for_js("document.getElementById('log').textContent.includes('Unexpected arguments')")
-    # The second step of the slow task runs later and names the session.
-    app$click("task_run")
-    wait_example_mood(app, "helper", "thinking")
-    expect_true(app$get_js("document.getElementById('task_run').disabled"))
-    app$wait_for_js(paste0(state, ".status.text === 'All 120 rows checked'"))
-    app$wait_for_js("document.getElementById('code_last').textContent.includes('session = session')")
-    app$wait_for_js(
-      "document.getElementById('mood').dataset.value === 'happy' && document.getElementById('status_text').value === 'All 120 rows checked'"
-    )
-    expect_match(app$get_value(output = "code_app"), "shinyApp(ui, server)", fixed = TRUE)
-    # Switching the menu off works even while its text has a problem.
-    select_function("mascot_popup_menu")
-    app$set_inputs(menu_items = "no equals sign")
-    app$set_inputs(menu_on = FALSE)
-    app$wait_for_js(paste0(state, ".click.type === 'none'"))
-    app$wait_for_js("!document.getElementById('code_app').textContent.includes('observeEvent(input$helper_menu')")
-    # Switching functions reuses the same mounted inputs and their values.
-    select_function("mascot_status")
-    expect_identical(app$get_value(input = "status_text"), "All 120 rows checked")
-    expect_true(app$get_js("document.getElementById('status_text') === window.studioStatusInput"))
-    expect_true(app$get_js("document.querySelector('[data-function=mascot_bubble]').hidden"))
-    expect_identical(
-      app$get_js("document.querySelectorAll('#studio_inspector [data-function]:not([hidden])').length"),
-      1L
-    )
-    app$wait_for_js(canvas_fits)
-    expect_true(app$get_js(canvas_fits))
-    expect_identical(app$get_js("getComputedStyle(document.getElementById('code_tray_body')).overflowY"), "auto")
-    app$run_js(
-      "document.getElementById('dock_grip').dispatchEvent(new KeyboardEvent('keydown', {key: 'End', bubbles: true}))"
-    )
-    app$wait_for_js(canvas_fits)
-    expect_true(app$get_js(canvas_fits))
-    # The header remains visible when collapsed; both controls reflect the same state and height.
-    tray_settled <- "(() => {
-      const dock = document.getElementById('studio_dock');
-      // During the max-height transition the computed max-height is the in-between value, so wait for it to end.
-      return dock.getAnimations().length === 0 &&
-        Math.abs(dock.getBoundingClientRect().height - parseFloat(getComputedStyle(dock).maxHeight)) < 1;
-    })()"
-    app$wait_for_js(tray_settled)
-    expanded_canvas_height <- app$get_js("document.getElementById('studio_canvas').clientHeight")
-    expanded_tray_height <- app$get_js("document.getElementById('studio_dock').getBoundingClientRect().height")
-    app$click(selector = "#code_tray_header")
-    app$wait_for_js("document.getElementById('studio_dock').classList.contains('is-closed')")
-    app$wait_for_js(tray_settled)
-    app$wait_for_js(sprintf("document.getElementById('studio_canvas').clientHeight > %f", expanded_canvas_height))
-    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "false")
-    expect_identical(
-      app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-controls')"),
-      "code_tray_body"
-    )
-    expect_true(app$get_js(
-      "document.getElementById('code_tray_header').getClientRects().length > 0 &&
-      document.getElementById('code_tray_body').getClientRects().length === 0 &&
-      document.getElementById('code_tray_body').inert && getComputedStyle(document.getElementById('dock_grip')).display === 'none'"
-    ))
-    collapsed_canvas_height <- app$get_js("document.getElementById('studio_canvas').clientHeight")
-    app$click(selector = "#code_tray_toggle")
-    app$wait_for_js("!document.getElementById('studio_dock').classList.contains('is-closed')")
-    app$wait_for_js(tray_settled)
-    app$wait_for_js(sprintf("document.getElementById('studio_canvas').clientHeight < %f", collapsed_canvas_height))
-    expect_true(app$get_js(sprintf(
-      "Math.abs(document.getElementById('studio_dock').getBoundingClientRect().height - %f) < 2",
-      expanded_tray_height
-    )))
-    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "true")
-    expect_true(app$get_js(
-      "!document.getElementById('code_tray_body').inert && getComputedStyle(document.getElementById('dock_grip')).display !== 'none'"
-    ))
-    # The header bar itself collapses and expands the tray, and the chevron button does the same from the keyboard.
-    app$click(selector = "#code_tray_header")
-    app$wait_for_js("document.getElementById('studio_dock').classList.contains('is-closed')")
-    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "false")
-    app$click(selector = "#code_tray_header")
-    app$wait_for_js("!document.getElementById('studio_dock').classList.contains('is-closed')")
-    expect_identical(app$get_js("document.getElementById('code_tray_toggle').getAttribute('aria-expanded')"), "true")
-    expect_true(app$get_js("JSON.parse(sessionStorage.getItem('mascot-studio-tray')).open === true"))
-    expect_true(app$get_js("JSON.parse(sessionStorage.getItem('mascot-studio-tray')).height > 0"))
-    # mascot_preview() is a normal entry of the index: its page replaces the live mascot on the canvas, its
-    # arguments are in Controls and its call is in the Code tray. Selecting another function brings the mascot back.
-    expect_false(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
-    expect_true(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
-    app$click(selector = '.pg-index-link[data-value="mascot_preview"]')
-    app$wait_for_js("!!document.querySelector('iframe.pg-preview')")
-    expect_true(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
-    expect_false(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
-    expect_true(app$get_js(
-      "!!document.getElementById('preview_menu_items') &&
-      !document.querySelector('#studio_inspector [data-function=mascot_preview]').hidden"
-    ))
-    expect_true(app$get_js("document.querySelector('#preview_card .bslib-full-screen-enter') !== null"))
-    app$click(selector = "#preview_card .bslib-full-screen-enter")
-    app$wait_for_js("document.getElementById('preview_card').getAttribute('data-full-screen') === 'true'")
-    expect_true(app$get_js("document.getElementById('preview_card').getBoundingClientRect().height > 400"))
-    app$click(selector = ".bslib-full-screen-exit")
-    app$wait_for_js("document.getElementById('preview_card').getAttribute('data-full-screen') === 'false'")
-    app$click(selector = "#preview_card .bslib-full-screen-enter")
-    app$wait_for_js("document.getElementById('preview_card').getAttribute('data-full-screen') === 'true'")
-    app$run_js(
-      "document.getElementById('preview_card').dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))"
-    )
-    app$wait_for_js("document.getElementById('preview_card').getAttribute('data-full-screen') === 'false'")
-    expect_identical(app$get_js("document.querySelector('#code_tabs .nav-link.active').textContent.trim()"), "Preview")
-    app$wait_for_js("document.getElementById('code_preview').textContent.includes('mascot_preview(')")
-    # The colour pickers are drawn by the server for the selected character; change them once Shiny has bound them.
-    app$wait_for_js(
-      "Shiny.shinyapp.$inputValues.preview_body !== undefined &&
-      Shiny.shinyapp.$inputValues.preview_rim !== undefined"
-    )
-    app$run_js(
-      "(() => {
-      for (const [id, value] of [['preview_body', '#1f6feb'], ['preview_rim', '#966600']]) {
-        const picker = document.getElementById(id); picker.value = value;
-        picker.dispatchEvent(new Event('input'));
-      }
-    })()"
-    )
-    app$run_js("Shiny.setInputValue('preview_theme_source', 'custom')")
-    app$run_js(
-      "Shiny.setInputValue('preview_menu_items', 'about = About the preview');
-      document.querySelector('input[name=preview_width][value=phone]').click();"
-    )
-    # No button is pressed: the page rebuilds by itself once the controls settle, and the code matches it.
-    app$wait_for_js(
-      "document.getElementById('code_preview').textContent.includes('body = \"#1f6feb\"') &&
-      document.getElementById('code_preview').textContent.includes('About the preview')"
-    )
-    app$wait_for_js("document.querySelector('iframe.pg-preview').classList.contains('is-phone')")
-    expect_match(
-      app$get_js("document.getElementById('code_preview').textContent"),
-      'click = mascot_popup_menu(c(about = "About the preview"))',
-      fixed = TRUE
-    )
-    # A visible "Building" badge shows between a change and the rebuilt page.
-    app$run_js(
-      "window.sawBuilding = false;
-      new MutationObserver(() => {
-        if (document.querySelector('.pg-building')) window.sawBuilding = true;
-      }).observe(document.body, {childList: true, subtree: true});
-      Shiny.setInputValue('preview_status', 'Auto build status');"
-    )
-    app$wait_for_js(
-      "document.getElementById('code_preview').textContent.includes('status = \"Auto build status\"')"
-    )
-    app$wait_for_js("document.querySelectorAll('.pg-building').length === 0")
-    expect_true(app$get_js("window.sawBuilding"))
-    expect_match(
-      app$get_js("document.getElementById('code_preview').textContent"),
-      'status = "Auto build status"',
-      fixed = TRUE
-    )
-    # Another function brings the live mascot back, in the state it was left in.
-    app$click(selector = '.pg-index-link[data-value="mascot_mood"]')
-    app$wait_for_js("document.querySelector('[data-canvas=preview]').hidden")
-    # The server hides the Preview tab after the client switches the stage.
-    app$wait_for_js("document.querySelector('#code_tabs a[data-value=preview]').getClientRects().length === 0")
-    expect_false(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
-    expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 1L)
-    expect_identical(
-      app$get_js(
-        "[...document.querySelectorAll('#code_tabs .nav-link')].filter(el => el.getClientRects().length > 0)
-        .map(el => el.textContent.trim()).join('|')"
-      ),
-      "UI|Server|App|Last|Log"
-    )
-    # Each URL starts a new Shiny session and builds only its own view.
-    app$run_js("window.location.search = '?view=examples'")
-    app$wait_for_js("!!document.querySelector('#example_code')")
-    expect_identical(app$get_js("document.querySelectorAll('#helper').length"), 0L)
-    expect_identical(
-      app$get_js("document.querySelectorAll('#examples_guide_card button, #examples_guide_card input').length"),
-      0L
-    )
-    expect_identical(
-      app$get_js("document.querySelectorAll('#examples_guide_card table').length"),
-      0L
-    )
-  })
   it("E2 form-check names invalid fields and becomes happy when both pass", {
     local_shiny_browser()
     app <- example_driver("form-check")
@@ -1713,22 +1109,22 @@ describe("studio round 8 help and copied apps", {
     for (fn in c("mascot", "update_mascot")) {
       for (arg in setdiff(names(get("the_guide", env)(fn)$args), c("id", "...", "session"))) {
         links <- as.character(htmltools::tagList(get("wiring_links", env)(fn)))
-        helper <- if (arg == "motion") "mascot_motion_settings" else paste0("mascot_", arg)
+        helper <- switch(arg, motion = "mascot_motion_settings", click = "mascot_action", paste0("mascot_", arg))
         expect_match(links, paste0('data-value="', helper, '"'), fixed = TRUE)
         expect_match(links, paste0(helper, "()"), fixed = TRUE)
         expect_match(links, 'data-event="select_function"', fixed = TRUE)
       }
     }
-    for (text in c("cover the Controls panel", "Follow others", "Demonstration:", "One-off gestures")) {
+    for (text in c("stays inside this contained preview", "Follow others", "Demonstration:", "One-off gestures")) {
       expect_match(page, text, fixed = TRUE)
     }
-    expect_false(grepl("inspector", get("html_text", env)(page), ignore.case = TRUE))
+    expect_match(page, "Inspector", fixed = TRUE)
     expect_match(page, "Click or tap the mascot to open its menu", fixed = TRUE)
     expect_false(grepl("is the only built-in character so far", get("html_text", env)(page), fixed = TRUE))
     expect_match(as.character(get("guide_help", env)("mascot")), 'vignette("mascot", package = "mascot")', fixed = TRUE)
     expect_match(
       as.character(get("function_visual", env)("mascot_mood")),
-      "Try moods with the cards in the top bar",
+      "Try moods with the selector in the top bar",
       fixed = TRUE
     )
   })
@@ -1743,7 +1139,7 @@ studio_parts <- function() {
 }
 
 describe("studio character bar", {
-  it("holds the character picker and mood cards in the main area at 375 pixels", {
+  it("holds the character and mood pickers in the main area at 375 pixels", {
     local_shiny_browser()
     app <- example_driver("studio", width = 375)
     withr::defer(app$stop())
@@ -1766,16 +1162,20 @@ describe("studio narrow layout (#341)", {
       checkmate::assert_number(width, lower = 1)
       app <- example_driver("studio", width = width)
       on.exit(app$stop())
-      wait_example_mood(app, "helper", "idle")
+      app$wait_for_js(
+        "document.getElementById('live_frame')?.contentDocument.getElementById('helper')?.dataset.shownMood === 'idle'"
+      )
       # The bug collapsed the canvas to zero height while its width stayed normal.
       sizes <- app$get_js(
         "(() => {
-          const centre = document.querySelector('.pg-centre').getBoundingClientRect();
-          const mascot = document.querySelector('#helper .mascot-canvas').getBoundingClientRect();
-          return {centre: centre.height, mascot: mascot.height};
+          const centre = document.getElementById('studio_canvas').getBoundingClientRect();
+          const host = document.getElementById('live_frame').getBoundingClientRect();
+          const mascot = document.getElementById('live_frame').contentDocument.querySelector('#helper .mascot-canvas').getBoundingClientRect();
+          return {centre: centre.height, host: host.height, mascot: mascot.height};
         })()"
       )
       expect_gt(sizes$centre, 200, label = paste("canvas height at", width, "px"))
+      expect_gt(sizes$host, 0, label = paste("host height at", width, "px"))
       expect_gt(sizes$mascot, 0, label = paste("mascot height at", width, "px"))
       expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"), info = paste("width", width))
     }
@@ -1820,12 +1220,11 @@ studio_start_values <- function(page) {
     checked <- regmatches(tag, regexec(sprintf('name="%s" value="([^"]*)" checked', id), tag))[[1]]
     values[[id]] <- checked[[2]]
   }
-  for (tag in tags('(?s)<select id="[^"]+".*?</select>')) {
+  for (tag in tags('(?s)<select\\b[^>]*\\bid="[^"]+"[^>]*>.*?</select>')) {
     options <- regmatches(tag, gregexpr('<option value="[^"]*"( selected)?', tag))[[1]]
     chosen <- grep("selected", options, fixed = TRUE, value = TRUE)
     values[[attribute(tag, "id")]] <- unescape(attribute(c(chosen, options)[[1]], "value"))
   }
-  values$mood <- attribute(tags('<div id="mood" [^>]*>'), "data-value")
   values
 }
 
@@ -2254,22 +1653,13 @@ describe("studio safeguards (#248)", {
   })
 })
 
-describe("studio phone sidebars (#265)", {
-  it("uses the opaque page background for overlay sidebars only at phone widths", {
-    css <- paste(
-      readLines(file.path(dirname(mascot_example("studio", run = FALSE)), "www", "studio.css")),
-      collapse = "\n"
-    )
-    expect_match(
-      css,
-      paste0(
-        "@media \\(max-width: 575[.]98px\\) \\{\\s*",
-        "(?:/\\*.*?\\*/\\s*)?",
-        "[.]bslib-sidebar-layout > aside[.]sidebar[.]bslib-sidebar-input \\{\\s*",
-        "background-color: var\\(--bs-body-bg\\);\\s*\\}"
-      ),
-      perl = TRUE
-    )
+describe("studio phone overlays (#265)", {
+  it("uses an opaque floating inspector and a bottom sheet on narrow screens", {
+    css <- paste(readLines(system.file("examples", "studio", "www", "studio.css", package = "mascot")), collapse = "\n")
+    expect_match(css, "background: var(--studio-panel)", fixed = TRUE)
+    expect_match(css, "@media (max-width: 860px)", fixed = TRUE)
+    expect_match(css, "height: 76dvh", fixed = TRUE)
+    expect_match(css, ".pg-inspector-shell", fixed = TRUE)
   })
 })
 
@@ -2548,5 +1938,29 @@ describe("the internal Your character studio panel", {
       }
     }
     expect_match(html, "never sent to another service", fixed = TRUE)
+  })
+})
+
+describe("studio isolated host", {
+  it("ships local engine scripts in the frame and accepts its real mount token", {
+    parts <- studio_parts()
+    initial <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, initial)
+      expect_match(output$live_host$html, 'id="live_frame"', fixed = TRUE)
+      page <- paste(readLines(file.path(preview_dir, "live.html"), warn = FALSE), collapse = "\n")
+      expect_match(page, 'data-studio-host="true"', fixed = TRUE)
+      expect_match(page, 'id="helper"', fixed = TRUE)
+      expect_match(page, 'role="status"', fixed = TRUE)
+      expect_match(page, 'name="viewport"', fixed = TRUE)
+      expect_lt(regexpr("/studio.js", page, fixed = TRUE)[[1]], regexpr("mascot-host.js", page, fixed = TRUE)[[1]])
+      expect_false(grepl("shiny.min.js", page, fixed = TRUE))
+      token <- regmatches(page, regexec('data-mount-token="([^"]+)"', page))[[1]][[2]]
+      fixture <- list(session = session, id = "helper")
+      protocol_ready(fixture, token = token, lifecycle = "reconcile")
+      session$flushReact()
+      expect_true(protocol_record(fixture)$live)
+      expect_identical(protocol_record(fixture)$mount_token, token)
+    })
   })
 })

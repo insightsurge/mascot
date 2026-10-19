@@ -58,13 +58,13 @@ welcome <- "Hello! Choose a function in the function index, change its controls,
 # What mascot() uses when an argument is left out, as shortcut code.
 defaults <- list(
   character = formals(mascot::mascot)$character,
-  mood = "idle",
+  mood = formals(mascot::mascot)$mood,
   status = quote(mascot_status()),
   bubble = quote(mascot_bubble()),
-  size = 160,
-  placement = "bottom-right",
+  size = formals(mascot::mascot)$size,
+  placement = formals(mascot::mascot)$placement,
   theme = quote(mascot_theme()),
-  motion = TRUE,
+  motion = formals(mascot::mascot)$motion,
   # The empty helper, so a removal reads as the reset it is (click = NULL in an update changes nothing).
   click = quote(mascot_action())
 )
@@ -135,10 +135,10 @@ playground_controls <- list(
     messages = input_id("messages"),
     others = input_id("others")
   ),
-  mascot_gesture = list(... = fixed_arg("Must be empty: optional arguments are named."), name = input_event("gesture")),
+  mascot_gesture = list(... = fixed_arg("Must be empty: optional arguments are named."), name = input_id("gesture")),
   mascot_size = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
-    size = input_id("size_unit", "size_px", "size_pct"),
+    size = input_id("size_px", "size_unit", "size_pct"),
     small_screen = input_id("small_mode", "small_px")
   ),
   mascot_placement = list(
@@ -202,7 +202,7 @@ playground_controls <- list(
     motion = input_id("idle"),
     click = input_id("action_on", "menu_on"),
     ... = input_id("mistake", "mistake_run"),
-    gesture = input_event("gesture"),
+    gesture = input_id("gesture"),
     session = input_id("task_run")
   ),
   mascot_preview = list(

@@ -1,9 +1,257 @@
-// The studio's browser helpers: a Shiny input for the browser's own colour picker, buttons
-// that report a click to the server, copy buttons, and swatches showing the colours in use.
+// Offline studio UI. The isolated host shares its parent's Shiny session, never its viewport.
 (() => {
+  if (window.frameElement?.id === 'live_frame' || document.documentElement.dataset.studioHost === 'true') {
+    document.documentElement.dataset.studioHost = 'true';
+    window.Shiny = {
+      setInputValue: (name, value, options) => window.parent.Shiny.setInputValue(name, value, options),
+    };
+    document.addEventListener('DOMContentLoaded', () => {
+      // Studio-only overlay: reuse the actual displayed frame, including gestures and swaps.
+      // The public R listing supplies labels; the engine supplies transformed coordinates.
+      const layer = document.createElement('div');
+      layer.className = 'pg-anchor-overlay';
+      layer.hidden = true;
+      layer.setAttribute('aria-label', 'Character anchors');
+      document.body.append(layer);
+      let listing = { character: '', anchors: [] };
+      let enabled = false;
+      let latest = null;
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('focusable', 'false');
+      svg.setAttribute('aria-label', 'Move anchor labels with arrow keys; Home or Escape resets a label');
+      layer.append(svg);
+      const pins = new Map();
+      let anchorOffset = { x: 0, y: 0 };
+      window.parent.mascot ||= {};
+      const parentMascot = window.parent.mascot;
+      parentMascot.studioAnchorPositions ||= new Map();
+      const positions = parentMascot.studioAnchorPositions;
+      const saved = () => {
+        if (!positions.has(listing.character)) positions.set(listing.character, new Map());
+        return positions.get(listing.character);
+      };
+      const resetLink = () => {
+        window.parent.document.getElementById('reset_anchors').hidden = saved().size === 0;
+      };
+      const clamp = (value, limit) => Math.max(4, Math.min(value, Math.max(4, limit - 4)));
+      function movePin(pin, x, y) {
+        saved().set(pin.name, { x: clamp(x, innerWidth - pin.width), y: clamp(y, innerHeight - 16) });
+        resetLink();
+        paintAnchors();
+      }
+      function wirePin(pin) {
+        let drag = null;
+        pin.group.addEventListener('pointerdown', (event) => {
+          if (event.button !== 0) return;
+          event.preventDefault();
+          pin.box.blur();
+          drag = { x: event.clientX, y: event.clientY, left: pin.left, top: pin.top };
+          pin.group.setPointerCapture(event.pointerId);
+        });
+        pin.group.addEventListener('pointermove', (event) => {
+          if (drag) movePin(pin, drag.left + event.clientX - drag.x, drag.top + event.clientY - drag.y);
+        });
+        const finish = () => {
+          drag = null;
+        };
+        pin.group.addEventListener('pointerup', finish);
+        pin.group.addEventListener('pointercancel', finish);
+        pin.group.addEventListener('lostpointercapture', finish);
+        pin.group.addEventListener('keydown', (event) => {
+          const step = event.shiftKey ? 10 : 2;
+          const delta = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[
+            event.key
+          ];
+          if (delta) movePin(pin, pin.left + delta[0], pin.top + delta[1]);
+          else if (['Escape', 'Home'].includes(event.key)) {
+            saved().delete(pin.name);
+            resetLink();
+            paintAnchors();
+          } else return;
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      }
+      function svgPart(tag, attrs, parent) {
+        const part = document.createElementNS(svgNS, tag);
+        for (const [name, value] of Object.entries(attrs)) part.setAttribute(name, value);
+        parent.append(part);
+        return part;
+      }
+      function paintAnchors() {
+        layer.hidden = !enabled || !latest || latest.character !== listing.character || latest.canvas.hidden;
+        if (layer.hidden) return;
+        const rect = latest.canvas.getBoundingClientRect();
+        svg.setAttribute('viewBox', `0 0 ${innerWidth} ${innerHeight}`);
+        // Uniform top/bottom lanes cannot collide with one another or the canvas.
+        // All measurements use this iframe's viewport, including its SVG viewBox.
+        const labelHeight = 16;
+        const gap = 6;
+        const slots = Math.max(1, Math.floor((innerWidth - 16) / 100));
+        const width = Math.min(110, (innerWidth - 16 - (slots - 1) * gap) / slots);
+        const active = listing.anchors.filter((label) => latest.anchors[label.name]?.available);
+        const topCount = Math.ceil(active.length / 2);
+        const topRows = Math.ceil(topCount / slots);
+        const bottomRows = Math.ceil((active.length - topCount) / slots);
+        const topRoom = topRows * (labelHeight + gap) + 12;
+        const bottomRoom = bottomRows * (labelHeight + gap) + 12;
+        const host = latest.canvas.closest('#helper');
+        const maxSize = Math.max(24, Math.min(innerWidth - 16, innerHeight - topRoom - bottomRoom));
+        if (host.style.getPropertyValue('--studio-anchor-size') !== `${maxSize}px`) {
+          host.style.setProperty('--studio-anchor-size', `${maxSize}px`);
+          requestAnimationFrame(paintAnchors);
+          return;
+        }
+        const desiredX = (innerWidth - rect.width) / 2;
+        const desiredY = topRoom + Math.max(0, (innerHeight - topRoom - bottomRoom - rect.height) / 2);
+        const nextOffset = { x: anchorOffset.x + desiredX - rect.left, y: anchorOffset.y + desiredY - rect.top };
+        if (Math.abs(nextOffset.x - anchorOffset.x) > 0.5 || Math.abs(nextOffset.y - anchorOffset.y) > 0.5) {
+          anchorOffset = nextOffset;
+          host.style.setProperty('--studio-anchor-shift', `${anchorOffset.x}px ${anchorOffset.y}px`);
+          requestAnimationFrame(paintAnchors);
+          return;
+        }
+        active.forEach((label, index) => {
+          const anchor = latest.anchors[label.name];
+          let pin = pins.get(label.name);
+          if (!pin) {
+            const group = svgPart(
+              'g',
+              {
+                'data-anchor': label.name,
+                'aria-label': `${label.name}: ${label.description || label.name}. Drag or use arrow keys; Home or Escape resets.`,
+              },
+              svg,
+            );
+            const line = svgPart('line', { class: 'pg-anchor-leader' }, group);
+            const dot = svgPart('circle', { class: 'pg-anchor-dot', r: 2.5 }, group);
+            const box = svgPart(
+              'rect',
+              {
+                class: 'pg-anchor-label',
+                rx: 3,
+                height: labelHeight,
+                tabindex: 0,
+                role: 'button',
+                'aria-label': `${label.name}: drag or use arrow keys; Home or Escape resets.`,
+              },
+              group,
+            );
+            const text = svgPart('text', { class: 'pg-anchor-text', 'dominant-baseline': 'middle' }, group);
+            svgPart('title', {}, group).textContent = `${label.name}: ${label.description || label.name}`;
+            pin = { group, line, dot, box, text, name: label.name };
+            pins.set(label.name, pin);
+            wirePin(pin);
+          }
+          const top = index < topCount;
+          const i = top ? index : index - topCount;
+          const laneCount = top ? topCount : active.length - topCount;
+          const columns = Math.min(slots, laneCount);
+          const defaultX = (innerWidth - (columns * width + (columns - 1) * gap)) / 2 + (i % slots) * (width + gap);
+          const defaultY = top
+            ? rect.top - 10 - topRows * (labelHeight + gap) + Math.floor(i / slots) * (labelHeight + gap)
+            : rect.bottom + 10 + Math.floor(i / slots) * (labelHeight + gap);
+          const position = saved().get(pin.name);
+          const x = clamp(position?.x ?? defaultX, innerWidth - width);
+          const y = clamp(position?.y ?? defaultY, innerHeight - labelHeight);
+          pin.left = x;
+          pin.top = y;
+          pin.box.setAttribute('x', x);
+          pin.box.setAttribute('y', y);
+          pin.box.setAttribute('width', width);
+          pin.text.setAttribute('x', x + 4);
+          pin.text.setAttribute('y', y + labelHeight / 2);
+          if (pin.width !== width) {
+            pin.text.textContent = pin.name;
+            let length = pin.name.length;
+            while (pin.text.getComputedTextLength() > width - 8 && length > 0)
+              pin.text.textContent = `${pin.name.slice(0, --length)}…`;
+            pin.width = width;
+          }
+          const ax = rect.left + (anchor.matrix[4] / 300) * rect.width;
+          const ay = rect.top + (anchor.matrix[5] / 300) * rect.height;
+          pin.dot.setAttribute('cx', ax);
+          pin.dot.setAttribute('cy', ay);
+          pin.line.setAttribute('x1', ax);
+          pin.line.setAttribute('y1', ay);
+          pin.line.setAttribute('x2', x + width / 2);
+          pin.line.setAttribute('y2', y + labelHeight / 2);
+        });
+        for (const [name, pin] of pins)
+          pin.group.style.display = active.some((label) => label.name === name) ? '' : 'none';
+      }
+      window.addEventListener('studio:reset-anchors', () => {
+        saved().clear();
+        resetLink();
+        paintAnchors();
+      });
+      window.addEventListener('studio:anchors', (event) => {
+        enabled = event.detail.enabled;
+        document.documentElement.classList.toggle('pg-show-anchors', enabled);
+        if (!enabled) {
+          anchorOffset = { x: 0, y: 0 };
+          document.getElementById('helper')?.style.removeProperty('--studio-anchor-shift');
+          document.getElementById('helper')?.style.removeProperty('--studio-anchor-size');
+        }
+        if (listing.character !== event.detail.listing.character) {
+          anchorOffset = { x: 0, y: 0 };
+          document.getElementById('helper')?.style.removeProperty('--studio-anchor-shift');
+          svg.replaceChildren();
+          pins.clear();
+        }
+        listing = event.detail.listing;
+        resetLink();
+        paintAnchors();
+      });
+      const geometry = window.mascot.geometry;
+      window.mascot.geometry = {
+        ...geometry,
+        draw(ctx, compiled, state, ...args) {
+          const result = geometry.draw(ctx, compiled, state, ...args);
+          if (compiled.source.id && ctx.canvas.closest('#helper')) {
+            latest = { canvas: ctx.canvas, character: compiled.source.id, anchors: state.anchors };
+            if (enabled) paintAnchors();
+          }
+          return result;
+        },
+      };
+      new ResizeObserver(paintAnchors).observe(document.body);
+      const helper = document.getElementById('helper');
+      if (helper) {
+        new MutationObserver(paintAnchors).observe(helper, {
+          attributes: true,
+          subtree: true,
+          attributeFilter: ['style', 'hidden', 'data-minimised'],
+        });
+      }
+      document.addEventListener('scroll', paintAnchors, true);
+
+      // Window load follows every DOM-ready listener, including the engine's mount.
+      window.addEventListener('load', () => window.mascot.host.reconcile(document.getElementById('helper')), {
+        once: true,
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.target.closest('input, textarea, select, button, [contenteditable=true]')) return;
+        window.parent.document.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: event.key,
+            ctrlKey: event.ctrlKey,
+            metaKey: event.metaKey,
+            altKey: event.altKey,
+            shiftKey: event.shiftKey,
+            bubbles: true,
+          }),
+        );
+      });
+      window.addEventListener('shiny:client-message', (event) => {
+        window.parent.dispatchEvent(new CustomEvent('shiny:client-message', { detail: event.detail }));
+      });
+    });
+    return;
+  }
   if (!window.Shiny) return;
   const $ = window.jQuery;
-
   // input type="color" as a Shiny input. CSS-variable pickers also set their variable on the page.
   class ColourBinding extends window.Shiny.InputBinding {
     find(scope) {
@@ -37,75 +285,873 @@
   }
   window.Shiny.inputBindings.register(new ColourBinding(), 'mascotStudio.colour');
 
-  // Mood cards are the one input for mascot_mood(name), including updates from the server.
-  function setMood(el, value) {
-    el.dataset.value = value;
-    for (const button of el.querySelectorAll('[data-event="try_mood"]')) {
-      button.setAttribute('aria-pressed', String(button.dataset.value === value));
-    }
-  }
-  class MoodBinding extends window.Shiny.InputBinding {
-    find(scope) {
-      return $(scope).find('.pg-mood-input');
-    }
-    getValue(el) {
-      return el.dataset.value;
-    }
-    subscribe(el, callback) {
-      $(el).on('change.pgMood', () => callback(false));
-    }
-    unsubscribe(el) {
-      $(el).off('.pgMood');
-    }
-    receiveMessage(el, data) {
-      if (typeof data.value === 'string') {
-        setMood(el, data.value);
-        $(el).trigger('change');
-      }
-    }
-  }
-  window.Shiny.inputBindings.register(new MoodBinding(), 'mascotStudio.mood');
-
+  const byId = (id) => document.getElementById(id);
+  // Avoid feeding unchanged text replacements back into the shell's MutationObserver.
+  const setText = (id, value) => {
+    const element = byId(id);
+    if (element.textContent !== value) element.textContent = value;
+  };
+  const send = (name, value) => window.Shiny.setInputValue(name, value, { priority: 'event' });
   let selectedFunction = 'mascot_mood';
-  // The canvas shows the live mascot, or the page mascot_preview() returns while that function is selected.
-  // Hiding (not removing) keeps the mascot and its state as they were.
-  function showCanvas() {
-    const canvas = document.getElementById('studio_canvas');
-    if (!canvas) return;
-    const mode = selectedFunction === 'mascot_preview' ? 'preview' : 'mascot';
-    canvas.dataset.mode = mode;
-    for (const part of canvas.querySelectorAll('[data-canvas]')) part.hidden = part.dataset.canvas !== mode;
+  let hostMode = 'mascot';
+  let moved = [];
+  let chipFunction = 'mascot';
+  let chipField = 'id';
+  let chipArgument = null;
+  let chipInput = '';
+  const surfaces = [];
+  const openers = new Map();
+  const phone = () => window.matchMedia('(max-width: 860px)').matches;
+  const visible = (element) => element && element.getClientRects().length > 0;
+  const focusables = (surface) =>
+    [...surface.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')].filter(
+      (element) => visible(element) && !element.disabled && !element.closest('[inert]'),
+    );
+
+  let anchorListing = { character: '', anchors: [] };
+  function liveWindow() {
+    return byId('live_frame')?.contentWindow;
+  }
+  function syncHost() {
+    const frame = liveWindow();
+    if (!frame?.document.documentElement) return;
+    frame.document.documentElement.dataset.bsTheme = document.documentElement.dataset.bsTheme || 'light';
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--studio-accent');
+    frame.document.documentElement.style.setProperty('--studio-accent', accent);
+    frame.dispatchEvent(
+      new frame.CustomEvent('studio:anchors', {
+        detail: {
+          enabled: !byId('show_anchors')?.disabled && byId('show_anchors')?.getAttribute('aria-pressed') === 'true',
+          listing: anchorListing,
+        },
+      }),
+    );
+  }
+  // The normal complete-state messages and real engine events cross the same-origin frame boundary.
+  window.Shiny.addCustomMessageHandler('mascot:update', (message) => {
+    liveWindow()?.mascot?.host.receive(message);
+  });
+  window.Shiny.addCustomMessageHandler('studio:anchors', (listing) => {
+    anchorListing = listing;
+    const empty = listing.anchors.length === 0;
+    byId('show_anchors').disabled = empty;
+    byId('no_anchors').hidden = !empty;
+    setText('no_anchors', `${listing.name} has no anchors`);
+    syncHost();
+  });
+  window.Shiny.addCustomMessageHandler('studio:task', (busy) => {
+    const button = byId('task_run');
+    if (button) button.disabled = busy;
+  });
+
+  function closeSelects() {
+    for (const select of document.querySelectorAll('select')) {
+      select.selectize?.close();
+      select.selectize?.blur();
+    }
+  }
+  function focusInput(id) {
+    const target = byId(id);
+    if (!target) return;
+    if (target.selectize) {
+      target.selectize.$control_input[0].focus();
+      target.selectize.close();
+    } else {
+      const control = target.matches('input, select, textarea, button')
+        ? target
+        : target.querySelector('input:checked, input, select, textarea, button');
+      (control || target).focus();
+    }
+    target.closest('.shiny-input-container, .pg-quick-gestures')?.classList.add('pg-topbar-highlight');
+  }
+  function restoreEditor() {
+    for (const item of moved) {
+      for (const portal of item.portals) {
+        portal.select.close();
+        portal.select.blur();
+        portal.select.positionDropdown = portal.position;
+        portal.select.settings.dropdownParent = portal.dropdownParent;
+        portal.parent.append(portal.select.$dropdown[0]);
+        portal.select.$dropdown.removeClass('pg-chip-dropdown');
+        portal.select.$dropdown.attr('style', portal.style || '');
+        portal.select.$dropdown_content.attr('style', portal.contentStyle || '');
+      }
+      item.marker.replaceWith(item.element);
+    }
+    moved = [];
+    // DOM-ready initialisation also calls this before Shiny installs setInputValue().
+    if (chipArgument !== null) send('chip_argument', '');
+    for (const chip of document.querySelectorAll('[data-call-arg]')) chip.setAttribute('aria-expanded', 'false');
+  }
+  function close(id, returnFocus = true) {
+    const surface = byId(id);
+    if (!surface || surface.hidden) return false;
+    if (id === 'chip_editor') {
+      closePopovers(false);
+      restoreEditor();
+    }
+    if (id === 'inspector_sidebar') closeSelects();
+    surface.hidden = true;
+    const index = surfaces.indexOf(id);
+    if (index >= 0) surfaces.splice(index, 1);
+    const opener = openers.get(id);
+    if (id === 'function_flyout') {
+      for (const button of document.querySelectorAll('.pg-rail [aria-expanded]'))
+        button.setAttribute('aria-expanded', 'false');
+    }
+    syncModal();
+    if (returnFocus) {
+      const replacement = id === 'chip_editor' ? document.querySelector(`[data-call-arg="${chipArgument}"]`) : opener;
+      if (id === 'studio_search') suppressSearchFocus = true;
+      (visible(replacement) ? replacement : byId('open_inspector'))?.focus();
+      suppressSearchFocus = false;
+    }
+    return true;
+  }
+  function open(id, opener = document.activeElement) {
+    const surface = byId(id);
+    if (!surface) return;
+    openers.set(id, opener);
+    surface.hidden = false;
+    const index = surfaces.indexOf(id);
+    if (index >= 0) surfaces.splice(index, 1);
+    surfaces.push(id);
+    syncModal();
+  }
+  function syncModal() {
+    const search = !byId('studio_search')?.hidden;
+    const inspector = !byId('inspector_sidebar')?.hidden && phone();
+    const modal = search ? byId('studio_search') : inspector ? byId('inspector_sidebar') : null;
+    for (const id of ['studio_centre', 'function_flyout', 'chip_editor', 'code_drawer']) {
+      if (byId(id)) byId(id).inert = !!modal;
+    }
+    document.querySelector('.pg-rail')?.toggleAttribute('inert', !!modal);
+    if (byId('inspector_sidebar')) {
+      byId('inspector_sidebar').inert = search;
+      byId('inspector_sidebar').setAttribute('role', inspector ? 'dialog' : 'region');
+      if (inspector && !byId('inspector_sidebar').contains(document.activeElement) && !search)
+        byId('inspector_sidebar').focus();
+      if (inspector) byId('inspector_sidebar').setAttribute('aria-modal', 'true');
+      else byId('inspector_sidebar').removeAttribute('aria-modal');
+    }
+  }
+  function tab(name) {
+    for (const button of document.querySelectorAll('[data-inspector-tab]')) {
+      const active = button.dataset.inspectorTab === name;
+      button.setAttribute('aria-selected', String(active));
+      button.tabIndex = active ? 0 : -1;
+      byId(`inspector_${button.dataset.inspectorTab}`).hidden = !active;
+    }
   }
   function showControls() {
-    showCanvas();
-    const inspector = document.getElementById('studio_inspector');
-    if (!inspector) return;
-    for (const group of inspector.querySelectorAll('[data-function]')) {
-      const selected = group.dataset.function === selectedFunction;
-      if (!selected && group.contains(document.activeElement)) {
-        document.querySelector(`.pg-index-link[data-value="${selectedFunction}"]`)?.focus();
-      }
-      group.hidden = !selected;
+    restoreEditor();
+    close('chip_editor', false);
+    for (const group of document.querySelectorAll('#studio_inspector [data-function]')) {
+      group.hidden = group.dataset.function !== selectedFunction;
     }
-    (inspector.closest('.sidebar-content') || inspector).scrollTop = 0;
     for (const button of document.querySelectorAll('.pg-index-link')) {
       button.setAttribute('aria-current', String(button.dataset.value === selectedFunction));
     }
+    if (byId('inspector_title')) byId('inspector_title').textContent = `${selectedFunction}()`;
+    if (byId('inspector_controls')) byId('inspector_controls').scrollTop = 0;
+  }
+  function mode(value) {
+    hostMode = value;
+    const select = byId('host_mode');
+    if (select?.selectize) select.selectize.setValue(value, true);
+    else if (select) select.value = value;
+    $(select).trigger('change');
+    const canvas = byId('studio_canvas');
+    if (!canvas) return;
+    canvas.dataset.mode = value;
+    for (const part of canvas.querySelectorAll('[data-canvas]')) part.hidden = part.dataset.canvas !== value;
+  }
+  // Reveal the mounted field through Shiny's own conditional panels and Bootstrap tabs.
+  // This reads the panel's condition, so exported argument names stay in the R control map.
+  function revealField(field) {
+    if (!field) return;
+    for (let ancestor = field; ancestor && ancestor.id !== 'studio_inspector'; ancestor = ancestor.parentElement) {
+      if (ancestor.matches('.shiny-panel-conditional')) {
+        const match = ancestor.dataset.displayIf?.match(/^input[.]([a-zA-Z0-9_]+)\s*==\s*['"]([^'"]+)['"]$/);
+        const element = match && byId(match[1]);
+        const binding = element && $(element).data('shiny-input-binding');
+        if (binding) binding.receiveMessage(element, { value: match[2] });
+      }
+      if (ancestor.classList.contains('tab-pane') && !ancestor.classList.contains('active')) {
+        const trigger = document.querySelector(
+          `[data-bs-toggle="tab"][data-bs-target="#${ancestor.id}"], [data-bs-toggle="tab"][href="#${ancestor.id}"], [data-bs-toggle="pill"][href="#${ancestor.id}"], [role="tab"][aria-controls="${ancestor.id}"]`,
+        );
+        if (trigger) window.bootstrap?.Tab?.getOrCreateInstance(trigger).show();
+      }
+    }
+  }
+  function selectFunction(fn, input = '', arg = '') {
+    for (const trigger of document.querySelectorAll('.pg-index [aria-describedby]')) {
+      window.bootstrap?.Tooltip?.getInstance(trigger)?.hide();
+    }
+    selectedFunction = fn;
+    showControls();
+    send('select_function', fn);
+    if (fn === 'mascot_preview') mode('preview');
+    else if (['mascot_example', 'mascot_examples'].includes(fn)) mode('examples');
+    else mode('mascot');
+    if (byId('function_flyout').dataset.group !== 'all') close('function_flyout', false);
+    open('inspector_sidebar');
+    tab('controls');
+    if (!input && ['mascot_character', 'mascot_mood'].includes(fn)) {
+      input = fn === 'mascot_character' ? 'character' : 'mood';
+      arg = fn === 'mascot_character' ? 'id' : 'name';
+    }
+    const sharedButton = document.querySelector(`[data-function="${fn}"] [data-focus-input]`);
+    if (!input && sharedButton) {
+      input = sharedButton.dataset.focusInput;
+      arg = sharedButton.closest('.pg-field').dataset.argument;
+    }
+    const field = document.querySelector(`[data-function="${fn}"] [data-argument="${arg}"]`);
+    revealField(field);
+    field?.scrollIntoView({ block: 'nearest' });
+    closeSelects();
+    byId('inspector_sidebar').focus({ preventScroll: true });
+    requestAnimationFrame(() => {
+      if (byId('inspector_sidebar').hidden || selectedFunction !== fn) return;
+      field?.scrollIntoView({ block: 'nearest' });
+    });
   }
 
-  function initialise() {
-    for (const el of document.querySelectorAll('input.pg-colour[data-css-var]')) {
-      document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
+  function flyout(group, opener) {
+    const panel = byId('function_flyout');
+    const same = panel.dataset.group === group && !panel.hidden;
+    close('function_flyout', false);
+    if (same) return;
+    panel.dataset.group = group;
+    for (const heading of panel.querySelectorAll('.pg-index h2')) {
+      const category = heading.dataset.category;
+      const show = group === 'all' || category === group || (group === 'wiring' && category === 'preview');
+      heading.hidden = !show;
+      let next = heading.nextElementSibling;
+      while (next && next.tagName !== 'H2') {
+        next.hidden = !show;
+        next = next.nextElementSibling;
+      }
     }
-    const centre = document.getElementById('studio_centre');
-    selectedFunction = centre?.dataset.initialFunction || selectedFunction;
-    showControls();
-    $(document).one('shiny:connected', () => {
-      if (centre) {
-        window.Shiny.setInputValue('initial_function', selectedFunction);
-        window.Shiny.setInputValue('initial_character', centre.dataset.initialCharacter);
+    open('function_flyout', opener);
+    opener?.setAttribute('aria-expanded', 'true');
+    focusables(panel)[1]?.focus();
+  }
+
+  let searchIndex = 0;
+  let results = [];
+  function searchResults() {
+    const query = byId('function_search').value.trim().toLowerCase();
+    results = [];
+    for (const option of byId('search_results').children) {
+      const match = option.textContent.toLowerCase().includes(query);
+      option.hidden = !match;
+      if (match) results.push(option);
+    }
+    searchIndex = 0;
+    byId('search_count').textContent = `${results.length} results`;
+    searchSelection();
+  }
+  function searchSelection() {
+    for (const option of byId('search_results').children) option.setAttribute('aria-selected', 'false');
+    const active = results[searchIndex];
+    if (active) {
+      active.setAttribute('aria-selected', 'true');
+      byId('function_search').setAttribute('aria-activedescendant', active.id);
+      active.scrollIntoView({ block: 'nearest' });
+    } else byId('function_search').removeAttribute('aria-activedescendant');
+  }
+  function searchOpen() {
+    if (!byId('studio_search')) return;
+    if (!byId('studio_search').hidden) {
+      byId('function_search').focus();
+      return;
+    }
+    open('studio_search');
+    byId('function_search').value = '';
+    searchResults();
+    byId('function_search').focus();
+  }
+  function chooseResult(option) {
+    close('studio_search', false);
+    selectFunction(option.dataset.searchFunction, option.dataset.searchInput, option.dataset.searchArgument);
+  }
+
+  // Move bound containers, never a function panel or a clone of its inputs.
+  function moveQuick(id) {
+    const input = byId(id);
+    if (input?.closest('#studio_character_bar')) return;
+    const element = input?.closest('.shiny-input-container');
+    if (!element) return;
+    const marker = document.createComment('mounted studio input');
+    element.before(marker);
+    const sliders = [...element.querySelectorAll('input.js-range-slider')].map((slider) => ({
+      slider: $(slider).data('ionRangeSlider'),
+      value: window.Shiny.shinyapp.$inputValues[slider.id] ?? Number(slider.value),
+    }));
+    const portals = [...element.querySelectorAll('select')]
+      .filter((select) => select.selectize)
+      .map((select) => {
+        const widget = select.selectize;
+        const portal = {
+          select: widget,
+          parent: widget.$dropdown[0].parentElement,
+          position: widget.positionDropdown,
+          dropdownParent: widget.settings.dropdownParent,
+          style: widget.$dropdown.attr('style'),
+          contentStyle: widget.$dropdown_content.attr('style'),
+        };
+        widget.settings.dropdownParent = 'body';
+        widget.$dropdown.appendTo(document.body).addClass('pg-chip-dropdown');
+        widget.positionDropdown = () => {
+          const rect = widget.$control[0].getBoundingClientRect();
+          const below = Math.max(0, innerHeight - rect.bottom - 8);
+          const above = Math.max(0, rect.top - 8);
+          const up = below < Math.min(200, widget.$dropdown_content[0].scrollHeight) && above > below;
+          widget.$dropdown_content.css('max-height', `${Math.min(200, up ? above : below)}px`);
+          const height = widget.$dropdown.outerHeight();
+          widget.$dropdown.css({
+            position: 'fixed',
+            left: `${rect.left}px`,
+            width: `${rect.width}px`,
+            top: `${up ? Math.max(8, rect.top - height) : rect.bottom}px`,
+          });
+          widget.$dropdown.attr('data-direction', up ? 'up' : 'down');
+        };
+        return portal;
+      });
+    moved.push({ element, marker, portals });
+    byId('chip_editor_body').append(element);
+    // ionRangeSlider measured its original hidden inspector. Refresh only once visible,
+    // retaining Shiny's current value rather than the hidden widget's stale geometry.
+    requestAnimationFrame(() => {
+      for (const item of sliders) {
+        if (!item.slider) continue;
+        const value = Number(item.value);
+        item.slider.update({ from: value >= item.slider.options.min ? value : item.slider.options.from });
       }
     });
+  }
+  function positionChip() {
+    const pop = byId('chip_editor');
+    if (pop.hidden) return;
+    const rect = document.querySelector(`[data-call-arg="${chipArgument}"]`)?.getBoundingClientRect();
+    if (!rect) return;
+    const viewport = window.visualViewport;
+    const left = viewport?.offsetLeft || 0;
+    const top = viewport?.offsetTop || 0;
+    const right = left + (viewport?.width || innerWidth);
+    const bottom = top + (viewport?.height || innerHeight);
+    pop.style.maxHeight = `${bottom - top - 16}px`;
+    pop.style.maxWidth = `${right - left - 16}px`;
+    const width = pop.offsetWidth;
+    pop.style.left = `${phone() ? left + 8 : Math.max(left + 8, Math.min(rect.left, right - width - 8))}px`;
+    pop.style.top = `${Math.max(top + 8, Math.min(phone() ? bottom - pop.offsetHeight - 8 : rect.top - pop.offsetHeight - 8, bottom - pop.offsetHeight - 8))}px`;
+  }
+  function chipContext(button) {
+    if (!button) return;
+    setText('chip_hint', button.dataset.callHint);
+    setText('chip_default', button.dataset.callDefault);
+    setText('chip_current', button.querySelector('.pg-chip-value').textContent);
+    const changed = button.dataset.callChanged === 'true';
+    byId('chip_changed').hidden = !changed;
+    byId('chip_reset').hidden = !changed || ['character', 'mood', 'gesture'].includes(chipArgument);
+    byId('chip_style').hidden = !['size', 'placement', 'theme', 'status', 'bubble', 'click', 'motion'].includes(
+      chipArgument,
+    );
+    for (const option of document.querySelectorAll('[data-chip-style]')) {
+      option.setAttribute('aria-pressed', String(option.dataset.chipStyle === button.dataset.callStyle));
+    }
+  }
+  function chipOpen(button) {
+    close('chip_editor', false);
+    close('inspector_sidebar', false);
+    chipArgument = button.dataset.callArg;
+    chipInput =
+      {
+        size: byId('size_unit').querySelector('input:checked')?.value === 'pct' ? 'size_pct' : 'size_px',
+        theme: 'theme_mode',
+        motion: 'motion_on',
+      }[chipArgument] || button.dataset.callInput;
+    chipFunction = button.dataset.callFunction;
+    chipField =
+      {
+        character: 'id',
+        mood: 'name',
+        gesture: 'name',
+        status: 'text',
+        bubble: 'text',
+        placement: 'position',
+        theme: 'mode',
+        motion: 'others',
+        click: chipFunction === 'mascot_popup_menu' ? 'items' : 'label',
+      }[chipArgument] || chipArgument;
+    byId('chip_editor_body').replaceChildren();
+    byId('chip_title').textContent = `${chipArgument} =`;
+    for (const overview of document.querySelectorAll('[data-chip-overview]')) {
+      overview.hidden = overview.dataset.chipOverview !== chipArgument;
+    }
+    chipContext(button);
+    open('chip_editor', button);
+    button.setAttribute('aria-expanded', 'true');
+    const controls =
+      {
+        status: ['status_text'],
+        bubble: ['bubble_text'],
+        size: ['size_unit', byId('size_unit').querySelector('input:checked')?.value === 'pct' ? 'size_pct' : 'size_px'],
+        placement: ['position', 'drag'],
+        theme: ['theme_source', 'theme_mode'],
+        motion: ['motion_on'],
+        click: ['click_type'],
+      }[chipArgument] || [];
+    for (const id of controls) moveQuick(id);
+    if (['character', 'mood', 'gesture'].includes(chipArgument)) {
+      const note = document.createElement('span');
+      note.textContent = 'Change it in the top bar. ';
+      const focus = document.createElement('button');
+      focus.type = 'button';
+      focus.id = 'chip_topbar';
+      focus.className = 'btn btn-sm';
+      focus.textContent = 'Focus top-bar control';
+      byId('chip_editor_body').append(note, focus);
+    }
+    closeSelects();
+    if (chipArgument === 'id') byId('chip_editor_body').textContent = 'Fixed studio id: "helper".';
+    send('chip_argument', chipArgument);
+    positionChip();
+    // Focus the surface, which leaves selectize closed until the visitor chooses it.
+    byId('chip_editor').tabIndex = -1;
+    byId('chip_editor').focus({ preventScroll: true });
+  }
+  let helpObserver = null;
+  function argumentHelp(fn, arg) {
+    helpObserver?.disconnect();
+    closePopovers();
+    close('chip_editor', false);
+    selectFunction(fn);
+    tab('help');
+    const reveal = () => {
+      if (!byId('function_help').querySelector(`[data-guide-function="${fn}"]`)) return false;
+      const field = byId('function_help').querySelector(`[data-argument="${arg}"]`);
+      if (!field) return false;
+      byId('function_help').dataset.activeArgument = arg;
+      byId('inspector_sidebar').focus({ preventScroll: true });
+      field.scrollIntoView({ block: 'nearest' });
+      return true;
+    };
+    if (!reveal()) {
+      // Shiny idle can precede an asynchronous renderUI replacement. Wait for
+      // the requested function, rather than ending on an unrelated idle event.
+      helpObserver = new MutationObserver(() => {
+        if (
+          selectedFunction !== fn ||
+          byId('inspector_sidebar').hidden ||
+          byId('inspector_tab_help').getAttribute('aria-selected') !== 'true' ||
+          reveal()
+        )
+          helpObserver.disconnect();
+      });
+      helpObserver.observe(byId('function_help'), { childList: true, subtree: true });
+    }
+  }
+
+  function closePopovers(returnFocus = true) {
+    const pop = document.querySelector('.popover.show');
+    if (!pop) return false;
+    const trigger = document.querySelector(`[aria-describedby="${pop.id}"]`);
+    window.bootstrap?.Popover?.getInstance(trigger)?.hide();
+    if (returnFocus) trigger?.focus();
+    return true;
+  }
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (event.key === 'Escape') {
+        // Shiny owns its modal lifecycle; it sits above all studio surfaces.
+        if (document.querySelector('.modal.show')) return;
+        const select = event.target.closest?.('.shiny-input-container')?.querySelector('select');
+        if (select?.selectize?.isOpen) {
+          select.selectize.close();
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+        if (closePopovers()) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          return;
+        }
+        const id = surfaces.at(-1);
+        if (id) {
+          close(id);
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+        return;
+      }
+      const activeModal = !byId('studio_search')?.hidden
+        ? byId('studio_search')
+        : phone() && !byId('inspector_sidebar')?.hidden
+          ? byId('inspector_sidebar')
+          : null;
+      if (event.key === 'Tab' && activeModal) {
+        const items = focusables(activeModal);
+        const index = items.indexOf(document.activeElement);
+        if ((event.shiftKey && index <= 0) || (!event.shiftKey && (index === items.length - 1 || index < 0))) {
+          event.preventDefault();
+          items[event.shiftKey ? items.length - 1 : 0]?.focus();
+        }
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchOpen();
+        return;
+      }
+      if (event.target.id === 'function_search') {
+        if (['ArrowDown', 'ArrowUp'].includes(event.key) && results.length) {
+          event.preventDefault();
+          searchIndex = (searchIndex + (event.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length;
+          searchSelection();
+        } else if (event.key === 'Enter' && results[searchIndex]) {
+          event.preventDefault();
+          chooseResult(results[searchIndex]);
+        }
+        return;
+      }
+      if (event.target.dataset?.inspectorTab && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault();
+        const tabs = [...document.querySelectorAll('[data-inspector-tab]')];
+        const i = tabs.indexOf(event.target);
+        const index =
+          event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (i + (event.key === 'ArrowRight' ? 1 : 2)) % 3;
+        tab(tabs[index].dataset.inspectorTab);
+        tabs[index].focus();
+        return;
+      }
+      const previewFocused = document.activeElement === byId('live_frame');
+      if (
+        !previewFocused ||
+        !byId('studio_keys')?.checked ||
+        activeModal ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      )
+        return;
+      if (event.key === '/') {
+        event.preventDefault();
+        searchOpen();
+      } else if (['w', 'n'].includes(event.key)) {
+        const select = byId('gesture');
+        const name = event.key === 'w' ? 'wave' : 'nod';
+        if (select.value === name) send('gesture_replay', name);
+        else {
+          select.value = name;
+          $(select).trigger('change');
+        }
+      } else if (/^[1-5]$/.test(event.key)) {
+        const select = byId('mood');
+        const value = select.options[Number(event.key) - 1]?.value;
+        if (value) {
+          if (select.selectize) select.selectize.setValue(value);
+          else {
+            select.value = value;
+            $(select).trigger('change');
+          }
+        }
+      }
+    },
+    true,
+  );
+
+  document.addEventListener('click', (event) => {
+    const menu = byId('studio_menu');
+    if (menu?.open && !event.target.closest('#studio_menu')) menu.open = false;
+    const target = event.target.closest('button, a, #open_search, [data-search-function]');
+    if (!target) return;
+    const id = target.id;
+    if (id === 'all_functions') flyout('all', target);
+    else if (target.dataset.group) flyout(target.dataset.group, target);
+    else if (id === 'open_search') searchOpen();
+    else if (id === 'replay_gesture') send('gesture_replay', byId('gesture').value || 'wave');
+    else if (id === 'open_inspector') {
+      closeSelects();
+      open('inspector_sidebar', target);
+      byId('inspector_sidebar').focus();
+    } else if (id === 'open_code') {
+      open('code_drawer', target);
+      focusables(byId('code_drawer'))[0]?.focus();
+    } else if (id === 'close_search') close('studio_search');
+    else if (id === 'close_functions') close('function_flyout');
+    else if (id === 'close_inspector') close('inspector_sidebar');
+    else if (id === 'close_chip') close('chip_editor');
+    else if (id === 'close_code') close('code_drawer');
+    else if (id === 'chip_inspector') {
+      close('chip_editor', false);
+      selectFunction(chipFunction, chipInput, chipField);
+    } else if (id === 'chip_help') {
+      argumentHelp(
+        chipArgument === 'gesture' ? 'mascot_gesture' : 'mascot',
+        chipArgument === 'gesture' ? 'name' : chipArgument,
+      );
+    } else if (id === 'chip_guide') {
+      close('chip_editor', false);
+      selectFunction(chipFunction);
+      tab('guide');
+    } else if (id === 'chip_topbar') {
+      close('chip_editor', false);
+      focusInput(chipInput);
+    } else if (target.closest('[data-chip-overview]')) {
+      const content = target.closest('[data-chip-overview]').querySelector('.pg-overview-content');
+      const popover = window.bootstrap.Popover.getOrCreateInstance(target, {
+        html: true,
+        sanitize: false, // Trusted package help, rendered by tools::Rd2HTML().
+        content: content.innerHTML,
+        container: document.body,
+        trigger: 'manual',
+        customClass: 'pg-help-popover',
+      });
+      popover.toggle();
+    } else if (id === 'chip_reset') send('chip_reset', chipArgument);
+    else if (target.dataset.chipStyle) send('chip_style', { arg: chipArgument, style: target.dataset.chipStyle });
+    else if (target.dataset.argumentHelp) argumentHelp(target.dataset.helpFunction, target.dataset.argumentHelp);
+    else if (id === 'phone_width') {
+      const on = target.getAttribute('aria-pressed') !== 'true';
+      target.setAttribute('aria-pressed', String(on));
+      document.querySelector('.pg-host')?.classList.toggle('is-phone', on);
+    } else if (id === 'reset_anchors') {
+      liveWindow()?.dispatchEvent(new Event('studio:reset-anchors'));
+    } else if (id === 'show_anchors' && !target.disabled) {
+      target.setAttribute('aria-pressed', String(target.getAttribute('aria-pressed') !== 'true'));
+      syncHost();
+    } else if (target.dataset.focusInput) {
+      focusInput(target.dataset.focusInput);
+    } else if (target.dataset.inspectorTab) tab(target.dataset.inspectorTab);
+    else if (target.dataset.callArg) chipOpen(target);
+    else if (target.dataset.searchFunction) chooseResult(target);
+    else if (target.dataset.event) {
+      if (target.tagName === 'A') event.preventDefault();
+      if (target.dataset.event === 'select_function') selectFunction(target.dataset.value);
+      else send(target.dataset.event, target.dataset.value || 'click');
+    } else if (target.dataset.copy) {
+      const source = byId(target.dataset.copy)?.textContent || '';
+      if (!target.dataset.label) target.dataset.label = target.textContent;
+      const label = target.dataset.label;
+      const done = (ok) => {
+        target.textContent = ok ? 'Copied' : 'Copy failed';
+        setTimeout(() => {
+          target.textContent = label;
+        }, 1500);
+      };
+      // The clipboard API needs a secure page; a studio opened by a network address falls back to a selection copy.
+      const fallback = () => {
+        const field = document.createElement('textarea');
+        field.value = source;
+        field.setAttribute('readonly', '');
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.append(field);
+        field.select();
+        let ok = false;
+        try {
+          ok = document.execCommand('copy');
+        } catch {
+          ok = false;
+        }
+        field.remove();
+        done(ok);
+      };
+      if (navigator.clipboard && window.isSecureContext)
+        navigator.clipboard.writeText(source).then(() => done(true), fallback);
+      else fallback();
+    }
+  });
+  document.addEventListener('input', (event) => {
+    if (event.target.id === 'function_search') searchResults();
+    if (event.target.id === 'bubble_text' && !byId('chip_editor').hidden && chipArgument === 'bubble')
+      send('chip_bubble', event.target.value);
+  });
+  $(document).on('change', '#size_unit', () => {
+    if (byId('chip_editor').hidden || chipArgument !== 'size') return;
+    const sizeId = byId('size_unit').querySelector('input:checked').value === 'pct' ? 'size_pct' : 'size_px';
+    const item = moved.find((entry) => entry.element.querySelector('#size_px, #size_pct'));
+    // A server reset also updates the radio group without changing its unit.
+    // Remounting here would restore the pre-reset slider value on the next frame.
+    if (item?.element.querySelector(`#${sizeId}`)) return;
+    if (item) {
+      item.marker.replaceWith(item.element);
+      moved.splice(moved.indexOf(item), 1);
+    }
+    moveQuick(byId('size_unit').querySelector('input:checked').value === 'pct' ? 'size_pct' : 'size_px');
+    positionChip();
+  });
+  $(document).on('change', '#host_mode', () => {
+    const value = byId('host_mode').value;
+    if (value !== hostMode) mode(value);
+  });
+  $(document).on('shiny:disconnected shiny:connected', (event) => {
+    liveWindow()?.document.dispatchEvent(new Event(event.type));
+  });
+  document.addEventListener(
+    'load',
+    (event) => {
+      if (event.target.id === 'live_frame') syncHost();
+    },
+    true,
+  );
+  new MutationObserver(syncHost).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-bs-theme', 'style'],
+  });
+  function positionDropdowns() {
+    for (const item of moved)
+      for (const portal of item.portals) {
+        if (portal.select.isOpen) portal.select.positionDropdown();
+      }
+  }
+  document.addEventListener('scroll', positionDropdowns, true);
+  let suppressSearchFocus = false;
+  function positionWordTooltip(word) {
+    const tooltip = word?.querySelector('.pg-word-tooltip');
+    if (!tooltip) return;
+    const rect = word.getBoundingClientRect();
+    tooltip.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - tooltip.offsetWidth - 8))}px`;
+    tooltip.style.top = `${Math.max(8, Math.min(rect.bottom + 8, innerHeight - tooltip.offsetHeight - 8))}px`;
+  }
+  document.addEventListener('pointerover', (event) => positionWordTooltip(event.target.closest('.pg-sentence-word')));
+  document.addEventListener('focusin', (event) => {
+    positionWordTooltip(event.target.closest('.pg-sentence-word'));
+    if (event.target.id === 'open_search' && !suppressSearchFocus && byId('studio_search').hidden) searchOpen();
+  });
+  document.addEventListener('focusout', (event) => {
+    event.target.closest?.('.pg-topbar-highlight')?.classList.remove('pg-topbar-highlight');
+  });
+  window.visualViewport?.addEventListener('resize', positionChip);
+  window.visualViewport?.addEventListener('scroll', positionChip);
+  window.addEventListener('resize', () => {
+    positionDropdowns();
+    positionChip();
+    syncModal();
+  });
+
+  // Mark changed controls without replacing, cloning or rebinding their mounted inputs.
+  const initialValues = new WeakMap();
+  function inputValue(input) {
+    return input.type === 'checkbox' || input.type === 'radio' ? `${input.value}:${input.checked}` : input.value;
+  }
+  // Keep irrelevant controls mounted and preserve their values while explaining their state.
+  function syncApplicability() {
+    const forever = byId('bubble_forever')?.checked === true;
+    const seconds = byId('bubble_seconds');
+    seconds?.setAttribute('aria-disabled', String(forever));
+    const slider = $('#bubble_duration').data('ionRangeSlider');
+    if (slider && slider.options.disable !== forever) slider.update({ disable: forever });
+    const inline = document.querySelector('#position input:checked')?.value === 'inline';
+    const drag = byId('drag');
+    if (drag?.selectize) {
+      if (inline) drag.selectize.disable();
+      else drag.selectize.enable();
+    }
+    if (drag) drag.disabled = inline;
+    if (byId('minimise')) byId('minimise').disabled = inline;
+  }
+  function markControls() {
+    syncApplicability();
+    for (const field of document.querySelectorAll('.pg-field')) {
+      const input = byId(field.dataset.defaultInput);
+      const expression = field.dataset.packageDefault;
+      let changed = false;
+      if (input && expression && !['none: required', 'empty'].includes(expression)) {
+        let current = input.type === 'checkbox' ? String(input.checked).toUpperCase() : input.value;
+        let expected = expression.replace(/^"(.*)"$/, '$1');
+        if (expected === 'NULL') expected = '';
+        if (['follow', 'own'].includes(current)) current = '';
+        if (field.dataset.owner === 'mascot' && field.dataset.argument === 'motion' && current === '') current = 'TRUE';
+        changed = String(current) !== expected;
+      }
+      for (const item of field.querySelectorAll('input, select, textarea')) {
+        if (initialValues.has(item) && initialValues.get(item) !== inputValue(item)) changed = true;
+      }
+      const mainArgument = {
+        mascot_size: 'size',
+        mascot_placement: 'position',
+        mascot_status: 'text',
+        mascot_bubble: 'text',
+        mascot_theme: 'mode',
+        mascot_motion_settings: 'others',
+      }[field.dataset.owner];
+      const chipName =
+        field.dataset.owner === 'mascot'
+          ? field.dataset.argument
+          : field.dataset.argument === mainArgument
+            ? {
+                mascot_size: 'size',
+                mascot_placement: 'placement',
+                mascot_status: 'status',
+                mascot_bubble: 'bubble',
+                mascot_theme: 'theme',
+                mascot_motion_settings: 'motion',
+              }[field.dataset.owner]
+            : null;
+      if (chipName) changed = document.querySelector(`[data-call-arg="${chipName}"]`)?.dataset.callChanged === 'true';
+      field.classList.toggle('is-changed', changed);
+      if (changed) field.title = 'Changed from the package default';
+      else field.removeAttribute('title');
+    }
+    for (const chip of document.querySelectorAll('[data-call-arg]')) {
+      if (!byId('chip_editor').hidden && chip.dataset.callArg === chipArgument) {
+        chip.setAttribute('aria-expanded', 'true');
+        chipContext(chip);
+        // The click can switch between action and menu while this editor stays open.
+        chipFunction = chip.dataset.callFunction;
+        if (chipArgument === 'click') chipInput = chip.dataset.callInput;
+        if (chipArgument === 'click') chipField = chipFunction === 'mascot_popup_menu' ? 'items' : 'label';
+      }
+    }
+  }
+  function rememberControls() {
+    for (const input of document.querySelectorAll('.pg-field input, .pg-field select, .pg-field textarea')) {
+      if (!initialValues.has(input)) initialValues.set(input, inputValue(input));
+    }
+    markControls();
+  }
+  // Shiny's receiveMessage() also emits jQuery changes for programmatic updates.
+  $(document).on('change', markControls);
+  function sizeSentenceWords() {
+    const moodLabel = byId('mood')?.selectedOptions[0]?.textContent || '';
+    setText('mood_article', /^[aeiou]/i.test(moodLabel) ? 'in an' : 'in a');
+    for (const select of document.querySelectorAll('.pg-sentence select')) {
+      const measure = document.createElement('span');
+      measure.textContent = select.selectedOptions[0]?.textContent || '';
+      measure.style.font = getComputedStyle(select).font;
+      measure.style.position = 'absolute';
+      measure.style.visibility = 'hidden';
+      document.body.append(measure);
+      const width = `${Math.ceil(measure.getBoundingClientRect().width) + 8}px`;
+      measure.remove();
+      if (select.style.width !== width) select.style.width = width;
+    }
+  }
+  $(document).on('change', '.pg-sentence select', sizeSentenceWords);
+  function initialise() {
+    const centre = byId('studio_centre');
+    if (!centre) return;
+    selectedFunction = centre.dataset.initialFunction || selectedFunction;
+    showControls();
+    if (selectedFunction === 'mascot_preview') mode('preview');
+    if (['mascot_example', 'mascot_examples'].includes(selectedFunction)) mode('examples');
+    if (centre.dataset.initialMode) mode(centre.dataset.initialMode);
+    $(document).one('shiny:connected', () => {
+      send('initial_function', selectedFunction);
+      send('initial_character', centre.dataset.initialCharacter);
+    });
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const reduced = () => {
+      byId('reduced_motion').textContent = media.matches ? 'Reduced motion (OS)' : '';
+    };
+    reduced();
+    media.addEventListener('change', reduced);
     const index = document.querySelector('.pg-index');
     index?.addEventListener('show.bs.tooltip', (event) => {
       const button = event.target.closest('.pg-index-link') ?? event.target.querySelector('.pg-index-link');
@@ -115,288 +1161,23 @@
         return;
       }
       for (const trigger of index.querySelectorAll('[aria-describedby]')) {
-        if (trigger !== event.target) window.bootstrap.Tooltip.getInstance(trigger)?.hide();
+        if (trigger !== event.target) window.bootstrap?.Tooltip?.getInstance(trigger)?.hide();
       }
     });
-    const dock = document.getElementById('studio_dock');
-    const header = document.getElementById('code_tray_header');
-    const headerToggle = document.getElementById('code_tray_toggle');
-    const trayBody = document.getElementById('code_tray_body');
-    const card = document.getElementById('studio_panels_card');
-    const saved = (() => {
-      try {
-        return JSON.parse(sessionStorage.getItem('mascot-studio-tray') || 'null');
-      } catch {
-        return null;
-      }
-    })();
-    let open = saved?.open ?? !window.matchMedia('(max-width: 575.98px)').matches;
-    function saveTray() {
-      try {
-        sessionStorage.setItem('mascot-studio-tray', JSON.stringify({ open, height: preferred }));
-      } catch {
-        /* Storage can be unavailable; the controls still work. */
-      }
-    }
-    function syncDock() {
-      if (!dock) return;
-      if (!open && (trayBody?.contains(document.activeElement) || document.activeElement?.id === 'dock_grip')) {
-        headerToggle?.focus();
-      }
-      dock.classList.toggle('is-closed', !open);
-      if (trayBody) {
-        trayBody.inert = !open;
-        trayBody.setAttribute('aria-hidden', String(!open));
-      }
-      headerToggle?.setAttribute('aria-expanded', String(open));
-      headerToggle?.setAttribute('aria-label', `${open ? 'Collapse' : 'Expand'} Code tray`);
-    }
-    function toggleTray() {
-      if (open && card?.dataset.fullScreen === 'true') document.querySelector('.bslib-full-screen-exit')?.click();
-      open = !open;
-      syncDock();
-      saveTray();
-    }
-    header?.addEventListener('click', toggleTray);
-    function placementControls() {
-      const inline = document.querySelector('#position input:checked')?.value === 'inline';
-      const minimise = document.getElementById('minimise');
-      const drag = document.getElementById('drag');
-      if (minimise) minimise.disabled = inline;
-      if (drag) {
-        drag.disabled = inline;
-        const selectize = $(drag)[0]?.selectize;
-        if (selectize) {
-          if (inline) selectize.disable();
-          else selectize.enable();
-        }
-      }
-    }
-    $(document).on('shiny:inputchanged', (event) => {
-      if (event.name === 'position') setTimeout(placementControls, 0);
-      if (event.name === 'bubble_forever') setTimeout(durationControl, 0);
-    });
-    function durationControl() {
-      const disabled = document.getElementById('bubble_forever')?.checked === true;
-      const slider = $('#bubble_duration').data('ionRangeSlider');
-      slider?.update({ disable: disabled });
-      document.getElementById('bubble_seconds')?.setAttribute('aria-disabled', String(disabled));
-    }
-    placementControls();
-    durationControl();
-    window.Shiny.addCustomMessageHandler('studio:task', (busy) => {
-      const button = document.getElementById('task_run');
-      if (button) button.disabled = busy;
-    });
-    const grip = document.getElementById('dock_grip');
-    let height = Number.isFinite(saved?.height) ? saved.height : 33;
-    // The height the visitor chose. A crowded canvas (the mascot_preview() page) lowers the height shown, not this.
-    let preferred = height;
-    let drag = null;
-    function resize(value, chosen = true) {
-      if (!centre || !grip || !centre.clientHeight) return;
-      const dockStyle = getComputedStyle(dock);
-      const borders = parseFloat(dockStyle.borderTopWidth) + parseFloat(dockStyle.borderBottomWidth);
-      dock.style.setProperty('--pg-dock-header-height', `${header.offsetHeight + borders}px`);
-      const canvas = document.getElementById('studio_canvas');
-      const style = getComputedStyle(canvas);
-      // Include the reserved bubble region, character, status and caption in the canvas floor.
-      // The preview page grows to fill the canvas, so only its own minimum height counts.
-      const contentHeight = [...canvas.children].reduce((total, child) => {
-        if (child.hidden) return total;
-        const childStyle = getComputedStyle(child);
-        const own = child.dataset.canvas === 'preview' ? parseFloat(childStyle.minHeight) : child.offsetHeight;
-        return total + own + parseFloat(childStyle.marginTop) + parseFloat(childStyle.marginBottom);
-      }, parseFloat(style.paddingTop) + parseFloat(style.paddingBottom));
-      const canvasHeight = Math.max(parseFloat(style.minHeight), contentHeight);
-      const toolbarHeight = centre.querySelector('.pg-toolbar').offsetHeight;
-      const maximum = Math.max(
-        0,
-        Math.min(80, ((centre.clientHeight - toolbarHeight - canvasHeight) / centre.clientHeight) * 100),
-      );
-      const minimum = Math.min(25, maximum);
-      height = Math.max(minimum, Math.min(maximum, value));
-      if (chosen) preferred = height;
-      centre.style.setProperty('--pg-dock-height', `${(height / 100) * centre.clientHeight}px`);
-      grip.setAttribute('aria-valuemin', String(Math.round(minimum)));
-      grip.setAttribute('aria-valuemax', String(Math.round(maximum)));
-      grip.setAttribute('aria-valuenow', String(Math.round(height)));
-    }
-    syncDock();
-    resize(height, false);
-    if (centre) {
-      const observer = new ResizeObserver(() => resize(preferred, false));
-      observer.observe(centre);
-      observer.observe(centre.querySelector('.pg-toolbar'));
-      observer.observe(header);
-      for (const child of document.getElementById('studio_canvas').children) observer.observe(child);
-    }
-    grip?.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0) return;
-      open = true;
-      syncDock();
-      document.body.classList.add('is-resizing');
-      drag = { y: event.clientY, height };
-      grip.setPointerCapture(event.pointerId);
-      event.preventDefault();
-    });
-    grip?.addEventListener('pointermove', (event) => {
-      if (drag) resize(drag.height + ((drag.y - event.clientY) / centre.clientHeight) * 100);
-    });
-    function stopResize(event) {
-      if (grip.hasPointerCapture(event.pointerId)) grip.releasePointerCapture(event.pointerId);
-      drag = null;
-      document.body.classList.remove('is-resizing');
-      saveTray();
-    }
-    grip?.addEventListener('pointerup', stopResize);
-    grip?.addEventListener('pointercancel', stopResize);
-    grip?.addEventListener('dblclick', () => {
-      resize(33);
-      saveTray();
-    });
-    grip?.addEventListener('keydown', (event) => {
-      if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
-      event.preventDefault();
-      open = true;
-      syncDock();
-      resize(event.key === 'Home' ? 25 : event.key === 'End' ? 80 : height + (event.key === 'ArrowUp' ? 5 : -5));
-      saveTray();
-    });
+    new ResizeObserver(positionChip).observe(byId('chip_editor'));
+    rememberControls();
+    sizeSentenceWords();
+    new MutationObserver(sizeSentenceWords).observe(byId('studio_character_bar'), { childList: true, subtree: true });
+    new MutationObserver(rememberControls).observe(byId('studio_shell'), { childList: true, subtree: true });
+    syncModal();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialise);
   else initialise();
 
-  function closeOpenPopovers() {
-    let closed = false;
-    for (const trigger of document.querySelectorAll(
-      'bslib-popover > button, [data-bs-toggle="popover"], [aria-describedby^="popover"]',
-    )) {
-      const inst = window.bootstrap?.Popover?.getInstance(trigger);
-      if (inst) {
-        inst.hide();
-        closed = true;
-      }
-    }
-    for (const popover of document.querySelectorAll('.popover.show')) {
-      const trigger = document.querySelector(`[aria-describedby="${popover.id}"]`);
-      const inst = trigger && window.bootstrap?.Popover?.getInstance(trigger);
-      if (inst) {
-        inst.hide();
-      } else {
-        popover.classList.remove('show');
-        popover.remove();
-      }
-      closed = true;
-    }
-    return closed;
-  }
-
-  function closeOpenTooltips() {
-    for (const trigger of document.querySelectorAll('[data-bs-toggle="tooltip"], .pg-index [aria-describedby]')) {
-      window.bootstrap?.Tooltip?.getInstance(trigger)?.hide();
-    }
-    for (const tooltip of document.querySelectorAll('.tooltip.show')) {
-      const trigger = document.querySelector(`[aria-describedby="${tooltip.id}"]`);
-      const inst = trigger && window.bootstrap?.Tooltip?.getInstance(trigger);
-      if (inst) {
-        inst.hide();
-      } else {
-        tooltip.classList.remove('show');
-        tooltip.remove();
-      }
-    }
-  }
-
-  // Restore the opener after Shiny's modal cleanup, for either dismissal path.
-  let guideOpener = null;
-  $(document).on('show.bs.modal', (event) => {
-    if (!event.target.classList.contains('pg-guide-modal')) return;
-    closeOpenPopovers();
-    closeOpenTooltips();
-  });
-  $(document).on('hidden.bs.modal', (event) => {
-    if (!event.target.classList.contains('pg-guide-modal')) return;
-    const opener = guideOpener;
-    guideOpener = null;
-    setTimeout(() => {
-      if (opener?.isConnected && opener.getClientRects().length) opener.focus();
-    }, 0);
-  });
-
-  // Use Shiny's modal lifecycle for both dismissal paths. Capture Escape before
-  // Bootstrap or Shiny's modal wrapper consumes it, then let removeModal() hide
-  // the modal and perform Shiny's normal unbinding and backdrop cleanup.
-  document.addEventListener(
-    'keydown',
-    (event) => {
-      if (event.key !== 'Escape') return;
-      if (document.querySelector('.pg-guide-modal.show')) {
-        event.preventDefault();
-        event.stopPropagation();
-        window.Shiny.setInputValue('close_guide', 'escape', { priority: 'event' });
-        return;
-      }
-      if (document.querySelectorAll('.popover.show').length > 0) {
-        event.preventDefault();
-        event.stopPropagation();
-        closeOpenPopovers();
-      }
-    },
-    true,
-  );
-
-  // Buttons update the same mounted inputs as the inspector.
-  document.addEventListener('click', (event) => {
-    if (!event.target.closest('.popover') && !event.target.closest('bslib-popover, [data-bs-toggle="popover"]')) {
-      closeOpenPopovers();
-    }
-    const target = event.target.closest('[data-event]');
-    if (target) {
-      if (target.tagName === 'A') event.preventDefault();
-      if (target.dataset.event === 'open_guide') {
-        closeOpenPopovers();
-        closeOpenTooltips();
-        guideOpener = target;
-      }
-      if (target.dataset.event === 'select_function') {
-        selectedFunction = target.dataset.value;
-        showControls();
-        // Choosing a function opens the controls again if they were collapsed.
-        const layout = document.getElementById('inspector_sidebar')?.closest('.bslib-sidebar-layout');
-        if (layout) window.bslib?.Sidebar?.getInstance(layout)?.toggle('open');
-      }
-      if (target.dataset.event === 'try_mood') {
-        const mood = document.getElementById('mood');
-        setMood(mood, target.dataset.value);
-        $(mood).trigger('change');
-        return;
-      }
-      window.Shiny.setInputValue(target.dataset.event, target.dataset.value ?? 'click', { priority: 'event' });
-      return;
-    }
-    const copy = event.target.closest('[data-copy]');
-    if (copy && navigator.clipboard) {
-      const source = document.getElementById(copy.dataset.copy);
-      navigator.clipboard.writeText(source ? source.innerText : '').then(
-        () => {
-          copy.textContent = 'Copied';
-          setTimeout(() => {
-            copy.textContent = 'Copy';
-          }, 1500);
-        },
-        () => {
-          copy.textContent = 'Copy failed';
-        },
-      );
-    }
-  });
-
-  // Paints each picker's round swatch with the colour the mascot uses now, read from its state.
   function paintSwatches() {
-    const el = document.getElementById('helper');
-    const state = el && window.mascot?.host?.state ? window.mascot.host.state(el) : null;
-    // Match the public role spelling from mascot_colour_roles(), including multiword keys.
+    const frame = liveWindow();
+    const el = frame?.document.getElementById('helper');
+    const state = el && frame.mascot?.host.state(el);
     const colours = Object.fromEntries(
       Object.entries(state?.colours || {}).map(([key, value]) => [
         key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(),

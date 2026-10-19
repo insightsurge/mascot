@@ -1923,6 +1923,11 @@ body:has(.pg-studio),
   .pg-topright > .pg-menu {
     min-width: 0;
   }
+  .pg-topright > .pg-menu > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   .pg-toolbar bslib-input-dark-mode {
     display: grid;
     place-items: center;

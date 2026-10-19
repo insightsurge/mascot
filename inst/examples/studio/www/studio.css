@@ -1337,9 +1337,11 @@ body:has(.pg-studio),
 }
 [data-studio-host] .mascot-status {
   border: 1px solid var(--studio-line);
-  border-radius: 999px;
+  /* A fixed radius keeps a one-line status a pill and a long, wrapped one a rounded box. */
+  border-radius: 16px;
   background: var(--studio-code);
-  padding: 3px 12px;
+  padding: 4px 14px;
+  overflow-wrap: anywhere;
 }
 .pg-call-dock .pg-actions .shiny-input-container {
   margin: 0;

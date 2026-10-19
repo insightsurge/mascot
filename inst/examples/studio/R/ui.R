@@ -1478,6 +1478,18 @@ palette_guide_demo <- function(character) {
   )
 }
 
+# The part of a help text (HTML) that starts at `from`, up to its closing paragraph; NULL when absent.
+studio_help_tail <- function(html, from) {
+  checkmate::assert_string(from, min.chars = 1)
+  text <- paste(as.character(html), collapse = "")
+  start <- regexpr(from, text, fixed = TRUE)
+  if (start < 0L) {
+    return(NULL)
+  }
+  tail <- substr(text, start, nchar(text))
+  gsub("\\s+", " ", sub("</p>\\s*$", "", tail))
+}
+
 # The founder's decision (#335): built-in characters keep one outline colour in both modes; an app that
 # wants a different dark-mode outline sets it. Both mascots below are forced into dark mode, so the
 # comparison reads on any page.
@@ -1493,6 +1505,8 @@ dark_outline_demo <- function(character) {
     "mascot_theme",
     dark = named_call("list", c(outline = studio_dark_outline_colour))
   )
+  # The words come from ?mascot_theme (its dark argument), so the two cannot drift apart.
+  tip <- studio_help_tail(help_arg("mascot_theme", "dark"), "Built-in characters keep one outline colour")
   default_theme <- mascot_theme(mode = "dark")
   custom_theme <- mascot_theme(dark = list(outline = studio_dark_outline_colour), mode = "dark")
   figure <- function(id, theme, caption) {
@@ -1505,9 +1519,7 @@ dark_outline_demo <- function(character) {
     id = "dark_outline_tip",
     class = "pg-dark-outline",
     tags$h3(class = "pg-section-title", "Tip: the outline in dark mode"),
-    tags$p(
-      "Built-in characters keep one outline colour in both modes. Every app's dark theme differs, and each character's light outer band keeps its silhouette readable on any dark page. An app that wants a different dark-mode outline sets it itself:"
-    ),
+    if (!is.null(tip)) tags$p(shiny::HTML(tip)),
     code_block(paste(deparse1(helper_call("mascot_theme")), deparse1(custom), sep = "\n")),
     div(
       class = "pg-dark-panel",
@@ -1527,8 +1539,14 @@ studio_palette_base <- function(character) {
   palettes <- mascot_palettes(character)$name
   palette <- palettes[[if (length(palettes) > 1L) 2L else 1L]]
   roles <- mascot_colour_roles(character, palette = palette)
-  colour <- if (tolower(roles$colour[[1L]]) == "#b93664") "#2563eb" else "#b93664"
-  list(palette = palette, role = roles$role[[1L]], base = roles$colour[[1L]], colour = colour)
+  # A role whose change is easy to see; the outline would contradict the table of the live mascot.
+  role <- intersect(c("body", "accessory"), roles$role)[1L]
+  if (is.na(role)) {
+    role <- roles$role[[1L]]
+  }
+  base <- roles$colour[[match(role, roles$role)]]
+  colour <- if (tolower(base) == "#b93664") "#2563eb" else "#b93664"
+  list(palette = palette, role = role, base = base, colour = colour)
 }
 
 palette_base_demo <- function(character) {
@@ -1545,6 +1563,13 @@ palette_base_demo <- function(character) {
     tags$p("The explicit light role wins over the palette. Other roles keep the palette or follow the changed leader."),
     code_block(deparse1(theme)),
     data_table(data.frame(role = example$role, palette = example$base, light = example$colour)),
-    mascot("palette_base_demo", character = character, theme = eval(theme), placement = "inline", motion = FALSE)
+    mascot(
+      "palette_base_demo",
+      character = character,
+      theme = eval(theme),
+      status = "Example, not the live mascot",
+      placement = "inline",
+      motion = FALSE
+    )
   )
 }

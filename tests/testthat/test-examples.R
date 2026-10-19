@@ -2467,7 +2467,12 @@ describe("studio palette follow-up (#353)", {
     for (id in builtin_characters()$id) {
       html <- as.character(get("dark_outline_demo", parts$env)(id))
       expect_match(html, 'id="dark_outline_tip"', fixed = TRUE)
-      expect_match(html, "Built-in characters keep one outline colour in both modes.", fixed = TRUE)
+      tip <- get("studio_help_tail", parts$env)(
+        get("help_arg", parts$env)("mascot_theme", "dark"),
+        "Built-in characters keep one outline colour"
+      )
+      expect_match(tip, "to use your own dark-mode outline", ignore.case = TRUE)
+      expect_match(html, tip, fixed = TRUE)
       expect_match(html, "mascot_theme(dark = list(outline = \"#FFC93C\"))", fixed = TRUE)
       expect_match(html, 'id="dark_outline_default"', fixed = TRUE)
       expect_match(html, 'id="dark_outline_custom"', fixed = TRUE)
@@ -2481,6 +2486,8 @@ describe("studio palette follow-up (#353)", {
       expect_match(roles, "Dark-mode outline tip", fixed = TRUE)
     }
     expect_error(get("dark_outline_demo", parts$env)(1), "character")
+    expect_null(get("studio_help_tail", parts$env)("No such text.", "Built-in"))
+    expect_error(get("studio_help_tail", parts$env)("text", 1), "string")
   })
   it("names native colours exactly and keeps the original API value and generated code", {
     parts <- studio_parts()

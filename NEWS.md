@@ -173,6 +173,8 @@
 
 * Palette ids reserve `minimal`, `pastel`, `vivid`, `corporate`, `earthy` and `night` for style aliases (#350).
 
+* A character file's name for its own colours (`native_palette`) cannot be one of these style aliases either (#390).
+
 * Shiny excludes private mascot state inputs from bookmarks even when the app
   later replaces its exclusions, including inside modules, and shows the
   development problem overlay when a buffered update fails at mount (#350).

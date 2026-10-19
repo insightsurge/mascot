@@ -88,8 +88,20 @@ studio_guide_pieces <- function(markdown) {
   if (found[[1]] > 0L) {
     blocks <- regmatches(markdown, list(found))[[1]]
     blocks <- sub("^<!--html_preserve-->", "", sub("<!--/html_preserve-->$", "", blocks))
-    tokens <- paste0("GUIDEBLOCK", seq_along(blocks), "X")
-    regmatches(markdown, list(found)) <- list(paste0("\n\n", tokens, "\n\n"))
+    # A tag in the middle of a line (an inline `r guide_fn_link()`) stays in its paragraph; one on its own
+    # becomes a block.
+    ends <- as.integer(found) + attr(found, "match.length") - 1L
+    inline <- vapply(
+      seq_along(blocks),
+      function(i) {
+        before <- substr(markdown, 1L, as.integer(found)[[i]] - 1L)
+        after <- substring(markdown, ends[[i]] + 1L)
+        nzchar(trimws(sub("^.*\n", "", before))) || nzchar(trimws(sub("\n.*$", "", after)))
+      },
+      logical(1)
+    )
+    tokens <- paste0(ifelse(inline, "GUIDEINLINE", "GUIDEBLOCK"), seq_along(blocks), "X")
+    regmatches(markdown, list(found)) <- list(ifelse(inline, tokens, paste0("\n\n", tokens, "\n\n")))
   }
   kind_of <- function(html) {
     if (grepl("^\\s*<div[^>]*class=\"pg-callout", html)) {
@@ -113,10 +125,11 @@ studio_guide_pieces <- function(markdown) {
     html <- gsub("<h3>", "<h3 class=\"pg-section-title\">", html, fixed = TRUE)
     html <- gsub("<table>", "<table class=\"table table-sm pg-table\">", html, fixed = TRUE)
     for (i in seq_along(blocks)) {
-      token <- paste0("<p>GUIDEBLOCK", i, "X</p>")
-      at <- regexpr(token, html, fixed = TRUE)
-      if (at > 0L) {
-        html <- paste0(substr(html, 1L, at - 1L), blocks[[i]], substring(html, at + attr(at, "match.length")))
+      for (token in c(paste0("<p>GUIDEBLOCK", i, "X</p>"), paste0("GUIDEINLINE", i, "X"))) {
+        at <- regexpr(token, html, fixed = TRUE)
+        if (at > 0L) {
+          html <- paste0(substr(html, 1L, at - 1L), blocks[[i]], substring(html, at + attr(at, "match.length")))
+        }
       }
     }
     pieces[[length(pieces) + 1L]] <<- structure(shiny::HTML(html), guide_kind = kind_of(html))

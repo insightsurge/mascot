@@ -1,0 +1,41 @@
+```{r setup-mascot_example, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### Copy an example into your project
+
+Find the names with `r guide_fn_link("mascot_examples")`, then locate an app
+without starting a server:
+
+```r
+basename(mascot::mascot_example("form-check", run = FALSE))
+```
+
+The call returns `app.R`. To adapt this single-file example, copy that file into
+your project:
+
+```r
+path <- mascot::mascot_example("form-check", run = FALSE)
+file.copy(path, "app.R", overwrite = FALSE)
+```
+
+Choose a destination without an existing `app.R`. For the multi-file playground,
+`golem` and rhino-shaped examples, copy the whole containing folder instead so
+that their supporting files stay together. The `golem` example needs golem;
+the single-file scenarios need Shiny, bslib and mascot.
+
+### Run one
+
+To explore all functions before adapting a single scenario, open the bundled
+playground from an interactive R console:
+
+```r
+mascot::mascot_example("studio")
+```
+
+Or run a copied example's directory with `shiny::runApp()`. The call waits until
+the app closes; locating the file with `run = FALSE` does not launch it.
+
+```{r mascot_example-host-mode, echo = FALSE, results = 'asis'}
+if (in_studio()) cat("In the studio, selecting this function opens the Examples host mode. Run the launch call you copy there in your R console; the host does not start another app.\n")
+```

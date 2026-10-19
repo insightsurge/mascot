@@ -1,0 +1,43 @@
+```{r setup-mascot_character, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### Choose a character for the job
+
+A character helper packages a choice for the `character` argument. Use an id from
+the listing below, either on its own or inside the helper. These two calls choose
+the same character:
+
+```{r mascot_character-calls, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'mascot::mascot("helper", character = "', studio_character, '")\n',
+  'mascot::mascot("helper", character = mascot::mascot_character("', studio_character, '"))'
+)))
+```
+
+### Shipped characters
+
+Use the `id` column when writing a call. The listing also identifies the family
+and whether a character is stable or experimental.
+
+```{r mascot_character-listing, echo = FALSE}
+if (in_studio()) {
+  shiny::uiOutput("characters_table")
+} else {
+  guide_table(mascot::mascot_characters())
+}
+```
+
+```{r mascot_character-family-note, echo = FALSE, results = 'asis'}
+if (in_studio()) cat("The studio table follows the Family filter in Controls for mascot_characters().\n")
+```
+
+### What comes with the character
+
+- Moods: `r guide_fn_link("mascot_moods")` lists the faces and their status text.
+- Gestures: `r guide_fn_link("mascot_gestures")` lists the movements you can request.
+- Anchors: `r guide_fn_link("mascot_anchors")` lists attachment points on the drawing.
+- Palettes: `r guide_fn_link("mascot_palettes")` lists the named colour choices.
+
+Check these listings for the character you choose before reusing code written
+for another character.

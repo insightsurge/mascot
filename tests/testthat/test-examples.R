@@ -38,6 +38,11 @@ describe("mascot_examples()", {
             "guide/mascot_action.Rmd",
             "guide/mascot_preview.Rmd",
             "guide/update_mascot.Rmd",
+            "guide/mascot_motion_settings.Rmd",
+            "guide/mascot_character.Rmd",
+            "guide/mascot_example.Rmd",
+            "guide/mascot_examples.Rmd",
+            "guide/mascot_studio.Rmd",
             "guide/mascot_status.Rmd",
             "guide/mascot_theme.Rmd",
             "www/studio.css",
@@ -863,6 +868,8 @@ describe("studio state and built previews", {
           character()
         )
         events <- regmatches(html, gregexpr('data-event="[^"]+"', html))[[1]]
+        # Links to another function's guide (data-event="select_function") only move the studio there.
+        events <- setdiff(events, 'data-event="select_function"')
         expect_setequal(events, paste0('data-event="', allowed_events, '"')[seq_along(allowed_events)])
         demo <- grepl('data-event="', buttons, fixed = TRUE)
         if (length(allowed_events)) {
@@ -1274,16 +1281,117 @@ describe("studio guide pages", {
       expect_match(selected, "Warnings, errors and common mistakes", fixed = TRUE)
     })
   }
+  new_pages <- list(
+    mascot_motion_settings = c(
+      "What each switch controls",
+      "Which setting wins",
+      "Three motion recipes",
+      "A calm dashboard"
+    ),
+    mascot_character = c("Choose a character for the job", "Shipped characters", "What comes with the character"),
+    mascot_example = c("Copy an example into your project", "Run one"),
+    mascot_examples = c("Pick an example by its task", "List the names"),
+    mascot_studio = c(
+      "Open a useful starting point",
+      "Two views, one app",
+      "Inspect without launching",
+      "What to look at first"
+    )
+  )
+  for (fn in names(new_pages)) {
+    it(paste("knits", fn, "with its worked guide and guards its live content"), {
+      env <- studio_guide_env()
+      html <- page_html(env$studio_guide_page(fn, "sela", guide_dir()))
+      standalone <- new.env(parent = globalenv())
+      standalone$guide_dir <- guide_dir()
+      sys.source(file.path(guide_dir(), "guide-helpers.R"), standalone)
+      standalone$studio_character <- "sela"
+      options <- knitr::opts_chunk$get()
+      withr::defer(knitr::opts_chunk$restore(options))
+      markdown <- knitr::knit(
+        file.path(guide_dir(), paste0(fn, ".Rmd")),
+        output = file.path(withr::local_tempdir(), "page.md"),
+        envir = standalone,
+        quiet = TRUE
+      )
+      outside <- page_html(env$studio_guide_pieces(paste(readLines(markdown), collapse = "\n")))
+      for (heading in new_pages[[fn]]) {
+        for (text in c(html, outside)) {
+          expect_match(text, paste0(">", heading, "</h3>"), fixed = TRUE)
+        }
+      }
+      expect_false(grepl("data-event|shiny-html-output|shiny-text-output|data-mascot", outside))
+      if (fn == "mascot_character") {
+        expect_match(html, 'id="characters_table"', fixed = TRUE)
+        for (id in mascot_characters()$id) {
+          expect_match(outside, paste0("<td>", id, "</td>"), fixed = TRUE)
+        }
+        expect_match(html, 'character = "sela"', fixed = TRUE)
+        other <- page_html(env$studio_guide_page(fn, "neer", guide_dir()))
+        expect_match(other, 'character = "neer"', fixed = TRUE)
+        expect_false(grepl('character = "sela"', other, fixed = TRUE))
+      } else {
+        # Only a link to another guide (data-event="select_function") may appear in the studio.
+        expect_false(grepl(
+          'data-event="(?!select_function")|shiny-html-output|shiny-text-output|data-mascot',
+          html,
+          perl = TRUE
+        ))
+      }
+      if (fn == "mascot_examples") {
+        for (column in mascot_examples()) {
+          for (value in column) {
+            expect_match(outside, value, fixed = TRUE)
+          }
+        }
+      }
+      if (fn %in% c("mascot_example", "mascot_examples")) {
+        expect_match(html, "Examples host mode", fixed = TRUE)
+        expect_false(grepl("Examples host mode", outside, fixed = TRUE))
+      }
+      if (fn == "mascot_motion_settings") {
+        for (switch in names(formals(mascot_motion_settings))[-1L]) {
+          expect_match(outside, paste0("<code>", switch, "</code>"), fixed = TRUE)
+        }
+        expect_match(outside, "pg-flow-step", fixed = TRUE)
+        expect_match(outside, "instant drag transitions", fixed = TRUE)
+        expect_match(html, "live motion switches in Controls", fixed = TRUE)
+        expect_false(grepl("live motion switches in Controls", outside, fixed = TRUE))
+        expect_s3_class(standalone$no_idle, "mascot_motion_settings")
+        expect_s3_class(standalone$gestures_only, "mascot_motion_settings")
+        expect_s3_class(standalone$still, "shiny.tag")
+      }
+      if (fn == "mascot_studio") {
+        # Here the studio is the subject, so the word belongs in standalone prose.
+        for (value in c("bslib", "knitr", "offline", "shiny.appobj", "Preview page")) {
+          expect_match(outside, value, fixed = TRUE)
+        }
+      } else {
+        # The required examples listing includes the app named studio. Exclude the
+        # package-generated table and code when checking our surrounding prose.
+        prose <- gsub("(?s)<table.*?</table>|<pre.*?</pre>|<code.*?</code>", "", outside, perl = TRUE)
+        expect_false(grepl("studio", env$html_text(prose), ignore.case = TRUE))
+      }
+      selected <- as.character(env$selected_guide(fn, "sela"))
+      expect_match(selected, paste0("Help page: ", fn, "()"), fixed = TRUE)
+      expect_match(selected, "Warnings, errors and common mistakes", fixed = TRUE)
+    })
+  }
   it("returns NULL for a function without a page, so only its help and mistakes are shown", {
     env <- studio_guide_env()
-    expect_null(env$studio_guide_page("mascot_motion_settings", "tessa", guide_dir()))
+    expect_null(env$studio_guide_page("not_a_mascot_function", "tessa", guide_dir()))
     expect_null(env$studio_guide_page("../mascot_theme", "tessa", guide_dir()))
     expect_null(env$studio_guide_page("mascot_theme", "tessa", withr::local_tempdir()))
     expect_error(env$studio_guide_page(1, "tessa"), "string")
     expect_error(env$studio_guide_page("mascot_theme", "", guide_dir()), "character")
     expect_error(env$studio_guide_page("mascot_theme", "tessa", 1), "string")
-    # The Guide of such a function still shows its help page and the live mistakes.
-    expect_match(as.character(env$selected_guide("mascot_motion_settings")), "pg-guide-help", fixed = TRUE)
+    # Simulate an absent page for a function with no fallback builder, retaining
+    # the original Help-and-mistakes behaviour as pages are added.
+    empty_dir <- withr::local_tempdir()
+    env$studio_guide_dir <- function() empty_dir
+    missing <- as.character(env$selected_guide("mascot_motion_settings"))
+    expect_match(missing, "pg-guide-help", fixed = TRUE)
+    expect_match(missing, "Warnings, errors and common mistakes", fixed = TRUE)
   })
   it("knits mascot_status into its table of status line and speech bubble", {
     env <- studio_guide_env()
@@ -1366,6 +1474,23 @@ describe("studio guide pages", {
     writeLines(sub("Status line or speech bubble?", "A new heading", text, fixed = TRUE), page)
     expect_match(page_html(env$studio_guide_page("mascot_status", "tessa", dir)), "A new heading", fixed = TRUE)
   })
+  it("links to another guide inside its paragraph: moving the studio there, or to the site page", {
+    env <- studio_guide_env()
+    html <- page_html(env$studio_guide_page("mascot_character", "tessa", guide_dir()))
+    for (fn in c("mascot_moods", "mascot_gestures", "mascot_anchors", "mascot_palettes")) {
+      expect_match(html, paste0('data-event="select_function" data-value="', fn, '"'), fixed = TRUE)
+      expect_match(
+        html,
+        paste0("<li>[A-Za-z]+: <a href=\"#\" data-event=\"select_function\" data-value=\"", fn),
+        perl = TRUE
+      )
+    }
+    expect_false(grepl("GUIDEINLINE|GUIDEBLOCK", html))
+    helpers <- new.env(parent = globalenv())
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), envir = helpers)
+    expect_match(as.character(helpers$guide_fn_link("mascot_moods")), 'href="guide-mascot_moods.html"', fixed = TRUE)
+    expect_error(helpers$guide_fn_link(1), "string")
+  })
   it("says so in the guide, and warns, when a page cannot be built", {
     env <- studio_guide_env()
     dir <- withr::local_tempdir()
@@ -1384,7 +1509,7 @@ describe("studio guide pages", {
   })
   it("does not repeat the description of the help page", {
     env <- studio_guide_env()
-    for (fn in c("mascot_status", "mascot_theme", batch_pages)) {
+    for (fn in c("mascot_status", "mascot_theme", batch_pages, names(new_pages))) {
       text <- env$html_text(page_html(env$studio_guide_page(fn, "tessa", guide_dir())))
       description <- env$html_text(env$help_page(fn)$description)
       sentences <- trimws(strsplit(description, "(?<=[.!?])\\s+", perl = TRUE)[[1]])

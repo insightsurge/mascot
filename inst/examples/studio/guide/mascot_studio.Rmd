@@ -1,0 +1,57 @@
+```{r setup-mascot_studio, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+### Open a useful starting point
+
+Launch the studio from an interactive R console:
+
+```r
+mascot::mascot_studio()
+mascot::mascot_studio(fn = "mascot_theme")
+```
+
+Use `fn` without parentheses to start on a particular function's Guide.
+Leaving it at `NULL` opens `mascot_mood`. Choose a character with `character`:
+
+```{r mascot_studio-character-call, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'mascot::mascot_studio(character = "', studio_character, '")'
+)))
+```
+
+### Two views, one app
+
+| `view` | Starting point |
+|--------|----------------|
+| `"studio"` | The function playground, with a live mascot and controls. |
+| `"examples"` | The bundled example gallery, with source code and launch calls. |
+
+```r
+mascot::mascot_studio(view = "examples")
+```
+
+Both views share the same shell. The view selects the initial host mode;
+`fn` chooses the Guide function in the playground. The host also offers a
+Preview page mode for comparing rendered mascots.
+
+### Inspect without launching
+
+```r
+app <- mascot::mascot_studio(fn = "mascot_theme", run = FALSE)
+inherits(app, "shiny.appobj")
+```
+
+This returns `TRUE`: `run = FALSE` gives you an app object rather than opening
+a server. By contrast, `mascot_example(..., run = FALSE)` gives a file path.
+
+### What to look at first
+
+Start with a mood change and its status text. Then compare a palette in light
+and dark modes, and try the motion switches. Use the Guide for worked explanations,
+Help for the function reference, and the generated code when adapting a choice
+to your own app.
+
+The studio works offline with mascot, Shiny and the optional packages bslib and
+knitr available locally. Its interface is experimental, so revisit the generated
+code when upgrading.

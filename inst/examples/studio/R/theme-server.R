@@ -407,7 +407,8 @@ theme_view_server <- function(input, output, session) {
     character = character(),
     theme = theme(),
     css = css_values(),
-    roles = if (source() == "mascot") names(colours$css()) else base::character()
+    roles = if (source() == "mascot") names(colours$css()) else base::character(),
+    chosen = source() == "bslib" || length(c(colours$light(), colours$dark())) > 0L
   ))
   checked <- shiny::eventReactive(input$check_contrast, contrast_settings())
   output$check_contrast_ui <- shiny::renderUI({
@@ -415,7 +416,11 @@ theme_view_server <- function(input, output, session) {
     if (!identical(settings, contrast_settings())) {
       return(contrast_stale_ui())
     }
-    contrast_result_ui(contrast_check(settings$character, theme_value(settings$theme)), settings$roles)
+    contrast_result_ui(
+      contrast_check(settings$character, theme_value(settings$theme)),
+      settings$roles,
+      settings$chosen
+    )
   })
 
   # The four scenarios, run as real calls on the Check tab's own mascot.

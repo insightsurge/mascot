@@ -444,7 +444,7 @@ describe("the Check tab", {
       session$setInputs(`colours-light_rim` = "#123456")
       expect_match(output$check_contrast_ui$html, "The settings changed since the last check.", fixed = TRUE)
       session$setInputs(check_contrast = 2)
-      expect_match(output$check_contrast_ui$html, "Every colour you chose", fixed = TRUE)
+      expect_match(output$check_contrast_ui$html, "Every colour you chose in R", fixed = TRUE)
     })
   })
   it("builds the every-mood page into the session's own folder when asked", {

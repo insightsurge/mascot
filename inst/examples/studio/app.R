@@ -1000,7 +1000,9 @@ studio_server <- function(input, output, session) {
     # The check and its result are shared with the theme view (R/shared-check.R).
     contrast_result_ui(
       contrast_check(checked$character, eval(checked$theme$short)),
-      if (input$theme_source == "mascot") names(colours$css()) else character()
+      if (input$theme_source == "mascot") names(colours$css()) else character(),
+      chosen = input$theme_source == "bslib" ||
+        (input$theme_source == "mascot" && length(c(colours$light(), colours$dark())) > 0L)
     )
   })
 

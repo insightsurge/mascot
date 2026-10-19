@@ -33,11 +33,13 @@ contrast_check <- function(character, theme = NULL) {
 }
 
 # A contrast_check() result as a note and, when colours are hard to see, a table. css names the roles that read a CSS
-# variable (NULL or empty for none): only the browser knows their value, so they are not checked here.
-contrast_result_ui <- function(result, css = character()) {
+# variable (NULL or empty for none): only the browser knows their value, so they are not checked here. chosen says
+# whether any colour was chosen in R (light, dark or a bs_theme()); palette colours are never checked.
+contrast_result_ui <- function(result, css = character(), chosen = TRUE) {
   checkmate::assert_list(result)
   checkmate::assert_names(names(result), must.include = c("error", "findings"))
   checkmate::assert_character(css, any.missing = FALSE, null.ok = TRUE)
+  checkmate::assert_flag(chosen)
   if (!is.null(result$error)) {
     return(shiny::div(class = "pg-note pg-warn", "The check failed: ", result$error))
   }
@@ -52,10 +54,17 @@ contrast_result_ui <- function(result, css = character()) {
   findings <- result$findings
   if (!nrow(findings)) {
     return(shiny::tagList(
-      shiny::div(
-        class = "pg-note pg-ok",
-        "Every colour you chose has at least 3:1 contrast against the page, in light and dark mode."
-      ),
+      if (chosen) {
+        shiny::div(
+          class = "pg-note pg-ok",
+          "Every colour you chose in R has at least 3:1 contrast against the page, in light and dark mode."
+        )
+      } else {
+        shiny::div(
+          class = "pg-note",
+          "No colour of your own was chosen in R, so nothing was checked here. Palette colours are not checked."
+        )
+      },
       css_note
     ))
   }

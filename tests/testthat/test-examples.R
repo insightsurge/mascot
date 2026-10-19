@@ -828,7 +828,8 @@ describe("studio state and built previews", {
       session$setInputs(bubble_text = "<b>Saved</b>", bubble_html = TRUE, bubble_show = 1)
       expect_true(messages$bubble_html$value)
       session$setInputs(contrast_check = 1)
-      expect_match(output$contrast$html, "Every colour you chose")
+      # No colour of the studio's own is chosen yet, so nothing is checked in R.
+      expect_match(output$contrast$html, "No colour of your own was chosen in R")
       session$setInputs(theme_source = "mascot", theme_mode = "dark")
       expect_match(output$contrast$html, "The settings changed since the last check")
       session$setInputs(theme_source = "own", theme_mode = "auto")

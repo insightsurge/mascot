@@ -405,9 +405,15 @@ describe("contrast_check() and contrast_result_ui()", {
     pass <- env$contrast_check("tessa", NULL)
     expect_match(
       as.character(env$contrast_result_ui(pass, NULL)),
-      "Every colour you chose has at least 3:1 contrast against the page, in light and dark mode.",
+      "Every colour you chose in R has at least 3:1 contrast against the page, in light and dark mode.",
       fixed = TRUE
     )
+    # With only CSS colours (or none of your own), nothing was checked in R, and the note says so.
+    only_css <- as.character(env$contrast_result_ui(pass, "body", chosen = FALSE))
+    expect_match(only_css, "No colour of your own was chosen in R, so nothing was checked here.", fixed = TRUE)
+    expect_false(grepl("at least 3:1", only_css, fixed = TRUE))
+    expect_match(only_css, "are not checked here", fixed = TRUE)
+    expect_error(env$contrast_result_ui(pass, chosen = NA), "chosen")
     expect_match(as.character(env$contrast_result_ui(pass, "body")), "\\(\\s*body\\s*\\) are not checked here")
     failed <- env$contrast_check("knurl", "coral_navy")
     expect_match(failed$error, 'Unknown palette "coral_navy"', fixed = TRUE)

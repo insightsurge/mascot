@@ -10,6 +10,7 @@
       // The public R listing supplies labels; the engine supplies transformed coordinates.
       const layer = document.createElement('div');
       layer.className = 'pg-anchor-overlay';
+      // Only each label's rect is a keyboard stop. Never focus the viewport-sized layer.
       layer.hidden = true;
       layer.setAttribute('aria-label', 'Character anchors');
       document.body.append(layer);
@@ -302,6 +303,14 @@
   const surfaces = [];
   const openers = new Map();
   const phone = () => window.matchMedia('(max-width: 860px)').matches;
+  const viewportBounds = () => {
+    const viewport = window.visualViewport;
+    const left = viewport?.offsetLeft || 0;
+    const top = viewport?.offsetTop || 0;
+    const width = viewport?.width || innerWidth;
+    const height = viewport?.height || innerHeight;
+    return { left, top, width, height, right: left + width, bottom: top + height };
+  };
   const visible = (element) => element && element.getClientRects().length > 0;
   const focusables = (surface) =>
     [...surface.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')].filter(
@@ -606,16 +615,17 @@
         widget.$dropdown.appendTo(document.body).addClass('pg-chip-dropdown');
         widget.positionDropdown = () => {
           const rect = widget.$control[0].getBoundingClientRect();
-          const below = Math.max(0, innerHeight - rect.bottom - 8);
-          const above = Math.max(0, rect.top - 8);
+          const bounds = viewportBounds();
+          const below = Math.max(0, bounds.bottom - rect.bottom - 8);
+          const above = Math.max(0, rect.top - bounds.top - 8);
           const up = below < Math.min(200, widget.$dropdown_content[0].scrollHeight) && above > below;
           widget.$dropdown_content.css('max-height', `${Math.min(200, up ? above : below)}px`);
           const height = widget.$dropdown.outerHeight();
           widget.$dropdown.css({
             position: 'fixed',
-            left: `${rect.left}px`,
-            width: `${rect.width}px`,
-            top: `${up ? Math.max(8, rect.top - height) : rect.bottom}px`,
+            left: `${Math.max(bounds.left + 8, Math.min(rect.left, bounds.right - rect.width - 8))}px`,
+            width: `${Math.min(rect.width, bounds.width - 16)}px`,
+            top: `${Math.max(bounds.top + 8, Math.min(up ? rect.top - height : rect.bottom, bounds.bottom - height - 8))}px`,
           });
           widget.$dropdown.attr('data-direction', up ? 'up' : 'down');
         };
@@ -638,11 +648,7 @@
     if (pop.hidden) return;
     const rect = document.querySelector(`[data-call-arg="${chipArgument}"]`)?.getBoundingClientRect();
     if (!rect) return;
-    const viewport = window.visualViewport;
-    const left = viewport?.offsetLeft || 0;
-    const top = viewport?.offsetTop || 0;
-    const right = left + (viewport?.width || innerWidth);
-    const bottom = top + (viewport?.height || innerHeight);
+    const { left, top, right, bottom } = viewportBounds();
     pop.style.maxHeight = `${bottom - top - 16}px`;
     pop.style.maxWidth = `${right - left - 16}px`;
     const width = pop.offsetWidth;
@@ -1016,10 +1022,18 @@
     const tooltip = word?.querySelector('.pg-word-tooltip');
     if (!tooltip) return;
     const rect = word.getBoundingClientRect();
-    tooltip.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - tooltip.offsetWidth - 8))}px`;
-    tooltip.style.top = `${Math.max(8, Math.min(rect.bottom + 8, innerHeight - tooltip.offsetHeight - 8))}px`;
+    const { left, top, right, bottom } = viewportBounds();
+    tooltip.style.left = `${Math.max(left + 8, Math.min(rect.left, right - tooltip.offsetWidth - 8))}px`;
+    tooltip.style.top = `${Math.max(top + 8, Math.min(rect.bottom + 8, bottom - tooltip.offsetHeight - 8))}px`;
   }
   document.addEventListener('pointerover', (event) => positionWordTooltip(event.target.closest('.pg-sentence-word')));
+  document.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse') return;
+    const word = event.target.closest('.pg-sentence-word');
+    for (const item of document.querySelectorAll('.pg-sentence-word'))
+      item.classList.toggle('is-touch-help', item === word);
+    positionWordTooltip(word);
+  });
   document.addEventListener('focusin', (event) => {
     positionWordTooltip(event.target.closest('.pg-sentence-word'));
     if (event.target.id === 'open_search' && !suppressSearchFocus && byId('studio_search').hidden) searchOpen();
@@ -1027,13 +1041,35 @@
   document.addEventListener('focusout', (event) => {
     event.target.closest?.('.pg-topbar-highlight')?.classList.remove('pg-topbar-highlight');
   });
-  window.visualViewport?.addEventListener('resize', positionChip);
-  window.visualViewport?.addEventListener('scroll', positionChip);
-  window.addEventListener('resize', () => {
+  function positionSurfaces() {
+    const bounds = viewportBounds();
+    for (const name of ['left', 'top', 'width', 'height'])
+      document.documentElement.style.setProperty(`--studio-viewport-${name}`, `${bounds[name]}px`);
+    const menu = byId('studio_menu');
+    if (menu?.open) {
+      const body = menu.querySelector('.pg-menu-body');
+      const rect = menu.querySelector('summary').getBoundingClientRect();
+      body.style.left = `${Math.max(bounds.left + 8, Math.min(rect.right - body.offsetWidth, bounds.right - body.offsetWidth - 8))}px`;
+      body.style.top = `${Math.max(bounds.top + 8, Math.min(rect.bottom + 4, bounds.bottom - body.offsetHeight - 8))}px`;
+    }
     positionDropdowns();
     positionChip();
+    for (const word of document.querySelectorAll('.pg-sentence-word')) positionWordTooltip(word);
     syncModal();
-  });
+  }
+  window.visualViewport?.addEventListener('resize', positionSurfaces);
+  window.visualViewport?.addEventListener('scroll', positionSurfaces);
+  window.addEventListener('resize', positionSurfaces);
+  document.addEventListener(
+    'scroll',
+    (event) => {
+      if (event.target !== byId('studio_centre') && event.target !== document) return;
+      const menu = byId('studio_menu');
+      if (menu?.open) menu.open = false;
+      for (const word of document.querySelectorAll('.is-touch-help')) word.classList.remove('is-touch-help');
+    },
+    true,
+  );
 
   // Mark changed controls without replacing, cloning or rebinding their mounted inputs.
   const initialValues = new WeakMap();
@@ -1128,7 +1164,8 @@
       measure.style.position = 'absolute';
       measure.style.visibility = 'hidden';
       document.body.append(measure);
-      const width = `${Math.ceil(measure.getBoundingClientRect().width) + 8}px`;
+      // Native sentence selects have no arrow and only 2px padding on either side.
+      const width = `${Math.ceil(measure.getBoundingClientRect().width) + 4}px`;
       measure.remove();
       if (select.style.width !== width) select.style.width = width;
     }
@@ -1165,11 +1202,12 @@
       }
     });
     new ResizeObserver(positionChip).observe(byId('chip_editor'));
+    byId('studio_menu').addEventListener('toggle', positionSurfaces);
     rememberControls();
     sizeSentenceWords();
     new MutationObserver(sizeSentenceWords).observe(byId('studio_character_bar'), { childList: true, subtree: true });
     new MutationObserver(rememberControls).observe(byId('studio_shell'), { childList: true, subtree: true });
-    syncModal();
+    positionSurfaces();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialise);
   else initialise();

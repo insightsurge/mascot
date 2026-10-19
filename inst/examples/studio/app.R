@@ -247,15 +247,18 @@ studio_page <- function(character, fn, view = "studio") {
         tags$button(type = "button", `data-chip-style` = "short", "Plain value"),
         tags$button(type = "button", `data-chip-style` = "helper", "Helper")
       ),
-      div(id = "chip_editor_body"),
       div(
-        class = "pg-chip-context",
-        tags$div(id = "chip_hint"),
-        "Default: ",
-        tags$code(id = "chip_default"),
-        tags$div("Current: ", tags$code(id = "chip_current")),
-        tags$span(id = "chip_changed", " Changed"),
-        tags$button(type = "button", id = "chip_reset", class = "btn btn-link btn-sm", "Reset")
+        id = "chip_editor_scroll",
+        div(id = "chip_editor_body"),
+        div(
+          class = "pg-chip-context",
+          tags$div(id = "chip_hint"),
+          "Default: ",
+          tags$code(id = "chip_default"),
+          tags$div("Current: ", tags$code(id = "chip_current")),
+          tags$span(id = "chip_changed", " Changed"),
+          tags$button(type = "button", id = "chip_reset", class = "btn btn-link btn-sm", "Reset")
+        )
       ),
       div(
         class = "pg-chip-footer",

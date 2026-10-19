@@ -118,7 +118,7 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
           selected = "",
           selectize = FALSE
         ),
-        tags$span(class = "pg-sentence-stop", "."),
+        tags$span(class = "pg-sentence-stop", ".", .noWS = "outside"),
         studio_button("gesture_play", "Play it again", "Replay the selected gesture, or wave when none is selected")
       )
     ),

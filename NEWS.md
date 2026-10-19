@@ -4,6 +4,8 @@
 
 * The studio wraps its configuration and top controls on phones, keeps floating editors inside the viewport, and limits anchor focus rings to keyboard-focused labels (#353).
 
+* The studio keeps Palette in its phone sentence, shows every `mascot()` parameter and its unset default, and reserves room for anchor labels. Touch help and scrollable editors follow the visible viewport when the keyboard opens (#353).
+
 ## Breaking changes
 
 * `mascot_character(id = "tessa")` names its argument `id`, as every other function that addresses a character does; `name =` is no longer accepted and has no alias. Pass the id positionally or as `id =` (#296).

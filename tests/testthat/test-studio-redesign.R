@@ -235,7 +235,15 @@ describe("studio overlays and live controls", {
     withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     browser <- app$get_chromote_session()
-    for (size in list(c(1280L, 720L), c(1366L, 768L), c(390L, 844L))) {
+    for (size in list(
+      c(1280L, 720L),
+      c(1366L, 768L),
+      c(375L, 667L),
+      c(390L, 844L),
+      c(430L, 932L),
+      c(768L, 1024L),
+      c(1024L, 768L)
+    )) {
       browser$Emulation$setDeviceMetricsOverride(
         width = size[1],
         height = size[2],
@@ -249,7 +257,7 @@ describe("studio overlays and live controls", {
       expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
       expect_identical(
         app$get_js("document.getElementById('inspector_sidebar').getAttribute('aria-modal')"),
-        if (size[1] == 390) "true" else NULL
+        if (size[1] <= 860) "true" else NULL
       )
       app$click(selector = "#close_inspector")
       app$click(selector = '[data-call-arg=size]')
@@ -1025,6 +1033,23 @@ describe("studio review follow-ups", {
     )
     expect_true(all(diff(positions) > 0))
     expect_match(html, 'title="status = NULL"', fixed = TRUE)
+    # Unset values display the exported defaults, in either style, including NULL.
+    initial <- get("start", parts$env)
+    defaults <- get("defaults", parts$env)
+    for (style in c("short", "helper")) {
+      unset <- lapply(defaults, get("code_pair", parts$env))
+      defaults_html <- as.character(get("call_chips", parts$env)(unset, style))
+      for (arg in names(defaults)) {
+        expected <- paste(arg, "=", deparse1(formals(mascot)[[arg]]))
+        expect_match(
+          defaults_html,
+          paste0('title="', htmltools::htmlEscape(expected, attribute = TRUE), '"'),
+          fixed = TRUE
+        )
+      }
+      initial$status <- NULL
+      expect_match(as.character(get("call_chips", parts$env)(initial, style)), 'title="status = NULL"', fixed = TRUE)
+    }
     expect_match(html, 'title="demo only, not an argument of mascot()"', fixed = TRUE)
     expect_match(html, '</button>\\s*<span>\\)</span>\\s*$', perl = TRUE)
     gesture <- get("gesture_chip", parts$env)
@@ -1422,6 +1447,12 @@ describe("studio inline help and movable anchors", {
       ";const layer=w.document.querySelector('.pg-anchor-overlay');",
       "return !layer.hasAttribute('tabindex') && !layer.querySelector('svg').hasAttribute('tabindex') && !testPin.hasAttribute('tabindex') && testBox.tabIndex===0 && w.getComputedStyle(testPin).outlineStyle==='none' && !testBox.matches(':focus-visible');})()"
     )))
+    expect_identical(
+      app$get_js(
+        "getComputedStyle(document.getElementById('live_frame')).outlineStyle"
+      ),
+      "none"
+    )
     app$wait_for_js(
       "Math.abs(+testBox.getAttribute('x')-testOrigin.x-18)<0.5 && Math.abs(+testBox.getAttribute('y')-testOrigin.y-12)<0.5"
     )
@@ -1499,17 +1530,32 @@ describe("studio phone layout", {
     app$wait_for_js("document.querySelectorAll('#live_call [data-call-arg]').length > 1")
     expect_true(app$get_js("document.documentElement.scrollWidth <= innerWidth"))
     expect_true(app$get_js(paste0(
-      "(() => {const boxes=['.pg-sentence','#open_search','#open_inspector'].map(s=>document.querySelector(s).getBoundingClientRect());",
+      "(() => {const boxes=['.pg-sentence','.pg-search-field','#open_inspector'].map(s=>document.querySelector(s).getBoundingClientRect());",
       "const overlap=(a,b)=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;",
       "return boxes.every((a,i)=>a.width>0 && a.height>0 && boxes.slice(i+1).every(b=>!overlap(a,b)));})()"
     )))
     expect_true(app$get_js(
       "(() => {const c=document.getElementById('live_call');return c.scrollWidth<=c.clientWidth && getComputedStyle(c).flexWrap==='wrap';})()"
     ))
+    expect_identical(
+      app$get_js(
+        "[...document.querySelectorAll('.pg-sentence select')].map(s=>s.id).join('|')"
+      ),
+      "character|palette|mood|gesture"
+    )
+    # The menu must stay on screen even when its tools row is near the right edge.
+    app$click(selector = '#studio_menu summary')
+    app$wait_for_js(
+      "(() => {const r=document.querySelector('.pg-menu-body').getBoundingClientRect();return r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight;})()"
+    )
+    app$run_js("document.getElementById('studio_menu').open=false")
     app$click(selector = '[data-call-arg=size]')
     app$wait_for_js("!document.getElementById('chip_editor').hidden")
     expect_true(app$get_js(
       "(() => {const r=document.getElementById('chip_editor').getBoundingClientRect();return r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight;})()"
+    ))
+    expect_true(app$get_js(
+      "(() => {const c=document.getElementById('chip_editor_scroll');return getComputedStyle(c).overflowY==='auto' && [...document.querySelectorAll('#chip_editor button')].filter(b=>b.getClientRects().length).every(b=>b.getBoundingClientRect().height>=40);})()"
     ))
   })
 })

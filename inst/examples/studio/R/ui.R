@@ -1026,7 +1026,8 @@ call_chips <- function(state, style, gesture = NULL) {
     tags$strong(class = "pg-call-name", "mascot("),
     lapply(args, function(arg) {
       if (arg == "...") {
-        return(tagList(
+        return(tags$span(
+          class = "pg-call-entry",
           tags$code(class = "pg-call-dots", title = "Additional unnamed arguments are not accepted", "..."),
           tags$span(class = "pg-call-comma", ",")
         ))
@@ -1040,19 +1041,21 @@ call_chips <- function(state, style, gesture = NULL) {
         }
       }
       chosen <- if (length(style) == 1L) style else style[[arg]] %||% style[[".default"]]
+      changed <- !is.null(state[[arg]]) && !identical(state[[arg]]$short, defaults[[arg]])
       value <- if (arg == "id") {
         '"helper"'
-      } else if (chosen == "short" && identical(state[[arg]]$short, defaults[[arg]])) {
+      } else if (!changed) {
         format_expr(signature[[arg]])
       } else {
         format_expr(state[[arg]][[chosen]])
       }
-      tagList(
+      tags$span(
+        class = "pg-call-entry",
         tags$button(
           type = "button",
           class = "pg-call-chip",
           `data-call-arg` = arg,
-          `data-call-changed` = if (arg != "id") tolower(as.character(!identical(state[[arg]]$short, defaults[[arg]]))),
+          `data-call-changed` = if (arg != "id") tolower(as.character(changed)),
           `data-call-function` = route$fn,
           `data-call-input` = route$input,
           `data-call-style` = chosen,

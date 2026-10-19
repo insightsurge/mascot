@@ -180,7 +180,8 @@ playground_controls <- list(
     ... = fixed_arg("Must be empty: the controls name every optional argument."),
     direction = input_id("menu_direction"),
     label = input_id("menu_label"),
-    tooltip = input_id("menu_tooltip")
+    tooltip = input_id("menu_tooltip"),
+    disabled = input_id("menu_disabled")
   ),
   mascot = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),

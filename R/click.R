@@ -51,7 +51,7 @@
 #' mascot_action("Open help")
 #' mascot_action("Open help", tooltip = FALSE)
 #' mascot_action()
-#' mascot("helper", click = "Open help")
+#' ui <- mascot("helper", click = "Open help")
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   shiny::fluidPage(mascot("helper", click = "Open help")),
@@ -146,7 +146,8 @@ click_wire <- function(value) {
       items = as.list(value$items),
       direction = value$direction,
       label = value$label,
-      tooltip = value$tooltip
+      tooltip = value$tooltip,
+      disabled = value$disabled
     ))
   }
   if (is.null(value$label)) {

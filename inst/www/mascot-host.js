@@ -40,12 +40,12 @@
  * Motion changes update the live controller; swaps reapply retained settings alongside the theme.
  * CSS suppresses bubble and restore-control movement too. No per-element global listeners are added by this host.
  * Click patches are { type: 'none' } | { type: 'action', label, tooltip, disabled } |
- * { type: 'menu', items: {id: label}, direction, label: string|null, tooltip: boolean }; a new click replaces the old one whole.
+ * { type: 'menu', items: {id: label}, direction, label: string|null, tooltip: boolean, disabled: boolean }; a new click replaces the old one whole.
  * Clicks are Shiny-only. Without one the canvas is an image and no keyboard stop. With one, a native button wraps
  * the canvas (hidden from assistive technology inside it), named by the action's label or the menu's label (else
  * "<character>, menu"); mood changes never rename it. Every activation of an action button (pointer, Enter, Space or an
  * assistive technology's click; a held key counts once) sets the namespaced id + '_click' to a count since mounting,
- * with priority 'event'; the count survives click changes. A disabled action (aria-disabled) sends nothing.
+ * with priority 'event'; the count survives click changes. A disabled action or menu (aria-disabled) sends and opens nothing.
  * Drags, outside clicks, Escape, minimise/restore and server updates never count.
  * Menu choices set id + '_menu' with priority 'event'. Labels always use textContent. Opening and closing never set
  * id + '_click'; navigation stays within the focused menu. No global keyboard listeners for menus.
@@ -1599,7 +1599,7 @@
     const fields = {
       none: ['type'],
       action: ['type', 'label', 'tooltip', 'disabled'],
-      menu: ['type', 'items', 'direction', 'label', 'tooltip'],
+      menu: ['type', 'items', 'direction', 'label', 'tooltip', 'disabled'],
     };
     const keys = fields[value.type];
     if (!keys) throw new Error('click type must be none, action or menu');
@@ -1616,12 +1616,14 @@
       throw new Error('click menu direction must be auto, top, bottom, left or right');
     if (value.label !== null && !label(value.label)) throw new Error('click menu label must be non-empty text or null');
     if (typeof value.tooltip !== 'boolean') throw new Error('click menu tooltip must be a boolean');
+    if (typeof value.disabled !== 'boolean') throw new Error('click menu disabled must be a boolean');
     return {
       type: 'menu',
       items: validateMenuItems(value.items),
       direction: value.direction,
       label: value.label,
       tooltip: value.tooltip,
+      disabled: value.disabled,
     };
   }
 
@@ -1661,7 +1663,7 @@
   }
 
   function openMenu(record, keyboard) {
-    if (record.minimised || !record.menuEl) return;
+    if (record.click.disabled || record.minimised || !record.menuEl) return;
     for (const other of [...openMenus]) if (other !== record) closeMenu(other);
     clearBubble(record);
     hideTooltip(record);
@@ -1826,7 +1828,7 @@
           return;
         }
         const item = menu && event.target.closest('[role="menuitem"]');
-        if (!item || !menu.contains(item)) return;
+        if (record.click.disabled || !item || !menu.contains(item)) return;
         const id = item.dataset.itemId;
         closeMenu(record, true);
         window.Shiny.setInputValue(`${record.el.id}_menu`, id, { priority: 'event' });

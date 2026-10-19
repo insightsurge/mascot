@@ -2012,6 +2012,13 @@ describe("studio safeguards (#248)", {
         wait = 700,
         sent = function(p) isFALSE(p$click$tooltip)
       ),
+      menu_disabled = row(
+        list(list(menu_on = TRUE, menu_items = "help = Help", menu_disabled = TRUE)),
+        "click",
+        "disabled = TRUE",
+        wait = 700,
+        sent = function(p) isTRUE(p$click$disabled)
+      ),
       action_on = row(
         list(list(action_on = TRUE)),
         "click",
@@ -2240,6 +2247,7 @@ describe("studio safeguards (#248)", {
       menu_direction = defaults_of("mascot_popup_menu")$direction,
       menu_label = "", # label = NULL names the menu after the character
       menu_tooltip = TRUE,
+      menu_disabled = defaults_of("mascot_popup_menu")$disabled,
       action_on = FALSE, # one click at a time: the menu above
       action_tooltip = action$tooltip,
       action_disabled = action$disabled,
@@ -2652,6 +2660,20 @@ describe("studio palette controls", {
       expect_identical(session$userData$mascot_updates[[session$ns("helper")]]$revision, previous)
       session$setInputs(gesture_play = 1)
       expect_identical(session$userData$mascot_updates[[session$ns("helper")]]$pending$name, "wave")
+    })
+  })
+})
+
+describe("studio disabled menus (#350)", {
+  it("sends a disabled menu and shows its reproducible helper call", {
+    parts <- studio_parts()
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, studio_start_values(parts$page))
+      studio_go_live(session)
+      session$setInputs(menu_on = TRUE, menu_items = "help = Help", menu_disabled = TRUE)
+      session$elapse(700)
+      expect_true(eval(click_code()$helper)$disabled)
+      expect_match(output$code_app, "disabled = TRUE", fixed = TRUE)
     })
   })
 })

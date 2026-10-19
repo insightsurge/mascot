@@ -91,7 +91,7 @@ mascot_placement()
 mascot_placement("top-left")
 mascot_placement("bottom-right", minimise = TRUE)
 mascot_placement("bottom-right", drag = "snap")
-mascot("helper", placement = list(position = "top-left", drag = "free"))
+ui <- mascot("helper", placement = list(position = "top-left", drag = "free"))
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   shiny::fluidPage(

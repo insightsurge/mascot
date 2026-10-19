@@ -435,7 +435,7 @@ shiny::observeEvent(input$helper_click, {
 
 `mascot_action("Open help", tooltip = FALSE)` hides the tooltip, and
 `disabled = TRUE` keeps the button but sends nothing, for example during a long
-task. For several actions, the app supplies menu labels and handles the choice;
+task; `mascot_popup_menu(..., disabled = TRUE)` likewise opens nothing. For several actions, the app supplies menu labels and handles the choice;
 the mascot opens the menu. Enter and Space open or close the focused toggle.
 Arrow keys, Home, End and Escape navigate the open menu.
 

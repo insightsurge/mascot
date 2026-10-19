@@ -29,7 +29,7 @@ same colours.
 \examples{
 mascot_palettes()
 mascot_palettes("tessa")
-mascot("helper", character = "tessa", theme = "coral_navy")
+ui <- mascot("helper", character = "tessa", theme = "coral_navy")
 }
 \seealso{
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}}, \code{\link[=mascot_theme]{mascot_theme()}}

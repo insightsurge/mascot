@@ -21,6 +21,7 @@
 * Tessa has a new look: a slimmer teal hexagon with a silver ring that shimmers now and then, hair with a side fringe, a small bow, small studs, arms that hang down and a chest badge whose icon shows her mood. She keeps her five moods, her wave and nod, her status lines and every anchor name, and gains anchors for her fringe, lock and studs. Her colours gain roles for the hair (`hair`, `hair_shade`, `hair_light`), the badge (`badge`, `badge_icon`), the iris, the body shade and the ring's light and dark ends, and the bow now has its own `accessory` colour instead of following the rim. Her old palettes `nordic`, `coral` and `azure` are replaced (#359).
 * Tessa's own colours are named `night_teal`, with `"original"` still selecting them; `mascot_palettes("tessa")` lists `night_teal` first, and her other palettes are `sea_green`, `forest`, `spring`, `peach`, `coral_navy`, `desert_coral`, `rose_soft`, `lilac_soft` and `mist_navy`. A character file may name its own colours with `native_palette`, and a palette may carry a `group` for sorting in documentation (#358, #359).
 * An unknown palette in `mascot()` (an error) or `update_mascot()` (a warning) now names the other characters that have a palette of that name (#358).
+* `mascot_popup_menu()` gains `disabled = FALSE`. With `TRUE`, the button stays reachable by keyboard and screen readers announce it as unavailable; it opens nothing and sends no input (#350).
 * `mascot()`, `update_mascot()` and `mascot_preview()` accept palette id strings
   through `theme`; `mascot_theme()` gains `palette`, with role and CSS overrides
   applied on top. Character swaps keep shared palette ids or warn and restore
@@ -127,6 +128,12 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* Exported examples assign mascot tags instead of printing the embedded character data (#350).
+
+* `mascot_motion_settings()` reports invalid `messages` panel names with class `mascot_error_choice` (#350).
+
+* `update_mascot()` help lists every helper reset and explains that each supplied setting replaces the whole group. Module warnings consistently name the local mascot id (#350).
 
 * Checked character data gains a compact `format()` method; `print()` assertion failures carry `mascot_error` (#350).
 

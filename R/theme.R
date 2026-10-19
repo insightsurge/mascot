@@ -88,9 +88,9 @@
 #' mascot_theme(palette = "coral_navy", light = list(rim = "#b93664"))
 #' mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
 #' mascot_theme(css = list(body = "--team-blue"))
-#' mascot("helper", theme = list(body = "#1f6feb"))
+#' ui <- mascot("helper", theme = list(body = "#1f6feb"))
 #' @examplesIf requireNamespace("bslib", quietly = TRUE)
-#' mascot("brand", theme = bslib::bs_theme(primary = "#1f6feb"))
+#' ui <- mascot("brand", theme = bslib::bs_theme(primary = "#1f6feb"))
 mascot_theme <- function(..., palette = NULL, light = NULL, dark = NULL, mode = "auto", css = NULL) {
   with_mascot_asserts({
     checkmate::assert_string(palette, min.chars = 1, null.ok = TRUE)

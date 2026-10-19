@@ -37,7 +37,7 @@
 #' mascot_motion_settings()
 #' mascot_motion_settings(idle = FALSE)
 #' mascot_motion_settings(messages = "menu", others = FALSE)
-#' mascot("still", motion = FALSE)
+#' ui <- mascot("still", motion = FALSE)
 #' @examplesIf interactive()
 #' shiny::shinyApp(
 #'   shiny::fluidPage(
@@ -88,9 +88,12 @@ mascot_motion_settings <- function(
     }
   })
   if (is.character(messages) && any(!messages %in% c("bubble", "tooltip", "menu"))) {
-    cli::cli_abort(
-      "{.arg messages} must use panel names: {.or {c('bubble', 'tooltip', 'menu')}}.",
-      class = "mascot_error"
+    abort_choice(
+      messages[!messages %in% c("bubble", "tooltip", "menu")][[1L]],
+      c("bubble", "tooltip", "menu"),
+      "messages",
+      "panel name",
+      environment()
     )
   }
   structure(

@@ -103,9 +103,9 @@ mascot_theme()
 mascot_theme(palette = "coral_navy", light = list(rim = "#b93664"))
 mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
 mascot_theme(css = list(body = "--team-blue"))
-mascot("helper", theme = list(body = "#1f6feb"))
+ui <- mascot("helper", theme = list(body = "#1f6feb"))
 \dontshow{if (requireNamespace("bslib", quietly = TRUE)) withAutoprint(\{ # examplesIf}
-mascot("brand", theme = bslib::bs_theme(primary = "#1f6feb"))
+ui <- mascot("brand", theme = bslib::bs_theme(primary = "#1f6feb"))
 \dontshow{\}) # examplesIf}
 }
 \seealso{

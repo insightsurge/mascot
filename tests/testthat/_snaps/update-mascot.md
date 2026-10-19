@@ -24,7 +24,7 @@
       update_mascot("a", gesture = mascot_gesture("waev"), session = session)
     Condition
       Warning:
-      `update_mascot()` left mascot "mock-session-a" unchanged.
+      `update_mascot()` left mascot "a" unchanged.
       x `gesture` must be one of "rock", "nod", "wave", or "shimmer". x "waev" is not a gesture.
 
 # update_mascot() / errors on code mistakes before inspecting runtime values

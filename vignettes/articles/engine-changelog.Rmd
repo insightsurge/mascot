@@ -14,6 +14,13 @@ covered in `NEWS.md`.
 When a mascot swaps to a character whose own colours carry the selected palette id (its `native_palette`), the host
 keeps that palette id and applies no palette colours, as it does for `original`.
 
+## 2026-10-19 — Disabled menus (#350)
+
+Menu click settings carry a `disabled` flag through validation and replacement.
+The host reuses the action button's `aria-disabled` and activation guard: the
+button stays focusable but opens nothing and sends no input. Disabling an open
+menu closes it; replacing it with an enabled menu allows activation again.
+
 ## 2026-10-18 — Menu toggles no longer send action clicks (#349)
 
 `mascot-host.js` sends `input$<id>_click` only for action buttons. Opening or closing a menu by pointer or keyboard

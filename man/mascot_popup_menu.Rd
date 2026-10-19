@@ -7,6 +7,7 @@
 mascot_popup_menu(
   items = NULL,
   ...,
+  disabled = FALSE,
   direction = "auto",
   label = NULL,
   tooltip = TRUE
@@ -18,10 +19,14 @@ non-empty item IDs without whitespace (for example \code{c(about = "About", help
 Defaults to \code{NULL}, an empty helper: in \code{\link[=update_mascot]{update_mascot()}}, it removes the
 click, so the mascot is a picture again. An empty vector is not accepted.
 Labels are always escaped. With \code{items = NULL}, explicitly supplying
-\code{direction}, \code{label} or \code{tooltip} is an error; use \code{mascot_popup_menu()}
+\code{disabled}, \code{direction}, \code{label} or \code{tooltip} is an error; use \code{mascot_popup_menu()}
 without options to remove the click.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}
+
+\item{disabled}{A flag. \code{TRUE} keeps the menu button reachable by keyboard,
+but opens nothing and sends no input. Screen readers announce it as
+unavailable. \code{FALSE} (the default) allows the menu to open.}
 
 \item{direction}{Direction to open the menu from the mascot: \code{"auto"} (the default),
 \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. \code{"auto"} picks the side with room
@@ -38,7 +43,7 @@ the pointer rests on the mascot or the keyboard focuses it, provided a
 the label.}
 }
 \value{
-A \code{mascot_popup_menu} object with \code{items}, \code{direction}, \code{label} and
+A \code{mascot_popup_menu} object with \code{items}, \code{disabled}, \code{direction}, \code{label} and
 \code{tooltip} elements.
 The returned object's fields are internal; pass the object on rather than reading its fields.
 }
@@ -113,7 +118,7 @@ mascot_popup_menu(c(about = "About this app"), direction = "top")
 mascot_popup_menu(c(about = "About this app"), label = "Help and settings")
 mascot_popup_menu(c(about = "About this app"), label = "Help and settings", tooltip = FALSE)
 mascot_popup_menu()
-mascot("helper", click = mascot_popup_menu(c(about = "About this app")))
+ui <- mascot("helper", click = mascot_popup_menu(c(about = "About this app")))
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 shiny::shinyApp(
   shiny::fluidPage(mascot("helper", click = mascot_popup_menu(

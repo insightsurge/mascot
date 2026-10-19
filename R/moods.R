@@ -23,9 +23,9 @@ mood_table <- function() {
 #'   an id string such as `"tessa"` or a [mascot_character()] helper.
 #' @returns A data frame with character columns `name` (the value you pass to
 #'   [mascot_mood()]), `description`, `status` (the text shown beside the mascot
-#'   for that mood), `fallback` (the mood used instead when this one is not
-#'   available, or `NA`), and a logical column `shared` (`TRUE` for the five
-#'   shared moods). Shared moods have no `fallback`.
+#'   for that mood), a logical column `shared` (`TRUE` for the five shared
+#'   moods), and a character column `fallback` (the mood used instead when this
+#'   one is not available, or `NA`). Shared moods have no `fallback`.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @family mascot helpers

@@ -17,9 +17,9 @@ Tessa can look worried while a form needs attention, think while work runs,
 and celebrate when it finishes. Status text carries the meaning even when
 someone cannot see the drawing or prefers less movement.
 
-The package works offline. It is built for `GxP` work: the app supplies the
-state and the words, and no AI service is involved. A mascot complements
-field errors and results; it does not replace them.
+The package works offline. It is built for good practice (`GxP`) work: the app
+supplies the state and the words, and no AI service is involved. A mascot
+complements field errors and results; it does not replace them.
 
 If the Shiny connection drops, the mascot shows its worried face and a
 connection message until the app reconnects.
@@ -549,12 +549,17 @@ when the setting has a clear/reset action:
 
 | Setting | Reset sent to `update_mascot()` |
 |---|---|
+| Character | `character = mascot_character()` (back to `"tessa"`) |
+| Mood | `mood = mascot_mood()` (back to `"idle"`) |
+| Size | `size = mascot_size()` (160, `small_screen = "auto"`) |
 | Custom status | `status = mascot_status()` follows the mood |
 | Bubble | `bubble = mascot_bubble()` removes it |
 | Theme | `theme = mascot_theme()` restores character colours |
 | Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
 | Placement | `placement = mascot_placement()` resets to default bottom-right; `mascot_placement("inline")` returns inline |
 | Motion | `motion = mascot_motion_settings()` allows movement subject to visitor preference |
+
+Each non-`NULL` argument replaces that whole setting, not part of it (example: `update_mascot("h", size = 200)` also resets a custom `small_screen` to `"auto"`).
 
 An invalid update warns and leaves the complete update unchanged. During app
 construction, invalid arguments stop with an error. This helps catch a typo

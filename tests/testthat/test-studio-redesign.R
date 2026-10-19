@@ -1889,6 +1889,48 @@ describe("the next studio review round", {
     expect_match(chips, 'class="pg-chip-pencil"', fixed = TRUE)
   })
 
+  it("never emits options-only helper calls from code builders and displays updated guide cards", {
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    env <- new.env()
+    sys.source(file.path(dir, "R", "guide.R"), envir = env)
+    sys.source(file.path(dir, "R", "help.R"), envir = env)
+    sys.source(file.path(dir, "R", "data.R"), envir = env)
+    sys.source(file.path(dir, "R", "ui.R"), envir = env)
+    sys.source(file.path(dir, "R", "code.R"), envir = env)
+    expect_identical(env$code_action("", disabled = TRUE)$helper, quote(mascot_action()))
+    expect_identical(env$code_action(NULL, disabled = TRUE)$helper, quote(mascot_action()))
+    expect_identical(eval(env$code_action("", disabled = TRUE)$helper), mascot_action())
+
+    expect_identical(env$code_menu(character(), direction = "top")$helper, quote(mascot_popup_menu()))
+    expect_identical(env$code_menu(NULL, direction = "top")$helper, quote(mascot_popup_menu()))
+    expect_identical(eval(env$code_menu(character(), direction = "top")$helper), mascot_popup_menu())
+
+    expect_identical(env$code_bubble("", FALSE, 10, FALSE)$helper, quote(mascot_bubble()))
+    expect_identical(env$code_bubble(NULL, FALSE, 10, FALSE)$helper, quote(mascot_bubble()))
+    expect_identical(eval(env$code_bubble("", FALSE, 10, FALSE)$helper), mascot_bubble())
+
+    action_guide <- as.character(env$selected_guide("mascot_action"))
+    expect_match(action_guide, "Options need their main argument; an empty call removes it.", fixed = TRUE)
+
+    menu_guide <- as.character(env$selected_guide("mascot_popup_menu"))
+    expect_match(menu_guide, "input$&lt;id&gt;_menu vs input$&lt;id&gt;_click", fixed = TRUE)
+    expect_match(menu_guide, "Options need their main argument; an empty call removes it.", fixed = TRUE)
+
+    bubble_guide <- as.character(env$selected_guide("mascot_bubble"))
+    expect_match(bubble_guide, "Options need their main argument; an empty call removes it.", fixed = TRUE)
+
+    theme_guide <- as.character(env$selected_guide("mascot_theme"))
+    expect_match(theme_guide, "A bs_theme() always uses mode = \"auto\"", fixed = TRUE)
+
+    update_guide <- as.character(env$selected_guide("update_mascot"))
+    expect_match(update_guide, "Reset table: what each argument resets to", fixed = TRUE)
+    expect_match(update_guide, "Each non-NULL argument replaces its whole setting", fixed = TRUE)
+    expect_match(update_guide, "mascot_update_ignored", fixed = TRUE)
+
+    preview_guide <- as.character(env$selected_guide("mascot_preview"))
+    expect_match(preview_guide, "160, 96 and 24 px", fixed = TRUE)
+  })
+
   it("expands only reading tabs, remembers the choice and collapses before closing", {
     local_shiny_browser()
     app <- studio_redesign_driver()

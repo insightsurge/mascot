@@ -393,6 +393,7 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
     mascot_popup_menu = visual_menu(),
     mascot = visual_mascot(),
     update_mascot = visual_update_mascot(),
+    mascot_preview = visual_preview(),
     NULL
   )
 }
@@ -504,6 +505,11 @@ visual_bubble <- function() {
       "Plain text is escaped and always safe. Wrap only your own content in HTML(), never untrusted visitor
       input. Bootstrap classes such as badge, table, and progress work inside the bubble because bslib includes
       Bootstrap."
+    ),
+    div(
+      class = "pg-callout",
+      tags$strong("Options need their main argument. "),
+      "Options need their main argument; an empty call removes it."
     )
   )
 }
@@ -678,6 +684,11 @@ visual_theme <- function(character = formals(mascot::mascot)$character) {
       div(class = "pg-flow-step", tags$code("bs_theme(secondary =)")),
       div(class = "pg-flow-arrow", "\u2192"),
       div(class = "pg-flow-step", tags$code(brand$secondary), div("and its followers"))
+    ),
+    div(
+      class = "pg-callout",
+      tags$strong("bs_theme(). "),
+      "A bs_theme() always uses mode = \"auto\" and cannot be combined with a forced mode or extra roles."
     )
   )
 }
@@ -702,6 +713,11 @@ visual_action <- function() {
       tags$strong("A picture or a button. "),
       "Without click, the mascot is a picture: no keyboard stop, no events. With one, it is a button named by its ",
       "label, so screen readers say what a click does."
+    ),
+    div(
+      class = "pg-callout",
+      tags$strong("Options need their main argument. "),
+      "Options need their main argument; an empty call removes it."
     )
   )
 }
@@ -726,9 +742,24 @@ visual_menu <- function() {
     div(class = "pg-code-wrap", code_output("menu_code"), copy_button("menu_code")),
     div(
       class = "pg-callout",
+      tags$strong("input$<id>_menu vs input$<id>_click. "),
+      "Menus never set ",
+      tags$code("input$<id>_click"),
+      "; only ",
+      tags$code("mascot_action()"),
+      " does. Choosing an item sets ",
+      tags$code("input$<id>_menu"),
+      " to the chosen item's id. Opening and closing the menu sends no Shiny input."
+    ),
+    div(
+      class = "pg-callout",
+      tags$strong("Options need their main argument. "),
+      "Options need their main argument; an empty call removes it."
+    ),
+    div(
+      class = "pg-callout",
       tags$strong("Keyboard. "),
-      "Tab to the mascot's menu button, then Enter or Space opens it; arrow keys move between items; Escape
-      closes it. Opening and closing it never set input$helper_click; choosing an item sets input$helper_menu."
+      "Tab to the mascot's menu button, then Enter or Space opens it; arrow keys move between items; Escape closes it."
     )
   )
 }
@@ -776,12 +807,73 @@ visual_update_mascot <- function() {
       `The mascot` = c("keeps it as it is", "clears it or goes back to the default", "changes it"),
       check.names = FALSE
     )),
+    tags$h3(class = "pg-section-title", "Reset table: what each argument resets to"),
+    data_table(data.frame(
+      Setting = c(
+        "Character",
+        "Mood",
+        "Size",
+        "Status",
+        "Bubble",
+        "Theme",
+        "Click",
+        "Placement",
+        "Motion"
+      ),
+      `Reset sent to update_mascot()` = c(
+        paste0("character = mascot_character() (back to \"", formals(mascot::mascot)$character, "\")"),
+        "mood = mascot_mood() (back to \"idle\")",
+        "size = mascot_size() (160, small_screen = \"auto\")",
+        "status = mascot_status() (follows the mood)",
+        "bubble = mascot_bubble() (removes it)",
+        "theme = mascot_theme() (restores character colours)",
+        "click = mascot_action() (or mascot_popup_menu(), removes it)",
+        "placement = mascot_placement() (resets to bottom-right; mascot_placement(\"inline\") returns inline)",
+        "motion = mascot_motion_settings() (allows movement subject to visitor preference)"
+      ),
+      check.names = FALSE
+    )),
+    div(
+      class = "pg-callout",
+      tags$strong("Whole setting. "),
+      "Each non-NULL argument replaces its whole setting (update_mascot(\"h\", size = 200) also resets small_screen)."
+    ),
     div(
       class = "pg-callout",
       tags$strong("All or nothing. "),
       "update_mascot() validates all values first. If any value is invalid, it warns, reports the issue, and sends
       nothing, preventing partial updates. Calling with an invalid argument name or outside a server session
       produces an error."
+    ),
+    tags$h3(class = "pg-section-title", "Condition classes"),
+    data_table(data.frame(
+      Class = c(
+        "mascot_update_ignored",
+        "mascot_error_choice",
+        "mascot_error_dots",
+        "mascot_contrast",
+        "mascot_placement_ignored"
+      ),
+      Type = c("Warning", "Error", "Error", "Warning", "Message"),
+      `When it occurs` = c(
+        "A helper in update_mascot() errors; the update is ignored",
+        "An invalid choice (the message lists valid options)",
+        "Unexpected arguments in ... (e.g. an unnamed argument or typo)",
+        "Colour contrast against background is below 3:1",
+        "Inline placement ignores minimise or drag"
+      ),
+      check.names = FALSE
+    ))
+  )
+}
+
+visual_preview <- function() {
+  tagList(
+    tags$h3(class = "pg-section-title", "Offline comparison"),
+    tags$p(
+      class = "pg-muted",
+      "mascot_preview() draws your character offline across light and dark modes, comparing your chosen size ",
+      "with 160, 96 and 24 px columns. Previews are always inline and accept no placement or click arguments."
     )
   )
 }

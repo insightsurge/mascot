@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The studio updates its Guide and code builders for recent API changes: `mascot_popup_menu()` explains that clicks never fire, option-only helper calls are prevented, `update_mascot()` documents its reset table and ignored-helper warnings, `mascot_preview()` aligns with its remaining arguments and 160, 96 and 24 pixel comparison columns, and `mascot_theme()` documents `bs_theme()` constraints (#353).
+
 * The studio search shows one result per function with matching argument badges, and Help and Guide cards offer a corner icon to widen the docked inspector (#353).
 
 * `mascot_studio()` puts function controls and searchable help over a live canvas, with single-value call-chip editors, sentence-style controls, a last-gesture chip, draggable anchor labels and leader lines, help tooltips on inline sentence words, per-argument code styles and resets, phone-width previews, a family-filtered character listing and an activity log beside the update demonstrations (#353).

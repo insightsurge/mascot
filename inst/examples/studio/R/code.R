@@ -32,7 +32,7 @@ code_status <- function(text) {
 }
 
 code_bubble <- function(text, html, duration, closable) {
-  if (!nzchar(trimws(text))) {
+  if (is.null(text) || !length(text) || !nzchar(trimws(text))) {
     return(code_pair(quote(mascot_bubble())))
   }
   value <- if (html) call("HTML", text) else text
@@ -131,11 +131,11 @@ code_placement <- function(position = "bottom-right", ..., minimise = TRUE, drag
 
 # A menu has no shortcut: a named vector is not a click, so both forms use the helper.
 code_menu <- function(items, direction = "auto", label = "", tooltip = TRUE, disabled = FALSE) {
-  if (!length(items)) {
+  if (is.null(items) || !length(items)) {
     return(code_pair(quote(mascot_popup_menu())))
   }
   vector <- if (length(items)) named_call("c", items)
-  has_label <- nzchar(trimws(label))
+  has_label <- nzchar(trimws(label %||% ""))
   helper <- helper_call(
     "mascot_popup_menu",
     vector,
@@ -149,7 +149,7 @@ code_menu <- function(items, direction = "auto", label = "", tooltip = TRUE, dis
 
 # An action's shortcut is its label; the helper also carries a hidden tooltip or a disabled state.
 code_action <- function(label, tooltip = TRUE, disabled = FALSE) {
-  if (!nzchar(trimws(label))) {
+  if (is.null(label) || !length(label) || !nzchar(trimws(label))) {
     return(code_pair(quote(mascot_action())))
   }
   helper <- helper_call("mascot_action", label, tooltip = if (!tooltip) FALSE, disabled = if (disabled) TRUE)

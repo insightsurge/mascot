@@ -1427,7 +1427,11 @@
   }
   // Shiny's receiveMessage() also emits jQuery changes for programmatic updates.
   $(document).on('change', markControls);
-  window.addEventListener('resize', () => sizeSentenceWords());
+  // Media-query changes settle after the resize event itself, so measure again on the next frames.
+  window.addEventListener('resize', () => {
+    sizeSentenceWords();
+    requestAnimationFrame(() => requestAnimationFrame(sizeSentenceWords));
+  });
   function sizeSentenceWords() {
     const sentence = document.querySelector('.pg-sentence');
     if (sentence)

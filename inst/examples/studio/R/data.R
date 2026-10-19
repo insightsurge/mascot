@@ -71,7 +71,7 @@ defaults <- list(
 mistakes <- list(
   `Leave out an argument name` = list(
     code = "update_mascot(\"helper\", \"happy\")",
-    why = "Arguments after id must be named. An unnamed mood is caught by ... and gives an error."
+    why = "Arguments after id must be named. An unnamed argument reports \"an unnamed argument\" and lists the valid names."
   ),
   `A mood that does not exist` = list(
     code = "update_mascot(\"helper\", mood = \"sleepy\")",
@@ -79,7 +79,11 @@ mistakes <- list(
   ),
   `Misspell an argument` = list(
     code = "update_mascot(\"helper\", moood = \"happy\")",
-    why = "... must be empty, so typos produce an error rather than being ignored."
+    why = "... must be empty, so typos produce an error listing the valid argument names."
+  ),
+  `Invalid helper value` = list(
+    code = "update_mascot(\"helper\", size = mascot_size(10))",
+    why = "A helper that errors gives a warning (class mascot_update_ignored); the whole update is ignored and the mascot stays unchanged."
   ),
   `Too small` = list(code = "update_mascot(\"helper\", size = 10)", why = "Sizes must be at least 24 pixels."),
   `Minimise an inline mascot` = list(

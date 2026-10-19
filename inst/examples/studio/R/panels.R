@@ -310,10 +310,21 @@ panel_messages <- function() {
         ),
         uiOutput("menu_problem")
       ),
-      note = div(class = "pg-note", "Click or tap the mascot to open its menu, then choose an item.")
+      note = div(
+        class = "pg-note",
+        "Click or tap the mascot to open its menu, then choose an item. Choosing an item sets input$helper_menu; menus never set input$helper_click."
+      )
     ),
     arg_field("mascot_popup_menu", "...", NULL),
-    arg_field("mascot_popup_menu", "disabled", input_switch("menu_disabled", "Disabled: menu opens nothing", FALSE)),
+    arg_field(
+      "mascot_popup_menu",
+      "disabled",
+      input_switch("menu_disabled", "Disabled: menu opens nothing", FALSE),
+      note = div(
+        class = "pg-note",
+        "A disabled menu stays reachable by keyboard and is announced as unavailable, but it opens nothing and sends nothing."
+      )
+    ),
     arg_field(
       "mascot_popup_menu",
       "direction",
@@ -700,7 +711,7 @@ panel_preview <- function(moods = mascot_moods()) {
         sliderInput(
           "preview_size",
           "Pixels",
-          min = 48,
+          min = 24,
           max = 240,
           value = formals(mascot::mascot_preview)$size,
           step = 8
@@ -712,7 +723,10 @@ panel_preview <- function(moods = mascot_moods()) {
           inline = TRUE
         )
       ),
-      note = div(class = "pg-note", "Phone width narrows the page; the mascot pixel size stays unchanged.")
+      note = div(
+        class = "pg-note",
+        "Comparison columns are 160, 96 and 24 px. Phone width narrows the page; the mascot pixel size stays unchanged."
+      )
     ),
     arg_field(
       fn,

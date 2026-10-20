@@ -119,8 +119,7 @@ panel_look <- function() {
         class = "pg-code-wrap",
         code_block(format_expr(code_check_character()), "pg-code", id = "check_character_call"),
         copy_button("check_character_call")
-      ),
-      note = div(class = "pg-note", "Edit a plain source list, then check it again. Checked objects are opaque.")
+      )
     ),
     fn_heading("mascot_character"),
     arg_field(

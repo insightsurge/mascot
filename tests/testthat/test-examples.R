@@ -1,3 +1,27 @@
+# The studio and its guide pages (guide/*.Rmd), loaded the way the tests below load pieces of the studio.
+studio_guide_env <- function(frame = parent.frame()) {
+  testthat::skip_if_not_installed("bslib")
+  testthat::skip_if_not_installed("knitr")
+  withr::local_package("shiny", .local_envir = frame)
+  withr::local_package("bslib", .local_envir = frame)
+  dir <- dirname(mascot_example("studio", run = FALSE))
+  env <- new.env()
+  for (file in c(
+    "guide.R",
+    "shared-help.R",
+    "data.R",
+    "shared-data.R",
+    "shared-ui.R",
+    "code.R",
+    "panels.R",
+    "ui.R",
+    "guide-md.R"
+  )) {
+    sys.source(file.path(dir, "R", file), envir = env)
+  }
+  env
+}
+
 describe("mascot_examples()", {
   it("lists the studio, its theme page and five scenario apps in order with readable metadata", {
     examples <- mascot_examples()
@@ -388,18 +412,8 @@ describe("the studio's controls", {
     }
   })
   it("labels the Guide as a call to its selected function and keeps visuals in separate sections", {
-    skip_if_not_installed("bslib")
-    withr::local_package("shiny")
-    withr::local_package("bslib")
-    dir <- dirname(mascot_example("studio", run = FALSE))
-    ui <- new.env()
-    sys.source(file.path(dir, "R", "guide.R"), envir = ui)
-    sys.source(file.path(dir, "R", "shared-help.R"), envir = ui)
-    sys.source(file.path(dir, "R", "data.R"), envir = ui)
-    sys.source(file.path(dir, "R", "ui.R"), envir = ui)
-    sys.source(file.path(dir, "R", "guide-md.R"), envir = ui)
-    sys.source(file.path(dir, "R", "data.R"), envir = ui)
-    sys.source(file.path(dir, "R", "code.R"), envir = ui)
+    # The same files the guide pages need as in the app, so no page falls back to "could not be built".
+    ui <- studio_guide_env()
     expect_error(ui$selected_guide(42), "string")
     for (fn in c(
       "mascot_mood",
@@ -411,7 +425,9 @@ describe("the studio's controls", {
       "mascot_popup_menu",
       "update_mascot"
     )) {
-      html <- as.character(ui$selected_guide(fn))
+      # A page that cannot be built warns and shows a fallback: that must fail here, not pass on structure alone.
+      expect_no_warning(html <- as.character(ui$selected_guide(fn)), message = "could not be built")
+      expect_false(grepl("could not be built", html, fixed = TRUE), info = fn)
       expect_match(html, paste0('data-guide-function="', fn, '"'), fixed = TRUE)
       # Function code now has one pinned output outside the Guide; no duplicate id.
       expect_false(grepl('id="code_function"', html, fixed = TRUE))
@@ -1208,30 +1224,6 @@ studio_parts <- function() {
   app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
   page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
   list(env = environment(app$serverFuncSource()), page = as.character(page))
-}
-
-# The studio and its guide pages (guide/*.Rmd), loaded the way the tests above load pieces of the studio.
-studio_guide_env <- function(frame = parent.frame()) {
-  testthat::skip_if_not_installed("bslib")
-  testthat::skip_if_not_installed("knitr")
-  withr::local_package("shiny", .local_envir = frame)
-  withr::local_package("bslib", .local_envir = frame)
-  dir <- dirname(mascot_example("studio", run = FALSE))
-  env <- new.env()
-  for (file in c(
-    "guide.R",
-    "shared-help.R",
-    "data.R",
-    "shared-data.R",
-    "shared-ui.R",
-    "code.R",
-    "panels.R",
-    "ui.R",
-    "guide-md.R"
-  )) {
-    sys.source(file.path(dir, "R", file), envir = env)
-  }
-  env
 }
 
 describe("studio guide pages", {
@@ -3716,6 +3708,12 @@ describe("the studio public character readers", {
       expect_true(fn %in% names(guide$playground_guide))
       expect_true(fn %in% names(guide$playground_controls))
     }
+  })
+  it("offers the check example to copy only, with no note about editing it", {
+    skip_without_studio_packages("studio")
+    page <- as.character(studio_parts()$page)
+    expect_match(page, 'id="check_character_call"', fixed = TRUE)
+    expect_false(grepl("Edit a plain source list", page, fixed = TRUE))
   })
   it("has a guide page for each character reader, with the real output and the experimental word", {
     env <- studio_guide_env()

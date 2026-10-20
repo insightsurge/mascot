@@ -3620,4 +3620,19 @@ describe("the studio public character readers", {
       expect_true(fn %in% names(guide$playground_controls))
     }
   })
+  it("has a guide page for each character reader, with the real output and the experimental word", {
+    env <- studio_guide_env()
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    page <- function(fn) {
+      paste(vapply(env$studio_guide_page(fn, "tessa", dir), as.character, character(1)), collapse = "\n")
+    }
+    read <- page("mascot_read_character")
+    expect_match(read, "Experimental", fixed = TRUE)
+    expect_match(read, "study_bot: Study Bot", fixed = TRUE)
+    expect_match(read, "coming soon", fixed = TRUE)
+    check <- page("mascot_check_character")
+    expect_match(check, "Experimental", fixed = TRUE)
+    expect_match(check, "Error: ", fixed = TRUE)
+    expect_match(check, "format_version", fixed = TRUE)
+  })
 })

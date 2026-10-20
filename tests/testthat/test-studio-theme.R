@@ -615,6 +615,13 @@ describe("the theme view in a browser", {
     ))
     expect_lt(diff(range(unlist(middles))), 12)
     expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-sentence')).fontSize"), "14px")
+    # The live code runs across the bottom, under the preview and the tabs.
+    expect_true(app$get_js(paste0(
+      "(() => { const box = (s) => document.querySelector(s).getBoundingClientRect(); ",
+      "const code = box('.theme-code'), main = box('.theme-main'); ",
+      "return code.top >= box('.theme-right').bottom && code.top >= box('.theme-preview').bottom && ",
+      "Math.abs(code.width - main.width) < 2; })()"
+    )))
     # Each tab shows its own panel.
     for (tab in c("colours", "brand", "check", "palette")) {
       app$run_js(sprintf("document.querySelector('#theme_tabs a[data-value=\"%s\"]').click()", tab))
@@ -649,15 +656,16 @@ describe("the theme view in a browser", {
     ))
     expect_identical(unlist(link), c("?view=theme", "_blank", "Theme a mascot"))
   })
-  it("stacks the preview, the code and the tabs on a phone, and keeps the preview in view", {
+  it("stacks the preview, the tabs and the code on a phone, and keeps the preview in view", {
     local_shiny_browser()
     skip_if_not_installed("bslib")
     app <- theme_driver(width = 375, height = 812)
     withr::defer(app$stop())
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
     top <- function(selector) app$get_js(sprintf("document.querySelector('%s').getBoundingClientRect().top", selector))
-    expect_lt(top(".theme-preview"), top(".theme-code"))
-    expect_lt(top(".theme-code"), top(".theme-right"))
+    expect_lt(top(".theme-preview"), top(".theme-stack"))
+    expect_lt(top(".theme-stack"), top(".theme-right"))
+    expect_lt(top(".theme-right"), top(".theme-code"))
     expect_true(app$get_js(
       "document.querySelector('.theme-page').scrollWidth <= document.querySelector('.theme-page').clientWidth"
     ))

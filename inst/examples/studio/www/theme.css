@@ -1,6 +1,6 @@
 /* The "Theme a mascot" view of the studio app. Tokens come from tokens.css; the preview sits on Bootstrap's plain
-   page colour (white, or #212529 in dark mode), the surfaces the contrast check uses. Below 860px the preview comes
-   first, stays in view while the tabs scroll under it, and the tabs stack below the code. */
+   page colour (white, or #212529 in dark mode), the surfaces the contrast check uses. The live R code runs across the
+   bottom. Below 860px the preview comes first and stays in view while the tabs and then the code scroll under it. */
 .theme-page {
   flex: 1 1 auto;
   min-height: 0;
@@ -96,7 +96,16 @@
 }
 
 .theme-code {
+  grid-column: 1 / -1;
   padding: 12px;
+}
+
+/* What the theme applies, under the preview. */
+.theme-stack {
+  padding: 8px 12px;
+  border: 1px solid var(--studio-line);
+  border-radius: var(--studio-surface-radius);
+  background: var(--studio-panel);
 }
 
 .theme-code-head {

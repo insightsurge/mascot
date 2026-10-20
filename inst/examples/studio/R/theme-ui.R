@@ -16,7 +16,8 @@ theme_brand_samples <- list(
   c("#b91c1c", "#1e3a8a")
 )
 
-# The page: a header, the preview with its code on the left, the tabs on the right (stacked on a phone).
+# The page: a header; the preview with the theme stack line on the left and the tabs on the right; the live R code
+# across the bottom. On a phone they stack in that order.
 theme_view_ui <- function(query) {
   checkmate::assert_list(query)
   character <- view_character(query)
@@ -34,8 +35,14 @@ theme_view_ui <- function(query) {
       theme_header(character),
       shiny::div(
         class = "theme-main",
-        shiny::div(class = "theme-left", theme_preview_card(character), theme_code_card()),
-        shiny::div(class = "theme-right", theme_tabs(character))
+        shiny::div(
+          class = "theme-left",
+          theme_preview_card(character),
+          # Shiny lays an HTML output out as display: contents, so the box is a wrapper of its own.
+          shiny::div(class = "theme-stack", shiny::uiOutput("theme_stack"))
+        ),
+        shiny::div(class = "theme-right", theme_tabs(character)),
+        theme_code_card()
       )
     )
   )
@@ -103,7 +110,7 @@ theme_preview_card <- function(character) {
   )
 }
 
-# The live R code, its Copy button, the Shortcut/Helper switch and the theme stack line.
+# The live R code, its Copy button and the Shortcut/Helper switch.
 theme_code_card <- function() {
   shiny::tags$section(
     class = "theme-code",
@@ -121,8 +128,7 @@ theme_code_card <- function() {
       ),
       copy_button("theme_code")
     ),
-    shiny::tagAppendAttributes(shiny::verbatimTextOutput("theme_code"), class = "theme-code-text"),
-    shiny::uiOutput("theme_stack", class = "theme-stack")
+    shiny::tagAppendAttributes(shiny::verbatimTextOutput("theme_code"), class = "theme-code-text")
   )
 }
 

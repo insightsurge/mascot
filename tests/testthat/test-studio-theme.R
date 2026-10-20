@@ -590,6 +590,13 @@ describe("the theme view's drawing and code", {
   })
 })
 
+# How far the mascot's canvas centre is from the preview card's centre, in CSS pixels.
+mascot_offset_js <- paste0(
+  "(() => { const c = document.querySelector('#theme_mascot canvas').getBoundingClientRect(); ",
+  "const p = document.getElementById('theme_preview').getBoundingClientRect(); ",
+  "return Math.abs((c.left + c.right) / 2 - (p.left + p.right) / 2); })()"
+)
+
 # The theme view in Chrome, started the way mascot_studio(view = "theme") starts it.
 theme_driver <- function(width = 1280, height = 800) {
   checkmate::assert_number(width, lower = 1)
@@ -616,6 +623,8 @@ describe("the theme view in a browser", {
     ))
     expect_lt(diff(range(unlist(middles))), 12)
     expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-sentence')).fontSize"), "14px")
+    # The mascot is centred in its card, also at phone width.
+    expect_lt(app$get_js(mascot_offset_js), 3)
     # Phone width narrows the preview area to 375px and back.
     area <- "document.querySelector('.theme-preview-area').getBoundingClientRect().width"
     wide <- app$get_js(area)
@@ -624,6 +633,7 @@ describe("the theme view in a browser", {
     app$wait_for_js("document.getElementById('theme_preview').classList.contains('is-phone')")
     expect_lte(app$get_js(area), 375)
     expect_identical(app$get_js("document.getElementById('preview_phone').getAttribute('aria-pressed')"), "true")
+    expect_lt(app$get_js(mascot_offset_js), 3)
     app$click(selector = "#preview_phone")
     app$wait_for_js("!document.getElementById('theme_preview').classList.contains('is-phone')")
     expect_equal(app$get_js(area), wide)
@@ -678,6 +688,15 @@ describe("the theme view in a browser", {
     expect_lt(top(".theme-preview"), top(".theme-stack"))
     expect_lt(top(".theme-stack"), top(".theme-right"))
     expect_lt(top(".theme-right"), top(".theme-code"))
+    # The small preview shows the mascot centred in its card.
+    expect_lt(app$get_js(mascot_offset_js), 3)
+    # The page switch and Start again sit side by side at their own size, under the sentence.
+    buttons <- app$get_js(paste0(
+      "['#page_mode', '#reset_all'].map((s) => { const r = document.querySelector(s).getBoundingClientRect(); ",
+      "return [r.top, r.width]; })"
+    ))
+    expect_lt(abs(buttons[[1]][[1]] - buttons[[2]][[1]]), 4)
+    expect_lt(buttons[[1]][[2]] + buttons[[2]][[2]], 250)
     expect_true(app$get_js(
       "document.querySelector('.theme-page').scrollWidth <= document.querySelector('.theme-page').clientWidth"
     ))

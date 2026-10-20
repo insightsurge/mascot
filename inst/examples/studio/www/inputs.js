@@ -36,6 +36,13 @@
   }
   window.Shiny.inputBindings.register(new ColourBinding(), 'mascotStudio.colour');
 
+  // A role's picker (R/shared-colours.R role_picker()) is marked is-changed while it differs from its listed colour,
+  // including after a reset from the server (receiveMessage() triggers a jQuery change).
+  $(document).on('input change', '.pg-role[data-default] > .pg-colour', (event) => {
+    const role = event.currentTarget.closest('.pg-role');
+    role.classList.toggle('is-changed', event.currentTarget.value.toLowerCase() !== role.dataset.default.toLowerCase());
+  });
+
   // Copies the text of the element that data-copy names, then says so on the button for a moment.
   const copy = (target) => {
     const source = document.getElementById(target.dataset.copy)?.textContent || '';

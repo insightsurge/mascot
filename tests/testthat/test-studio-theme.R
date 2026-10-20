@@ -691,3 +691,34 @@ describe("the forced mode in a browser", {
     expect_identical(app$get_value(input = "mode"), "dark")
   })
 })
+
+describe("the colour tiles in a browser", {
+  it("show the reset only on a changed tile, and hide the own-colour hint", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    withr::defer(app$stop())
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    app$run_js("document.querySelector('#theme_tabs a[data-value=colours]').click()")
+    app$wait_for_js("!!document.getElementById('colours-light_body')")
+    tile <- "document.getElementById('colours-light_body').closest('.pg-role')"
+    reset_shown <- sprintf("getComputedStyle(%s.querySelector('.pg-role-reset')).display !== 'none'", tile)
+    expect_false(app$get_js(reset_shown))
+    expect_identical(app$get_js(sprintf("getComputedStyle(%s.querySelector('.pg-role-leader')).display", tile)), "none")
+    # Given a changed colour
+    app$run_js("const i = document.getElementById('colours-light_body'); i.value = '#c2185b'; $(i).trigger('change');")
+    # Then the tile is marked and offers its reset; the reset puts it back
+    app$wait_for_js(sprintf("%s.classList.contains('is-changed')", tile))
+    expect_true(app$get_js(reset_shown))
+    app$run_js(sprintf("%s.querySelector('.pg-role-reset').click()", tile))
+    app$wait_for_js(sprintf("!%s.classList.contains('is-changed')", tile))
+    # The tiles sit in a grid of columns.
+    expect_gt(
+      app$get_js(sprintf(
+        "getComputedStyle(%s.parentElement).gridTemplateColumns.split(' ').length",
+        tile
+      )),
+      1
+    )
+  })
+})

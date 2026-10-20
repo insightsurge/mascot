@@ -120,7 +120,9 @@ colour_input <- function(id, value, label, ...) {
 # One role's picker with its name, what it follows and a reset button. ns() names the picker and the reset event
 # for a module. resolved adds the round swatch that shows the colour in use now; only a page that reads the drawn
 # mascot's state can fill it (the studio does, from its live frame). leader is the word for a role that follows no
-# other: the studio uses the help pages' "leader"; a page for app authors can say "own colour".
+# other: the studio uses the help pages' "leader"; a page for app authors can say "own colour". The picker carries
+# its listed colour (data-default) and is marked is-changed while it differs (inputs.js keeps that mark current), and
+# the hint of a role that follows no other is marked pg-role-leader, so a page can style both.
 role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = shiny::NS(NULL), leader = "leader") {
   checkmate::assert_choice(mode, c("light", "dark"))
   checkmate::assert_data_frame(roles)
@@ -131,14 +133,20 @@ role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = s
   checkmate::assert_string(leader, min.chars = 1)
   row <- roles[roles$role == role, ]
   follows <- if (is.na(row$follows)) leader else paste0("follows ", row$follows, " (", row$shade, ")")
+  changed <- !is.null(value) && !identical(tolower(value), tolower(row$colour))
   shiny::div(
-    class = "pg-role",
+    class = if (changed) "pg-role is-changed" else "pg-role",
+    `data-default` = row$colour,
     colour_input(
       ns(paste0(mode, "_", role)),
       if (is.null(value)) row$colour else value,
       paste(role, "in", mode, "mode")
     ),
-    shiny::div(class = "pg-role-text", shiny::tags$code(role), shiny::div(class = "pg-muted", follows)),
+    shiny::div(
+      class = "pg-role-text",
+      shiny::tags$code(role),
+      shiny::div(class = if (is.na(row$follows)) "pg-muted pg-role-leader" else "pg-muted", follows)
+    ),
     if (resolved) {
       shiny::tags$span(
         class = "pg-resolved",

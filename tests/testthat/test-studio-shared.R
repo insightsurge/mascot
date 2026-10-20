@@ -493,3 +493,23 @@ describe("window_bar() and window_footer()", {
     expect_error(env$window_bar(""), "title")
   })
 })
+
+describe("role_picker() marks", {
+  it("carry the listed colour, mark a changed picker, and mark the hint of a role that follows no other", {
+    env <- studio_shared("shared-colours.R")
+    roles <- mascot_colour_roles("tessa")
+    plain <- as.character(env$role_picker("light", "body", roles))
+    expect_match(
+      plain,
+      sprintf('<div class="pg-role" data-default="%s">', roles$colour[roles$role == "body"]),
+      fixed = TRUE
+    )
+    expect_match(plain, '<div class="pg-muted pg-role-leader">leader</div>', fixed = TRUE)
+    changed <- as.character(env$role_picker("light", "body", roles, value = "#123456"))
+    expect_match(changed, '<div class="pg-role is-changed"', fixed = TRUE)
+    same <- as.character(env$role_picker("light", "body", roles, value = tolower(roles$colour[roles$role == "body"])))
+    expect_false(grepl("is-changed", same, fixed = TRUE))
+    follower <- roles$role[!is.na(roles$follows)][[1]]
+    expect_false(grepl("pg-role-leader", as.character(env$role_picker("light", follower, roles)), fixed = TRUE))
+  })
+})

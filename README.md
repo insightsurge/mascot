@@ -16,6 +16,17 @@ fails validation. It follows light and dark mode, and takes its colours from you
 - Known users: [`docs/consumers.md`](https://github.com/insightsurge/mascot/blob/main/docs/consumers.md)
 - Plan: the milestones and the epic tree under issue #1
 
+## In a Quarto page
+
+A plain `mascot()` draws in a rendered Quarto page (static: the mood and status are set when you render). Put it in an
+R chunk, with inline placement:
+
+```r
+mascot("helper", mood = "happy", status = "Rendered with Quarto", placement = "inline")
+```
+
+The Get started article has the details and caveats. A Quarto `shortcode` comes in 0.2.0.
+
 ## Installation
 
 mascot is not on CRAN yet, and its GitHub repository is private for now. Once it is public, install the

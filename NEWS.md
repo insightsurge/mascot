@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The Get started article has a "Quarto pages" section, and the README and the placement guide mention it: a plain `mascot()` draws in a rendered Quarto page (static, with inline placement recommended); the Quarto `shortcode` comes in 0.2.0 (#412).
+
 * `mascot_studio(view = "theme")` and `mascot_example("theme")` open Theme a mascot, a page of the studio's app that themes one character: a palette, your own colours for light and dark mode, CSS variables or your app's brand colours, with the live code to copy. Its Check tab shows every mood in light and dark, checks contrast and runs the common warnings in the package's own words. The studio's More menu opens it in a new tab (#378).
 
 * The redesigned studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).

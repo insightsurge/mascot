@@ -771,8 +771,20 @@ describe("the colour tiles in a browser", {
     # Then the tile is marked and offers its reset; the reset puts it back
     app$wait_for_js(sprintf("%s.classList.contains('is-changed')", tile))
     expect_true(app$get_js(reset_shown))
-    app$run_js(sprintf("%s.querySelector('.pg-role-reset').click()", tile))
+    # A keyboard user presses Enter on the reset button: the tile goes back, and the focus moves to its picker.
+    app$run_js(sprintf("%s.querySelector('.pg-role-reset').focus()", tile))
+    expect_true(app$get_js(sprintf("document.activeElement === %s.querySelector('.pg-role-reset')", tile)))
+    chrome <- app$get_chromote_session()
+    chrome$Input$dispatchKeyEvent(
+      type = "keyDown",
+      key = "Enter",
+      code = "Enter",
+      windowsVirtualKeyCode = 13,
+      text = "\r"
+    )
+    chrome$Input$dispatchKeyEvent(type = "keyUp", key = "Enter", code = "Enter", windowsVirtualKeyCode = 13)
     app$wait_for_js(sprintf("!%s.classList.contains('is-changed')", tile))
+    app$wait_for_js("document.activeElement === document.getElementById('colours-light_body')")
     # More parts is one grid of tiles too, with no heading per group.
     expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-role-group-title')).display"), "none")
     expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-role-group')).display"), "contents")

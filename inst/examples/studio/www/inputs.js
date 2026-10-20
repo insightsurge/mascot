@@ -38,9 +38,12 @@
 
   // A role's picker (R/shared-colours.R role_picker()) is marked is-changed while it differs from its listed colour,
   // including after a reset from the server (receiveMessage() triggers a jQuery change).
+  // A page may hide the reset button of an unchanged role: if that button has the focus, the role's picker takes it.
   $(document).on('input change', '.pg-role[data-default] > .pg-colour', (event) => {
     const role = event.currentTarget.closest('.pg-role');
-    role.classList.toggle('is-changed', event.currentTarget.value.toLowerCase() !== role.dataset.default.toLowerCase());
+    const changed = event.currentTarget.value.toLowerCase() !== role.dataset.default.toLowerCase();
+    if (!changed && role.querySelector('.pg-role-reset') === document.activeElement) event.currentTarget.focus();
+    role.classList.toggle('is-changed', changed);
   });
 
   // Copies the text of the element that data-copy names, then says so on the button for a moment.

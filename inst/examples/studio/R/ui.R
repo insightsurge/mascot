@@ -2,7 +2,7 @@
 # cards for the guide, and the small diagrams that explain each category.
 
 # What the studio keeps about a function itself (R/guide.R). Its words come from the help page: see
-# help_page() in R/help.R.
+# help_page() in R/shared-help.R.
 the_guide <- function(fn) {
   checkmate::assert_string(fn)
   checkmate::assert_choice(fn, names(playground_guide))
@@ -936,47 +936,6 @@ palette_swap_section <- function(character) {
     try_button("palette_swap", "kept", paste("Swap and keep", example[["palette"]])),
     try_button("palette_swap", "dropped", paste("Swap and drop", example[["palette"]])),
     tags$div(role = "status", textOutput("palette_swap_result"))
-  )
-}
-
-# The part of a help text (HTML) that starts at `from`, up to its closing paragraph; NULL when absent.
-studio_help_tail <- function(html, from) {
-  checkmate::assert_string(from, min.chars = 1)
-  text <- paste(as.character(html), collapse = "")
-  start <- regexpr(from, text, fixed = TRUE)
-  if (start < 0L) {
-    return(NULL)
-  }
-  tail <- substr(text, start, nchar(text))
-  gsub("\\s+", " ", sub("</p>\\s*$", "", tail))
-}
-
-# The Experimental sections of a function's help page as notes (the badge and the package's own words), or only
-# those whose title matches `title` (a regular expression). No note for a function that is not experimental.
-studio_experimental_notes <- function(fn, title = NULL) {
-  checkmate::assert_string(fn, min.chars = 1)
-  checkmate::assert_string(title, min.chars = 1, null.ok = TRUE)
-  found <- help_page(fn)$experimental
-  if (!is.null(title)) {
-    found <- found[grepl(title, names(found))]
-  }
-  lapply(unname(found), function(html) div(class = "pg-note pg-experimental", html))
-}
-
-# The experimental status of the bslib mapping, in the words of ?mascot_theme (so the two cannot drift), with the
-# same badge as the help page's other experimental sections.
-studio_bslib_experimental <- function() {
-  help <- help_page("mascot_theme")
-  text <- paste(
-    vapply(list(help$description, help$details), function(x) paste(as.character(x), collapse = ""), ""),
-    collapse = " "
-  )
-  tail <- studio_help_tail(text, "Which parts of a character")
-  sentence <- if (!is.null(tail)) sub("(?s)(release\\.).*$", "\\1", tail, perl = TRUE)
-  div(
-    class = "pg-note",
-    tags$span(class = "badge text-bg-warning", "Experimental"),
-    if (!is.null(sentence)) tagList(" ", HTML(sentence))
   )
 }
 

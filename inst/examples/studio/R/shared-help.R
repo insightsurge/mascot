@@ -1,5 +1,5 @@
-# The studio's words are the package's help pages, read at run time, so they cannot drift from
-# the roxygen comments. R/guide.R keeps only what a help page does not have (the category, which
+# The studio app's words are the package's help pages, read at run time, so they cannot drift from
+# the roxygen comments. Every view shares this file: the studio's reference and guide, and the theme view's notes. R/guide.R keeps only what a help page does not have (the category, which
 # vignette section to read next, where an argument can be tried). Shiny sources every file in R/
 # before app.R attaches mascot, so everything here is a function that runs later.
 
@@ -227,4 +227,47 @@ vignette_anchor <- function(heading) {
 
 vignette_url <- function(heading) {
   paste0("https://mascot-pkg.web.app/articles/mascot.html#", vignette_anchor(heading))
+}
+
+# ---- Notes quoted from the help pages ---------------------------------------------------------
+
+# The part of a help text (HTML) that starts at `from`, up to its closing paragraph; NULL when absent.
+studio_help_tail <- function(html, from) {
+  checkmate::assert_string(from, min.chars = 1)
+  text <- paste(as.character(html), collapse = "")
+  start <- regexpr(from, text, fixed = TRUE)
+  if (start < 0L) {
+    return(NULL)
+  }
+  tail <- substr(text, start, nchar(text))
+  gsub("\\s+", " ", sub("</p>\\s*$", "", tail))
+}
+
+# The Experimental sections of a function's help page as notes (the badge and the package's own words), or only
+# those whose title matches `title` (a regular expression). No note for a function that is not experimental.
+studio_experimental_notes <- function(fn, title = NULL) {
+  checkmate::assert_string(fn, min.chars = 1)
+  checkmate::assert_string(title, min.chars = 1, null.ok = TRUE)
+  found <- help_page(fn)$experimental
+  if (!is.null(title)) {
+    found <- found[grepl(title, names(found))]
+  }
+  lapply(unname(found), function(html) shiny::div(class = "pg-note pg-experimental", html))
+}
+
+# The experimental status of the bslib mapping, in the words of ?mascot_theme (so the two cannot drift), with the
+# same badge as the help page's other experimental sections.
+studio_bslib_experimental <- function() {
+  help <- help_page("mascot_theme")
+  text <- paste(
+    vapply(list(help$description, help$details), function(x) paste(as.character(x), collapse = ""), ""),
+    collapse = " "
+  )
+  tail <- studio_help_tail(text, "Which parts of a character")
+  sentence <- if (!is.null(tail)) sub("(?s)(release\\.).*$", "\\1", tail, perl = TRUE)
+  shiny::div(
+    class = "pg-note",
+    shiny::tags$span(class = "badge text-bg-warning", "Experimental"),
+    if (!is.null(sentence)) shiny::tagList(" ", shiny::HTML(sentence))
+  )
 }

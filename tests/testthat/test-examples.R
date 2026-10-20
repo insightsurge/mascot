@@ -35,11 +35,11 @@ describe("mascot_examples()", {
             "R/data.R",
             "R/guide-md.R",
             "R/guide.R",
-            "R/help.R",
             "R/panels.R",
             "R/shared-check.R",
             "R/shared-colours.R",
             "R/shared-data.R",
+            "R/shared-help.R",
             "R/shared-layout.R",
             "R/shared-run.R",
             "R/shared-ui.R",
@@ -141,7 +141,7 @@ describe("mascot_examples()", {
   it("reads every description, argument and return value from the package's help pages", {
     skip_if_not_installed("htmltools")
     help <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), envir = help)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-help.R"), envir = help)
     # Letters and digits only, so markup, quotes and line wrapping do not matter.
     plain <- function(text) tolower(gsub("[^[:alnum:]]", "", text))
     for (fn in getNamespaceExports("mascot")) {
@@ -166,7 +166,7 @@ describe("mascot_examples()", {
   })
   it("renders help text as HTML and finds the help example that supplies an argument", {
     help <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), envir = help)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-help.R"), envir = help)
     expect_error(help$help_page(42), "string")
     expect_error(help$help_arg("mascot_bubble", 42), "string")
     expect_error(help$help_rd("not_a_mascot_function"), "no help page")
@@ -349,7 +349,7 @@ describe("the studio's controls", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     ui <- new.env()
     sys.source(file.path(dir, "R", "guide.R"), envir = ui)
-    sys.source(file.path(dir, "R", "help.R"), envir = ui)
+    sys.source(file.path(dir, "R", "shared-help.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     expect_error(ui$argument_default(42, "position"), "string")
@@ -392,7 +392,7 @@ describe("the studio's controls", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     ui <- new.env()
     sys.source(file.path(dir, "R", "guide.R"), envir = ui)
-    sys.source(file.path(dir, "R", "help.R"), envir = ui)
+    sys.source(file.path(dir, "R", "shared-help.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     sys.source(file.path(dir, "R", "guide-md.R"), envir = ui)
@@ -429,7 +429,7 @@ describe("the studio's controls", {
     data <- new.env()
     sys.source(file.path(dir, "R", "data.R"), envir = data)
     help <- new.env()
-    sys.source(file.path(dir, "R", "help.R"), envir = help)
+    sys.source(file.path(dir, "R", "shared-help.R"), envir = help)
     ui <- new.env()
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     app <- shiny::shinyAppDir(dir)
@@ -1094,7 +1094,7 @@ describe("studio round 8 help and copied apps", {
   })
   it("parses help examples only once per function", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-help.R"), env)
     original <- env$help_rd
     calls <- 0L
     env$help_rd <- function(fn) {
@@ -1218,7 +1218,7 @@ studio_guide_env <- function(frame = parent.frame()) {
   env <- new.env()
   for (file in c(
     "guide.R",
-    "help.R",
+    "shared-help.R",
     "data.R",
     "shared-data.R",
     "shared-ui.R",

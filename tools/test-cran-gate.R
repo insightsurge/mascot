@@ -135,7 +135,9 @@ probe <- function(
   env = character(),
   skip = NULL,
   package = "real",
-  check_output = NULL
+  check_output = NULL,
+  args = character(),
+  expect_exit = NULL
 ) {
   checkmate::assert_string(name)
   checkmate::assert_choice(group, c("static", "heavy"))
@@ -148,6 +150,8 @@ probe <- function(
   checkmate::assert_string(skip, null.ok = TRUE)
   checkmate::assert_choice(package, c("real", "fixture"))
   checkmate::assert_function(check_output, null.ok = TRUE)
+  checkmate::assert_character(args, any.missing = FALSE)
+  checkmate::assert_int(expect_exit, null.ok = TRUE)
   list(
     name = name,
     group = group,
@@ -159,7 +163,9 @@ probe <- function(
     env = env,
     skip = skip,
     package = package,
-    check_output = check_output
+    check_output = check_output,
+    args = args,
+    expect_exit = expect_exit
   )
 }
 
@@ -368,6 +374,15 @@ heavy_probes <- function() {
     "})"
   )
   failing_test <- c("test_that(\"the gate probe fails\", {", "  expect_true(FALSE)", "})")
+  # Fails the first time it runs (the counter file doesn't exist yet) and passes after: the gate's re-run sees it pass.
+  flaky_test <- c(
+    "test_that(\"the gate probe fails once\", {",
+    "  counter <- Sys.getenv(\"GATE_PROBE_COUNTER\")",
+    "  first <- !file.exists(counter)",
+    "  file.create(counter)",
+    "  expect_false(first)",
+    "})"
+  )
   list(
     probe("clean fixture passes in full", "heavy", "full", function(dir) NULL, package = "fixture"),
     probe(
@@ -380,7 +395,7 @@ heavy_probes <- function() {
       package = "fixture"
     ),
     probe(
-      "tests: a failing test is named, its run folder survives and coverage is skipped",
+      "tests: a failing test is named, its run folder survives and it is re-run (failed again)",
       "heavy",
       "tests",
       function(dir) plant(dir, "tests/testthat/test-zz-gate-probe.R", failing_test),
@@ -393,10 +408,60 @@ heavy_probes <- function() {
         if (is.na(folder) || !file.exists(file.path(folder, "tests.json"))) {
           out <- c(out, "the printed run folder is gone or has no tests.json")
         }
-        if (!grepl("(^|\n)SKIP +coverage", output)) {
-          out <- c(out, "coverage wasn't skipped after the failed tests step")
+        if (!grepl("re-run of 1 file(s) without covr: failed again", output, fixed = TRUE)) {
+          out <- c(out, "the FAIL line doesn't say the file was re-run and failed again")
         }
         out
+      }
+    ),
+    probe(
+      "tests: a test that fails once and then passes exits 3 (probable flake)",
+      "heavy",
+      "tests",
+      function(dir) plant(dir, "tests/testthat/test-zz-gate-probe.R", flaky_test),
+      expect_fail = "tests",
+      detail = "passed (probable flake)",
+      package = "fixture",
+      env = c(GATE_PROBE_COUNTER = file.path(tempdir(), "gate-flake-counter")),
+      expect_exit = 3L,
+      check_output = function(output) {
+        if (grepl("FAILED: tests \\(every failing test passed", output)) character() else "no exit-3 note after FAILED"
+      }
+    ),
+    probe(
+      "tests: --no-retry doesn't re-run",
+      "heavy",
+      "tests",
+      function(dir) plant(dir, "tests/testthat/test-zz-gate-probe.R", failing_test),
+      expect_fail = "tests",
+      package = "fixture",
+      args = "--no-retry",
+      check_output = function(output) if (grepl("re-run of", output, fixed = TRUE)) "it re-ran" else character()
+    ),
+    probe(
+      "tests: --no-coverage runs plainly and skips coverage",
+      "heavy",
+      "tests",
+      function(dir) NULL,
+      expect_pass = "tests",
+      package = "fixture",
+      args = "--no-coverage",
+      check_output = function(output) {
+        if (grepl("(^|\n)SKIP +coverage[^\n]*--no-coverage", output)) character() else "coverage wasn't skipped"
+      }
+    ),
+    probe(
+      "tests: a non-standard tests/ layout runs plainly; a failure then skips coverage",
+      "heavy",
+      "tests",
+      function(dir) {
+        plant(dir, "tests/testthat/test-zz-gate-probe.R", failing_test)
+        plant(dir, "tests/extra.R", "invisible(1)")
+      },
+      expect_fail = "tests",
+      package = "fixture",
+      check_output = function(output) {
+        if (grepl("(^|\n)SKIP +coverage[^\n]*covr gives no percentage", output)) character() else "coverage ran"
       }
     ),
     probe(
@@ -440,7 +505,13 @@ problems <- function(probe, status, lines) {
   checkmate::assert_int(status)
   checkmate::assert_character(lines)
   state <- substr(lines, 1, 4)
-  want_exit <- if (length(probe$expect_fail) > 0) 1L else 0L
+  want_exit <- if (!is.null(probe$expect_exit)) {
+    probe$expect_exit
+  } else if (length(probe$expect_fail) > 0) {
+    1L
+  } else {
+    0L
+  }
   out <- character()
   if (status != want_exit) {
     out <- c(out, sprintf("exit %d, expected %d", status, want_exit))
@@ -480,7 +551,7 @@ run_probe <- function(probe, files, gate, fixture = NULL) {
   probe$plant(dir)
   run <- processx::run(
     rscript,
-    c(gate, probe$mode),
+    c(gate, probe$mode, probe$args),
     wd = dir,
     env = child_env(probe$env),
     error_on_status = FALSE,
@@ -564,6 +635,14 @@ unit_checks <- function(gate) {
     class = "rcmdcheck"
   )
   checked <- g$check_result(check)
+  marked <- g$issue_text(
+    data.frame(file = "test-x.R", line = 1L, test = "waits", kind = "Error", message = "timed out after 30 s")
+  )
+  filter_text <- g$rerun_filter(c("test-a.R", "tests/test-b.c.R"))
+  flakes <- file.path(dir, "flakes.tsv")
+  g$append_flakes(flakes, state$tests$bad, "tests", "passed (probable flake)")
+  g$append_flakes(flakes, state$tests$bad, "tests", "failed again")
+  flake_rows <- utils::read.delim(flakes, stringsAsFactors = FALSE)
   list(
     unit(
       "run folder: <parent>/<YYYYmmdd-HHMMSS>-<mode>, created",
@@ -629,6 +708,42 @@ unit_checks <- function(gate) {
       checked$status == "FAIL" &&
         grepl("failing tests: Failure ('test-a.R:3:3'): fails", checked$detail, fixed = TRUE),
       checked$detail
+    ),
+    unit(
+      "timeout label: a failure that reads like a wait running out is marked, others are not",
+      grepl("[looks like a timeout]", marked, fixed = TRUE) &&
+        !grepl("[looks like a timeout]", g$issue_text(state$tests$bad[1, ]), fixed = TRUE),
+      marked
+    ),
+    unit(
+      "re-run filter: picks exactly the failing files, without test- and .R, dots escaped",
+      identical(filter_text, "^(a|b\\.c)$") &&
+        grepl("a", "a") &&
+        !grepl(filter_text, "ab") &&
+        grepl(filter_text, "b.c") &&
+        !grepl(filter_text, "bxc"),
+      filter_text
+    ),
+    unit(
+      "exit codes: 0 passed, 1 a failure, 3 only a flaky tests step, 1 for a flaky test plus another failure",
+      identical(
+        c(
+          g$exit_code(character(), FALSE),
+          g$exit_code("tests", FALSE),
+          g$exit_code("tests", TRUE),
+          g$exit_code(c("tests", "docs"), TRUE)
+        ),
+        c(0L, 1L, 3L, 1L)
+      )
+    ),
+    unit(
+      "flake log: one row per retried failure with the re-run result, the header written once",
+      nrow(flake_rows) == 4 &&
+        identical(names(flake_rows)[1:4], c("date", "mode", "commit", "file")) &&
+        all(
+          flake_rows$rerun == c("passed (probable flake)", "passed (probable flake)", "failed again", "failed again")
+        ),
+      paste(names(flake_rows), collapse = ", ")
     )
   )
 }

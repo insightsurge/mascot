@@ -2,12 +2,21 @@
 # cran-gate version: 2026-10-21
 # CRAN gate: one command that says whether an R package would pass CRAN's checks, before you submit it.
 #
-#   Rscript <path to this file> [fast|tests|full|lint] [--update-wordlist]
+#   Rscript <path to this file> [fast|tests|full|lint] [--no-coverage] [--no-retry] [--update-wordlist]
 #
 #   fast  (default) tools, style, docs in sync, \value, spelling, R CMD check --as-cran without tests
 #   tests           tools, tests (NOT_CRAN=true, so tests that CRAN skips run too) and coverage
 #   full            everything: fast steps, tests, coverage, CRAN-like check with tests, built tarball
 #   lint            the quick static steps only: tools, style, docs in sync, \value, spelling
+#
+# In `tests` and `full` the suite runs ONCE, under covr, and the same run gives the test results and the coverage
+# (a package whose tests/ is not the standard testthat layout falls back to a plain run plus a separate covr run).
+# --no-coverage runs the suite plainly, without covr (quicker, no coverage); --no-retry skips the re-run below.
+# When tests fail, the failing files are re-run once without covr: if every one then passes, the line says so
+# ("probable flake") and the gate exits 3; each retried failure is appended to flakes.tsv beside the run folder.
+#
+# Exit codes: 0 every step passed or skipped; 1 a step failed; 3 the only failures are tests that passed on the
+# re-run (a person decides: it is not merge evidence on its own).
 #
 # Run it from the package root. It prints one PASS/FAIL/SKIP line per step and a summary, and exits 1 if any step
 # fails. Detailed output goes to a run folder that outlives the gate (its path is printed): one log per step,
@@ -419,10 +428,77 @@ test_issues <- function(res) {
   do.call(rbind, c(list(empty), unlist(rows, recursive = FALSE)))
 }
 
-# Issues as `file:line "test" (Kind: message)`.
+# A failure message that reads like a timeout (a wait that ran out), which a package may fix by waiting longer.
+timeout_like <- function(message) {
+  checkmate::assert_character(message, any.missing = FALSE)
+  grepl("timed? ?out|timeout|within [0-9]+ ?(s|sec|seconds)", message, ignore.case = TRUE)
+}
+
+# Issues as `file:line "test" (Kind: message)`, with a note on the ones that look like a timeout.
 issue_text <- function(issues) {
   checkmate::assert_data_frame(issues)
-  sprintf("%s:%s \"%s\" (%s: %s)", issues$file, issues$line, issues$test, issues$kind, issues$message)
+  note <- ifelse(timeout_like(issues$message), " [looks like a timeout]", "")
+  sprintf("%s:%s \"%s\" (%s: %s)%s", issues$file, issues$line, issues$test, issues$kind, issues$message, note)
+}
+
+# The testthat `filter` that picks exactly these test files (testthat matches it against the file name without the
+# `test-` or `test_` prefix and the .R extension).
+rerun_filter <- function(files) {
+  checkmate::assert_character(files, min.len = 1, any.missing = FALSE)
+  names <- sub("^test[-_]", "", sub("\\.[Rr]$", "", basename(files)))
+  escaped <- gsub("([.|()\\^{}+$*?]|\\[|\\])", "\\\\\\1", names)
+  paste0("^(", paste(unique(escaped), collapse = "|"), ")$")
+}
+
+# The gate's exit code: 0 passed, 1 a step failed, 3 the only failure is tests that passed on the re-run.
+exit_code <- function(failed, flaky) {
+  checkmate::assert_character(failed, any.missing = FALSE)
+  checkmate::assert_flag(flaky)
+  if (length(failed) == 0) {
+    return(0L)
+  }
+  if (flaky && identical(unique(failed), "tests")) 3L else 1L
+}
+
+# The git commit the run is for, or "" outside a repository.
+git_head <- function() {
+  out <- suppressWarnings(tryCatch(
+    system2("git", c("rev-parse", "--short", "HEAD"), stdout = TRUE, stderr = FALSE),
+    error = function(e) character()
+  ))
+  if (length(out) == 0 || !is.null(attr(out, "status"))) "" else out[[1]]
+}
+
+# Appends one row per retried failure to flakes.tsv (date, mode, commit, file, line, test, kind, message, re-run).
+append_flakes <- function(path, issues, mode, rerun) {
+  checkmate::assert_string(path)
+  checkmate::assert_data_frame(issues)
+  checkmate::assert_string(mode)
+  checkmate::assert_string(rerun)
+  if (nrow(issues) == 0) {
+    return(invisible(path))
+  }
+  rows <- data.frame(
+    date = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+    mode = mode,
+    commit = git_head(),
+    file = issues$file,
+    line = issues$line,
+    test = issues$test,
+    kind = issues$kind,
+    message = gsub("[\t\r\n]+", " ", issues$message),
+    rerun = rerun
+  )
+  utils::write.table(
+    rows,
+    path,
+    sep = "\t",
+    quote = FALSE,
+    row.names = FALSE,
+    col.names = !file.exists(path),
+    append = file.exists(path)
+  )
+  invisible(path)
 }
 
 # Reads a testthat results object: writes tests.rds and tests.json to the run folder and returns the counts, the
@@ -487,6 +563,91 @@ tests_result <- function(summary, txt) {
   result("FAIL", paste0(counts, ": ", paste(named, collapse = "; "), more, "; details: ", txt))
 }
 
+# Whether the tests step can run the suite once under covr and take the results from that run: the gate is going to
+# measure coverage (tests or full mode, no --no-coverage), covr is installed, and tests/ is the standard testthat
+# layout (only testthat.R beside testthat/), which is what covr's own `tests` run would execute.
+single_run_ok <- function(state) {
+  checkmate::assert_environment(state)
+  tests_dir <- list.files("tests", all.files = FALSE)
+  isTRUE(state$mode %in% c("tests", "full")) &&
+    !isTRUE(state$no_coverage) &&
+    requireNamespace("covr", quietly = TRUE) &&
+    file.exists("tests/testthat.R") &&
+    setequal(tests_dir, c("testthat", "testthat.R"))
+}
+
+# One covr run that executes the suite against the installed package and saves testthat's results. Returns them;
+# the coverage object is left in state$cov for the coverage step.
+tests_under_covr <- function(run_dir, txt, log, state) {
+  checkmate::assert_directory_exists(run_dir, access = "w")
+  checkmate::assert_string(txt)
+  checkmate::assert_string(log)
+  checkmate::assert_environment(state)
+  pkg <- read.dcf("DESCRIPTION", fields = "Package")[[1]]
+  rds <- file.path(run_dir, "tests.rds")
+  unlink(rds)
+  code <- c(
+    sprintf(
+      paste0(
+        "res <- testthat::test_dir(%s, package = %s, load_package = 'installed', ",
+        "reporter = testthat::SummaryReporter$new(file = %s, max_reports = Inf), stop_on_failure = FALSE)"
+      ),
+      deparse(normalizePath("tests/testthat")),
+      deparse(pkg),
+      deparse(txt)
+    ),
+    sprintf("saveRDS(res, %s)", deparse(rds))
+  )
+  # covr cuts the failure output to warning.length characters (1000 by default): raise it to R's maximum.
+  withr::local_options(warning.length = 8170L)
+  state$cov <- tryCatch(
+    run_logged(function() covr::package_coverage(quiet = TRUE, type = "none", code = code), log),
+    error = function(e) {
+      write(conditionMessage(e), log, append = TRUE)
+      if (!file.exists(rds)) {
+        stop(first_message_line(conditionMessage(e)), call. = FALSE)
+      }
+      NULL
+    }
+  )
+  readRDS(rds)
+}
+
+# After a failed run: re-run only the failing files once, without covr, and say whether they pass then. A pass is
+# reported as a probable flake (the gate exits 3), never as a PASS. More than 5 failing files is a breakage.
+retry_failed <- function(out, state, run_dir, log) {
+  checkmate::assert_list(out)
+  checkmate::assert_environment(state)
+  checkmate::assert_directory_exists(run_dir, access = "w")
+  checkmate::assert_string(log)
+  bad <- state$tests$bad
+  files <- unique(bad$file)
+  if (isTRUE(state$no_retry) || length(files) == 0) {
+    return(out)
+  }
+  if (length(files) > 5) {
+    return(result("FAIL", paste0(out$detail, "; not re-run: ", length(files), " files failed, that is a breakage")))
+  }
+  again <- tryCatch(
+    run_logged(
+      function() devtools::test(filter = rerun_filter(files), stop_on_failure = FALSE, reporter = "silent"),
+      log
+    ),
+    error = function(e) NULL
+  )
+  if (is.null(again)) {
+    return(result("FAIL", paste0(out$detail, "; the re-run could not be made")))
+  }
+  still <- test_issues(again)
+  still <- still[still$kind != "Warning", , drop = FALSE]
+  passed <- nrow(still) == 0
+  state$flaky <- passed
+  verdict <- if (passed) "passed (probable flake)" else "failed again"
+  append_flakes(file.path(dirname(run_dir), "flakes.tsv"), bad, state$mode, verdict)
+  where <- if (isTRUE(state$single_run)) " without covr" else ""
+  result("FAIL", sprintf("%s; re-run of %d file(s)%s: %s", out$detail, length(files), where, verdict))
+}
+
 step_tests <- function(uses, run_dir, log, state) {
   checkmate::assert_list(uses, types = "logical")
   checkmate::assert_directory_exists(run_dir, access = "w")
@@ -497,11 +658,20 @@ step_tests <- function(uses, run_dir, log, state) {
   }
   withr::local_envvar(NOT_CRAN = "true")
   txt <- file.path(run_dir, "tests.txt")
-  reporter <- testthat::SummaryReporter$new(file = txt, max_reports = Inf)
-  # stop_on_failure = FALSE: with TRUE, testthat aborts with "Test failures." and its results are lost.
-  res <- run_logged(function() devtools::test(stop_on_failure = FALSE, reporter = reporter), log)
+  state$single_run <- single_run_ok(state)
+  res <- if (state$single_run) {
+    tests_under_covr(run_dir, txt, log, state)
+  } else {
+    reporter <- testthat::SummaryReporter$new(file = txt, max_reports = Inf)
+    # stop_on_failure = FALSE: with TRUE, testthat aborts with "Test failures." and its results are lost.
+    run_logged(function() devtools::test(stop_on_failure = FALSE, reporter = reporter), log)
+  }
   state$tests <- summarise_tests(res, run_dir)
-  tests_result(state$tests, txt)
+  out <- tests_result(state$tests, txt)
+  if (out$status == "FAIL") {
+    out <- retry_failed(out, state, run_dir, log)
+  }
+  out
 }
 
 step_coverage <- function(uses, settings, log, state) {
@@ -512,25 +682,32 @@ step_coverage <- function(uses, settings, log, state) {
   if (!uses$tests) {
     return(result("SKIP", "the package has no tests/"))
   }
-  if (identical(state$statuses[["tests"]], "FAIL")) {
-    return(result("SKIP", "tests failed, and covr gives no percentage when a test fails"))
+  if (isTRUE(state$no_coverage)) {
+    return(result("SKIP", "--no-coverage"))
   }
   withr::local_envvar(NOT_CRAN = "true")
-  # covr cuts the failure output to warning.length characters (1000 by default): raise it to R's maximum.
-  withr::local_options(warning.length = 8170L)
-  cov <- tryCatch(
-    run_logged(function() covr::package_coverage(quiet = TRUE), log),
-    error = function(e) {
-      message <- conditionMessage(e)
-      write(message, log, append = TRUE)
-      failing <- failure_headers(message)
-      if (length(failing) == 0) {
-        return(result("FAIL", first_message_line(message)))
-      }
-      more <- if (length(failing) > 3) sprintf(" +%d more", length(failing) - 3) else ""
-      result("FAIL", paste0("tests failed under covr: ", paste(utils::head(failing, 3), collapse = "; "), more))
+  cov <- state$cov
+  if (!inherits(cov, "coverage")) {
+    if (identical(state$statuses[["tests"]], "FAIL")) {
+      return(result("SKIP", "tests failed, and covr gives no percentage when a test fails"))
     }
-  )
+    # The tests step did not run under covr (a non-standard tests/ layout): run covr's own tests run.
+    # covr cuts the failure output to warning.length characters (1000 by default): raise it to R's maximum.
+    withr::local_options(warning.length = 8170L)
+    cov <- tryCatch(
+      run_logged(function() covr::package_coverage(quiet = TRUE), log),
+      error = function(e) {
+        message <- conditionMessage(e)
+        write(message, log, append = TRUE)
+        failing <- failure_headers(message)
+        if (length(failing) == 0) {
+          return(result("FAIL", first_message_line(message)))
+        }
+        more <- if (length(failing) > 3) sprintf(" +%d more", length(failing) - 3) else ""
+        result("FAIL", paste0("tests failed under covr: ", paste(utils::head(failing, 3), collapse = "; "), more))
+      }
+    )
+  }
   if (!inherits(cov, "coverage")) {
     return(cov)
   }
@@ -538,11 +715,17 @@ step_coverage <- function(uses, settings, log, state) {
     return(result("PASS", "no R code lines to cover yet"))
   }
   pct <- covr::percent_coverage(cov)
+  after_failure <- if (identical(state$statuses[["tests"]], "FAIL")) " (from a run with failing tests)" else ""
   if (pct < settings$coverage) {
-    return(result("FAIL", sprintf("%.1f%% is under %g%%; see covr::zero_coverage()", pct, settings$coverage)))
+    return(
+      result(
+        "FAIL",
+        sprintf("%.1f%% is under %g%%; see covr::zero_coverage()%s", pct, settings$coverage, after_failure)
+      )
+    )
   }
   limit <- if (settings$coverage > 0) sprintf("at least %g%% needed", settings$coverage) else "no limit set"
-  result("PASS", sprintf("%.1f%% (%s)", pct, limit))
+  result("PASS", sprintf("%.1f%% (%s)%s", pct, limit, after_failure))
 }
 
 step_tarball <- function(settings, log) {
@@ -651,8 +834,9 @@ failure_report <- function(failed, run_dir, state, whole_logs) {
 
 main <- function(args) {
   checkmate::assert_character(args, any.missing = FALSE)
+  flags <- c("--update-wordlist", "--no-coverage", "--no-retry")
   update <- "--update-wordlist" %in% args
-  mode <- setdiff(args, "--update-wordlist")
+  mode <- setdiff(args, flags)
   mode <- if (length(mode) == 0) "fast" else mode
   checkmate::assert_choice(mode, modes, .var.name = "mode")
   if (!file.exists("DESCRIPTION")) {
@@ -668,6 +852,10 @@ main <- function(args) {
   run_dir <- run_folder(default_out(), mode)
   state <- new.env()
   state$statuses <- character()
+  state$mode <- mode
+  state$no_coverage <- "--no-coverage" %in% args
+  state$no_retry <- "--no-retry" %in% args
+  state$flaky <- FALSE
   rows <- data.frame(step = character(), status = character(), seconds = numeric(), detail = character())
   cli::cli_h1("CRAN gate: {mode}")
   cli::cat_line("Run folder: ", run_dir)
@@ -691,8 +879,10 @@ main <- function(args) {
   cli::cat_line("Run folder: ", run_dir)
   if (length(failed) > 0) {
     cli::cat_line(failure_report(failed, run_dir, state, whole_logs = identical(Sys.getenv("CI"), "true")))
-    cli::cat_line("FAILED: ", paste(failed, collapse = ", "))
-    quit(status = 1)
+    code <- exit_code(failed, isTRUE(state$flaky))
+    note <- if (code == 3L) " (every failing test passed on the re-run: a probable flake, exit code 3)" else ""
+    cli::cat_line("FAILED: ", paste(failed, collapse = ", "), note)
+    quit(status = code)
   }
   cli::cat_line("All steps passed (", sum(statuses == "SKIP"), " skipped).")
   invisible(statuses)

@@ -262,6 +262,25 @@ widget's rendered output (section 6). Every change in `inst/www/` adds an entry 
 - Avoid `:::` into shiny or bslib: it is fragile, and reviewers flag it (**CRAN** for base packages, house for the
   rest).
 
+### Lifecycle and status words
+
+**House.** The lifecycle badge is used only for experimental and deprecated. Other promises weaker than "stable"
+use plain words in help pages:
+- **informal:** the shape is not promised (example: the palettes text in `mascot_characters()`).
+- **add-only:** ids and columns may be added, never removed or renamed.
+- **reserved:** a name held back so nothing else can take it (example: `wear`, `minimal`, `pastel`, `vivid`, `corporate`, `earthy`, `night`, `original`).
+- **dev-mode only:** appears only in Shiny development mode.
+
+**Experimental in 0.1.0:**
+- Knurl and Neer
+- `mascot_studio()`
+- `mascot_preview()`
+- `mascot_theme(css =)`
+- `mascot_placement(drag = "free")`
+- which parts of a character a `bs_theme()` colours
+- `mascot_read_character()` and `mascot_check_character()` (once exported)
+- the character file format
+
 ## 6. Testing
 
 - **A pyramid.** Most tests are fast unit tests. Above them sit `shiny::testServer()` tests for server logic, and

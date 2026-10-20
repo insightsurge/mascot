@@ -27,6 +27,9 @@ mascot("helper", placement = "inline")
 mascot("helper", placement = mascot_placement("top-left", minimise = TRUE))
 ```
 
+In a rendered Quarto page there is no server: use `placement = "inline"` in an R chunk, give each mascot its own `id`,
+and see "Quarto pages" in the Get started article.
+
 ```{r mascot_placement-mistakes, echo = FALSE}
 if (!in_studio()) guide_mistakes_html("mascot_placement", studio_character)
 ```

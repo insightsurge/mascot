@@ -437,7 +437,7 @@ versions in `lint.yaml` and `gate-self-test.yaml` in step with the local install
 |---|---|
 | Pre-commit framework | One maintainer and no shared clone yet; it needs a Python tool. The gate and CI cover the same checks. Revisit when others commit |
 | Codecov | The repository is private. The 70 percent gate runs inside the coverage workflow. Optional once public |
-| Screenshot tests | They differ between operating systems and Chrome versions. Values, DOM state and draw-call hashes are stable |
+| Screenshot tests in the test suite and CI | They differ between operating systems and Chrome versions. Values, DOM state and draw-call hashes are stable. A manual-only visual baseline runner exists for engine acceptance (`tools/visual/`, workflow `engine-visual`); its baselines are provisional until canonical Ubuntu captures are published |
 | jest or vitest | JS logic is kept small and tested through shinytest2. `node --test` is the fallback if pure functions grow |
 | TypeScript and a build step | Only needed for TypeScript or npm libraries. Plain JS is its own source and needs no Node in CI |
 | htmlwidgets | An extra dependency built around plots; `htmlDependency()` plus an output binding is enough |

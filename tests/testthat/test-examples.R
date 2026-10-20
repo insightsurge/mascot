@@ -1407,7 +1407,7 @@ describe("studio guide pages", {
     mascot_examples = c("Pick an example by its task", "List the names"),
     mascot_studio = c(
       "Open a useful starting point",
-      "Two views, one app",
+      "Three views, one app",
       "Inspect without launching",
       "What to look at first"
     )

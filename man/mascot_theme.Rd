@@ -18,9 +18,12 @@ mascot_theme(
 
 \item{palette}{A palette id from \code{\link[=mascot_palettes]{mascot_palettes()}}, or \code{NULL} (the default)
 for the character's own colours. Checked against the chosen character when
-used. \code{"original"} also chooses its own colours. A palette is applied first,
-then \code{light} and \code{dark} roles, then \code{css}. Without a dark map, a palette uses
-its light colours in both modes. A \code{bs_theme()} is a separate alternative.}
+used. An unknown palette id is an error in \code{\link[=mascot]{mascot()}} (the UI is being
+built) but only a warning in \code{\link[=update_mascot]{update_mascot()}} (a live session, so the
+mascot keeps running unchanged). \code{"original"} also
+chooses its own colours. A palette is applied first, then \code{light} and \code{dark}
+roles, then \code{css}. Without a dark map, a palette uses its light colours in
+both modes. A \code{bs_theme()} is a separate alternative.}
 
 \item{light, dark}{Named lists of colour roles, or \code{NULL} (the default) to keep
 the palette's colours (or the character's own colours) in that mode.

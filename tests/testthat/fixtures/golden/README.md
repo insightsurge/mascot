@@ -1,0 +1,1 @@
+Frozen copies of the character files of each released version. At each release add a folder named for that version and copy the shipped example and built-in character files into it. Never edit a file in an existing folder. Every later version must load every file here unchanged (check passes). Until the 0.1.0 release this folder is provisional and may be refreshed.

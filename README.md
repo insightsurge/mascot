@@ -8,6 +8,10 @@ fails validation. It follows light and dark mode, and takes its colours from you
 
 **Status:** early development, before 0.1.0. Not on CRAN yet.
 
+**Experimental (may change in 0.1.x):** Knurl and Neer, `mascot_studio()`, `mascot_preview()`, `mascot_theme(css =)`, `drag = "free"`, the mapping of `bs_theme()` colours to a character's parts, and the character file format. Tessa and Sela are stable.
+
+**Make your own character: coming soon.** In 0.1.0 a character file can be read and checked (experimental); saving and registering characters and palettes follow in 0.1.x.
+
 - Scope, users and planned releases: [`docs/scope.md`](https://github.com/insightsurge/mascot/blob/main/docs/scope.md)
 - Known users: [`docs/consumers.md`](https://github.com/insightsurge/mascot/blob/main/docs/consumers.md)
 - Plan: the milestones and the epic tree under issue #1

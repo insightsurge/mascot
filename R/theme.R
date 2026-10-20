@@ -48,9 +48,12 @@
 #' Note that `suppressWarnings()` also works but hides every warning.
 #' @param palette A palette id from [mascot_palettes()], or `NULL` (the default)
 #'   for the character's own colours. Checked against the chosen character when
-#'   used. `"original"` also chooses its own colours. A palette is applied first,
-#'   then `light` and `dark` roles, then `css`. Without a dark map, a palette uses
-#'   its light colours in both modes. A `bs_theme()` is a separate alternative.
+#'   used. An unknown palette id is an error in [mascot()] (the UI is being
+#'   built) but only a warning in [update_mascot()] (a live session, so the
+#'   mascot keeps running unchanged). `"original"` also
+#'   chooses its own colours. A palette is applied first, then `light` and `dark`
+#'   roles, then `css`. Without a dark map, a palette uses its light colours in
+#'   both modes. A `bs_theme()` is a separate alternative.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param light,dark Named lists of colour roles, or `NULL` (the default) to keep
 #'   the palette's colours (or the character's own colours) in that mode.

@@ -19,7 +19,9 @@ family \code{id}), and logical columns \code{is_default} (\code{TRUE} only for t
 character \code{\link[=mascot]{mascot()}} uses when you name none) and \code{built_in} (\code{TRUE} for
 characters shipped with the package), and \code{lifecycle} (\code{"stable"} or
 \code{"experimental"} for built-in characters, or \code{NA} for a registered
-custom character), and \code{palettes} (comma-separated palette ids).
+custom character), and \code{palettes} (comma-separated palette ids; informal
+text for reading, so its exact shape is not promised: use \code{\link[=mascot_palettes]{mascot_palettes()}}
+for ids you rely on).
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types. The first column is the value you pass to the matching function.
 }
@@ -65,3 +67,7 @@ Other mascot helpers:
 \code{\link[=mascot_theme]{mascot_theme()}}
 }
 \concept{mascot helpers}
+\section{Experimental characters}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+Knurl and Neer.
+}

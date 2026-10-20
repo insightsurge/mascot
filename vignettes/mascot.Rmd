@@ -12,523 +12,290 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(mascot) # nolint: undesirable_function_linter.
 ```
 
-A mascot is a character drawn in code beside your app's ordinary feedback.
-Tessa can look worried while a form needs attention, think while work runs,
-and celebrate when it finishes. Status text carries the meaning even when
-someone cannot see the drawing or prefers less movement.
+## In a minute
 
-The package works offline. It is built for good practice (`GxP`) work: the app
-supplies the state and the words, and no AI service is involved. A mascot
-complements field errors and results; it does not replace them.
+`mascot` puts a small character drawn in code into your Shiny app or Quarto page. It shows a mood with a status line beside it, and wiggles into the new face when the mood changes. You control it from R with plain arguments, with no AI service involved. It is built for good practice (`GxP`) work, sitting beside your ordinary field errors and results rather than replacing them.
 
-If the Shiny connection drops, the mascot shows its worried face and a
-connection message until the app reconnects.
+What you get:
+
+- **A character with moods:** four built-in characters with five shared moods (`"idle"`, `"thinking"`, `"happy"`, `"worried"` and `"celebrating"`).
+- **Status text beside it:** a visible text line next to the drawing so the face never speaks alone.
+- **Smooth motion:** a short wiggle on mood changes, plus nods and waves that respect reduced-motion settings.
+- **Light and dark mode:** follows your `bslib` colour toggle or Quarto's theme mode.
+- **Your colours:** built-in palettes, custom light and dark colours, or brand colours from `bslib::bs_theme()`.
+- **Offline by design:** ships every script and style in the package, and shows a worried face if Shiny disconnects.
+- **A studio to explore:** [`mascot_studio()`](guide-mascot_studio.html) (experimental) lets you try every function live and copy the R code.
+
+`mascot` is not on CRAN yet, and its GitHub repository is private for now. Once the repository is public, install the development version with `pak`:
+
+```{r install, eval=FALSE}
+# install.packages("pak")
+pak::pak("insightsurge/mascot")
+```
 
 ## Your first app
 
-Put this code in an `app.R` file and run it from an interactive R session.
-Click **Finish review** to change Tessa's mood and message together.
+Suppose you have a batch review page where Tessa, the default character, waits in the corner until someone clicks **Finish review**, then smiles and confirms that every row passed. Put this code in an `app.R` file and run it from an interactive R session:
 
 ```{r first-app, eval=FALSE}
 library(shiny)
 library(mascot)
 
 ui <- fluidPage(
-  h1("Sample review"),
+  h1("Batch review"),
   actionButton("finish", "Finish review"),
   mascot("helper", status = "Ready to review")
 )
 
 server <- function(input, output, session) {
   observeEvent(input$finish, {
-    update_mascot("helper", mood = "happy", status = "Review complete",
-      bubble = mascot_bubble("All rows checked.", duration = 5))
+    update_mascot(
+      "helper",
+      mood = "happy",
+      status = "Review complete",
+      bubble = mascot_bubble("All rows checked.", duration = 5)
+    )
   })
 }
 
 shinyApp(ui, server)
 ```
 
-`mascot("helper", ...)` belongs in the UI; `update_mascot("helper", ...)`
-belongs in the server. Arguments after the id must be named.
+How each line works:
 
-Give each mascot its own id.
-
-### Show the mascot later
-
-To add the mascot only when it is needed, build it in the server with
-`renderUI()` and place `uiOutput()` in the UI. Updates sent before it appears
-are kept until it does, so the first `update_mascot()` can run in the same
-observer.
-
-```{r show-later, eval=FALSE}
-library(shiny)
-library(mascot)
-
-ui <- fluidPage(
-  actionButton("start", "Start the review"),
-  actionButton("finish", "Finish"),
-  uiOutput("helper_ui")
-)
-
-server <- function(input, output, session) {
-  shown <- reactiveVal(FALSE)
-  output$helper_ui <- renderUI({
-    req(shown())
-    mascot("helper", status = "Reviewing")
-  })
-  observeEvent(input$start, {
-    shown(TRUE)
-    # Sent before the mascot exists: kept until it appears.
-    update_mascot("helper", mood = "thinking")
-  })
-  observeEvent(input$finish, {
-    update_mascot("helper", mood = "happy", status = "Review complete")
-  })
-}
-
-shinyApp(ui, server)
-```
-
-The `reactiveVal()` makes the mascot appear once: clicking **Start the review**
-again does not rebuild it, so it keeps its mood and position.
+- `library(shiny)` and `library(mascot)` load Shiny and the package.
+- [`mascot()`](guide-mascot.html) adds Tessa in the bottom-right corner with the id `"helper"` and `"Ready to review"` beside her.
+- `observeEvent(input$finish, { ... })` waits for your user to click **Finish review**.
+- [`update_mascot()`](guide-update_mascot.html) updates `"helper"` in place using the same id.
+- `mood = "happy"` and `status = "Review complete"` change Tessa's face and status text together.
+- [`mascot_bubble()`](guide-mascot_bubble.html) shows a speech bubble above Tessa that closes after five seconds (`duration = 5`).
 
 ## Open an example
 
-Start with mascot studio, `mascot_studio()` (experimental). Select a function in the index on
-the left; its arguments appear in the controls on the right, and one live Tessa
-follows your changes. Each argument's information button shows its help text,
-and the Guide button opens the function's help with pictures and common
-mistakes. Selecting `mascot_preview()` shows its static page in place of the
-live mascot. The Code tray under the canvas holds UI, server and whole-app code
-to copy, plus the last call and an event log; collapse it from its header, drag
-its top edge to resize it, or open it full screen. Both side panels collapse.
-The four other apps each show one scenario.
+You can try the bundled Shiny apps before writing your own code.
 
-![Mascot studio: a function index on the left, Tessa with a checklist bubble above the Code tray in the centre, and the selected function's controls on the right.](figures/studio-light.png)
+- [`mascot_examples()`](guide-mascot_examples.html) lists the seven bundled example apps in teaching order.
+- [`mascot_example()`](guide-mascot_example.html) runs an example by name, or returns the path to its `app.R` with `run = FALSE`.
+- [`mascot_studio()`](guide-mascot_studio.html) (experimental) opens an interactive playground where you can click through every function and copy the code.
 
-```{r catalogue}
+```{r open-example-list}
 mascot_examples()
 ```
 
-```{r run-example, eval=FALSE}
-mascot_example("studio")
+```{r open-example-run, eval=FALSE}
+mascot_example("form-check")
+mascot_studio()
 ```
 
-To read a scenario without running it:
+## The big ideas
 
-```{r locate-example}
-app_file <- mascot_example("form-check", run = FALSE)
-basename(app_file)
-```
-
-Each scenario's `app.R` contains its UI and server and runs alone when copied
-into a project with shiny, `bslib` and mascot installed. Layout uses ordinary
-`bslib` cards. The studio is a folder: `app.R`, with its helpers in `R/`
-and its styles in `www/`. `mascot_example()` does not copy or write files.
+- **One id connects UI and server:** pass the same id string to [`mascot()`](guide-mascot.html) in the UI and [`update_mascot()`](guide-update_mascot.html) in the server, naming all other arguments.
+- **Mood plus status text:** the text beside the character carries the meaning for your users and screen readers, so the face never stands alone.
+- **`NULL` leaves a setting unchanged:** in `update_mascot()`, `NULL` keeps the current value on the page, while an empty helper resets it.
+- **Bad runtime values warn without crashing:** invalid values in `update_mascot()` warn and leave the mascot untouched instead of stopping the app.
+- **Helpers are optional shortcuts:** pass a plain value like `size = 180`, or use [`mascot_size()`](guide-mascot_size.html) when you want extra options.
 
 ## Moods and status
 
-```{r moods}
-mascot_moods()
-```
+When a form has missing entries or a report takes 20 seconds to build, update the mood and status line together so people using your app can see what is happening.
 
-```{r mood-helpers, results="hide"}
-mascot_mood("worried")
-mascot_status("2 fields need attention")
-mascot_character("tessa")
-```
+- Every character has five shared moods (`"idle"`, `"thinking"`, `"happy"`, `"worried"` and `"celebrating"`), listed by [`mascot_moods()`](guide-mascot_moods.html).
+- Set a mood by name or with [`mascot_mood()`](guide-mascot_mood.html) in [`mascot()`](guide-mascot.html) and [`update_mascot()`](guide-update_mascot.html).
+- Leave `status = NULL` in `mascot()` to use the mood's default status line, or pass your own text with [`mascot_status()`](guide-mascot_status.html).
+- For a slow task, show the `"thinking"` mood first, do the work, then update the mood when it finishes (`"long-task"` in [`mascot_example()`](guide-mascot_example.html) shows how).
+- Choose a character with [`mascot_character()`](guide-mascot_character.html), list them with [`mascot_characters()`](guide-mascot_characters.html), and see their families and attachment points with [`mascot_families()`](guide-mascot_families.html) and [`mascot_anchors()`](guide-mascot_anchors.html).
+- Tessa and Sela are stable, while Knurl and Neer are experimental and may change (with a warning one release before any removal).
 
-Tessa and Sela are stable built-in characters: their ids, names, five shared
-moods, gesture names, colour-role names and palette names stay the same in
-every release, while their drawings, motion and exact palette colours may be
-polished. Knurl and Neer (experimental) may change in any way, and neither will
-be removed without a warning in the release before its removal. The character file
-format and authoring functions are experimental too. `mascot_character()`
-selects a character; it does not create a new one. The plain names
-`character = "tessa"` and `mood = "worried"` are shortcuts for their helpers.
-
-`mascot_characters()` lists the characters this R session knows, and
-`mascot_families()` their families. Give a character to a listing to see what
-it declares: `mascot_moods("tessa")` adds the status text of each mood, and
-`mascot_gestures("tessa")` the length of each movement. `mascot_anchors()` and
-`mascot_palettes()` list a character's attachment points and colour palettes.
-
-```{r character-listings}
+```{r moods-and-characters}
 mascot_characters()
-mascot_gestures("tessa")
+mascot_moods("tessa")
 ```
 
-Without custom status, Tessa's line follows the mood: **Working out how the
-parts fit.**, **That came together nicely.**, and so on. Custom status stays
-until replaced or reset.
-
-```{r status-update, eval=FALSE}
-update_mascot("helper", mood = mascot_mood("worried"),
-  status = mascot_status("2 fields need attention"))
-update_mascot("helper", status = mascot_status()) # Follow the mood again.
+```{r mood-status-update, eval=FALSE}
+update_mascot("helper", mood = "worried", status = "2 fields need attention")
+update_mascot("helper", mood = "happy", status = mascot_status())
 ```
 
-Try `mascot_example("form-check")` for a plain `observe()` that checks two
-fields. It uses no extra validation package. Try `mascot_example("long-task")`
-for a slow step run with `shiny::ExtendedTask`: Tessa thinks while it runs and
-turns happy or worried when it finishes, and the app stays responsive. The
-example's task is a two-second promise; for real work, return
-`mirai::mirai(...)` from the task function. Automatic busy and validator
-watchers are not available yet; these apps send explicit updates.
+"Make your own character" is coming soon. In 0.1.0 you can read and check a character file with [`mascot_read_character()`](guide-mascot_read_character.html) or [`mascot_check_character()`](guide-mascot_check_character.html) (both experimental) and pass the result to `mascot_character()`, `mascot()`, `update_mascot()` or [`mascot_preview()`](guide-mascot_preview.html). See [Write your own character](write-your-own-character.html) for details.
 
 ## Message bubbles
 
-Bubbles are separate from status. Plain text is escaped; deliberate HTML or
-self-contained `htmltools` tags can be supplied when your app needs them.
+While the status line shows the current state, a speech bubble announces a specific event, such as three skipped rows in an uploaded file.
 
-```{r bubbles, results="hide"}
-mascot_bubble("Three rows skipped.") # Five seconds by default.
-mascot_bubble("Check the source data.", duration = Inf)
-mascot_bubble() # Clear an existing bubble when sent in an update.
+- Pass a string or [`mascot_bubble()`](guide-mascot_bubble.html) to `bubble` in [`mascot()`](guide-mascot.html) or [`update_mascot()`](guide-update_mascot.html).
+- A bubble stays for five seconds (`duration = 5`) and shows a close button by default.
+- Use `duration = Inf` for a message your user must act on so it stays until closed or cleared with `mascot_bubble()`.
+- The timer pauses on hover, on keyboard focus, or while the mascot is minimised.
+- Bubbles stay open across mood changes and character swaps.
+- Plain text is escaped, or you can pass trusted markup with `htmltools::HTML()` or self-contained `htmltools` tags.
+
+```{r bubbles-helpers, results="hide"}
+mascot_bubble("Three rows skipped.")
+mascot_bubble("Check the dates in column B.", duration = Inf)
+mascot_bubble()
 ```
 
-A bubble stays until closed when `duration = Inf`. Timed bubbles
-pause on hover or keyboard focus, and while the mascot is minimised. The
-close button is present by default. A bubble survives a mood change unless
-you replace or clear it. Pausing while a tab is hidden is still pending.
-
-Try the bubble examples, including your own HTML, in
-`mascot_example("studio")`, or the lasting error
-message in `mascot_example("long-task")`.
+```{r bubbles-update, eval=FALSE}
+update_mascot(
+  "helper",
+  mood = "worried",
+  status = "Import needs attention",
+  bubble = mascot_bubble("Check the dates in column B.", duration = Inf)
+)
+```
 
 ## One-off gestures
 
-```{r gestures}
-mascot_gestures()
-```
+When someone saves a filter or switches tabs, a one-off gesture plays a quick nod or wave without changing the character's mood.
 
-```{r gesture-helper, results="hide"}
-mascot_gesture("wave")
+- Send a gesture from the server with `gesture` in [`update_mascot()`](guide-update_mascot.html), using a name like `"nod"` or [`mascot_gesture()`](guide-mascot_gesture.html).
+- Every character has `"nod"` to acknowledge an action and `"wave"` to greet, listed by [`mascot_gestures()`](guide-mascot_gestures.html).
+- If you change the mood and send a gesture in the same call, the new mood appears first.
+- A character swap already includes a greeting wave, so any extra gesture in that update is skipped.
+- Reduced-motion settings or [`mascot_motion_settings()`](guide-mascot_motion_settings.html) can skip the movement while keeping the rest of the update.
+
+```{r gestures-listing}
+mascot_gestures("tessa")
 ```
 
 ```{r gesture-update, eval=FALSE}
 update_mascot("helper", gesture = mascot_gesture("nod"))
 ```
 
-Gestures are named-only in `update_mascot()`; they are not a persistent mood.
-The visitor's reduced-motion preference can suppress them. A gesture sent
-before the mascot appears plays once when it does. A character
-swap has its own wave and takes precedence over a gesture in the same update.
-Try both gestures in `mascot_example("studio")`.
-
 ## Size and placement
 
-The default is 160 pixels, floating in the bottom-right corner as an assistant,
-with a minimise control. Use `minimise = FALSE` to hide that control.
-Use `placement = "inline"` to place a mascot in the page flow.
+A mascot can float in a window corner as an app-wide helper or sit inline inside a card right next to a form.
 
-```{r layout, results="hide"}
+- By default, [`mascot()`](guide-mascot.html) draws at `160` pixels in the `"bottom-right"` corner with a minimise button (`minimise = TRUE`).
+- Set `size` to a pixel number (at least `24`), a percentage like `"20%"`, or [`mascot_size()`](guide-mascot_size.html).
+- On phone screens, `small_screen = "auto"` shrinks floating mascots to at most `96` pixels while leaving inline mascots unchanged.
+- Set `placement` to `"inline"`, a corner name like `"top-left"`, or [`mascot_placement()`](guide-mascot_placement.html).
+- Minimising a floating mascot turns it into a round restore button and sets `input$<id>_minimised` in Shiny.
+- Set `drag = "snap"` for corner snapping or `drag = "free"` (experimental) for free dragging, which updates `input$<id>_position` in Shiny.
+
+```{r size-placement-helpers, results="hide"}
 mascot_size(180, small_screen = 72)
-mascot_size("20%")
-mascot_placement("bottom-right", minimise = TRUE)
+mascot_placement("bottom-right", minimise = TRUE, drag = "snap")
 ```
 
-Percentages use the container width inline and the window width when floating.
-Every size draws the full character. Inline mascots reserve space above the
-drawing for a bubble, even before one appears, to avoid moving the page.
-A floating mascot can sit in any corner;
-its minimise control appears on hover or keyboard focus, and stays available
-on touch. The restore button stays reachable while minimised. Opening a mascot
-menu hides the action controls until the menu closes.
-
-Inline mascots ignore `minimise` and `drag`. Explicitly setting either in
-`mascot_placement()` or a placement list gives an informational message,
-including in `update_mascot()`; defaults such as `mascot_placement("inline")`
-stay silent. The browser receives both controls as `FALSE` inline.
-
-```{r layout-update, eval=FALSE}
-update_mascot("helper", size = mascot_size(180, small_screen = 72),
-  placement = mascot_placement("top-left", minimise = TRUE))
-update_mascot("helper", placement = mascot_placement("inline")) # Return inline.
+```{r size-placement-app, eval=FALSE}
+mascot("card_helper", size = 120, placement = "inline")
+mascot("corner_helper", placement = mascot_placement("bottom-right", drag = "snap"))
+update_mascot("corner_helper", placement = mascot_placement("top-left"))
 ```
-
-Try the size and placement controls in `mascot_example("studio")`, and the
-parent-owned corner helper in `mascot_example("modules")`.
-
-### Let visitors move it
-
-`drag = "none"` (the default) disables dragging. A floating mascot can be dragged by its drawing, with a mouse or a finger.
-Dragging is off by default. With `drag = "snap"` the mascot moves to the
-nearest corner when it is dropped; with `drag = "free"` (experimental) it stays where it is
-dropped, kept inside the window. A click without movement still opens its menu.
-While minimised, drag the round restore button with the same rules. A click
-without movement restores the mascot; a drag leaves it minimised. After a
-snap, restoring shows the mascot in its new corner.
-
-```{r drag, eval=FALSE}
-mascot("helper",
-  placement = mascot_placement("bottom-right", drag = "snap"))
-```
-
-Each drop sets `input$helper_position`: the corner, such as `"top-left"`,
-after a snap, or a list with `x` and `y` in pixels after a free drop. A later
-`update_mascot(placement = ...)` replaces where the visitor put it. To remember
-the corner between visits, save it in your app and pass it back as `position`.
 
 ## Theme and light/dark mode
 
-No theme means Tessa's own colours. Brand colours are used only when you ask.
+When your app has its own brand palette or a dark mode switch, you can match the character's colours through `theme`.
 
-A palette is a named theme for one character: use `mascot_palettes("knurl")` to
-list choices, then `mascot("helper", character = "knurl", theme = "orbit")`.
-Use `mascot_theme(palette = "orbit", light = list(body = "#d0d8e0"))` to put your
-role colours on top; CSS variables win last. `theme = "original"` restores the
-character's own colours in an update, while `NULL` leaves them unchanged. A
-character may also name its own colours: Tessa's are `night_teal`, listed first
-by `mascot_palettes("tessa")`, and `"original"` selects the same colours. A
-character swap keeps a palette with the same id when available; otherwise R
-warns, restores the incoming character's colours and keeps your explicit colours
-for shared roles. Built-in palettes do not give contrast warnings; your added
-colours are checked as usual. `mascot_colour_roles("knurl", palette = "orbit")`
-shows the palette's colours, including derived followers.
-A named list supplies selected roles in every mode. Unset roles follow the
-character's declared leaders: `list(body = "#c2185b")` gives pink sleeves,
-eyelids and feet, plus lighter pink highlights. Feet follow a supplied rim
-before the body, and sleeves follow a supplied body shade before the body. The
-bow, the hair, the badge and the iris have their own colours (`accessory`,
-`hair`, `badge`, `iris`), and the detail of the bow becomes a darker shade. A
-supplied sleeve or other role always wins. With no supplied or filled leader,
-the original colour stays. Outline, face lines, eye whites, shine, teeth,
-hands, sweat and shadow keep their colours.
+- Leave `theme = NULL` in [`mascot()`](guide-mascot.html) to keep the character's own colours (or pass `"original"` in [`update_mascot()`](guide-update_mascot.html) to restore them).
+- Pick a built-in palette from [`mascot_palettes()`](guide-mascot_palettes.html), such as `theme = "coral_navy"` for Tessa.
+- Use [`mascot_colour_roles()`](guide-mascot_colour_roles.html) to see a character's parts and which leader roles they follow when you set only a few colours.
+- Pass `light` and `dark` lists in [`mascot_theme()`](guide-mascot_theme.html) for separate light and dark colours, or `css` for browser CSS variables (experimental).
+- Pass a `bslib::bs_theme()` to fill the character's primary and secondary brand roles (experimental role mapping).
+- By default, `mode = "auto"` follows `bslib::input_dark_mode()` or Quarto's dark mode, and stays light when the page gives no signal.
 
-`mascot_colour_roles()` lists `follows` (leaders in priority order) and `shade`
-(`same`, `lighter` or `darker`); `NA` means there is no follow rule. Its
-`description` column says what each role colours, and `brand` marks the roles
-that take a `bslib` primary or secondary colour. Derived
-shades preserve hue using calibrated lightness and saturation shifts.
-Feeding Tessa's own body, body shade, rim and bow colours back reproduces her derived
-colours within 3 units per RGB channel (0--255). Supplied colours stay exact.
-
-```{r roles}
-mascot_colour_roles("tessa")
+```{r palettes-and-roles}
+mascot_palettes("tessa")
 ```
 
-```{r two-palettes, results="hide"}
-mascot_theme(
-  light = list(body = "#1f6feb"),
-  dark = list(body = "#9ec5fe"),
-  mode = "auto"
-)
-```
-
-```{r theme-update, eval=FALSE}
-mascot("helper", theme = list(body = "#1f6feb", rim = "#966600"))
-update_mascot("helper", theme = mascot_theme()) # Restore original colours.
-```
-
-With `bslib` installed, primary supplies Tessa's body and secondary supplies
-her rim. Her follow rules also colour sleeves, eyelids and feet.
-The mapping of `bs_theme()` colours to a character's parts (experimental) may
-change in a later release.
-
-```{r bslib-theme, eval=FALSE}
-if (requireNamespace("bslib", quietly = TRUE)) {
-  mascot("helper", theme = bslib::bs_theme(
-    primary = "#1f6feb", secondary = "#966600"
-  ))
-}
-```
-
-A `bs_theme()` supplies the same brand colours in both modes. For different
-colours per mode, use `mascot_theme(light = ..., dark = ...)`.
-`_brand.yml` enters through `bslib::bs_theme(brand = ...)`.
-
-The default `mode = "auto"` follows the nearest valid `data-bs-theme` from the
-mascot's original place in the page, then Quarto's body classes. Without a
-page signal it stays light, even if the system prefers dark; the speech bubble follows the same signal. Explicit
-`"light"` or `"dark"` wins. Plain lists and `bs_theme()` follow the page too.
-A character swap resolves the incoming character's follow rules again.
-
-Try `mascot_example("theme")`: its page switch, `bslib::input_dark_mode()`,
-changes the page and the mascot together, with no server theme update.
-
-### Different colours per mode
-
-Give `mascot_theme()` a light and a dark map for different colours in each
-mode. You only need to supply leaders; individual roles can override their
-followers for full control.
-
-```{r pink-theme, results="hide"}
+```{r theme-examples, eval=FALSE}
 pink_theme <- mascot_theme(
   light = list(body = "#B53D78", rim = "#A94A82"),
   dark = list(body = "#F2A6CF", rim = "#C5B0EB")
 )
-```
 
-```{r pink-theme-use, eval=FALSE}
 mascot("helper", theme = pink_theme)
-# Or change an existing mascot from the server:
-update_mascot("helper", theme = pink_theme)
+update_mascot("helper", theme = "coral_navy")
 ```
-
-![Tessa with the pink and lilac theme on a light page: a coordinated rose body, sleeves and feet.](figures/branding-pink-light.png)
-
-![The same theme on a dark page: Tessa has a light pink body and sleeves with a lilac rim and feet.](figures/branding-pink-dark.png)
-
-CSS variables are another source (experimental):
-
-```{r css-theme, eval=FALSE}
-mascot("helper", theme = mascot_theme(
-  css = list(body = "--bs-primary"), mode = "auto"
-))
-```
-
-A missing or invalid CSS variable uses the character's original role colour
-and warns in the browser console. R warns when a supplied colour has less
-than 3:1 contrast against the checked background in Shiny development mode,
-but retains your choice. Previews and the studio always warn by default.
-`options(mascot.contrast_warnings = TRUE)` or `FALSE` forces R warnings on
-or off everywhere.
-CSS contrast warnings appear in the browser console. Review your actual app
-background as well; a warning does not adjust a colour for you.
 
 ## Motion
 
-```{r motion, results="hide"}
+On a busy review dashboard where extra movement would distract people, you can quieten or stop animation while keeping every mood and message working.
+
+- Pass `motion = FALSE` to [`mascot()`](guide-mascot.html) or [`update_mascot()`](guide-update_mascot.html) to stop all movement at once.
+- Use [`mascot_motion_settings()`](guide-mascot_motion_settings.html) to switch `idle`, `mood_change`, `gestures`, `swap`, `minimising`, `restoring` and `messages` on or off individually.
+- Any switch left as `NULL` follows `others` (`TRUE` by default), so `others = FALSE` with `gestures = TRUE` allows only gestures.
+- A user's browser or system reduced-motion preference always wins over `TRUE`.
+- Idle breathing and blinking stop within five seconds of an action, and [`mascot_gesture()`](guide-mascot_gesture.html) triggers one-off movements when allowed.
+
+```{r motion-helpers, results="hide"}
 mascot_motion_settings(idle = FALSE)
-mascot_motion_settings(messages = "menu", others = FALSE)
-mascot("still", motion = FALSE)
+mascot_motion_settings(others = FALSE, gestures = TRUE)
 ```
 
-Each part moves independently: `idle` controls breathing and blinking,
-`mood_change` the wiggle or hop, `gestures` nods and waves, `swap` the
-character transition, and `minimising` and `restoring` the short movement
-to the round restore button and back. `messages` takes `TRUE`, `FALSE`,
-or panel names from `c("bubble", "tooltip", "menu")`; still panels keep working.
-Unnamed switches, including future switches, follow `others`; named switches
-always win. `NULL` follows `others`.
-
-`motion = FALSE` stops all movement, including panel appearance, the drag snap,
-minimising and restoring. The visitor's
-[reduced-motion setting](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)
-always wins over any `TRUE`. Idle movement settles within five seconds.
-Settings play nothing; use `mascot_gesture()` to play a movement. A gesture
-sent with `gestures = FALSE` is skipped, while the mood, bubble and status in
-the same update still apply. Shiny development mode reports the skipped gesture.
-
-```{r motion-update, eval=FALSE}
-update_mascot("helper", motion = mascot_motion_settings(gestures = FALSE))
+```{r motion-app, eval=FALSE}
+mascot("still_helper", motion = FALSE)
+update_mascot("still_helper", motion = mascot_motion_settings(idle = FALSE))
 ```
-
-Try each switch and the panel multi-select in `mascot_studio(fn = "mascot_motion_settings")`.
 
 ## Clicks and menus
 
-By default a mascot is a picture: clicking it does nothing, and the keyboard
-skips it. `click` makes it a button, for one action of your app or for a menu.
-Every action activation (a click or tap, Enter or Space) sets `input$helper_click`, a
-count, so your server can answer it:
+A mascot is a plain image by default so keyboard users never land on a dead control, but `click` turns it into a button or a menu.
 
-```{r action, eval=FALSE}
-# In the UI: a label says what a click does, for screen readers and in a tooltip.
-mascot("helper", click = "Open help")
+- Leave `click = NULL` in [`mascot()`](guide-mascot.html) when clicking the character does nothing.
+- Pass a label like `click = "Open help"` or [`mascot_action()`](guide-mascot_action.html) for a single action that counts clicks in `input$<id>_click`.
+- Pass [`mascot_popup_menu()`](guide-mascot_popup_menu.html) with a named character vector to open a menu that sends the chosen item's name to `input$<id>_menu`.
+- Opening or closing a menu never changes `input$<id>_click`, and dragging never counts as a click.
+- Keyboard users can Tab to the button, press Enter or Space, use arrow keys in the menu, and press Escape to close it.
+- Set `disabled = TRUE` to pause clicks during a slow task, or pass an empty helper to [`update_mascot()`](guide-update_mascot.html) to remove the click.
 
-# In the server:
-shiny::observeEvent(input$helper_click, {
-  shiny::showModal(shiny::modalDialog("Help for this app", easyClose = TRUE))
-})
-```
+```{r clicks-and-menus, eval=FALSE}
+mascot(
+  "helper",
+  click = mascot_popup_menu(c(finish = "Finish review", reset = "Reset helper"))
+)
 
-`mascot_action("Open help", tooltip = FALSE)` hides the tooltip, and
-`disabled = TRUE` keeps the button but sends nothing, for example during a long
-task; `mascot_popup_menu(..., disabled = TRUE)` likewise opens nothing. For several actions, the app supplies menu labels and handles the choice;
-the mascot opens the menu. Enter and Space open or close the focused toggle.
-Arrow keys, Home, End and Escape navigate the open menu.
-
-```{r menu, eval=FALSE}
-# In the UI:
-mascot("helper", click = mascot_popup_menu(
-  c(finish = "Finish review", reset = "Reset helper", about = "About this app")
-))
-
-# In the server:
-shiny::observeEvent(input$helper_menu, {
+observeEvent(input$helper_menu, {
   if (identical(input$helper_menu, "finish")) {
-    update_mascot("helper", mood = "happy", status = "Review complete",
+    update_mascot(
+      "helper",
+      mood = "happy",
+      status = "Review complete",
       bubble = mascot_bubble("All checks finished.", duration = Inf),
-      gesture = mascot_gesture("nod"))
-  }
-  if (identical(input$helper_menu, "reset")) {
-    update_mascot("helper", mood = "idle", status = "Ready to review",
-      bubble = mascot_bubble())
-  }
-  if (identical(input$helper_menu, "about")) {
-    shiny::showModal(shiny::modalDialog("About this app", easyClose = TRUE))
+      gesture = mascot_gesture("nod")
+    )
   }
 })
 ```
 
-Menu labels are clickable text items. Their names (`finish`, `reset`,
-`about`) arrive in `input$helper_menu`; they are not Shiny action-button
-counts. The menu does not accept arbitrary widgets such as sliders.
-Reset above clears the feedback and keeps the selected colours.
+## Shiny modules
 
-![Tessa with an open menu containing Finish review, Reset helper and About this example.](figures/branding-menu.png)
+When you split a larger Shiny app into modules, including `golem` and `rhino` apps, each module can own and update its own mascot.
 
-![After Finish review, Tessa looks happy, her status reads Review complete, and her bubble says All checks finished.](figures/branding-finished.png)
+- In the module UI, call [`mascot()`](guide-mascot.html) with a namespaced id such as `mascot(ns("helper"))`.
+- Pass the plain local id `"helper"` to [`update_mascot()`](guide-update_mascot.html) inside `shiny::moduleServer()`.
+- Read `input$helper_click`, `input$helper_menu`, `input$helper_position` and `input$helper_minimised` directly from that module's `input`.
+- For one shared corner mascot across modules, return a reactive from each module and update the parent mascot from the top-level server.
+- Run [`mascot_example()`](guide-mascot_example.html) with `"modules"`, `"golem"` or `"rhino"` to see full working apps.
 
-Click or touch the drawing, or focus it and press Enter/Space with keyboard
-opening enabled. Escape closes the menu. Repeated choices trigger repeated
-events. Opening and closing the menu never set `input$helper_click`. An
-empty helper, `mascot_action()` or `mascot_popup_menu()`, removes the click when
-sent in an update. On static pages the mascot remains an image; clicks need
-Shiny.
-
-## Modules
-
-Create a module mascot with `ns("helper")` in its UI. Update it with the local
-id `"helper"` inside the same module's server. Shiny applies the prefix once.
-A menu choice arrives as `input$helper_menu` in that module.
-
-```{r module, eval=FALSE}
-helper_ui <- function(id) {
+```{r shiny-module, eval=FALSE}
+review_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shiny::actionButton(ns("finish"), "Finish review"),
-    mascot(ns("helper"))
+    mascot(ns("helper"), placement = "inline")
   )
 }
-helper_server <- function(id) {
+
+review_server <- function(id) {
   shiny::moduleServer(id, function(input, output, session) {
-    ready <- shiny::reactiveVal(FALSE)
     shiny::observeEvent(input$finish, {
-      ready(TRUE)
-      update_mascot("helper", mood = "happy")
+      update_mascot("helper", mood = "happy", status = "Review complete")
     })
-    ready
   })
 }
 ```
 
-For an app-wide mascot, create it once in the parent's UI. Let a child return
-a reactive value, then have the parent observe that value and update its own
-mascot. `mascot_example("modules")` shows two children with separate helpers
-and one shared parent helper. It includes working inputs and the complete app.
-
-## Theme a mascot
-
-Start with `mascot_example("theme")`, or `mascot_studio(view = "theme")`.
-Choose a palette, your own colours for light and dark mode or your app's brand
-colours, and copy the code it shows. Its Check tab shows every mood in light
-and dark, checks contrast, and runs the warnings you may meet, in the
-package's own words. Inspect `mascot_colour_roles()` before choosing roles, and
-review contrast in both modes. Theming keeps the character's shape and
-identity. Keep ordinary error messages beside the fields they describe.
-
-A new named character comes later with `mascot_remix()`.
-The Quarto `shortcode` and fuller static-site guidance come in a later release; plain `mascot()` already works in a
-Quarto page (next section).
-
 ## Quarto pages
 
-A plain `mascot()` also works in a rendered Quarto page, with no Shiny server. Put it in an R chunk and set its mood and
-status when you write the page:
+You can also place [`mascot()`](guide-mascot.html) in a rendered Quarto document with no Shiny server to show a fixed mood and status line.
+
+- The character draws when the page loads, and stays static because there is no R session behind the page.
+- Use `placement = "inline"` (or [`mascot_placement()`](guide-mascot_placement.html)) to sit in the page flow, and give each mascot a unique `id`.
+- On a static page that never shows a bubble, hide the reserved bubble space with `.mascot-bubble-region { display: none; }` in CSS.
+- The mascot follows Quarto's light and dark theme toggle and works in self-contained pages (`embed-resources: true`).
+- Quarto support is lightly tested so far, and a Quarto `shortcode` is planned for 0.2.0.
 
 ````markdown
 ```{r}
@@ -538,64 +305,66 @@ mascot("helper", mood = "happy", status = "Rendered with Quarto", placement = "i
 ```
 ````
 
-Things to know:
-
-- The character draws, and shows its status text, when the page loads. A static page has no R session behind it, so
-  nothing changes the mood afterwards and clicks do not reach R. Live updates need Shiny.
-- A mascot floats in the page corner by default. Use `placement = "inline"` to put it in the flow of the page, and give
-  every mascot its own `id`.
-- Inline mascots reserve room above them for a bubble (see Size and placement). On a static page that never shows a
-  bubble, collapse that room with the CSS rule `.mascot-bubble-region { display: none; }`.
-- With a light and a dark theme (for example `theme: {light: cosmo, dark: darkly}`), the mascot follows Quarto's colour
-  toggle (see Theme and light/dark mode). A page with `embed-resources: true` works too.
-- Quarto use is lightly tested: drawing, inline placement, several mascots, the colour toggle and a self-contained
-  page. The Quarto `shortcode` and fuller guidance for static sites are planned for 0.2.0.
-
 ## Check a look before using it
 
-`mascot_preview()` (experimental) makes one offline page with every mood in light and dark,
-then compares your requested size with 160, 96 and 24 pixels. Motion is off by
-default so you can inspect the faces. Assign the result to build it without
-opening a Viewer; print it when you want to look:
+Before wiring a character or colour theme into your app, you can inspect every mood and size on one offline page or try controls live in the studio.
 
-```{r preview, eval=FALSE}
-page <- mascot_preview(theme = mascot_theme(
-  light = list(body = "#B53D78", rim = "#A94A82"),
-  dark = list(body = "#F2A6CF", rim = "#C5B0EB")
-))
-page
+- [`mascot_preview()`](guide-mascot_preview.html) (experimental) builds a static offline page showing every mood in light and dark mode across your chosen size and 160, 96 and 24 pixels.
+- Previews always draw mascots inline with `motion = FALSE` by default so you can compare faces side by side.
+- Assign the result of `mascot_preview()` to inspect `attr(page, "contrast")` for any custom colours below 3:1 contrast, and print `page` to view it.
+- [`mascot_studio()`](guide-mascot_studio.html) (experimental) opens an offline app where you can test every function, check themes with `view = "theme"`, and copy R code.
+- Use [`mascot_examples()`](guide-mascot_examples.html) and [`mascot_example()`](guide-mascot_example.html) to browse or open the seven bundled example apps.
+
+```{r preview-and-studio, eval=FALSE}
+page <- mascot_preview(
+  theme = mascot_theme(
+    light = list(body = "#B53D78", rim = "#A94A82"),
+    dark = list(body = "#F2A6CF", rim = "#C5B0EB")
+  )
+)
 attr(page, "contrast")
-mascot_preview(mood = "happy", size = 96)
-```
 
-Follow rules coordinate the coloured parts. A `bs_theme()` uses `bg`/`fg` for
-the light panel and `body-bg-dark`/`body-color-dark` for the dark panel.
-Supplied colours below 3:1 against the panel background
-are kept and listed above the grids, with one combined warning in R of class `mascot_contrast`.
-`attr(page, "contrast")` returns their role, colour, background, ratio and mode.
-Experimental CSS values are only known in the browser; look in its console for
-those warnings. Previews show mascots inline for comparison. Status text
-remains beside each mascot; fine face details are harder to read at 24 pixels.
+mascot_studio(view = "theme")
+```
 
 ## Leave unchanged or reset
 
-In `update_mascot()`, `NULL` leaves a setting unchanged. Use an empty helper
-when the setting has a clear/reset action:
+When you call [`update_mascot()`](guide-update_mascot.html) from the server, you can leave settings alone, replace them, or reset them to their defaults.
 
-| Setting | Reset sent to `update_mascot()` |
-|---|---|
-| Character | `character = mascot_character()` (back to `"tessa"`) |
-| Mood | `mood = mascot_mood()` (back to `"idle"`) |
-| Size | `size = mascot_size()` (160, `small_screen = "auto"`) |
-| Custom status | `status = mascot_status()` follows the mood |
-| Bubble | `bubble = mascot_bubble()` removes it |
-| Theme | `theme = mascot_theme()` restores character colours |
-| Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
-| Placement | `placement = mascot_placement()` resets to default bottom-right; `mascot_placement("inline")` returns inline |
-| Motion | `motion = mascot_motion_settings()` allows movement subject to visitor preference |
+- Leaving an argument as `NULL` in `update_mascot()` keeps its current value, whereas `NULL` in [`mascot()`](guide-mascot.html) means none or the default.
+- Passing an empty helper resets that setting to its starting state, as shown in the table below.
+- Any non-`NULL` argument replaces that whole setting at once (for example, `size = 200` also resets `small_screen` to `"auto"`).
+- If any value in `update_mascot()` is invalid, R warns and ignores the whole call so the mascot never updates halfway.
+- Updates sent before a `shiny::renderUI()` mascot appears on screen are queued in order and applied as soon as it mounts.
 
-Each non-`NULL` argument replaces that whole setting, not part of it (example: `update_mascot("h", size = 200)` also resets a custom `small_screen` to `"auto"`).
+| Setting | Reset sent to `update_mascot()` | Result |
+|---|---|---|
+| Character | `character = `[`mascot_character()`](guide-mascot_character.html) | Switches back to `"tessa"` |
+| Mood | `mood = `[`mascot_mood()`](guide-mascot_mood.html) | Returns to `"idle"` |
+| Size | `size = `[`mascot_size()`](guide-mascot_size.html) | Resets to `160` pixels (`small_screen = "auto"`) |
+| Custom status | `status = `[`mascot_status()`](guide-mascot_status.html) | Follows the mood again |
+| Bubble | `bubble = `[`mascot_bubble()`](guide-mascot_bubble.html) | Removes the speech bubble |
+| Theme | `theme = `[`mascot_theme()`](guide-mascot_theme.html) (or `"original"`) | Restores the character's own colours |
+| Click | `click = `[`mascot_action()`](guide-mascot_action.html) (or [`mascot_popup_menu()`](guide-mascot_popup_menu.html)) | Makes the mascot a picture again |
+| Placement | `placement = `[`mascot_placement()`](guide-mascot_placement.html) | Floats in `"bottom-right"` (`"inline"` for inline) |
+| Motion | `motion = `[`mascot_motion_settings()`](guide-mascot_motion_settings.html) | Allows movement again |
 
-An invalid update warns and leaves the complete update unchanged. During app
-construction, invalid arguments stop with an error. This helps catch a typo
-without applying half of a change.
+```{r reset-examples, eval=FALSE}
+# Change only the mood; status, bubble and theme stay as they were:
+update_mascot("helper", mood = "thinking")
+
+# Reset custom status, clear the bubble, and restore original colours:
+update_mascot(
+  "helper",
+  status = mascot_status(),
+  bubble = mascot_bubble(),
+  theme = mascot_theme()
+)
+```
+
+## Where next
+
+- **Studio guide pages:** open the **Studio guide** menu on the website (or inside [`mascot_studio()`](guide-mascot_studio.html)) for visual guides to [`mascot()`](guide-mascot.html), [`update_mascot()`](guide-update_mascot.html), [`mascot_theme()`](guide-mascot_theme.html) and every other export.
+- **Package reference:** check the **Reference** menu (or `?mascot`, `?"mascot-package"` and `?mascot_styling` in R) for all argument details, condition classes and CSS variables.
+- **Bundled example apps:** use [`mascot_examples()`](guide-mascot_examples.html) and [`mascot_example()`](guide-mascot_example.html) to copy working apps for form checks, slow tasks, modules, `golem` and `rhino`.
+- **Custom characters (experimental):** read [Write your own character](write-your-own-character.html) to see how [`mascot_read_character()`](guide-mascot_read_character.html) and [`mascot_check_character()`](guide-mascot_check_character.html) read and check a character file.

@@ -1,0 +1,208 @@
+---
+title: "Write your own character"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(mascot) # nolint: undesirable_function_linter.
+```
+
+"Make your own character" is coming soon to mascot. In version 0.1.0, you can
+already read and check a character file using `mascot_read_character()` and
+`mascot_check_character()`. Both functions are experimental, and their
+arguments, results and diagnostics may change in 0.1.x.
+
+Saving and registering characters and palettes will arrive in 0.1.x. The mascot
+studio does not take custom characters yet, but you can preview your own
+character offline and use it directly in Shiny apps.
+
+## Find the example character
+
+mascot ships with a sample character recipe, `study_bot.json`. Start by copying
+it to a temporary file in `tempdir()` so you can inspect and modify it without
+touching package files:
+
+```{r copy-example}
+path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+copy <- tempfile(fileext = ".json")
+file.copy(path, copy)
+```
+
+## Read and check the file
+
+Call `mascot_read_character()` with the file path. It reads the JSON file, checks
+every field against the character format rules, and returns an opaque, checked
+character object:
+
+```{r read-character}
+bot <- mascot_read_character(copy)
+bot
+```
+
+Printing the object shows a concise summary: the character identifier, display
+name, family, supported moods, gestures, detail overrides, and the source path.
+
+Checked character objects are self-contained and opaque. Edits to the object
+itself are refused at every package boundary. Always edit the source JSON or
+plain list, then read or check it again.
+
+## Inside the character format
+
+Opening `study_bot.json` reveals a single JSON object. Every field is verified
+against the format rules:
+
+* `format_version`: The integer `1`. This identifies the file grammar.
+* `id`: A unique lowercase identifier (`"study_bot"`). Built-in character ids
+  (`"tessa"`, `"sela"`, `"knurl"`, `"neer"`) are reserved and refused.
+* `name`: The human-readable name shown in titles and summaries (`"Study Bot"`).
+* `family`: The character family (`"visorfolk"`). Source recipes can reference a
+  family definition for shared default gestures and palettes.
+* `requires`: Declared engine capabilities. `study_bot` requires `"parts"`,
+  `"outline"`, `"clip"`, `"face_kit"`, `"glow"`, `"tracks"`, and `"lod"`.
+  Unsupported and reserved capabilities are refused.
+* `colours`: Named colour roles and their default hex values (`body`, `outline`,
+  `screen`, `feature`, and `accent`).
+* `ground`: Where the character stands: its centre height (`centre_height: 60`).
+* `outline`: The width of the outline and the colour role it uses.
+* `parts`: The shapes the character is drawn from (in this file `head` and
+  `badge_disc`), each with its drawing instructions.
+* `anchors`: Named points on parts for attaching accessories or badges.
+* `face`: Which part carries the face (`part`), the face `kit` (`"screen"`),
+  where it sits (`at`), a `clip`, and the `eyes` and `mouth` settings.
+* `moods`: Configurations for the five core moods that every character must
+  support: `idle`, `thinking`, `happy`, `worried`, and `celebrating`.
+* `gestures`: Named motion tracks. Every character must define moving `wave` and
+  `nod` gestures: `wave` must move at least one non-root part (such as a hand or
+  antenna), while `nod` may move any channel, including `root`.
+* `palettes`: Alternative colour collections (such as `"sea_glass"`).
+* `contrast`: Accessibility rules that verify contrast between foreground and
+  background colour roles.
+* `lod`: Level-of-detail rules for smaller sizes, such as hiding fine details
+  like `badge_disc` in the micro detail band.
+
+## Make a small edit
+
+To customise your character, read the JSON into R using `jsonlite`, edit the
+fields, and write it back:
+
+```{r edit-character}
+data <- jsonlite::read_json(copy)
+
+# Change the identifier and display name
+data$id <- "sparky_bot"
+data$name <- "Sparky Bot"
+
+# Change the primary body colour from blue to warm coral
+data$colours$body <- "#ff6b4a"
+
+# Save the modified JSON back to disk
+jsonlite::write_json(data, copy, auto_unbox = TRUE, pretty = TRUE)
+
+# Read and check the edited character
+sparky <- mascot_read_character(copy)
+sparky
+```
+
+`mascot_read_character()` validates the modified file and returns the updated
+character object.
+
+## Break it on purpose
+
+The checker stops at the first problem and raises a classed condition of class
+`mascot_error_character` (which also inherits from `mascot_error`). The error
+carries structured diagnostic metadata:
+
+* `code`: A stable problem identifier (such as `"version"` or `"input_type"`).
+* `path`: The JSON path where the error occurred (for example `$.format_version`).
+* `value`: The invalid value that was rejected.
+* `fix`: Plain-words guidance explaining how to resolve the problem.
+
+Change `format_version` to an unsupported number to see the diagnostic:
+
+```{r break-character}
+data$format_version <- 2
+jsonlite::write_json(data, copy, auto_unbox = TRUE, pretty = TRUE)
+
+err <- tryCatch(
+  mascot_read_character(copy),
+  mascot_error_character = function(e) e
+)
+
+class(err)
+err$code
+err$path
+err$value
+err$fix
+conditionMessage(err)
+```
+
+The error message clearly states the supported format version:
+`"This file is format version 2; this mascot version supports 1. Update the package, or use a version-1 file."`
+
+## Preview and use in an app
+
+Reset the format version to 1 before using the character:
+
+```{r preview-character}
+data$format_version <- 1
+jsonlite::write_json(data, copy, auto_unbox = TRUE, pretty = TRUE)
+sparky <- mascot_read_character(copy)
+
+# Generate an offline comparison preview across moods and sizes
+preview <- mascot_preview(character = sparky)
+```
+
+Assigning `mascot_preview(character = sparky)` to an object generates an offline
+preview page comparing moods, sizes, and light and dark backgrounds without
+opening an interactive viewer.
+
+To use your character in a Shiny application, pass the checked object directly to
+the `character` argument of `mascot()`. You can also style your character's own
+colour roles using `mascot_theme()`:
+
+```{r shiny-usage, eval=FALSE}
+library(shiny)
+library(mascot) # nolint: undesirable_function_linter.
+
+ui <- fluidPage(
+  mascot(
+    "helper",
+    character = sparky,
+    theme = mascot_theme(light = list(screen = "#051b20"))
+  )
+)
+```
+
+`mascot_theme()` checks colour role names against the selected character when
+the mascot renders, so custom role names such as `screen` are fully supported.
+
+## What stays the same
+
+The character format is designed with stability in mind:
+
+* **Compatibility promise**: Version-1 character files will keep loading
+  throughout the 0.1.x release series.
+* **Predictable validation**: The checker only becomes stricter in a new format
+  version, except for documented security or resource-safety fixes.
+* **Additive features**: New capabilities arrive as new capability names in
+  `requires`, leaving existing files untouched.
+* **No silent migrations**: Breaking changes will introduce format version 2,
+  with the engine accepting both versions. Character files are never modified or
+  upgraded silently.
+
+## Coming soon
+
+Upcoming releases in the 0.1.x series will expand support for custom characters:
+
+* **Saving characters**: An export function (`mascot_save_character()`) to write
+  self-contained, resolved JSON files with embedded family metadata and face kits.
+* **Session registration**: Registering a checked character for the R process
+  (`mascot_register_character()`) during application start-up so you can refer to
+  it by name.
+* **Palette registration**: Registering custom colour palettes across characters.
+* **Studio integration**: The mascot studio's **Your character** panel, allowing
+  you to upload, inspect and preview custom characters interactively.
+
+```{r cleanup, include=FALSE}
+unlink(copy)
+```

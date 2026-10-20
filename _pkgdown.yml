@@ -90,6 +90,10 @@ articles:
     navbar: ~
     contents:
       - mascot
+  - title: Make your own
+    navbar: Make your own
+    contents:
+      - articles/write-your-own-character
   - title: Changelog
     navbar: Changelog
     contents:

@@ -771,3 +771,16 @@ describe("the colour tiles in a browser", {
     )
   })
 })
+
+describe("the mascot_studio() guide page", {
+  it("documents every view the app serves", {
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    views <- new.env()
+    sys.source(file.path(dir, "R", "views.R"), envir = views)
+    guide <- paste(readLines(file.path(dir, "guide", "mascot_studio.Rmd"), warn = FALSE), collapse = "\n")
+    for (view in names(views$studio_view_titles)) {
+      expect_match(guide, sprintf('`"%s"`', view), fixed = TRUE, info = view)
+    }
+    expect_false(grepl("Two views", guide, fixed = TRUE))
+  })
+})

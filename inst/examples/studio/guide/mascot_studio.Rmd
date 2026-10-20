@@ -24,20 +24,24 @@ htmltools::tags$pre(htmltools::tags$code(paste0(
 )))
 ```
 
-### Two views, one app
+### Three views, one app
 
 | `view` | Starting point |
 |--------|----------------|
 | `"studio"` | The function playground, with a live mascot and controls. |
 | `"examples"` | The bundled example gallery, with source code and launch calls. |
+| `"theme"` | Theme a mascot: a palette, your own colours or your brand's for one character, with the code to copy. |
 
 ```r
 mascot::mascot_studio(view = "examples")
+mascot::mascot_studio(view = "theme")
 ```
 
-Both views share the same shell. The view selects the initial host mode;
-`fn` chooses the Guide function in the playground. The host also offers a
-Preview page mode for comparing rendered mascots.
+The studio and examples views share the same shell. The view selects the
+initial host mode; `fn` chooses the Guide function in the playground. The host
+also offers a Preview page mode for comparing rendered mascots. The theme view
+is a page of its own, also opened by `mascot_example("theme")` and from the
+studio's More menu.
 
 ### Inspect without launching
 

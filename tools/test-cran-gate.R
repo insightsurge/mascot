@@ -1,17 +1,22 @@
 #!/usr/bin/env Rscript
+# cran-gate version: 2026-10-21
 # Self-test for the CRAN gate (cran-gate.R, in the same folder): a check that can't fail protects nothing.
 #
-#   Rscript <path to this file> [all|unit|static|heavy]
+#   Rscript <path to this file> [all|unit|static|heavy] [step,step,...]
+#
+#   A list of steps (for example `heavy tests,coverage`) runs only the probes that expect one of them to FAIL or PASS.
 #
 #   unit            the gate's reporting code, sourced without running the gate and fed a real testthat results
 #                   object from a tiny temporary test folder (seconds)
 #   static          a clean copy of the package must pass; then one planted defect per quick step (settings,
 #                   tools, air, biome, docs, lintr, value, spelling) must make that step FAIL
-#   heavy           the same for check_fast, tests, coverage, check_full and tarball (a minute or more)
-#   all   (default) all three
+#   heavy           the same for check_fast, tests, coverage, check_full and tarball, on a tiny generated package
+#                   (a few minutes, not the hours the real package's own suite would need)
+#   all   (default) all three; static also checks that this folder's gate and the skill's copy are the same files
 #
 # Run it from the root of a package that passes the gate. Each probe copies the package to tempdir() (tracked and
-# new files in a git repository; nothing git ignores), plants one defect in the copy and runs the gate on it. PASS
+# new files in a git repository; nothing git ignores; the heavy probes copy the tiny generated package instead),
+# plants one defect in the copy and runs the gate on it. PASS
 # means the gate did what the probe expects: exit 1 with FAIL for the named step (exit 0 for the clean copy). A
 # probe for a step this package doesn't use (no air.toml, no .lintr, no tests...) is skipped. Exits 1 if the gate
 # misses a defect. The package itself is never changed.
@@ -128,7 +133,9 @@ probe <- function(
   expect_pass = character(),
   detail = NULL,
   env = character(),
-  skip = NULL
+  skip = NULL,
+  package = "real",
+  check_output = NULL
 ) {
   checkmate::assert_string(name)
   checkmate::assert_choice(group, c("static", "heavy"))
@@ -139,6 +146,8 @@ probe <- function(
   checkmate::assert_string(detail, null.ok = TRUE)
   checkmate::assert_character(env, names = "unique")
   checkmate::assert_string(skip, null.ok = TRUE)
+  checkmate::assert_choice(package, c("real", "fixture"))
+  checkmate::assert_function(check_output, null.ok = TRUE)
   list(
     name = name,
     group = group,
@@ -148,7 +157,9 @@ probe <- function(
     expect_pass = expect_pass,
     detail = detail,
     env = env,
-    skip = skip
+    skip = skip,
+    package = package,
+    check_output = check_output
   )
 }
 
@@ -171,6 +182,69 @@ gate_packages_still_found <- function() {
     error_on_status = FALSE
   )
   !identical(run$stdout, "FALSE")
+}
+
+# A tiny package for the heavy probes: they plant one defect in a copy and run the gate on it, so a probe takes seconds
+# of test time instead of the minutes or hours of the real package's suite. It has an exported, documented, tested
+# function, no air.toml, .lintr or biome.json (those steps skip), and no Suggests besides testthat.
+fixture_package <- function() {
+  dir <- tempfile("gate-fixture-")
+  dir.create(dir)
+  roxygen <- as.character(utils::packageVersion("roxygen2"))
+  plant(
+    dir,
+    "DESCRIPTION",
+    c(
+      "Package: fixturepkg",
+      "Title: A Tiny Package for the Gate's Self-Test",
+      "Version: 0.0.1",
+      "Authors@R: person(\"Gate\", \"Fixture\", email = \"gate@example.com\", role = c(\"aut\", \"cre\", \"cph\"))",
+      "Description: Holds one small function so the self-test can plant defects in a copy and see the gate notice.",
+      "License: GPL-3",
+      "Encoding: UTF-8",
+      "Roxygen: list(markdown = TRUE)",
+      paste0("RoxygenNote: ", roxygen),
+      "Suggests: testthat (>= 3.0.0)",
+      "Config/testthat/edition: 3"
+    )
+  )
+  plant(
+    dir,
+    "R/add-one.R",
+    c(
+      "#' Add one",
+      "#'",
+      "#' @param x A number.",
+      "#' @returns A number, one more than `x`.",
+      "#' @export",
+      "#' @examples",
+      "#' add_one(1)",
+      "add_one <- function(x) {",
+      "  stopifnot(is.numeric(x))",
+      "  x + 1",
+      "}"
+    )
+  )
+  plant(dir, "tests/testthat.R", c("library(testthat)", "library(fixturepkg)", "test_check(\"fixturepkg\")"))
+  plant(
+    dir,
+    "tests/testthat/test-add-one.R",
+    c("test_that(\"add_one adds one\", {", "  expect_equal(add_one(1), 2)", "})")
+  )
+  document(dir)
+  dir
+}
+
+# A fresh copy of a directory (the fixture), so one probe's defect never reaches the next.
+copy_dir <- function(from) {
+  checkmate::assert_directory_exists(from)
+  dir <- tempfile("gate-probe-")
+  dir.create(dir)
+  kids <- list.files(from, full.names = TRUE, all.files = TRUE, no.. = TRUE)
+  if (!all(file.copy(kids, dir, recursive = TRUE))) {
+    cli::cli_abort("Could not copy {.path {from}} to {.path {dir}}.")
+  }
+  dir
 }
 
 static_probes <- function(uses) {
@@ -279,34 +353,51 @@ static_probes <- function(uses) {
   )
 }
 
-heavy_probes <- function(uses) {
-  checkmate::assert_list(uses, types = "logical")
-  # Enough untested lines to pull any coverage under the limit, however large the package gets.
-  r_lines <- sum(lengths(lapply(list.files("R", full.names = TRUE), readLines, warn = FALSE)))
-  untested <- c("gate_probe <- function(x) {", rep("  x <- x + 1", max(50, 10 * r_lines)), "  x", "}")
+# The run folder the gate printed ("Run folder: <path>"), or NA.
+printed_run_folder <- function(output) {
+  checkmate::assert_string(output)
+  line <- grep("^Run folder: ", strsplit(output, "\r?\n")[[1]], value = TRUE)
+  if (length(line) == 0) NA_character_ else sub("^Run folder: ", "", line[[1]])
+}
+
+heavy_probes <- function() {
+  untested <- c("gate_probe <- function(x) {", rep("  x <- x + 1", 100), "  x", "}")
   needs_not_cran <- c(
     "test_that(\"the gate's tests step runs with NOT_CRAN=true\", {",
     "  expect_identical(Sys.getenv(\"NOT_CRAN\"), \"true\")",
     "})"
   )
   failing_test <- c("test_that(\"the gate probe fails\", {", "  expect_true(FALSE)", "})")
-  no_testthat <- if (!uses$testthat) "the package has no tests/testthat"
   list(
+    probe("clean fixture passes in full", "heavy", "full", function(dir) NULL, package = "fixture"),
     probe(
       "check_fast: a note (unexpected top-level file)",
       "heavy",
       "fast",
       function(dir) plant(dir, "gate-probe-note.txt", "x"),
       expect_fail = "check_fast",
-      detail = "0 errors, 0 warnings, " # so the FAIL is for a note alone
+      detail = "0 errors, 0 warnings, ", # so the FAIL is for a note alone
+      package = "fixture"
     ),
     probe(
-      "tests: a failing test",
+      "tests: a failing test is named, its run folder survives and coverage is skipped",
       "heavy",
       "tests",
       function(dir) plant(dir, "tests/testthat/test-zz-gate-probe.R", failing_test),
       expect_fail = "tests",
-      skip = no_testthat
+      detail = "test-zz-gate-probe.R",
+      package = "fixture",
+      check_output = function(output) {
+        out <- character()
+        folder <- printed_run_folder(output)
+        if (is.na(folder) || !file.exists(file.path(folder, "tests.json"))) {
+          out <- c(out, "the printed run folder is gone or has no tests.json")
+        }
+        if (!grepl("(^|\n)SKIP +coverage", output)) {
+          out <- c(out, "coverage wasn't skipped after the failed tests step")
+        }
+        out
+      }
     ),
     probe(
       "coverage: untested code",
@@ -315,31 +406,22 @@ heavy_probes <- function(uses) {
       function(dir) plant(dir, "R/zz-gate-probe.R", untested),
       expect_fail = "coverage",
       expect_pass = "tests",
-      skip = if (!uses$testthat) {
-        no_testthat
-      } else if (!uses$coverage_limit) {
-        "the coverage limit is set to 0"
-      }
+      package = "fixture"
     ),
     # One full run, two defects: a test that only passes with NOT_CRAN=true (so it passes in the tests step and
     # fails in the CRAN-like check), and a file in inst/ that .Rbuildignore keeps out of the tarball.
     probe(
-      if (uses$testthat) {
-        "check_full and tarball: a test that needs NOT_CRAN; an inst/ file left out of the build"
-      } else {
-        "tarball: an inst/ file left out of the build"
-      },
+      "check_full and tarball: a test that needs NOT_CRAN; an inst/ file left out of the build",
       "heavy",
       "full",
       function(dir) {
-        if (uses$testthat) {
-          plant(dir, "tests/testthat/test-zz-gate-probe.R", needs_not_cran)
-        }
+        plant(dir, "tests/testthat/test-zz-gate-probe.R", needs_not_cran)
         plant(dir, "inst/gate-probe-secret.txt", "x")
         plant(dir, ".Rbuildignore", "^inst/gate-probe-secret\\.txt$", append = TRUE)
       },
-      expect_fail = c(if (uses$testthat) "check_full", "tarball"),
-      expect_pass = if (uses$testthat) "tests" else character()
+      expect_fail = c("check_full", "tarball"),
+      expect_pass = "tests",
+      package = "fixture"
     )
   )
 }
@@ -383,14 +465,17 @@ problems <- function(probe, status, lines) {
   out
 }
 
-run_probe <- function(probe, files, gate) {
+run_probe <- function(probe, files, gate, fixture = NULL) {
   checkmate::assert_list(probe)
   checkmate::assert_character(files, min.len = 1, any.missing = FALSE)
   checkmate::assert_file_exists(gate)
+  if (!is.null(fixture)) {
+    checkmate::assert_directory_exists(fixture)
+  }
   if (!is.null(probe$skip)) {
     return(list(status = "SKIP", detail = probe$skip, output = ""))
   }
-  dir <- fresh_copy(files)
+  dir <- if (probe$package == "fixture") copy_dir(fixture) else fresh_copy(files)
   on.exit(unlink(dir, recursive = TRUE))
   probe$plant(dir)
   run <- processx::run(
@@ -403,6 +488,9 @@ run_probe <- function(probe, files, gate) {
   )
   lines <- step_lines(run$stdout)
   wrong <- problems(probe, run$status, lines)
+  if (!is.null(probe$check_output)) {
+    wrong <- c(wrong, probe$check_output(run$stdout))
+  }
   if (length(wrong) > 0) {
     return(list(status = "FAIL", detail = paste(wrong, collapse = "; "), output = run$stdout))
   }
@@ -545,6 +633,49 @@ unit_checks <- function(gate) {
   )
 }
 
+# The gate and this self-test live twice: in the repository and in the skill folder (the skill's copy is the one real
+# source). When both exist and this run is from somewhere else, they must be the same files; elsewhere (CI, another
+# machine) there is nothing to compare and the check is skipped.
+skill_scripts <- function() path.expand("~/.agents/skills/cran-gate/scripts")
+
+version_line <- function(path) {
+  checkmate::assert_file_exists(path)
+  line <- grep("^# cran-gate version: ", readLines(path, n = 5, warn = FALSE), value = TRUE)
+  if (length(line) == 0) "no version line" else sub("^# cran-gate version: ", "", line[[1]])
+}
+
+copies_in_step <- function(gate) {
+  checkmate::assert_file_exists(gate)
+  here <- normalizePath(dirname(gate))
+  there <- skill_scripts()
+  if (!dir.exists(there)) {
+    return(list(status = "SKIP", detail = "no skill copy of the gate on this machine"))
+  }
+  if (identical(here, normalizePath(there))) {
+    return(list(status = "SKIP", detail = "this run is from the skill copy itself"))
+  }
+  files <- c("cran-gate.R", "test-cran-gate.R")
+  same <- file.exists(file.path(there, files)) &
+    tools::md5sum(file.path(here, files)) == tools::md5sum(file.path(there, files))
+  differ <- files[!same]
+  if (length(differ) == 0) {
+    return(list(status = "PASS", detail = paste("same files as the skill copy, version", version_line(gate))))
+  }
+  copy <- paste0("cp ", file.path(here, differ), " ", file.path(there, differ), collapse = "; ")
+  list(
+    status = "FAIL",
+    detail = paste0(
+      toString(differ),
+      " differ from the skill copy (here: ",
+      version_line(file.path(here, differ[[1]])),
+      ", there: ",
+      if (file.exists(file.path(there, differ[[1]]))) version_line(file.path(there, differ[[1]])) else "missing",
+      "). Copy the newer one over the older: ",
+      copy
+    )
+  )
+}
+
 run_unit <- function(gate) {
   checkmate::assert_file_exists(gate)
   started <- Sys.time()
@@ -565,9 +696,10 @@ run_unit <- function(gate) {
 }
 
 main <- function(args) {
-  checkmate::assert_character(args, any.missing = FALSE, max.len = 1)
-  group <- if (length(args) == 0) "all" else args
+  checkmate::assert_character(args, any.missing = FALSE, max.len = 2)
+  group <- if (length(args) == 0) "all" else args[[1]]
   checkmate::assert_choice(group, groups, .var.name = "group")
+  steps <- if (length(args) == 2) strsplit(args[[2]], ",", fixed = TRUE)[[1]] else character()
   if (!file.exists("DESCRIPTION")) {
     cli::cli_abort("Run the self-test from the package root (no DESCRIPTION in {.path {getwd()}}).")
   }
@@ -575,15 +707,24 @@ main <- function(args) {
   uses <- package_uses()
   probes <- c(
     if (group %in% c("all", "static")) static_probes(uses),
-    if (group %in% c("all", "heavy")) heavy_probes(uses)
+    if (group %in% c("all", "heavy")) heavy_probes()
   )
+  if (length(steps) > 0) {
+    probes <- Filter(function(p) length(intersect(steps, c(p$expect_fail, p$expect_pass))) > 0, probes)
+  }
   files <- package_files()
   cli::cli_h1("CRAN gate self-test: {group} ({length(probes)} probes)")
-  statuses <- if (group %in% c("all", "unit")) run_unit(gate) else character()
+  statuses <- if (group %in% c("all", "unit") && length(steps) == 0) run_unit(gate) else character()
+  if (group %in% c("all", "static") && length(steps) == 0) {
+    copies <- copies_in_step(gate)
+    statuses["copies in step"] <- copies$status
+    cli::cat_line(sprintf("%-4s copies in step: %s", copies$status, copies$detail))
+  }
+  fixture <- if (any(vapply(probes, function(p) p$package == "fixture", logical(1)))) fixture_package()
   for (probe in probes) {
     started <- Sys.time()
     res <- tryCatch(
-      run_probe(probe, files, gate),
+      run_probe(probe, files, gate, fixture),
       error = function(e) list(status = "FAIL", detail = conditionMessage(e), output = "")
     )
     secs <- as.numeric(difftime(Sys.time(), started, units = "secs"))

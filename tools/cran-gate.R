@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+# cran-gate version: 2026-10-21
 # CRAN gate: one command that says whether an R package would pass CRAN's checks, before you submit it.
 #
 #   Rscript <path to this file> [fast|tests|full|lint] [--update-wordlist]

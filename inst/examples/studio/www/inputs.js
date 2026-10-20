@@ -97,6 +97,36 @@
       const on = document.getElementById(target.dataset.toggleTarget)?.classList.toggle(target.dataset.toggleClass);
       target.setAttribute('aria-pressed', String(Boolean(on)));
     }
+    if (target.dataset.busyLabel && target.getAttribute('aria-busy') !== 'true') busy(target);
+  });
+
+  // A button with data-busy-label says so while the server works on its click: the label, aria-busy and disabled,
+  // until the output data-busy-output names shows a result or an error (or, failing that, the server is idle again).
+  const busyButtons = new Set();
+  const busy = (button) => {
+    button.dataset.idleLabel = button.textContent;
+    button.textContent = button.dataset.busyLabel;
+    button.setAttribute('aria-busy', 'true');
+    button.disabled = true;
+    busyButtons.add(button);
+  };
+  const done = (button) => {
+    if (!busyButtons.delete(button)) return;
+    button.textContent = button.dataset.idleLabel;
+    button.removeAttribute('aria-busy');
+    button.disabled = false;
+  };
+  $(document).on('shiny:value shiny:error', (event) => {
+    for (const button of busyButtons) if (button.dataset.busyOutput === event.target.id) done(button);
+  });
+  let serverBusy = false;
+  $(document).on('shiny:busy', () => {
+    serverBusy = true;
+  });
+  $(document).on('shiny:idle', () => {
+    if (!serverBusy) return;
+    serverBusy = false;
+    for (const button of busyButtons) done(button);
   });
   // The visible part of the page: the visual viewport when the phone keyboard or zoom changes it.
   const viewportBounds = () => {

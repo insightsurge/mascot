@@ -440,7 +440,14 @@ theme_check_tab <- function() {
       " The page mascot_preview() builds for this theme: every mood in light and dark, at your size and smaller.",
       " It checks only colours you supplied; palette colours never warn."
     ),
-    shiny::actionButton("check_preview", "Show every mood", class = "btn-outline-primary btn-sm"),
+    # inputs.js shows "Building…" on the button until the page is shown.
+    shiny::actionButton(
+      "check_preview",
+      "Show every mood",
+      class = "btn-outline-primary btn-sm",
+      `data-busy-label` = "Building\u2026",
+      `data-busy-output` = "check_preview_ui"
+    ),
     shiny::uiOutput("check_preview_ui"),
     shiny::tags$h3(class = "theme-section-title", "Contrast"),
     shiny::tags$p(
@@ -448,7 +455,13 @@ theme_check_tab <- function() {
       "Each colour you chose is compared with the page background: white in light mode and #212529 in dark mode, or",
       "your bs_theme()'s backgrounds. A colour needs at least 3:1 contrast to be easy to see."
     ),
-    shiny::actionButton("check_contrast", "Check contrast", class = "btn-outline-primary btn-sm"),
+    shiny::actionButton(
+      "check_contrast",
+      "Check contrast",
+      class = "btn-outline-primary btn-sm",
+      `data-busy-label` = "Checking\u2026",
+      `data-busy-output` = "check_contrast_ui"
+    ),
     shiny::uiOutput("check_contrast_ui"),
     shiny::tags$h3(class = "theme-section-title", "When you swap characters or pick a hard-to-see colour"),
     shiny::tags$p(

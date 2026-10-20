@@ -851,3 +851,30 @@ describe("the Brand colours tab for a character with no brand parts", {
     app$wait_for_js("document.querySelector('#theme_tabs a[data-value=colours]').classList.contains('active')")
   })
 })
+
+describe("the Check tab's slow buttons in a browser", {
+  it("say they are busy until their result shows", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    withr::defer(app$stop())
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    app$run_js("document.querySelector('#theme_tabs a[data-value=check]').click()")
+    for (case in list(
+      c("check_contrast", "Checking…", "Check contrast"),
+      c("check_preview", "Building…", "Show every mood")
+    )) {
+      # When the button is clicked, it says so at once
+      state <- app$get_js(sprintf(
+        "(() => { const b = document.getElementById('%s'); b.click(); return [b.textContent, b.getAttribute('aria-busy'), String(b.disabled)]; })()",
+        case[[1]]
+      ))
+      expect_identical(unlist(state), c(case[[2]], "true", "true"), info = case[[1]])
+      # Then it is back once the result shows
+      app$wait_for_js(sprintf("!document.getElementById('%s').disabled", case[[1]]))
+      expect_identical(app$get_js(sprintf("document.getElementById('%s').textContent", case[[1]])), case[[3]])
+      expect_null(app$get_js(sprintf("document.getElementById('%s').getAttribute('aria-busy')", case[[1]])))
+      expect_true(app$get_js(sprintf("document.getElementById('%s_ui').textContent.trim().length > 0", case[[1]])))
+    }
+  })
+})

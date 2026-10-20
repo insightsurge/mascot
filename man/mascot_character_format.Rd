@@ -16,8 +16,9 @@ the character marks for small sizes. Text is displayed as text, never HTML.
 \details{
 Start from \code{system.file("examples", "characters", "study_bot.json", package = "mascot")}.
 Edit a plain list or JSON source and check it again. A checked object is opaque.
-Source files can use current family defaults; saved resolved files embed
-defaults and kits for deployment and archiving. Registered family snapshots
+Source files can use current family defaults. A resolved file embeds its family
+defaults and face kits, so it does not depend on the installed package's defaults;
+saving a resolved file from R is planned for 0.1.x. Registered family snapshots
 are metadata and never become defaults for other source files.
 
 Checks stop at the first problem, giving a diagnostic code, JSON path, value
@@ -34,11 +35,10 @@ The checker may only get stricter in a new format version, except for a
 documented security or resource-safety fix, which includes a diagnostic and
 migration guidance. New features arrive as a new capability name in \code{requires}.
 A breaking change means format version 2, with both versions accepted.
-Files are never upgraded silently. A saved (resolved) file is self-contained.
+Files are never upgraded silently. A resolved file is self-contained.
 }
 
 \seealso{
-\code{\link[=mascot_check_character]{mascot_check_character()}}, \code{\link[=mascot_read_character]{mascot_read_character()}},
-\code{\link[=mascot_register_character]{mascot_register_character()}}, \code{\link[=mascot_save_character]{mascot_save_character()}}
+\code{\link[=mascot_check_character]{mascot_check_character()}}, \code{\link[=mascot_read_character]{mascot_read_character()}}
 }
 \keyword{internal}

@@ -567,3 +567,64 @@ describe("the studio's code builders on their own", {
     expect_identical(picked$size, 120)
   })
 })
+
+describe("colour_roles_server() with the browser's timing", {
+  module <- function() studio_shared("shared-colours.R")$colour_roles_server
+  it("ignores a late value from the old pickers that arrives after a palette change", {
+    skip_if_not_installed("bslib")
+    palette <- shiny::reactiveVal("original")
+    shiny::testServer(module(), args = list(character = shiny::reactiveVal("tessa"), palette = palette), {
+      colours <- session$returned
+      tessa <- mascot_colour_roles("tessa")
+      do.call(session$setInputs, stats::setNames(as.list(tessa$colour), paste0("light_", tessa$role)))
+      session$setInputs(light_rim = "#654321")
+      # When the palette changes and, before the browser draws the new pickers, a late value of the old rim arrives
+      palette("coral_navy")
+      session$flushReact()
+      session$setInputs(light_rim = "#654322")
+      # Then the old pickers' other values are not taken as changes against the new palette
+      expect_identical(names(colours$light()), "rim")
+    })
+  })
+  it("carries only the colours every character in a quick run of switches has", {
+    skip_if_not_installed("bslib")
+    character <- shiny::reactiveVal("tessa")
+    shiny::testServer(module(), args = list(character = character, palette = shiny::reactiveVal("original")), {
+      colours <- session$returned
+      tessa <- mascot_colour_roles("tessa")
+      do.call(session$setInputs, stats::setNames(as.list(tessa$colour), paste0("light_", tessa$role)))
+      session$setInputs(light_body = "#123456", light_rim = "#654321")
+      for (next_character in c("sela", "knurl", "neer")) {
+        character(next_character)
+        session$flushReact()
+      }
+      shared <- Reduce(
+        intersect,
+        lapply(c("tessa", "sela", "knurl", "neer"), function(id) mascot_colour_roles(id)$role)
+      )
+      expect_true(all(names(colours$light()) %in% intersect(c("body", "rim"), shared)))
+      expect_identical(colours$light()[["body"]], "#123456")
+    })
+  })
+  it("resets a role while it is being edited, and takes the browser's echo of the reset as no change", {
+    skip_if_not_installed("bslib")
+    shiny::testServer(
+      module(),
+      args = list(character = shiny::reactiveVal("tessa"), palette = shiny::reactiveVal("original")),
+      {
+        colours <- session$returned
+        tessa <- mascot_colour_roles("tessa")
+        do.call(session$setInputs, stats::setNames(as.list(tessa$colour), paste0("light_", tessa$role)))
+        session$setInputs(light_body = "#123456")
+        session$setInputs(reset_colour = "light:body")
+        expect_length(colours$light(), 0L)
+        # The browser then reports the picker it was told to show
+        session$setInputs(light_body = tolower(tessa$colour[tessa$role == "body"]))
+        expect_length(colours$light(), 0L)
+        # And a further edit counts again
+        session$setInputs(light_body = "#abcdef")
+        expect_identical(colours$light(), c(body = "#abcdef"))
+      }
+    )
+  })
+})

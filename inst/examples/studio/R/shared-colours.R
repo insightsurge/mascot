@@ -288,11 +288,11 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
     roles <- shiny::reactive(palette_roles(character(), palette()))
     # The colours the user changed, by mode, for the roles last drawn.
     picked <- shiny::reactiveValues(light = base::character(), dark = base::character())
-    # The roles the pickers were last drawn with, and the drawing whose inputs were last read. Not reactive:
-    # only the observers below change them, and nothing is drawn again because they change.
+    # The roles the pickers were last drawn with, and each picker's value when last read. Not reactive: only the
+    # observers below change them, and nothing is drawn again because they change.
     shown <- new.env(parent = emptyenv())
     shown$roles <- NULL
-    shown$read <- 0L
+    shown$values <- list()
     drawn <- shiny::reactiveVal(0L)
     # A new character or palette: keep the colours the user changed for roles the new listing has too, then draw.
     # The first drawing keeps every colour already picked (a set() before it), since no listing came before.
@@ -305,22 +305,28 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
       shown$roles <- roles()
       drawn(shiny::isolate(drawn()) + 1L)
     })
-    # A picker changed in the browser.
+    # A picker changed in the browser. Only a picker whose value changed since it was last read is a new choice:
+    # right after a drawing the inputs still hold the old pickers' values, and a late value from an old picker can
+    # still arrive, so the others are not read again against the new listing.
     shiny::observe({
-      now <- drawn()
+      drawn()
       listed <- shown$roles
       shiny::req(listed)
-      values <- lapply(stats::setNames(modes, modes), function(mode) {
-        stats::setNames(lapply(paste0(mode, "_", listed$role), function(name) input[[name]]), listed$role)
-      })
-      # Right after a drawing the inputs still hold the previous pickers' values, until the browser sends the new
-      # ones: this run only starts watching the new pickers.
-      if (now != shown$read) {
-        shown$read <- now
-        return()
-      }
       for (mode in modes) {
-        picked[[mode]] <- changed_colours(values[[mode]], listed)
+        now <- shiny::isolate(picked[[mode]])
+        for (role in listed$role) {
+          name <- paste0(mode, "_", role)
+          value <- input[[name]]
+          if (is.null(value) || identical(value, shown$values[[name]])) {
+            next
+          }
+          shown$values[[name]] <- value
+          now <- now[names(now) != role]
+          if (tolower(value) != tolower(listed$colour[match(role, listed$role)])) {
+            now[[role]] <- tolower(value)
+          }
+        }
+        picked[[mode]] <- now
       }
     })
     pickers <- function(mode) {

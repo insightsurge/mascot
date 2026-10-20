@@ -226,7 +226,7 @@ The character format is designed with stability in mind:
 
 Faces and moods, writing your own gestures, palettes and dark mode, and drawing
 for small sizes each deserve more room than this article has. A longer series
-on these topics is planned for the R Engineering Playbook.
+on these topics is planned for the author's blog.
 
 ## Coming soon
 

@@ -1,0 +1,219 @@
+/* The Bridge at Five: page and controls. The film itself is drawn on one canvas by stage.js. */
+:root {
+  --story-bg: #f6f5fb;
+  --story-fg: #1d2340;
+  --story-muted: #4a5070;
+  --story-panel: #ffffff;
+  --story-border: #d6d4e6;
+  --story-accent: #5b3fa8;
+  --story-accent-fg: #ffffff;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --story-bg: #12142a;
+    --story-fg: #eceaf7;
+    --story-muted: #b9b6d3;
+    --story-panel: #1b1e3a;
+    --story-border: #34385e;
+    --story-accent: #b9a4ff;
+    --story-accent-fg: #12142a;
+  }
+}
+html,
+body {
+  margin: 0;
+  background: var(--story-bg);
+  color: var(--story-fg);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.5;
+}
+.story {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.story-heading {
+  font-size: 1.5rem;
+  margin: 0 0 0.25rem;
+}
+.story-intro {
+  margin: 0 0 0.75rem;
+  color: var(--story-muted);
+}
+.story-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #1a1d3c;
+  isolation: isolate;
+}
+.story-frame.is-tall {
+  aspect-ratio: 4 / 5;
+}
+.story-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+/* The four engine mascots live here, under the canvas: the stage copies their canvases every frame.
+   They stay inside the window (the engine pauses off-screen mascots) but are covered by the film. */
+.story-cast {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  z-index: 0;
+  pointer-events: none;
+}
+.story-cast .mascot {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+  margin: 0 !important;
+}
+/* While nothing plays, the cast moves out of the window, where the engine pauses it (no hidden animation). */
+.story-frame.is-resting .story-cast {
+  transform: translateX(-400vw);
+}
+.story-cast .mascot-bubble-region {
+  display: none !important;
+}
+.story-big-play {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 5%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.3rem 0.7rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1d2340;
+  font: inherit;
+  font-weight: 650;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(10, 12, 40, 0.35);
+}
+.story-big-play:hover {
+  background: #ffffff;
+}
+.story-big-play-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: #5b3fa8;
+  position: relative;
+  flex: none;
+}
+.story-big-play-icon::after {
+  content: '';
+  position: absolute;
+  left: 0.78rem;
+  top: 0.55rem;
+  border-style: solid;
+  border-width: 0.45rem 0 0.45rem 0.7rem;
+  border-color: transparent transparent transparent #ffffff;
+}
+.story-big-play[hidden] {
+  display: none;
+}
+.story-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.story-button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  border: 1px solid var(--story-border);
+  background: var(--story-panel);
+  color: var(--story-fg);
+  cursor: pointer;
+  min-height: 44px;
+}
+.story-button:hover {
+  border-color: var(--story-accent);
+}
+.story-button[hidden] {
+  display: none;
+}
+.story-progress {
+  flex: 1 1 120px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--story-border);
+  overflow: hidden;
+}
+.story-progress-bar {
+  height: 100%;
+  width: 0;
+  background: var(--story-accent);
+}
+.story-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--story-muted);
+  min-width: 3.2em;
+  text-align: right;
+}
+.story-motion-note {
+  margin: 0.6rem 0 0;
+  color: var(--story-muted);
+}
+.story-link-button {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--story-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.story-captions {
+  margin-top: 0.75rem;
+  min-height: 4.6em;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  background: var(--story-panel);
+  border: 1px solid var(--story-border);
+  font-size: 1.05rem;
+}
+.story-captions p {
+  margin: 0.1rem 0;
+}
+.story-caption-placeholder,
+.story-caption-status {
+  color: var(--story-muted);
+}
+.story-caption-who {
+  font-weight: 700;
+}
+.story-transcript {
+  margin-top: 0.75rem;
+}
+.story-transcript summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.story-transcript ol {
+  padding-left: 1.4rem;
+}
+.story button:focus-visible {
+  outline: 3px solid var(--story-accent);
+  outline-offset: 2px;
+}

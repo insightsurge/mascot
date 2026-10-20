@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Bridge at Five</title>
+<meta name="description" content="A short animated story with Tessa, Sela, Knurl and Neer, drawn live by the mascot package.">
+<style>
+{{ENGINE_CSS}}
+</style>
+<style>
+{{STAGE_CSS}}
+</style>
+</head>
+<body>
+<main class="story" aria-labelledby="story-title">
+  <h1 id="story-title" class="story-heading">The Bridge at Five</h1>
+  <p class="story-intro">A short story with Tessa, Sela, Knurl and Neer. About 50 seconds, no sound.</p>
+  <div class="story-frame" id="story-frame">
+    <canvas class="story-canvas" id="story-canvas" role="img"
+      aria-label="The Bridge at Five: four mascots by a stream at dusk. Press Play to start the story."></canvas>
+    <div class="story-cast" aria-hidden="true">
+{{CAST}}
+    </div>
+    <button type="button" class="story-big-play" id="story-big-play">
+      <span class="story-big-play-icon" aria-hidden="true"></span>
+      <span class="story-big-play-label">Play the story</span>
+    </button>
+  </div>
+  <div class="story-controls" role="group" aria-label="Story controls">
+    <button type="button" id="story-play" class="story-button">Play</button>
+    <button type="button" id="story-restart" class="story-button">Restart</button>
+    <button type="button" id="story-prev" class="story-button" hidden>Previous scene</button>
+    <button type="button" id="story-next" class="story-button" hidden>Next scene</button>
+    <div class="story-progress" aria-hidden="true"><div class="story-progress-bar" id="story-progress-bar"></div></div>
+    <span class="story-time" id="story-time" aria-hidden="true">0:00</span>
+  </div>
+  <p class="story-motion-note" id="story-motion-note" hidden>
+    Your device asks for reduced motion, so the story is shown as still scenes.
+    Use <strong>Next scene</strong> to step through it.
+    <button type="button" id="story-animate" class="story-link-button">Play it as an animation instead</button>
+  </p>
+  <div class="story-captions" id="story-captions" aria-live="polite" aria-atomic="true">
+    <p class="story-caption-placeholder">Captions appear here while the story plays.</p>
+  </div>
+  <details class="story-transcript">
+    <summary>Read the whole story</summary>
+    <ol id="story-transcript-list"></ol>
+  </details>
+</main>
+<script>
+{{ENGINE_JS}}
+</script>
+<script>
+{{STAGE_JS}}
+</script>
+</body>
+</html>

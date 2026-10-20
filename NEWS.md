@@ -150,6 +150,10 @@
 
 ## Minor improvements and fixes
 
+* The character-file check names both format versions when a file's `format_version` is not supported (#339).
+
+* `?mascot_character_format` gains a Compatibility section: version-1 files keep loading through 0.1.x (#339).
+
 * `?mascot_theme` and the Get started article say that which parts of a character a `bslib::bs_theme()` colours is experimental and may change in a later release (#385).
 
 * `?mascot_theme` explains that built-in characters keep one outline colour in both modes, and how to set your own dark-mode outline with `dark = list(outline = )` (#380).

@@ -65,7 +65,7 @@ describe("the internal Your character studio panel in Chrome", {
     app$wait_for_js("document.getElementById('your_character_check').textContent.includes('$.format_version')")
     expect_match(
       app$get_js("document.getElementById('your_character_check').textContent"),
-      "supported character-format version",
+      "This file is format version 99;",
       fixed = TRUE
     )
     expect_length(app$get_js("Array.from(document.querySelectorAll('#your_character_grid .mascot'))"), 0)

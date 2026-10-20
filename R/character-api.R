@@ -220,10 +220,17 @@ format.mascot_character_data <- function(x, ...) {
 #' and repair instruction. Input byte, depth and node limits and drawing budgets
 #' are enforced for all input forms. Unsupported and reserved capabilities are
 #' refused. Format version, capability set and admission policy version are
-#' distinct. A documented security or resource-safety correction may reject an
-#' older file with a diagnostic and migration guidance.
+#' distinct. The installed grammar and policy live in
+#' `system.file("format", package = "mascot")`.
 #'
-#' The installed grammar and policy live in `system.file("format", package = "mascot")`.
+#' @section Compatibility:
+#' Version-1 files keep loading through 0.1.x.
+#' The checker may only get stricter in a new format version, except for a
+#' documented security or resource-safety fix, which includes a diagnostic and
+#' migration guidance. New features arrive as a new capability name in `requires`.
+#' A breaking change means format version 2, with both versions accepted.
+#' Files are never upgraded silently. A saved (resolved) file is self-contained.
+#'
 #' @name mascot_character_format
 #' @seealso [mascot_check_character()], [mascot_read_character()],
 #'   [mascot_register_character()], [mascot_save_character()]

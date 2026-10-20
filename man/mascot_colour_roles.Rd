@@ -45,6 +45,7 @@ Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
 \code{\link[=mascot_characters]{mascot_characters()}},
+\code{\link[=mascot_check_character]{mascot_check_character()}},
 \code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},
 \code{\link[=mascot_gestures]{mascot_gestures()}},
@@ -55,6 +56,7 @@ Other mascot helpers:
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},
+\code{\link[=mascot_read_character]{mascot_read_character()}},
 \code{\link[=mascot_size]{mascot_size()}},
 \code{\link[=mascot_status]{mascot_status()}},
 \code{\link[=mascot_theme]{mascot_theme()}}

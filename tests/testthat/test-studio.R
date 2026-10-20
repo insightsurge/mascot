@@ -235,3 +235,17 @@ describe("mascot_studio() views (#395)", {
     expect_error(theme_ui("sela"), "query")
   })
 })
+
+describe("mascot_studio() checked object guidance", {
+  it("verifies objects and points to public previews while the studio uses ids", {
+    local_empty_registry()
+    bot <- mascot_read_character(system.file("examples", "characters", "study_bot.json", package = "mascot"))
+    for (character in list(bot, mascot_character(bot))) {
+      expect_error(mascot_studio(character = character, run = FALSE), "built-in character id", class = "mascot_error")
+    }
+    expect_s3_class(mascot_studio(character = mascot_character("tessa"), run = FALSE), "shiny.appobj")
+    expect_length(character_data_ids(), 0)
+    bot$name <- "Edited"
+    expect_error(mascot_studio(character = bot, run = FALSE), class = "mascot_error_character")
+  })
+})

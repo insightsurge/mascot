@@ -128,6 +128,8 @@ guide_mistake_calls <- function(fn, character) {
       vapply(palette_cases, function(x) x$code, character(1))
     ),
     mascot_character = 'mascot_character("unknown-character")',
+    mascot_read_character = 'mascot_read_character("no-such-file.json")',
+    mascot_check_character = 'mascot_check_character(list(format_version = 1))',
     mascot_mood = paste0(
       'mascot("helper", character = ',
       encodeString(character, quote = '"'),

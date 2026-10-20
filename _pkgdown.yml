@@ -47,6 +47,10 @@ navbar:
         - text: "Character and mood"
         - text: "mascot_character()"
           href: articles/guide-mascot_character.html
+        - text: "mascot_read_character()"
+          href: articles/guide-mascot_read_character.html
+        - text: "mascot_check_character()"
+          href: articles/guide-mascot_check_character.html
         - text: "mascot_mood()"
           href: articles/guide-mascot_mood.html
         - text: "mascot_moods()"
@@ -118,6 +122,8 @@ reference:
       mascot_placement(drag = "free") are experimental.
     contents:
       - mascot_character
+      - mascot_read_character
+      - mascot_check_character
       - mascot_mood
       - mascot_size
       - mascot_placement

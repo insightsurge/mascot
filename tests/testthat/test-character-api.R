@@ -1,6 +1,6 @@
-describe("R4a authoring arguments and internal surface", {
-  it("keeps authoring functions internal and supplies argument conditions", {
-    fns <- c("mascot_check_character", "mascot_read_character", "mascot_register_character", "mascot_save_character")
+describe("character authoring arguments and internal helpers", {
+  it("keeps register and save internal and supplies argument conditions", {
+    fns <- c("mascot_register_character", "mascot_save_character")
     expect_false(any(fns %in% getNamespaceExports("mascot")))
     path <- file.path(withr::local_tempdir(), "out.json")
     checked <- mascot_read_character(system.file("examples", "characters", "study_bot.json", package = "mascot"))
@@ -426,5 +426,21 @@ describe("B2 checked character display", {
     expect_identical(capture.output(print(x)), text)
     expect_error(print.mascot_character_data(list()), class = "mascot_error")
     expect_error(format.mascot_character_data(list()), class = "mascot_error")
+  })
+})
+
+
+describe("public character readers", {
+  it("exports only read and check and runs the offline public route", {
+    exports <- readLines(system.file("NAMESPACE", package = "mascot", mustWork = TRUE))
+    for (fn in c("mascot_read_character", "mascot_check_character")) {
+      expect_true(paste0("export(", fn, ")") %in% exports)
+    }
+    path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+    bot <- mascot::mascot_read_character(path)
+    checked <- mascot::mascot_check_character(jsonlite::read_json(path))
+    expect_s3_class(bot, "mascot_character_data")
+    expect_identical(bot$id, checked$id)
+    expect_false(any(c("mascot_register_character", "mascot_save_character") %in% getNamespaceExports("mascot")))
   })
 })

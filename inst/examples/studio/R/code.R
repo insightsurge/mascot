@@ -250,6 +250,13 @@ arg_name <- function(name) {
 }
 
 format_call <- function(fn, args) {
+  # These read-only entries demonstrate the bundled source rather than live settings.
+  if (!length(args) && fn == "mascot_read_character") {
+    return(format_expr(code_read_character()))
+  }
+  if (!length(args) && fn == "mascot_check_character") {
+    return(format_expr(code_check_character()))
+  }
   format_expr(as.call(c(list(str2lang(fn)), args)))
 }
 
@@ -340,4 +347,16 @@ whole_app_code <- function(ui, click_handler, packages, css_values = NULL) {
     if (!is.null(click_handler)) paste0(indent_code(click_handler, 2), "\n"),
     "}\n\nshinyApp(ui, server)"
   )
+}
+
+
+# The public file-first route, kept separate from the future character editor.
+code_read_character <- function() {
+  quote(mascot_read_character(system.file("examples", "characters", "study_bot.json", package = "mascot")))
+}
+
+code_check_character <- function() {
+  quote(mascot_check_character(jsonlite::read_json(
+    system.file("examples", "characters", "study_bot.json", package = "mascot")
+  )))
 }

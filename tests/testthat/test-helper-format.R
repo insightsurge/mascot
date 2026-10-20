@@ -66,3 +66,14 @@ describe("helper calls", {
     expect_identical(format(mascot_theme()), "mascot_theme()")
   })
 })
+
+
+describe("checked character helper formatting", {
+  it("labels checked drawing data instead of suggesting an unusable call", {
+    bot <- mascot_read_character(system.file("examples", "characters", "study_bot.json", package = "mascot"))
+    helper <- mascot_character(bot)
+    expected <- "<mascot_character: study_bot (checked custom character)>"
+    expect_identical(format(helper), expected)
+    expect_identical(capture.output(print(helper)), expected)
+  })
+})

@@ -46,7 +46,12 @@ describe("mascot_theme()", {
   })
 
   it("rejects malformed maps, reserved roles, colours and helper fields", {
-    expect_snapshot(error = TRUE, mascot_theme(light = list(bdoy = "blue")))
+    expect_error(
+      mascot("helper", theme = list(bdoy = "blue")),
+      'Did you mean "body"?',
+      fixed = TRUE,
+      class = "mascot_error"
+    )
     for (role in c("light", "dark", "default", "eyeWhite", "toString")) {
       expect_error(mascot_theme(light = stats::setNames(list("blue"), role)), "unknown or reserved colour roles")
     }
@@ -357,5 +362,84 @@ describe("B2 theme diagnostics", {
     withr::local_options(mascot.contrast_warnings = "yes")
     expect_warning(expect_true(contrast_warnings(always = TRUE)), "mascot.contrast_warnings", class = "mascot_warning")
     expect_no_warning(expect_true(contrast_warnings(always = TRUE)))
+  })
+})
+
+
+describe("mascot_theme() custom roles", {
+  it("checks role form first and membership against the selected character", {
+    withr::local_options(mascot.contrast_warnings = FALSE)
+    local_empty_registry()
+    source <- jsonlite::read_json(system.file("examples", "characters", "study_bot.json", package = "mascot"))
+    source$colours$signal_lamp <- "#112233"
+    bot <- mascot_check_character(source)
+    theme <- mascot_theme(
+      light = list(signal_lamp = "#123456"),
+      dark = list(signal_lamp = "#234567"),
+      css = list(signal_lamp = "--signal")
+    )
+    expect_null(theme_problem(theme))
+    expect_match(as.character(mascot("bot", character = bot, theme = theme)), "signal_lamp", fixed = TRUE)
+    session <- shiny::MockShinySession$new()
+    withr::defer(session$close())
+    update_mascot("bot", character = bot, theme = theme, session = session)
+    expect_identical(mascot_id_state(session, "bot")$desired$theme$light$signal_lamp, "#123456")
+    expect_error(mascot("helper", theme = theme), "mascot_colour_roles", class = "mascot_error")
+    expect_warning(update_mascot("other", character = "tessa", theme = theme, session = session), "unknown or reserved")
+    for (role in c("a-b", "a__b", "A", "1role", "light", "dark", "default")) {
+      expect_error(mascot_theme(light = stats::setNames(list("blue"), role)), "unknown or reserved")
+    }
+    expect_s3_class(mascot_theme(light = list(signal2_ = "blue")), "mascot_theme")
+    for (field in c("light", "dark", "css")) {
+      map <- if (field == "css") list(signal_lamp = "--signal") else list(signal_lamp = "#123456")
+      single <- do.call(mascot_theme, stats::setNames(list(map), field))
+      wire <- as_theme_arg(single, environment())
+      expect_named(wire[[field]], "signal_lamp")
+      expect_match(as.character(mascot_preview(bot, mood = "idle", theme = single)), "signal_lamp", fixed = TRUE)
+      problem <- theme_problem(single, colour_role_registry("tessa"))
+      error <- tryCatch(mascot("invalid", theme = single), error = identity)
+      expect_s3_class(error, "mascot_error")
+      expect_identical(gsub("[[:space:]]+", " ", conditionMessage(error)), gsub("[[:space:]]+", " ", problem))
+    }
+    expect_length(character_data_ids(), 0)
+  })
+})
+
+
+describe("theme role naming before a character is chosen", {
+  it("explains the naming rule without suggesting built-in roles", {
+    for (role in c("Bdoy", "a__b", "light", "dark", "default")) {
+      problem <- theme_map_problem(stats::setNames(list("blue"), role), "light", NULL)
+      expect_match(problem, "lowercase snake case", fixed = TRUE)
+      expect_match(problem, "optional final underscore", fixed = TRUE)
+      expect_match(problem, "`light`, `dark` and `default` are reserved", fixed = TRUE)
+      expect_match(problem, "mascot_colour_roles()", fixed = TRUE)
+      expect_false(grepl("Did you mean|Valid roles:", problem))
+    }
+  })
+  it("caches the schema's colour-map key pattern for repeated checks", {
+    schema <- character_format_schema()
+    expect_identical(schema$definitions$colour_map$key_pattern, schema$definitions$id$pattern)
+    # An empty cache makes the read count independent of preceding tests.
+    local_mocked_bindings(theme_role_pattern_cache = new.env(parent = emptyenv()))
+    reads <- new.env(parent = emptyenv())
+    reads$n <- 0L
+    local_mocked_bindings(character_format_schema = function() {
+      reads$n <- reads$n + 1L
+      schema
+    })
+    expect_null(theme_map_problem(list(signal2_ = "blue"), "light", NULL))
+    expect_null(theme_map_problem(list(signal_lamp = "blue"), "light", NULL))
+    expect_identical(reads$n, 1L)
+  })
+})
+
+
+describe("built-in theme typo compatibility", {
+  it("keeps the existing mascot error text byte for byte", {
+    snapshot <- readLines(test_path("_snaps", "mascot.md"), warn = FALSE)
+    expected <- sub("^      ! ", "", grep('! `theme` has unknown or reserved colour roles:', snapshot, value = TRUE))
+    expect_length(expected, 1L)
+    expect_identical(theme_map_problem(list(bdoy = "blue"), "theme", colour_role_registry("tessa")), expected)
   })
 })

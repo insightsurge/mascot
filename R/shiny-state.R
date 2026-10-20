@@ -219,9 +219,10 @@ mascot_state_theme <- function(theme, data, strict = TRUE, roles = names(data$co
     }
     if (any(wrong)) {
       if (strict) {
+        hint <- theme_role_hint(colour_role_names(names(theme[[field]])[wrong]), colour_role_names(roles))
         cli::cli_abort(
           c(
-            "Unknown theme colour role {.val {names(theme[[field]])[wrong]}} for {.val {data$id}}.",
+            "Unknown theme colour role {.val {names(theme[[field]])[wrong]}} for {.val {data$id}}.{hint}",
             "i" = "Choose {.or {roles}}."
           ),
           class = "mascot_error"

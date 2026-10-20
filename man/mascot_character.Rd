@@ -7,11 +7,15 @@
 mascot_character(id = "tessa")
 }
 \arguments{
-\item{id}{A non-empty string naming a built-in character. Defaults to
-\code{"tessa"}; \code{NULL} is not accepted.}
+\item{id}{A non-empty string naming a known character, or checked
+\code{mascot_character_data} from \code{\link[=mascot_read_character]{mascot_read_character()}} or
+\code{\link[=mascot_check_character]{mascot_check_character()}}. Defaults to \code{"tessa"}; \code{NULL} is not accepted.
+A checked object is used as passed and is not stored anywhere; pass it
+each time you choose that character.}
 }
 \value{
-A \code{mascot_character} object with \code{id} and \code{name} elements.
+A \code{mascot_character} helper carrying the character's identity and,
+for a custom character, its checked drawing data.
 The returned object's fields are internal; pass the object on rather than reading its fields.
 }
 \description{
@@ -29,6 +33,8 @@ file format and character authoring functions are experimental too.
 \examples{
 mascot_character()
 mascot_character("tessa")
+path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+mascot_character(mascot_read_character(path))
 }
 \seealso{
 \code{\link[=mascot]{mascot()}}
@@ -38,6 +44,7 @@ Other mascot helpers:
 \code{\link[=mascot_anchors]{mascot_anchors()}},
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_characters]{mascot_characters()}},
+\code{\link[=mascot_check_character]{mascot_check_character()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
 \code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},
@@ -49,6 +56,7 @@ Other mascot helpers:
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},
+\code{\link[=mascot_read_character]{mascot_read_character()}},
 \code{\link[=mascot_size]{mascot_size()}},
 \code{\link[=mascot_status]{mascot_status()}},
 \code{\link[=mascot_theme]{mascot_theme()}}

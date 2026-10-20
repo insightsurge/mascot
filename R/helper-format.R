@@ -7,6 +7,9 @@ helper_format <- function(x) {
   defaults <- formals(constructor)
   args <- unclass(x)
   if (helper == "mascot_character") {
+    if (!is.null(x$data)) {
+      return(paste0("<mascot_character: ", x$id, " (checked custom character)>"))
+    }
     args <- list(id = x$id)
   }
   if (helper == "mascot_bubble") {

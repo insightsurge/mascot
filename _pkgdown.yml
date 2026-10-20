@@ -53,6 +53,8 @@ reference:
   - title: Helpers
     contents:
       - mascot_character
+      - mascot_read_character
+      - mascot_check_character
       - mascot_mood
       - mascot_size
       - mascot_placement

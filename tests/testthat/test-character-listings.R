@@ -387,11 +387,11 @@ describe("humanised role descriptions", {
 
 describe("R4a public listing documentation", {
   it("keeps checked and registered forms for R4b and documents every family column", {
+    # mascot_character() documents checked character data from 0.1.0 (#339), so it is not listed here.
     pages <- c(
       "mascot",
       "update_mascot",
       "mascot_preview",
-      "mascot_character",
       "mascot_characters",
       "mascot_families",
       "mascot_moods",

@@ -57,7 +57,7 @@
 #'   \out{<span class='badge text-bg-warning'>Experimental</span>}}}{%
 #'   \strong{[Experimental]}}
 #'   `"free"` is experimental: the position it reports and how to restore it
-#'   may change (issue #224). Has no effect inline: an
+#'   may change. Has no effect inline: an
 #'   explicitly supplied value gives an informational message. `TRUE`, `FALSE` and
 #'   `NULL` are not accepted. See the Dragging section.
 #' @returns A `mascot_placement` object with `position`, `minimise` and `drag`
@@ -71,7 +71,7 @@
 #'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
 #'       lifecycle::badge("experimental"), fixed = TRUE),
 #'   "\n\"free\" is experimental: the position it reports and how to restore ",
-#'   "it may change (issue #224).\n}"
+#'   "it may change.\n}"
 #' )
 #' @export
 #' @examples

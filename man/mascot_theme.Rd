@@ -28,7 +28,11 @@ Values can be colour names, hex
 strings, \code{\link[grDevices:rgb]{grDevices::rgb()}} output, CSS \code{rgb()} or \code{rgba()} strings, or
 three RGB numbers (red, green and blue) in 0--255. Single numeric palette
 indices are not accepted. Roles use snake case; \code{light}, \code{dark} and
-\code{default} are reserved. Built-in characters keep one outline colour in
+\code{default} are reserved. Names follow the character format: a lowercase letter,
+then lowercase letters or digits separated by single underscores, with an
+optional final underscore. Construction checks this form; \code{\link[=mascot]{mascot()}},
+\code{\link[=update_mascot]{update_mascot()}} and \code{\link[=mascot_preview]{mascot_preview()}} check roles against the chosen
+character. Built-in characters keep one outline colour in
 both modes; their light outer band keeps them readable on any dark page.
 To use your own dark-mode outline, set \code{dark = list(outline = "#FFC93C")}.}
 
@@ -122,6 +126,7 @@ Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
 \code{\link[=mascot_characters]{mascot_characters()}},
+\code{\link[=mascot_check_character]{mascot_check_character()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
 \code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},
@@ -133,6 +138,7 @@ Other mascot helpers:
 \code{\link[=mascot_placement]{mascot_placement()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},
+\code{\link[=mascot_read_character]{mascot_read_character()}},
 \code{\link[=mascot_size]{mascot_size()}},
 \code{\link[=mascot_status]{mascot_status()}}
 }

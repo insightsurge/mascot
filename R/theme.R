@@ -58,7 +58,11 @@
 #'   strings, [grDevices::rgb()] output, CSS `rgb()` or `rgba()` strings, or
 #'   three RGB numbers (red, green and blue) in 0--255. Single numeric palette
 #'   indices are not accepted. Roles use snake case; `light`, `dark` and
-#'   `default` are reserved. Built-in characters keep one outline colour in
+#'   `default` are reserved. Names follow the character format: a lowercase letter,
+#'   then lowercase letters or digits separated by single underscores, with an
+#'   optional final underscore. Construction checks this form; [mascot()],
+#'   [update_mascot()] and [mascot_preview()] check roles against the chosen
+#'   character. Built-in characters keep one outline colour in
 #'   both modes; their light outer band keeps them readable on any dark page.
 #'   To use your own dark-mode outline, set `dark = list(outline = "#FFC93C")`.
 #' @param mode Mode selection: `"auto"` (the default), `"light"` or `"dark"`.
@@ -129,11 +133,26 @@ mascot_theme <- function(..., palette = NULL, light = NULL, dark = NULL, mode = 
   value
 }
 
+# Cache only the format's role-name grammar; checked character data stays separate.
+theme_role_pattern_cache <- new.env(parent = emptyenv())
+
+#' Read the role-name pattern once per package session
+#' @noRd
+theme_role_pattern <- function() {
+  if (is.null(theme_role_pattern_cache$pattern)) {
+    definitions <- character_format_schema()$definitions
+    id <- definitions$id$pattern
+    key <- definitions$colour_map$key_pattern
+    theme_role_pattern_cache$pattern <- if (!is.null(key) && identical(key, id)) key else id
+  }
+  theme_role_pattern_cache$pattern
+}
+
 #' Validate a colour or CSS map without throwing at runtime
 #' @noRd
 theme_map_problem <- function(x, arg, roles, css = FALSE) {
   checkmate::assert_string(arg)
-  checkmate::assert_character(roles, any.missing = FALSE)
+  checkmate::assert_character(roles, any.missing = FALSE, null.ok = TRUE)
   checkmate::assert_flag(css)
   # Union input uses check_* so runtime errors can become warnings.
   if (is.null(x)) {
@@ -142,7 +161,25 @@ theme_map_problem <- function(x, arg, roles, css = FALSE) {
   if (!isTRUE(checkmate::check_list(x, names = "unique")) || (length(x) && is.null(names(x)))) {
     return(paste0("`", arg, "` must be a named list with unique colour roles, or NULL."))
   }
-  wrong <- names(x)[!names(x) %in% roles | names(x) %in% c("light", "dark", "default")]
+  # Before a character is chosen, admit the same role-name grammar as the format.
+  valid <- if (is.null(roles)) {
+    grepl(theme_role_pattern(), names(x))
+  } else {
+    names(x) %in% roles
+  }
+  wrong <- names(x)[!valid | names(x) %in% c("light", "dark", "default")]
+  if (is.null(roles) && length(wrong)) {
+    return(paste0(
+      "`",
+      arg,
+      "` has unknown or reserved colour roles: ",
+      paste(encodeString(wrong, quote = '"'), collapse = ", "),
+      ". Use lowercase snake case: a lowercase letter, then lowercase letters or digits ",
+      "separated by single underscores, with an optional final underscore. ",
+      "`light`, `dark` and `default` are reserved. ",
+      "See `mascot_colour_roles()` for a character's roles."
+    ))
+  }
   if (length(wrong)) {
     return(paste0(
       "`",
@@ -201,8 +238,8 @@ theme_role_hint <- function(wrong, roles) {
 
 #' Validate shortcuts and complete helper objects without changing anything
 #' @noRd
-theme_problem <- function(x, roles = colour_role_registry()) {
-  checkmate::assert_character(roles, any.missing = FALSE)
+theme_problem <- function(x, roles = NULL) {
+  checkmate::assert_character(roles, any.missing = FALSE, null.ok = TRUE)
   # Union input uses the same non-throwing boundary as size and placement.
   if (is.null(x)) {
     return(NULL)
@@ -323,7 +360,7 @@ theme_contrast <- function(colour, background) {
 as_theme_arg <- function(x, call, character = NULL) {
   checkmate::assert_environment(call)
   character_catalogue_assert(character, nullable = TRUE)
-  problem <- theme_problem(x, colour_role_registry(character))
+  problem <- theme_problem(x, if (is.null(character)) NULL else colour_role_registry(character))
   if (is.null(problem) && is.null(character)) {
     palette <- if (is.character(x)) {
       x
@@ -372,9 +409,9 @@ as_theme_arg <- function(x, call, character = NULL) {
   } else if (!inherits(x, "mascot_theme")) {
     x <- structure(list(palette = NULL, light = x, dark = x, mode = "auto", css = NULL), class = "mascot_theme")
   }
-  roles <- colour_role_registry(character)
+  roles <- if (is.null(character)) NULL else colour_role_registry(character)
   engine <- if (is.null(character)) {
-    unique(unlist(lapply(builtin_characters()$id, function(id) names(character_colour_data(id)$colours))))
+    NULL
   } else {
     names(character_colour_data(character)$colours)
   }
@@ -404,7 +441,9 @@ as_theme_arg <- function(x, call, character = NULL) {
         }
       }
     }
-    names(value) <- engine[match(names(map), colour_role_names(engine))]
+    if (!is.null(character)) {
+      names(value) <- engine[match(names(map), colour_role_names(engine))]
+    }
     value
   }
   value <- list(

@@ -9,8 +9,12 @@
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param fn A function name in the studio's Guide, without parentheses.
 #'   `NULL` starts with `mascot_mood()`. Used in the studio view only.
-#' @param character A character ID from the studio's character selector.
-#'   Defaults to the default character of [mascot()].
+#' @param character A built-in character id string from the studio's character
+#'   selector, or a [mascot_character()] helper for a built-in character.
+#'   Defaults to the default character of [mascot()]. A checked character object
+#'   or a helper carrying one is refused with advice to use [mascot_preview()]
+#'   or [mascot()] to display it. Checked objects come from
+#'   [mascot_read_character()] or [mascot_check_character()].
 #' @param run A logical flag. `TRUE` launches in an interactive R session;
 #'   `FALSE` returns the app without launching it.
 #' @returns With `run = FALSE`, a `shiny.appobj` object. With `run = TRUE`,
@@ -32,11 +36,25 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
   with_mascot_asserts({
     checkmate::assert_string(view)
     checkmate::assert_string(fn, min.chars = 1, null.ok = TRUE)
-    checkmate::assert_string(character, min.chars = 1)
+    character_catalogue_assert(character)
     checkmate::assert_flag(run)
   })
   if (...length() > 0L) {
     abort_dots(names(substitute(list(...)))[-1L], ...length(), c("fn", "character", "run"), environment())
+  }
+  if (inherits(character, "mascot_character_data") || inherits(character, "mascot_character")) {
+    resolved <- as_character_arg(character, environment())
+    if (!is.null(resolved$data)) {
+      cli::cli_abort(
+        paste0(
+          "The studio currently needs a built-in character id from its selector (or a helper for one). ",
+          "Use {.fn mascot_preview} or {.fn mascot} with this checked character object ",
+          "or its mascot_character() helper."
+        ),
+        class = "mascot_error"
+      )
+    }
+    character <- resolved$id
   }
   path <- dirname(mascot_example("studio", run = FALSE))
   guide <- new.env(parent = baseenv())

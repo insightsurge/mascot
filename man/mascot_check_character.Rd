@@ -34,9 +34,35 @@ give your character its own id before checking it.
 \examples{
 path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
 source <- jsonlite::read_json(path)
-bot <- mascot:::mascot_check_character(source)
+bot <- mascot_check_character(source)
 }
 \seealso{
 \link{mascot_character_format}
+
+Other mascot helpers:
+\code{\link[=mascot_action]{mascot_action()}},
+\code{\link[=mascot_anchors]{mascot_anchors()}},
+\code{\link[=mascot_bubble]{mascot_bubble()}},
+\code{\link[=mascot_character]{mascot_character()}},
+\code{\link[=mascot_characters]{mascot_characters()}},
+\code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
+\code{\link[=mascot_families]{mascot_families()}},
+\code{\link[=mascot_gesture]{mascot_gesture()}},
+\code{\link[=mascot_gestures]{mascot_gestures()}},
+\code{\link[=mascot_mood]{mascot_mood()}},
+\code{\link[=mascot_moods]{mascot_moods()}},
+\code{\link[=mascot_motion_settings]{mascot_motion_settings()}},
+\code{\link[=mascot_palettes]{mascot_palettes()}},
+\code{\link[=mascot_placement]{mascot_placement()}},
+\code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
+\code{\link[=mascot_preview]{mascot_preview()}},
+\code{\link[=mascot_read_character]{mascot_read_character()}},
+\code{\link[=mascot_size]{mascot_size()}},
+\code{\link[=mascot_status]{mascot_status()}},
+\code{\link[=mascot_theme]{mascot_theme()}}
 }
-\keyword{internal}
+\concept{mascot helpers}
+\section{Experimental}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+Its arguments, results and diagnostics may change in 0.1.x.
+}

@@ -782,13 +782,23 @@ describe("update_mascot() themes", {
     )
     shiny::testServer(function(input, output, session) {}, {
       for (theme in list(1, list(bdoy = "blue"), list(body = "invalid"), structure(list(), class = "mascot_theme"))) {
-        expect_warning(update_mascot("helper", theme = theme, mood = "happy", status = "Saved"), "unchanged")
+        expect_warning(
+          update_mascot("helper", character = "tessa", theme = theme, mood = "happy", status = "Saved"),
+          "unchanged"
+        )
       }
+      expect_warning(
+        update_mascot("helper", theme = list(Bdoy = "blue"), mood = "happy", status = "Saved"),
+        "unchanged"
+      )
       expect_length(captured$patches, 0)
       local_mocked_bindings(dev_mode = function() TRUE)
-      expect_warning(update_mascot("helper", theme = list(bdoy = "blue"), character = "missing"), "unchanged")
+      withr::with_options(list(mascot.contrast_warnings = FALSE), {
+        expect_warning(update_mascot("helper", theme = list(bdoy = "blue"), character = "missing"), "unchanged")
+      })
       expect_named(captured$patches[[1]], "problem")
-      expect_match(captured$patches[[1]]$problem, "bdoy")
+      expect_match(captured$patches[[1]]$problem, "missing")
+      expect_false(grepl("bdoy", captured$patches[[1]]$problem, fixed = TRUE))
       expect_warning(update_mascot("helper", theme = mascot_theme(light = list(body = "white"))), "below 3:1")
       expect_identical(captured$patches[[2]]$theme$light$body, "#FFFFFF")
       expect_null(captured$patches[[2]]$problem)
@@ -1617,5 +1627,39 @@ describe("settle overlay in a cold-start update (#350)", {
     )
     protocol_ready(f)
     expect_match(protocol_flush(f)$problem, "^mascot: ")
+  })
+})
+
+
+describe("deferred theme role checks", {
+  it("warns with a suggestion and rejects the whole queued call when the page character arrives", {
+    withr::local_options(mascot.contrast_warnings = FALSE)
+    local_mocked_bindings(dev_mode = function() FALSE)
+    fixture <- protocol_fixture()
+    withr::defer(fixture$session$close())
+    expect_no_warning(update_mascot(
+      "helper",
+      theme = list(bdoy = "blue"),
+      mood = "happy",
+      status = "Saved",
+      session = fixture$session
+    ))
+    expect_null(protocol_record(fixture)$context)
+    expect_length(protocol_record(fixture)$cold, 1L)
+    captured <- new.env(parent = emptyenv())
+    withCallingHandlers(protocol_ready(fixture), mascot_update_ignored = function(w) {
+      captured$warning <- w
+      invokeRestart("muffleWarning")
+    })
+    expect_s3_class(captured$warning, "mascot_update_ignored")
+    message <- gsub("[[:space:]]+", " ", conditionMessage(captured$warning))
+    expect_match(message, "Unknown theme colour role.*bdoy.*Choose")
+    expect_match(message, 'Did you mean "body"?', fixed = TRUE)
+    record <- protocol_record(fixture)
+    expect_identical(record$desired$mood, "idle")
+    expect_identical(record$desired$status, list(mode = "mood"))
+    expect_identical(record$desired$theme, mascot_empty_theme())
+    expect_length(record$owned, 0L)
+    expect_length(record$cold, 0L)
   })
 })

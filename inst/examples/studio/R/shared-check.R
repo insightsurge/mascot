@@ -101,8 +101,10 @@ contrast_stale_ui <- function() {
 }
 
 # A character swap as an app would make it: the mascot shows `from` in `palette`, then becomes `to`. Both calls run
-# through run_real_call() in envir; the result is the swap's, with the two calls as code. The package keeps the
-# palette when `to` has one of that name, and otherwise warns (mascot_palette_dropped) and uses its own colours.
+# through run_real_call() in envir; the result is the swap's, with the two calls as code and step = "swap". When the
+# first call fails or is left unchanged (ok is FALSE), the swap is not run: the result is the first call's, with
+# step = "setup". The package keeps the palette when `to` has one of that name, and otherwise warns
+# (mascot_palette_dropped) and uses its own colours.
 palette_swap_run <- function(id, from, to, palette, envir) {
   checkmate::assert_string(id, min.chars = 1)
   checkmate::assert_string(from, min.chars = 1)
@@ -111,8 +113,14 @@ palette_swap_run <- function(id, from, to, palette, envir) {
   checkmate::assert_environment(envir)
   first <- call("update_mascot", id, character = from, theme = palette, motion = FALSE)
   swap <- call("update_mascot", id, character = to)
-  run_real_call(first, envir)
+  setup <- run_real_call(first, envir)
+  if (!setup$ok) {
+    setup$code <- deparse1(first)
+    setup$step <- "setup"
+    return(setup)
+  }
   result <- run_real_call(swap, envir)
   result$code <- paste(deparse1(first), deparse1(swap), sep = "\n")
+  result$step <- "swap"
   result
 }

@@ -1,12 +1,14 @@
 #!/usr/bin/env Rscript
 # Self-test for the CRAN gate (cran-gate.R, in the same folder): a check that can't fail protects nothing.
 #
-#   Rscript <path to this file> [all|static|heavy]
+#   Rscript <path to this file> [all|unit|static|heavy]
 #
+#   unit            the gate's reporting code, sourced without running the gate and fed a real testthat results
+#                   object from a tiny temporary test folder (seconds)
 #   static          a clean copy of the package must pass; then one planted defect per quick step (settings,
 #                   tools, air, biome, docs, lintr, value, spelling) must make that step FAIL
 #   heavy           the same for check_fast, tests, coverage, check_full and tarball (a minute or more)
-#   all   (default) both
+#   all   (default) all three
 #
 # Run it from the root of a package that passes the gate. Each probe copies the package to tempdir() (tracked and
 # new files in a git repository; nothing git ignores), plants one defect in the copy and runs the gate on it. PASS
@@ -17,7 +19,7 @@
 # Run it after changing the gate or the settings it reads (.lintr, air.toml, biome.json, the Config/cran-gate
 # fields); a new gate step gets a probe here at the same time.
 
-groups <- c("all", "static", "heavy")
+groups <- c("all", "unit", "static", "heavy")
 rscript <- file.path(R.home("bin"), "Rscript")
 
 # The gate is the file next to this one, wherever the skill is installed.
@@ -409,6 +411,159 @@ run_probe <- function(probe, files, gate) {
   list(status = "PASS", detail = detail, output = run$stdout)
 }
 
+# One unit check: its name, whether it held, and what was seen when it didn't.
+unit <- function(name, ok, seen = "") {
+  checkmate::assert_string(name)
+  checkmate::assert_flag(ok, na.ok = TRUE)
+  checkmate::assert_string(seen)
+  list(name = name, ok = isTRUE(ok), seen = seen)
+}
+
+# A tiny test folder with one passing, one failing, one erroring, one warning and one skipped test. Each problem is
+# on line 2 of its file.
+unit_test_folder <- function(dir) {
+  checkmate::assert_string(dir)
+  tests <- file.path(dir, "tests")
+  dir.create(tests, recursive = TRUE, showWarnings = FALSE)
+  plant(dir, "tests/test-pass.R", c("test_that(\"passes\", {", "  expect_true(TRUE)", "})"))
+  plant(dir, "tests/test-fail.R", c("test_that(\"fails\", {", "  expect_true(FALSE)", "})"))
+  plant(dir, "tests/test-error.R", c("test_that(\"errors\", {", "  stop(\"boom\")", "})"))
+  plant(dir, "tests/test-warn.R", c("test_that(\"warns\", {", "  warning(\"careful\")", "  expect_true(TRUE)", "})"))
+  plant(dir, "tests/test-skip.R", c("test_that(\"skips\", {", "  skip(\"not today\")", "})"))
+  tests
+}
+
+# The unit group: sources the gate (its last lines run the gate only under Rscript) and checks the reporting code
+# on a real testthat results object. Returns a list of unit() results.
+unit_checks <- function(gate) {
+  checkmate::assert_file_exists(gate)
+  g <- new.env()
+  sys.source(gate, envir = g)
+  dir <- tempfile("gate-unit-")
+  on.exit(unlink(dir, recursive = TRUE))
+  tests <- unit_test_folder(dir)
+  run_tests <- function(filter = NULL) {
+    testthat::test_dir(tests, filter = filter, reporter = "silent", stop_on_failure = FALSE, stop_on_warning = FALSE)
+  }
+  parent <- file.path(dir, "out")
+  run_dir <- g$run_folder(parent, "tests")
+  second <- g$run_folder(parent, "tests")
+  txt <- file.path(run_dir, "tests.txt")
+  failing <- g$tests_result(g$summarise_tests(run_tests(), run_dir), txt)
+  json <- jsonlite::read_json(file.path(run_dir, "tests.json"), simplifyVector = TRUE)
+  passing <- g$tests_result(g$summarise_tests(run_tests("pass|warn|skip"), second), txt)
+  state <- new.env()
+  state$tests <- g$summarise_tests(run_tests(), second)
+  report <- g$failure_report("tests", second, state, whole_logs = FALSE)
+  g$write_gate_json(run_dir, "tests", data.frame(step = "tests", status = "FAIL", seconds = 1, detail = "x"))
+  gate_json <- jsonlite::read_json(file.path(run_dir, "gate.json"), simplifyVector = TRUE)
+  # Lines as testthat's CheckReporter writes them (the format of testthat.Rout.fail under R CMD check and covr),
+  # with its Unicode rule and with the ASCII one it uses when the output can't show Unicode.
+  check_output <- c(
+    "[ FAIL 2 | WARN 0 | SKIP 0 | PASS 1 ]",
+    paste("── Failure ('test-a.R:3:3'): fails", strrep("─", 5)),
+    "Expected FALSE to be TRUE.",
+    "-- Error ('test-b.R:1:1'): (code run outside of `test_that()`) -----"
+  )
+  headers <- g$failure_headers(paste(check_output, collapse = "\n"))
+  check <- structure(
+    list(
+      errors = "checking tests ... ERROR\n  Running 'testthat.R'",
+      warnings = character(),
+      notes = character(),
+      test_fail = list(testthat = paste(check_output, collapse = "\n"))
+    ),
+    class = "rcmdcheck"
+  )
+  checked <- g$check_result(check)
+  list(
+    unit(
+      "run folder: <parent>/<YYYYmmdd-HHMMSS>-<mode>, created",
+      dir.exists(run_dir) &&
+        identical(dirname(run_dir), normalizePath(parent)) &&
+        grepl("^[0-9]{8}-[0-9]{6}-tests$", basename(run_dir)),
+      run_dir
+    ),
+    unit("run folder: a second run in the same second gets its own folder", dir.exists(second) && second != run_dir),
+    unit(
+      "tests FAIL line: the counts (5 expectations: a pass, a failure, a warning plus a pass, a skip)",
+      failing$status == "FAIL" && startsWith(failing$detail, "5 expectations, 2 failed, 1 warnings, 1 skipped: "),
+      failing$detail
+    ),
+    unit(
+      "tests FAIL line: file:line, test name, kind and first message line of each problem",
+      grepl("test-error.R:2 \"errors\" (Error: boom)", failing$detail, fixed = TRUE) &&
+        grepl("test-fail.R:2 \"fails\" (Failure: Expected FALSE to be TRUE.)", failing$detail, fixed = TRUE),
+      failing$detail
+    ),
+    unit(
+      "tests FAIL line: ends with where the details are",
+      endsWith(failing$detail, paste0("; details: ", txt)),
+      failing$detail
+    ),
+    unit(
+      "tests.json: counts, one issue per failure, error and warning, one row per test",
+      identical(json$counts$failed, 2L) &&
+        setequal(json$issues$kind, c("Error", "Failure", "Warning")) &&
+        nrow(json$tests) == 5 &&
+        !"result" %in% names(json$tests) &&
+        all(names(json$slowest_files) %in% basename(list.files(tests))),
+      paste(names(json), collapse = ", ")
+    ),
+    unit("tests.rds: the raw results", file.exists(file.path(run_dir, "tests.rds"))),
+    unit(
+      "tests PASS line: counts and the slowest file",
+      passing$status == "PASS" &&
+        startsWith(passing$detail, "4 expectations, 0 failed, 1 warnings, 1 skipped; slowest file test-"),
+      passing$detail
+    ),
+    unit(
+      "failure report: the problems block after the summary",
+      any(grepl("^---- tests: the first 2 of 2 problems", report)) &&
+        any(grepl("test-fail.R:2 \"fails\"", report, fixed = TRUE)),
+      paste(report, collapse = " | ")
+    ),
+    unit(
+      "gate.json: the mode and one row per step",
+      identical(gate_json$mode, "tests") && identical(gate_json$steps$status, "FAIL"),
+      paste(names(gate_json), collapse = ", ")
+    ),
+    unit(
+      "failure headers: taken from check output, with the rule characters off",
+      identical(
+        headers,
+        c("Failure ('test-a.R:3:3'): fails", "Error ('test-b.R:1:1'): (code run outside of `test_that()`)")
+      ),
+      paste(headers, collapse = " | ")
+    ),
+    unit(
+      "check_full FAIL line: names the failing tests from the check's test output",
+      checked$status == "FAIL" &&
+        grepl("failing tests: Failure ('test-a.R:3:3'): fails", checked$detail, fixed = TRUE),
+      checked$detail
+    )
+  )
+}
+
+run_unit <- function(gate) {
+  checkmate::assert_file_exists(gate)
+  started <- Sys.time()
+  checks <- tryCatch(
+    unit_checks(gate),
+    error = function(e) list(unit("the unit checks ran", FALSE, conditionMessage(e)))
+  )
+  secs <- as.numeric(difftime(Sys.time(), started, units = "secs"))
+  statuses <- character()
+  for (check in checks) {
+    status <- if (check$ok) "PASS" else "FAIL"
+    statuses[paste("unit:", check$name)] <- status
+    seen <- if (check$ok || !nzchar(check$seen)) "" else paste0(": saw ", check$seen)
+    cli::cat_line(sprintf("%-4s unit: %s%s", status, check$name, seen))
+  }
+  cli::cat_line(sprintf("     unit group: %d checks in %.0fs", length(checks), secs))
+  statuses
+}
+
 main <- function(args) {
   checkmate::assert_character(args, any.missing = FALSE, max.len = 1)
   group <- if (length(args) == 0) "all" else args
@@ -424,7 +579,7 @@ main <- function(args) {
   )
   files <- package_files()
   cli::cli_h1("CRAN gate self-test: {group} ({length(probes)} probes)")
-  statuses <- character()
+  statuses <- if (group %in% c("all", "unit")) run_unit(gate) else character()
   for (probe in probes) {
     started <- Sys.time()
     res <- tryCatch(
@@ -444,8 +599,8 @@ main <- function(args) {
       "FAILED: the gate did not behave as expected for ",
       length(failed),
       " of ",
-      length(probes),
-      " probes."
+      length(statuses),
+      " checks and probes."
     )
     if (identical(unname(statuses["clean copy passes"]), "FAIL")) {
       cli::cat_line("The clean copy didn't pass: make the gate pass on the package first, then run the self-test.")
@@ -458,7 +613,7 @@ main <- function(args) {
 
 # Like the gate: say plainly, in base R, when the packages this script needs are missing.
 ensure_packages <- function() {
-  pkgs <- c("checkmate", "cli", "processx")
+  pkgs <- c("checkmate", "cli", "jsonlite", "processx", "testthat")
   absent <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
   if (length(absent) > 0) {
     message("Missing R packages: ", toString(absent), "; .libPaths()[1] = ", .libPaths()[1])

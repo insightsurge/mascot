@@ -9,7 +9,8 @@
 #   lint            the quick static steps only: tools, style, docs in sync, \value, spelling
 #
 # Run it from the package root. It prints one PASS/FAIL/SKIP line per step and a summary, and exits 1 if any step
-# fails. Detailed output goes to a log file in tempdir() whose path is printed.
+# fails. Detailed output goes to a run folder that outlives the gate (its path is printed): one log per step,
+# gate.json (one row per step) and, after the tests step, tests.txt, tests.json and tests.rds.
 #
 # Always checked (CRAN or its reviewers ask for these): R CMD check --as-cran with 0 errors, 0 warnings and 0 notes;
 # a \value section for every exported function; help pages in sync with the roxygen comments; spelling; every file
@@ -26,11 +27,13 @@
 #   Config/cran-gate/tarball-mb: 5     largest built package allowed, in MB (default 5; 5 to 9, CRAN's limit is 10)
 #   Config/cran-gate/extra-dirs: tools more folders to format-check and lint, comma separated (default: none)
 #
-# Needs the R packages checkmate, cli, devtools and spelling, plus roxygen2, lintr, covr, withr and pkgbuild for the
-# steps that use them; the tools step names whatever is missing.
+# Needs the R packages checkmate, cli, devtools, jsonlite and spelling, plus roxygen2, lintr, covr, testthat, withr
+# and pkgbuild for the steps that use them; the tools step names whatever is missing.
 #
 # Writes to the package: devtools::document() may rewrite man/, NAMESPACE and DESCRIPTION (the docs step then fails
-# and names the files); --update-wordlist rewrites inst/WORDLIST. Nothing else outside tempdir().
+# and names the files); --update-wordlist rewrites inst/WORDLIST. Outside the package it writes only to tempdir()
+# and the run folder: <CRAN_GATE_OUT>/<YYYYmmdd-HHMMSS>-<mode>, where CRAN_GATE_OUT defaults to cran-gate/ in the
+# system temp folder (the parent of tempdir()).
 
 modes <- c("fast", "tests", "full", "lint")
 
@@ -71,7 +74,7 @@ package_uses <- function() {
 required_packages <- function(mode, uses) {
   checkmate::assert_choice(mode, modes)
   checkmate::assert_list(uses, types = "logical")
-  pkgs <- c("checkmate", "cli", "devtools", "spelling")
+  pkgs <- c("checkmate", "cli", "devtools", "jsonlite", "spelling")
   if (uses$roxygen) {
     pkgs <- c(pkgs, "roxygen2")
   }
@@ -104,6 +107,28 @@ result <- function(status, detail = "") {
   checkmate::assert_choice(status, c("PASS", "FAIL", "SKIP"))
   checkmate::assert_string(detail)
   list(status = status, detail = detail)
+}
+
+# The run folder: one per gate run, outside the session's tempdir() (which R deletes when the gate exits), so the
+# logs and results are still there when you read them. `parent` is CRAN_GATE_OUT or cran-gate/ in the system temp
+# folder.
+run_folder <- function(parent, mode) {
+  checkmate::assert_string(parent, min.chars = 1)
+  checkmate::assert_string(mode, min.chars = 1)
+  dir.create(parent, recursive = TRUE, showWarnings = FALSE)
+  checkmate::assert_directory_exists(parent, access = "w", .var.name = "CRAN_GATE_OUT")
+  base <- file.path(normalizePath(parent), paste0(format(Sys.time(), "%Y%m%d-%H%M%S"), "-", mode))
+  dir <- base
+  n <- 1L
+  while (!dir.create(dir, showWarnings = FALSE)) {
+    n <- n + 1L
+    dir <- paste0(base, "-", n)
+  }
+  dir
+}
+
+default_out <- function() {
+  Sys.getenv("CRAN_GATE_OUT", file.path(dirname(tempdir()), "cran-gate"))
 }
 
 # Runs `fun`, sending its printed output and messages to the log file.
@@ -305,13 +330,29 @@ step_spelling <- function(update, log) {
   result("FAIL", paste0("unknown words: ", toString(words$word), "; fix them, or add with --update-wordlist"))
 }
 
+# The failing tests named in testthat's check output (testthat.Rout.fail under R CMD check or covr): lines such as
+# "-- Failure ('test-x.R:3:3'): the name --", with the rule characters taken off.
+failure_headers <- function(text) {
+  checkmate::assert_character(text, any.missing = FALSE)
+  lines <- unlist(strsplit(text, "\n", fixed = TRUE))
+  found <- regmatches(lines, regexpr("(Failure|Error) \\('[^']+'\\): .*$", lines))
+  trimws(sub("[ ─-]+$", "", found))
+}
+
 check_result <- function(res) {
   checkmate::assert_class(res, "rcmdcheck")
   counts <- c(errors = length(res$errors), warnings = length(res$warnings), notes = length(res$notes))
   detail <- paste(counts, names(counts), collapse = ", ")
   if (sum(counts) > 0) {
     first <- strsplit(c(res$errors, res$warnings, res$notes)[1], "\n", fixed = TRUE)[[1]][1]
-    return(result("FAIL", paste0(detail, "; first: ", first)))
+    failing <- failure_headers(as.character(unlist(res$test_fail)))
+    tests <- if (length(failing) > 0) {
+      more <- if (length(failing) > 3) sprintf(" +%d more", length(failing) - 3) else ""
+      paste0("; failing tests: ", paste(utils::head(failing, 3), collapse = "; "), more)
+    } else {
+      ""
+    }
+    return(result("FAIL", paste0(detail, "; first: ", first, tests)))
   }
   result("PASS", detail)
 }
@@ -337,27 +378,161 @@ step_check <- function(tests, log) {
   check_result(res)
 }
 
-step_tests <- function(uses, log) {
+# The first line of a test's message, without testthat's "Error in `eval(code, test_env)`: " prefix, cut to 100
+# characters. A line ending in ":" (cli's "Error in `f()`:") keeps the line after it.
+first_message_line <- function(message) {
+  checkmate::assert_string(message)
+  lines <- trimws(strsplit(message, "\n", fixed = TRUE)[[1]])
+  lines <- lines[nzchar(lines)]
+  if (length(lines) == 0) {
+    return("")
+  }
+  line <- if (length(lines) > 1 && endsWith(lines[1], ":")) paste(lines[1:2], collapse = " ") else lines[1]
+  line <- sub("^Error in `eval\\(code, test_env\\)`: ", "", line)
+  if (nchar(line) > 100) paste0(substr(line, 1, 97), "...") else line
+}
+
+# One row per failure, error and warning in a testthat results object: file, line, test, kind, message.
+test_issues <- function(res) {
+  checkmate::assert_class(res, "testthat_results")
+  kinds <- c(expectation_failure = "Failure", expectation_error = "Error", expectation_warning = "Warning")
+  rows <- lapply(res, function(t) {
+    found <- Filter(function(e) inherits(e, names(kinds)), t$results)
+    lapply(found, function(e) {
+      data.frame(
+        file = t$file,
+        line = if (inherits(e$srcref, "srcref")) as.integer(e$srcref[[1]]) else NA_integer_,
+        test = if (length(t$test) == 0 || is.na(t$test)) "(code outside test_that())" else t$test,
+        kind = unname(kinds[intersect(class(e), names(kinds))[1]]),
+        message = first_message_line(conditionMessage(e))
+      )
+    })
+  })
+  empty <- data.frame(
+    file = character(),
+    line = integer(),
+    test = character(),
+    kind = character(),
+    message = character()
+  )
+  do.call(rbind, c(list(empty), unlist(rows, recursive = FALSE)))
+}
+
+# Issues as `file:line "test" (Kind: message)`.
+issue_text <- function(issues) {
+  checkmate::assert_data_frame(issues)
+  sprintf("%s:%s \"%s\" (%s: %s)", issues$file, issues$line, issues$test, issues$kind, issues$message)
+}
+
+# Reads a testthat results object: writes tests.rds and tests.json to the run folder and returns the counts, the
+# issues and the slowest files.
+summarise_tests <- function(res, run_dir) {
+  checkmate::assert_class(res, "testthat_results")
+  checkmate::assert_directory_exists(run_dir, access = "w")
+  df <- as.data.frame(res)
+  issues <- test_issues(res)
+  slow <- if (nrow(df) > 0) {
+    utils::head(sort(tapply(df$real, df$file, sum, na.rm = TRUE), decreasing = TRUE), 10)
+  } else {
+    numeric()
+  }
+  bad <- issues[issues$kind != "Warning", , drop = FALSE]
+  counts <- list(
+    expectations = sum(df$nb),
+    failed = nrow(bad),
+    warnings = sum(issues$kind == "Warning"),
+    skipped = sum(df$skipped)
+  )
+  saveRDS(res, file.path(run_dir, "tests.rds"))
+  jsonlite::write_json(
+    list(
+      counts = counts,
+      issues = issues,
+      slowest_files = as.list(slow),
+      tests = df[setdiff(names(df), "result")]
+    ),
+    file.path(run_dir, "tests.json"),
+    auto_unbox = TRUE,
+    pretty = TRUE,
+    digits = NA,
+    na = "null"
+  )
+  list(counts = counts, issues = issues, bad = bad, slow = slow)
+}
+
+# The tests step's line: counts and the slowest file on PASS; counts, the first 3 problems and where the details
+# are on FAIL.
+tests_result <- function(summary, txt) {
+  checkmate::assert_list(summary)
+  checkmate::assert_string(txt)
+  n <- summary$counts
+  counts <- sprintf(
+    "%d expectations, %d failed, %d warnings, %d skipped",
+    n$expectations,
+    n$failed,
+    n$warnings,
+    n$skipped
+  )
+  if (nrow(summary$bad) == 0) {
+    slowest <- if (length(summary$slow) > 0) {
+      sprintf("; slowest file %s (%.0fs)", names(summary$slow)[1], summary$slow[[1]])
+    } else {
+      ""
+    }
+    return(result("PASS", paste0(counts, slowest)))
+  }
+  named <- issue_text(utils::head(summary$bad, 3))
+  more <- if (nrow(summary$bad) > 3) sprintf("; +%d more", nrow(summary$bad) - 3) else ""
+  result("FAIL", paste0(counts, ": ", paste(named, collapse = "; "), more, "; details: ", txt))
+}
+
+step_tests <- function(uses, run_dir, log, state) {
   checkmate::assert_list(uses, types = "logical")
+  checkmate::assert_directory_exists(run_dir, access = "w")
   checkmate::assert_string(log)
+  checkmate::assert_environment(state)
   if (!uses$testthat) {
     return(result("SKIP", "no tests/testthat (R CMD check still runs whatever is in tests/)"))
   }
   withr::local_envvar(NOT_CRAN = "true")
-  res <- run_logged(function() devtools::test(stop_on_failure = TRUE, reporter = "summary"), log)
-  df <- as.data.frame(res)
-  result("PASS", paste0(sum(df$nb), " expectations, ", sum(df$skipped), " skipped"))
+  txt <- file.path(run_dir, "tests.txt")
+  reporter <- testthat::SummaryReporter$new(file = txt, max_reports = Inf)
+  # stop_on_failure = FALSE: with TRUE, testthat aborts with "Test failures." and its results are lost.
+  res <- run_logged(function() devtools::test(stop_on_failure = FALSE, reporter = reporter), log)
+  state$tests <- summarise_tests(res, run_dir)
+  tests_result(state$tests, txt)
 }
 
-step_coverage <- function(uses, settings, log) {
+step_coverage <- function(uses, settings, log, state) {
   checkmate::assert_list(uses, types = "logical")
   checkmate::assert_list(settings)
   checkmate::assert_string(log)
+  checkmate::assert_environment(state)
   if (!uses$tests) {
     return(result("SKIP", "the package has no tests/"))
   }
+  if (identical(state$statuses[["tests"]], "FAIL")) {
+    return(result("SKIP", "tests failed, and covr gives no percentage when a test fails"))
+  }
   withr::local_envvar(NOT_CRAN = "true")
-  cov <- run_logged(function() covr::package_coverage(quiet = TRUE), log)
+  # covr cuts the failure output to warning.length characters (1000 by default): raise it to R's maximum.
+  withr::local_options(warning.length = 8170L)
+  cov <- tryCatch(
+    run_logged(function() covr::package_coverage(quiet = TRUE), log),
+    error = function(e) {
+      message <- conditionMessage(e)
+      write(message, log, append = TRUE)
+      failing <- failure_headers(message)
+      if (length(failing) == 0) {
+        return(result("FAIL", first_message_line(message)))
+      }
+      more <- if (length(failing) > 3) sprintf(" +%d more", length(failing) - 3) else ""
+      result("FAIL", paste0("tests failed under covr: ", paste(utils::head(failing, 3), collapse = "; "), more))
+    }
+  )
+  if (!inherits(cov, "coverage")) {
+    return(cov)
+  }
   if (nrow(as.data.frame(cov)) == 0) {
     return(result("PASS", "no R code lines to cover yet"))
   }
@@ -394,13 +569,15 @@ step_tarball <- function(settings, log) {
   result("PASS", sprintf("%.2f MB (limit %g MB), %d inst/ files shipped", size_mb, settings$tarball_mb, length(inst)))
 }
 
-run_step <- function(step, mode, update, uses, settings, log) {
+run_step <- function(step, mode, update, uses, settings, run_dir, log, state) {
   checkmate::assert_string(step)
   checkmate::assert_choice(mode, modes)
   checkmate::assert_flag(update)
   checkmate::assert_list(uses, types = "logical")
   checkmate::assert_list(settings)
+  checkmate::assert_directory_exists(run_dir)
   checkmate::assert_string(log)
+  checkmate::assert_environment(state)
   tryCatch(
     switch(
       step,
@@ -412,13 +589,63 @@ run_step <- function(step, mode, update, uses, settings, log) {
       value = step_value(log),
       spelling = step_spelling(update, log),
       check_fast = step_check(tests = FALSE, log),
-      tests = step_tests(uses, log),
-      coverage = step_coverage(uses, settings, log),
+      tests = step_tests(uses, run_dir, log, state),
+      coverage = step_coverage(uses, settings, log, state),
       check_full = step_check(tests = TRUE, log),
       tarball = step_tarball(settings, log)
     ),
     error = function(e) result("FAIL", conditionMessage(e))
   )
+}
+
+# gate.json in the run folder: the mode and one row per step (status, seconds, detail). Rewritten after every step,
+# so a gate that is stopped part-way still leaves the steps it finished.
+write_gate_json <- function(run_dir, mode, rows) {
+  checkmate::assert_directory_exists(run_dir, access = "w")
+  checkmate::assert_string(mode)
+  checkmate::assert_data_frame(rows)
+  if (!requireNamespace("jsonlite", quietly = TRUE)) {
+    return(invisible(FALSE)) # the tools step names jsonlite as missing
+  }
+  jsonlite::write_json(
+    list(mode = mode, run_folder = run_dir, steps = rows),
+    file.path(run_dir, "gate.json"),
+    auto_unbox = TRUE,
+    pretty = TRUE,
+    digits = NA
+  )
+  invisible(TRUE)
+}
+
+# What to read after a FAIL: the first 10 test problems, then the last lines of each failed step's log (the whole log
+# on CI, where the run folder isn't visible afterwards).
+failure_report <- function(failed, run_dir, state, whole_logs) {
+  checkmate::assert_character(failed, any.missing = FALSE)
+  checkmate::assert_directory_exists(run_dir)
+  checkmate::assert_environment(state)
+  checkmate::assert_flag(whole_logs)
+  out <- character()
+  bad <- state$tests$bad
+  if ("tests" %in% failed && !is.null(bad) && nrow(bad) > 0) {
+    out <- c(
+      out,
+      sprintf("---- tests: the first %d of %d problems (all in tests.json) ----", min(10, nrow(bad)), nrow(bad)),
+      issue_text(utils::head(bad, 10))
+    )
+  }
+  for (step in failed) {
+    log <- file.path(run_dir, paste0(step, ".log"))
+    lines <- if (file.exists(log)) readLines(log, warn = FALSE) else character()
+    if (length(lines) == 0) {
+      next
+    }
+    if (whole_logs) {
+      out <- c(out, sprintf("---- %s: log ----", step), lines)
+    } else {
+      out <- c(out, sprintf("---- %s: the last lines of %s.log ----", step, step), utils::tail(lines, 20))
+    }
+  }
+  out
 }
 
 main <- function(args) {
@@ -437,29 +664,32 @@ main <- function(args) {
     quit(status = 1)
   }
   uses <- package_uses()
-  log <- tempfile("cran-gate-", fileext = ".log")
-  file.create(log)
+  run_dir <- run_folder(default_out(), mode)
+  state <- new.env()
+  state$statuses <- character()
+  rows <- data.frame(step = character(), status = character(), seconds = numeric(), detail = character())
   cli::cli_h1("CRAN gate: {mode}")
-  statuses <- character()
+  cli::cat_line("Run folder: ", run_dir)
   for (step in steps_for(mode)) {
+    log <- file.path(run_dir, paste0(step, ".log"))
+    file.create(log)
     started <- Sys.time()
-    res <- run_step(step, mode, update, uses, settings, log)
+    res <- run_step(step, mode, update, uses, settings, run_dir, log, state)
     secs <- as.numeric(difftime(Sys.time(), started, units = "secs"))
-    statuses[step] <- res$status
+    state$statuses[step] <- res$status
+    rows[nrow(rows) + 1L, ] <- list(step, res$status, round(secs, 1), res$detail)
+    write_gate_json(run_dir, mode, rows)
     detail <- if (nzchar(res$detail)) paste0(": ", res$detail) else ""
     cli::cat_line(sprintf("%-4s %-10s (%3.0fs)%s", res$status, step, secs, detail))
     if (step == "tools" && res$status == "FAIL") {
       break
     }
   }
+  statuses <- state$statuses
   failed <- names(statuses)[statuses == "FAIL"]
-  cli::cat_line("Log: ", log)
-  if (length(failed) > 0 && identical(Sys.getenv("CI"), "true")) {
-    # On CI the log file isn't visible afterwards, so show it.
-    cli::cat_line("---- log ----")
-    cli::cat_line(readLines(log, warn = FALSE))
-  }
+  cli::cat_line("Run folder: ", run_dir)
   if (length(failed) > 0) {
+    cli::cat_line(failure_report(failed, run_dir, state, whole_logs = identical(Sys.getenv("CI"), "true")))
     cli::cat_line("FAILED: ", paste(failed, collapse = ", "))
     quit(status = 1)
   }
@@ -478,5 +708,8 @@ ensure_gate_packages <- function() {
   }
 }
 
-ensure_gate_packages()
-main(commandArgs(trailingOnly = TRUE))
+# Run only under Rscript: sourcing the file (as the self-test does) defines the functions without running the gate.
+if (sys.nframe() == 0L) {
+  ensure_gate_packages()
+  main(commandArgs(trailingOnly = TRUE))
+}

@@ -1,0 +1,37 @@
+```{r setup-mascot_size, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_size-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_size")
+```
+
+### Size
+
+The ruler marks 24, 72, 160 and 320 pixels; 160 is the default.
+
+```{r mascot_size-ruler, echo = FALSE}
+if (in_studio()) shiny::uiOutput("size_ruler") else guide_table(data.frame(
+  Pixels = vapply(c(24, 72, formals(mascot::mascot_size)$size, 320),
+                  function(size) mascot::mascot_size(size)$size, numeric(1)),
+  Reference = c("Minimum", "Small example", "Default", "Large example")
+))
+```
+
+<div class="pg-callout">
+
+<strong>Small screens.</strong>
+small_screen applies on screens narrower than 576 pixels. Narrow your browser window to see the mascot switch size.
+With `small_screen = "auto"`, a floating mascot shrinks to at most 96 pixels; an inline mascot keeps its size.
+
+</div>
+
+```r
+mascot_size()
+mascot_size(120, small_screen = 72)
+mascot_size("30%", small_screen = NULL)
+```
+
+```{r mascot_size-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_size", studio_character)
+```

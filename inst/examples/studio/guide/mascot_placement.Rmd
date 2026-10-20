@@ -1,0 +1,32 @@
+```{r setup-mascot_placement, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_placement-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_placement")
+```
+
+### Placement
+
+A default mascot() floats in the bottom-right corner. Inline placement puts the mascot where mascot() is
+placed in your UI and scrolls with the page. The map shows the four floating corners and the inline option.
+
+```{r mascot_placement-map, echo = FALSE}
+if (in_studio()) {
+  htmltools::tagList(
+    htmltools::tags$p(class = "pg-muted",
+      'This studio displays the character inline with placement = "inline" so it remains on the canvas.'),
+    shiny::uiOutput("placement_map")
+  )
+} else guide_placement_map()
+```
+
+```r
+mascot("helper")
+mascot("helper", placement = "inline")
+mascot("helper", placement = mascot_placement("top-left", minimise = TRUE))
+```
+
+```{r mascot_placement-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_placement", studio_character)
+```

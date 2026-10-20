@@ -60,6 +60,9 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
   guide <- new.env(parent = baseenv())
   sys.source(file.path(path, "R", "guide.R"), envir = guide)
   data <- new.env(parent = baseenv())
+  # The data file loads the guide's shared code; it finds that folder next to the app (a development copy of
+  # the package is not visible to system.file() from this environment).
+  data$studio_guide_root <- path
   sys.source(file.path(path, "R", "data.R"), envir = data)
   # These choices are available only after loading the studio data.
   for (arg in c("view", "fn", "character")) {
@@ -74,7 +77,13 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
   }
   app <- shiny::shinyAppDir(path)
   handler <- app$httpHandler
-  initial <- list(view = view, fn = if (is.null(fn)) "mascot_mood" else fn, character = character)
+  # A function the caller named opens on its Guide; without one the studio starts on the canvas.
+  initial <- list(
+    view = view,
+    fn = if (is.null(fn)) "mascot_mood" else fn,
+    character = character,
+    open = if (is.null(fn) || view != "studio") "" else "guide"
+  )
   # The page request carries per-app defaults to its UI. Explicit navigation links
   # override them; the mounted inputs carry them to the WebSocket session.
   app$httpHandler <- function(request) {

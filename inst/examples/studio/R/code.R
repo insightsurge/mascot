@@ -32,7 +32,7 @@ code_status <- function(text) {
 }
 
 code_bubble <- function(text, html, duration, closable) {
-  if (!nzchar(trimws(text))) {
+  if (is.null(text) || !length(text) || !nzchar(trimws(text))) {
     return(code_pair(quote(mascot_bubble())))
   }
   value <- if (html) call("HTML", text) else text
@@ -89,7 +89,7 @@ code_motion <- function(
     args$others <- FALSE
   }
   helper <- do.call(helper_call, c(list("mascot_motion_settings"), args))
-  code_pair(helper, helper)
+  code_pair(if (length(helper) == 1L) TRUE else helper, helper)
 }
 
 code_size <- function(size, small_screen = "auto") {
@@ -131,11 +131,11 @@ code_placement <- function(position = "bottom-right", ..., minimise = TRUE, drag
 
 # A menu has no shortcut: a named vector is not a click, so both forms use the helper.
 code_menu <- function(items, direction = "auto", label = "", tooltip = TRUE, disabled = FALSE) {
-  if (!length(items)) {
+  if (is.null(items) || !length(items)) {
     return(code_pair(quote(mascot_popup_menu())))
   }
   vector <- if (length(items)) named_call("c", items)
-  has_label <- nzchar(trimws(label))
+  has_label <- nzchar(trimws(label %||% ""))
   helper <- helper_call(
     "mascot_popup_menu",
     vector,
@@ -149,7 +149,7 @@ code_menu <- function(items, direction = "auto", label = "", tooltip = TRUE, dis
 
 # An action's shortcut is its label; the helper also carries a hidden tooltip or a disabled state.
 code_action <- function(label, tooltip = TRUE, disabled = FALSE) {
-  if (!nzchar(trimws(label))) {
+  if (is.null(label) || !length(label) || !nzchar(trimws(label))) {
     return(code_pair(quote(mascot_action())))
   }
   helper <- helper_call("mascot_action", label, tooltip = if (!tooltip) FALSE, disabled = if (disabled) TRUE)
@@ -166,10 +166,8 @@ code_theme <- function(source, light, dark, mode, css_roles, primary, secondary,
   checkmate::assert_string(secondary, null.ok = TRUE)
   checkmate::assert_string(palette, min.chars = 1)
   if (source == "own") {
-    if (palette != "original") {
-      return(code_pair(palette, helper_call("mascot_theme", palette = palette)))
-    }
-    return(code_pair(quote(mascot_theme())))
+    helper <- helper_call("mascot_theme", palette = if (palette != "original") palette, mode = if (mode != "auto") mode)
+    return(code_pair(if (palette != "original" && mode == "auto") palette else helper, helper))
   }
   if (source == "bslib") {
     return(code_pair(helper_call("bslib::bs_theme", primary = primary, secondary = secondary)))
@@ -259,7 +257,13 @@ format_call <- function(fn, args) {
 
 # Picks the shortcut or helper form of every setting.
 pick_style <- function(pairs, style) {
-  lapply(pairs, function(pair) pair[[style]])
+  if (length(style) > 1L) {
+    style <- as.list(style)
+  }
+  lapply(names(pairs), function(arg) {
+    pairs[[arg]][[if (length(style) == 1L) style else style[[arg]] %||% style[[".default"]]]]
+  }) |>
+    stats::setNames(names(pairs))
 }
 
 # The observeEvent() that answers a click: the action's, or one branch per menu item, for the app to fill in.

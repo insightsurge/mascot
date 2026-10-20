@@ -2,8 +2,8 @@
 #'
 #' Start with the studio: every exported function and argument, live, with
 #' explanations and the code to copy. The other examples show one scenario each.
-#' All work offline. The studio and single-file examples need optional `bslib`;
-#' the `golem` example needs optional `golem`. The rhino-shaped example uses
+#' All work offline. The studio and single-file examples need optional `bslib`, and
+#' the studio also needs optional `knitr`; the `golem` example needs optional `golem`. The rhino-shaped example uses
 #' plain Shiny without rhino or box.
 #' @returns A data frame with character columns `name`, `title` and `description`,
 #'   in teaching order. `name` is accepted by [mascot_example()].

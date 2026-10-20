@@ -6,6 +6,10 @@ library(shiny)
 if (!requireNamespace("bslib", quietly = TRUE)) {
   stop("This example needs bslib. Install it before running the app.")
 }
+# The guide pages are R Markdown files (guide/<function>.Rmd), knitted when a guide is opened.
+if (!requireNamespace("knitr", quietly = TRUE)) {
+  stop("The studio needs knitr for its guide pages. Install it before running the app.")
+}
 library(bslib)
 library(mascot)
 
@@ -38,17 +42,153 @@ server_args <- function(state, style) {
 
 # ---- Pages -------------------------------------------------------------------------------
 
-studio_page <- function(character, fn) {
+studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
   checkmate::assert_string(character)
   checkmate::assert_string(fn)
-  initial <- start
-  initial$character <- code_character(character)
-  start_mascot <- do.call(mascot, lapply(ui_args(initial, "short"), eval))
-  bslib::layout_sidebar(
-    sidebar = bslib::sidebar(function_index(), width = 250, open = "desktop", title = "Function index"),
-    # The inspector is a right-hand sidebar inside the main area, so it collapses the bslib way too.
-    bslib::layout_sidebar(
-      sidebar = bslib::sidebar(
+  checkmate::assert_flag(open_guide)
+  checkmate::assert_choice(view, c("studio", "examples"))
+  div(
+    id = "studio_shell",
+    class = "pg-studio",
+    studio_rail(),
+    div(
+      id = "function_flyout",
+      class = "pg-flyout pg-float",
+      hidden = NA,
+      div(
+        class = "pg-surface-head",
+        tags$strong("Functions"),
+        studio_button("close_functions", "Close", "Close functions")
+      ),
+      function_index()
+    ),
+    studio_search(),
+    div(
+      id = "studio_centre",
+      class = "pg-centre",
+      `data-initial-function` = fn,
+      `data-initial-mode` = if (view == "examples" || fn %in% c("mascot_example", "mascot_examples")) {
+        "examples"
+      } else if (fn == "mascot_preview") {
+        "preview"
+      } else {
+        "mascot"
+      },
+      `data-initial-character` = character,
+      `data-initial-open` = if (open_guide) "guide",
+      panel_character_bar(character = character),
+      div(
+        id = "studio_canvas",
+        class = "pg-host pg-float",
+        `data-mode` = "mascot",
+        div(
+          class = "pg-host-bar",
+          tags$span(
+            class = "pg-window-dots",
+            `aria-hidden` = "true",
+            tags$i(class = "pg-light-red"),
+            tags$i(class = "pg-light-yellow"),
+            tags$i(class = "pg-light-green")
+          ),
+          tags$span("Host container"),
+          tags$span(class = "pg-muted", "Contained preview"),
+          tagAppendAttributes(studio_button("back_to_studio", "Back to studio"), hidden = NA),
+          div(id = "examples_phone_tools", class = "pg-topright")
+        ),
+        div(
+          class = "pg-host-options",
+          selectInput(
+            "host_mode",
+            "Host mode",
+            c("Live mascot" = "mascot", "Preview page" = "preview")
+          ),
+          studio_button("phone_width", "Phone width", pressed = FALSE),
+          studio_button("show_anchors", "Anchors", pressed = FALSE),
+          tags$span(id = "no_anchors", role = "status", hidden = NA),
+          tags$button(
+            type = "button",
+            id = "reset_anchors",
+            class = "btn btn-link btn-sm",
+            hidden = NA,
+            "Reset anchors"
+          ),
+          tags$span(id = "reduced_motion", role = "status"),
+          if (!is.null(studio_character_hint())) tags$span(class = "pg-hint", studio_character_hint()),
+          uiOutput("stage_note", inline = TRUE, class = "pg-stage-note")
+        ),
+        div(class = "pg-stage", `data-canvas` = "mascot", uiOutput("live_host", class = "pg-live-host")),
+        div(
+          class = "pg-preview-stage",
+          `data-canvas` = "preview",
+          hidden = NA,
+          div(class = "pg-preview-head", uiOutput("preview_status_badge", inline = TRUE)),
+          bslib::card(id = "preview_card", full_screen = TRUE, uiOutput("preview_frame", class = "pg-preview-frame"))
+        ),
+        div(class = "pg-example-stage", `data-canvas` = "examples", hidden = NA, example_browser()),
+        div(class = "pg-host-footer", tags$code('id = "helper"'), textOutput("host_event", inline = TRUE))
+      ),
+      div(
+        id = "studio_dock",
+        class = "pg-call-dock pg-float",
+        div(
+          class = "pg-surface-head",
+          tags$span(class = "pg-eyebrow", "Current configuration"),
+          tags$span(class = "pg-call-hint", "Click an argument to edit it"),
+          div(
+            class = "pg-actions",
+            div(
+              title = paste(
+                "Shortcuts are plain values, for example mood = \"happy\".",
+                "Helpers are mascot_*() calls, for example mood = mascot_mood(\"happy\").",
+                "Both give the same mascot."
+              ),
+              radioButtons(
+                "code_style",
+                "Style",
+                c(Shortcuts = "short", Helpers = "helper"),
+                selected = "short",
+                inline = TRUE
+              )
+            ),
+            copy_button("code_ui", "Copy your settings"),
+            studio_button("open_code", "Code views")
+          )
+        ),
+        uiOutput("live_call", class = "pg-live-call")
+      )
+    ),
+    studio_right_rail(),
+    div(
+      id = "inspector_sidebar",
+      class = "pg-inspector-shell pg-float",
+      hidden = NA,
+      `aria-label` = "Function inspector",
+      tabindex = "-1",
+      div(
+        class = "pg-surface-head",
+        tags$strong(id = "inspector_title", paste0(fn, "()")),
+        studio_button("close_inspector", "Close", "Close inspector")
+      ),
+      div(
+        class = "pg-inspector-tabs",
+        role = "tablist",
+        `aria-label` = "Inspector views",
+        lapply(c("Controls", "Help", "Guide"), function(tab) {
+          tags$button(
+            type = "button",
+            id = paste0("inspector_tab_", tolower(tab)),
+            role = "tab",
+            `data-inspector-tab` = tolower(tab),
+            `aria-controls` = paste0("inspector_", tolower(tab)),
+            `aria-selected` = if (tab == "Controls") "true" else "false",
+            tab
+          )
+        })
+      ),
+      div(
+        id = "inspector_controls",
+        role = "tabpanel",
+        `aria-labelledby` = "inspector_tab_controls",
         div(
           class = "pg-inspector",
           id = "studio_inspector",
@@ -61,167 +201,129 @@ studio_page <- function(character, fn) {
           panel_wiring(),
           panel_studio(),
           panel_preview(),
-          panel_views()
-        ),
-        id = "inspector_sidebar",
-        title = "Controls",
-        position = "right",
-        width = 330,
-        open = "desktop"
-      ),
-      class = "pg-studio",
-      id = "studio_shell",
-      border = TRUE,
-      border_radius = FALSE,
-      padding = 0,
-      gap = 0,
-      div(
-        class = "pg-centre",
-        id = "studio_centre",
-        `data-initial-function` = fn,
-        `data-initial-character` = character,
-        panel_character_bar(character = character),
-        div(
-          class = "pg-canvas",
-          id = "studio_canvas",
-          `data-mode` = "mascot",
-          # The live mascot and the static preview share the canvas: the selected function decides which
-          # one shows (www/studio.js). Hiding keeps the mascot, and its state, exactly as it was.
-          div(class = "pg-stage", `data-canvas` = "mascot", start_mascot),
-          uiOutput("stage_note", `data-canvas` = "mascot"),
-          div(
-            class = "pg-canvas-caption pg-muted",
-            `data-canvas` = "mascot",
-            textOutput("character_caption", inline = TRUE)
-          ),
-          div(
-            class = "pg-preview-stage",
-            `data-canvas` = "preview",
-            hidden = NA,
-            div(
-              class = "pg-preview-head",
-              tags$span(
-                class = "pg-muted",
-                "The page ",
-                tags$code("mascot_preview()"),
-                " returns for the arguments in Controls."
-              ),
-              uiOutput("preview_status_badge", inline = TRUE)
-            ),
-            bslib::card(
-              id = "preview_card",
-              full_screen = TRUE,
-              bslib::card_body(
-                padding = 0,
-                uiOutput("preview_frame", class = "pg-preview-frame")
-              )
-            )
+          inspector_function("mascot_examples", uiOutput("example_listing")),
+          inspector_function(
+            "mascot_example",
+            arg_field("mascot_example", "name", NULL),
+            arg_field("mascot_example", "run", NULL),
+            arg_field("mascot_example", "...", NULL)
           )
-        ),
+        )
+      ),
+      div(
+        id = "inspector_help",
+        role = "tabpanel",
+        `aria-labelledby` = "inspector_tab_help",
+        hidden = NA,
+        uiOutput("function_help")
+      ),
+      div(
+        id = "inspector_guide",
+        role = "tabpanel",
+        `aria-labelledby` = "inspector_tab_guide",
+        hidden = NA,
+        uiOutput("guide")
+      ),
+      div(
+        class = "pg-code-pin",
+        div(class = "pg-eyebrow", "R code for this function"),
+        div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
+      )
+    ),
+    div(
+      id = "chip_editor",
+      class = "pg-chip-editor pg-float",
+      role = "dialog",
+      `aria-label` = "Edit argument",
+      hidden = NA,
+      div(
+        class = "pg-surface-head",
         div(
-          class = "pg-dock",
-          id = "studio_dock",
-          tags$div(
-            id = "dock_grip",
-            class = "pg-grip",
-            role = "separator",
-            tabindex = "0",
-            `aria-label` = "Resize the Code tray",
-            `aria-orientation` = "horizontal",
-            `aria-valuemin` = "25",
-            `aria-valuemax` = "80",
-            `aria-valuenow` = "33",
-            title = "Drag to resize, or use the up and down arrow keys"
-          ),
-          # The header bar only collapses the tray; full screen belongs to the card inside the body,
-          # so the two buttons never overlap and full screen is offered only while the code shows.
-          div(
-            id = "code_tray_header",
-            class = "pg-tray-header",
-            tags$button(
-              type = "button",
-              id = "code_tray_toggle",
-              class = "pg-tray-toggle",
-              `aria-expanded` = "true",
-              `aria-controls` = "code_tray_body",
-              `aria-label` = "Collapse Code tray",
-              tags$span("Code"),
-              shiny::icon("chevron-up", class = "pg-tray-chevron")
+          class = "pg-chip-title-row",
+          tags$span(id = "chip_title", class = "pg-chip-title"),
+          lapply(c(setdiff(names(formals(mascot)), "..."), "gesture"), function(arg) {
+            fn <- if (arg == "gesture") "mascot_gesture" else "mascot"
+            field <- if (arg == "gesture") "name" else arg
+            tags$span(
+              `data-chip-overview` = arg,
+              hidden = NA,
+              tags$button(
+                type = "button",
+                class = "pg-info pg-chip-question",
+                `aria-label` = paste("About", arg),
+                `aria-expanded` = "false",
+                "?"
+              ),
+              div(class = "pg-overview-content", hidden = NA, arg_popover_body(fn, field))
             )
-          ),
+          })
+        ),
+        studio_button("close_chip", "Close")
+      ),
+      div(
+        id = "chip_style",
+        hidden = NA,
+        tags$button(type = "button", `data-chip-style` = "short", "Plain value"),
+        tags$button(type = "button", `data-chip-style` = "helper", "Helper")
+      ),
+      div(
+        id = "chip_editor_scroll",
+        div(id = "chip_editor_body"),
+        div(
+          class = "pg-chip-context",
+          tags$div(id = "chip_hint"),
+          "Default: ",
+          tags$code(id = "chip_default"),
+          tags$div("Current: ", tags$code(id = "chip_current")),
+          tags$span(id = "chip_changed", " Changed"),
+          tags$button(type = "button", id = "chip_reset", class = "btn btn-link btn-sm", "Reset")
+        )
+      ),
+      div(
+        class = "pg-chip-footer",
+        tags$button(type = "button", id = "chip_inspector", class = "btn btn-primary btn-sm", "Advanced controls"),
+        studio_button("chip_help", "Help"),
+        studio_button("chip_guide", "Guide")
+      )
+    ),
+    div(
+      id = "code_drawer",
+      class = "pg-code-drawer pg-float",
+      hidden = NA,
+      div(class = "pg-surface-head", tags$strong("Code views"), studio_button("close_code", "Close")),
+      div(
+        id = "code_tray_body",
+        class = "pg-tray-body",
+        div(
+          id = "studio_panels_card",
           div(
-            id = "code_tray_body",
-            class = "pg-tray-body",
-            bslib::card(
-              id = "studio_panels_card",
-              full_screen = TRUE,
-              bslib::card_body(
-                # The caption and the code style switch share one line to save height.
-                div(
-                  class = "pg-code-intro",
-                  div(class = "pg-hint pg-code-purpose", textOutput("code_caption", inline = TRUE)),
-                  div(
-                    class = "pg-code-style",
-                    popover(
-                      tags$button(
-                        type = "button",
-                        class = "pg-arg-chip",
-                        `aria-label` = "Shortcuts or helpers?",
-                        "Code style",
-                        tags$span(class = "pg-info", "i")
-                      ),
-                      p("Shortcuts are plain values: mood = \"happy\"."),
-                      p(
-                        "Helpers are mascot_*() calls: mood = mascot_mood(\"happy\"). Use them for settings beyond the main value, such as a bubble's duration. Both give the same mascot."
-                      ),
-                      title = "Shortcuts or helpers?"
-                    ),
-                    radioButtons("code_style", NULL, c(Shortcuts = "short", Helpers = "helper"), inline = TRUE)
-                  )
-                ),
-                navset_underline(
-                  id = "code_tabs",
-                  nav_panel(
-                    "UI",
-                    div(class = "pg-hint", "A mascot() UI call with the current settings."),
-                    div(class = "pg-code-wrap", code_output("code_ui"), copy_button("code_ui"))
-                  ),
-                  nav_panel(
-                    "Server",
-                    div(class = "pg-hint", "An update_mascot() server call with the current settings."),
-                    div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))
-                  ),
-                  nav_panel(
-                    "App",
-                    div(class = "pg-hint", "A complete Shiny app: copy and run it in a new file."),
-                    div(class = "pg-code-wrap", code_output("code_app"), copy_button("code_app"))
-                  ),
-                  nav_panel(
-                    "Last",
-                    div(class = "pg-hint", "The latest server call run by the studio."),
-                    div(class = "pg-code-wrap", code_output("code_last"), copy_button("code_last"))
-                  ),
-                  nav_panel(
-                    "Preview",
-                    value = "preview",
-                    div(class = "pg-hint", "The mascot_preview() call that built the page on the canvas."),
-                    div(class = "pg-code-wrap", code_output("code_preview"), copy_button("code_preview")),
-                    uiOutput("preview_contrast")
-                  ),
-                  nav_panel(
-                    "Log",
-                    div(
-                      class = "pg-card-head",
-                      div(
-                        class = "pg-hint",
-                        "Recent calls and menu selections, newest first, including warnings and errors."
-                      ),
-                      actionButton("log_clear", "Clear", class = "btn-outline-primary btn-sm")
-                    ),
-                    uiOutput("log")
-                  )
-                ),
-              )
+            class = "pg-code-intro",
+            textOutput("code_caption", inline = TRUE)
+          ),
+          navset_underline(
+            id = "code_tabs",
+            nav_panel(
+              "UI",
+              div(class = "pg-hint", "Current configuration: mascot() in your UI."),
+              div(class = "pg-code-wrap", code_output("code_ui"), copy_button("code_ui"))
+            ),
+            nav_panel("Server", div(class = "pg-code-wrap", code_output("code_server"), copy_button("code_server"))),
+            nav_panel("App", div(class = "pg-code-wrap", code_output("code_app"), copy_button("code_app"))),
+            nav_panel(
+              "Last",
+              div(class = "pg-hint", "Last executed call, including one-off gestures."),
+              div(class = "pg-code-wrap", code_output("code_last"), copy_button("code_last"))
+            ),
+            nav_panel(
+              "Preview",
+              value = "preview",
+              div(class = "pg-code-wrap", code_output("code_preview"), copy_button("code_preview")),
+              uiOutput("preview_contrast")
+            ),
+            nav_panel(
+              "Log",
+              actionButton("log_clear", "Clear log", class = "btn-outline-primary btn-sm"),
+              uiOutput("log")
             )
           )
         )
@@ -230,36 +332,27 @@ studio_page <- function(character, fn) {
   )
 }
 
-examples_page <- layout_columns(
-  col_widths = breakpoints(sm = 12, lg = c(5, 7)),
-  card(
-    id = "examples_guide_card",
-    full_screen = FALSE,
-    card_header("Guide"),
-    card_body(guide_content("examples"))
-  ),
-  card(
-    full_screen = TRUE,
-    card_header(class = "pg-card-head", "Read an example", tags$span(class = "pg-muted", "mascot_example()")),
-    card_body(
-      arg_field(
-        "mascot_example",
-        "name",
-        selectInput(
-          "example_name",
-          "Example",
-          stats::setNames(examples$name, paste0(examples$title, " (", examples$name, ")"))
-        )
-      ),
-      arg_field(
-        "mascot_example",
-        "run",
-        input_switch("example_run", "run = TRUE: show the command that launches it", FALSE)
-      ),
-      uiOutput("example_result")
-    )
+example_browser <- function() {
+  div(
+    class = "pg-example-browser",
+    arg_field(
+      "mascot_example",
+      "name",
+      selectInput(
+        "example_name",
+        "Example",
+        stats::setNames(examples$name, paste0(examples$title, " (", examples$name, ")"))
+      )
+    ),
+    arg_field(
+      "mascot_example",
+      "run",
+      input_switch("example_run", "run = TRUE: show the command that launches it", FALSE)
+    ),
+    uiOutput("example_result")
   )
-)
+}
+examples_page <- example_browser()
 
 view_from_request <- function(request) {
   checkmate::assert(checkmate::check_list(request), checkmate::check_environment(request), .var.name = "request")
@@ -290,48 +383,13 @@ ui <- function(request) {
     defaults$character
   }
   fn <- if (!is.null(query$fn) && query$fn %in% names(playground_guide)) query$fn else "mascot_mood"
-  page_navbar(
+  bslib::page_fillable(
     title = "mascot studio",
-    id = "tabs",
     theme = bs_theme(version = 5),
-    fillable = if (view == "studio") "studio" else FALSE,
-    window_title = "mascot studio",
-    header = tags$head(
-      tags$link(rel = "stylesheet", href = "studio.css"),
-      tags$script(src = "studio.js")
-    ),
-    if (view == "studio") {
-      nav_panel("Studio", value = "studio", studio_page(character, fn))
-    } else {
-      view_link("Studio", "studio", FALSE)
-    },
-    if (view == "examples") {
-      nav_panel("Examples", value = "examples", examples_page)
-    } else {
-      view_link("Examples", "examples")
-    },
-    nav_spacer(),
-    bslib::nav_menu(
-      "Links",
-      bslib::nav_item(tags$a(
-        class = "dropdown-item",
-        href = "https://github.com/insightsurge/mascot",
-        target = "_blank",
-        rel = "noopener",
-        shiny::icon("github"),
-        "GitHub"
-      )),
-      bslib::nav_item(tags$a(
-        class = "dropdown-item",
-        href = "https://mascot-pkg.web.app/",
-        target = "_blank",
-        rel = "noopener",
-        shiny::icon("book"),
-        "Package website"
-      )),
-      align = "right"
-    ),
-    nav_item(input_dark_mode(id = "dark_mode", mode = "light"))
+    padding = 0,
+    tags$head(tags$link(rel = "stylesheet", href = "studio.css"), tags$script(src = "studio.js")),
+    div(class = "pg-routing", selectInput("tabs", NULL, c("studio", "examples"), selected = view)),
+    studio_page(character, fn, view, identical(query$open, "guide"))
   )
 }
 
@@ -343,6 +401,8 @@ studio_server <- function(input, output, session) {
   settings$bubble <- code_pair(defaults$bubble)
   settings$click <- code_pair(defaults$click)
   state <- do.call(reactiveValues, settings)
+  live_demo <- reactiveValues(click = start$click, bubble = start$bubble)
+  last_gesture <- reactiveVal(NULL)
   last_call <- reactiveVal("No update yet. Change a setting in Controls.")
   log <- reactiveVal(list())
   selected_function <- reactiveVal("mascot_mood")
@@ -467,9 +527,19 @@ studio_server <- function(input, output, session) {
     )
   }
   current_character <- reactive(input$character %||% defaults$character)
+  observeEvent(current_character(), {
+    listing <- mascot_anchors(current_character())
+    session$sendCustomMessage(
+      "studio:anchors",
+      list(
+        character = current_character(),
+        name = mascot_character(current_character())$name,
+        anchors = lapply(seq_len(nrow(listing)), function(i) as.list(listing[i, , drop = FALSE]))
+      )
+    )
+  })
   character_name <- reactive(mascot_character(current_character())$name)
-  roles <- reactive(mascot_colour_roles(current_character()))
-  output$character_caption <- renderText(paste(character_name(), "follows the arguments in Controls."))
+  roles <- reactive(mascot_colour_roles(current_character(), palette = selected_palette()))
   output$code_caption <- renderText(paste("Code for", character_name(), "with the current settings."))
   observeEvent(input$initial_function, selected_function(input$initial_function), once = TRUE)
   observeEvent(
@@ -483,7 +553,15 @@ studio_server <- function(input, output, session) {
   menu_last <- reactiveVal("nothing yet")
   menu_error <- reactiveVal(NULL)
 
-  style <- reactive(if (is.null(input$code_style)) "short" else input$code_style)
+  argument_styles <- reactiveVal(list())
+  style <- reactive(unlist(c(list(.default = input$code_style %||% "short"), argument_styles())))
+  observeEvent(input$chip_style, {
+    value <- input$chip_style
+    req(value$arg %in% names(defaults), value$style %in% c("short", "helper"))
+    overrides <- argument_styles()
+    overrides[[value$arg]] <- value$style
+    argument_styles(overrides)
+  })
 
   add_log <- function(code, outcome, message = NULL) {
     entry <- list(code = code, outcome = outcome, message = message)
@@ -569,9 +647,15 @@ studio_server <- function(input, output, session) {
     code <- format_call("update_mascot", args)
     last_call(code)
     ok <- run_logged(as.call(c(as.name("update_mascot"), args)), code)
+    if (ok && !is.null(pairs$gesture)) {
+      last_gesture(eval(pairs$gesture$short))
+    }
     if (ok && remember) {
       for (field in intersect(names(pairs), names(defaults))) {
         state[[field]] <- pairs[[field]]
+        if (field %in% c("click", "bubble")) {
+          live_demo[[field]] <- pairs[[field]]
+        }
         if (field == "mood") {
           updateSelectInput(session, "mood", selected = eval(pairs[[field]]$short))
         }
@@ -587,11 +671,14 @@ studio_server <- function(input, output, session) {
     invisible(ok)
   }
 
+  observeEvent(input$chip_argument, {
+    if (identical(input$chip_argument, "bubble")) sync_bubble_controls(live_demo$bubble)
+  })
+
   # Clicks on buttons that carry data-event and data-value arrive as input$<event>.
   observeEvent(input$select_function, {
     req(input$select_function %in% names(playground_guide))
     selected_function(input$select_function)
-    nav_select("tabs", "studio")
   })
   observeEvent(input$open_guide, {
     selected_function(input$open_guide)
@@ -608,25 +695,97 @@ studio_server <- function(input, output, session) {
   })
   observeEvent(input$close_guide, removeModal())
   observeEvent(input$reset_all, session$reload())
+  observeEvent(input$chip_reset, {
+    arg <- input$chip_reset
+    req(arg %in% names(defaults))
+    switch(
+      arg,
+      character = updateSelectInput(session, "character", selected = defaults$character),
+      mood = updateSelectInput(session, "mood", selected = defaults$mood),
+      status = updateTextInput(session, "status_text", value = ""),
+      bubble = sync_bubble_controls(code_pair(defaults$bubble)),
+      size = {
+        updateRadioButtons(session, "size_unit", selected = "px")
+        updateSliderInput(session, "size_px", value = defaults$size)
+        updateRadioButtons(session, "small_mode", selected = "auto")
+      },
+      placement = {
+        updateRadioButtons(session, "position", selected = defaults$placement)
+        update_switch("minimise", value = TRUE, session = session)
+        updateSelectInput(session, "drag", selected = "none")
+      },
+      theme = {
+        updateSelectInput(session, "palette", selected = "original")
+        updateSelectInput(session, "theme_source", selected = "own")
+        updateRadioButtons(session, "theme_mode", selected = "auto")
+        for (mode in c("light", "dark")) {
+          for (role in roles()$role) {
+            reset_colour(mode, role)
+          }
+        }
+        updateCheckboxGroupInput(session, "css_roles", selected = character())
+      },
+      motion = {
+        update_switch("motion_on", value = TRUE, session = session)
+        for (id in c("idle", "mood_change", "gestures", "swap", "minimising", "restoring", "messages")) {
+          updateSelectInput(session, id, selected = "follow")
+        }
+        update_switch("others", value = TRUE, session = session)
+      },
+      click = {
+        click_kind("none")
+        update_switch("action_on", value = FALSE, session = session)
+        update_switch("menu_on", value = FALSE, session = session)
+      }
+    )
+    send(stats::setNames(list(code_pair(defaults[[arg]])), arg), force = TRUE)
+  })
 
   # Keep each top-bar choice when the incoming character supports it.
   selected_palette <- reactive({
     value <- input$palette %||% "original"
     if (value %in% studio_palette_choices(current_character())) value else "original"
   })
+  observe({
+    character <- current_character()
+    sentence <- studio_palette_sentence(character, selected_palette())
+    session$sendCustomMessage("studio:palette", c(sentence, list(ids = names(studio_palette_choices(character)))))
+  })
+  # The character before the current switch. A low-priority observer updates it after the switch has been handled.
+  previous_character <- reactiveVal(NULL)
+  observeEvent(input$character, previous_character(input$character), priority = -10)
   observeEvent(
     input$character,
     {
       character <- current_character()
-      palettes <- studio_palette_choices(character)
+      previous <- previous_character() %||% character
       moods <- mascot_moods(character)$name
       gestures <- mascot_gestures(character)$name
       mood <- if (isTRUE(input$mood %in% moods)) input$mood else "idle"
-      gesture <- if (isTRUE(input$gesture %in% gestures)) input$gesture else gestures[[1]]
-      updateSelectInput(session, "palette", choices = palettes, selected = selected_palette())
+      gesture <- if (isTRUE(input$gesture %in% gestures)) input$gesture else ""
+      updateSelectInput(
+        session,
+        "palette",
+        choices = studio_palette_labels(character),
+        selected = selected_palette()
+      )
       updateSelectInput(session, "mood", choices = stats::setNames(moods, tools::toTitleCase(moods)), selected = mood)
-      updateSelectInput(session, "gesture", choices = gestures, selected = gesture)
-      send(list(character = code_character(character), theme = theme_now(), mood = code_mood(mood)), force = TRUE)
+      updateSelectInput(
+        session,
+        "gesture",
+        choices = studio_gesture_choices(character),
+        selected = gesture
+      )
+      # The pickers still show the previous character's colours until they are rebuilt: carry only the roles the
+      # user changed, as the rebuild does, so the new character is not sent the old character's colours.
+      send(
+        list(
+          character = code_character(character),
+          theme = theme_with(carried_colours("light", previous), carried_colours("dark", previous)),
+          mood = code_mood(mood)
+        ),
+        force = TRUE
+      )
     },
     ignoreInit = TRUE
   )
@@ -657,6 +816,23 @@ studio_server <- function(input, output, session) {
     # Before Show when both arrive together.
     priority = 1
   )
+  observeEvent(
+    input$chip_bubble,
+    {
+      send(
+        list(
+          bubble = code_bubble(
+            input$chip_bubble,
+            isTRUE(input$bubble_html),
+            if (isTRUE(input$bubble_forever)) Inf else input$bubble_duration %||% 5,
+            isTRUE(input$bubble_closable)
+          )
+        ),
+        force = TRUE
+      )
+    },
+    ignoreInit = TRUE
+  )
   observeEvent(input$bubble_show, {
     duration <- if (input$bubble_forever) Inf else as.numeric(input$bubble_duration)
     text <- bubble_draft$text %||% input$bubble_text
@@ -667,6 +843,9 @@ studio_server <- function(input, output, session) {
 
   # Motion and gestures
   motion_code <- reactive({
+    if (identical(input$motion_on, FALSE)) {
+      return(code_pair(FALSE, helper_call("mascot_motion_settings", others = FALSE)))
+    }
     code_motion(
       input$idle,
       input$mood_change,
@@ -683,7 +862,18 @@ studio_server <- function(input, output, session) {
     send(list(motion = motion_code())),
     ignoreInit = TRUE
   )
-  observeEvent(input$gesture_play, send(list(gesture = code_gesture(input$gesture)), force = TRUE))
+  observeEvent(input$gesture, {
+    if (nzchar(input$gesture)) send(list(gesture = code_gesture(input$gesture)), force = TRUE)
+  })
+  observeEvent(input$gesture_replay, {
+    req(input$gesture_replay %in% mascot_gestures(current_character())$name)
+    send(list(gesture = code_gesture(input$gesture_replay)), force = TRUE)
+  })
+  observeEvent(input$gesture_play, {
+    gesture <- if (isTRUE(nzchar(input$gesture))) input$gesture else "wave"
+    req(gesture %in% mascot_gestures(current_character())$name)
+    send(list(gesture = code_gesture(gesture)), force = TRUE)
+  })
 
   # Size and placement
   size_code <- reactive({
@@ -719,6 +909,16 @@ studio_server <- function(input, output, session) {
     add_log(paste0("input$helper_position  # ", value), "event", "The visitor dropped the mascot.")
   })
   output$position_last <- renderText(position_last())
+  minimised_last <- reactiveVal("Not minimised.")
+  observeEvent(input$helper_minimised, {
+    minimised_last(if (isTRUE(input$helper_minimised)) "TRUE: minimised" else "FALSE: restored")
+    add_log(
+      paste0("input$helper_minimised  # ", input$helper_minimised),
+      "event",
+      if (isTRUE(input$helper_minimised)) "The visitor minimised the mascot." else "The visitor restored the mascot."
+    )
+  })
+  output$minimised_last <- renderText(minimised_last())
   output$size_ruler <- renderUI({
     if (input$size_unit == "pct") {
       size_ruler(NULL, NULL)
@@ -736,7 +936,7 @@ studio_server <- function(input, output, session) {
       character_name(),
       " is floating in the ",
       sub("-", " ", input$position, fixed = TRUE),
-      " corner of the window. Choose Inline to bring the mascot back here."
+      " corner of the preview. Choose Inline to bring the mascot back here."
     )
   })
 
@@ -766,6 +966,7 @@ studio_server <- function(input, output, session) {
     "mascot_theme",
     "css",
     tagList(
+      studio_experimental_notes("mascot_theme", "CSS source"),
       div(
         class = "pg-css",
         colour_input(
@@ -788,7 +989,14 @@ studio_server <- function(input, output, session) {
   output$theme_brand <- renderUI({
     brand <- studio_brand(current_character())
     tagList(lapply(c("primary", "secondary"), function(slot) {
-      label <- paste(tools::toTitleCase(slot), "colours", brand[[slot]] %||% "no mapped part", "for", character_name())
+      label <- paste0(
+        tools::toTitleCase(slot),
+        " colours: ",
+        brand[[slot]] %||% "no mapped part",
+        " (",
+        character_name(),
+        ")"
+      )
       div(
         class = "pg-css",
         colour_input(
@@ -817,18 +1025,35 @@ studio_server <- function(input, output, session) {
     keep <- !is.na(values) & tolower(values) != tolower(roles()$colour)
     stats::setNames(tolower(values[keep]), roles()$role[keep])
   }
-  theme_now <- reactive({
+  theme_with <- function(light, dark) {
     code_theme(
       input$theme_source %||% "own",
-      picked("light"),
-      picked("dark"),
+      light,
+      dark,
       input$theme_mode %||% "auto",
       intersect(input$css_roles, roles()$role),
       input$bs_primary %||% "#1f6feb",
       input$bs_secondary %||% "#966600",
       selected_palette()
     )
-  })
+  }
+  theme_now <- reactive(theme_with(picked("light"), picked("dark")))
+  # The colours a user changed, read before the pickers follow a new character: the pickers still hold the previous
+  # character's values, so only a role the previous character had, whose value differs from the colour that
+  # character listed, counts as changed (the same rule as role_values()).
+  carried_colours <- function(mode, previous) {
+    palette <- isolate(input$palette)
+    listed <- mascot_colour_roles(
+      previous,
+      palette = if (isTRUE(palette %in% studio_palette_choices(previous))) palette else "original"
+    )
+    values <- stats::setNames(
+      lapply(roles()$role, function(role) isolate(input[[paste0(mode, "_", role)]])),
+      roles()$role
+    )
+    kept <- Filter(Negate(is.null), reconcile_colour_values(listed, roles(), values))
+    vapply(kept, tolower, character(1))
+  }
   observeEvent(
     input$theme_source,
     {
@@ -840,7 +1065,7 @@ studio_server <- function(input, output, session) {
     input$palette,
     {
       if (input$palette != "original" && identical(input$theme_source, "bslib")) {
-        updateRadioButtons(session, "theme_source", selected = "own")
+        updateSelectInput(session, "theme_source", selected = "own")
       }
     },
     ignoreInit = TRUE
@@ -917,6 +1142,17 @@ studio_server <- function(input, output, session) {
 
   # Click: one action or a menu. The two switches take turns, because a mascot has one click.
   click_kind <- reactiveVal("menu")
+  observeEvent(
+    input$click_type,
+    {
+      req(input$click_type %in% c("none", "action", "menu"))
+      click_kind(input$click_type)
+      update_switch("action_on", value = input$click_type == "action", session = session)
+      update_switch("menu_on", value = input$click_type == "menu", session = session)
+    },
+    ignoreInit = TRUE
+  )
+  observeEvent(click_kind(), updateSelectInput(session, "click_type", selected = click_kind()))
   observeEvent(
     input$action_on,
     {
@@ -1130,8 +1366,10 @@ studio_server <- function(input, output, session) {
       } else if (input$mistake == "Low contrast") {
         role <- roles()$role[1]
         light <- stats::setNames("#f8f9fa", role)
-        state$theme <- code_theme("mascot", light, light, "auto", NULL, NULL, NULL, selected_palette())
-        updateRadioButtons(session, "theme_source", selected = "mascot")
+        # The call replaced the whole theme (a plain list has no palette), so the palette is cleared as well.
+        state$theme <- code_theme("mascot", light, light, "auto", NULL, NULL, NULL, "original")
+        updateSelectInput(session, "palette", selected = "original")
+        updateSelectInput(session, "theme_source", selected = "mascot")
         updateRadioButtons(session, "theme_mode", selected = "auto")
         updateCheckboxGroupInput(session, "css_roles", selected = character())
         for (mode in c("light", "dark")) {
@@ -1149,8 +1387,13 @@ studio_server <- function(input, output, session) {
   # selection). While the function is selected the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
   # rebuilds the page after a short pause, with a "Building..." badge until it is shown.
-  preview_selected <- reactive(identical(selected_function(), "mascot_preview"))
-  preview_roles <- reactive(mascot_colour_roles(uploaded_character() %||% current_character()))
+  preview_selected <- reactive(
+    identical(selected_function(), "mascot_preview") || identical(input$host_mode, "preview")
+  )
+  preview_roles <- reactive(mascot_colour_roles(
+    uploaded_character() %||% current_character(),
+    palette = if (is.null(uploaded_character())) selected_palette() else NULL
+  ))
   output$preview_pickers <- renderUI({
     tagList(lapply(preview_roles()$role, function(role) {
       div(
@@ -1340,7 +1583,7 @@ studio_server <- function(input, output, session) {
   })
   outputOptions(output, "code_preview", suspendWhenHidden = FALSE)
   # The Code tray follows the selected function: its Preview tab for mascot_preview(), the usual tabs otherwise.
-  observeEvent(selected_function(), {
+  observeEvent(preview_selected(), {
     if (preview_selected()) {
       nav_show("code_tabs", "preview", select = TRUE)
     } else {
@@ -1399,7 +1642,7 @@ studio_server <- function(input, output, session) {
   outputOptions(output, "code_last", suspendWhenHidden = FALSE)
   outputOptions(output, "code_server", suspendWhenHidden = FALSE)
   outputOptions(output, "code_app", suspendWhenHidden = FALSE)
-  output$log <- renderUI({
+  activity_log <- reactive({
     entries <- log()
     if (!length(entries)) {
       return(div(class = "pg-hint", "Nothing yet."))
@@ -1417,11 +1660,119 @@ studio_server <- function(input, output, session) {
     )
   })
 
+  output$log <- renderUI(activity_log())
+  output$wiring_log <- renderUI(activity_log())
   outputOptions(output, "log", suspendWhenHidden = FALSE)
+  outputOptions(output, "wiring_log", suspendWhenHidden = FALSE)
+
+  # A separate drawn example exercises retained palettes without changing the live host's controls.
+  palette_swap_result <- reactiveVal("Choose a swap to run the calls below.")
+  output$palette_swap_result <- renderText(palette_swap_result())
+  observeEvent(input$palette_swap, {
+    target <- unname(studio_palette_swap[input$palette_swap])
+    req(input$palette_swap %in% c("kept", "dropped"))
+    warning_text <- NULL
+    update_mascot(
+      "palette_swap_demo",
+      character = unname(studio_palette_swap["from"]),
+      theme = unname(studio_palette_swap["palette"]),
+      motion = FALSE
+    )
+    withCallingHandlers(
+      update_mascot("palette_swap_demo", character = target),
+      mascot_palette_dropped = function(w) {
+        warning_text <<- paste("mascot_palette_dropped:", cli::ansi_strip(conditionMessage(w)))
+        invokeRestart("muffleWarning")
+      }
+    )
+    palette_swap_result(
+      warning_text %||% paste("Palette", studio_palette_swap[["palette"]], "kept for", mascot_character(target)$name)
+    )
+  })
+  observeEvent(input$menu_long_status, {
+    req(input$menu_long_status %in% c("top-right", "bottom-right"))
+    updateRadioButtons(session, "position", selected = input$menu_long_status)
+    updateTextInput(session, "status_text", value = studio_long_status)
+    updateSelectInput(session, "click_type", selected = "menu")
+    click_kind("menu")
+    update_switch("menu_on", value = TRUE, session = session)
+    update_switch("menu_disabled", value = FALSE, session = session)
+    updateRadioButtons(session, "menu_direction", selected = "auto")
+    updateTextAreaInput(session, "menu_items", value = paste(names(default_menu), "=", default_menu, collapse = "\n"))
+    updateTextInput(session, "menu_label", value = "")
+    update_switch("menu_tooltip", value = TRUE, session = session)
+    send(
+      list(
+        placement = code_placement(
+          input$menu_long_status,
+          minimise = isTRUE(input$minimise),
+          drag = input$drag %||% "none"
+        ),
+        status = code_status(studio_long_status),
+        click = code_menu(default_menu, direction = "auto")
+      ),
+      force = TRUE
+    )
+  })
 
   # A reference for the selected function, with code made from its current controls.
   output$guide <- renderUI(selected_guide(selected_function(), current_character()))
+  output$function_help <- renderUI(function_help(selected_function()))
+  outputOptions(output, "function_help", suspendWhenHidden = FALSE)
+  output$example_listing <- renderUI(data_table(mascot_examples()))
+  output$host_event <- renderText({
+    entries <- log()
+    if (!length(entries)) "No event yet" else entries[[1]]$code
+  })
+  output$live_call <- renderUI({
+    current <- reactiveValuesToList(state)
+    # Welcome content is omitted from copied app code but belongs in the current
+    # configuration. Retain the last accepted value when a draft is invalid.
+    current$click <- live_demo$click
+    current$bubble <- live_demo$bubble
+    # The welcome bubble and menu are the studio's own demonstration; copied code leaves them out.
+    demo <- c(
+      if (!identical(live_demo$bubble$short, state$bubble$short)) "bubble",
+      if (!identical(live_demo$click$short, state$click$short)) "click"
+    )
+    call_chips(current, style(), last_gesture(), demo)
+  })
+  # Readiness and events come from the isolated engine, not a second Shiny session.
+  output$live_host <- renderUI({
+    initial <- isolate(start)
+    initial$character <- code_character(isolate(current_character()))
+    live <- do.call(mascot, lapply(ui_args(initial, "short"), eval))
+    bridge <- htmltools::htmlDependency(
+      "studio-bridge",
+      "1.0.0",
+      src = c(href = ".."),
+      script = "studio.js",
+      stylesheet = "studio.css"
+    )
+    live <- htmltools::attachDependencies(live, c(list(bridge), htmltools::htmlDependencies(live)))
+    page <- htmltools::tags$html(
+      lang = "en-GB",
+      `data-studio-host` = "true",
+      htmltools::tags$head(htmltools::tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")),
+      htmltools::tags$body(div(class = "pg-isolated-stage", live))
+    )
+    htmltools::save_html(page, file.path(preview_dir, "live.html"), libdir = "lib")
+    tags$iframe(
+      id = "live_frame",
+      class = "pg-live-frame",
+      src = paste0(prefix, "/live.html"),
+      title = "Contained live mascot preview",
+      tabindex = "0"
+    )
+  })
+  outputOptions(output, "live_host", suspendWhenHidden = FALSE)
   output$roles_table <- renderUI(roles_table(current_character(), selected_palette()))
+  family_listing <- reactive({
+    family <- input$list_family %||% ""
+    mascot_characters(family = if (nzchar(family)) family else NULL)
+  })
+  output$family_listing <- renderUI(data_table(family_listing()))
+  output$characters_table <- renderUI(data_table(family_listing()))
   output$code_function <- renderText({
     fn <- selected_function()
     if (fn %in% c("mascot", "update_mascot", "mascot_action", "mascot_popup_menu") && !is.null(settings_problem())) {
@@ -1442,7 +1793,7 @@ studio_server <- function(input, output, session) {
         input$bubble_closable
       ),
       mascot_motion_settings = motion_code(),
-      mascot_gesture = code_gesture(if (is.null(input$gesture)) "nod" else input$gesture),
+      mascot_gesture = code_gesture(if (!nzchar(input$gesture %||% "")) "nod" else input$gesture),
       mascot_size = size_code(),
       mascot_placement = code_placement(
         input$position,
@@ -1481,7 +1832,10 @@ studio_server <- function(input, output, session) {
         fn,
         if (nzchar(input$list_family %||% "")) list(family = input$list_family) else list()
       ),
-      mascot_example = format_call(fn, list(name = examples$name[1], run = FALSE)),
+      mascot_example = format_call(
+        fn,
+        list(name = input$example_name %||% examples$name[1], run = isTRUE(input$example_run))
+      ),
       mascot_studio = format_call(fn, list(fn = "mascot_theme")),
       format_call(fn, list())
     )
@@ -1498,7 +1852,7 @@ examples_server <- function(input, output, session) {
     call <- if (input$example_run) {
       code_block(sprintf("mascot::mascot_example(\"%s\")", name), "pg-code", id = "example_call")
     } else {
-      code_block(sprintf("mascot_example(\"%s\", run = FALSE)\n#> \"%s\"", name, path), "pg-code", id = "example_call")
+      code_block(sprintf("mascot_example(\"%s\", run = FALSE)", name), "pg-code", id = "example_call")
     }
     tagList(
       div(class = "pg-code-wrap", call, copy_button("example_call")),
@@ -1527,21 +1881,10 @@ examples_server <- function(input, output, session) {
   })
 }
 
-# The UI exposes exactly one panel for the URL. Its initial selection routes the
-# server, because the WebSocket request need not carry the page's query string.
+# Both URL views use the same studio shell; the URL only chooses its initial host mode.
 server <- function(input, output, session) {
-  observeEvent(
-    input$tabs,
-    {
-      req(input$tabs %in% c("studio", "examples"))
-      switch(
-        input$tabs,
-        studio = studio_server(input, output, session),
-        examples = examples_server(input, output, session)
-      )
-    },
-    once = TRUE
-  )
+  studio_server(input, output, session)
+  examples_server(input, output, session)
 }
 
 shinyApp(ui, server)

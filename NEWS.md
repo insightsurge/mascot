@@ -1,5 +1,25 @@
 # mascot (development version)
 
+* The redesigned studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).
+
+* The studio's Guide is written once, as R Markdown pages in `inst/examples/studio/guide/` (one per function, 26 in all), and the website shows the same pages in a new Studio guide menu. The studio now needs the optional package `knitr` (#353).
+
+* The studio updates its Guide and code builders for recent API changes: `mascot_popup_menu()` explains that clicks never fire, option-only helper calls are prevented, `update_mascot()` documents its reset table and ignored-helper warnings, `mascot_preview()` aligns with its remaining arguments and 160, 96 and 24 pixel comparison columns, and `mascot_theme()` documents `bs_theme()` constraints (#353).
+
+* The studio search shows one result per function with matching argument badges, and Help and Guide cards offer a corner icon to widen the docked inspector (#353).
+
+* `mascot_studio()` puts function controls and searchable help over a live canvas, with single-value call-chip editors, sentence-style controls, a last-gesture chip, draggable anchor labels and leader lines, help tooltips on inline sentence words, per-argument code styles and resets, phone-width previews, a family-filtered character listing and an activity log beside the update demonstrations (#353).
+
+* The studio wraps its configuration and top controls on phones, keeps floating editors inside the viewport, and limits anchor focus rings to keyboard-focused labels (#353).
+
+* The studio keeps Palette in its phone sentence, shows every `mascot()` parameter and its unset default, and reserves room for anchor labels. Touch help and scrollable editors follow the visible viewport when the keyboard opens (#353).
+
+* The studio gives phone search its own row, shares the utility buttons evenly, keeps the live status inside a taller host, aligns code-style radios and leaves room for underscores in call chips (#353).
+
+* The studio separates its Inspector views and More menu into a right-hand rail, with matching rail buttons and a compact Inspector entry on phones (#353).
+
+* The studio expands Help and Guide beside the rail, highlights edited call arguments, offers a compact call bar, and opens More examples in place with a return to the mounted studio (#353).
+
 ## Breaking changes
 
 * `mascot_preview()` removes the inert `placement` and `click` arguments. Remove them from preview calls; comparison columns now use 160, 96 and 24 pixels after the requested size (#350).

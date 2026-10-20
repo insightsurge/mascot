@@ -1,0 +1,81 @@
+```{r setup-update_mascot, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+knitr::knit_meta_add(list(guide_dependency()))
+```
+
+```{r update_mascot-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("update_mascot")
+```
+
+### What each kind of value does in update_mascot()
+
+| You pass | Example | The mascot |
+|----------|---------|------------|
+| nothing (NULL) | `mood = NULL` | keeps it as it is |
+| an empty helper | `bubble = mascot_bubble()` | clears it or goes back to the default |
+| a value | `mood = "happy"` | changes it |
+
+### Reset table: what each argument resets to
+
+| Setting | Reset sent to update_mascot() |
+|---------|------------------------------|
+| Character | `character = mascot_character()` (back to "`r formals(mascot::mascot)$character`") |
+| Mood | `mood = mascot_mood()` (back to "idle") |
+| Size | `size = mascot_size()` (160, small_screen = "auto") |
+| Status | `status = mascot_status()` (follows the mood) |
+| Bubble | `bubble = mascot_bubble()` (removes it) |
+| Theme | `theme = mascot_theme()` (restores character colours) |
+| Click | `click = mascot_action()` (or mascot_popup_menu(), removes it) |
+| Placement | `placement = mascot_placement()` (resets to bottom-right; mascot_placement("inline") returns inline) |
+| Motion | `motion = mascot_motion_settings()` (allows movement subject to visitor preference) |
+
+<div class="pg-callout">
+
+<strong>Whole setting.</strong>
+Each non-NULL argument replaces its whole setting (update_mascot("h", size = 200) also resets small_screen).
+
+</div>
+
+<div class="pg-callout">
+
+<strong>All or nothing.</strong>
+update_mascot() checks all values first. If any value is invalid, it warns, reports the issue, and sends
+nothing, preventing partial updates. Calling with an invalid argument name or outside a server session
+produces an error.
+
+</div>
+
+### What else update_mascot() does
+
+- In Shiny development mode, an invalid value also shows a worried mascot with the problem as its status; the next valid update clears it.
+- Updates sent before a mascot appears are kept, one whole call at a time, and applied once it does, also when the first mascot is made by `renderUI()` or `insertUI()`. Only the latest pending gesture plays.
+- A character or mood change applies before a gesture. During a character swap the gesture is skipped.
+- A new placement replaces any position the visitor dragged the mascot to. With dragging on, the minimised restore button can be dragged too.
+- The click count (`input$<id>_click`) continues across changes of the click.
+- Bubbles survive mood changes and character swaps.
+
+### Condition classes
+
+The classes are documented in `?"mascot-package"`. Errors carry `mascot_error`, warnings `mascot_warning` and messages `mascot_message`; the specific classes below come in addition.
+
+| Class | Type | When it occurs |
+|-------|------|----------------|
+| mascot_error | Error | Any error raised by mascot, including checkmate assertions |
+| mascot_warning | Warning | Any warning raised by mascot |
+| mascot_message | Message | Any message raised by mascot |
+| mascot_update_ignored | Warning | An invalid value in update_mascot(); the whole update is ignored |
+| mascot_error_choice | Error | An invalid choice (the message lists valid options) |
+| mascot_error_dots | Error | Unexpected arguments in ... (e.g. an unnamed argument or typo) |
+| mascot_error_argument | Error | An argument error in character authoring |
+| mascot_error_character | Error | A character's content is invalid |
+| mascot_error_file | Error | A character file is invalid |
+| mascot_contrast | Warning | Colour contrast against background is below 3:1 |
+| mascot_placement_ignored | Message | Inline placement ignores minimise or drag |
+| mascot_palette_dropped | Warning | A character swap drops a palette the incoming character lacks |
+| mascot_gesture_dropped | Warning | Development diagnostic: a pending gesture cannot play |
+| mascot_click_dropped | Warning | Development diagnostic: a click needs an unavailable mood or gesture |
+| mascot_template_evicted | Warning | Development diagnostic: unused UI templates leave the cache |
+
+```{r update_mascot-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("update_mascot", studio_character)
+```

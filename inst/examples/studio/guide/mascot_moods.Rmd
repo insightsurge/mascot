@@ -1,0 +1,29 @@
+```{r setup-mascot_moods, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_moods-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_moods")
+```
+
+```{r mascot_moods-heading, echo = FALSE, results = "asis"}
+guide_heading(
+  paste0(mascot::mascot_character(studio_character)$name, "'s ", nrow(mascot::mascot_moods(studio_character)), " moods"),
+  "Moods"
+)
+```
+
+<div class="pg-muted">
+
+The five shared moods come first. A character may add its own; a mood that is not available falls back to the
+one named in fallback.
+
+</div>
+
+```{r mascot_moods-table, echo = FALSE}
+guide_each_character(function(ch) guide_table(mascot::mascot_moods(ch)))
+```
+
+```{r mascot_moods-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_moods", studio_character)
+```

@@ -1,0 +1,7 @@
+Colour precedence: the character's own colours, then palette, then light/dark colours, then css (later wins).
+
+In `update_mascot()`, `theme = "original"` restores the character's own colours; `theme = NULL` leaves colours as they are.
+
+A palette without a dark version uses its light colours in both modes; this applies to all shipped palettes today.
+
+Native and built-in palette colours give no contrast warnings. Your own colours warn below 3:1 contrast in development mode and previews; the colours are kept.

@@ -1,0 +1,26 @@
+```{r setup-mascot_colour_roles, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_colour_roles-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_colour_roles")
+```
+
+```{r mascot_colour_roles-heading, echo = FALSE, results = "asis"}
+guide_heading(paste0(mascot::mascot_character(studio_character)$name, "'s parts"), "Parts")
+```
+
+Leaders adopt the colours you supply. Followers copy the first leader you customise, shaded the same,
+lighter, or darker, unless you customise them directly. Low contrast against the page warns in development
+mode and previews; the colour is kept. The mascot.contrast_warnings option forces R warnings on or off.
+
+```{r mascot_colour_roles-table, echo = FALSE}
+if (in_studio()) htmltools::tagList(
+  htmltools::tags$p(class = "pg-muted", "Low contrast also warns in this studio; the colour is kept."),
+  shiny::uiOutput("roles_table")
+) else guide_each_character(guide_roles_table)
+```
+
+```{r mascot_colour_roles-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_colour_roles", studio_character)
+```

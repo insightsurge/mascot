@@ -15,8 +15,8 @@ names and types. The first column is the value you pass to the matching function
 \description{
 Start with the studio: every exported function and argument, live, with
 explanations and the code to copy. The other examples show one scenario each.
-All work offline. The studio and single-file examples need optional \code{bslib};
-the \code{golem} example needs optional \code{golem}. The rhino-shaped example uses
+All work offline. The studio and single-file examples need optional \code{bslib}, and
+the studio also needs optional \code{knitr}; the \code{golem} example needs optional \code{golem}. The rhino-shaped example uses
 plain Shiny without rhino or box.
 }
 \examples{

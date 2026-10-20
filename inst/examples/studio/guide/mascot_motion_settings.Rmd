@@ -1,0 +1,85 @@
+```{r setup-mascot_motion_settings, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_motion_settings-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_motion_settings")
+```
+
+### What each switch controls
+
+Choose which movement suits the task before adding gestures or changing moods.
+Turning panel movement off still leaves the panels available.
+
+| Switch | What you see move |
+|--------|-------------------|
+| `idle` | The resting character breathes and blinks. |
+| `mood_change` | A wiggle or hop accompanies a new mood. |
+| `gestures` | The character performs a nod, wave or another gesture. |
+| `swap` | One character changes into another. |
+| `minimising` | The mascot travels to its round restore button. |
+| `restoring` | The mascot returns from its restore button. |
+| `messages` | The bubble, tooltip and menu animate as panels. |
+| `others` | Movement whose switch is left at `NULL`, including future switches. |
+
+### Which setting wins
+
+A visitor who requests reduced motion keeps that preference even when a switch
+is enabled. Otherwise, an explicit named switch takes priority; a switch left at
+`NULL` uses `others`.
+
+```{r mascot_motion_settings-precedence, echo = FALSE}
+guide_flow(
+  guide_step("Visitor requests reduced motion", htmltools::div("overrides enabled movement")),
+  guide_step("Named switch", htmltools::div("TRUE or FALSE; messages also accepts panel names")),
+  guide_step("others", htmltools::div("used when the switch is NULL"))
+)
+```
+
+### Three motion recipes
+
+```r
+mascot::mascot("helper", motion = FALSE)
+```
+
+Result: movement is off, with reduced-motion poses and instant drag transitions.
+
+```r
+mascot::mascot("helper", motion = mascot::mascot_motion_settings(idle = FALSE))
+```
+
+Result: resting breathing and blinking are off; the other switches follow the
+default `others = TRUE`, subject to the visitor's reduced-motion preference.
+
+```r
+mascot::mascot("helper", motion = mascot::mascot_motion_settings(others = FALSE, gestures = TRUE))
+```
+
+Result: only gestures are enabled; the other switches follow `others = FALSE`.
+The helper sets permission to move; it does not start a gesture.
+
+```{r mascot_motion_settings-check-recipes, include = FALSE, echo = FALSE}
+still <- mascot::mascot("helper", motion = FALSE)
+no_idle <- mascot::mascot_motion_settings(idle = FALSE)
+gestures_only <- mascot::mascot_motion_settings(others = FALSE, gestures = TRUE)
+```
+
+### A calm dashboard
+
+Create the dashboard helper with the gestures-only recipe above. In a server
+observer, acknowledge an action with a nod:
+
+```r
+mascot::update_mascot("helper", gesture = "nod")
+```
+
+Mood, bubble and status updates still work when their movement is disabled.
+A reduced-motion preference can suppress the nod too.
+
+```{r mascot_motion_settings-controls, echo = FALSE, results = 'asis'}
+if (in_studio()) cat("In the studio, try the live motion switches in Controls.\n")
+```
+
+```{r mascot_motion_settings-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_motion_settings", studio_character)
+```

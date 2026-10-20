@@ -1,0 +1,13 @@
+---
+title: "mascot_size()"
+---
+
+The studio guide for [`mascot_size()`](../reference/mascot_size.html). The same page is read in the mascot studio.
+
+```{r setup, include = FALSE}
+guide_dir <- system.file("examples", "studio", "guide", package = "mascot")
+sys.source(file.path(guide_dir, "guide-helpers.R"), envir = knitr::knit_global())
+```
+
+```{r child = file.path(guide_dir, "mascot_size.Rmd")}
+```

@@ -1,0 +1,26 @@
+```{r setup-mascot_gestures, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_gestures-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_gestures")
+```
+
+```{r mascot_gestures-heading, echo = FALSE, results = "asis"}
+guide_heading(paste0(mascot::mascot_character(studio_character)$name, "'s gestures"), "Gestures")
+```
+
+<div class="pg-muted">
+
+frames is the length of the movement that plays, at 30 frames per second. A gesture whose parts are missing
+plays its fallback.
+
+</div>
+
+```{r mascot_gestures-table, echo = FALSE}
+guide_each_character(function(ch) guide_table(mascot::mascot_gestures(ch)))
+```
+
+```{r mascot_gestures-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_gestures", studio_character)
+```

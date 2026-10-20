@@ -7,6 +7,7 @@ describe("the internal Your character studio panel in Chrome", {
       mascot_studio(run = FALSE)
     })
     withr::defer(app$stop())
+    app$click(selector = "#inspector_view_controls")
     app$run_js("document.querySelector('details:has(#your_character_example)').open = true")
     app$click("your_character_example")
     app$wait_for_js("document.getElementById('your_character_check').textContent === 'Checked: Study Bot'")
@@ -39,7 +40,7 @@ describe("the internal Your character studio panel in Chrome", {
       app$get_js("getComputedStyle(document.querySelector('#your_character_grid [data-bs-theme=light]')).display"),
       "none"
     )
-    app$click(selector = '.pg-index-link[data-value="mascot_preview"]')
+    app$click(selector = 'details:has(#your_character_example) [data-event=select_function][data-value=mascot_preview]')
     app$wait_for_js(
       "document.querySelector('#preview_frame iframe')?.contentDocument?.querySelector('h1')?.textContent.includes('Study Bot')"
     )

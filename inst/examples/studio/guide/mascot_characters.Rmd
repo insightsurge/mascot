@@ -1,0 +1,17 @@
+```{r setup-mascot_characters, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_characters-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_characters")
+```
+
+### Characters this session knows
+
+```{r mascot_characters-table, echo = FALSE}
+if (in_studio()) shiny::uiOutput("characters_table") else guide_table(mascot::mascot_characters())
+```
+
+```{r mascot_characters-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_characters", studio_character)
+```

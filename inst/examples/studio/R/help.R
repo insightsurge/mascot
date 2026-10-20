@@ -78,6 +78,20 @@ rd_html <- function(content, tag = "\\description") {
   htmltools::HTML(trimws(html))
 }
 
+# The Experimental sections of a help page ("Experimental", "Experimental free dragging", ...), named by their
+# titles, each as the HTML the help page has: the lifecycle badge and the package's own sentence. The studio shows
+# them beside the parts they name, so the word and its reason come from the roxygen comments and cannot drift.
+rd_experimental <- function(rd) {
+  found <- list()
+  for (item in rd_sections(rd, "\\section")) {
+    title <- gsub("\\s+", " ", trimws(paste(unlist(item[[1]]), collapse = "")))
+    if (grepl("^Experimental", title)) {
+      found[[title]] <- rd_html(item, "\\section")
+    }
+  }
+  found
+}
+
 # Plain text of an HTML fragment, for one-line summaries.
 html_text <- function(html) {
   text <- gsub("<[^>]*>", "", as.character(html))
@@ -141,6 +155,7 @@ help_page <- function(fn) {
       description = section("\\description"),
       details = section("\\details"),
       value = section("\\value"),
+      experimental = rd_experimental(rd),
       args = args
     )
   }

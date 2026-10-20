@@ -1,0 +1,13 @@
+---
+title: "mascot_studio()"
+---
+
+The studio guide for [`mascot_studio()`](../reference/mascot_studio.html). The same page is read in the mascot studio.
+
+```{r setup, include = FALSE}
+guide_dir <- system.file("examples", "studio", "guide", package = "mascot")
+sys.source(file.path(guide_dir, "guide-helpers.R"), envir = knitr::knit_global())
+```
+
+```{r child = file.path(guide_dir, "mascot_studio.Rmd")}
+```

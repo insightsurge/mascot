@@ -1,0 +1,235 @@
+/* Styles for the diagrams of the guide pages (guide-helpers.R). The studio has its own copy of these
+   classes in www/studio.css; every selector here sits in :where() so it has no weight and the studio's
+   rules win there. Colours come from Bootstrap's variables when the page has them (the studio, bslib,
+   pkgdown) and from neutral fallbacks otherwise, which read on a light and a dark page. */
+
+:where(.pg-flow) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 0.8rem 0;
+}
+
+:where(.pg-flow-step) {
+  border: 1px solid var(--bs-border-color, rgba(127, 127, 127, 0.45));
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  background: var(--bs-tertiary-bg, rgba(127, 127, 127, 0.1));
+}
+
+:where(.pg-flow-arrow) {
+  align-self: center;
+  color: var(--bs-secondary-color, inherit);
+}
+
+:where(.pg-flow-gap) {
+  flex-basis: 100%;
+}
+
+:where(.pg-callout) {
+  background: var(--bs-info-bg-subtle, rgba(13, 110, 253, 0.12));
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  margin: 0.8rem 0;
+  font-size: 0.9rem;
+}
+
+:where(.pg-callout-warn) {
+  background: var(--bs-warning-bg-subtle, rgba(255, 193, 7, 0.2));
+}
+
+:where(.pg-timeline) {
+  font-size: 0.8rem;
+  margin: 0.8rem 0;
+}
+
+:where(.pg-timeline-bar) {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg, rgba(127, 127, 127, 0.15));
+  overflow: hidden;
+}
+
+:where(.pg-timeline-fill) {
+  width: 60%;
+  height: 100%;
+  background: var(--bs-primary, #0d6efd);
+}
+
+:where(.pg-timeline-labels) {
+  display: flex;
+  justify-content: space-between;
+  color: var(--bs-secondary-color, inherit);
+}
+
+:where(.pg-palette-table) {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+:where(.pg-cards) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.6rem;
+}
+
+:where(.pg-card-mini) {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bs-border-color, rgba(127, 127, 127, 0.45));
+  border-radius: 0.5rem;
+  margin: 0;
+  font-size: 0.85rem;
+  background: var(--bs-body-bg, transparent);
+  color: var(--bs-body-color, inherit);
+}
+
+:where(.pg-card-title) {
+  font-weight: 600;
+}
+
+:where(.pg-card-foot) {
+  margin-top: auto;
+  font-size: 0.75rem;
+}
+
+:where(.pg-card-mini > .card-body) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bslib-spacer, 1rem);
+  padding: var(--bs-card-spacer-y, 1rem) var(--bs-card-spacer-x, 1rem);
+}
+
+:where(.pg-map) {
+  position: relative;
+  border: 2px solid var(--bs-border-color, rgba(127, 127, 127, 0.2));
+  border-radius: 0.5rem;
+  height: 12rem;
+  max-width: 22rem;
+  font-size: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+:where(.pg-map-bar) {
+  height: 1rem;
+  background: var(--bs-tertiary-bg, rgba(127, 127, 127, 0.2));
+  border-bottom: 1px solid var(--bs-border-color, rgba(127, 127, 127, 0.2));
+}
+
+:where(.pg-map-page) {
+  padding: 0.75rem 4.5rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+:where(.pg-map-line) {
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--bs-tertiary-bg, rgba(127, 127, 127, 0.2));
+}
+
+:where(.pg-map-line.short) {
+  width: 60%;
+}
+
+:where(.pg-map-inline),
+:where(.pg-map-corner) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--bs-border-color, rgba(127, 127, 127, 0.2));
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--bs-secondary-color, inherit);
+  font-size: 0.7rem;
+}
+
+:where(.pg-map-inline) {
+  height: 2.5rem;
+}
+
+:where(.pg-map-corner) {
+  position: absolute;
+  width: 3.5rem;
+  height: 2.2rem;
+}
+
+:where(.pg-map-inline.is-active),
+:where(.pg-map-corner.is-active) {
+  border: 2px solid var(--bs-primary, rgba(127, 127, 127, 0.2));
+  background: var(--bs-primary-bg-subtle, rgba(127, 127, 127, 0.2));
+  color: var(--bs-emphasis-color, inherit);
+  font-weight: 600;
+}
+
+:where(.pg-top-left) {
+  top: 1.4rem;
+  left: 0.4rem;
+}
+
+:where(.pg-top-right) {
+  top: 1.4rem;
+  right: 0.4rem;
+}
+
+:where(.pg-bottom-left) {
+  bottom: 0.4rem;
+  left: 0.4rem;
+}
+
+:where(.pg-bottom-right) {
+  bottom: 0.4rem;
+  right: 0.4rem;
+}
+
+:where(.pg-map-caption) {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.3rem;
+}
+
+:where(.pg-wire) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+:where(.pg-wire-box) {
+  flex: 1;
+  border: 1px solid var(--bs-border-color, rgba(127, 127, 127, 0.2));
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+:where(.pg-wire-box pre) {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+:where(.pg-swatch) {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--bs-border-color, rgba(127, 127, 127, 0.45));
+  border-radius: 0.2rem;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+/* Tabs of the website pages: one tab per character. */
+:where(.pg-character-tabs) {
+  margin: 0.8rem 0;
+}
+
+:where(.pg-character-tabs .tab-content) {
+  padding-top: 0.75rem;
+}
+
+:where(.pg-log-message) {
+  white-space: pre-wrap;
+}

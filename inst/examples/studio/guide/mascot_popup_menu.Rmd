@@ -1,0 +1,78 @@
+```{r setup-mascot_popup_menu, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_popup_menu-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_popup_menu")
+```
+
+### From a click to your server
+
+```{r mascot_popup_menu-flow, echo = FALSE}
+guide_flow(
+  guide_step("The visitor picks", htmltools::div(htmltools::tags$strong("Finish review"))),
+  guide_step(htmltools::tags$code("input$helper_menu"), htmltools::div('becomes "finish"')),
+  guide_step("Your", htmltools::tags$code("observeEvent()"), htmltools::div("decides")),
+  guide_step(htmltools::tags$code("update_mascot()"), htmltools::div("answers"))
+)
+```
+
+```{r mascot_popup_menu-last, echo = FALSE}
+if (in_studio()) htmltools::div(class = "pg-live",
+  htmltools::tags$span(class = "pg-muted", "Last choice here: "), shiny::textOutput("menu_last", inline = TRUE))
+```
+
+### Long status
+
+The menu opens from the mascot's position on the screen and falls back to the opposite side when the
+chosen side has no room. A long status makes the mascot taller, so choose a corner, then open the live
+mascot's menu to see where it lands.
+
+```{r mascot_popup_menu-try, echo = FALSE}
+if (in_studio()) htmltools::tagList(
+  try_button("menu_long_status", "top-right", "Try top corner with long status"),
+  try_button("menu_long_status", "bottom-right", "Try bottom corner with long status")
+)
+```
+
+### Your server code for these items
+
+```{r mascot_popup_menu-code, echo = FALSE}
+if (in_studio()) htmltools::div(class = "pg-code-wrap", code_output("menu_code"), copy_button("menu_code"))
+```
+
+For an item named `finish` and labelled "Finish review", the server can answer like this:
+
+```r
+shiny::observeEvent(input$helper_menu, {
+  switch(input$helper_menu,
+    finish = mascot::update_mascot("helper", mood = "happy")
+  )
+})
+```
+
+<div class="pg-callout">
+
+<strong>input$&lt;id&gt;_menu vs input$&lt;id&gt;_click.</strong>
+Menus never set `input$<id>_click`; only `mascot_action()` does. Choosing an item sets
+`input$<id>_menu` to the chosen item's id. Opening and closing the menu sends no Shiny input.
+
+</div>
+
+<div class="pg-callout">
+
+<strong>Options need their main argument.</strong>
+An empty call removes it.
+
+</div>
+
+<div class="pg-callout">
+
+<strong>Keyboard.</strong>
+Tab to the mascot's menu button, then Enter or Space opens it; arrow keys move between items; Escape closes it.
+
+</div>
+
+```{r mascot_popup_menu-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_popup_menu", studio_character)
+```

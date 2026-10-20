@@ -1,0 +1,29 @@
+```{r setup-mascot_mood, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_mood-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_mood")
+```
+
+### The `r nrow(mascot::mascot_moods())` moods
+
+```{r mascot_mood-table, echo = FALSE}
+guide_table(mascot::mascot_moods())
+```
+
+<div class="pg-callout">
+
+<strong>The mood never speaks alone.</strong>
+The status line under the mascot names the mood (or displays your custom text), providing clear meaning for
+screen readers and anyone who cannot distinguish facial expressions.
+
+```{r mascot_mood-controls, echo = FALSE}
+if (in_studio()) htmltools::tags$p("Try moods with the Mood drop-down in the top bar.")
+```
+
+</div>
+
+```{r mascot_mood-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_mood", studio_character)
+```

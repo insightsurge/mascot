@@ -29,6 +29,7 @@ describe("mascot_studio()", {
     expect_match(page(studio), 'id="preview_build"', fixed = TRUE)
     expect_match(page(studio), 'id="preview_card"', fixed = TRUE)
     expect_match(page(studio), 'data-full-screen="false"', fixed = TRUE)
+    expect_match(page(studio), 'data-bslib-card-init', fixed = TRUE)
     expect_match(page(studio), 'id="studio_example_call"', fixed = TRUE)
     expect_match(page(studio), 'data-copy="studio_example_call"', fixed = TRUE)
     expect_false(grepl('id="studio_view"', page(studio), fixed = TRUE))
@@ -38,9 +39,11 @@ describe("mascot_studio()", {
     examples <- mascot_studio("examples", run = FALSE)
     expect_match(page(examples), 'id="example_name"', fixed = TRUE)
     expect_match(page(examples), 'href="?view=studio"', fixed = TRUE)
-    expect_false(grepl('id="helper"', page(examples), fixed = TRUE))
-    expect_match(page(examples, "view=studio"), 'id="helper"', fixed = TRUE)
-    expect_false(grepl('id="example_name"', page(examples, "view=studio"), fixed = TRUE))
+    # Views select the initial host mode; the mounted live engine arrives via renderUI in its iframe.
+    expect_match(page(examples), 'data-initial-mode="examples"', fixed = TRUE)
+    expect_match(page(examples, "view=studio"), 'data-initial-mode="mascot"', fixed = TRUE)
+    expect_match(page(examples, "view=studio"), 'id="example_name"', fixed = TRUE)
+    expect_match(page(examples, "view=studio"), 'id="live_host"', fixed = TRUE)
     expect_identical(options(), before)
   })
   it("passes its app to Shiny when launched interactively", {
@@ -68,6 +71,10 @@ describe("mascot_studio()", {
       "document.querySelector('.pg-index-link[data-value=mascot_theme]').getAttribute('aria-current') === 'true'"
     )
     expect_false(app$get_js("document.querySelector('[data-function=mascot_theme]').hidden"))
+    # A named function opens on its Guide, as ?mascot_studio promises.
+    app$wait_for_js(
+      "!document.getElementById('inspector_sidebar').hidden && document.getElementById('inspector_tab_guide').getAttribute('aria-selected') === 'true'"
+    )
     expect_identical(app$get_value(input = "character"), formals(mascot)$character)
     # Starting on mascot_preview() shows its page on the canvas in place of the live mascot.
     preview <- app_driver(
@@ -89,10 +96,15 @@ describe("mascot_studio()", {
     })
     withr::defer(examples$stop())
     examples$wait_for_js("!!document.getElementById('example_name')")
+    expect_identical(examples$get_js("document.getElementById('studio_canvas').dataset.mode"), "examples")
+    examples$click(selector = "#studio_menu > summary")
     examples$click(selector = 'a[href="?view=studio"]')
-    examples$wait_for_js("!!document.getElementById('helper') && !!document.getElementById('studio_inspector')")
+    examples$wait_for_js(
+      "!!document.getElementById('live_frame')?.contentDocument?.getElementById('helper') && !!document.getElementById('studio_inspector')"
+    )
     expect_identical(examples$get_js("new URLSearchParams(location.search).get('view')"), "studio")
-    expect_identical(examples$get_js("document.querySelectorAll('#example_name').length"), 0L)
+    expect_identical(examples$get_js("document.querySelectorAll('#example_name').length"), 1L)
+    expect_identical(examples$get_js("document.getElementById('studio_canvas').dataset.mode"), "mascot")
   })
 })
 
@@ -100,10 +112,37 @@ describe("the studio on older R", {
   it("defines its own %||%, which base R has only from R 4.4", {
     path <- dirname(mascot_example("studio", run = FALSE))
     data <- new.env(parent = baseenv())
+    # As mascot_studio() does: the data file finds the guide's shared code next to the app.
+    data$studio_guide_root <- path
     sys.source(file.path(path, "R", "data.R"), envir = data)
     expect_true(exists("%||%", envir = data, inherits = FALSE))
     expect_identical(data$`%||%`(NULL, "b"), "b")
     expect_identical(data$`%||%`("a", "b"), "a")
+  })
+})
+
+describe("mascot_studio() opening on a function", {
+  it("asks the page to open the Guide only when a function is named", {
+    skip_if_not_installed("bslib")
+    page <- function(app, query = "") {
+      as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
+    }
+    expect_match(page(mascot_studio(fn = "mascot_theme", run = FALSE)), 'data-initial-open="guide"', fixed = TRUE)
+    expect_false(grepl("data-initial-open", page(mascot_studio(run = FALSE)), fixed = TRUE))
+    expect_false(grepl(
+      "data-initial-open",
+      page(mascot_studio("examples", fn = "mascot_theme", run = FALSE)),
+      fixed = TRUE
+    ))
+  })
+})
+
+describe("the studio and its guide files on older R", {
+  it("use no %||%, which base R has only from R 4.4, in the files the website also reads", {
+    guide <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    for (file in c("guide-mistakes.R", "guide-shared.R", "guide-helpers.R")) {
+      expect_false(any(grepl("%||%", readLines(file.path(guide, file), warn = FALSE), fixed = TRUE)), info = file)
+    }
   })
 })
 

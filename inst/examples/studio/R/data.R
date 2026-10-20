@@ -53,59 +53,40 @@ bubble_examples <- list(
 )
 
 default_menu <- c(finish = "Finish review", reset = "Reset helper", about = "About this studio")
-welcome <- "Hello! Choose a function in the function index, change its controls, and I will follow."
+welcome <- "Hello! Open the function index (the m button) to pick a function, change its controls, and I will follow."
 
 # What mascot() uses when an argument is left out, as shortcut code.
 defaults <- list(
   character = formals(mascot::mascot)$character,
-  mood = "idle",
+  mood = formals(mascot::mascot)$mood,
   status = quote(mascot_status()),
   bubble = quote(mascot_bubble()),
-  size = 160,
-  placement = "bottom-right",
+  size = formals(mascot::mascot)$size,
+  placement = formals(mascot::mascot)$placement,
   theme = quote(mascot_theme()),
-  motion = TRUE,
+  motion = formals(mascot::mascot)$motion,
   # The empty helper, so a removal reads as the reset it is (click = NULL in an update changes nothing).
   click = quote(mascot_action())
 )
-mistakes <- list(
-  `Leave out an argument name` = list(
-    code = "update_mascot(\"helper\", \"happy\")",
-    why = "Arguments after id must be named. An unnamed mood is caught by ... and gives an error."
-  ),
-  `A mood that does not exist` = list(
-    code = "update_mascot(\"helper\", mood = \"sleepy\")",
-    why = "Displays a warning listing valid moods. The mascot keeps its current mood."
-  ),
-  `Misspell an argument` = list(
-    code = "update_mascot(\"helper\", moood = \"happy\")",
-    why = "... must be empty, so typos produce an error rather than being ignored."
-  ),
-  `Too small` = list(code = "update_mascot(\"helper\", size = 10)", why = "Sizes must be at least 24 pixels."),
-  `Minimise an inline mascot` = list(
-    code = "update_mascot(\"helper\", placement = mascot_placement(\"inline\", minimise = TRUE))",
-    why = "An inline mascot ignores minimise. An informational message explains this, and the mascot sits inline."
-  ),
-  `A bubble that never shows` = list(
-    code = "update_mascot(\"helper\", bubble = mascot_bubble(\"Hi\", duration = 0))",
-    why = "duration must be greater than zero. Use Inf to keep the bubble open."
-  ),
-  `Not a colour` = list(
-    code = "update_mascot(\"helper\", theme = list(body = \"not-a-colour\"))",
-    why = "Colours are validated in R before sending to the browser."
-  ),
-  `Low contrast` = list(
-    code = "update_mascot(\"helper\", theme = list(body = \"#f8f9fa\"))",
-    why = "The colour is applied, with a warning if contrast against the page is low."
-  ),
-  `The wrong id` = list(
-    code = "update_mascot(\"helpr\", mood = \"happy\")",
-    why = paste(
-      "No error and no change: the server cannot see browser elements. With shiny::devmode(TRUE), the browser",
-      "console reports the missing element."
-    )
-  )
-)
+# The calls of the guide's "common mistakes" lists live in guide/guide-mistakes.R, shared with the website;
+# its functions are defined here too, and the studio's names point to them.
+studio_guide_dir <- function() {
+  # mascot_studio() names the app's folder; otherwise the app's own folder (Shiny runs it from there) or the
+  # installed package.
+  if (exists("studio_guide_root", inherits = TRUE)) {
+    return(file.path(get("studio_guide_root", inherits = TRUE), "guide"))
+  }
+  local <- file.path(getwd(), "guide")
+  if (file.exists(file.path(local, "guide-helpers.R"))) {
+    return(normalizePath(local))
+  }
+  system.file("examples", "studio", "guide", package = "mascot")
+}
+sys.source(file.path(studio_guide_dir(), "guide-mistakes.R"), envir = environment())
+sys.source(file.path(studio_guide_dir(), "guide-shared.R"), envir = environment())
+mistakes <- guide_mistake_base
+character_mistakes <- guide_character_mistakes
+studio_mistake_palettes <- guide_mistake_palettes
 
 # Where each argument can be tried: the HTML that must be on the page (an input id, or the
 # data-event of a button), or the reason it has no control. tests/testthat/test-examples.R checks
@@ -140,7 +121,7 @@ playground_controls <- list(
   mascot_gesture = list(name = input_id("gesture", "gesture_play")),
   mascot_size = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
-    size = input_id("size_unit", "size_px", "size_pct"),
+    size = input_id("size_px", "size_unit", "size_pct"),
     small_screen = input_id("small_mode", "small_px")
   ),
   mascot_placement = list(
@@ -246,41 +227,27 @@ studio_families <- function() {
 }
 
 # Count shipped characters rather than the selector's current discovery adapter.
-studio_character_hint <- function(
-  directory = system.file("format", "characters", package = "mascot", mustWork = TRUE)
-) {
-  checkmate::assert_directory_exists(directory)
-  files <- list.files(directory, pattern = "[.]json$")
-  if (length(files) != 1) {
+studio_character_hint <- function(directory = NULL) {
+  checkmate::assert(
+    checkmate::check_null(directory),
+    checkmate::check_directory_exists(directory),
+    .var.name = "directory"
+  )
+  # The built-in characters come from the package's own listing; a folder of character files can stand in for it.
+  ids <- if (is.null(directory)) {
+    listing <- mascot::mascot_characters()
+    listing$id[listing$built_in]
+  } else {
+    sub("[.]json$", "", list.files(directory, pattern = "[.]json$"))
+  }
+  if (length(ids) != 1L) {
     return(NULL)
   }
-  id <- sub("[.]json$", "", files)
-  paste(mascot::mascot_character(id)$name, "is the only built-in character so far.")
+  paste(mascot::mascot_character(ids)$name, "is the only built-in character so far.")
 }
 
-# The brand slots of a character, read from the public colour-role listing: slot name to role.
-studio_brand <- function(character) {
-  checkmate::assert_string(character)
-  roles <- mascot::mascot_colour_roles(character)
-  roles <- roles[!is.na(roles$brand), ]
-  result <- list()
-  for (i in seq_len(nrow(roles))) {
-    for (slot in strsplit(roles$brand[i], ", ", fixed = TRUE)[[1]]) {
-      result[[slot]] <- roles$role[i]
-    }
-  }
-  result
-}
-
-character_mistakes <- function(character) {
-  checkmate::assert_string(character)
-  role <- mascot::mascot_colour_roles(character)$role[1]
-  result <- mistakes
-  for (name in c("Not a colour", "Low contrast")) {
-    result[[name]]$code <- sub("body =", paste0(arg_name(role), " ="), result[[name]]$code, fixed = TRUE)
-  }
-  result
-}
+# The brand slots of a character: slot name to role (the same function the guide pages use).
+studio_brand <- guide_brand_roles
 
 # Future authoring controls stay separate from the public function map.
 studio_character_controls <- list(
@@ -294,3 +261,57 @@ studio_character_controls <- list(
     overwrite = fixed_arg("Download replaces only Shiny's supplied temporary destination.")
   )
 )
+
+# Temporary until #375 removes resting-only animations from the gesture listing.
+studio_resting_gestures <- c(tessa = "shimmer")
+
+studio_gesture_choices <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  gestures <- mascot::mascot_gestures(character)$name
+  resting <- gestures %in% studio_resting_gestures[character]
+  gestures <- c(gestures[!resting], gestures[resting])
+  labels <- ifelse(
+    gestures %in% studio_resting_gestures[character],
+    paste(gestures, "(resting animation)"),
+    paste("a", tools::toTitleCase(gestures))
+  )
+  c("no gesture" = "", stats::setNames(gestures, labels))
+}
+
+# Keep the API names in studio_palette_choices(); humanise only the sentence's labels.
+studio_palette_labels <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  choices <- studio_palette_choices(character)
+  labels <- gsub("_", " ", names(choices), fixed = TRUE)
+  names(choices) <- paste0(toupper(substr(labels, 1L, 1L)), substring(labels, 2L))
+  native <- names(studio_palette_choices(character))[[1L]]
+  names(choices)[[1L]] <- paste0(
+    mascot::mascot_character(character)$name,
+    "'s own colours",
+    if (native != "original") paste0(" (", native, ")")
+  )
+  choices
+}
+
+studio_long_status <- "Review in progress: checking the submitted rows and recording the results before the next step."
+
+# Named examples, independent of the studio default character.
+# The first two characters share this palette id and the third has none of it. A test fails if a change to the
+# palettes breaks that.
+studio_palette_swap <- c(from = "tessa", kept = "sela", dropped = "knurl", palette = "coral_navy")
+
+# The sentence keeps the selector's API value "original" while naming the character's own colours.
+studio_palette_sentence <- function(character, palette = "original") {
+  checkmate::assert_string(character, min.chars = 1)
+  checkmate::assert_string(palette, min.chars = 1)
+  choices <- studio_palette_choices(character)
+  native <- names(choices)[match("original", choices)]
+  labels <- studio_palette_labels(character)
+  original <- identical(palette, "original")
+  list(
+    prefix = if (original) "in" else "in the",
+    label = names(labels)[match(palette, choices)],
+    suffix = if (original) "," else "palette,",
+    id = if (original) native else palette
+  )
+}

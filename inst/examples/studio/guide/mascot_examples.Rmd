@@ -1,0 +1,33 @@
+```{r setup-mascot_examples, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_examples-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_examples")
+```
+
+### Pick an example by its task
+
+The descriptions below show what each example teaches. Use the `name` column
+as the value to pass when opening one with `r guide_fn_link("mascot_example")`.
+
+```{r mascot_examples-listing, echo = FALSE}
+guide_table(mascot::mascot_examples()[c("name", "title", "description")])
+```
+
+### List the names
+
+```r
+mascot::mascot_examples()
+```
+
+The listing is a plain data frame, in the order the examples are best read.
+Start with the first entry, then take the scenario that matches your app.
+
+```{r mascot_examples-host-mode, echo = FALSE, results = 'asis'}
+if (in_studio()) cat("In the studio, selecting this function opens the Examples host mode: choose an example to read its code and copy its launch call.\n")
+```
+
+```{r mascot_examples-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_examples", studio_character)
+```

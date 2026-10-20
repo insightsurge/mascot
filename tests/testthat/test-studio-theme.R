@@ -53,7 +53,7 @@ describe("the theme view's page", {
     parts <- theme_parts()
     page <- parts$page
     expect_match(page, "<title>Theme a mascot</title>", fixed = TRUE)
-    for (id in c("character", "palette", "mood", "page_mode", "start_again", "theme_code", "code_style")) {
+    for (id in c("character", "mood", "page_mode", "reset_all", "theme_code", "code_style", "preview_caption")) {
       expect_match(page, paste0('id="', id, '"'), fixed = TRUE, info = id)
     }
     expect_match(page, 'id="theme_mascot"', fixed = TRUE)
@@ -65,6 +65,31 @@ describe("the theme view's page", {
     expect_false(grepl("studio.js", page, fixed = TRUE))
     expect_false(grepl("studio.css", page, fixed = TRUE))
     expect_false(grepl('class="pg-studio"', page, fixed = TRUE))
+  })
+  it("uses the studio's sentence bar and window frame, with no palette menu", {
+    page <- theme_parts()$page
+    expect_match(page, 'id="theme_sentence_bar" class="pg-toolbar pg-float"', fixed = TRUE)
+    expect_match(page, "Showing\\s*<div class=\"form-group shiny-input-container\">")
+    expect_match(page, 'aria-describedby="character_tooltip"', fixed = TRUE)
+    expect_match(page, 'aria-describedby="mood_tooltip"', fixed = TRUE)
+    expect_match(page, '<span id="mood_article">in an</span>', fixed = TRUE)
+    expect_match(page, 'data-sentence="auto"', fixed = TRUE)
+    expect_false(grepl('id="palette"', page, fixed = TRUE))
+    expect_match(page, '<span class="pg-window-dots" aria-hidden="true">', fixed = TRUE)
+    expect_match(page, "<span>Preview</span>", fixed = TRUE)
+    expect_false(grepl("Contained preview", page, fixed = TRUE))
+    expect_match(page, '<div class="pg-host-footer">', fixed = TRUE)
+  })
+  it("captions the preview with the character and the palette", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "sela", mood = "idle")
+      expect_identical(output$preview_caption, "Sela \u00b7 original")
+      session$setInputs(palette_grid = "coral_navy")
+      expect_identical(output$preview_caption, "Sela \u00b7 coral_navy")
+      session$setInputs(brand_source = "bslib")
+      expect_identical(output$preview_caption, "Sela \u00b7 bs_theme()")
+    })
   })
   it("marks the experimental characters in the character menu", {
     page <- theme_parts()$page
@@ -171,7 +196,7 @@ describe("theme_stack_parts()", {
 })
 
 describe("theme_view_server()", {
-  it("keeps the code in step with the palette from the cards, the menu and the stack line", {
+  it("keeps the code in step with the palette from the cards, the Start from menu and the stack line", {
     env <- theme_parts()$env
     shiny::testServer(env$theme_view_server, {
       session$setInputs(character = "tessa", mood = "idle", code_style = "short")
@@ -183,10 +208,10 @@ describe("theme_view_server()", {
       expect_match(output$theme_stack$html, "Palette:\\s*<code>coral_navy</code>")
       session$setInputs(code_style = "helper")
       expect_identical(output$theme_code, 'mascot("helper", theme = mascot_theme(palette = "coral_navy"))')
-      session$setInputs(code_style = "short", palette = "forest")
+      session$setInputs(code_style = "short", palette_grid = "forest")
       expect_identical(output$theme_code, 'mascot("helper", theme = "forest")')
       # A palette the character lacks is ignored.
-      session$setInputs(palette = "orbit")
+      session$setInputs(palette_grid = "orbit")
       expect_identical(output$theme_code, 'mascot("helper", theme = "forest")')
       # The stack line's clear button goes back to the character's own colours.
       session$setInputs(stack_clear = "palette")
@@ -196,7 +221,7 @@ describe("theme_view_server()", {
   it("drops a palette the next character does not have and keeps one it has", {
     env <- theme_parts()$env
     shiny::testServer(env$theme_view_server, {
-      session$setInputs(character = "tessa", mood = "idle", palette = "coral_navy")
+      session$setInputs(character = "tessa", mood = "idle", palette_grid = "coral_navy")
       session$setInputs(character = "sela")
       expect_identical(output$theme_code, 'mascot("helper", character = "sela", theme = "coral_navy")')
       session$setInputs(character = "knurl")
@@ -309,7 +334,7 @@ describe("the Your colours tab", {
       session$setInputs(character = "tessa", mood = "idle")
       session$setInputs(start_from = "forest")
       expect_identical(output$theme_code, 'mascot("helper", theme = "forest")')
-      expect_identical(updates$palette$value, "forest")
+      expect_false("palette" %in% names(updates))
       expect_identical(updates$palette_grid$value, "forest")
     })
   })
@@ -360,7 +385,7 @@ describe("the Brand colours tab", {
       # Then the brand parts take the colours in both modes, which is a plain list
       expect_identical(output$theme_code, 'mascot("helper", theme = list(body = "#0f766e", rim = "#c2410c"))')
       # When the user switches to bs_theme()
-      session$setInputs(palette = "coral_navy", mode = "dark", brand_source = "bslib")
+      session$setInputs(palette_grid = "coral_navy", mode = "dark", brand_source = "bslib")
       expect_identical(
         output$theme_code,
         'mascot(\n  "helper",\n  theme = bslib::bs_theme(primary = "#0f766e", secondary = "#c2410c")\n)'
@@ -451,14 +476,14 @@ describe("the Check tab", {
     env <- theme_parts()$env
     shiny::testServer(env$theme_view_server, {
       folder <- file.path(tempdir(), paste0("theme-preview-", session$token))
-      session$setInputs(character = "sela", mood = "idle", palette = "coral_navy")
+      session$setInputs(character = "sela", mood = "idle", palette_grid = "coral_navy")
       expect_false(dir.exists(folder))
       session$setInputs(check_preview = 1)
       html <- output$check_preview_ui$html
       expect_match(html, 'mascot_preview(character = "sela", theme = "coral_navy")', fixed = TRUE)
       expect_match(html, sprintf('src="theme-preview-%s/preview-1.html"', session$token), fixed = TRUE)
       expect_true(file.exists(file.path(folder, "preview-1.html")))
-      session$setInputs(palette = "forest")
+      session$setInputs(palette_grid = "forest")
       expect_match(output$check_preview_ui$html, "The settings changed since this page was built.", fixed = TRUE)
     })
   })
@@ -596,7 +621,7 @@ describe("the theme view in a browser", {
     )
     app$wait_for_value(output = "theme_code", ignore = list(NULL, 'mascot("helper")'))
     expect_identical(app$get_value(output = "theme_code"), 'mascot("helper", theme = "coral_navy")')
-    expect_identical(app$get_js("document.getElementById('palette').value"), "coral_navy")
+    expect_identical(app$get_js("document.getElementById('start_from').value"), "coral_navy")
     # Copy puts the code shown on the clipboard.
     app$run_js(
       "window.copied = null; navigator.clipboard.writeText = (text) => { window.copied = text; return Promise.resolve(); };"

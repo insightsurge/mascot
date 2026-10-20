@@ -148,7 +148,7 @@ theme_view_server <- function(input, output, session) {
   moods <- shiny::reactive(mascot::mascot_moods(character())$name)
   mood <- shiny::reactive(if (isTRUE(input$mood %in% moods())) input$mood else "idle")
 
-  # The palette: one value, which the header menu and the Palette tab's cards both show and set.
+  # The palette: one value, which the Palette tab's cards and the Start from menu both show and set.
   palette_now <- shiny::reactiveVal("original")
   palette <- shiny::reactive({
     value <- palette_now()
@@ -157,13 +157,10 @@ theme_view_server <- function(input, output, session) {
   pick_palette <- function(value) {
     if (isTRUE(value %in% studio_palette_choices(shiny::isolate(character())))) palette_now(value)
   }
-  shiny::observeEvent(input$palette, pick_palette(input$palette))
   shiny::observeEvent(input$palette_grid, pick_palette(input$palette_grid))
   shiny::observeEvent(input$start_from, pick_palette(input$start_from))
   shiny::observeEvent(character(), {
-    for (id in c("palette", "start_from")) {
-      shiny::updateSelectInput(session, id, choices = studio_palette_labels(character()), selected = palette())
-    }
+    shiny::updateSelectInput(session, "start_from", choices = studio_palette_labels(character()), selected = palette())
     shiny::updateSelectInput(
       session,
       "mood",
@@ -173,7 +170,6 @@ theme_view_server <- function(input, output, session) {
     palette_now(palette())
   })
   shiny::observeEvent(palette(), {
-    shiny::updateSelectInput(session, "palette", selected = palette())
     shiny::updateSelectInput(session, "start_from", selected = palette())
     shiny::updateRadioButtons(session, "palette_grid", selected = palette())
   })
@@ -449,6 +445,14 @@ theme_view_server <- function(input, output, session) {
     theme_check_result_ui(shown$title, shown$code, shown$result, shown$outcome)
   })
 
-  shiny::observeEvent(input$start_again, session$reload())
+  output$preview_caption <- shiny::renderText({
+    paste(
+      mascot::mascot_character(character())$name,
+      if (source() == "bslib") "bs_theme()" else palette(),
+      sep = " \u00b7 "
+    )
+  })
+
+  shiny::observeEvent(input$reset_all, session$reload())
   invisible(NULL)
 }

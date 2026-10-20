@@ -29,6 +29,8 @@ theme_view_ui <- function(query) {
     ),
     shiny::div(
       class = "theme-page",
+      # inputs.js sizes the sentence's words on this page.
+      `data-sentence` = "auto",
       theme_header(character),
       shiny::div(
         class = "theme-main",
@@ -43,44 +45,49 @@ theme_view_ui <- function(query) {
 theme_header <- function(character) {
   checkmate::assert_string(character, min.chars = 1)
   moods <- mascot::mascot_moods(character)$name
-  shiny::tags$header(
-    class = "theme-header",
-    shiny::tags$h1(class = "theme-title", studio_view_titles[["theme"]]),
-    shiny::div(
-      class = "theme-header-controls",
-      role = "group",
-      `aria-label` = "Character, palette and mood",
-      shiny::selectInput("character", "Character", studio_characters(), selected = character, selectize = FALSE),
-      shiny::selectInput(
-        "palette",
-        "Palette",
-        studio_palette_labels(character),
-        selected = "original",
-        selectize = FALSE
-      ),
+  # The studio's sentence bar (R/shared-layout.R): character and mood are its words; the palette is chosen with the
+  # palette cards.
+  bar <- sentence_bar(
+    "theme_sentence_bar",
+    "Character, mood and page",
+    "Character and mood",
+    list(
+      "Showing",
+      shiny::selectInput("character", NULL, studio_characters(), selected = character, selectize = FALSE),
+      shiny::tags$span(id = "mood_article", "in an"),
       shiny::selectInput(
         "mood",
-        "Mood",
+        NULL,
         stats::setNames(moods, tools::toTitleCase(moods)),
         selected = "idle",
         selectize = FALSE
       ),
-      shiny::div(
-        class = "theme-page-mode",
-        shiny::tags$span(class = "theme-label", "Page"),
-        bslib::input_dark_mode(id = "page_mode", mode = "light")
-      ),
-      shiny::actionButton("start_again", "Start again", class = "btn-outline-primary btn-sm")
-    )
+      shiny::tags$span("mood.")
+    ),
+    bslib::input_dark_mode(id = "page_mode", mode = "light"),
+    shiny::actionButton("reset_all", "Start again", class = "btn-outline-primary btn-sm")
+  )
+  bar <- sentence_words(
+    bar,
+    lapply(c(character = "mascot_character", mood = "mascot_mood"), function(fn) {
+      shiny::tagList(shiny::tags$code(paste0(fn, "()")), shiny::tags$span(help_page(fn)$title))
+    })
+  )
+  shiny::tags$header(
+    class = "theme-header",
+    shiny::tags$h1(class = "theme-title", studio_view_titles[["theme"]]),
+    bar
   )
 }
 
-# The live mascot on a plain page surface, as an app would show it.
+# The live mascot in the studio's window frame, on a plain page surface, as an app would show it. The caption names
+# the mascot's id, character and palette.
 theme_preview_card <- function(character) {
   checkmate::assert_string(character, min.chars = 1)
   shiny::tags$section(
     class = "theme-preview",
     `aria-label` = "Preview",
+    window_bar("Preview"),
     shiny::div(
       class = "theme-preview-stage",
       mascot::mascot(
@@ -91,7 +98,8 @@ theme_preview_card <- function(character) {
         placement = "inline"
       )
     ),
-    shiny::uiOutput("preview_note")
+    shiny::uiOutput("preview_note"),
+    window_footer(shiny::tags$code('id = "helper"'), shiny::textOutput("preview_caption", inline = TRUE))
   )
 }
 

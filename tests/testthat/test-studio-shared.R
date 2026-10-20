@@ -450,3 +450,46 @@ describe("palette_swap_run()", {
     })
   })
 })
+
+describe("sentence_bar() and sentence_words()", {
+  it("build a toolbar whose sentence selects are words with a tooltip that describes them", {
+    env <- studio_shared("shared-layout.R")
+    bar <- env$sentence_bar(
+      "bar",
+      "Quick controls",
+      "Character and mood",
+      list("Showing", shiny::selectInput("character", NULL, c(Tessa = "tessa")), "."),
+      shiny::actionButton("reset_all", "Start again")
+    )
+    bar <- env$sentence_words(bar, list(character = shiny::tags$code("mascot_character()")))
+    html <- as.character(bar)
+    expect_match(
+      html,
+      '<div id="bar" class="pg-toolbar pg-float" role="toolbar" aria-label="Quick controls">',
+      fixed = TRUE
+    )
+    expect_match(html, '<div class="pg-sentence" role="group" aria-label="Character and mood">', fixed = TRUE)
+    expect_match(html, '<div class="pg-sentence-word">', fixed = TRUE)
+    expect_match(html, 'aria-label="Character"', fixed = TRUE)
+    expect_match(html, 'aria-describedby="character_tooltip"', fixed = TRUE)
+    expect_match(html, '<span id="character_tooltip" class="pg-word-tooltip" role="tooltip">', fixed = TRUE)
+    # The other controls follow the sentence.
+    expect_lt(regexpr("pg-sentence", html), regexpr('id="reset_all"', html))
+    expect_error(env$sentence_bar("", "a", "b", list()), "id")
+    expect_error(env$sentence_bar("bar", "a", "b", "Showing"), "sentence")
+    expect_error(env$sentence_words(bar, list()), "tooltips")
+    expect_error(env$sentence_words("bar", list(character = "x")), "bar")
+  })
+})
+
+describe("window_bar() and window_footer()", {
+  it("draw the three window dots, a title and a caption line", {
+    env <- studio_shared("shared-layout.R")
+    html <- as.character(env$window_bar("Preview", shiny::tags$span("extra")))
+    expect_match(html, '<div class="pg-host-bar">', fixed = TRUE)
+    expect_identical(lengths(gregexpr('<i class="pg-light-', html, fixed = TRUE)), 3L)
+    expect_match(html, "<span>Preview</span>\\s*<span>extra</span>")
+    expect_match(as.character(env$window_footer("caption")), '<div class="pg-host-footer">caption</div>', fixed = TRUE)
+    expect_error(env$window_bar(""), "title")
+  })
+})

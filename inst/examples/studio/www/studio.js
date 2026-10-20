@@ -274,14 +274,8 @@
   const surfaces = [];
   const openers = new Map();
   const phone = () => window.matchMedia('(max-width: 860px)').matches;
-  const viewportBounds = () => {
-    const viewport = window.visualViewport;
-    const left = viewport?.offsetLeft || 0;
-    const top = viewport?.offsetTop || 0;
-    const width = viewport?.width || innerWidth;
-    const height = viewport?.height || innerHeight;
-    return { left, top, width, height, right: left + width, bottom: top + height };
-  };
+  // The visible viewport and the sentence bar's helpers are shared with the other views (inputs.js).
+  const { viewportBounds, positionWordTooltip, sizeSentence } = window.mascotStudioInputs;
   const visible = (element) => element && element.getClientRects().length > 0;
   const focusables = (surface) =>
     [...surface.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')].filter(
@@ -1206,27 +1200,12 @@
       }
   }
   document.addEventListener('scroll', positionDropdowns, true);
-  function positionWordTooltip(word) {
-    const tooltip = word?.querySelector('.pg-word-tooltip');
-    if (!tooltip) return;
-    const rect = word.getBoundingClientRect();
-    const { left, top, right, bottom } = viewportBounds();
-    tooltip.style.left = `${Math.max(left + 8, Math.min(rect.left, right - tooltip.offsetWidth - 8))}px`;
-    tooltip.style.top = `${Math.max(top + 8, Math.min(rect.bottom + 8, bottom - tooltip.offsetHeight - 8))}px`;
-  }
-  document.addEventListener('pointerover', (event) =>
-    positionWordTooltip(event.target.closest('.pg-sentence-word, #all_functions')),
-  );
+  // The sentence words' tooltips are placed by inputs.js; the function index button has one too.
+  document.addEventListener('pointerover', (event) => positionWordTooltip(event.target.closest('#all_functions')));
   document.addEventListener('pointerdown', (event) => {
-    if (event.pointerType === 'mouse') return;
-    const word = event.target.closest('.pg-sentence-word, #all_functions');
-    for (const item of document.querySelectorAll('.pg-sentence-word'))
-      item.classList.toggle('is-touch-help', item === word);
-    positionWordTooltip(word);
+    if (event.pointerType !== 'mouse') positionWordTooltip(event.target.closest('#all_functions'));
   });
-  document.addEventListener('focusin', (event) => {
-    positionWordTooltip(event.target.closest('.pg-sentence-word, #all_functions'));
-  });
+  document.addEventListener('focusin', (event) => positionWordTooltip(event.target.closest('#all_functions')));
   document.addEventListener('focusout', (event) => {
     event.target.closest?.('.pg-topbar-highlight')?.classList.remove('pg-topbar-highlight');
   });
@@ -1411,20 +1390,7 @@
       setText('palette_prefix', palette.value === 'original' ? 'in' : 'in the');
       setText('palette_suffix', palette.value === 'original' ? ',' : 'palette,');
     }
-    const moodLabel = byId('mood')?.selectedOptions[0]?.textContent || '';
-    setText('mood_article', /^[aeiou]/i.test(moodLabel) ? 'in an' : 'in a');
-    for (const select of document.querySelectorAll('.pg-sentence select')) {
-      const measure = document.createElement('span');
-      measure.textContent = select.selectedOptions[0]?.textContent || '';
-      measure.style.font = getComputedStyle(select).font;
-      measure.style.position = 'absolute';
-      measure.style.visibility = 'hidden';
-      document.body.append(measure);
-      // Native sentence selects have no arrow and only 2px padding on either side.
-      const width = `${Math.ceil(measure.getBoundingClientRect().width) + 4}px`;
-      measure.remove();
-      if (select.style.width !== width) select.style.width = width;
-    }
+    sizeSentence();
   }
   window.Shiny.addCustomMessageHandler('studio:palette', (sentence) => {
     const select = byId('palette');

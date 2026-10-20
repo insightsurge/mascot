@@ -767,36 +767,7 @@ body:has(.pg-studio),
   font-size: 12px;
   color: var(--studio-muted);
 }
-.pg-toolbar {
-  align-self: center;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 6px 10px;
-  padding: 6px 10px;
-  max-width: 100%;
-  width: 100%;
-  flex-shrink: 0;
-}
 
-.pg-toolbar .shiny-input-container {
-  width: 120px;
-  margin: 0;
-}
-.pg-toolbar label {
-  font-size: 10px;
-  margin: 0;
-  color: var(--studio-muted);
-}
-.pg-toolbar .selectize-control {
-  margin: 0;
-}
-.pg-toolbar .selectize-input {
-  min-height: 34px;
-  padding: 6px 24px 6px 8px;
-  border-radius: 8px;
-}
 .pg-quick-gestures {
   display: flex;
   gap: 4px;
@@ -826,29 +797,7 @@ body:has(.pg-studio),
   min-width: 0;
   max-width: 100%;
 }
-.pg-host-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 14px;
-  border-bottom: 1px solid var(--studio-line);
-  font-size: 12px;
-}
-.pg-host-bar > .pg-muted {
-  margin-left: auto;
-}
-.pg-window-dots {
-  flex-shrink: 0;
-  display: flex;
-  gap: 6px;
-}
-.pg-window-dots i {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--studio-line);
-}
+
 .pg-host-options {
   display: flex;
   align-items: center;
@@ -936,15 +885,7 @@ body:has(.pg-studio),
   padding: 14px;
   min-height: 0;
 }
-.pg-host-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 14px;
-  border-top: 1px solid var(--studio-line);
-  color: var(--studio-muted);
-  font-size: 12px;
-}
+
 #host_event {
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1301,10 +1242,7 @@ button.pg-call-name:focus-visible {
   border-color: var(--studio-primary);
   background: var(--studio-note);
 }
-.pg-toolbar .pg-sentence .shiny-input-container {
-  width: auto;
-  max-width: 100%;
-}
+
 #chip_editor_body .shiny-input-container {
   margin-bottom: 4px;
 }
@@ -1434,80 +1372,11 @@ button.pg-call-name:focus-visible {
 .pg-anchor-overlay g:active {
   cursor: grabbing;
 }
-.pg-sentence {
-  box-shadow: var(--studio-shadow);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: 1px solid var(--studio-line);
-  border-radius: var(--studio-surface-radius);
-  background: var(--studio-panel);
-  color: var(--studio-ink);
-}
-.pg-sentence-word {
-  position: relative;
-}
-.pg-word-tooltip {
-  position: fixed;
-  z-index: 100;
-  width: max-content;
-  max-width: min(270px, 80vw);
-  padding: 8px 10px;
-  border: 1px solid var(--studio-line);
-  border-radius: 6px;
-  background: var(--studio-panel);
-  color: var(--studio-ink);
-  box-shadow: var(--studio-shadow);
-  font-size: 12px;
-  pointer-events: none;
-  visibility: hidden;
-}
-#mood_tooltip {
-  transform: none;
-}
+
 #gesture_tooltip {
   right: auto;
 }
-.pg-word-tooltip span {
-  display: block;
-}
-.pg-sentence-word:hover .pg-word-tooltip,
-.pg-sentence-word:focus-within .pg-word-tooltip,
-.pg-sentence-word.is-touch-help .pg-word-tooltip {
-  visibility: visible;
-}
-.pg-toolbar.pg-float {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-}
 
-.pg-sentence select,
-.pg-sentence #gesture_play {
-  appearance: none;
-  min-height: 30px;
-  padding: 0 2px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--studio-primary);
-  font: inherit;
-  text-decoration: underline dotted;
-  text-underline-offset: 4px;
-  cursor: pointer;
-}
-.pg-sentence select:focus-visible,
-.pg-sentence #gesture_play:focus-visible {
-  outline: 2px solid var(--studio-primary);
-  outline-offset: 3px;
-}
-.pg-sentence .pg-quick-gestures {
-  align-items: center;
-  gap: 4px;
-}
 .pg-search-field {
   flex: 1 1 180px;
   min-width: 140px;
@@ -1542,13 +1411,7 @@ button.pg-call-name:focus-visible {
   color: var(--studio-muted);
   background: var(--studio-note);
 }
-.pg-toolbar #reset_all,
-.pg-toolbar bslib-input-dark-mode {
-  border: 1px solid var(--studio-line);
-  box-shadow: var(--studio-shadow);
-  border-radius: var(--studio-surface-radius);
-  background: var(--studio-panel);
-}
+
 .pg-chip-title-row {
   display: flex;
   align-items: center;
@@ -1562,33 +1425,7 @@ button.pg-call-name:focus-visible {
   background: var(--studio-note);
   color: var(--studio-primary);
 }
-.pg-window-dots .pg-light-red {
-  background: var(--studio-traffic-red);
-}
-.pg-window-dots .pg-light-yellow {
-  background: var(--studio-traffic-yellow);
-}
-.pg-window-dots .pg-light-green {
-  background: var(--studio-traffic-green);
-}
-.pg-window-dots i {
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
-}
 
-.pg-toolbar > .pg-sentence {
-  flex: 0 0 auto;
-  max-width: 100%;
-}
-.pg-sentence .pg-quick-gestures {
-  flex-wrap: wrap;
-  gap: 0;
-}
-.pg-sentence-stop {
-  /* Join the full stop to the text, across the native select's trailing padding. */
-  margin-left: -2px;
-  margin-right: 4px;
-  pointer-events: none;
-}
 .pg-call-dock {
   flex-shrink: 0;
 }
@@ -1664,10 +1501,7 @@ button.pg-call-name:focus-visible {
 .pg-host:has(#show_anchors[aria-pressed="true"]) .pg-live-frame:focus-visible {
   outline: none;
 }
-.pg-host-bar,
-.pg-host-footer {
-  flex-wrap: wrap;
-}
+
 .pg-centre {
   overflow-y: auto;
   overflow-x: hidden;
@@ -1676,12 +1510,7 @@ button.pg-call-name:focus-visible {
 [data-studio-host] .mascot:not([data-floating="true"]) {
   max-width: min(100%, calc(100dvh - 44px));
 }
-@media (max-width: 1100px) {
-  .pg-toolbar > .pg-sentence {
-    flex-basis: 100%;
-    justify-content: flex-start;
-  }
-}
+
 @media (max-width: 999px) {
   .pg-search-field kbd {
     display: none;
@@ -1732,14 +1561,6 @@ button.pg-call-name:focus-visible {
   max-height: min(60dvh, calc(var(--studio-viewport-height, 100dvh) - 100px));
 }
 @media (hover: none) {
-  .pg-sentence-word:hover .pg-word-tooltip {
-    visibility: hidden;
-  }
-  .pg-sentence-word:focus-within .pg-word-tooltip,
-  .pg-sentence-word.is-touch-help .pg-word-tooltip {
-    visibility: visible;
-    pointer-events: auto;
-  }
   .pg-index-link span {
     white-space: normal;
     overflow: visible;
@@ -1819,25 +1640,6 @@ button.pg-call-name:focus-visible {
     gap: 8px;
   }
 
-  /* Sentence, full-width search, then four equal utility cells. The mounted
-     right controls move to this row at the phone breakpoint. */
-  .pg-toolbar {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px 4px;
-    padding: 6px;
-    border-radius: 12px;
-    font-size: 12px;
-  }
-  .pg-toolbar > .pg-sentence {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    padding: 6px 10px;
-    gap: 2px 4px;
-  }
-  .pg-toolbar .shiny-input-container {
-    width: 110px;
-  }
   .pg-toolbar .btn,
   .pg-quick-gestures .btn {
     padding: 3px 7px;
@@ -1901,17 +1703,6 @@ button.pg-call-name:focus-visible {
     align-items: center;
     justify-content: center;
   }
-  .pg-toolbar bslib-input-dark-mode {
-    display: grid;
-    place-items: center;
-    min-width: 0;
-    width: 100%;
-    height: 44px;
-    border: 1px solid var(--studio-line);
-    border-radius: var(--studio-surface-radius);
-    /* The shadow button's SVG uses em units and inherits this font size. */
-    font-size: 20px;
-  }
 
   /* The iframe needs room for the mascot, a wrapped status and a bubble.
      The centre scrolls vertically when this no longer fits the phone screen. */
@@ -1920,16 +1711,7 @@ button.pg-call-name:focus-visible {
     min-height: 520px;
     grid-template-rows: auto auto minmax(400px, 1fr) auto;
   }
-  .pg-host-bar {
-    gap: 6px;
-    padding: 6px 10px;
-  }
-  .pg-host-bar > .pg-muted {
-    font-size: 10px;
-  }
-  .pg-host-footer {
-    font-size: 11px;
-  }
+
   .pg-host-options {
     gap: 4px;
     padding: 6px;
@@ -2034,10 +1816,6 @@ button.pg-call-name:focus-visible {
     min-width: 0;
     overflow-wrap: anywhere;
   }
-  .pg-word-tooltip {
-    max-height: 30dvh;
-    overflow: auto;
-  }
 }
 
 #studio_character_bar {
@@ -2111,12 +1889,7 @@ button.pg-call-name:focus-visible {
   font-size: 11px;
   font-weight: 600;
 }
-#all_functions:hover .pg-word-tooltip,
-#all_functions:focus-visible .pg-word-tooltip {
-  display: block;
-  visibility: visible;
-  opacity: 1;
-}
+
 #studio_dock .pg-call-chip {
   display: inline-flex;
   align-items: center;

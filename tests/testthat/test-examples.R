@@ -39,6 +39,7 @@ describe("mascot_examples()", {
             "R/panels.R",
             "R/shared-check.R",
             "R/shared-colours.R",
+            "R/shared-layout.R",
             "R/shared-run.R",
             "R/theme-server.R",
             "R/theme-ui.R",

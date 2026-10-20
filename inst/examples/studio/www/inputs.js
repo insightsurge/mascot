@@ -83,7 +83,71 @@
       else window.Shiny.setInputValue(target.dataset.event, target.dataset.value || 'click', { priority: 'event' });
     } else if (target.dataset.copy) copy(target);
   });
+  // The visible part of the page: the visual viewport when the phone keyboard or zoom changes it.
+  const viewportBounds = () => {
+    const viewport = window.visualViewport;
+    const left = viewport?.offsetLeft || 0;
+    const top = viewport?.offsetTop || 0;
+    const width = viewport?.width || innerWidth;
+    const height = viewport?.height || innerHeight;
+    return { left, top, width, height, right: left + width, bottom: top + height };
+  };
+
+  // The sentence bar (R/shared-layout.R): each word's tooltip stays inside the visible viewport, and touch shows it.
+  const positionWordTooltip = (word) => {
+    const tooltip = word?.querySelector('.pg-word-tooltip');
+    if (!tooltip) return;
+    const rect = word.getBoundingClientRect();
+    const { left, top, right, bottom } = viewportBounds();
+    tooltip.style.left = `${Math.max(left + 8, Math.min(rect.left, right - tooltip.offsetWidth - 8))}px`;
+    tooltip.style.top = `${Math.max(top + 8, Math.min(rect.bottom + 8, bottom - tooltip.offsetHeight - 8))}px`;
+  };
+  document.addEventListener('pointerover', (event) => positionWordTooltip(event.target.closest('.pg-sentence-word')));
+  document.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'mouse') return;
+    const word = event.target.closest('.pg-sentence-word');
+    for (const item of document.querySelectorAll('.pg-sentence-word'))
+      item.classList.toggle('is-touch-help', item === word);
+    positionWordTooltip(word);
+  });
+  document.addEventListener('focusin', (event) => positionWordTooltip(event.target.closest('.pg-sentence-word')));
+
+  // Each sentence select is as wide as its chosen word, and "in a"/"in an" follows the mood.
+  const sizeSentence = () => {
+    const article = document.getElementById('mood_article');
+    const moodLabel = document.getElementById('mood')?.selectedOptions[0]?.textContent || '';
+    const wanted = /^[aeiou]/i.test(moodLabel) ? 'in an' : 'in a';
+    if (article && article.textContent !== wanted) article.textContent = wanted;
+    for (const select of document.querySelectorAll('.pg-sentence select')) {
+      const measure = document.createElement('span');
+      measure.textContent = select.selectedOptions[0]?.textContent || '';
+      measure.style.font = getComputedStyle(select).font;
+      measure.style.position = 'absolute';
+      measure.style.visibility = 'hidden';
+      document.body.append(measure);
+      // Native sentence selects have no arrow and only 2px padding on either side.
+      const width = `${Math.ceil(measure.getBoundingClientRect().width) + 4}px`;
+      measure.remove();
+      if (select.style.width !== width) select.style.width = width;
+    }
+  };
+
+  // A page marked data-sentence="auto" sizes its sentence here; the studio sizes its own with more of its words.
+  const startSentence = () => {
+    const page = document.querySelector('[data-sentence="auto"]');
+    if (!page) return;
+    sizeSentence();
+    $(document).on('change', '.pg-sentence select', sizeSentence);
+    window.addEventListener('resize', () => requestAnimationFrame(sizeSentence));
+    new MutationObserver(sizeSentence).observe(page.querySelector('.pg-sentence'), { childList: true, subtree: true });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startSentence);
+  else startSentence();
+
   window.mascotStudioInputs = {
     on: (name, handler) => handlers.set(name, handler),
+    viewportBounds,
+    positionWordTooltip,
+    sizeSentence,
   };
 })();

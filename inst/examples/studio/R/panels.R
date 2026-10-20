@@ -15,15 +15,12 @@ studio_palette_choices <- function(character) {
 panel_character_bar <- function(moods = mascot_moods(character), character = formals(mascot::mascot)$character) {
   checkmate::assert_data_frame(moods)
   checkmate::assert_string(character)
-  bar <- div(
-    id = "studio_character_bar",
-    class = "pg-toolbar pg-float",
-    role = "toolbar",
-    `aria-label` = "Quick controls",
-    div(
-      class = "pg-sentence",
-      role = "group",
-      `aria-label` = "Character, palette, mood and one-off gesture",
+  # The shared sentence bar (R/shared-layout.R), with the studio's search and utility buttons after the sentence.
+  bar <- sentence_bar(
+    "studio_character_bar",
+    "Quick controls",
+    "Character, palette, mood and one-off gesture",
+    list(
       "Showing",
       selectInput("character", NULL, studio_characters(), selected = character, selectize = FALSE),
       tags$span(id = "palette_prefix", "in"),
@@ -92,25 +89,15 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
       names(labels)[[i]]
     )
   }))$addAttrs(title = studio_palette_sentence(character)$id)$allTags()
-  for (id in c("character", "palette", "mood", "gesture")) {
-    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(`aria-label` = tools::toTitleCase(id))$allTags()
-  }
-  for (id in c("character", "palette", "mood", "gesture")) {
+  tooltips <- lapply(stats::setNames(nm = c("character", "palette", "mood", "gesture")), function(id) {
     fn <- if (id == "palette") "mascot_palettes" else paste0("mascot_", id)
-    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$parent()$addClass("pg-sentence-word")$append(
-      tags$span(
-        id = paste0(id, "_tooltip"),
-        class = "pg-word-tooltip",
-        role = "tooltip",
-        tags$code(paste0(fn, "()")),
-        tags$span(help_page(fn)$title),
-        if (id == "palette") tags$code(id = "palette_id", studio_palette_sentence(character)$id)
-      )
-    )$allTags()
-    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(
-      `aria-describedby` = paste0(id, "_tooltip")
-    )$allTags()
-  }
+    shiny::tagList(
+      tags$code(paste0(fn, "()")),
+      tags$span(help_page(fn)$title),
+      if (id == "palette") tags$code(id = "palette_id", studio_palette_sentence(character)$id)
+    )
+  })
+  bar <- sentence_words(bar, tooltips)
   bar
 }
 

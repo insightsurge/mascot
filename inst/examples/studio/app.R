@@ -77,16 +77,9 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
         id = "studio_canvas",
         class = "pg-host pg-float",
         `data-mode` = "mascot",
-        div(
-          class = "pg-host-bar",
-          tags$span(
-            class = "pg-window-dots",
-            `aria-hidden` = "true",
-            tags$i(class = "pg-light-red"),
-            tags$i(class = "pg-light-yellow"),
-            tags$i(class = "pg-light-green")
-          ),
-          tags$span("Host container"),
+        # The shared window frame (R/shared-layout.R).
+        window_bar(
+          "Host container",
           tags$span(class = "pg-muted", "Contained preview"),
           tagAppendAttributes(studio_button("back_to_studio", "Back to studio"), hidden = NA),
           div(id = "examples_phone_tools", class = "pg-topright")
@@ -121,7 +114,7 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
           bslib::card(id = "preview_card", full_screen = TRUE, uiOutput("preview_frame", class = "pg-preview-frame"))
         ),
         div(class = "pg-example-stage", `data-canvas` = "examples", hidden = NA, example_browser()),
-        div(class = "pg-host-footer", tags$code('id = "helper"'), textOutput("host_event", inline = TRUE))
+        window_footer(tags$code('id = "helper"'), textOutput("host_event", inline = TRUE))
       ),
       div(
         id = "studio_dock",

@@ -79,6 +79,11 @@ describe("the theme view's page", {
     expect_match(page, "<span>Preview</span>", fixed = TRUE)
     expect_false(grepl("Contained preview", page, fixed = TRUE))
     expect_match(page, '<div class="pg-host-footer">', fixed = TRUE)
+    # A slim header: the title, then the sentence bar.
+    expect_match(
+      page,
+      '<header class="theme-header">\\s*<h1 class="theme-title">Theme a mascot</h1>\\s*<div id="theme_sentence_bar"'
+    )
   })
   it("captions the preview with the character and the palette", {
     env <- theme_parts()$env

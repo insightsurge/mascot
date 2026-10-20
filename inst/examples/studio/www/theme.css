@@ -18,9 +18,10 @@
   padding: 12px 0 16px;
 }
 
+/* A slim header: the title only. */
 .theme-title {
-  font-size: 1.35rem;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: 700;
   margin: 0;
 }
 
@@ -151,6 +152,50 @@
 
 .theme-tab {
   padding-top: 12px;
+}
+
+/* The four tabs, and the Light | Dark | CSS variables tabs inside Your colours, as pills. */
+#theme_tabs,
+#colour_modes {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#theme_tabs {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--studio-line);
+}
+
+#theme_tabs .nav-link,
+#colour_modes .nav-link {
+  padding: 6px 12px;
+  border: 1px solid var(--studio-line);
+  border-radius: 8px;
+  background: var(--studio-panel);
+  color: var(--studio-muted);
+  font-size: 0.84rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+#colour_modes .nav-link {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+#theme_tabs .nav-link:hover,
+#colour_modes .nav-link:hover {
+  border-color: var(--studio-primary);
+  color: var(--studio-ink);
+}
+
+#theme_tabs .nav-link.active,
+#colour_modes .nav-link.active {
+  border-color: var(--studio-primary);
+  background: var(--studio-note);
+  color: var(--studio-primary);
+  font-weight: 600;
 }
 
 .theme-muted {
@@ -404,21 +449,22 @@ fieldset[disabled] .shiny-input-container {
   }
 
   /* The four tabs stay on one line and scroll sideways if the screen is too narrow. */
-  .theme-right .nav {
+  #theme_tabs {
     flex-wrap: nowrap;
     overflow-x: auto;
-    gap: 0.25rem;
-    font-size: 0.85rem;
+    gap: 4px;
+  }
+
+  #theme_tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 6px 7px;
+    font-size: 0.8rem;
   }
 
   .theme-right {
     padding: 10px 12px 12px;
-  }
-
-  .theme-right .nav-link {
-    white-space: nowrap;
-    padding-left: 0.35rem;
-    padding-right: 0.35rem;
   }
 
   .theme-preview .theme-note {

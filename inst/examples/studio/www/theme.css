@@ -574,6 +574,13 @@ fieldset[disabled] .shiny-input-container {
     margin: 0;
   }
 
+  .theme-preview-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+  }
+
   .theme-preview-stage .mascot-status {
     font-size: 0.8rem;
     line-height: 1.2;

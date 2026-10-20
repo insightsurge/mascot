@@ -45,16 +45,24 @@ starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Ex
   an employer, client or internal system; no unmeasured numbers; British English.
 
 ## Quality gate
-Run the gate, `Rscript tools/cran-gate.R [fast|tests|full|lint]`, instead of calling `devtools::check()`, lintr or
-Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line per step. The script is generic (any R
+Run the gate, `Rscript tools/cran-gate.R [fast|tests|full|lint|nosuggests]`, instead of calling `devtools::check()`,
+lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line per step (`--help` lists the options). The script is generic (any R
 package can use it as it is); mascot's choices are in `DESCRIPTION`
 (`Config/cran-gate/coverage: 70`, `extra-dirs`) and in `air.toml`, `.lintr` and `biome.json`.
-- `fast` (default) before every commit; `tests` (tests + coverage) before a PR that touches `R/` or `tests/`;
-  `full` before a release; `lint` reproduces CI's lint job.
+- `fast` (default) before every commit; `tests` (the suite once under covr: tests and coverage) before a PR that
+  touches `R/` or `tests/`; `full` before a release (it also runs CI's no-Suggests check); `lint` reproduces CI's
+  lint job; `nosuggests` reproduces CI's check-no-suggests job without installing anything.
+- A failing run names the failing tests in its FAIL line and keeps a run folder (the path is printed; one log per
+  step, `gate.json`, `tests.json`, `flakes.tsv` beside it) that survives the gate. After a failure the failing test
+  files are re-run once without covr. **Exit code 3 means every failing test passed on that re-run (a probable flake):
+  it is never merge evidence without the founder's word; 2 means a settings or tools problem; 1 a step failed.**
+  `--steps`, `--filter` and `--no-coverage` give runs marked PARTIAL, which are not merge evidence either.
 - New spelling words go into `inst/WORDLIST` only after the founder agrees (`--update-wordlist`).
 - The gate has its own test: after changing the gate, `.lintr`, `air.toml` or `biome.json`, run
-  `Rscript tools/test-cran-gate.R` (one planted defect per step, on a copy in `tempdir()`); a new step needs a probe.
-  Keep the gate free of anything mascot-specific.
+  `Rscript tools/test-cran-gate.R` (one planted defect per step; the heavy probes use a tiny generated package, so
+  the whole run takes a few minutes); a new step needs a probe. Keep the gate free of anything mascot-specific. The
+  gate and its self-test also live in the skill folder (`~/.agents/skills/cran-gate/scripts/`, the one real copy):
+  the self-test's "copies in step" check fails when they differ, so copy a changed file to both places.
 - CI must be green: R-CMD-check (fails on notes), test-coverage (70%, Chrome tests), lint (the gate),
   check-no-suggests, pkgdown, gitleaks. Never `continue-on-error` or weaken a check to get green.
 - **Temporary while the repo is private** (limited Actions minutes, #113): PRs run R-CMD-check on Ubuntu only (all 5

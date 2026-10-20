@@ -206,10 +206,6 @@ code_output <- function(id) {
   tagAppendAttributes(verbatimTextOutput(id), class = "pg-code")
 }
 
-copy_button <- function(target, label = "Copy") {
-  tags$button(type = "button", class = "btn btn-sm btn-outline-primary pg-copy", `data-copy` = target, label)
-}
-
 # ---- The guide card -------------------------------------------------------------------------
 
 # The function's signature, read from the installed package so it is never out of date.
@@ -530,22 +526,6 @@ guide_mistakes <- function(fn, character) {
         )
       )
     })
-  )
-}
-
-# Studio navigation comes from the same function/control map as completeness checks.
-studio_button <- function(id, label, aria_label = label, pressed = NULL) {
-  checkmate::assert_string(id)
-  checkmate::assert_string(label)
-  checkmate::assert_string(aria_label)
-  checkmate::assert_flag(pressed, null.ok = TRUE)
-  tags$button(
-    id = id,
-    type = "button",
-    class = "btn btn-sm btn-outline-primary",
-    `aria-label` = aria_label,
-    `aria-pressed` = if (!is.null(pressed)) tolower(as.character(pressed)),
-    label
   )
 }
 

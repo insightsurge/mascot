@@ -2,14 +2,6 @@
 # Shiny sources this before app.R attaches mascot, so everything here is a function, called
 # from app.R once the packages are attached.
 
-# The palette menu: the character's own colours always carry the value "original" (no palette applied), whatever
-# name the character gives them; the other palettes carry their own names.
-studio_palette_choices <- function(character) {
-  checkmate::assert_string(character, min.chars = 1)
-  listed <- mascot_palettes(character)$name
-  stats::setNames(c("original", listed[-1L]), listed)
-}
-
 # ---- Inspector controls, grouped by function -----------------------------------------------
 
 panel_character_bar <- function(moods = mascot_moods(character), character = formals(mascot::mascot)$character) {
@@ -563,7 +555,6 @@ panel_colours <- function() {
     )
   )
 }
-
 
 panel_wiring <- function() {
   inspector_category(

@@ -39,8 +39,10 @@ describe("mascot_examples()", {
             "R/panels.R",
             "R/shared-check.R",
             "R/shared-colours.R",
+            "R/shared-data.R",
             "R/shared-layout.R",
             "R/shared-run.R",
+            "R/shared-ui.R",
             "R/theme-server.R",
             "R/theme-ui.R",
             "R/ui.R",
@@ -668,7 +670,8 @@ describe("studio round 4 regression guards", {
       expect_false(any(grepl("tessa", lines, ignore.case = TRUE)), info = file)
     }
     env <- new.env()
-    sys.source(file.path(dir, "R", "data.R"), env)
+    # The characters come from the studio app's shared data.
+    sys.source(file.path(dir, "R", "shared-data.R"), env)
     expect_identical(unname(env$studio_characters())[[1L]], formals(mascot)$character)
     expect_identical(names(env$studio_characters()), c("Tessa", "Sela", "Knurl (experimental)", "Neer (experimental)"))
   })
@@ -1213,7 +1216,17 @@ studio_guide_env <- function(frame = parent.frame()) {
   withr::local_package("bslib", .local_envir = frame)
   dir <- dirname(mascot_example("studio", run = FALSE))
   env <- new.env()
-  for (file in c("guide.R", "help.R", "data.R", "code.R", "panels.R", "ui.R", "guide-md.R")) {
+  for (file in c(
+    "guide.R",
+    "help.R",
+    "data.R",
+    "shared-data.R",
+    "shared-ui.R",
+    "code.R",
+    "panels.R",
+    "ui.R",
+    "guide-md.R"
+  )) {
     sys.source(file.path(dir, "R", file), envir = env)
   }
   env
@@ -2886,7 +2899,10 @@ describe("framework examples", {
 describe("studio listings (character data)", {
   it("reads brand slots, characters and families from the public listings", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
+    # The brand slots and families are the studio's data; the characters, the app's shared data.
+    for (file in c("data.R", "shared-data.R")) {
+      sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", file), env)
+    }
     recipe <- system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE)
     brand <- jsonlite::fromJSON(recipe)$brand
     expect_identical(env$studio_brand("tessa")[c("primary", "secondary")], as.list(brand)[c("primary", "secondary")])
@@ -2904,7 +2920,7 @@ describe("studio listings (character data)", {
     local_empty_registry()
     character_data_register(character_format_check(format_recipe("study_bot")))
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-data.R"), env)
     expect_identical(unname(env$studio_characters()), c("tessa", "sela", "knurl", "neer"))
   })
 })

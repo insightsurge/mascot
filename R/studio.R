@@ -42,11 +42,9 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
   path <- dirname(mascot_example("studio", run = FALSE))
   guide <- new.env(parent = baseenv())
   sys.source(file.path(path, "R", "guide.R"), envir = guide)
+  # The characters the app offers, from its shared data (mascot's public listing only).
   data <- new.env(parent = baseenv())
-  # The data file loads the guide's shared code; it finds that folder next to the app (a development copy of
-  # the package is not visible to system.file() from this environment).
-  data$studio_guide_root <- path
-  sys.source(file.path(path, "R", "data.R"), envir = data)
+  sys.source(file.path(path, "R", "shared-data.R"), envir = data)
   views <- new.env(parent = baseenv())
   sys.source(file.path(path, "R", "views.R"), envir = views)
   # These choices are available only after loading the studio data.

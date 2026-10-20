@@ -543,7 +543,12 @@ panel_layout <- function() {
       "mascot_placement",
       "drag",
       tagList(
-        selectInput("drag", "When dropped", c("No dragging" = "none", Snap = "snap", Free = "free")),
+        selectInput(
+          "drag",
+          "When dropped",
+          c("No dragging" = "none", Snap = "snap", `Free (experimental)` = "free")
+        ),
+        studio_experimental_notes("mascot_placement", "free dragging"),
         conditionalPanel(
           "input.position == 'inline'",
           div(class = "pg-note", "An inline mascot ignores drag. Pick a corner position to try it.")

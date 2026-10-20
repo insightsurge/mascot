@@ -966,6 +966,7 @@ studio_server <- function(input, output, session) {
     "mascot_theme",
     "css",
     tagList(
+      studio_experimental_notes("mascot_theme", "CSS source"),
       div(
         class = "pg-css",
         colour_input(

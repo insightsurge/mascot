@@ -306,6 +306,7 @@ function_card <- function(fn, example = FALSE, expand = FALSE) {
     full_screen = FALSE,
     `data-guide-function` = fn,
     bslib::card_header(tags$code(paste0(fn, "()")), if (expand) studio_expand_icon("expand_inspector")),
+    studio_experimental_notes(fn),
     tags$h3(class = "pg-section-title", "Description"),
     div(class = "pg-help", help$description),
     div(
@@ -514,6 +515,7 @@ guide_help <- function(fn) {
   div(
     class = "pg-guide-piece pg-guide-help",
     tags$h3(class = "pg-section-title", paste0("Help page: ", fn, "()")),
+    studio_experimental_notes(fn),
     div(class = "pg-help", help$description),
     if (!is.null(help$details)) {
       tagList(tags$h4(class = "pg-help-heading", "Details"), div(class = "pg-help", help$details))
@@ -989,6 +991,18 @@ studio_help_tail <- function(html, from) {
   }
   tail <- substr(text, start, nchar(text))
   gsub("\\s+", " ", sub("</p>\\s*$", "", tail))
+}
+
+# The Experimental sections of a function's help page as notes (the badge and the package's own words), or only
+# those whose title matches `title` (a regular expression). No note for a function that is not experimental.
+studio_experimental_notes <- function(fn, title = NULL) {
+  checkmate::assert_string(fn, min.chars = 1)
+  checkmate::assert_string(title, min.chars = 1, null.ok = TRUE)
+  found <- help_page(fn)$experimental
+  if (!is.null(title)) {
+    found <- found[grepl(title, names(found))]
+  }
+  lapply(unname(found), function(html) div(class = "pg-note pg-experimental", html))
 }
 
 # The experimental status of the bslib mapping, in the words of ?mascot_theme (so the two cannot drift), with the

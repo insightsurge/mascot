@@ -3562,3 +3562,32 @@ describe("studio review fixes (#353)", {
     expect_error(env$studio_character_hint(1), "directory")
   })
 })
+
+describe("experimental labels in the studio (#353)", {
+  it("shows the help pages' own Experimental sections beside the functions and controls they name", {
+    parts <- studio_parts()
+    env <- parts$env
+    notes <- function(fn, title = NULL) {
+      paste(vapply(get("studio_experimental_notes", env)(fn, title), as.character, ""), collapse = "")
+    }
+    for (fn in c("mascot_preview", "mascot_studio", "mascot_theme", "mascot_placement", "mascot_characters")) {
+      expect_match(notes(fn), "badge text-bg-warning", fixed = TRUE, info = fn)
+      card <- as.character(get("function_card", env)(fn))
+      expect_match(card, "pg-experimental", fixed = TRUE, info = fn)
+    }
+    # Words come from the help page, not from the studio
+    expect_match(notes("mascot_preview"), "may change before CRAN", fixed = TRUE)
+    expect_match(notes("mascot_placement", "free dragging"), "free", fixed = TRUE)
+    expect_match(notes("mascot_theme", "CSS source"), "R cannot check", fixed = TRUE)
+    expect_false(grepl("R cannot check", notes("mascot_theme", "colour mapping"), fixed = TRUE))
+    expect_length(get("studio_experimental_notes", env)("mascot_mood"), 0L)
+    expect_false(grepl("pg-experimental", as.character(get("function_card", env)("mascot_mood")), fixed = TRUE))
+    expect_error(get("studio_experimental_notes", env)(1), "string")
+    expect_error(get("studio_experimental_notes", env)("mascot_theme", 1), "string")
+  })
+  it("marks free dragging where it is chosen, with the help page's words", {
+    page <- as.character(studio_parts()$page)
+    expect_match(page, "Free (experimental)", fixed = TRUE)
+    expect_match(page, "is experimental: the position it reports", fixed = TRUE)
+  })
+})

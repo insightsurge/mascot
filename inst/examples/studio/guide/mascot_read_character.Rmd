@@ -10,7 +10,7 @@ if (!in_studio()) guide_try_live("mascot_read_character")
 htmltools::div(
   class = "pg-note",
   htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
-  " Reading your own character file, and the file format, may change in a later release."
+  " Its arguments, results and diagnostics, and the file format, may change in 0.1.x."
 )
 ```
 
@@ -31,12 +31,12 @@ htmltools::tags$pre(htmltools::tags$code(paste0(
 What R prints for that character:
 
 ```{r mascot_read_character-print, echo = FALSE}
-htmltools::tags$pre(htmltools::tags$code(paste(
-  utils::capture.output(print(mascot::mascot_read_character(
-    system.file("examples", "characters", "study_bot.json", package = "mascot")
-  ))),
-  collapse = "\n"
+lines <- utils::capture.output(print(mascot::mascot_read_character(
+  system.file("examples", "characters", "study_bot.json", package = "mascot")
 )))
+# The last line names the file by its full path, which is this machine's; show the path inside the package.
+lines <- sub("^From: .*", "From: .../examples/characters/study_bot.json", lines)
+htmltools::tags$pre(htmltools::tags$code(paste(lines, collapse = "\n")))
 ```
 
 ### What it does not do yet

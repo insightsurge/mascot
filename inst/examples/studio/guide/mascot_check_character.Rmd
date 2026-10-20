@@ -10,15 +10,15 @@ if (!in_studio()) guide_try_live("mascot_check_character")
 htmltools::div(
   class = "pg-note",
   htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
-  " Checking your own character, and the file format, may change in a later release."
+  " Its arguments, results and diagnostics, and the file format, may change in 0.1.x."
 )
 ```
 
 ### Check a character you wrote as a list
 
-`mascot_check_character()` checks a plain R list that describes a character, for example one you
-read with `jsonlite::read_json()` or wrote by hand. It returns a checked character, or an error that
-names the first problem. The package's example file gives a list that passes:
+`mascot_check_character()` checks JSON text or a plain R list that describes a character, for example
+one you read with `jsonlite::read_json()` or wrote by hand. It returns a checked character, or an error
+that names the first problem. The package's example file gives a list that passes:
 
 ```{r mascot_check_character-call, echo = FALSE}
 htmltools::tags$pre(htmltools::tags$code(paste0(

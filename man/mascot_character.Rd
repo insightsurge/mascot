@@ -54,3 +54,7 @@ Other mascot helpers:
 \code{\link[=mascot_theme]{mascot_theme()}}
 }
 \concept{mascot helpers}
+\section{Experimental characters}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+Knurl and Neer.
+}

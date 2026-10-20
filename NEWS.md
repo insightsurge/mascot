@@ -62,7 +62,7 @@
 
 * `mascot_character()` chooses a character by id (#190).
 
-* Three more built-in characters: Sela, a second hexagon; Knurl, a robot; and Neer, a water elemental. `mascot_characters()` gains a `lifecycle` column. Tessa and Sela are stable: their id, name, five moods, gesture names, colour role names and palette names stay the same in every release, while their drawing, motion and exact colours may be polished. Knurl and Neer are experimental: anything about them may change, and neither is removed without a warning one release before. The character file format and the functions for making your own characters are experimental too (#317, #318, #319, #26).
+* *Experimental:* Knurl and Neer. Three more built-in characters: Sela, a second hexagon; Knurl, a robot; and Neer, a water elemental. `mascot_characters()` gains a `lifecycle` column. Tessa and Sela are stable: their id, name, five moods, gesture names, colour role names and palette names stay the same in every release, while their drawing, motion and exact colours may be polished. Knurl and Neer are experimental: anything about them may change, and neither is removed without a warning one release before. The help pages carry an experimental badge for them. The character file format and the functions for making your own characters are experimental too (#317, #318, #319, #26, #387).
 
 * `mascot_colour_roles()` lists a character's colour roles with their colours, the leaders they follow and their shade (#202, #213).
   * It gains a `description` column and a `brand` column naming the `bslib` primary or secondary slot a role fills. The first four columns are unchanged (#296).
@@ -129,6 +129,8 @@
   * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
 
 ## Minor improvements and fixes
+
+* `?update_mascot` names the `mascot_update_ignored` condition class, and `?update_mascot` and `?mascot_theme` explain that an unknown palette id is an error in `mascot()` but only a warning in `update_mascot()` (#387).
 
 * The character-file check names both format versions when a file's `format_version` is not supported (#339).
 

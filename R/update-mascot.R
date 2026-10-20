@@ -82,10 +82,20 @@
 #' to `"auto"`.
 #'
 #' Building UI with [mascot()] or helpers errors on invalid values;
-#' [update_mascot()] warns and leaves the mascot unchanged. See
-#' [mascot-package] for condition classes. This includes a helper that raises a
-#' `mascot_error` while an argument is evaluated inside the call, such as
-#' `size = mascot_size(input$px)`; the whole update is ignored.
+#' [update_mascot()] warns with class `mascot_update_ignored` and leaves the
+#' mascot unchanged. An invalid `id`, unknown arguments in `...` or a missing
+#' session still raise errors. See [mascot-package] for all condition classes.
+#' This includes a helper that raises a `mascot_error` while an argument is
+#' evaluated inside the call, such as `size = mascot_size(input$px)`; the whole
+#' update is ignored.
+#'
+#' An unknown palette id is an error in [mascot()] but only a warning in
+#' `update_mascot()`. [mascot()] runs while the UI is built, where an error shows
+#' at once. `update_mascot()` runs in a live session, where an error would stop
+#' the app for the visitor, so it warns and the mascot keeps running unchanged.
+#' The message names any other characters that have a palette of that name. (A
+#' palette kept from before a character swap is dropped instead, with class
+#' `mascot_palette_dropped`; see the `character` argument.)
 #'
 #' **Status text and bubbles.** Use the always visible status line for a short
 #' description of the current state.

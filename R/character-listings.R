@@ -11,7 +11,9 @@
 #'   character [mascot()] uses when you name none) and `built_in` (`TRUE` for
 #'   characters shipped with the package), and `lifecycle` (`"stable"` or
 #'   `"experimental"` for built-in characters, or `NA` for a registered
-#'   custom character), and `palettes` (comma-separated palette ids).
+#'   custom character), and `palettes` (comma-separated palette ids; informal
+#'   text for reading, so its exact shape is not promised: use [mascot_palettes()]
+#'   for ids you rely on).
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types. The first column is the value you pass to the matching function.
 #' @details Stable built-ins keep their id, name, five shared moods, gesture
@@ -22,6 +24,13 @@
 #'   experimental too.
 #' @family mascot helpers
 #' @seealso [mascot_character()], [mascot_families()]
+#' @evalRd paste0(
+#'   "\\section{Experimental characters}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\nKnurl and Neer.\n}"
+#' )
 #' @export
 #' @examples
 #' mascot_characters()

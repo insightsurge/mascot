@@ -148,8 +148,8 @@ self-reported pass: run the gate and CI, and look at the output (screenshots for
 - Local, gitignored working notes in `dev/handoffs/`, managed with the `handoff` skill (installed per user, not
   kept in this repository).
 - Start a session with `dev/handoffs/README.md` and the skill's `status`, then `package/`. Update the handoff
-  before a PR, before a compaction and at the end of a session; run the skill's `check`. Log the founder's asks and decisions (`overview/decisions.md`); durable material goes into
-  git (issues, `docs/`, ADRs).
+  before a PR, before a compaction and at the end of a session; run the skill's `check`. Log the founder's asks and decisions (`dev/handoffs/decisions.md`); `dev/handoffs/api-review.md` is the one-page
+  summary of the API review. Durable material goes into git (issues, `docs/`, ADRs).
 - **External notes:** related repositories leave this one ideas, decisions and updates in
   `dev/handoffs/external-notes.md`. Triage them with the skill's inbox steps at the start of a session and in every
   handoff update: verify each entry, spread what holds into the areas here, open an issue for agreed work, and

@@ -9,6 +9,12 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-20 — Removed the module namespace hint (#392)
+
+`mascot-host.js` no longer has `suggestNamespace()`, the two-second development-mode hint for a missing `ns()`. It could
+not be reached from Shiny, because R drops an update for an id that is not mounted, so no user ever saw it. The module
+rule stays documented in `?mascot` and `?update_mascot`.
+
 ## 2026-10-19 — Palette kept on a swap when it names the incoming character's own colours (#358)
 
 When a mascot swaps to a character whose own colours carry the selected palette id (its `native_palette`), the host

@@ -136,48 +136,6 @@ describe("mascot.host", {
     expect_length(result$warnings, 5)
     expect_true(all(startsWith(unlist(result$warnings), "mascot: ")))
   })
-  it("warns once in development mode when an update misses a namespaced mascot on the page", {
-    skip_without_chrome()
-    js <- local_host_page()
-    result <- js(
-      "(async () => {
-      const source = document.getElementById('a'), warnings = [], events = [], original = console.warn;
-      const add = id => {const el=source.cloneNode(true); el.id=id; document.body.append(el); mascot.host.mount(el); return el;};
-      console.warn = message => warnings.push(message);
-      window.addEventListener('shiny:client-message', event => events.push(event.detail.message));
-      // Hold the host's two-second namespace timers and run them on demand: no waiting on the clock.
-      const realTimeout = window.setTimeout, held = [], delays = [];
-      window.setTimeout = (fn, delay, ...rest) => delay === 2000 ? (held.push(fn), delays.push(delay), 0) :
-        realTimeout(fn, delay, ...rest);
-      const elapse = () => held.splice(0).forEach(fn => fn());
-      add('first-helper');
-      window.Shiny = {inDevMode: () => false};
-      mascot.host.receive({id:'helper',patch:{mood:'happy'}});
-      elapse();
-      const production = warnings.length, productionTimers = delays.length;
-      window.Shiny = {inDevMode: () => true};
-      mascot.host.receive({id:'helper',patch:{mood:'thinking'}});
-      mascot.host.receive({id:'helper',patch:{mood:'happy'}});
-      mascot.host.receive({id:'later',patch:{mood:'happy'}});
-      add('summary');
-      mascot.host.receive({id:'second-summary',patch:{mood:'happy'}});
-      const early = warnings.length;
-      elapse();
-      window.setTimeout = realTimeout;
-      console.warn = original; delete window.Shiny;
-      return {production, productionTimers, early, timers: delays.length, warnings, events};
-    })()"
-    )
-    expect_identical(result$production, 0L)
-    expect_identical(result$productionTimers, 0L)
-    # Nothing warns before the delay has passed; afterwards each missed id warns once.
-    expect_identical(result$early, 0L)
-    expect_gte(result$timers, 3L)
-    expect_length(result$warnings, 2)
-    expect_match(result$warnings[[1]], 'no mascot "helper".*"first-helper".*from inside its module')
-    expect_match(result$warnings[[2]], 'no mascot "second-summary".*"summary".*ns\\("summary"\\)')
-    expect_identical(result$events[[1]], sub("^mascot: ", "", result$warnings[[1]]))
-  })
   it("bounds the queue for an id that has not appeared and asks the server for its full state", {
     skip_without_chrome()
     js <- local_host_page()

@@ -380,6 +380,14 @@
   width: 100%;
 }
 
+/* The note under a colour the package cannot use yet (inputs.js adds it after the text box). */
+.theme-page .pg-role > .pg-field-problem {
+  grid-column: 1 / -1;
+  color: var(--bs-danger-text-emphasis);
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
 /* Brand colours */
 .theme-brand-parts {
   padding-left: 1.1rem;

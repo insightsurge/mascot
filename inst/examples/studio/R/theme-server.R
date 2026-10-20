@@ -63,6 +63,32 @@ theme_brand_roles <- function(character) {
   })
 }
 
+# The colours mascot_theme() rejects (a translucent colour typed half way), as the problem to show under each one's
+# text box, named by the picker's input id in the colour module (colours-light_shine_translucent).
+theme_draft_problems <- function(light = character(), dark = character(), module = "colours") {
+  checkmate::assert_character(light, any.missing = FALSE)
+  checkmate::assert_character(dark, any.missing = FALSE)
+  checkmate::assert_string(module, min.chars = 1)
+  problems <- base::character()
+  for (mode in c("light", "dark")) {
+    values <- if (mode == "light") light else dark
+    for (role in names(values)) {
+      args <- stats::setNames(list(stats::setNames(list(values[[role]]), role)), mode)
+      failed <- tryCatch(
+        {
+          do.call(mascot::mascot_theme, args)
+          FALSE
+        },
+        error = function(e) TRUE
+      )
+      if (failed) {
+        problems[[paste0(module, "-", mode, "_", role)]] <- "Not a valid colour yet: the code keeps the last valid one."
+      }
+    }
+  }
+  problems
+}
+
 # The theme stack line: what each layer adds, in the order the package applies them (palette, own colours, CSS),
 # and the mode. Returns one row per layer: its key, label, value and whether it can be cleared.
 theme_stack_parts <- function(
@@ -264,11 +290,30 @@ theme_view_server <- function(input, output, session) {
     shiny::outputOptions(output, name, suspendWhenHidden = FALSE)
   }
 
-  theme <- shiny::reactive({
+  draft_theme <- shiny::reactive({
     if (source() == "bslib") {
       return(theme_view_theme("bslib", primary = brand()$primary, secondary = brand()$secondary))
     }
     theme_view_theme("mascot", palette(), colours$light(), colours$dark(), mode(), colours$css())
+  })
+  # The theme the code, the preview and the checks use: the draft, unless the package rejects one of its colours (a
+  # translucent colour typed half way); then the last accepted theme, with a note under each rejected text box.
+  draft_problems <- shiny::reactive({
+    if (source() == "bslib") base::character() else theme_draft_problems(colours$light(), colours$dark())
+  })
+  accepted <- shiny::reactiveVal(NULL)
+  shiny::observeEvent(list(draft_theme(), draft_problems()), {
+    if (!length(draft_problems())) accepted(draft_theme())
+  })
+  theme <- shiny::reactive(if (length(draft_problems())) accepted() else draft_theme())
+  shown_problems <- new.env(parent = emptyenv())
+  shown_problems$ids <- base::character()
+  shiny::observeEvent(draft_problems(), ignoreNULL = FALSE, {
+    now <- draft_problems()
+    for (id in union(shown_problems$ids, names(now))) {
+      session$sendCustomMessage("studio:field-problem", list(id = id, text = if (id %in% names(now)) now[[id]] else ""))
+    }
+    shown_problems$ids <- names(now)
   })
   # The values of the CSS variables the theme reads; none when no part reads one.
   css_values <- shiny::reactive({

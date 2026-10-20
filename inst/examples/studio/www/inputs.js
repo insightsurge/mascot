@@ -189,6 +189,29 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startSentence);
   else startSentence();
 
+  // The server's note under a field it cannot use yet ({ id, text }; an empty text removes the note).
+  window.Shiny.addCustomMessageHandler('studio:field-problem', ({ id, text }) => {
+    const field = document.getElementById(id);
+    if (!field) return;
+    let note = document.getElementById(`${id}_problem`);
+    if (!text) {
+      field.removeAttribute('aria-invalid');
+      field.removeAttribute('aria-describedby');
+      note?.remove();
+      return;
+    }
+    if (!note) {
+      note = document.createElement('div');
+      note.id = `${id}_problem`;
+      note.className = 'pg-field-problem';
+      note.setAttribute('role', 'status');
+      field.after(note);
+    }
+    note.textContent = text;
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', note.id);
+  });
+
   window.mascotStudioInputs = {
     on: (name, handler) => handlers.set(name, handler),
     viewportBounds,

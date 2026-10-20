@@ -883,3 +883,71 @@ describe("the Check tab's slow buttons in a browser", {
     }
   })
 })
+
+describe("a translucent colour typed half way", {
+  it("is named by its picker, and only the colours mascot_theme() rejects are", {
+    env <- theme_parts()$env
+    expect_length(env$theme_draft_problems(c(body = "#123456"), c(shine_translucent = "rgba(1, 2, 3, 0.5)")), 0L)
+    problems <- env$theme_draft_problems(c(shine_translucent = "rgba(1,2", body = "#123456"))
+    expect_named(problems, "colours-light_shine_translucent")
+    expect_match(problems[[1]], "Not a valid colour yet", fixed = TRUE)
+    expect_error(env$theme_draft_problems(light = 1), "light")
+  })
+  it("leaves the code and the preview at the last accepted theme, with a note under its text box", {
+    env <- theme_parts()$env
+    calls <- list()
+    assign("update_mascot", function(id, ...) calls[[length(calls) + 1L]] <<- list(...), envir = env)
+    shiny::testServer(env$theme_view_server, {
+      notes <- list()
+      session$sendCustomMessage <- function(type, message) {
+        if (identical(type, "studio:field-problem")) notes[[message$id]] <<- message$text
+      }
+      session$setInputs(character = "knurl", mood = "idle", code_style = "short", mode = "auto")
+      roles <- mascot_colour_roles("knurl")
+      do.call(session$setInputs, stats::setNames(as.list(roles$colour), paste0("colours-light_", roles$role)))
+      session$setInputs(`colours-light_shine_translucent` = "rgba(1, 2, 3, 0.5)")
+      session$elapse(300)
+      accepted <- output$theme_code
+      expect_match(accepted, 'shine_translucent = "rgba(1, 2, 3, 0.5)"', fixed = TRUE)
+      sent <- length(calls)
+      # When the box holds a colour the package rejects
+      session$setInputs(`colours-light_shine_translucent` = "rgba(1,2")
+      session$elapse(300)
+      # Then the code and the preview stay at the accepted theme, and the box gets a note
+      expect_identical(output$theme_code, accepted)
+      expect_length(calls, sent)
+      expect_match(notes$`colours-light_shine_translucent`, "Not a valid colour yet", fixed = TRUE)
+      # And once the colour is valid again, both follow and the note goes
+      session$setInputs(`colours-light_shine_translucent` = "rgba(9, 9, 9, 0.5)")
+      session$elapse(300)
+      expect_match(output$theme_code, 'shine_translucent = "rgba(9, 9, 9, 0.5)"', fixed = TRUE)
+      expect_identical(notes$`colours-light_shine_translucent`, "")
+      expect_gt(length(calls), sent)
+    })
+  })
+})
+
+describe("a translucent colour typed half way, in a browser", {
+  it("gets a note under its text box until it is valid", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    withr::defer(app$stop())
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    app$set_inputs(character = "knurl")
+    app$run_js("document.querySelector('#theme_tabs a[data-value=colours]').click()")
+    app$wait_for_js("!!document.getElementById('colours-light_shine_translucent')")
+    box <- "document.getElementById('colours-light_shine_translucent')"
+    app$run_js(sprintf("const b = %s; b.value = 'rgba(1,2'; $(b).trigger('change');", box))
+    app$wait_for_js("!!document.getElementById('colours-light_shine_translucent_problem')")
+    expect_identical(app$get_js(sprintf("%s.getAttribute('aria-invalid')", box)), "true")
+    expect_match(
+      app$get_js("document.getElementById('colours-light_shine_translucent_problem').textContent"),
+      "Not a valid colour yet",
+      fixed = TRUE
+    )
+    app$run_js(sprintf("const b = %s; b.value = 'rgba(1, 2, 3, 0.5)'; $(b).trigger('change');", box))
+    app$wait_for_js("!document.getElementById('colours-light_shine_translucent_problem')")
+    expect_null(app$get_js(sprintf("%s.getAttribute('aria-invalid')", box)))
+  })
+})

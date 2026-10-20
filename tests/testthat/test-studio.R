@@ -16,7 +16,7 @@ describe("mascot_studio()", {
     expect_error(mascot_studio(), "needs an interactive R session")
   })
   it("returns independent apps with the requested first view and function", {
-    skip_if_not_installed("bslib")
+    skip_without_studio_packages("studio")
     before <- options()
     studio <- mascot_studio(fn = "mascot_theme", run = FALSE)
     expect_s3_class(studio, "shiny.appobj")
@@ -123,7 +123,7 @@ describe("the studio on older R", {
 
 describe("mascot_studio() opening on a function", {
   it("asks the page to open the Guide only when a function is named", {
-    skip_if_not_installed("bslib")
+    skip_without_studio_packages("studio")
     page <- function(app, query = "") {
       as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
     }
@@ -179,7 +179,8 @@ describe("mascot_studio() views (#395)", {
     as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
   }
   it("opens the theme view on its own page, without the studio's shell", {
-    skip_if_not_installed("bslib")
+    # The test also opens the studio's page.
+    skip_without_studio_packages("studio")
     theme <- mascot_studio("theme", character = "sela", run = FALSE)
     html <- page(theme)
     expect_match(html, "<title>Theme a mascot</title>", fixed = TRUE)

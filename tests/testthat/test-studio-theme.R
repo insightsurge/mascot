@@ -2,7 +2,7 @@
 
 # The studio app's environment, where the view's functions live, and the theme view's page.
 theme_parts <- function() {
-  testthat::skip_if_not_installed("bslib")
+  skip_without_studio_packages("theme")
   app <- mascot_studio("theme", run = FALSE)
   page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
   app_env <- environment(shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))$serverFuncSource())
@@ -545,7 +545,7 @@ describe("the Check tab", {
 
 describe("opening the theme view", {
   it("is in the studio's More menu, in a new tab, and in the Examples view's list", {
-    skip_if_not_installed("bslib")
+    skip_without_studio_packages("studio")
     app <- mascot_studio(run = FALSE)
     page <- function(query) {
       as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)

@@ -2,6 +2,7 @@
 studio_redesign_driver <- function(width = 1280, height = 720) {
   checkmate::assert_number(width, lower = 1)
   checkmate::assert_number(height, lower = 1)
+  skip_without_studio_packages("studio")
   app_path <- normalizePath(system.file("examples", "studio", package = "mascot", mustWork = TRUE))
   app <- function() NULL
   body(app) <- substitute(
@@ -44,7 +45,7 @@ describe("the redesigned studio", {
 })
 
 studio_redesign_parts <- function() {
-  testthat::skip_if_not_installed("bslib")
+  skip_without_studio_packages("studio")
   app <- shiny::shinyAppDir(system.file("examples", "studio", package = "mascot"))
   list(
     env = environment(app$serverFuncSource()),

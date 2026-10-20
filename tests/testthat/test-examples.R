@@ -93,6 +93,10 @@ describe("mascot_examples()", {
       for (script in list.files(dir, pattern = "[.]R$", recursive = TRUE, full.names = TRUE)) {
         expect_type(parse(script), "expression")
       }
+      # The studio's page needs knitr too (helper-studio.R); without it only its files are checked above.
+      if (name == "studio" && requireNamespace("bslib", quietly = TRUE) && !requireNamespace("knitr", quietly = TRUE)) {
+        next
+      }
       if (name != "rhino" && !requireNamespace("bslib", quietly = TRUE)) {
         # shinyAppDir() reads app.R on the first request.
         expect_error(shiny::shinyAppDir(dir)$httpHandler(list(PATH_INFO = "/")), "example needs bslib")
@@ -415,7 +419,7 @@ describe("the studio's controls", {
     }
   })
   it("has a control on the page, or a stated reason, for every exported argument", {
-    skip_if_not_installed("bslib")
+    skip_without_studio_packages("studio")
     # mascot is already attached by the test run; attaching it here would detach it on exit.
     withr::local_package("shiny")
     withr::local_package("bslib")
@@ -536,7 +540,7 @@ describe("mascot_example()", {
     expect_identical(captured, dirname(mascot_example("modules", run = FALSE)))
   })
   it("opens the studio's app on its theme page for \"theme\"", {
-    skip_if_not_installed("bslib")
+    skip_without_studio_packages("theme")
     # Given an interactive session where running an app only records it
     local_mocked_bindings(example_interactive = function() TRUE)
     captured <- NULL
@@ -1195,7 +1199,7 @@ describe("studio round 8 help and copied apps", {
 
 # The studio app's own environment (its server, data and code builders) and its page, built without a browser.
 studio_parts <- function() {
-  testthat::skip_if_not_installed("bslib")
+  skip_without_studio_packages("studio")
   app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
   page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
   list(env = environment(app$serverFuncSource()), page = as.character(page))

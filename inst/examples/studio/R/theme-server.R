@@ -224,7 +224,18 @@ theme_view_server <- function(input, output, session) {
     session$sendInputMessage("brand_secondary", list(value = pair[[2]]))
   })
   output$brand_parts <- shiny::renderUI(theme_brand_parts_ui(brand_roles(), mascot::mascot_character(character())$name))
-  output$brand_source <- shiny::renderUI(theme_brand_source_ui(source(), brand_roles()))
+  # "yes" or "no", read by the Brand colours tab's conditionalPanel().
+  output$brand_has_parts <- shiny::renderText(if (length(unlist(brand_roles()))) "yes" else "no")
+  # How to write the colours matters only with brand parts, or to leave a bs_theme() already chosen.
+  output$brand_source <- shiny::renderUI({
+    shiny::req(length(unlist(brand_roles())) > 0L || source() == "bslib")
+    theme_brand_source_ui(source(), brand_roles())
+  })
+  shiny::observeEvent(input$go_tab, {
+    if (isTRUE(input$go_tab %in% c("palette", "colours", "brand", "check"))) {
+      bslib::nav_select("theme_tabs", input$go_tab)
+    }
+  })
   output$source_note <- shiny::renderUI({
     shiny::req(source() == "bslib")
     shiny::div(
@@ -249,7 +260,7 @@ theme_view_server <- function(input, output, session) {
   })
   mode <- shiny::reactive(if (source() == "bslib") "auto" else chosen_mode())
   output$mode_ui <- shiny::renderUI(theme_mode_input(shiny::isolate(chosen_mode()), source() == "bslib"))
-  for (name in c("mode_ui", "brand_parts", "brand_source")) {
+  for (name in c("mode_ui", "brand_parts", "brand_source", "brand_has_parts")) {
     shiny::outputOptions(output, name, suspendWhenHidden = FALSE)
   }
 

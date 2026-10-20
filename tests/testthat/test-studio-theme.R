@@ -811,3 +811,43 @@ describe("the mascot_studio() guide page", {
     expect_false(grepl("Two views", guide, fixed = TRUE))
   })
 })
+
+describe("the Brand colours tab for a character with no brand parts", {
+  it("hides the pickers and sample pairs and points to Your colours", {
+    parts <- theme_parts()
+    expect_match(parts$page, "data-display-if=\"output.brand_has_parts == &#39;yes&#39;\"", fixed = TRUE)
+    expect_match(
+      as.character(parts$env$theme_brand_parts_ui(parts$env$theme_brand_roles("neer"), "Neer")),
+      'data-event="go_tab" data-value="colours"',
+      fixed = TRUE
+    )
+    expect_error(parts$env$theme_tab_button("help", "Help"), "tab")
+    shiny::testServer(parts$env$theme_view_server, {
+      sent <- list()
+      session$sendInputMessage <- function(id, message) sent[[id]] <<- message
+      session$setInputs(character = "tessa", mood = "idle")
+      expect_identical(output$brand_has_parts, "yes")
+      expect_match(output$brand_source$html, "Use bs_theme() instead", fixed = TRUE)
+      session$setInputs(character = "neer")
+      expect_identical(output$brand_has_parts, "no")
+      expect_error(output$brand_source)
+      # The button opens Your colours.
+      session$setInputs(go_tab = "colours")
+      expect_identical(sent$theme_tabs$value, "colours")
+    })
+  })
+  it("shows no brand pickers for Neer in a browser", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    withr::defer(app$stop())
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    app$run_js("document.querySelector('#theme_tabs a[data-value=brand]').click()")
+    app$wait_for_js("document.getElementById('brand_primary').offsetParent !== null")
+    app$set_inputs(character = "neer")
+    app$wait_for_js("document.getElementById('brand_primary').offsetParent === null")
+    expect_false(app$get_js("[...document.querySelectorAll('.theme-brand-sample')].some((b) => b.offsetParent)"))
+    app$click(selector = "[data-event=go_tab][data-value=colours]")
+    app$wait_for_js("document.querySelector('#theme_tabs a[data-value=colours]').classList.contains('active')")
+  })
+})

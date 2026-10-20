@@ -276,32 +276,39 @@ theme_brand_tab <- function() {
       "parts."
     ),
     shiny::uiOutput("brand_parts"),
-    shiny::div(
-      class = "theme-brand-pickers",
-      lapply(seq_along(slots), function(i) {
-        label <- paste(tools::toTitleCase(slots[[i]]), "colour")
-        shiny::tags$label(
-          class = "pg-css",
-          colour_input(paste0("brand_", slots[[i]]), theme_brand_samples[[1]][[i]], label),
-          shiny::tags$span(label)
-        )
-      })
-    ),
-    shiny::div(
-      class = "theme-brand-samples",
-      role = "group",
-      `aria-label` = "Sample brand colours",
-      shiny::tags$span(class = "theme-muted", "Try a pair:"),
-      lapply(theme_brand_samples, function(pair) {
-        shiny::tags$button(
-          type = "button",
-          class = "btn btn-outline-secondary btn-sm theme-brand-sample",
-          `data-event` = "brand_sample",
-          `data-value` = paste(pair, collapse = ","),
-          `aria-label` = paste("Primary", pair[[1]], "and secondary", pair[[2]]),
-          lapply(pair, function(colour) shiny::tags$span(class = "theme-swatch", style = paste0("background:", colour)))
-        )
-      })
+    # Only for a character with brand parts (output$brand_has_parts): for the others the pickers would change
+    # nothing.
+    shiny::conditionalPanel(
+      "output.brand_has_parts == 'yes'",
+      shiny::div(
+        class = "theme-brand-pickers",
+        lapply(seq_along(slots), function(i) {
+          label <- paste(tools::toTitleCase(slots[[i]]), "colour")
+          shiny::tags$label(
+            class = "pg-css",
+            colour_input(paste0("brand_", slots[[i]]), theme_brand_samples[[1]][[i]], label),
+            shiny::tags$span(label)
+          )
+        })
+      ),
+      shiny::div(
+        class = "theme-brand-samples",
+        role = "group",
+        `aria-label` = "Sample brand colours",
+        shiny::tags$span(class = "theme-muted", "Try a pair:"),
+        lapply(theme_brand_samples, function(pair) {
+          shiny::tags$button(
+            type = "button",
+            class = "btn btn-outline-secondary btn-sm theme-brand-sample",
+            `data-event` = "brand_sample",
+            `data-value` = paste(pair, collapse = ","),
+            `aria-label` = paste("Primary", pair[[1]], "and secondary", pair[[2]]),
+            lapply(pair, function(colour) {
+              shiny::tags$span(class = "theme-swatch", style = paste0("background:", colour))
+            })
+          )
+        })
+      )
     ),
     shiny::uiOutput("brand_source")
   )
@@ -354,6 +361,19 @@ theme_brand_source_ui <- function(source, roles) {
   )
 }
 
+# A button that opens one of the four tabs (input$go_tab).
+theme_tab_button <- function(tab, label) {
+  checkmate::assert_choice(tab, c("palette", "colours", "brand", "check"))
+  checkmate::assert_string(label, min.chars = 1)
+  shiny::tags$button(
+    type = "button",
+    class = "btn btn-link btn-sm p-0 align-baseline",
+    `data-event` = "go_tab",
+    `data-value` = tab,
+    label
+  )
+}
+
 # The parts each brand colour colours, from mascot_colour_roles()$brand; a character with none says so.
 theme_brand_parts_ui <- function(roles, name) {
   checkmate::assert_list(roles, types = "character", names = "unique")
@@ -362,7 +382,8 @@ theme_brand_parts_ui <- function(roles, name) {
     return(shiny::div(
       class = "pg-note",
       name,
-      " has no parts that take brand colours. Use Your colours to colour any part."
+      " has no parts that take brand colours. Use Your colours to colour any part. ",
+      theme_tab_button("colours", "Open Your colours")
     ))
   }
   shiny::tags$ul(

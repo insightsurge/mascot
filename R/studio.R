@@ -5,7 +5,8 @@
 #' experimental and may change in a later release. Choices belong to the returned
 #' app; no global options are changed.
 #' @param view Which view to open: `"studio"` (the default) for the function
-#'   playground, or `"examples"` for the gallery of bundled examples.
+#'   playground, `"examples"` for the gallery of bundled examples, or `"theme"`
+#'   to theme one character.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param fn A function name in the studio's Guide, without parentheses.
 #'   `NULL` starts with `mascot_mood()`. Used in the studio view only.
@@ -59,17 +60,17 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
   path <- dirname(mascot_example("studio", run = FALSE))
   guide <- new.env(parent = baseenv())
   sys.source(file.path(path, "R", "guide.R"), envir = guide)
+  # The characters the app offers, from its shared data (mascot's public listing only).
   data <- new.env(parent = baseenv())
-  # The data file loads the guide's shared code; it finds that folder next to the app (a development copy of
-  # the package is not visible to system.file() from this environment).
-  data$studio_guide_root <- path
-  sys.source(file.path(path, "R", "data.R"), envir = data)
+  sys.source(file.path(path, "R", "shared-data.R"), envir = data)
+  views <- new.env(parent = baseenv())
+  sys.source(file.path(path, "R", "views.R"), envir = views)
   # These choices are available only after loading the studio data.
   for (arg in c("view", "fn", "character")) {
     value <- get(arg)
     valid <- switch(
       arg,
-      view = c("studio", "examples"),
+      view = names(views$studio_view_titles),
       fn = names(guide$playground_guide),
       character = unname(data$studio_characters())
     )

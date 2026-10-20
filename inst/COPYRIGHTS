@@ -23,8 +23,12 @@ vignettes/figures/*.png
     Source: screenshots of the bundled example apps captured locally in Chrome.
     Copyright (c) Harsh Verma. Licence: MIT.
 
+inst/examples/studio/www/inputs.js
+inst/examples/studio/www/shared.css
 inst/examples/studio/www/studio.css
 inst/examples/studio/www/studio.js
+inst/examples/studio/www/theme.css
+inst/examples/studio/www/tokens.css
 inst/examples/studio/guide/*.Rmd
 inst/examples/studio/guide/guide-helpers.R
 inst/examples/studio/guide/guide-mistakes.R

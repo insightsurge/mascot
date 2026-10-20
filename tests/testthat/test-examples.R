@@ -1,13 +1,14 @@
 describe("mascot_examples()", {
-  it("lists the studio and six scenario apps in order with readable metadata", {
+  it("lists the studio, its theme page and five scenario apps in order with readable metadata", {
     examples <- mascot_examples()
     expect_s3_class(examples, "data.frame")
     expect_named(examples, c("name", "title", "description"))
-    expect_identical(examples$name, c("studio", "form-check", "long-task", "modules", "branding", "golem", "rhino"))
+    expect_identical(examples$name, c("studio", "form-check", "long-task", "modules", "theme", "golem", "rhino"))
     expect_true(all(vapply(examples, is.character, logical(1))))
     expect_true(all(nzchar(unlist(examples))))
     expect_identical(anyDuplicated(examples$name), 0L)
-    expect_match(examples$description[examples$name == "branding"], "Requires bslib")
+    expect_identical(examples$title[examples$name == "theme"], "Theme a mascot")
+    expect_match(examples$description[examples$name == "theme"], "Requires bslib")
   })
   it("copies single-file scenarios and the studio and rhino folders, and builds it without a server", {
     # mascot is already attached by the test run; attaching it here would detach it on exit.
@@ -20,6 +21,11 @@ describe("mascot_examples()", {
       expect_true(file.exists(file), info = name)
       # The studio and framework examples need their whole folder.
       sources <- list.files(dirname(file), recursive = TRUE)
+      # The theme page is a view of the studio's app: the same folder.
+      if (name == "theme") {
+        expect_identical(file, mascot_example("studio", run = FALSE))
+        next
+      }
       if (name == "studio") {
         expect_setequal(
           sources,
@@ -29,9 +35,18 @@ describe("mascot_examples()", {
             "R/data.R",
             "R/guide-md.R",
             "R/guide.R",
-            "R/help.R",
             "R/panels.R",
+            "R/shared-check.R",
+            "R/shared-colours.R",
+            "R/shared-data.R",
+            "R/shared-help.R",
+            "R/shared-layout.R",
+            "R/shared-run.R",
+            "R/shared-ui.R",
+            "R/theme-server.R",
+            "R/theme-ui.R",
             "R/ui.R",
+            "R/views.R",
             "guide/guide-helpers.R",
             "guide/guide-mistakes.R",
             "guide/guide-shared.R",
@@ -63,8 +78,12 @@ describe("mascot_examples()", {
             "guide/mascot_studio.Rmd",
             "guide/mascot_status.Rmd",
             "guide/mascot_theme.Rmd",
+            "www/inputs.js",
+            "www/shared.css",
             "www/studio.css",
-            "www/studio.js"
+            "www/studio.js",
+            "www/theme.css",
+            "www/tokens.css"
           )
         )
       } else if (name == "rhino") {
@@ -77,6 +96,10 @@ describe("mascot_examples()", {
       dir <- file.path(copy, name)
       for (script in list.files(dir, pattern = "[.]R$", recursive = TRUE, full.names = TRUE)) {
         expect_type(parse(script), "expression")
+      }
+      # The studio's page needs knitr too (helper-studio.R); without it only its files are checked above.
+      if (name == "studio" && requireNamespace("bslib", quietly = TRUE) && !requireNamespace("knitr", quietly = TRUE)) {
+        next
       }
       if (name != "rhino" && !requireNamespace("bslib", quietly = TRUE)) {
         # shinyAppDir() reads app.R on the first request.
@@ -120,7 +143,7 @@ describe("mascot_examples()", {
   it("reads every description, argument and return value from the package's help pages", {
     skip_if_not_installed("htmltools")
     help <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), envir = help)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-help.R"), envir = help)
     # Letters and digits only, so markup, quotes and line wrapping do not matter.
     plain <- function(text) tolower(gsub("[^[:alnum:]]", "", text))
     for (fn in getNamespaceExports("mascot")) {
@@ -145,7 +168,7 @@ describe("mascot_examples()", {
   })
   it("renders help text as HTML and finds the help example that supplies an argument", {
     help <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), envir = help)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-help.R"), envir = help)
     expect_error(help$help_page(42), "string")
     expect_error(help$help_arg("mascot_bubble", 42), "string")
     expect_error(help$help_rd("not_a_mascot_function"), "no help page")
@@ -171,13 +194,13 @@ describe("the studio's controls", {
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
     items <- c(`finish-review` = "Finish the review of every row in this table", about = "About this app")
     menu <- code$code_menu(items)
-    theme <- code$code_theme("mascot", c(body = "#1f6feb"), c(body = "#9ec5fe"), "dark", "rim", "", "")
+    theme <- code$code_theme("mascot", c(body = "#1f6feb"), c(body = "#9ec5fe"), "dark", c(rim = "--brand"), "", "")
     call <- code$format_call("mascot", list(id = "helper", click = menu$helper, theme = theme$helper))
     expect_match(call, "`finish-review` = ", fixed = TRUE)
     expect_identical(eval(parse(text = call)[[1]][["click"]]), mascot_popup_menu(items))
     handler <- code$menu_handler_code(items)
     expect_type(parse(text = handler), "expression")
-    app <- code$whole_app_code(call, handler, c("shiny", "mascot"), "#7b4fd6")
+    app <- code$whole_app_code(call, handler, c("shiny", "mascot"), c(`--brand` = "#7b4fd6"))
     expect_type(parse(text = app), "expression")
     # Every helper has live example code in the guide, including the compound controls.
     pairs <- list(
@@ -328,7 +351,7 @@ describe("the studio's controls", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     ui <- new.env()
     sys.source(file.path(dir, "R", "guide.R"), envir = ui)
-    sys.source(file.path(dir, "R", "help.R"), envir = ui)
+    sys.source(file.path(dir, "R", "shared-help.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     expect_error(ui$argument_default(42, "position"), "string")
@@ -371,7 +394,7 @@ describe("the studio's controls", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     ui <- new.env()
     sys.source(file.path(dir, "R", "guide.R"), envir = ui)
-    sys.source(file.path(dir, "R", "help.R"), envir = ui)
+    sys.source(file.path(dir, "R", "shared-help.R"), envir = ui)
     sys.source(file.path(dir, "R", "data.R"), envir = ui)
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     sys.source(file.path(dir, "R", "guide-md.R"), envir = ui)
@@ -400,7 +423,7 @@ describe("the studio's controls", {
     }
   })
   it("has a control on the page, or a stated reason, for every exported argument", {
-    skip_if_not_installed("bslib")
+    skip_without_studio_packages("studio")
     # mascot is already attached by the test run; attaching it here would detach it on exit.
     withr::local_package("shiny")
     withr::local_package("bslib")
@@ -408,7 +431,7 @@ describe("the studio's controls", {
     data <- new.env()
     sys.source(file.path(dir, "R", "data.R"), envir = data)
     help <- new.env()
-    sys.source(file.path(dir, "R", "help.R"), envir = help)
+    sys.source(file.path(dir, "R", "shared-help.R"), envir = help)
     ui <- new.env()
     sys.source(file.path(dir, "R", "ui.R"), envir = ui)
     app <- shiny::shinyAppDir(dir)
@@ -520,6 +543,25 @@ describe("mascot_example()", {
     expect_identical(mascot_example("modules"), "app stopped")
     expect_identical(captured, dirname(mascot_example("modules", run = FALSE)))
   })
+  it("opens the studio's app on its theme page for \"theme\"", {
+    skip_without_studio_packages("theme")
+    # Given an interactive session where running an app only records it
+    local_mocked_bindings(example_interactive = function() TRUE)
+    captured <- NULL
+    local_mocked_bindings(
+      runApp = function(appDir) {
+        captured <<- appDir
+        "app stopped"
+      },
+      .package = "shiny"
+    )
+    # Then run = FALSE gives the studio's app.R, and run = TRUE runs that app on the theme page
+    expect_identical(mascot_example("theme", run = FALSE), mascot_example("studio", run = FALSE))
+    expect_identical(mascot_example("theme"), "app stopped")
+    expect_s3_class(captured, "shiny.appobj")
+    page <- captured$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
+    expect_match(as.character(page), "<title>Theme a mascot</title>", fixed = TRUE)
+  })
 })
 
 # A literal scenario name is embedded so the child R process needs no test globals.
@@ -601,52 +643,6 @@ describe("bundled example apps", {
     wait_example_mood(app, "parent", "happy")
     expect_true(app$get_js("mascot.host.state(document.getElementById('parent')).placement.floating"))
   })
-  it("E5 branding switches palettes and modes and handles each menu action", {
-    local_shiny_browser()
-    skip_if_not_installed("bslib")
-    app <- example_driver("branding")
-    withr::defer(app$stop())
-    wait_example_mood(app, "helper", "idle")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.sleeve?.toLowerCase()==='#1f6feb'")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#966600")
-    app$click("celebrate")
-    wait_example_mood(app, "helper", "celebrating")
-    app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
-    app$wait_for_js("document.documentElement.dataset.bsTheme==='dark'")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#1f6feb'")
-    app$set_inputs(palette = "rose")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#f2a6cf'")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.rim"), "#C5B0EB")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.sleeve"), "#F2A6CF")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#C5B0EB")
-    app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
-    app$wait_for_js("document.documentElement.dataset.bsTheme==='light'")
-    app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body?.toLowerCase()==='#b53d78'")
-    # The bow has its own colour now, so a brand's rim no longer reaches it.
-    expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).colours.accessory"))
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.sleeve"), "#B53D78")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.limb"), "#A94A82")
-    app$click("personalise")
-    app$wait_for_js("!!mascot.host.state(document.getElementById('helper')).bubble")
-    app$click("original")
-    app$wait_for_js("Object.values(mascot.host.state(document.getElementById('helper')).colours).every(x=>x===null)")
-    app$click("brand")
-    app$wait_for_js("!!mascot.host.state(document.getElementById('helper')).colours.body")
-    app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper [role=menuitem][data-item-id=finish]")
-    wait_example_mood(app, "helper", "happy")
-    expect_match(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "Review complete")
-    expect_match(app$get_js("document.querySelector('#helper .mascot-bubble').textContent"), "All checks finished")
-    app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper .mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=reset]")
-    wait_example_mood(app, "helper", "idle")
-    expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).bubble"))
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).colours.body"), "#B53D78")
-    app$click(selector = "#helper .mascot-menu-toggle")
-    app$click(selector = "#helper .mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=about]")
-    app$wait_for_js("!!document.querySelector('.modal.show, .modal.in')")
-    expect_match(app$get_js("document.querySelector('.modal-title').textContent"), "About this example")
-  })
 })
 
 describe("studio round 4 regression guards", {
@@ -676,20 +672,37 @@ describe("studio round 4 regression guards", {
       expect_false(any(grepl("tessa", lines, ignore.case = TRUE)), info = file)
     }
     env <- new.env()
-    sys.source(file.path(dir, "R", "data.R"), env)
+    # The characters come from the studio app's shared data.
+    sys.source(file.path(dir, "R", "shared-data.R"), env)
     expect_identical(unname(env$studio_characters())[[1L]], formals(mascot)$character)
     expect_identical(names(env$studio_characters()), c("Tessa", "Sela", "Knurl (experimental)", "Neer (experimental)"))
   })
-  it("omits empty colour groups and groups unfamiliar parts", {
-    env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "panels.R"), env)
-    groups <- env$colour_groups(data.frame(role = c("feature", "beak")))
-    expect_named(groups, c("Face", "Other parts"))
-    expect_identical(groups$`Other parts`, "beak")
+  it("opens the main colours and folds the other parts under a heading per group", {
+    skip_if_not_installed("bslib")
+    # studio_parts() is defined further down this file, after this block has run.
+    parts <- list(
+      env = environment(shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))$serverFuncSource())
+    )
+    roles <- mascot_colour_roles("sela")
+    groups <- get("colour_groups", parts$env)(roles, "sela")
+    html <- as.character(get("role_pickers", parts$env)("light", roles, character = "sela"))
+    titles <- regmatches(html, gregexpr('<div class="accordion-title">[^<]*</div>', html))[[1]]
+    expect_identical(gsub("<[^>]+>", "", titles), c("Main colours", "More parts"))
+    expect_match(
+      html,
+      'data-value="Main colours"[^>]*>\\s*<div class="accordion-header">\\s*<button[^>]*aria-expanded="true"'
+    )
+    expect_match(
+      html,
+      'data-value="More parts"[^>]*>\\s*<div class="accordion-header">\\s*<button[^>]*aria-expanded="false"'
+    )
+    headings <- regmatches(html, gregexpr('<h4 class="pg-role-group-title">[^<]*</h4>', html))[[1]]
+    expect_identical(gsub("<[^>]+>", "", headings), names(groups$`More parts`))
+    expect_error(get("role_pickers", parts$env)("light", roles, character = 1), "character")
   })
   it("keeps only explicit shared colour overrides across character palettes", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "panels.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-colours.R"), env)
     old <- data.frame(role = c("body", "outline", "limb"), colour = c("#abcdef", "#000000", "#123456"))
     new <- data.frame(role = c("body", "outline", "beak"), colour = c("#fedcba", "#111111", "#654321"))
     values <- env$reconcile_colour_values(
@@ -742,8 +755,8 @@ describe("studio state and built previews", {
         bubble_closable = TRUE,
         theme_source = "own",
         theme_mode = "auto",
-        css_roles = character(),
-        css_accent = "#123456",
+        `colours-css_roles` = character(),
+        `colours-css_value` = "#123456",
         position = "inline",
         minimise = TRUE,
         drag = "none",
@@ -825,9 +838,10 @@ describe("studio state and built previews", {
       session$setInputs(bubble_text = "<b>Saved</b>", bubble_html = TRUE, bubble_show = 1)
       expect_true(messages$bubble_html$value)
       session$setInputs(contrast_check = 1)
-      expect_match(output$contrast$html, "Every colour checked")
+      # No colour of the studio's own is chosen yet, so nothing is checked in R.
+      expect_match(output$contrast$html, "No colour of your own was chosen in R")
       session$setInputs(theme_source = "mascot", theme_mode = "dark")
-      expect_match(output$contrast$html, "[Ss]tale")
+      expect_match(output$contrast$html, "The settings changed since the last check")
       session$setInputs(theme_source = "own", theme_mode = "auto")
       session$elapse(400)
       bubble <- state$bubble
@@ -975,8 +989,8 @@ describe("studio state and built previews", {
         bubble_closable = TRUE,
         theme_source = "own",
         theme_mode = "auto",
-        css_roles = character(),
-        css_accent = "#123456",
+        `colours-css_roles` = character(),
+        `colours-css_value` = "#123456",
         position = "inline",
         minimise = FALSE,
         drag = "none",
@@ -1082,7 +1096,7 @@ describe("studio round 8 help and copied apps", {
   })
   it("parses help examples only once per function", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "help.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-help.R"), env)
     original <- env$help_rd
     calls <- 0L
     env$help_rd <- function(fn) {
@@ -1190,7 +1204,7 @@ describe("studio round 8 help and copied apps", {
 
 # The studio app's own environment (its server, data and code builders) and its page, built without a browser.
 studio_parts <- function() {
-  testthat::skip_if_not_installed("bslib")
+  skip_without_studio_packages("studio")
   app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
   page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
   list(env = environment(app$serverFuncSource()), page = as.character(page))
@@ -1204,7 +1218,17 @@ studio_guide_env <- function(frame = parent.frame()) {
   withr::local_package("bslib", .local_envir = frame)
   dir <- dirname(mascot_example("studio", run = FALSE))
   env <- new.env()
-  for (file in c("guide.R", "help.R", "data.R", "code.R", "panels.R", "ui.R", "guide-md.R")) {
+  for (file in c(
+    "guide.R",
+    "shared-help.R",
+    "data.R",
+    "shared-data.R",
+    "shared-ui.R",
+    "code.R",
+    "panels.R",
+    "ui.R",
+    "guide-md.R"
+  )) {
     sys.source(file.path(dir, "R", file), envir = env)
   }
   env
@@ -1402,7 +1426,7 @@ describe("studio guide pages", {
     mascot_examples = c("Pick an example by its task", "List the names"),
     mascot_studio = c(
       "Open a useful starting point",
-      "Two views, one app",
+      "Three views, one app",
       "Inspect without launching",
       "What to look at first"
     )
@@ -2261,28 +2285,28 @@ describe("studio safeguards (#248)", {
         sent = function(p) length(p$theme$brand) == 2
       ),
       theme_mode = row(
-        list(list(theme_source = "mascot", light_body = "#1f6feb", theme_mode = "dark")),
+        list(list(theme_source = "mascot", `colours-light_body` = "#1f6feb", theme_mode = "dark")),
         "theme",
         'mode = "dark"',
         wait = 400,
         sent = function(p) identical(p$theme$mode, "dark")
       ),
       light_body = row(
-        list(list(theme_source = "mascot", light_body = "#1f6feb")),
+        list(list(theme_source = "mascot", `colours-light_body` = "#1f6feb")),
         "theme",
         'light = list(body = "#1f6feb")',
         wait = 400,
         sent = function(p) identical(tolower(p$theme$light$body), "#1f6feb")
       ),
       dark_body = row(
-        list(list(theme_source = "mascot", dark_body = "#9ec5fe")),
+        list(list(theme_source = "mascot", `colours-dark_body` = "#9ec5fe")),
         "theme",
         'dark = list(body = "#9ec5fe")',
         wait = 400,
         sent = function(p) identical(tolower(p$theme$dark$body), "#9ec5fe")
       ),
       css_roles = row(
-        list(list(theme_source = "mascot", css_roles = "body")),
+        list(list(theme_source = "mascot", `colours-css_roles` = "body")),
         "theme",
         'css = list(body = "--studio-accent")',
         wait = 400,
@@ -2589,6 +2613,72 @@ describe("studio phone overlays (#265)", {
   })
 })
 
+describe("studio code builders with a CSS map (#395)", {
+  it("writes each role's own CSS variable, and the value of each variable the app sets", {
+    code <- new.env()
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
+    css <- c(body = "--brand", rim = "--brand-light")
+    theme <- code$code_theme("mascot", c(body = "#1f6feb"), NULL, "auto", css, NULL, NULL)
+    expect_identical(eval(theme$helper), mascot_theme(light = list(body = "#1f6feb"), css = as.list(css)))
+    # A CSS source never becomes the plain-list shortcut, which has no css.
+    expect_identical(theme$short, theme$helper)
+    expect_null(eval(code$code_theme("mascot", c(body = "#1f6feb"), NULL, "auto", NULL, NULL, NULL)$helper)$css)
+    expect_error(code$code_theme("mascot", NULL, NULL, "auto", "--brand", NULL, NULL), "names\\(css\\)")
+    expect_error(code$code_theme("mascot", NULL, NULL, "auto", c(body = ""), NULL, NULL), "css")
+    app <- code$whole_app_code(
+      'mascot("helper")',
+      NULL,
+      c("shiny", "mascot"),
+      c(`--brand` = "#111111", `--brand-light` = "#222222")
+    )
+    expect_match(app, 'tags$style(":root { --brand: #111111; --brand-light: #222222; }"),', fixed = TRUE)
+    expect_type(parse(text = app), "expression")
+    for (none in list(NULL, stats::setNames(character(), character()))) {
+      expect_false(grepl("tags$style", code$whole_app_code('mascot("helper")', NULL, "mascot", none), fixed = TRUE))
+    }
+    expect_error(code$whole_app_code('mascot("helper")', NULL, "mascot", "#111111"), "names\\(css_values\\)")
+  })
+  it("gives the studio the same code as before: its accent variable and that variable's value", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(theme_source = "mascot", `colours-css_roles` = "body", `colours-css_value` = "#663399")
+      session$elapse(400)
+      expect_match(output$code_ui, 'css = list(body = "--studio-accent")', fixed = TRUE)
+      expect_match(output$code_app, 'tags$style(":root { --studio-accent: #663399; }"),', fixed = TRUE)
+      session$setInputs(`colours-css_roles` = character())
+      session$elapse(400)
+      expect_false(grepl("tags$style", output$code_app, fixed = TRUE))
+    })
+  })
+})
+
+describe("studio shared tokens and inputs (#395)", {
+  it("loads the shared tokens and inputs before the studio's own files", {
+    page <- studio_parts()$page
+    at <- function(file) regexpr(paste0('"', file, '"'), page, fixed = TRUE)[[1]]
+    for (file in c("tokens.css", "shared.css", "studio.css", "inputs.js", "studio.js")) {
+      expect_gt(at(file), 0)
+    }
+    expect_lt(at("tokens.css"), at("shared.css"))
+    expect_lt(at("shared.css"), at("studio.css"))
+    expect_lt(at("inputs.js"), at("studio.js"))
+  })
+  it("keeps the colour and spacing tokens in one file", {
+    www <- file.path(dirname(mascot_example("studio", run = FALSE)), "www")
+    read <- function(file) paste(readLines(file.path(www, file), warn = FALSE), collapse = "\n")
+    tokens <- read("tokens.css")
+    studio <- read("studio.css")
+    for (token in c("--studio-accent", "--studio-panel", "--studio-ink", "--studio-primary", "--studio-shadow")) {
+      expect_match(tokens, paste0(token, ":"), fixed = TRUE, info = token)
+      expect_false(grepl(paste0(token, ":"), studio, fixed = TRUE), info = token)
+    }
+    expect_false(grepl("body:has(.pg-studio)", tokens, fixed = TRUE))
+  })
+})
+
 describe("studio bubble controls (#249)", {
   it("shows the chosen example even when Show arrives before the browser fills the inputs", {
     parts <- studio_parts()
@@ -2811,7 +2901,10 @@ describe("framework examples", {
 describe("studio listings (character data)", {
   it("reads brand slots, characters and families from the public listings", {
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
+    # The brand slots and families are the studio's data; the characters, the app's shared data.
+    for (file in c("data.R", "shared-data.R")) {
+      sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", file), env)
+    }
     recipe <- system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE)
     brand <- jsonlite::fromJSON(recipe)$brand
     expect_identical(env$studio_brand("tessa")[c("primary", "secondary")], as.list(brand)[c("primary", "secondary")])
@@ -2829,7 +2922,7 @@ describe("studio listings (character data)", {
     local_empty_registry()
     character_data_register(character_format_check(format_recipe("study_bot")))
     env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-data.R"), env)
     expect_identical(unname(env$studio_characters()), c("tessa", "sela", "knurl", "neer"))
   })
 })
@@ -2875,6 +2968,9 @@ describe("studio isolated host", {
       expect_match(page, 'role="status"', fixed = TRUE)
       expect_match(page, 'name="viewport"', fixed = TRUE)
       expect_lt(regexpr("/studio.js", page, fixed = TRUE)[[1]], regexpr("mascot-host.js", page, fixed = TRUE)[[1]])
+      # The frame's page colours come from the shared tokens.
+      expect_lt(regexpr("/tokens.css", page, fixed = TRUE)[[1]], regexpr("/studio.css", page, fixed = TRUE)[[1]])
+      expect_gt(regexpr("/tokens.css", page, fixed = TRUE)[[1]], 0)
       expect_false(grepl("shiny.min.js", page, fixed = TRUE))
       token <- regmatches(page, regexec('data-mount-token="([^"]+)"', page))[[1]][[2]]
       fixture <- list(session = session, id = "helper")
@@ -2916,7 +3012,7 @@ describe("studio palette controls", {
       light = NULL,
       dark = NULL,
       mode = "auto",
-      css_roles = NULL,
+      css = NULL,
       primary = NULL,
       secondary = NULL,
       palette = "original"
@@ -3071,18 +3167,19 @@ describe("studio palette sync (#353)", {
     for (character in unname(get("studio_characters", parts$env)())) {
       for (palette in unname(get("studio_palette_choices", parts$env)(character))) {
         roles <- mascot_colour_roles(character, palette = palette)
-        groups <- get("colour_groups", parts$env)(roles)
+        groups <- get("colour_groups", parts$env)(roles, character)
         expect_setequal(unlist(groups, use.names = FALSE), roles$role)
         expect_length(unlist(groups), nrow(roles))
         for (mode in c("light", "dark")) {
-          html <- as.character(get("role_pickers", parts$env)(mode, roles))
+          html <- as.character(get("role_pickers", parts$env)(mode, roles, character = character))
           for (role in roles$role) {
             expect_match(html, paste0('id="', mode, "_", role, '"'), fixed = TRUE)
           }
         }
         # Arbitrary roles travel through all three override fields without an old role allow-list.
         overrides <- stats::setNames(rep("#123456", nrow(roles)), roles$role)
-        theme <- eval(builder("mascot", overrides, overrides, "auto", roles$role, "", "", palette)$helper)
+        css <- stats::setNames(rep("--studio-accent", nrow(roles)), roles$role)
+        theme <- eval(builder("mascot", overrides, overrides, "auto", css, "", "", palette)$helper)
         expect_identical(unlist(theme$light), overrides)
         expect_identical(unlist(theme$dark), overrides)
         expect_setequal(names(theme$css), roles$role)
@@ -3177,10 +3274,10 @@ describe("studio palette sync (#353)", {
       app$wait_for_js(sprintf("!document.querySelector('#studio_inspector [data-function=%s]').hidden", fn))
     }
     select_function("mascot_theme")
-    app$wait_for_js("document.getElementById('light_hair') && document.getElementById('dark_badge')")
+    app$wait_for_js("document.getElementById('colours-light_hair') && document.getElementById('colours-dark_badge')")
     for (role in c("hair", "badge", "iris", "body_shade", "hand")) {
       expect_true(app$get_js(sprintf(
-        "!!document.getElementById('light_%s') && !!document.getElementById('dark_%s')",
+        "!!document.getElementById('colours-light_%s') && !!document.getElementById('colours-dark_%s')",
         role,
         role
       )))
@@ -3448,7 +3545,7 @@ describe("studio review fixes (#353)", {
         session$elapse(400)
         roles <- mascot_colour_roles(who)
         # What the browser reports for untouched pickers: each role's listed colour.
-        untouched <- stats::setNames(as.list(roles$colour), paste0("light_", roles$role))
+        untouched <- stats::setNames(as.list(roles$colour), paste0("colours-light_", roles$role))
         do.call(session$setInputs, c(list(theme_source = "mascot"), untouched))
         session$elapse(400)
         expect_false(grepl("theme =", output$code_ui, fixed = TRUE), info = who)
@@ -3464,7 +3561,7 @@ describe("studio review fixes (#353)", {
       do.call(session$setInputs, start)
       studio_go_live(session)
       tessa <- mascot_colour_roles("tessa")
-      untouched <- stats::setNames(as.list(tessa$colour), paste0("light_", tessa$role))
+      untouched <- stats::setNames(as.list(tessa$colour), paste0("colours-light_", tessa$role))
       do.call(session$setInputs, c(list(theme_source = "mascot"), untouched))
       session$elapse(400)
       session$setInputs(character = "sela")
@@ -3474,7 +3571,7 @@ describe("studio review fixes (#353)", {
       shared <- intersect(tessa$role, mascot_colour_roles("sela")$role)[[1L]]
       session$setInputs(character = "tessa")
       session$elapse(400)
-      do.call(session$setInputs, stats::setNames(list("#123456"), paste0("light_", shared)))
+      do.call(session$setInputs, stats::setNames(list("#123456"), paste0("colours-light_", shared)))
       session$setInputs(character = "sela")
       carried <- session$userData$mascot_updates[[session$ns("helper")]]$desired$theme
       expect_identical(tolower(unlist(carried$light)[[1L]]), "#123456")

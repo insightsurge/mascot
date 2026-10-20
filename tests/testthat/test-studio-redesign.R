@@ -2,6 +2,7 @@
 studio_redesign_driver <- function(width = 1280, height = 720) {
   checkmate::assert_number(width, lower = 1)
   checkmate::assert_number(height, lower = 1)
+  skip_without_studio_packages("studio")
   app_path <- normalizePath(system.file("examples", "studio", package = "mascot", mustWork = TRUE))
   app <- function() NULL
   body(app) <- substitute(
@@ -44,7 +45,7 @@ describe("the redesigned studio", {
 })
 
 studio_redesign_parts <- function() {
-  testthat::skip_if_not_installed("bslib")
+  skip_without_studio_packages("studio")
   app <- shiny::shinyAppDir(system.file("examples", "studio", package = "mascot"))
   list(
     env = environment(app$serverFuncSource()),
@@ -599,30 +600,35 @@ describe("E1 studio behaviour in the redesigned UI", {
     state <- paste0(studio_frame, ".mascot.host.state(", studio_live, ")")
     studio_select_function(app, "mascot_theme")
     app$set_inputs(theme_source = "mascot", theme_mode = "light")
-    studio_colour(app, "light_body", "#1f6feb")
+    studio_colour(app, "colours-light_body", "#1f6feb")
     app$wait_for_js(sprintf("%s.colours.body?.toLowerCase() === '#1f6feb'", state))
-    studio_colour(app, "light_body_highlight", "#abcdef")
+    studio_colour(app, "colours-light_body_highlight", "#abcdef")
     app$wait_for_js(sprintf("%s.colours.body_highlight?.toLowerCase() === '#abcdef'", state))
     app$wait_for_js(
       "document.querySelector('.pg-resolved[data-mode=light][data-role=body_highlight]').style.background === 'rgb(171, 205, 239)'"
     )
-    app$run_js("document.querySelector('[data-event=reset_colour][data-value=\"light:body_highlight\"]').click()")
+    app$run_js(
+      "document.querySelector('[data-event=\"colours-reset_colour\"][data-value=\"light:body_highlight\"]').click()"
+    )
     app$wait_for_js("!document.getElementById('code_ui').textContent.includes('#abcdef')")
-    studio_colour(app, "dark_body", "#224466")
+    # The reset reaches the picker itself: Shiny adds the module's prefix to the input message.
+    highlight <- tolower(mascot_colour_roles("tessa")$colour[mascot_colour_roles("tessa")$role == "body_highlight"])
+    app$wait_for_js(sprintf("document.getElementById('colours-light_body_highlight').value === '%s'", highlight))
+    studio_colour(app, "colours-dark_body", "#224466")
     app$set_inputs(theme_mode = "dark")
     app$wait_for_js(sprintf("%s.mode === 'dark' && %s.colours.body?.toLowerCase() === '#224466'", state, state))
-    app$set_inputs(css_roles = "body")
-    studio_colour(app, "css_accent", "#663399")
+    app$set_inputs(`colours-css_roles` = "body")
+    studio_colour(app, "colours-css_value", "#663399")
     app$wait_for_js(sprintf("%s.colours.body?.toLowerCase() === '#663399'", state))
     expect_match(app$get_value(output = "code_ui"), "--studio-accent", fixed = TRUE)
-    app$set_inputs(css_roles = character(), theme_mode = "light")
-    studio_colour(app, "light_body", "#f8f9fa")
+    app$set_inputs(`colours-css_roles` = character(), theme_mode = "light")
+    studio_colour(app, "colours-light_body", "#f8f9fa")
     app$wait_for_js(sprintf("%s.colours.body?.toLowerCase() === '#f8f9fa'", state))
     app$click(selector = "#contrast_check")
     app$wait_for_js("document.getElementById('contrast').textContent.includes('hard to see')")
-    studio_colour(app, "light_body", "#1f6feb")
-    app$wait_for_js("document.getElementById('contrast').textContent.includes('Stale contrast result')")
-    app$run_js("document.querySelector('[data-event=reset_mode][data-value=light]').click()")
+    studio_colour(app, "colours-light_body", "#1f6feb")
+    app$wait_for_js("document.getElementById('contrast').textContent.includes('settings changed since the last check')")
+    app$run_js("document.querySelector('[data-event=\"colours-reset_mode\"][data-value=light]').click()")
     app$wait_for_js("!document.getElementById('code_ui').textContent.includes('#1f6feb')")
     studio_select_function(app, "mascot_characters")
     family <- mascot_families()$id[1]
@@ -714,8 +720,8 @@ describe("studio demonstration server routes", {
       bubble_closable = TRUE,
       theme_source = "own",
       theme_mode = "auto",
-      css_roles = character(),
-      css_accent = "#123456",
+      `colours-css_roles` = character(),
+      `colours-css_value` = "#123456",
       position = "inline",
       minimise = TRUE,
       drag = "none",
@@ -783,8 +789,8 @@ describe("studio demonstration server routes", {
       bubble_closable = TRUE,
       theme_source = "own",
       theme_mode = "auto",
-      css_roles = character(),
-      css_accent = "#123456",
+      `colours-css_roles` = character(),
+      `colours-css_value` = "#123456",
       position = "inline",
       minimise = TRUE,
       drag = "none",
@@ -1912,8 +1918,10 @@ describe("the next studio review round", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     env <- new.env()
     sys.source(file.path(dir, "R", "guide.R"), envir = env)
-    sys.source(file.path(dir, "R", "help.R"), envir = env)
+    sys.source(file.path(dir, "R", "shared-help.R"), envir = env)
     sys.source(file.path(dir, "R", "data.R"), envir = env)
+    sys.source(file.path(dir, "R", "shared-data.R"), envir = env)
+    sys.source(file.path(dir, "R", "shared-ui.R"), envir = env)
     sys.source(file.path(dir, "R", "ui.R"), envir = env)
     sys.source(file.path(dir, "R", "guide-md.R"), envir = env)
     sys.source(file.path(dir, "R", "code.R"), envir = env)

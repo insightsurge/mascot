@@ -2,117 +2,17 @@
 # Shiny sources this before app.R attaches mascot, so everything here is a function, called
 # from app.R once the packages are attached.
 
-# Groups for the colour pickers; parts a future character adds appear under "Other parts".
-colour_groups <- function(roles) {
-  groups <- list(
-    Body = c(
-      "body",
-      "body_shade",
-      "body_highlight",
-      "rim",
-      "rim_light",
-      "rim_shade",
-      "outline",
-      "outline_second",
-      "shadow"
-    ),
-    Face = c(
-      "feature",
-      "eye_white",
-      "shine",
-      "eyelid",
-      "iris",
-      "iris_tint",
-      "teeth",
-      "tongue",
-      "blush",
-      "blush_strong"
-    ),
-    Hair = c("hair", "hair_shade", "hair_light"),
-    `Chest badge` = c("badge", "badge_icon"),
-    `Arms, feet and accessories` = c("limb", "sleeve", "hand", "accessory", "accessory_light", "accessory_detail"),
-    Effects = c("sparkle", "sparkle_outline", "sweat")
-  )
-  groups <- lapply(groups, intersect, roles$role)
-  groups$`Other parts` <- setdiff(roles$role, unlist(groups))
-  Filter(length, groups)
-}
-
-# The palette menu: the character's own colours always carry the value "original" (no palette applied), whatever
-# name the character gives them; the other palettes carry their own names.
-studio_palette_choices <- function(character) {
-  checkmate::assert_string(character, min.chars = 1)
-  listed <- mascot_palettes(character)$name
-  stats::setNames(c("original", listed[-1L]), listed)
-}
-
 # ---- Inspector controls, grouped by function -----------------------------------------------
-
-role_picker <- function(mode, role, roles, value = NULL) {
-  row <- roles[roles$role == role, ]
-  follows <- if (is.na(row$follows)) "leader" else paste0("follows ", row$follows, " (", row$shade, ")")
-  div(
-    class = "pg-role",
-    colour_input(paste0(mode, "_", role), value %||% row$colour, paste(role, "in", mode, "mode")),
-    div(class = "pg-role-text", tags$code(role), div(class = "pg-muted", follows)),
-    tags$span(
-      class = "pg-resolved",
-      `data-role` = role,
-      `data-mode` = mode,
-      `data-default` = row$colour,
-      title = "In use now"
-    ),
-    tags$button(
-      type = "button",
-      class = "btn btn-link btn-sm pg-role-reset",
-      `data-event` = "reset_colour",
-      `data-value` = paste0(mode, ":", role),
-      `aria-label` = paste("Reset", role, "in", mode, "mode"),
-      "\u00d7"
-    )
-  )
-}
-
-role_pickers <- function(mode, roles, values = list(), name = mascot_character()$name) {
-  role_groups <- colour_groups(roles)
-  tagList(
-    div(
-      class = "pg-hint",
-      paste0(
-        "Each picker starts at ",
-        name,
-        "'s colour. Change one to add it to the theme. Click \u00d7 to remove it. The round swatch shows the colour in use now."
-      )
-    ),
-    do.call(
-      bslib::accordion,
-      c(
-        lapply(names(Filter(length, role_groups)), function(group) {
-          bslib::accordion_panel(
-            group,
-            lapply(role_groups[[group]], function(role) role_picker(mode, role, roles, values[[role]])),
-            value = group
-          )
-        }),
-        list(open = names(role_groups)[1])
-      )
-    ),
-    try_button("reset_mode", mode, paste("Reset", mode, "colours"), "btn-outline-primary")
-  )
-}
 
 panel_character_bar <- function(moods = mascot_moods(character), character = formals(mascot::mascot)$character) {
   checkmate::assert_data_frame(moods)
   checkmate::assert_string(character)
-  bar <- div(
-    id = "studio_character_bar",
-    class = "pg-toolbar pg-float",
-    role = "toolbar",
-    `aria-label` = "Quick controls",
-    div(
-      class = "pg-sentence",
-      role = "group",
-      `aria-label` = "Character, palette, mood and one-off gesture",
+  # The shared sentence bar (R/shared-layout.R), with the studio's search and utility buttons after the sentence.
+  bar <- sentence_bar(
+    "studio_character_bar",
+    "Quick controls",
+    "Character, palette, mood and one-off gesture",
+    list(
       "Showing",
       selectInput("character", NULL, studio_characters(), selected = character, selectize = FALSE),
       tags$span(id = "palette_prefix", "in"),
@@ -181,25 +81,15 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
       names(labels)[[i]]
     )
   }))$addAttrs(title = studio_palette_sentence(character)$id)$allTags()
-  for (id in c("character", "palette", "mood", "gesture")) {
-    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(`aria-label` = tools::toTitleCase(id))$allTags()
-  }
-  for (id in c("character", "palette", "mood", "gesture")) {
+  tooltips <- lapply(stats::setNames(nm = c("character", "palette", "mood", "gesture")), function(id) {
     fn <- if (id == "palette") "mascot_palettes" else paste0("mascot_", id)
-    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$parent()$addClass("pg-sentence-word")$append(
-      tags$span(
-        id = paste0(id, "_tooltip"),
-        class = "pg-word-tooltip",
-        role = "tooltip",
-        tags$code(paste0(fn, "()")),
-        tags$span(help_page(fn)$title),
-        if (id == "palette") tags$code(id = "palette_id", studio_palette_sentence(character)$id)
-      )
-    )$allTags()
-    bar <- htmltools::tagQuery(bar)$find(paste0("#", id))$addAttrs(
-      `aria-describedby` = paste0(id, "_tooltip")
-    )$allTags()
-  }
+    shiny::tagList(
+      tags$code(paste0(fn, "()")),
+      tags$span(help_page(fn)$title),
+      if (id == "palette") tags$code(id = "palette_id", studio_palette_sentence(character)$id)
+    )
+  })
+  bar <- sentence_words(bar, tooltips)
   bar
 }
 
@@ -631,11 +521,22 @@ panel_colours <- function() {
       ),
       conditionalPanel(
         "input.theme_source == 'mascot'",
-        bslib::navset_tab(
-          bslib::nav_panel("Light", uiOutput("theme_light")),
-          bslib::nav_panel("Dark", uiOutput("theme_dark")),
-          bslib::nav_panel("CSS variables", uiOutput("theme_css"))
-        )
+        # The pickers are the colour_roles_server("colours") module's (app.R).
+        local({
+          colours <- colour_roles_ui("colours")
+          bslib::navset_tab(
+            bslib::nav_panel("Light", arg_field("mascot_theme", "light", colours$light)),
+            bslib::nav_panel("Dark", arg_field("mascot_theme", "dark", colours$dark)),
+            bslib::nav_panel(
+              "CSS variables",
+              arg_field(
+                "mascot_theme",
+                "css",
+                tagList(studio_experimental_notes("mascot_theme", "CSS source"), colours$css)
+              )
+            )
+          )
+        })
       ),
       conditionalPanel(
         "input.theme_source == 'bslib'",
@@ -679,7 +580,6 @@ panel_colours <- function() {
     )
   )
 }
-
 
 panel_wiring <- function() {
   inspector_category(
@@ -831,24 +731,6 @@ panel_views <- function() {
       div(class = "pg-note", "This view has its own controls and opens in a new tab.")
     )
   }))
-}
-
-# Keep explicit overrides for shared roles; untouched pickers adopt the new palette.
-reconcile_colour_values <- function(old_roles, roles, values) {
-  checkmate::assert_data_frame(old_roles, null.ok = TRUE)
-  checkmate::assert_data_frame(roles)
-  checkmate::assert_list(values)
-  stats::setNames(
-    lapply(roles$role, function(role) {
-      value <- values[[role]]
-      if (is.null(old_roles) || !role %in% old_roles$role || is.null(value)) {
-        return(NULL)
-      }
-      old <- old_roles$colour[match(role, old_roles$role)]
-      if (tolower(value) == tolower(old)) NULL else value
-    }),
-    roles$role
-  )
 }
 
 # Internal R4a review panel, omitted unless explicitly enabled before launch.

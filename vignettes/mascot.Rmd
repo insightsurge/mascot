@@ -345,14 +345,14 @@ page signal it stays light, even if the system prefers dark; the speech bubble f
 `"light"` or `"dark"` wins. Plain lists and `bs_theme()` follow the page too.
 A character swap resolves the incoming character's follow rules again.
 
-Try `mascot_example("branding")`: `bslib::input_dark_mode()` switches the
-page and the mascot together, with no server theme update. The original-colours
-button resets Tessa without changing the page theme.
+Try `mascot_example("theme")`: its page switch, `bslib::input_dark_mode()`,
+changes the page and the mascot together, with no server theme update.
 
-### Pink and lilac
+### Different colours per mode
 
-Choose **Pink and lilac** for explicit light and dark palettes. You only need
-to supply leaders; individual roles can override their followers for full control.
+Give `mascot_theme()` a light and a dark map for different colours in each
+mode. You only need to supply leaders; individual roles can override their
+followers for full control.
 
 ```{r pink-theme, results="hide"}
 pink_theme <- mascot_theme(
@@ -367,9 +367,9 @@ mascot("helper", theme = pink_theme)
 update_mascot("helper", theme = pink_theme)
 ```
 
-![Branding app with Pink and lilac selected: Tessa has a coordinated rose body, sleeves and feet on a light background.](figures/branding-pink-light.png)
+![Tessa with the pink and lilac theme on a light page: a coordinated rose body, sleeves and feet.](figures/branding-pink-light.png)
 
-![Branding app in dark mode: Tessa has a light pink body and sleeves with a lilac rim and feet.](figures/branding-pink-dark.png)
+![The same theme on a dark page: Tessa has a light pink body and sleeves with a lilac rim and feet.](figures/branding-pink-dark.png)
 
 CSS variables are another source (experimental):
 
@@ -479,7 +479,6 @@ events. Opening and closing the menu never set `input$helper_click`. An
 empty helper, `mascot_action()` or `mascot_popup_menu()`, removes the click when
 sent in an update. On static pages the mascot remains an image; clicks need
 Shiny.
-Try all three actions in `mascot_example("branding")`.
 
 ## Modules
 
@@ -512,12 +511,15 @@ a reactive value, then have the parent observe that value and update its own
 mascot. `mascot_example("modules")` shows two children with separate helpers
 and one shared parent helper. It includes working inputs and the complete app.
 
-## Personalise Tessa
+## Theme a mascot
 
-Start with the branding example. Choose your team's colours, status and bubble
-text; keep ordinary error messages beside the fields they describe. Inspect
-`mascot_colour_roles()` before choosing roles, and review contrast in both
-modes. Personalising these settings keeps Tessa's existing shape and identity.
+Start with `mascot_example("theme")`, or `mascot_studio(view = "theme")`.
+Choose a palette, your own colours for light and dark mode or your app's brand
+colours, and copy the code it shows. Its Check tab shows every mood in light
+and dark, checks contrast, and runs the warnings you may meet, in the
+package's own words. Inspect `mascot_colour_roles()` before choosing roles, and
+review contrast in both modes. Theming keeps the character's shape and
+identity. Keep ordinary error messages beside the fields they describe.
 
 A new named character comes later with `mascot_remix()`.
 The Quarto `shortcode` and fuller static-site guidance are separate upcoming work.

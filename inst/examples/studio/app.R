@@ -6,10 +6,6 @@ library(shiny)
 if (!requireNamespace("bslib", quietly = TRUE)) {
   stop("This example needs bslib. Install it before running the app.")
 }
-# The guide pages are R Markdown files (guide/<function>.Rmd), knitted when a guide is opened.
-if (!requireNamespace("knitr", quietly = TRUE)) {
-  stop("The studio needs knitr for its guide pages. Install it before running the app.")
-}
 library(bslib)
 library(mascot)
 
@@ -81,16 +77,9 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
         id = "studio_canvas",
         class = "pg-host pg-float",
         `data-mode` = "mascot",
-        div(
-          class = "pg-host-bar",
-          tags$span(
-            class = "pg-window-dots",
-            `aria-hidden` = "true",
-            tags$i(class = "pg-light-red"),
-            tags$i(class = "pg-light-yellow"),
-            tags$i(class = "pg-light-green")
-          ),
-          tags$span("Host container"),
+        # The shared window frame (R/shared-layout.R).
+        window_bar(
+          "Host container",
           tags$span(class = "pg-muted", "Contained preview"),
           tagAppendAttributes(studio_button("back_to_studio", "Back to studio"), hidden = NA),
           div(id = "examples_phone_tools", class = "pg-topright")
@@ -125,7 +114,7 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
           bslib::card(id = "preview_card", full_screen = TRUE, uiOutput("preview_frame", class = "pg-preview-frame"))
         ),
         div(class = "pg-example-stage", `data-canvas` = "examples", hidden = NA, example_browser()),
-        div(class = "pg-host-footer", tags$code('id = "helper"'), textOutput("host_event", inline = TRUE))
+        window_footer(tags$code('id = "helper"'), textOutput("host_event", inline = TRUE))
       ),
       div(
         id = "studio_dock",
@@ -357,7 +346,7 @@ examples_page <- example_browser()
 view_from_request <- function(request) {
   checkmate::assert(checkmate::check_list(request), checkmate::check_environment(request), .var.name = "request")
   query <- shiny::parseQueryString(if (is.null(request$QUERY_STRING)) "" else request$QUERY_STRING)
-  if (is.null(query$view) || !query$view %in% "examples") "studio" else query$view
+  if (is.null(query$view) || !query$view %in% names(views)) "studio" else query$view
 }
 
 view_link <- function(label, view, new_tab = TRUE) {
@@ -374,22 +363,38 @@ view_link <- function(label, view, new_tab = TRUE) {
   ))
 }
 
+# The page of the studio and examples views; the query string chooses what it opens on.
+studio_view_ui <- function(query, view) {
+  checkmate::assert_list(query)
+  checkmate::assert_choice(view, c("studio", "examples"))
+  # The guide pages are R Markdown files (guide/<function>.Rmd), knitted when a guide is opened. Only this page
+  # has them, so the other views start without knitr.
+  if (!requireNamespace("knitr", quietly = TRUE)) {
+    stop("The studio needs knitr for its guide pages. Install it before running the app.")
+  }
+  fn <- if (!is.null(query$fn) && query$fn %in% names(playground_guide)) query$fn else "mascot_mood"
+  tagList(
+    tags$head(
+      tags$link(rel = "stylesheet", href = "tokens.css"),
+      tags$link(rel = "stylesheet", href = "shared.css"),
+      tags$link(rel = "stylesheet", href = "studio.css"),
+      tags$script(src = "inputs.js"),
+      tags$script(src = "studio.js")
+    ),
+    studio_page(view_character(query), fn, view, identical(query$open, "guide"))
+  )
+}
+
 ui <- function(request) {
   view <- view_from_request(request)
   query <- shiny::parseQueryString(request$QUERY_STRING %||% "")
-  character <- if (!is.null(query$character) && query$character %in% unname(studio_characters())) {
-    query$character
-  } else {
-    defaults$character
-  }
-  fn <- if (!is.null(query$fn) && query$fn %in% names(playground_guide)) query$fn else "mascot_mood"
   bslib::page_fillable(
-    title = "mascot studio",
+    title = views[[view]]$title,
     theme = bs_theme(version = 5),
     padding = 0,
-    tags$head(tags$link(rel = "stylesheet", href = "studio.css"), tags$script(src = "studio.js")),
-    div(class = "pg-routing", selectInput("tabs", NULL, c("studio", "examples"), selected = view)),
-    studio_page(character, fn, view, identical(query$open, "guide"))
+    # The server reads the view from here when the address bar does not name it (see view_from_client()).
+    div(class = "pg-routing", hidden = NA, selectInput("tabs", NULL, names(views), selected = view)),
+    views[[view]]$ui(query)
   )
 }
 
@@ -568,51 +573,21 @@ studio_server <- function(input, output, session) {
     log(utils::head(c(list(entry), log()), 30))
   }
 
-  # Evaluates a call and logs it with any warning or error. Returns TRUE when the mascot changed:
-  # a wrong value warns and leaves the mascot unchanged; a low-contrast colour warns and is kept.
+  # Runs a call with run_real_call(), then logs it and shows any error, warning or message. Returns TRUE when the
+  # mascot changed: a wrong value warns and leaves the mascot unchanged; a low-contrast colour warns and is kept.
   run_logged <- function(call, code) {
-    # Show development feedback here without changing the caller's option.
-    old_contrast <- getOption("mascot.contrast_warnings")
-    on.exit(options(mascot.contrast_warnings = old_contrast), add = TRUE)
-    if (is.null(getOption("mascot.contrast_warnings"))) {
-      options(mascot.contrast_warnings = TRUE)
-    }
-    messages <- character()
-    warnings <- character()
-    unchanged <- FALSE
-    error <- NULL
-    tryCatch(
-      withCallingHandlers(
-        eval(call),
-        warning = function(w) {
-          warnings <<- c(warnings, cli::ansi_strip(conditionMessage(w)))
-          if (!inherits(w, "mascot_contrast")) {
-            unchanged <<- TRUE
-          }
-          invokeRestart("muffleWarning")
-        },
-        message = function(m) {
-          messages <<- c(messages, trimws(cli::ansi_strip(conditionMessage(m))))
-          invokeRestart("muffleMessage")
-        }
-      ),
-      error = function(e) error <<- cli::ansi_strip(conditionMessage(e))
-    )
-    if (!is.null(error)) {
-      add_log(code, "error", error)
-      showNotification(error, type = "error", duration = 8)
-      return(FALSE)
-    }
-    if (length(warnings)) {
-      add_log(code, "warning", paste(warnings, collapse = "\n"))
-      showNotification(paste(warnings, collapse = "\n"), type = "warning", duration = 8)
-    } else if (length(messages)) {
-      add_log(code, "message", paste(messages, collapse = "\n"))
-      showNotification(paste(messages, collapse = "\n"), duration = 8)
-    } else {
+    result <- run_real_call(call, environment())
+    if (result$class == "ok") {
       add_log(code, "ok")
+    } else {
+      add_log(code, result$class, result$message)
+      showNotification(
+        result$message,
+        type = switch(result$class, error = "error", warning = "warning", "default"),
+        duration = 8
+      )
     }
-    !unchanged
+    result$ok
   }
 
   sync_bubble_controls <- function(pair) {
@@ -718,12 +693,7 @@ studio_server <- function(input, output, session) {
         updateSelectInput(session, "palette", selected = "original")
         updateSelectInput(session, "theme_source", selected = "own")
         updateRadioButtons(session, "theme_mode", selected = "auto")
-        for (mode in c("light", "dark")) {
-          for (role in roles()$role) {
-            reset_colour(mode, role)
-          }
-        }
-        updateCheckboxGroupInput(session, "css_roles", selected = character())
+        colours$reset()
       },
       motion = {
         update_switch("motion_on", value = TRUE, session = session)
@@ -751,14 +721,10 @@ studio_server <- function(input, output, session) {
     sentence <- studio_palette_sentence(character, selected_palette())
     session$sendCustomMessage("studio:palette", c(sentence, list(ids = names(studio_palette_choices(character)))))
   })
-  # The character before the current switch. A low-priority observer updates it after the switch has been handled.
-  previous_character <- reactiveVal(NULL)
-  observeEvent(input$character, previous_character(input$character), priority = -10)
   observeEvent(
     input$character,
     {
       character <- current_character()
-      previous <- previous_character() %||% character
       moods <- mascot_moods(character)$name
       gestures <- mascot_gestures(character)$name
       mood <- if (isTRUE(input$mood %in% moods)) input$mood else "idle"
@@ -776,12 +742,12 @@ studio_server <- function(input, output, session) {
         choices = studio_gesture_choices(character),
         selected = gesture
       )
-      # The pickers still show the previous character's colours until they are rebuilt: carry only the roles the
-      # user changed, as the rebuild does, so the new character is not sent the old character's colours.
+      # The colour module carries only the roles the user changed that the new character has too, so the new
+      # character is not sent the old character's colours.
       send(
         list(
           character = code_character(character),
-          theme = theme_with(carried_colours("light", previous), carried_colours("dark", previous)),
+          theme = theme_with(colours$light(), colours$dark()),
           mood = code_mood(mood)
         ),
         force = TRUE
@@ -940,52 +906,15 @@ studio_server <- function(input, output, session) {
     )
   })
 
-  # Colour inputs rebuild only when the character changes; source switches retain them.
-  picker_roles <- new.env(parent = emptyenv())
-  role_values <- function(mode) {
-    checkmate::assert_choice(mode, c("light", "dark"))
-    values <- stats::setNames(
-      lapply(roles()$role, function(role) isolate(input[[paste0(mode, "_", role)]])),
-      roles()$role
-    )
-    values <- reconcile_colour_values(picker_roles[[mode]], roles(), values)
-    picker_roles[[mode]] <- roles()
-    values
-  }
-  output$theme_light <- renderUI(arg_field(
-    "mascot_theme",
-    "light",
-    role_pickers("light", roles(), role_values("light"), character_name())
-  ))
-  output$theme_dark <- renderUI(arg_field(
-    "mascot_theme",
-    "dark",
-    role_pickers("dark", roles(), role_values("dark"), character_name())
-  ))
-  output$theme_css <- renderUI(arg_field(
-    "mascot_theme",
-    "css",
-    tagList(
-      studio_experimental_notes("mascot_theme", "CSS source"),
-      div(
-        class = "pg-css",
-        colour_input(
-          "css_accent",
-          isolate(input$css_accent) %||% "#7b4fd6",
-          "Value of --studio-accent",
-          `data-css-var` = "--studio-accent"
-        ),
-        tags$code("--studio-accent")
-      ),
-      checkboxGroupInput(
-        "css_roles",
-        "Parts that read the variable",
-        roles()$role,
-        selected = intersect(isolate(input$css_roles), roles()$role),
-        inline = TRUE
-      )
-    )
-  ))
+  # Colour pickers for every role, light and dark, and the parts that read --studio-accent: the shared module
+  # (R/shared-colours.R). They are drawn again when the character or palette changes; source switches keep them.
+  colours <- colour_roles_server(
+    "colours",
+    current_character,
+    selected_palette,
+    css = c(`--studio-accent` = "#7b4fd6"),
+    resolved = TRUE
+  )
   output$theme_brand <- renderUI({
     brand <- studio_brand(current_character())
     tagList(lapply(c("primary", "secondary"), function(slot) {
@@ -1008,52 +937,22 @@ studio_server <- function(input, output, session) {
       )
     }))
   })
-  for (id in c("theme_light", "theme_dark", "theme_css", "theme_brand")) {
-    outputOptions(output, id, suspendWhenHidden = FALSE)
-  }
+  outputOptions(output, "theme_brand", suspendWhenHidden = FALSE)
 
   # Colours and theme
-  picked <- function(mode) {
-    values <- vapply(
-      roles()$role,
-      function(role) {
-        value <- input[[paste0(mode, "_", role)]]
-        if (is.null(value)) NA_character_ else value
-      },
-      character(1)
-    )
-    keep <- !is.na(values) & tolower(values) != tolower(roles()$colour)
-    stats::setNames(tolower(values[keep]), roles()$role[keep])
-  }
   theme_with <- function(light, dark) {
     code_theme(
       input$theme_source %||% "own",
       light,
       dark,
       input$theme_mode %||% "auto",
-      intersect(input$css_roles, roles()$role),
+      colours$css(),
       input$bs_primary %||% "#1f6feb",
       input$bs_secondary %||% "#966600",
       selected_palette()
     )
   }
-  theme_now <- reactive(theme_with(picked("light"), picked("dark")))
-  # The colours a user changed, read before the pickers follow a new character: the pickers still hold the previous
-  # character's values, so only a role the previous character had, whose value differs from the colour that
-  # character listed, counts as changed (the same rule as role_values()).
-  carried_colours <- function(mode, previous) {
-    palette <- isolate(input$palette)
-    listed <- mascot_colour_roles(
-      previous,
-      palette = if (isTRUE(palette %in% studio_palette_choices(previous))) palette else "original"
-    )
-    values <- stats::setNames(
-      lapply(roles()$role, function(role) isolate(input[[paste0(mode, "_", role)]])),
-      roles()$role
-    )
-    kept <- Filter(Negate(is.null), reconcile_colour_values(listed, roles(), values))
-    vapply(kept, tolower, character(1))
-  }
+  theme_now <- reactive(theme_with(colours$light(), colours$dark()))
   observeEvent(
     input$theme_source,
     {
@@ -1074,69 +973,29 @@ studio_server <- function(input, output, session) {
   observeEvent(theme_code(), send(list(theme = theme_code())), ignoreInit = TRUE)
   # The browser reads the variable again only when the theme is sent, so resend it.
   observeEvent(
-    input$css_accent,
-    if (length(input$css_roles)) send(list(theme = theme_code()), force = TRUE),
+    colours$css_values(),
+    if (length(colours$css())) send(list(theme = theme_code()), force = TRUE),
     ignoreInit = TRUE
-  )
-  reset_colour <- function(mode, role) {
-    session$sendInputMessage(paste0(mode, "_", role), list(value = roles()$colour[roles()$role == role]))
-  }
-  observeEvent(input$reset_colour, {
-    parts <- strsplit(input$reset_colour, ":", fixed = TRUE)[[1]]
-    reset_colour(parts[1], parts[2])
-  })
-  observeEvent(
-    input$reset_mode,
-    for (role in roles()$role) {
-      reset_colour(input$reset_mode, role)
-    }
   )
   contrast_settings <- reactive(list(
     character = current_character(),
     theme = theme_now(),
     accepted_theme = state$theme,
-    css = input$css_accent
+    css = colours$css_values()
   ))
   checked_contrast <- eventReactive(input$contrast_check, contrast_settings())
   output$contrast <- renderUI({
     req(input$contrast_check)
     checked <- checked_contrast()
     if (!identical(checked, contrast_settings())) {
-      return(div(class = "pg-note", "Stale contrast result: settings changed. Check contrast again."))
+      return(contrast_stale_ui())
     }
-    theme <- checked$theme
-    preview <- tryCatch(
-      suppressWarnings(mascot_preview(character = checked$character, theme = eval(theme$short))),
-      error = function(e) e
-    )
-    if (inherits(preview, "error")) {
-      return(div(class = "pg-note pg-warn", "The check failed: ", cli::ansi_strip(conditionMessage(preview))))
-    }
-    css_note <- if (length(input$css_roles) && input$theme_source == "mascot") {
-      div(
-        class = "pg-note",
-        "Parts tied to a CSS variable (",
-        paste(input$css_roles, collapse = ", "),
-        ") are not checked here: only the browser knows their value. It warns in its console."
-      )
-    }
-    findings <- attr(preview, "contrast")
-    if (!nrow(findings)) {
-      return(tagList(
-        div(class = "pg-note pg-ok", "Every colour checked in R has at least 3:1 contrast in light and dark."),
-        css_note
-      ))
-    }
-    findings$ratio <- format(round(findings$ratio, 2), nsmall = 2)
-    tagList(
-      div(class = "pg-note pg-warn", "These colours are hard to see on the page background. They are kept."),
-      css_note,
-      data_table(
-        findings,
-        cells = list(colour = function(value) {
-          tagList(tags$span(class = "pg-swatch", style = paste0("background:", value)), tags$code(value))
-        })
-      )
+    # The check and its result are shared with the theme view (R/shared-check.R).
+    contrast_result_ui(
+      contrast_check(checked$character, eval(checked$theme$short)),
+      if (input$theme_source == "mascot") names(colours$css()) else character(),
+      chosen = input$theme_source == "bslib" ||
+        (input$theme_source == "mascot" && length(c(colours$light(), colours$dark())) > 0L)
     )
   })
 
@@ -1371,12 +1230,9 @@ studio_server <- function(input, output, session) {
         updateSelectInput(session, "palette", selected = "original")
         updateSelectInput(session, "theme_source", selected = "mascot")
         updateRadioButtons(session, "theme_mode", selected = "auto")
-        updateCheckboxGroupInput(session, "css_roles", selected = character())
+        colours$reset()
         for (mode in c("light", "dark")) {
-          for (part in roles()$role) {
-            reset_colour(mode, part)
-          }
-          session$sendInputMessage(paste0(mode, "_", role), list(value = "#f8f9fa"))
+          colours$set(mode, role, "#f8f9fa")
         }
       }
     }
@@ -1452,14 +1308,9 @@ studio_server <- function(input, output, session) {
     )
     Filter(Negate(is.null), args)
   })
-  prefix <- paste0("studio-preview-", session$token)
-  preview_dir <- file.path(tempdir(), prefix)
-  dir.create(preview_dir, showWarnings = FALSE)
-  addResourcePath(prefix, preview_dir)
-  session$onSessionEnded(function() {
-    removeResourcePath(prefix)
-    unlink(preview_dir, recursive = TRUE)
-  })
+  folder <- preview_folder(session, "studio-preview")
+  prefix <- folder$prefix
+  preview_dir <- folder$dir
   preview_request <- reactiveVal(0)
   preview_count <- reactiveVal(0)
   is_building <- reactiveVal(FALSE)
@@ -1632,7 +1483,8 @@ studio_server <- function(input, output, session) {
       ui,
       click_handler_code(current$click$helper),
       c("shiny", if (grepl("bs_theme", theme, fixed = TRUE)) "bslib", "mascot"),
-      if (grepl("--studio-accent", theme, fixed = TRUE)) input$css_accent
+      # The value of each CSS variable the theme reads.
+      colours$css_values()[vapply(names(colours$css_values()), grepl, logical(1), x = theme, fixed = TRUE)]
     )
   })
   output$code_last <- renderText(last_call())
@@ -1671,22 +1523,20 @@ studio_server <- function(input, output, session) {
   observeEvent(input$palette_swap, {
     target <- unname(studio_palette_swap[input$palette_swap])
     req(input$palette_swap %in% c("kept", "dropped"))
-    warning_text <- NULL
-    update_mascot(
+    # The swap is shared with the theme view's Check tab (R/shared-check.R).
+    result <- palette_swap_run(
       "palette_swap_demo",
-      character = unname(studio_palette_swap["from"]),
-      theme = unname(studio_palette_swap["palette"]),
-      motion = FALSE
-    )
-    withCallingHandlers(
-      update_mascot("palette_swap_demo", character = target),
-      mascot_palette_dropped = function(w) {
-        warning_text <<- paste("mascot_palette_dropped:", cli::ansi_strip(conditionMessage(w)))
-        invokeRestart("muffleWarning")
-      }
+      studio_palette_swap[["from"]],
+      target,
+      studio_palette_swap[["palette"]],
+      environment()
     )
     palette_swap_result(
-      warning_text %||% paste("Palette", studio_palette_swap[["palette"]], "kept for", mascot_character(target)$name)
+      if ("mascot_palette_dropped" %in% result$condition_classes) {
+        paste("mascot_palette_dropped:", result$message)
+      } else {
+        paste("Palette", studio_palette_swap[["palette"]], "kept for", mascot_character(target)$name)
+      }
     )
   })
   observeEvent(input$menu_long_status, {
@@ -1747,7 +1597,7 @@ studio_server <- function(input, output, session) {
       "1.0.0",
       src = c(href = ".."),
       script = "studio.js",
-      stylesheet = "studio.css"
+      stylesheet = c("tokens.css", "shared.css", "studio.css")
     )
     live <- htmltools::attachDependencies(live, c(list(bridge), htmltools::htmlDependencies(live)))
     page <- htmltools::tags$html(
@@ -1881,10 +1731,17 @@ examples_server <- function(input, output, session) {
   })
 }
 
-# Both URL views use the same studio shell; the URL only chooses its initial host mode.
-server <- function(input, output, session) {
+# The studio and examples views use the same studio shell; the URL only chooses its initial host mode.
+views <- studio_views(studio_view_ui, function(input, output, session) {
   studio_server(input, output, session)
   examples_server(input, output, session)
+})
+
+# A session runs only its own view's server, read once when it starts: Shiny sets the page's first input values
+# and the address before it calls this function.
+server <- function(input, output, session) {
+  view <- view_from_client(isolate(session$clientData$url_search), isolate(input$tabs))
+  views[[view]]$server(input, output, session)
 }
 
 shinyApp(ui, server)

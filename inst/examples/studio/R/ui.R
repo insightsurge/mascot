@@ -2,7 +2,7 @@
 # cards for the guide, and the small diagrams that explain each category.
 
 # What the studio keeps about a function itself (R/guide.R). Its words come from the help page: see
-# help_page() in R/help.R.
+# help_page() in R/shared-help.R.
 the_guide <- function(fn) {
   checkmate::assert_string(fn)
   checkmate::assert_choice(fn, names(playground_guide))
@@ -197,29 +197,6 @@ wiring_links <- function(fn) {
   })
 }
 
-colour_input <- function(id, value, label, ...) {
-  checkmate::assert_string(id, min.chars = 1)
-  checkmate::assert_string(value)
-  checkmate::assert_string(label)
-  # A colour picker holds only #rrggbb. A role listed with transparency (rgba(...)) gets a text box with the
-  # listed value instead, so it is never turned into a solid colour that would be sent as an override.
-  solid <- grepl("^#[0-9a-fA-F]{6}$", value)
-  tags$input(
-    id = id,
-    type = if (solid) "color" else "text",
-    class = if (solid) {
-      "pg-colour form-control form-control-color"
-    } else {
-      "pg-colour pg-colour-text form-control form-control-sm"
-    },
-    value = value,
-    title = if (solid) label else paste0(label, " (translucent: edit the text, for example ", value, ")"),
-    `aria-label` = label,
-    spellcheck = if (!solid) "false",
-    ...
-  )
-}
-
 # A pre block without the line breaks htmltools would add inside it.
 code_block <- function(text, class = NULL, id = NULL) {
   tags$pre(id = id, class = class, tags$code(text), .noWS = "inside")
@@ -227,10 +204,6 @@ code_block <- function(text, class = NULL, id = NULL) {
 
 code_output <- function(id) {
   tagAppendAttributes(verbatimTextOutput(id), class = "pg-code")
-}
-
-copy_button <- function(target, label = "Copy") {
-  tags$button(type = "button", class = "btn btn-sm btn-outline-primary pg-copy", `data-copy` = target, label)
 }
 
 # ---- The guide card -------------------------------------------------------------------------
@@ -556,22 +529,6 @@ guide_mistakes <- function(fn, character) {
   )
 }
 
-# Studio navigation comes from the same function/control map as completeness checks.
-studio_button <- function(id, label, aria_label = label, pressed = NULL) {
-  checkmate::assert_string(id)
-  checkmate::assert_string(label)
-  checkmate::assert_string(aria_label)
-  checkmate::assert_flag(pressed, null.ok = TRUE)
-  tags$button(
-    id = id,
-    type = "button",
-    class = "btn btn-sm btn-outline-primary",
-    `aria-label` = aria_label,
-    `aria-pressed` = if (!is.null(pressed)) tolower(as.character(pressed)),
-    label
-  )
-}
-
 studio_rail <- function() {
   groups <- setdiff(names(playground_categories), "preview")
   icons <- c(
@@ -676,6 +633,7 @@ studio_right_rail <- function() {
         class = "pg-menu-body pg-float",
         tags$a(href = "?view=studio", "Studio"),
         tags$a(id = "more_examples", href = "?view=examples", "More examples"),
+        tags$a(id = "more_theme", href = "?view=theme", target = "_blank", rel = "noopener", "Theme a mascot"),
         tags$a(href = "https://github.com/insightsurge/mascot", target = "_blank", rel = "noopener", "GitHub"),
         tags$a(href = "https://mascot-pkg.web.app/", target = "_blank", rel = "noopener", "Package website"),
         tags$label(
@@ -978,47 +936,6 @@ palette_swap_section <- function(character) {
     try_button("palette_swap", "kept", paste("Swap and keep", example[["palette"]])),
     try_button("palette_swap", "dropped", paste("Swap and drop", example[["palette"]])),
     tags$div(role = "status", textOutput("palette_swap_result"))
-  )
-}
-
-# The part of a help text (HTML) that starts at `from`, up to its closing paragraph; NULL when absent.
-studio_help_tail <- function(html, from) {
-  checkmate::assert_string(from, min.chars = 1)
-  text <- paste(as.character(html), collapse = "")
-  start <- regexpr(from, text, fixed = TRUE)
-  if (start < 0L) {
-    return(NULL)
-  }
-  tail <- substr(text, start, nchar(text))
-  gsub("\\s+", " ", sub("</p>\\s*$", "", tail))
-}
-
-# The Experimental sections of a function's help page as notes (the badge and the package's own words), or only
-# those whose title matches `title` (a regular expression). No note for a function that is not experimental.
-studio_experimental_notes <- function(fn, title = NULL) {
-  checkmate::assert_string(fn, min.chars = 1)
-  checkmate::assert_string(title, min.chars = 1, null.ok = TRUE)
-  found <- help_page(fn)$experimental
-  if (!is.null(title)) {
-    found <- found[grepl(title, names(found))]
-  }
-  lapply(unname(found), function(html) div(class = "pg-note pg-experimental", html))
-}
-
-# The experimental status of the bslib mapping, in the words of ?mascot_theme (so the two cannot drift), with the
-# same badge as the help page's other experimental sections.
-studio_bslib_experimental <- function() {
-  help <- help_page("mascot_theme")
-  text <- paste(
-    vapply(list(help$description, help$details), function(x) paste(as.character(x), collapse = ""), ""),
-    collapse = " "
-  )
-  tail <- studio_help_tail(text, "Which parts of a character")
-  sentence <- if (!is.null(tail)) sub("(?s)(release\\.).*$", "\\1", tail, perl = TRUE)
-  div(
-    class = "pg-note",
-    tags$span(class = "badge text-bg-warning", "Experimental"),
-    if (!is.null(sentence)) tagList(" ", HTML(sentence))
   )
 }
 

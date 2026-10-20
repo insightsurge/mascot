@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `mascot_studio(view = "theme")` and `mascot_example("theme")` open Theme a mascot, a page of the studio's app that themes one character: a palette, your own colours for light and dark mode, CSS variables or your app's brand colours, with the live code to copy. Its Check tab shows every mood in light and dark, checks contrast and runs the common warnings in the package's own words. The studio's More menu opens it in a new tab (#378).
+
 * The redesigned studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).
 
 * The studio's Guide is written once, as R Markdown pages in `inst/examples/studio/guide/` (one per function, 26 in all), and the website shows the same pages in a new Studio guide menu. The studio now needs the optional package `knitr` (#353).
@@ -21,6 +23,8 @@
 * The studio expands Help and Guide beside the rail, highlights edited call arguments, offers a compact call bar, and opens More examples in place with a return to the mounted studio (#353).
 
 ## Breaking changes
+
+* The `branding` example is removed; `mascot_examples()` lists `"theme"` in its place. Use `mascot_example("theme")` (#378).
 
 * `mascot_preview()` removes the inert `placement` and `click` arguments. Remove them from preview calls; comparison columns now use 160, 96 and 24 pixels after the requested size (#350).
 

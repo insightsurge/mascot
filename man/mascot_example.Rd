@@ -26,7 +26,9 @@ copied or written by this function. Use \code{run = FALSE} to read the app's cod
 or pass its directory to \code{\link[shiny:runApp]{shiny::runApp()}}. The single-file scenarios can be
 copied into a project with Shiny, \code{bslib} and mascot installed. Copy the whole
 folder for the studio, \code{golem} and rhino-shaped examples; \code{golem} also needs the
-\code{golem} package.
+\code{golem} package. \code{"theme"} is a page of the studio's app: \code{run = FALSE} returns
+the studio's \code{app.R}, and \code{run = TRUE} opens the app on that page, as
+\code{\link[=mascot_studio]{mascot_studio()}} with \code{view = "theme"} does.
 }
 \examples{
 basename(mascot_example("form-check", run = FALSE))

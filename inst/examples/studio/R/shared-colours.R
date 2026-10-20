@@ -273,8 +273,9 @@ colour_roles_ui <- function(id, modes = c("light", "dark"), css = TRUE) {
 # the variable the CSS part offers, named with its starting value (c(`--brand` = "#7b4fd6")), or NULL for none.
 # resolved shows each role's colour in use now, and leader names a role that follows no other (see role_picker()).
 # Returns light, dark and css: reactives of the changed values (role = colour, role = variable), css_values: a
-# reactive of the variable's value, and two functions: reset(mode = NULL, role = NULL) puts pickers back to the
-# listed colours (with no arguments, every picker, and no part reads the variable); set(mode, role, value) sets one.
+# reactive of the variable's value, and three functions: reset(mode = NULL, role = NULL) puts pickers back to the
+# listed colours (with no arguments, every picker, and no part reads the variable); set(mode, role, value) sets one;
+# clear_css() makes no part read the variable.
 colour_roles_server <- function(id, character, palette, css = NULL, resolved = FALSE, leader = "leader") {
   checkmate::assert_string(id, min.chars = 1)
   checkmate::assert_class(character, "reactive")
@@ -390,8 +391,8 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
           set(each, part, listed$colour[match(part, listed$role)])
         }
       }
-      if (is.null(mode) && is.null(role) && !is.null(css)) {
-        shiny::updateCheckboxGroupInput(session, "css_roles", selected = base::character())
+      if (is.null(mode) && is.null(role)) {
+        clear_css()
       }
       invisible(NULL)
     }
@@ -404,11 +405,22 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
       shiny::req(input$reset_mode %in% modes)
       reset(input$reset_mode)
     })
+    # The parts that read the variable: the checkboxes' choice, or none right after clear_css(), before the browser
+    # reports the cleared checkboxes.
+    css_parts <- shiny::reactiveVal(base::character())
+    shiny::observeEvent(input$css_roles, css_parts(as.character(input$css_roles)), ignoreNULL = FALSE)
+    clear_css <- function() {
+      if (!is.null(css)) {
+        css_parts(base::character())
+        shiny::updateCheckboxGroupInput(session, "css_roles", selected = base::character())
+      }
+      invisible(NULL)
+    }
     list(
       light = shiny::reactive(changed_colours(as.list(picked$light), roles())),
       dark = shiny::reactive(changed_colours(as.list(picked$dark), roles())),
       css = shiny::reactive({
-        parts <- if (is.null(css)) base::character() else intersect(input$css_roles, roles()$role)
+        parts <- if (is.null(css)) base::character() else intersect(css_parts(), roles()$role)
         stats::setNames(rep(if (is.null(css)) base::character() else names(css), length(parts)), parts)
       }),
       css_values = shiny::reactive({
@@ -419,7 +431,8 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
         }
       }),
       reset = reset,
-      set = set
+      set = set,
+      clear_css = clear_css
     )
   })
 }

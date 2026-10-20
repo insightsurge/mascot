@@ -346,6 +346,34 @@ describe("colour_roles_server()", {
       }
     )
   })
+  it("clears the parts that read the CSS variable at once, and tells the browser", {
+    skip_if_not_installed("bslib")
+    shiny::testServer(
+      studio_shared("shared-colours.R")$colour_roles_server,
+      args = list(
+        character = shiny::reactiveVal("tessa"),
+        palette = shiny::reactiveVal("original"),
+        css = c(`--brand` = "#7b4fd6")
+      ),
+      {
+        colours <- session$returned
+        sent <- list()
+        root <- session$rootScope()
+        root$sendInputMessage <- function(inputId, message) sent[[inputId]] <<- message
+        session$setInputs(css_roles = c("body", "rim"))
+        expect_identical(colours$css(), c(body = "--brand", rim = "--brand"))
+        # When the caller clears them, before the browser answers
+        colours$clear_css()
+        session$flushReact()
+        # Then no part reads the variable, and the checkboxes are told to clear
+        expect_length(colours$css(), 0L)
+        # (a running app adds the module's prefix to the name)
+        id <- grep("css_roles$", names(sent), value = TRUE)
+        expect_length(id, 1L)
+        expect_length(sent[[id]]$value, 0L)
+      }
+    )
+  })
   it("starts outside a reactive context, as a running app starts it", {
     # testServer() runs the module inside isolate(), which would hide a reactive read at start-up.
     session <- shiny::MockShinySession$new()
@@ -355,7 +383,7 @@ describe("colour_roles_server()", {
       session,
       server("colours", shiny::reactiveVal("tessa"), shiny::reactiveVal("original"))
     )
-    expect_named(colours, c("light", "dark", "css", "css_values", "reset", "set"))
+    expect_named(colours, c("light", "dark", "css", "css_values", "reset", "set", "clear_css"))
   })
   it("checks its arguments", {
     server <- studio_shared("shared-colours.R")$colour_roles_server

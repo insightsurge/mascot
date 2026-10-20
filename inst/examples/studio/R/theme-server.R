@@ -276,7 +276,7 @@ theme_view_server <- function(input, output, session) {
         colours$reset("light")
         colours$reset("dark")
       },
-      css = shiny::updateCheckboxGroupInput(session, "colours-css_roles", selected = base::character()),
+      css = colours$clear_css(),
       mode = {
         chosen_mode("auto")
         shiny::updateRadioButtons(session, "mode", selected = "auto")

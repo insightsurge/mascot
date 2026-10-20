@@ -324,12 +324,13 @@ describe("the Your colours tab", {
       session$sendInputMessage <- function(id, message) updates[[id]] <<- message
       session$setInputs(stack_clear = "mode")
       expect_identical(updates$mode$value, "auto")
+      # Clearing CSS goes through the colour module: no part reads the variable at once, and the checkboxes clear
       session$setInputs(stack_clear = "css")
       expect_length(updates$`colours-css_roles`$value, 0L)
-      # Clearing your colours resets every picker: the code keeps only the palette and the CSS part
+      expect_false(grepl("css =|--app-accent", output$theme_code))
+      # Clearing your colours resets every picker: only the palette is left
       session$setInputs(stack_clear = "colours")
-      expect_false(grepl("light =|dark =", output$theme_code))
-      expect_match(output$theme_code, 'palette = "coral_navy"', fixed = TRUE)
+      expect_identical(output$theme_code, 'mascot("helper", theme = "coral_navy")')
     })
   })
   it("keeps the starting palette, the header menu and the cards on one value", {

@@ -259,7 +259,7 @@
 /* Your colours: the pickers as a grid of compact tiles (the shared picker CSS stays as the studio's inspector uses
    it). A tile holds the picker, the role's name and, for a part that follows another, what it follows; its x shows
    only while the role is changed, and a changed tile has the accent border. */
-.theme-tab {
+.theme-tab:not(:has(.theme-palette-grid)) {
   max-width: 980px;
 }
 
@@ -432,15 +432,16 @@ fieldset[disabled] .shiny-input-container {
 }
 
 /* Palette cards: a radio group; the chosen card has the primary colour's border. */
+/* The cards fill each row at any width; in a card the text column takes the room the mascot leaves. */
 .theme-palette-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
   gap: 10px;
 }
 
 .theme-palette-card {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.6rem;
   align-items: center;
   padding: 8px;
@@ -467,8 +468,8 @@ fieldset[disabled] .shiny-input-container {
 }
 
 .theme-card-mascot {
-  width: 88px;
-  height: calc(88px + 3.25rem);
+  width: 5.5rem;
+  height: calc(5.5rem + 3.25rem);
 }
 
 /* .mascot-status is one of the package's public styling hooks (?mascot_styling). */

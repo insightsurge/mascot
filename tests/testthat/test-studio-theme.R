@@ -712,6 +712,9 @@ describe("the colour tiles in a browser", {
     expect_true(app$get_js(reset_shown))
     app$run_js(sprintf("%s.querySelector('.pg-role-reset').click()", tile))
     app$wait_for_js(sprintf("!%s.classList.contains('is-changed')", tile))
+    # More parts is one grid of tiles too, with no heading per group.
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-role-group-title')).display"), "none")
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-role-group')).display"), "contents")
     # The tiles sit in a grid of columns.
     expect_gt(
       app$get_js(sprintf(

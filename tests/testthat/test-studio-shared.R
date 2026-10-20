@@ -549,3 +549,21 @@ describe("role_picker() marks", {
     expect_false(grepl("pg-role-leader", as.character(env$role_picker("light", follower, roles)), fixed = TRUE))
   })
 })
+
+describe("the studio's code builders on their own", {
+  it("need nothing from the studio's other files, nor %||% (base R has it only from 4.4)", {
+    # Given code.R in a minimal environment where %||% stops, as on R before 4.4 without the studio's data.R
+    guard <- new.env(parent = baseenv())
+    guard[["%||%"]] <- function(x, y) stop("code.R used %||%")
+    code <- new.env(parent = guard)
+    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
+    # Then the builders that used it work
+    menu <- code$code_menu(c(about = "About"), "auto", NULL)
+    expect_identical(eval(menu$helper, asNamespace("mascot")), mascot_popup_menu(c(about = "About")))
+    pairs <- list(mood = code$code_mood("happy"), size = code$code_size(120))
+    expect_identical(code$pick_style(pairs, "helper")$mood, quote(mascot_mood("happy")))
+    picked <- code$pick_style(pairs, c(.default = "short", mood = "helper"))
+    expect_identical(picked$mood, quote(mascot_mood("happy")))
+    expect_identical(picked$size, 120)
+  })
+})

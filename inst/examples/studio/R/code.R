@@ -135,7 +135,8 @@ code_menu <- function(items, direction = "auto", label = "", tooltip = TRUE, dis
     return(code_pair(quote(mascot_popup_menu())))
   }
   vector <- if (length(items)) named_call("c", items)
-  has_label <- nzchar(trimws(label %||% ""))
+  # Written out rather than %||%, which base R has only from 4.4 (the package supports 4.1).
+  has_label <- nzchar(trimws(if (is.null(label)) "" else label))
   helper <- helper_call(
     "mascot_popup_menu",
     vector,
@@ -258,7 +259,14 @@ pick_style <- function(pairs, style) {
     style <- as.list(style)
   }
   lapply(names(pairs), function(arg) {
-    pairs[[arg]][[if (length(style) == 1L) style else style[[arg]] %||% style[[".default"]]]]
+    chosen <- if (length(style) == 1L) {
+      style
+    } else if (is.null(style[[arg]])) {
+      style[[".default"]]
+    } else {
+      style[[arg]]
+    }
+    pairs[[arg]][[chosen]]
   }) |>
     stats::setNames(names(pairs))
 }

@@ -30,9 +30,10 @@
   margin-left: auto;
 }
 
+/* The preview column takes about 42% of the width, the tabs the rest. */
 .theme-main {
   display: grid;
-  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
   gap: 16px;
   align-items: start;
 }
@@ -58,6 +59,7 @@
 .theme-preview {
   background: var(--bs-body-bg);
   overflow: hidden;
+  container-type: inline-size;
 }
 
 .theme-preview > .pg-host-bar,
@@ -77,9 +79,10 @@
   overflow: hidden;
 }
 
+/* The mascot grows with the preview column, up to 300px. */
 .theme-preview-stage {
-  width: 180px;
-  height: calc(180px + 5rem);
+  width: min(55cqw, 300px);
+  height: calc(min(55cqw, 300px) + 5rem);
   margin: 16px auto;
 }
 

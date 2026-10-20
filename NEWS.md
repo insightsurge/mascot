@@ -45,6 +45,7 @@
 * `mascot_read_character()` and `mascot_check_character()` are now public and *Experimental*: read a local JSON file or check JSON text or a plain list to get an opaque checked character object. Their arguments, results and diagnostics may change in 0.1.x (#339).
 * `mascot_character()` accepts a checked character object, uses it as passed and does not store it anywhere; pass it each time you choose that character. The studio currently directs custom objects to `mascot_preview()` or `mascot()` (#339).
 * `mascot_theme()` checks the form of colour role names when called. A role name that is not valid for the chosen character is now reported when the theme is used with `mascot()`, `update_mascot()` or `mascot_preview()`, rather than when `mascot_theme()` is called, so custom characters can use their own roles (#339).
+* The "Write your own character" article walks through reading and checking a character file (*Experimental*, #339).
 
 * Tessa has a new look: a slimmer teal hexagon with a silver ring that shimmers now and then, hair with a side fringe, a small bow, small studs, arms that hang down and a chest badge whose icon shows her mood. She keeps her five moods, her wave and nod, her status lines and every anchor name, and gains anchors for her fringe, lock and studs. Her colours gain roles for the hair (`hair`, `hair_shade`, `hair_light`), the badge (`badge`, `badge_icon`), the iris, the body shade and the ring's light and dark ends, and the bow now has its own `accessory` colour instead of following the rim. Her old palettes `nordic`, `coral` and `azure` are replaced (#359).
 * Tessa's own colours are named `night_teal`, with `"original"` still selecting them; `mascot_palettes("tessa")` lists `night_teal` first, and her other palettes are `sea_green`, `forest`, `spring`, `peach`, `coral_navy`, `desert_coral`, `rose_soft`, `lilac_soft` and `mist_navy`. A character file may name its own colours with `native_palette`, and a palette may carry a `group` for sorting in documentation (#358, #359).
@@ -154,7 +155,7 @@
 * `update_mascot(id, ..., session = shiny::getDefaultReactiveDomain())` names every update option; `NULL` leaves it unchanged and empty helpers reset settings. `update_mascot()` changes a mascot from the Shiny server: its character, mood, status, bubble, size, placement, theme, motion, click and gesture. Arguments left as `NULL` stay unchanged (#190, #196, #201, #202, #203, #143).
   * An update sent before the mascot appears is kept until it does. The latest state is kept for a later first mascot with the same ID (#193), and only the latest early gesture plays, once (#200).
   * A new `placement` replaces any position the visitor dragged the mascot to (#220).
-  * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
+  * Invalid values give a warning and leave the mascot unchanged.
 
 ## Minor improvements and fixes
 

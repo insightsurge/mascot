@@ -26,6 +26,13 @@ builtin_characters <- function() {
 #'   file format and character authoring functions are experimental too.
 #' @family mascot helpers
 #' @seealso [mascot()]
+#' @evalRd paste0(
+#'   "\\section{Experimental characters}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\nKnurl and Neer.\n}"
+#' )
 #' @export
 #' @examples
 #' mascot_character()

@@ -441,7 +441,12 @@ panel_layout <- function() {
       "mascot_placement",
       "drag",
       tagList(
-        selectInput("drag", "When dropped", c("No dragging" = "none", Snap = "snap", Free = "free")),
+        selectInput(
+          "drag",
+          "When dropped",
+          c("No dragging" = "none", Snap = "snap", `Free (experimental)` = "free")
+        ),
+        studio_experimental_notes("mascot_placement", "free dragging"),
         conditionalPanel(
           "input.position == 'inline'",
           div(class = "pg-note", "An inline mascot ignores drag. Pick a corner position to try it.")
@@ -505,7 +510,14 @@ panel_colours <- function() {
           bslib::navset_tab(
             bslib::nav_panel("Light", arg_field("mascot_theme", "light", colours$light)),
             bslib::nav_panel("Dark", arg_field("mascot_theme", "dark", colours$dark)),
-            bslib::nav_panel("CSS variables", arg_field("mascot_theme", "css", colours$css))
+            bslib::nav_panel(
+              "CSS variables",
+              arg_field(
+                "mascot_theme",
+                "css",
+                tagList(studio_experimental_notes("mascot_theme", "CSS source"), colours$css)
+              )
+            )
           )
         })
       ),

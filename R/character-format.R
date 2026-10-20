@@ -482,7 +482,29 @@ character_format_parse <- function(x, from = "list") {
     character_format_abort("input_type", "$.format_version", NULL, "Supply an integer format_version.")
   }
   if (version != schema$format_version) {
-    character_format_abort("version", "$.format_version", version, "Use a supported character-format version.")
+    shown <- format(version, scientific = FALSE, trim = TRUE)
+    fix <- if (version > schema$format_version) {
+      paste0(
+        "This file is format version ",
+        shown,
+        "; this mascot version supports ",
+        schema$format_version,
+        ". Update the package, or use a version-",
+        schema$format_version,
+        " file."
+      )
+    } else {
+      paste0(
+        "Format version ",
+        shown,
+        " is not a supported version; this mascot version supports ",
+        schema$format_version,
+        ". Use a version-",
+        schema$format_version,
+        " file."
+      )
+    }
+    character_format_abort("version", "$.format_version", version, fix)
   }
   required <- character_format_node(
     data$requires,

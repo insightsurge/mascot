@@ -113,6 +113,9 @@ reference:
       - mascot
       - update_mascot
   - title: Helpers
+    desc: >
+      Knurl and Neer (mascot_character(), mascot_characters()), mascot_theme(css =) and
+      mascot_placement(drag = "free") are experimental.
     contents:
       - mascot_character
       - mascot_mood
@@ -135,6 +138,7 @@ reference:
       - mascot_palettes
 
   - title: Examples
+    desc: mascot_preview() and mascot_studio() are experimental.
     contents:
       - mascot_preview
       - mascot_examples

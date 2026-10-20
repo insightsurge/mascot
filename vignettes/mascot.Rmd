@@ -95,7 +95,7 @@ again does not rebuild it, so it keeps its mood and position.
 
 ## Open an example
 
-Start with mascot studio, `mascot_studio()`. Select a function in the index on
+Start with mascot studio, `mascot_studio()` (experimental). Select a function in the index on
 the left; its arguments appear in the controls on the right, and one live Tessa
 follows your changes. Each argument's information button shows its help text,
 and the Guide button opens the function's help with pictures and common
@@ -142,7 +142,7 @@ mascot_character("tessa")
 Tessa and Sela are stable built-in characters: their ids, names, five shared
 moods, gesture names, colour-role names and palette names stay the same in
 every release, while their drawings, motion and exact palette colours may be
-polished. Knurl and Neer are experimental: any part may change, and neither will
+polished. Knurl and Neer (experimental) may change in any way, and neither will
 be removed without a warning in the release before its removal. The character file
 format and authoring functions are experimental too. `mascot_character()`
 selects a character; it does not create a new one. The plain names
@@ -255,7 +255,7 @@ parent-owned corner helper in `mascot_example("modules")`.
 
 `drag = "none"` (the default) disables dragging. A floating mascot can be dragged by its drawing, with a mouse or a finger.
 Dragging is off by default. With `drag = "snap"` the mascot moves to the
-nearest corner when it is dropped; with `drag = "free"` it stays where it is
+nearest corner when it is dropped; with `drag = "free"` (experimental) it stays where it is
 dropped, kept inside the window. A click without movement still opens its menu.
 While minimised, drag the round restore button with the same rules. A click
 without movement restores the mascot; a drag leaves it minimised. After a
@@ -324,8 +324,8 @@ update_mascot("helper", theme = mascot_theme()) # Restore original colours.
 
 With `bslib` installed, primary supplies Tessa's body and secondary supplies
 her rim. Her follow rules also colour sleeves, eyelids and feet.
-Which parts a `bs_theme()` colours is experimental and may change in a later
-release.
+The mapping of `bs_theme()` colours to a character's parts (experimental) may
+change in a later release.
 
 ```{r bslib-theme, eval=FALSE}
 if (requireNamespace("bslib", quietly = TRUE)) {
@@ -371,7 +371,7 @@ update_mascot("helper", theme = pink_theme)
 
 ![The same theme on a dark page: Tessa has a light pink body and sleeves with a lilac rim and feet.](figures/branding-pink-dark.png)
 
-CSS variables are an **experimental** source:
+CSS variables are another source (experimental):
 
 ```{r css-theme, eval=FALSE}
 mascot("helper", theme = mascot_theme(
@@ -526,7 +526,7 @@ The Quarto `shortcode` and fuller static-site guidance are separate upcoming wor
 
 ## Check a look before using it
 
-`mascot_preview()` makes one offline page with every mood in light and dark,
+`mascot_preview()` (experimental) makes one offline page with every mood in light and dark,
 then compares your requested size with 160, 96 and 24 pixels. Motion is off by
 default so you can inspect the faces. Assign the result to build it without
 opening a Viewer; print it when you want to look:

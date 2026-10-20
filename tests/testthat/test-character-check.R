@@ -294,3 +294,20 @@ describe("reserved names in fixed and data positions", {
     )
   })
 })
+
+describe("released character files", {
+  it("keeps every golden character file loading unchanged", {
+    root <- test_path("fixtures", "golden")
+    folders <- list.dirs(root, recursive = FALSE, full.names = TRUE)
+    expect_gt(length(folders), 0L)
+    for (folder in folders) {
+      files <- list.files(folder, pattern = "\\.json$", full.names = TRUE)
+      expect_gt(length(files), 0L)
+      for (file in files) {
+        # Built-in ids are reserved, so only the shipped built-ins use the internal admission route.
+        built_in <- tools::file_path_sans_ext(basename(file)) %in% builtin_characters()$id
+        expect_no_error(character_format_check(file, from = "file", builtin = built_in))
+      }
+    }
+  })
+})

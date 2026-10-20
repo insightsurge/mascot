@@ -182,6 +182,11 @@ theme_colours_tab <- function(character) {
   shiny::div(
     class = "theme-tab",
     shiny::tags$p(
+      class = "pg-note theme-pointer",
+      "Just have two brand colours? ",
+      theme_tab_button("brand", "Use the Brand colours tab.")
+    ),
+    shiny::tags$p(
       class = "theme-lead",
       "Change any part's colour. A part marked \"follows body\" takes a lighter or darker shade of that colour until",
       "you set it."

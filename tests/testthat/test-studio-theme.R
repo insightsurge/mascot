@@ -269,6 +269,11 @@ describe("the Your colours tab", {
       expect_match(page, paste0('id="', id, '"'), fixed = TRUE, info = id)
     }
     expect_match(page, "Force the mascot", fixed = TRUE)
+    # One line points a user with two brand colours to the Brand colours tab.
+    expect_match(
+      page,
+      'Just have two brand colours[?]\\s*<button[^>]*data-event="go_tab" data-value="brand"[^>]*>Use the Brand colours tab.</button>'
+    )
     expect_match(page, 'href="?view=studio&amp;fn=mascot_theme"', fixed = TRUE)
     # The CSS source is marked experimental in the help page's own words.
     expect_match(page, "Experimental</span>\\s*This source is experimental\\.")

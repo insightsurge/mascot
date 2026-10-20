@@ -608,6 +608,13 @@ describe("the theme view in a browser", {
     app <- theme_driver()
     withr::defer(app$stop())
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    # The header is one line: title, sentence, page switch, Start again; the sentence has the studio's text size.
+    middles <- app$get_js(paste0(
+      "['.theme-title', '.pg-sentence', '#page_mode', '#reset_all'].map((s) => { ",
+      "const r = document.querySelector(s).getBoundingClientRect(); return (r.top + r.bottom) / 2; })"
+    ))
+    expect_lt(diff(range(unlist(middles))), 12)
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-sentence')).fontSize"), "14px")
     # Each tab shows its own panel.
     for (tab in c("colours", "brand", "check", "palette")) {
       app$run_js(sprintf("document.querySelector('#theme_tabs a[data-value=\"%s\"]').click()", tab))

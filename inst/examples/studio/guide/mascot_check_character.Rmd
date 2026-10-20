@@ -1,0 +1,51 @@
+```{r setup-mascot_check_character, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_check_character-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_check_character")
+```
+
+```{r mascot_check_character-experimental, echo = FALSE}
+htmltools::div(
+  class = "pg-note",
+  htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
+  " Checking your own character, and the file format, may change in a later release."
+)
+```
+
+### Check a character you wrote as a list
+
+`mascot_check_character()` checks a plain R list that describes a character, for example one you
+read with `jsonlite::read_json()` or wrote by hand. It returns a checked character, or an error that
+names the first problem. The package's example file gives a list that passes:
+
+```{r mascot_check_character-call, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'path <- system.file("examples", "characters", "study_bot.json", package = "mascot")\n',
+  'source <- jsonlite::read_json(path)\n',
+  'bot <- mascot::mascot_check_character(source)'
+)))
+```
+
+A list that leaves out what a character needs is refused, and the error says where:
+
+```{r mascot_check_character-error, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'mascot::mascot_check_character(list(format_version = 1))\n\n',
+  tryCatch(
+    {
+      mascot::mascot_check_character(list(format_version = 1))
+      ""
+    },
+    error = function(e) paste0("Error: ", cli::ansi_strip(conditionMessage(e)))
+  )
+)))
+```
+
+`r guide_fn_link("mascot_read_character")` reads and checks a file in one step. The studio takes the
+built-in characters only for now; custom characters in the studio are coming soon.
+
+```{r mascot_check_character-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_check_character", studio_character)
+```

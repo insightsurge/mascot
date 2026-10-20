@@ -53,9 +53,11 @@ describe("mascot_examples()", {
             "guide/mascot_placement.Rmd",
             "guide/mascot_colour_roles.Rmd",
             "guide/mascot_popup_menu.Rmd",
+            "guide/mascot_read_character.Rmd",
             "guide/mascot.Rmd",
             "guide/mascot_motion_settings.Rmd",
             "guide/mascot_character.Rmd",
+            "guide/mascot_check_character.Rmd",
             "guide/mascot_example.Rmd",
             "guide/mascot_examples.Rmd",
             "guide/mascot_studio.Rmd",
@@ -663,7 +665,7 @@ describe("studio round 4 regression guards", {
     # The one-line hint is the first sentence of the argument's help text, so it cannot depend on the selection.
     text <- hint("mascot_character", "id")
     expect_false(grepl("Selected:", text, fixed = TRUE))
-    expect_match(text, "built-in character", fixed = TRUE)
+    expect_match(text, "known character", fixed = TRUE)
   })
   it("gets character labels and defaults from the package", {
     dir <- dirname(mascot_example("studio", run = FALSE))
@@ -3570,13 +3572,21 @@ describe("experimental labels in the studio (#353)", {
     notes <- function(fn, title = NULL) {
       paste(vapply(get("studio_experimental_notes", env)(fn, title), as.character, ""), collapse = "")
     }
-    for (fn in c("mascot_preview", "mascot_studio", "mascot_theme", "mascot_placement", "mascot_characters")) {
+    for (fn in c(
+      "mascot_preview",
+      "mascot_studio",
+      "mascot_theme",
+      "mascot_placement",
+      "mascot_characters",
+      "mascot_read_character",
+      "mascot_check_character"
+    )) {
       expect_match(notes(fn), "badge text-bg-warning", fixed = TRUE, info = fn)
       card <- as.character(get("function_card", env)(fn))
       expect_match(card, "pg-experimental", fixed = TRUE, info = fn)
     }
     # Words come from the help page, not from the studio
-    expect_match(notes("mascot_preview"), "may change before CRAN", fixed = TRUE)
+    expect_match(notes("mascot_preview"), "may change in a later release", fixed = TRUE)
     expect_match(notes("mascot_placement", "free dragging"), "free", fixed = TRUE)
     expect_match(notes("mascot_theme", "CSS source"), "R cannot check", fixed = TRUE)
     expect_false(grepl("R cannot check", notes("mascot_theme", "colour mapping"), fixed = TRUE))
@@ -3589,5 +3599,25 @@ describe("experimental labels in the studio (#353)", {
     page <- as.character(studio_parts()$page)
     expect_match(page, "Free (experimental)", fixed = TRUE)
     expect_match(page, "is experimental: the position it reports", fixed = TRUE)
+  })
+})
+
+
+describe("the studio public character readers", {
+  it("lists read and check without enabling the authoring panel", {
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    guide <- new.env()
+    sys.source(file.path(dir, "R", "guide.R"), guide)
+    sys.source(file.path(dir, "R", "data.R"), guide)
+    sys.source(file.path(dir, "R", "code.R"), guide)
+    expect_s3_class(eval(guide$code_read_character()), "mascot_character_data")
+    expect_s3_class(eval(guide$code_check_character()), "mascot_character_data")
+    for (fn in c("mascot_read_character", "mascot_check_character")) {
+      expect_s3_class(eval(parse(text = guide$format_call(fn, list()))), "mascot_character_data")
+    }
+    for (fn in c("mascot_read_character", "mascot_check_character")) {
+      expect_true(fn %in% names(guide$playground_guide))
+      expect_true(fn %in% names(guide$playground_controls))
+    }
   })
 })

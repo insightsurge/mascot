@@ -207,6 +207,31 @@ panel_look <- function() {
   inspector_category(
     playground_categories$look$title,
     value = "look",
+    fn_heading("mascot_read_character"),
+    arg_field(
+      "mascot_read_character",
+      "path",
+      div(
+        class = "pg-code-wrap",
+        code_block(format_expr(code_read_character()), "pg-code", id = "read_character_call"),
+        copy_button("read_character_call")
+      ),
+      note = div(
+        class = "pg-note",
+        "Copy this offline example into R, then pass the result to mascot() or mascot_preview()."
+      )
+    ),
+    fn_heading("mascot_check_character"),
+    arg_field(
+      "mascot_check_character",
+      "x",
+      div(
+        class = "pg-code-wrap",
+        code_block(format_expr(code_check_character()), "pg-code", id = "check_character_call"),
+        copy_button("check_character_call")
+      ),
+      note = div(class = "pg-note", "Edit a plain source list, then check it again. Checked objects are opaque.")
+    ),
     fn_heading("mascot_character"),
     arg_field(
       "mascot_character",

@@ -15,14 +15,22 @@
 #'   change a non-root part channel; `nod` may change any channel, including `root`.
 #'   Direct objects never enter the process registry. Format version, supported
 #'   capabilities and admission policy version are separate contracts. Built-in
-#'   character ids (including planned characters) are reserved and refused here;
+#'   character ids are reserved and refused here;
 #'   give your character its own id before checking it.
 #' @seealso [mascot_character_format]
-#' @keywords internal
+#' @family mascot helpers
+#' @evalRd paste0(
+#'   "\\section{Experimental}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\nIts arguments, results and diagnostics may change in 0.1.x.\n}"
+#' )
+#' @export
 #' @examples
 #' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
 #' source <- jsonlite::read_json(path)
-#' bot <- mascot:::mascot_check_character(source)
+#' bot <- mascot_check_character(source)
 mascot_check_character <- function(x) {
   character_api_asserts(
     {
@@ -65,10 +73,18 @@ mascot_check_character <- function(x) {
 #'   the exact supplied `path`, `operation = "read"` and a stable `code`.
 #'   Content and argument diagnostics are described in [mascot_check_character()].
 #' @seealso [mascot_character_format]
-#' @keywords internal
+#' @family mascot helpers
+#' @evalRd paste0(
+#'   "\\section{Experimental}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\nIts arguments, results and diagnostics may change in 0.1.x.\n}"
+#' )
+#' @export
 #' @examples
 #' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
-#' bot <- mascot:::mascot_read_character(path)
+#' bot <- mascot_read_character(path)
 mascot_read_character <- function(path) {
   character_api_asserts(checkmate::assert_string(path, min.chars = 1), "path", path)
   checked <- character_format_check(path, from = "file")

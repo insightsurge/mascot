@@ -1,0 +1,1751 @@
+{
+  "format_version": 1,
+  "id": "sela",
+  "name": "Sela",
+  "family": "hexonians",
+  "description": "A reassuring lilac Hexonian with time blocks; suits scheduling and resource planning.",
+  "resolved": true,
+  "family_definition": {
+    "id": "hexonians",
+    "name": "Hexonians",
+    "description": "Hex-shaped characters.",
+    "defaults": {}
+  },
+  "requires": [
+    "parts",
+    "paints",
+    "clip",
+    "outline",
+    "glow",
+    "face_kit",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "outline": "#1D1236",
+    "outline_second": "#FFF6E0",
+    "feature": "#1D1236",
+    "eye_white": "#FFFDF4",
+    "shine": "#FFFFFF",
+    "teeth": "#FFFDF4",
+    "tongue": "#FF6F8E",
+    "mouth_in": "#3A0B2E",
+    "eyelid": "#D9C8F5",
+    "iris": "#6B3FC4",
+    "iris_dark": "#1F0F45",
+    "blush": "#F58FB6",
+    "blush_strong": "#F58FB6",
+    "body": "#D9C8F5",
+    "body_shade": "#B9A0E8",
+    "body_highlight": "#E8DEF9",
+    "rim": "#C98FB0",
+    "rim_light": "#FFFDF4",
+    "rim_shade": "#91677F",
+    "hair_purple": "#4B2A8C",
+    "hair_dark": "#1F0F45",
+    "fringe_pink": "#F0C14B",
+    "fringe_cyan": "#F3CD6F",
+    "chip_a": "#F0C14B",
+    "chip_b": "#C9B2FF",
+    "chip_conflict": "#3A1F78",
+    "star": "#C9B2FF",
+    "arm": "#B9A0E8",
+    "arm_highlight": "#F0C14B",
+    "gold": "#C9B2FF",
+    "shadow": "#1E103C",
+    "sweat": "#BDF3FF",
+    "sweat_deep": "#27B8F0"
+  },
+  "follows": {
+    "body_shade": {
+      "from": [
+        "body"
+      ],
+      "shade": "darker",
+      "amount": -0.14
+    },
+    "body_highlight": {
+      "from": [
+        "body"
+      ],
+      "shade": "lighter",
+      "amount": 0.18
+    },
+    "arm": {
+      "from": [
+        "body"
+      ],
+      "shade": "darker",
+      "amount": -0.08
+    },
+    "eyelid": {
+      "from": [
+        "body"
+      ]
+    }
+  },
+  "brand": {
+    "primary": "body",
+    "secondary": "rim"
+  },
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "body",
+      "min": 3,
+      "where": "eyes, brows and mouth on the hex body"
+    },
+    {
+      "fg": "outline",
+      "bg": "page_light",
+      "min": 3,
+      "where": "outlined silhouette on a light page"
+    }
+  ],
+  "ground": {
+    "centre_height": 99.36,
+    "shadow": {
+      "rx": 69.12,
+      "ry": 12.44,
+      "alpha": 0.3,
+      "colour": "shadow"
+    }
+  },
+  "outline": {
+    "width": 4.5,
+    "colour": "outline",
+    "join": "round",
+    "cap": "round",
+    "second": {
+      "width": 6.5,
+      "colour": "outline_second"
+    }
+  },
+  "paints": {
+    "body_gradient": {
+      "type": "linear",
+      "from": [
+        98.6,
+        106
+      ],
+      "to": [
+        282.2,
+        322
+      ],
+      "stops": [
+        [
+          0,
+          "body_highlight"
+        ],
+        [
+          0.32,
+          "body"
+        ],
+        [
+          0.7,
+          "body"
+        ],
+        [
+          1,
+          "body_shade"
+        ]
+      ]
+    },
+    "rim_gradient": {
+      "type": "linear",
+      "from": [
+        85,
+        106
+      ],
+      "to": [
+        285,
+        322
+      ],
+      "stops": [
+        [
+          0,
+          "rim_light"
+        ],
+        [
+          0.4,
+          "rim"
+        ],
+        [
+          1,
+          "rim_shade"
+        ]
+      ]
+    },
+    "hair_bob": {
+      "type": "linear",
+      "from": [
+        55,
+        114
+      ],
+      "to": [
+        315,
+        324
+      ],
+      "stops": [
+        [
+          0,
+          "hair_purple"
+        ],
+        [
+          1,
+          "hair_dark"
+        ]
+      ]
+    },
+    "hair_fringe": {
+      "type": "linear",
+      "from": [
+        85,
+        94
+      ],
+      "to": [
+        195,
+        174
+      ],
+      "stops": [
+        [
+          0,
+          "hair_purple"
+        ],
+        [
+          1,
+          "hair_dark"
+        ]
+      ]
+    },
+    "chip_a_grad": {
+      "type": "linear",
+      "from": [
+        0,
+        0
+      ],
+      "to": [
+        0,
+        30
+      ],
+      "stops": [
+        [
+          0,
+          "shine"
+        ],
+        [
+          0.25,
+          "chip_a"
+        ],
+        [
+          1,
+          "chip_a"
+        ]
+      ]
+    },
+    "chip_b_grad": {
+      "type": "linear",
+      "from": [
+        0,
+        0
+      ],
+      "to": [
+        0,
+        30
+      ],
+      "stops": [
+        [
+          0,
+          "shine"
+        ],
+        [
+          0.25,
+          "chip_b"
+        ],
+        [
+          1,
+          "chip_b"
+        ]
+      ]
+    },
+    "body_gleam": {
+      "type": "radial",
+      "centre": [
+        174.2,
+        203.2
+      ],
+      "focus": [
+        158,
+        176.2
+      ],
+      "r0": 2,
+      "r1": 118.8,
+      "stops": [
+        [
+          0,
+          "shine",
+          0.34
+        ],
+        [
+          1,
+          "shine",
+          0
+        ]
+      ]
+    }
+  },
+  "parts": [
+    {
+      "id": "figure",
+      "at": [
+        -149,
+        -253.44
+      ],
+      "scale": 0.72,
+      "items": []
+    },
+    {
+      "id": "feet",
+      "parent": "figure",
+      "layer": 10,
+      "items": [
+        {
+          "shape": "ellipse",
+          "x": 151,
+          "y": 314.44,
+          "rx": 19,
+          "ry": 10,
+          "fill": "gold",
+          "outline": true
+        },
+        {
+          "shape": "ellipse",
+          "x": 219,
+          "y": 314.44,
+          "rx": 19,
+          "ry": 10,
+          "fill": "gold",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "chips",
+      "parent": "figure",
+      "layer": 12,
+      "at": [
+        292,
+        96
+      ],
+      "glow": {
+        "item": "card",
+        "colour": "chip_a",
+        "blur": 8,
+        "alpha": 0.5
+      },
+      "items": [
+        {
+          "id": "card",
+          "shape": "round_rect",
+          "x": 0,
+          "y": 0,
+          "w": 66,
+          "h": 30,
+          "r": 9,
+          "fill": {
+            "paint": "chip_a_grad"
+          },
+          "stroke": "outline",
+          "width": 3,
+          "join": "round"
+        },
+        {
+          "shape": "round_rect",
+          "x": 9,
+          "y": 12.5,
+          "w": 9,
+          "h": 5,
+          "r": 2.5,
+          "fill": "outline",
+          "alpha": 0.55
+        },
+        {
+          "shape": "round_rect",
+          "x": 23,
+          "y": 12.5,
+          "w": 9,
+          "h": 5,
+          "r": 2.5,
+          "fill": "outline",
+          "alpha": 0.55
+        },
+        {
+          "shape": "round_rect",
+          "x": 37,
+          "y": 12.5,
+          "w": 9,
+          "h": 5,
+          "r": 2.5,
+          "fill": "outline",
+          "alpha": 0.55
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "chip_b",
+      "parent": "figure",
+      "layer": 13,
+      "at": [
+        292,
+        133
+      ],
+      "items": [
+        {
+          "id": "card",
+          "shape": "round_rect",
+          "x": 0,
+          "y": 0,
+          "w": 66,
+          "h": 30,
+          "r": 9,
+          "fill": {
+            "paint": "chip_b_grad"
+          },
+          "stroke": "outline",
+          "width": 3,
+          "join": "round"
+        },
+        {
+          "shape": "round_rect",
+          "x": 9,
+          "y": 12.5,
+          "w": 9,
+          "h": 5,
+          "r": 2.5,
+          "fill": "outline",
+          "alpha": 0.55
+        },
+        {
+          "shape": "round_rect",
+          "x": 23,
+          "y": 12.5,
+          "w": 9,
+          "h": 5,
+          "r": 2.5,
+          "fill": "outline",
+          "alpha": 0.55
+        },
+        {
+          "shape": "round_rect",
+          "x": 37,
+          "y": 12.5,
+          "w": 9,
+          "h": 5,
+          "r": 2.5,
+          "fill": "outline",
+          "alpha": 0.55
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "chip_overlap",
+      "parent": "figure",
+      "layer": 14,
+      "at": [
+        292,
+        96
+      ],
+      "items": [],
+      "variants": {
+        "thinking": [
+          {
+            "shape": "round_rect",
+            "x": 0,
+            "y": 18,
+            "w": 66,
+            "h": 12,
+            "r": 6,
+            "fill": "chip_conflict",
+            "stroke": "outline",
+            "width": 2.5,
+            "join": "round"
+          }
+        ],
+        "worried": [
+          {
+            "shape": "round_rect",
+            "x": 0,
+            "y": 6,
+            "w": 66,
+            "h": 24,
+            "r": 6,
+            "fill": "chip_conflict",
+            "stroke": "outline",
+            "width": 2.5,
+            "join": "round"
+          }
+        ]
+      },
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "hair_back",
+      "parent": "figure",
+      "layer": 18,
+      "items": [
+        {
+          "shape": "path",
+          "d": "M89 180 C61 220 67 292 107 306 L263 306 C303 292 309 220 281 180 C273 82 97 82 89 180 Z",
+          "fill": {
+            "paint": "hair_bob"
+          },
+          "outline": true
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "shape": "path",
+            "d": "M89 180 C61 220 67 292 107 306 L263 306 C303 292 309 220 281 180 C273 82 97 82 89 180 Z",
+            "fill": "hair_purple",
+            "outline": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "body",
+      "parent": "figure",
+      "layer": 20,
+      "items": [
+        {
+          "shape": "hexagon",
+          "x": 185,
+          "y": 214,
+          "r": 108,
+          "corner": 17,
+          "fill": {
+            "paint": "rim_gradient"
+          },
+          "outline": true
+        },
+        {
+          "shape": "hexagon",
+          "x": 185,
+          "y": 214,
+          "r": 97,
+          "corner": 14,
+          "fill": {
+            "paint": "body_gradient"
+          }
+        },
+        {
+          "id": "body_gleam",
+          "shape": "hexagon",
+          "x": 185,
+          "y": 214,
+          "r": 97,
+          "corner": 14,
+          "fill": {
+            "paint": "body_gleam"
+          },
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "shape": "hexagon",
+          "x": 185,
+          "y": 214,
+          "r": 97,
+          "corner": 12,
+          "stroke": "outline",
+          "width": 1.8,
+          "alpha": 0.38,
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "shape": "hexagon",
+            "x": 185,
+            "y": 214,
+            "r": 108,
+            "corner": 17,
+            "fill": "rim",
+            "outline": true
+          },
+          {
+            "shape": "hexagon",
+            "x": 185,
+            "y": 214,
+            "r": 97,
+            "corner": 14,
+            "fill": "body"
+          }
+        ]
+      }
+    },
+    {
+      "id": "face_owner",
+      "parent": "figure",
+      "layer": 40,
+      "items": []
+    },
+    {
+      "id": "fringe",
+      "parent": "figure",
+      "layer": 50,
+      "items": [
+        {
+          "id": "silhouette",
+          "shape": "path",
+          "d": "M189 96 C125 92 77 134 91 184 C99 176 107 160 119 166 C145 152 179 144 205 118 C203 106 197 100 189 96 Z",
+          "fill": {
+            "paint": "hair_fringe"
+          },
+          "outline": true
+        },
+        {
+          "id": "pink_band",
+          "shape": "path",
+          "d": "M107 118 Q145 114 181 118",
+          "stroke": "fringe_pink",
+          "width": 5,
+          "alpha": 0.5,
+          "clip": "fringe.silhouette",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "cyan_band",
+          "shape": "path",
+          "d": "M95 154 Q135 134 173 130",
+          "stroke": "fringe_cyan",
+          "width": 2,
+          "alpha": 0.45,
+          "clip": "fringe.silhouette",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "shape": "path",
+          "d": "M119.582701300 125.259134488 L119.383787561 136.419760504 L129.740865512 140.582701300 L118.580239496 140.383787561 L114.417298700 150.740865512 L114.616212439 139.580239496 L104.259134488 135.417298700 L115.419760504 135.616212439 Z",
+          "fill": "star",
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "sweat",
+      "parent": "figure",
+      "layer": 55,
+      "at": [
+        267,
+        142
+      ],
+      "items": [],
+      "variants": {
+        "worried": [
+          {
+            "shape": "path",
+            "d": "M 0 -14.3 C 9.9 0 9.9 9.9 0 9.9 C -9.9 9.9 -9.9 0 0 -14.3 Z",
+            "fill": "sweat",
+            "stroke": "outline",
+            "width": 2.6
+          },
+          {
+            "shape": "ellipse",
+            "x": -2.86,
+            "y": 2.2,
+            "rx": 2.2,
+            "ry": 3.63,
+            "rotate": 0.3,
+            "fill": "shine"
+          }
+        ]
+      },
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "arm_l",
+      "parent": "figure",
+      "layer": 60,
+      "at": [
+        99,
+        222
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              -8.29,
+              28.83
+            ],
+            [
+              -12.75,
+              56.47
+            ]
+          ],
+          "stroke": "arm",
+          "width": 13
+        },
+        {
+          "shape": "circle",
+          "x": -12.75,
+          "y": 56.47,
+          "r": 9,
+          "fill": "gold",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "arm_r",
+      "parent": "figure",
+      "layer": 60,
+      "at": [
+        271,
+        222
+      ],
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              8.29,
+              28.83
+            ],
+            [
+              12.75,
+              56.47
+            ]
+          ],
+          "stroke": "arm",
+          "width": 13
+        },
+        {
+          "shape": "circle",
+          "x": 12.75,
+          "y": 56.47,
+          "r": 9,
+          "fill": "gold",
+          "outline": true
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    }
+  ],
+  "anchors": {
+    "crown": {
+      "part": "figure",
+      "at": [
+        185,
+        106
+      ],
+      "description": "Top vertex of the hex."
+    },
+    "forehead": {
+      "part": "figure",
+      "at": [
+        185,
+        150
+      ],
+      "description": "Forehead center above eyes."
+    },
+    "hair": {
+      "part": "figure",
+      "at": [
+        117,
+        138
+      ],
+      "description": "Star clasp anchor on the fringe."
+    },
+    "hand_l": {
+      "part": "arm_l",
+      "at": [
+        -12.75,
+        56.47
+      ],
+      "description": "Left hand attachment."
+    },
+    "hand_r": {
+      "part": "arm_r",
+      "at": [
+        12.75,
+        56.47
+      ],
+      "description": "Right hand attachment."
+    },
+    "chips": {
+      "part": "figure",
+      "at": [
+        292,
+        96
+      ],
+      "description": "Upper time blocks anchor point."
+    }
+  },
+  "face": {
+    "part": "face_owner",
+    "kit": "sela_face",
+    "kit_definition": {
+      "id": "sela_face",
+      "description": "Sela expressive lashed eyes and magenta lids.",
+      "roles": [
+        "feature",
+        "eye_white",
+        "shine",
+        "eyelid",
+        "teeth",
+        "tongue",
+        "mouth_in",
+        "iris",
+        "blush",
+        "blush_strong",
+        "outline"
+      ],
+      "defaults": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "neutral",
+        "blush": 1
+      },
+      "eye_styles": {
+        "open": {
+          "op": "eye_ellipse",
+          "rx": 19,
+          "ry": 21.28,
+          "pupil": {
+            "r": 12.5,
+            "look_range": [
+              6.5,
+              5.7
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.67,
+              -1.12
+            ],
+            "length": 8,
+            "width": 3.4
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "focused": {
+          "op": "eye_ellipse",
+          "rx": 19,
+          "ry": 19.58,
+          "pupil": {
+            "r": 12.5,
+            "look_range": [
+              6.5,
+              5.7
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0.3,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.67,
+              -1.12
+            ],
+            "length": 8,
+            "width": 3.4
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "worried": {
+          "op": "eye_ellipse",
+          "rx": 19,
+          "ry": 23.83,
+          "pupil": {
+            "r": 12.5,
+            "look_range": [
+              6.5,
+              5.7
+            ],
+            "glints": [
+              {
+                "at": [
+                  -0.34,
+                  -0.38
+                ],
+                "r": 0.3
+              },
+              {
+                "at": [
+                  0.34,
+                  0.34
+                ],
+                "r": 0.14
+              }
+            ],
+            "at": [
+              0,
+              0
+            ],
+            "mirror_glints": false
+          },
+          "lid": 0,
+          "slant": 0,
+          "lashes": {
+            "angles": [
+              -0.67,
+              -1.12
+            ],
+            "length": 8,
+            "width": 3.4
+          },
+          "outline": {
+            "colour": "feature",
+            "width": 3.4
+          },
+          "lid_edge": {
+            "colour": "feature",
+            "width": 3
+          }
+        },
+        "happy": {
+          "op": "eye_arc",
+          "r": 16.72,
+          "start": 3.455751918948773,
+          "end": 5.969026041820607,
+          "y": 6.65,
+          "width": 5.6,
+          "lashes": {
+            "angles": [
+              -0.56,
+              -1.08
+            ],
+            "radii": [
+              14,
+              5
+            ],
+            "at": [
+              0,
+              6
+            ],
+            "length": 7,
+            "width": 3.2
+          },
+          "stroke": "feature",
+          "hide_brows": false
+        },
+        "closed": {
+          "op": "eye_arc",
+          "r": 16.72,
+          "start": 3.455751918948773,
+          "end": 5.969026041820607,
+          "y": 6.65,
+          "width": 5.6,
+          "lashes": {
+            "angles": [
+              -0.56,
+              -1.08
+            ],
+            "radii": [
+              14,
+              5
+            ],
+            "at": [
+              0,
+              6
+            ],
+            "length": 7,
+            "width": 3.2
+          },
+          "stroke": "feature",
+          "hide_brows": false
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M0 0",
+          "width": 0,
+          "stroke": "feature",
+          "y": -29.45
+        },
+        "neutral": {
+          "op": "brow_path",
+          "d": "M-18 2 Q0 -7.5 18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -29.45
+        },
+        "thinking": {
+          "op": "brow_path",
+          "d": "M-18 4 Q0 -6 18 0",
+          "width": 5,
+          "stroke": "feature",
+          "y": -34
+        },
+        "worried": {
+          "op": "brow_path",
+          "d": "M-18 -2 Q0 -10 18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -38
+        },
+        "happy": {
+          "op": "brow_path",
+          "d": "M-18 2 Q0 -8 18 2",
+          "width": 5,
+          "stroke": "feature",
+          "y": -34
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            17,
+            17
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 -0.055 Q0 0.4125 1 -0.055",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            17,
+            17
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0 Q0 0 1 0",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        },
+        "worried": {
+          "op": "mouth_path",
+          "box": [
+            17,
+            17
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 0.1 C-0.5 -0.8 0.5 0.1 1 0.1",
+              "stroke": "feature",
+              "width": 4.6
+            }
+          ]
+        },
+        "grin": {
+          "op": "mouth_path",
+          "box": [
+            17,
+            17
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M-1 -0.05 Q0 0.24 1 -0.05 C0.9 0.95 -0.9 0.95 -1 -0.05 Z",
+              "fill": "mouth_in",
+              "stroke": "feature",
+              "width": 3.6
+            }
+          ]
+        }
+      },
+      "effects": {}
+    },
+    "at": [
+      185,
+      212
+    ],
+    "eyes": {
+      "y": 0,
+      "spacing": 37,
+      "lashes": true,
+      "iris": "iris"
+    },
+    "mouth": {
+      "y": 46
+    },
+    "blush": {
+      "x": 43.65,
+      "y": 33.25,
+      "rx": 11.78,
+      "ry": 6.46,
+      "alpha": 0.5,
+      "strong_alpha": 0.5
+    }
+  },
+  "moods": {
+    "idle": {
+      "description": "Idle scheduling state with clear separated time blocks.",
+      "status": "Schedule is balanced and clear.",
+      "face": {
+        "eyes": "open",
+        "mouth": "smile",
+        "brows": "neutral",
+        "open": 1
+      },
+      "channels": {
+        "chip_b.y": 0,
+        "arm_l.rotate": 0,
+        "arm_r.rotate": 0,
+        "root.rotate": 0,
+        "root.lift": 0
+      }
+    },
+    "thinking": {
+      "description": "Thinking state inspecting an overlapping time block conflict.",
+      "status": "Reviewing resource conflict.",
+      "face": {
+        "eyes": "focused",
+        "mouth": "flat",
+        "brows": "thinking",
+        "open": 1,
+        "look_x": 0.7,
+        "look_y": -0.7
+      },
+      "channels": {
+        "chip_b.y": -19,
+        "chip_overlap.variant": "thinking",
+        "arm_l.rotate": -0.67,
+        "arm_r.rotate": 0.32,
+        "root.rotate": -0.07,
+        "root.lift": 0
+      }
+    },
+    "happy": {
+      "description": "Happy state as overlapping blocks slide apart.",
+      "status": "Conflict resolved cleanly.",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "happy",
+        "open": 0.55
+      },
+      "channels": {
+        "chip_b.y": 13,
+        "arm_l.rotate": 0,
+        "arm_r.rotate": 3.3,
+        "root.rotate": 0.05,
+        "root.lift": 0.12
+      }
+    },
+    "worried": {
+      "description": "Worried state facing a major booking overlap.",
+      "status": "Direct schedule clash detected.",
+      "face": {
+        "eyes": "worried",
+        "mouth": "worried",
+        "brows": "worried",
+        "open": 1,
+        "look_x": -0.25,
+        "look_y": 0.1
+      },
+      "channels": {
+        "chip_b.y": -31,
+        "chip_overlap.variant": "worried",
+        "sweat.variant": "worried",
+        "arm_l.rotate": -0.32,
+        "arm_r.rotate": 0.32,
+        "root.rotate": 0,
+        "root.lift": 0
+      }
+    },
+    "celebrating": {
+      "description": "Celebrating state with schedule reconciled and nod of assurance.",
+      "status": "All bookings confirmed and locked.",
+      "face": {
+        "eyes": "happy",
+        "mouth": "grin",
+        "brows": "happy",
+        "open": 1
+      },
+      "channels": {
+        "chip_b.y": 13,
+        "arm_l.rotate": -3.3,
+        "arm_r.rotate": 3.3,
+        "root.rotate": 0,
+        "root.lift": 1
+      }
+    }
+  },
+  "gestures": {
+    "nod": {
+      "description": "A short nod: the body dips twice.",
+      "frames": 18,
+      "tracks": {
+        "root.scale_y": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            -0.04
+          ],
+          [
+            0.45,
+            0
+          ],
+          [
+            0.65,
+            -0.04
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "root.lift": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            -3
+          ],
+          [
+            0.45,
+            0
+          ],
+          [
+            0.65,
+            -3
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "wave": {
+      "description": "A wave of the right hand; the body leans slightly.",
+      "frames": 30,
+      "tracks": {
+        "arm_r.rotate": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.2,
+              3.5999999999999996
+            ],
+            [
+              0.4,
+              3.0
+            ],
+            [
+              0.6,
+              3.5999999999999996
+            ],
+            [
+              0.8,
+              3.0
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.2,
+            -0.025
+          ],
+          [
+            0.8,
+            -0.025
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    }
+  },
+  "lod": {
+    "small": {
+      "hide": []
+    },
+    "micro": {
+      "hide": [
+        "feet",
+        "chips",
+        "chip_b",
+        "chip_overlap",
+        "fringe",
+        "sweat",
+        "arm_l",
+        "arm_r"
+      ],
+      "variants": {
+        "hair_back": "micro",
+        "body": "micro"
+      },
+      "face": {
+        "lashes": false,
+        "brows": false,
+        "iris": false
+      },
+      "glow": false
+    }
+  },
+  "native_palette": "lilac_violet",
+  "palettes": {
+    "orchid": {
+      "description": "Pink face, plum rim and deep violet hair.",
+      "group": "rose and plum",
+      "light": {
+        "body": "#E64A9B",
+        "rim": "#7A2E6B",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#58214D",
+        "outline": "#1B1230",
+        "feature": "#1B1230",
+        "hair_purple": "#3F2287",
+        "hair_dark": "#1E1050",
+        "iris_dark": "#1E1050",
+        "fringe_pink": "#29D3FF",
+        "fringe_cyan": "#54DCFF",
+        "chip_a": "#29D3FF",
+        "chip_b": "#FFD23F",
+        "chip_conflict": "#FF2850",
+        "gold": "#FFD23F",
+        "star": "#FFD23F",
+        "arm_highlight": "#29D3FF",
+        "iris": "#C58BFF",
+        "blush": "#FFD1E6",
+        "blush_strong": "#FFD1E6"
+      }
+    },
+    "coral_navy": {
+      "description": "Peach face, coral rim and dark blue hair.",
+      "group": "peach and sand",
+      "light": {
+        "body": "#FFE5D9",
+        "rim": "#FF6B6B",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#B84D4D",
+        "outline": "#181828",
+        "feature": "#181828",
+        "hair_purple": "#1D3557",
+        "hair_dark": "#1D3557",
+        "iris_dark": "#1D3557",
+        "fringe_pink": "#2A9D8F",
+        "fringe_cyan": "#55B1A5",
+        "chip_a": "#2A9D8F",
+        "chip_b": "#FFB703",
+        "chip_conflict": "#1D3557",
+        "gold": "#FFB703",
+        "star": "#FFB703",
+        "arm_highlight": "#2A9D8F",
+        "iris": "#2A9D8F",
+        "blush": "#2A9D8F",
+        "blush_strong": "#2A9D8F"
+      }
+    },
+    "azure": {
+      "description": "Pale blue face, blue rim and navy hair.",
+      "group": "blue",
+      "light": {
+        "body": "#E0F2FE",
+        "rim": "#0284C7",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#015F8F",
+        "outline": "#181828",
+        "feature": "#181828",
+        "hair_purple": "#0F172A",
+        "hair_dark": "#0F172A",
+        "iris_dark": "#0F172A",
+        "fringe_pink": "#7DD3FC",
+        "fringe_cyan": "#97DCFD",
+        "chip_a": "#7DD3FC",
+        "chip_b": "#F59E0B",
+        "chip_conflict": "#0F172A",
+        "gold": "#F59E0B",
+        "star": "#F59E0B",
+        "arm_highlight": "#7DD3FC",
+        "iris": "#7DD3FC",
+        "blush": "#7DD3FC",
+        "blush_strong": "#7DD3FC"
+      }
+    },
+    "peach_ink": {
+      "description": "Peach face, rose rim and ink blue hair.",
+      "group": "peach and sand",
+      "light": {
+        "body": "#FFE4D6",
+        "rim": "#B93664",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#852748",
+        "outline": "#211E2C",
+        "feature": "#211E2C",
+        "hair_purple": "#2B305C",
+        "hair_dark": "#171D3A",
+        "iris_dark": "#171D3A",
+        "fringe_pink": "#EF85A3",
+        "fringe_cyan": "#F29DB5",
+        "chip_a": "#EF85A3",
+        "chip_b": "#F2C24B",
+        "chip_conflict": "#832746",
+        "gold": "#F2C24B",
+        "star": "#F2C24B",
+        "arm_highlight": "#EF85A3",
+        "iris": "#49578C",
+        "blush": "#E7A89F",
+        "blush_strong": "#E7A89F"
+      }
+    },
+    "lilac_soft": {
+      "description": "Soft lilac face, mauve rim and dusky violet hair.",
+      "group": "lilac and violet",
+      "light": {
+        "body": "#E1D8F1",
+        "rim": "#A68CA5",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#786577",
+        "outline": "#1D1236",
+        "feature": "#1D1236",
+        "hair_purple": "#574A7E",
+        "hair_dark": "#2B2643",
+        "iris_dark": "#2B2643",
+        "fringe_pink": "#EFD59D",
+        "fringe_cyan": "#F2DDB1",
+        "chip_a": "#EFD59D",
+        "chip_b": "#D5C9F4",
+        "chip_conflict": "#443B6A",
+        "gold": "#D5C9F4",
+        "star": "#D5C9F4",
+        "arm_highlight": "#EFD59D",
+        "iris": "#735EB1",
+        "blush": "#EFABC3",
+        "blush_strong": "#EFABC3"
+      }
+    },
+    "mist_navy": {
+      "description": "Pale blue-grey face, steel-blue rim and navy hair.",
+      "group": "blue",
+      "light": {
+        "body": "#DCE5EC",
+        "rim": "#8FAAC0",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#677A8A",
+        "outline": "#1A2740",
+        "feature": "#1A2740",
+        "hair_purple": "#1A2740",
+        "hair_dark": "#08142B",
+        "iris_dark": "#08142B",
+        "fringe_pink": "#E9B84A",
+        "fringe_cyan": "#EDC66E",
+        "chip_a": "#E9B84A",
+        "chip_b": "#4388A6",
+        "chip_conflict": "#23333F",
+        "gold": "#4388A6",
+        "star": "#4388A6",
+        "arm_highlight": "#E9B84A",
+        "iris": "#4388A6",
+        "blush": "#D97959",
+        "blush_strong": "#D97959"
+      }
+    },
+    "desert_clay": {
+      "description": "Sand face, cream rim and terracotta hair.",
+      "group": "peach and sand",
+      "light": {
+        "body": "#EEDBC9",
+        "rim": "#F7EFE6",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#B2ACA6",
+        "outline": "#261917",
+        "feature": "#261917",
+        "hair_purple": "#54281E",
+        "hair_dark": "#3A1B14",
+        "iris_dark": "#3A1B14",
+        "fringe_pink": "#2BA89C",
+        "fringe_cyan": "#55B9B0",
+        "chip_a": "#2BA89C",
+        "chip_b": "#E26D46",
+        "chip_conflict": "#3D2018",
+        "gold": "#E26D46",
+        "star": "#E26D46",
+        "arm_highlight": "#2BA89C",
+        "iris": "#2BA89C",
+        "blush": "#DB7358",
+        "blush_strong": "#DB7358"
+      }
+    },
+    "forest": {
+      "description": "Forest-green face, gold rim and deep pine hair.",
+      "group": "green",
+      "light": {
+        "body": "#2FA567",
+        "rim": "#F2C94C",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#AE9137",
+        "outline": "#14221B",
+        "feature": "#14221B",
+        "hair_purple": "#123524",
+        "hair_dark": "#0A1F15",
+        "iris_dark": "#0A1F15",
+        "fringe_pink": "#F2C94C",
+        "fringe_cyan": "#F5D470",
+        "chip_a": "#F2C94C",
+        "chip_b": "#BFF0C9",
+        "chip_conflict": "#0F4A30",
+        "gold": "#BFF0C9",
+        "star": "#BFF0C9",
+        "arm_highlight": "#F2C94C",
+        "iris": "#1E8A55",
+        "blush": "#FF8F86",
+        "blush_strong": "#FF8F86"
+      }
+    },
+    "apricot_navy": {
+      "description": "Apricot face, burnt-orange rim and navy hair.",
+      "group": "peach and sand",
+      "light": {
+        "body": "#F8CBA6",
+        "rim": "#B8651F",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#844916",
+        "outline": "#241628",
+        "feature": "#241628",
+        "hair_purple": "#2B2F5C",
+        "hair_dark": "#171A3A",
+        "iris_dark": "#171A3A",
+        "fringe_pink": "#3E7FC1",
+        "fringe_cyan": "#6599CD",
+        "chip_a": "#3E7FC1",
+        "chip_b": "#3F86C9",
+        "chip_conflict": "#1B2A55",
+        "gold": "#3F86C9",
+        "star": "#3F86C9",
+        "arm_highlight": "#3E7FC1",
+        "iris": "#3A5FA8",
+        "blush": "#EE8F7B",
+        "blush_strong": "#EE8F7B"
+      }
+    },
+    "blush_plum": {
+      "description": "Pale pink face, mauve rim and dark plum hair.",
+      "group": "rose and plum",
+      "light": {
+        "body": "#FFE5DE",
+        "rim": "#845162",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#5F3A47",
+        "outline": "#150016",
+        "feature": "#150016",
+        "hair_purple": "#29104A",
+        "hair_dark": "#150016",
+        "iris_dark": "#150016",
+        "fringe_pink": "#E9B84A",
+        "fringe_cyan": "#EDC66E",
+        "chip_a": "#E9B84A",
+        "chip_b": "#E3B6B1",
+        "chip_conflict": "#522C5D",
+        "gold": "#E3B6B1",
+        "star": "#E3B6B1",
+        "arm_highlight": "#E9B84A",
+        "iris": "#522C5D",
+        "blush": "#E3B6B1",
+        "blush_strong": "#E3B6B1"
+      }
+    },
+    "lilac_dusk": {
+      "description": "Soft lilac face, amber rim and deep violet hair.",
+      "group": "lilac and violet",
+      "light": {
+        "body": "#DCCBF3",
+        "rim": "#B5832F",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#825E22",
+        "outline": "#1D1236",
+        "feature": "#1D1236",
+        "hair_purple": "#3F2A78",
+        "hair_dark": "#251650",
+        "iris_dark": "#251650",
+        "fringe_pink": "#6B3FC4",
+        "fringe_cyan": "#8965D0",
+        "chip_a": "#6B3FC4",
+        "chip_b": "#E0793F",
+        "chip_conflict": "#2A1A5A",
+        "gold": "#E0793F",
+        "star": "#E0793F",
+        "arm_highlight": "#6B3FC4",
+        "iris": "#6B3FC4",
+        "blush": "#F29AB8",
+        "blush_strong": "#F29AB8"
+      }
+    },
+    "sea_green": {
+      "description": "Sea-green face, silver rim and dark navy-teal hair.",
+      "group": "teal",
+      "light": {
+        "body": "#3AAE94",
+        "rim": "#C9D6DA",
+        "rim_light": "#FFFDF4",
+        "rim_shade": "#919A9D",
+        "outline": "#14221B",
+        "feature": "#14221B",
+        "hair_purple": "#113241",
+        "hair_dark": "#041E29",
+        "iris_dark": "#041E29",
+        "fringe_pink": "#F08A7A",
+        "fringe_cyan": "#F3A195",
+        "chip_a": "#F08A7A",
+        "chip_b": "#D5F3EA",
+        "chip_conflict": "#04483B",
+        "gold": "#D5F3EA",
+        "star": "#D5F3EA",
+        "arm_highlight": "#F08A7A",
+        "iris": "#127A66",
+        "blush": "#FF8F86",
+        "blush_strong": "#FF8F86"
+      }
+    }
+  },
+  "palette_sources": {
+    "orchid": "character",
+    "coral_navy": "character",
+    "azure": "character",
+    "peach_ink": "character",
+    "lilac_soft": "character",
+    "mist_navy": "character",
+    "desert_clay": "character",
+    "forest": "character",
+    "apricot_navy": "character",
+    "blush_plum": "character",
+    "lilac_dusk": "character",
+    "sea_green": "character"
+  },
+  "note": "Source: picked round5.md and the recovered drawing source drawSela lines 90-113. True source geometry, coordinates, palette, and features. Preserves source coordinates inside figure parent at [-144, -253.44] scale 0.72 mapping source ground 352 to 270. Format gaps: dynamic time block clipping/hatching, procedural honeycomb canvas texture, dual-rotation group lag, shadowBlur glow on canvas, fine procedural hair strands. Fidelity correction: source four-tip gold sparkle at radius 13/inner ratio 0.22 and rotation 0.2, without an outline; restored the body radial gleam and purple shadow colour. Fringe pink/cyan paths, widths and alpha already match the source; no arbitrary highlight brightening."
+}

@@ -77,6 +77,7 @@ describe("the theme view's page", {
     expect_false(grepl('id="palette"', page, fixed = TRUE))
     expect_match(page, '<span class="pg-window-dots" aria-hidden="true">', fixed = TRUE)
     expect_match(page, "<span>Preview</span>", fixed = TRUE)
+    expect_match(page, 'id="preview_phone"[^>]*aria-pressed="false"[^>]*data-toggle-class="is-phone"')
     expect_false(grepl("Contained preview", page, fixed = TRUE))
     expect_match(page, '<div class="pg-host-footer">', fixed = TRUE)
     # A slim header: the title, then the sentence bar.
@@ -615,6 +616,17 @@ describe("the theme view in a browser", {
     ))
     expect_lt(diff(range(unlist(middles))), 12)
     expect_identical(app$get_js("getComputedStyle(document.querySelector('.pg-sentence')).fontSize"), "14px")
+    # Phone width narrows the preview area to 375px and back.
+    area <- "document.querySelector('.theme-preview-area').getBoundingClientRect().width"
+    wide <- app$get_js(area)
+    expect_gt(wide, 400)
+    app$click(selector = "#preview_phone")
+    app$wait_for_js("document.getElementById('theme_preview').classList.contains('is-phone')")
+    expect_lte(app$get_js(area), 375)
+    expect_identical(app$get_js("document.getElementById('preview_phone').getAttribute('aria-pressed')"), "true")
+    app$click(selector = "#preview_phone")
+    app$wait_for_js("!document.getElementById('theme_preview').classList.contains('is-phone')")
+    expect_equal(app$get_js(area), wide)
     # The live code runs across the bottom, under the preview and the tabs.
     expect_true(app$get_js(paste0(
       "(() => { const box = (s) => document.querySelector(s).getBoundingClientRect(); ",

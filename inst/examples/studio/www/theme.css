@@ -68,7 +68,28 @@
 .theme-preview {
   background: var(--bs-body-bg);
   overflow: hidden;
+}
+
+/* The area the mascot sits in; Phone width narrows it to 375px, centred. */
+.theme-preview-area {
   container-type: inline-size;
+  margin: 0 auto;
+}
+
+.theme-preview.is-phone .theme-preview-area {
+  max-width: 375px;
+  border-inline: 1px dashed var(--studio-line);
+}
+
+#preview_phone {
+  margin-left: auto;
+  padding: 1px 8px;
+  font-size: 11px;
+}
+
+#preview_phone[aria-pressed="true"] {
+  background: var(--studio-note);
+  color: var(--studio-primary);
 }
 
 .theme-preview > .pg-host-bar,

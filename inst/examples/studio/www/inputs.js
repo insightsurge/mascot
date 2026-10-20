@@ -89,6 +89,11 @@
       if (handler) handler(target.dataset.value);
       else window.Shiny.setInputValue(target.dataset.event, target.dataset.value || 'click', { priority: 'event' });
     } else if (target.dataset.copy) copy(target);
+    else if (target.dataset.toggleClass) {
+      // A button with data-toggle-class switches that class on the element data-toggle-target names.
+      const on = document.getElementById(target.dataset.toggleTarget)?.classList.toggle(target.dataset.toggleClass);
+      target.setAttribute('aria-pressed', String(Boolean(on)));
+    }
   });
   // The visible part of the page: the visual viewport when the phone keyboard or zoom changes it.
   const viewportBounds = () => {

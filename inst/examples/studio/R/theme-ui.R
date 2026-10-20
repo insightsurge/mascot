@@ -92,20 +92,32 @@ theme_header <- function(character) {
 theme_preview_card <- function(character) {
   checkmate::assert_string(character, min.chars = 1)
   shiny::tags$section(
+    id = "theme_preview",
     class = "theme-preview",
     `aria-label` = "Preview",
-    window_bar("Preview"),
-    shiny::div(
-      class = "theme-preview-stage",
-      mascot::mascot(
-        theme_preview_id,
-        character = character,
-        # The size follows the stage, which is smaller on a phone so the mascot stays in view while editing.
-        size = mascot::mascot_size("100%", small_screen = NULL),
-        placement = "inline"
+    window_bar(
+      "Preview",
+      # Narrows the preview to a phone's width and back, in the browser only (inputs.js).
+      shiny::tagAppendAttributes(
+        studio_button("preview_phone", "Phone width", pressed = FALSE),
+        `data-toggle-class` = "is-phone",
+        `data-toggle-target` = "theme_preview"
       )
     ),
-    shiny::uiOutput("preview_note"),
+    shiny::div(
+      class = "theme-preview-area",
+      shiny::div(
+        class = "theme-preview-stage",
+        mascot::mascot(
+          theme_preview_id,
+          character = character,
+          # The size follows the stage, which is smaller on a phone so the mascot stays in view while editing.
+          size = mascot::mascot_size("100%", small_screen = NULL),
+          placement = "inline"
+        )
+      ),
+      shiny::uiOutput("preview_note")
+    ),
     window_footer(shiny::tags$code('id = "helper"'), shiny::textOutput("preview_caption", inline = TRUE))
   )
 }

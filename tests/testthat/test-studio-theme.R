@@ -514,6 +514,20 @@ describe("the Check tab", {
       expect_match(output$check_preview_ui$html, "The settings changed since this page was built.", fixed = TRUE)
     })
   })
+  it("numbers its pages itself and keeps only the last two, whatever the button sends", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      folder <- file.path(tempdir(), paste0("theme-preview-", session$token))
+      session$setInputs(character = "tessa", mood = "idle")
+      # A huge or non-numeric value from the browser is only a trigger
+      session$setInputs(check_preview = 1e12)
+      expect_true(file.exists(file.path(folder, "preview-1.html")))
+      session$setInputs(check_preview = "not a number")
+      session$setInputs(check_preview = -5)
+      expect_setequal(list.files(folder, pattern = "^preview-"), c("preview-2.html", "preview-3.html"))
+      expect_match(output$check_preview_ui$html, "preview-3.html", fixed = TRUE)
+    })
+  })
   it("checks the arguments of its result card", {
     env <- theme_parts()$env
     result <- list(ok = TRUE, class = "ok", message = NULL, silencer = NULL, condition_classes = NULL)

@@ -345,6 +345,11 @@ theme_view_server <- function(input, output, session) {
   # of this session's (made on the first build).
   folder <- NULL
   built <- shiny::reactiveVal(NULL)
+  # The pages are numbered by the server: the button's value is only a trigger. The last two pages are kept, so the
+  # page before stays until the new one has loaded.
+  pages <- new.env(parent = emptyenv())
+  pages$count <- 0L
+  pages$files <- base::character()
   # What the page depends on: a new CSS variable value makes it out of date too.
   preview_settings <- shiny::reactive(list(character(), theme(), css_values()))
   shiny::observeEvent(input$check_preview, {
@@ -374,10 +379,12 @@ theme_view_server <- function(input, output, session) {
     if (!is.null(root_style)) {
       page <- htmltools::tagList(htmltools::tags$head(htmltools::tags$style(root_style)), page)
     }
-    file <- sprintf("preview-%d.html", input$check_preview)
+    pages$count <- pages$count + 1L
+    file <- sprintf("preview-%d.html", pages$count)
     htmltools::save_html(page, file.path(folder$dir, file), libdir = "lib")
-    # The page before stays until the new one has loaded.
-    unlink(file.path(folder$dir, sprintf("preview-%d.html", seq_len(max(0L, input$check_preview - 2L)))))
+    pages$files <- c(pages$files, file)
+    unlink(file.path(folder$dir, utils::head(pages$files, -2L)))
+    pages$files <- utils::tail(pages$files, 2L)
     built(list(code = code, src = paste0(folder$prefix, "/", file), settings = preview_settings()))
   })
   output$check_preview_ui <- shiny::renderUI({

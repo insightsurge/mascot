@@ -141,7 +141,7 @@ probe <- function(
 ) {
   checkmate::assert_string(name)
   checkmate::assert_choice(group, c("static", "heavy"))
-  checkmate::assert_choice(mode, c("fast", "tests", "full", "lint"))
+  checkmate::assert_choice(mode, c("fast", "tests", "full", "lint", "nosuggests"))
   checkmate::assert_function(plant)
   checkmate::assert_character(expect_fail, any.missing = FALSE)
   checkmate::assert_character(expect_pass, any.missing = FALSE)
@@ -270,7 +270,8 @@ static_probes <- function(uses) {
         plant(dir, "DESCRIPTION", desc)
       },
       expect_fail = "settings",
-      detail = "tarball-mb"
+      detail = "tarball-mb",
+      expect_exit = 2L
     ),
     probe(
       "tools: the gate's own packages are missing",
@@ -278,6 +279,7 @@ static_probes <- function(uses) {
       "lint",
       function(dir) NULL,
       expect_fail = "tools",
+      expect_exit = 2L,
       env = no_packages_env(),
       skip = if (gate_packages_still_found()) "checkmate or cli is in R's own library here; can't hide them"
     ),
@@ -287,6 +289,7 @@ static_probes <- function(uses) {
       "lint",
       function(dir) NULL,
       expect_fail = "tools",
+      expect_exit = 2L,
       detail = "missing: air",
       env = c(PATH = bare_path),
       skip = if (!uses$air) {
@@ -310,6 +313,7 @@ static_probes <- function(uses) {
       "lint",
       function(dir) plant(dir, "inst/www/gate-probe.js", c("var a=1", "function f( x ){return x}")),
       expect_fail = if (has_biome) "biome" else "tools",
+      expect_exit = if (has_biome) NULL else 2L,
       skip = if (!uses$biome) "the package doesn't use Biome (no biome.json)"
     ),
     probe(
@@ -355,6 +359,78 @@ static_probes <- function(uses) {
       detail = "speling",
       expect_pass = "docs",
       skip = no_roxygen
+    ),
+    probe(
+      "--steps: only the named steps run and the run is marked PARTIAL",
+      "static",
+      "lint",
+      function(dir) NULL,
+      expect_pass = "spelling",
+      package = "fixture",
+      args = c("--steps", "spelling"),
+      check_output = function(output) {
+        out <- character()
+        if (!grepl("(^|\n)PARTIAL: only tools, spelling", output)) {
+          out <- c(out, "no PARTIAL line")
+        }
+        if (grepl("(^|\n)(PASS|SKIP|FAIL) +docs", output)) {
+          out <- c(out, "docs ran")
+        }
+        out
+      }
+    ),
+    probe(
+      "--list: the steps of each mode, then stop",
+      "static",
+      "lint",
+      function(dir) NULL,
+      package = "fixture",
+      args = "--list",
+      check_output = function(output) {
+        if (
+          grepl("nosuggests: tools, nosuggests", output, fixed = TRUE) &&
+            grepl("skips: no air.toml", output, fixed = TRUE)
+        ) {
+          character()
+        } else {
+          "the list lacks the nosuggests mode or the reason a step skips"
+        }
+      }
+    ),
+    probe(
+      "--help: usage and exit codes",
+      "static",
+      "lint",
+      function(dir) NULL,
+      package = "fixture",
+      args = "--help",
+      check_output = function(output) {
+        if (grepl("Exit codes:", output, fixed = TRUE)) character() else "no exit codes shown"
+      }
+    ),
+    probe(
+      "usage: an unknown option exits 2",
+      "static",
+      "lint",
+      function(dir) NULL,
+      expect_fail = "usage",
+      package = "fixture",
+      args = "--bogus",
+      expect_exit = 2L,
+      check_output = function(output) {
+        if (grepl("FAIL usage: unknown option --bogus", output, fixed = TRUE)) character() else "no usage message"
+      }
+    ),
+    probe(
+      "pkgdown: a reference entry for a topic that doesn't exist",
+      "static",
+      "lint",
+      function(dir) {
+        plant(dir, "_pkgdown.yml", c("reference:", "- title: Everything", "  contents:", "  - not_a_topic"))
+      },
+      expect_fail = "pkgdown",
+      package = "fixture",
+      skip = if (!requireNamespace("pkgdown", quietly = TRUE)) "pkgdown isn't installed here"
     )
   )
 }
@@ -486,6 +562,38 @@ heavy_probes <- function() {
       },
       expect_fail = c("check_full", "tarball"),
       expect_pass = "tests",
+      package = "fixture"
+    ),
+    probe(
+      "nosuggests: a clean fixture passes",
+      "heavy",
+      "nosuggests",
+      function(dir) NULL,
+      expect_pass = "nosuggests",
+      package = "fixture"
+    ),
+    probe(
+      "nosuggests: a test that assumes a Suggests package is installed fails (testthat skips a missing package itself)",
+      "heavy",
+      "nosuggests",
+      function(dir) {
+        desc <- readLines(file.path(dir, "DESCRIPTION"), warn = FALSE)
+        plant(
+          dir,
+          "DESCRIPTION",
+          sub("^Suggests: testthat \\(>= 3.0.0\\)$", "Suggests: testthat (>= 3.0.0), covr", desc)
+        )
+        plant(
+          dir,
+          "tests/testthat/test-zz-gate-probe.R",
+          c(
+            "test_that(\"assumes a Suggests package is installed\", {",
+            "  expect_true(requireNamespace(\"covr\", quietly = TRUE))",
+            "})"
+          )
+        )
+      },
+      expect_fail = "nosuggests",
       package = "fixture"
     )
   )
@@ -731,10 +839,54 @@ unit_checks <- function(gate) {
           g$exit_code(character(), FALSE),
           g$exit_code("tests", FALSE),
           g$exit_code("tests", TRUE),
-          g$exit_code(c("tests", "docs"), TRUE)
+          g$exit_code(c("tests", "docs"), TRUE),
+          g$exit_code("tools", FALSE),
+          g$exit_code(c("tools", "tests"), TRUE)
         ),
-        c(0L, 1L, 3L, 1L)
+        c(0L, 1L, 3L, 1L, 2L, 2L)
       )
+    ),
+    unit(
+      "arguments: modes, flags with a value in two forms, flags without, and the mistakes that exit 2",
+      identical(g$parse_args(character())$mode, "fast") &&
+        identical(g$parse_args("lint")$mode, "lint") &&
+        identical(g$parse_args(c("lint", "--steps", "spelling,docs"))$steps, c("spelling", "docs")) &&
+        identical(g$parse_args(c("lint", "--steps=docs"))$steps, "docs") &&
+        identical(g$parse_args(c("tests", "--filter", "a|b", "--no-retry", "--no-coverage"))$filter, "a|b") &&
+        g$parse_args(c("tests", "--no-retry"))$no_retry &&
+        g$parse_args("--list")$list &&
+        !is.null(g$parse_args("--bogus")$error) &&
+        !is.null(g$parse_args("nope")$error) &&
+        !is.null(g$parse_args(c("fast", "lint"))$error) &&
+        !is.null(g$parse_args("--steps")$error) &&
+        !is.null(g$parse_args(c("lint", "--steps", "tests"))$error)
+    ),
+    unit(
+      "list: every mode with its steps, and a skip reason for a package without Air",
+      any(grepl(
+        "^nosuggests: tools, nosuggests$",
+        g$list_steps(list(
+          air = TRUE,
+          lintr = TRUE,
+          biome = TRUE,
+          roxygen = TRUE,
+          tests = TRUE,
+          testthat = TRUE,
+          pkgdown = TRUE
+        ))
+      )) &&
+        any(grepl(
+          "air \\(skips: no air.toml\\)",
+          g$list_steps(list(
+            air = FALSE,
+            lintr = TRUE,
+            biome = TRUE,
+            roxygen = TRUE,
+            tests = TRUE,
+            testthat = TRUE,
+            pkgdown = TRUE
+          ))
+        ))
     ),
     unit(
       "flake log: one row per retried failure with the re-run result, the header written once",

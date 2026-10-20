@@ -2,12 +2,13 @@
 # cran-gate version: 2026-10-21
 # CRAN gate: one command that says whether an R package would pass CRAN's checks, before you submit it.
 #
-#   Rscript <path to this file> [fast|tests|full|lint] [--no-coverage] [--no-retry] [--update-wordlist]
+#   Rscript <path to this file> [fast|tests|full|lint|nosuggests] [options]   (--help lists the options)
 #
 #   fast  (default) tools, style, docs in sync, \value, spelling, R CMD check --as-cran without tests
 #   tests           tools, tests (NOT_CRAN=true, so tests that CRAN skips run too) and coverage
 #   full            everything: fast steps, tests, coverage, CRAN-like check with tests, built tarball
-#   lint            the quick static steps only: tools, style, docs in sync, \value, spelling
+#   lint            the quick static steps only: tools, style, docs in sync, \value, spelling, pkgdown
+#   nosuggests      R CMD check with only the hard dependencies on the library path (CI's check-no-suggests job)
 #
 # In `tests` and `full` the suite runs ONCE, under covr, and the same run gives the test results and the coverage
 # (a package whose tests/ is not the standard testthat layout falls back to a plain run plus a separate covr run).
@@ -15,8 +16,9 @@
 # When tests fail, the failing files are re-run once without covr: if every one then passes, the line says so
 # ("probable flake") and the gate exits 3; each retried failure is appended to flakes.tsv beside the run folder.
 #
-# Exit codes: 0 every step passed or skipped; 1 a step failed; 3 the only failures are tests that passed on the
-# re-run (a person decides: it is not merge evidence on its own).
+# Exit codes: 0 every step passed or skipped; 1 a step failed; 2 usage, settings or tools problem (the gate could not
+# judge the package); 3 the only failures are tests that passed on the re-run (a person decides: it is not merge
+# evidence on its own). --steps and --filter give a PARTIAL run, which is not merge evidence either.
 #
 # Run it from the package root. It prints one PASS/FAIL/SKIP line per step and a summary, and exits 1 if any step
 # fails. Detailed output goes to a run folder that outlives the gate (its path is printed): one log per step,
@@ -45,7 +47,7 @@
 # and the run folder: <CRAN_GATE_OUT>/<YYYYmmdd-HHMMSS>-<mode>, where CRAN_GATE_OUT defaults to cran-gate/ in the
 # system temp folder (the parent of tempdir()).
 
-modes <- c("fast", "tests", "full", "lint")
+modes <- c("fast", "tests", "full", "lint", "nosuggests")
 
 setting <- function(name, default) {
   checkmate::assert_string(name)
@@ -77,7 +79,8 @@ package_uses <- function() {
     biome = any(file.exists(c("biome.json", "biome.jsonc"))),
     roxygen = !all(is.na(read.dcf("DESCRIPTION", fields = roxygen_fields))),
     tests = dir.exists("tests"),
-    testthat = dir.exists("tests/testthat")
+    testthat = dir.exists("tests/testthat"),
+    pkgdown = any(file.exists(c("_pkgdown.yml", "_pkgdown.yaml", "pkgdown/_pkgdown.yml", "inst/_pkgdown.yml")))
   )
 }
 
@@ -94,8 +97,8 @@ required_packages <- function(mode, uses) {
   if (mode %in% c("tests", "full") && uses$tests) {
     pkgs <- c(pkgs, "covr", "withr", if (uses$testthat) "testthat")
   }
-  if (mode == "full") {
-    pkgs <- c(pkgs, "pkgbuild")
+  if (mode %in% c("full", "nosuggests")) {
+    pkgs <- c(pkgs, "pkgbuild", "rcmdcheck")
   }
   pkgs
 }
@@ -105,10 +108,11 @@ steps_for <- function(mode) {
   static <- c("air", "biome", "docs", "lintr", "value", "spelling")
   switch(
     mode,
-    fast = c("tools", static, "check_fast"),
+    fast = c("tools", static, "pkgdown", "check_fast"),
     tests = c("tools", "tests", "coverage"),
-    full = c("tools", static, "tests", "coverage", "check_full", "tarball"),
-    lint = c("tools", static)
+    full = c("tools", static, "pkgdown", "tests", "coverage", "check_full", "nosuggests", "tarball"),
+    lint = c("tools", static, "pkgdown"),
+    nosuggests = c("tools", "nosuggests")
   )
 }
 
@@ -450,12 +454,16 @@ rerun_filter <- function(files) {
   paste0("^(", paste(unique(escaped), collapse = "|"), ")$")
 }
 
-# The gate's exit code: 0 passed, 1 a step failed, 3 the only failure is tests that passed on the re-run.
+# The gate's exit code: 0 passed, 1 a step failed, 2 the gate could not judge the package (its tools or settings are
+# wrong), 3 the only failure is tests that passed on the re-run.
 exit_code <- function(failed, flaky) {
   checkmate::assert_character(failed, any.missing = FALSE)
   checkmate::assert_flag(flaky)
   if (length(failed) == 0) {
     return(0L)
+  }
+  if (any(c("tools", "settings") %in% failed)) {
+    return(2L)
   }
   if (flaky && identical(unique(failed), "tests")) 3L else 1L
 }
@@ -664,7 +672,10 @@ step_tests <- function(uses, run_dir, log, state) {
   } else {
     reporter <- testthat::SummaryReporter$new(file = txt, max_reports = Inf)
     # stop_on_failure = FALSE: with TRUE, testthat aborts with "Test failures." and its results are lost.
-    run_logged(function() devtools::test(stop_on_failure = FALSE, reporter = reporter), log)
+    run_logged(
+      function() devtools::test(filter = state$filter, stop_on_failure = FALSE, reporter = reporter),
+      log
+    )
   }
   state$tests <- summarise_tests(res, run_dir)
   out <- tests_result(state$tests, txt)
@@ -683,7 +694,7 @@ step_coverage <- function(uses, settings, log, state) {
     return(result("SKIP", "the package has no tests/"))
   }
   if (isTRUE(state$no_coverage)) {
-    return(result("SKIP", "--no-coverage"))
+    return(result("SKIP", if (is.null(state$filter)) "--no-coverage" else "--filter (a partial run has no coverage)"))
   }
   withr::local_envvar(NOT_CRAN = "true")
   cov <- state$cov
@@ -726,6 +737,113 @@ step_coverage <- function(uses, settings, log, state) {
   }
   limit <- if (settings$coverage > 0) sprintf("at least %g%% needed", settings$coverage) else "no limit set"
   result("PASS", sprintf("%.1f%% (%s)%s", pct, limit, after_failure))
+}
+
+# Why a step would skip for this package (NULL: it runs), for --list.
+step_skip_reason <- function(step, uses) {
+  checkmate::assert_string(step)
+  checkmate::assert_list(uses, types = "logical")
+  switch(
+    step,
+    air = if (!uses$air) "no air.toml",
+    biome = if (!uses$biome) "no biome.json",
+    lintr = if (!uses$lintr) "no .lintr",
+    docs = if (!uses$roxygen) "the package doesn't use roxygen2",
+    pkgdown = if (!uses$pkgdown) "no _pkgdown.yml",
+    tests = if (!uses$testthat) "no tests/testthat",
+    coverage = if (!uses$tests) "no tests/",
+    check_full = NULL,
+    nosuggests = if (.Platform$OS.type == "windows") "symlinks may need privileges on Windows",
+    NULL
+  )
+}
+
+step_pkgdown <- function(uses, log) {
+  checkmate::assert_list(uses, types = "logical")
+  checkmate::assert_string(log)
+  if (!uses$pkgdown) {
+    return(result("SKIP", "no _pkgdown.yml"))
+  }
+  if (!requireNamespace("pkgdown", quietly = TRUE)) {
+    return(result("SKIP", "pkgdown isn't installed"))
+  }
+  run_logged(function() pkgdown::check_pkgdown(), log)
+  result("PASS", "no problems")
+}
+
+# The package names in DESCRIPTION fields such as Imports, without R and without version limits.
+description_packages <- function(fields) {
+  checkmate::assert_character(fields, min.len = 1, any.missing = FALSE)
+  desc <- read.dcf("DESCRIPTION", fields = fields)
+  text <- paste(stats::na.omit(as.vector(desc)), collapse = ",")
+  pkgs <- trimws(strsplit(gsub("\\s+", " ", text), ",", fixed = TRUE)[[1]])
+  setdiff(sub(" .*$", "", pkgs[nzchar(pkgs)]), "R")
+}
+
+# A library of symlinks to what CI's no-Suggests job installs: the hard dependencies (Depends, Imports, LinkingTo)
+# with everything they need, testthat when the package has tests, and the packages that build its vignettes.
+# Returns its path, or NULL when symlinks cannot be made.
+nosuggests_library <- function(dir, uses) {
+  checkmate::assert_directory_exists(dir, access = "w")
+  checkmate::assert_list(uses, types = "logical")
+  builders <- description_packages("VignetteBuilder")
+  roots <- unique(c(
+    description_packages(c("Depends", "Imports", "LinkingTo")),
+    if (uses$testthat) "testthat",
+    builders,
+    if (length(builders) > 0) "rmarkdown"
+  ))
+  base <- rownames(utils::installed.packages(priority = "base"))
+  db <- utils::installed.packages()
+  roots <- intersect(setdiff(roots, base), rownames(db))
+  deps <- tools::package_dependencies(roots, db = db, which = c("Depends", "Imports", "LinkingTo"), recursive = TRUE)
+  needed <- intersect(setdiff(unique(c(roots, unlist(deps))), base), rownames(db))
+  lib <- file.path(dir, "nosuggests-lib")
+  dir.create(lib, recursive = TRUE)
+  for (pkg in needed) {
+    linked <- suppressWarnings(file.symlink(find.package(pkg), file.path(lib, pkg)))
+    if (!isTRUE(linked)) {
+      return(NULL)
+    }
+  }
+  structure(lib, linked = length(needed))
+}
+
+# R CMD check as CI's check-no-suggests job runs it, without installing anything: only the hard dependencies are on
+# the library path, `_R_CHECK_FORCE_SUGGESTS_` is false and NOT_CRAN is unset, so a test that uses a Suggests
+# package without guarding it fails here.
+step_nosuggests <- function(uses, run_dir, log) {
+  checkmate::assert_list(uses, types = "logical")
+  checkmate::assert_directory_exists(run_dir, access = "w")
+  checkmate::assert_string(log)
+  lib <- nosuggests_library(run_dir, uses)
+  if (is.null(lib)) {
+    return(result("SKIP", "symlinks can't be made here (on Windows they may need privileges)"))
+  }
+  tarball <- run_logged(function() pkgbuild::build(dest_path = run_dir, quiet = TRUE), log)
+  res <- run_logged(
+    function() {
+      rcmdcheck::rcmdcheck(
+        tarball,
+        args = c("--no-manual", "--as-cran"),
+        libpath = as.character(lib),
+        env = c(
+          `_R_CHECK_FORCE_SUGGESTS_` = "false",
+          `_R_CHECK_CRAN_INCOMING_` = "false",
+          `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
+          R_LIBS_USER = "NULL",
+          R_LIBS_SITE = "NULL",
+          NOT_CRAN = ""
+        ),
+        check_dir = file.path(run_dir, "nosuggests-check"),
+        error_on = "never",
+        quiet = TRUE
+      )
+    },
+    log
+  )
+  out <- check_result(res)
+  result(out$status, paste0(out$detail, " (", attr(lib, "linked"), " packages on the library path)"))
 }
 
 step_tarball <- function(settings, log) {
@@ -772,10 +890,12 @@ run_step <- function(step, mode, update, uses, settings, run_dir, log, state) {
       lintr = step_lintr(uses, settings, log),
       value = step_value(log),
       spelling = step_spelling(update, log),
+      pkgdown = step_pkgdown(uses, log),
       check_fast = step_check(tests = FALSE, log),
       tests = step_tests(uses, run_dir, log, state),
       coverage = step_coverage(uses, settings, log, state),
       check_full = step_check(tests = TRUE, log),
+      nosuggests = step_nosuggests(uses, run_dir, log),
       tarball = step_tarball(settings, log)
     ),
     error = function(e) result("FAIL", conditionMessage(e))
@@ -832,13 +952,148 @@ failure_report <- function(failed, run_dir, state, whole_logs) {
   out
 }
 
+usage_lines <- c(
+  "Usage: Rscript cran-gate.R [fast|tests|full|lint|nosuggests] [options]",
+  "",
+  "  fast        tools, style, docs in sync, \\value, spelling, pkgdown, R CMD check --as-cran without tests (default)",
+  "  tests       tools, the tests under covr (once) and coverage",
+  "  full        everything: fast steps, tests, coverage, CRAN-like check with tests, no-Suggests check, tarball",
+  "  lint        the quick static steps only",
+  "  nosuggests  R CMD check with only the hard dependencies on the library path (CI's check-no-suggests job)",
+  "",
+  "Options:",
+  "  --steps a,b    run only these steps of the mode (tools always runs); the run is marked PARTIAL",
+  "  --filter RE    run only the test files whose names match RE, plainly, without coverage; PARTIAL",
+  "  --no-coverage  run the tests plainly, without covr and without coverage",
+  "  --no-retry     do not re-run failing test files once",
+  "  --out DIR      the folder for the run folders (default: CRAN_GATE_OUT, else cran-gate/ in the system temp folder)",
+  "  --list         show the steps of each mode and which ones this package would skip, then stop",
+  "  --update-wordlist  add the unknown words found by the spelling step to inst/WORDLIST",
+  "  --help         this text",
+  "",
+  "Exit codes: 0 every step passed or skipped; 1 a step failed; 2 usage, settings or tools problem (the gate could",
+  "not judge the package); 3 the only failures are tests that passed on the re-run (a person decides)."
+)
+
+# The command line as a list; `error` is a message when the arguments don't make sense (the gate then exits 2).
+parse_args <- function(args) {
+  checkmate::assert_character(args, any.missing = FALSE)
+  opts <- list(
+    mode = "fast",
+    update = FALSE,
+    no_coverage = FALSE,
+    no_retry = FALSE,
+    steps = character(),
+    filter = NULL,
+    out = NULL,
+    list = FALSE,
+    help = FALSE,
+    error = NULL
+  )
+  value_flags <- c("--steps", "--filter", "--out")
+  modes_given <- character()
+  i <- 1L
+  while (i <= length(args)) {
+    arg <- args[[i]]
+    key <- sub("=.*$", "", arg)
+    if (key %in% value_flags) {
+      if (grepl("=", arg, fixed = TRUE)) {
+        value <- sub("^[^=]*=", "", arg)
+      } else if (i < length(args)) {
+        i <- i + 1L
+        value <- args[[i]]
+      } else {
+        opts$error <- paste(key, "needs a value")
+        return(opts)
+      }
+      switch(
+        key,
+        `--steps` = {
+          opts$steps <- strsplit(value, ",", fixed = TRUE)[[1]]
+        },
+        `--filter` = {
+          opts$filter <- value
+        },
+        `--out` = {
+          opts$out <- value
+        }
+      )
+    } else if (arg == "--update-wordlist") {
+      opts$update <- TRUE
+    } else if (arg == "--no-coverage") {
+      opts$no_coverage <- TRUE
+    } else if (arg == "--no-retry") {
+      opts$no_retry <- TRUE
+    } else if (arg == "--list") {
+      opts$list <- TRUE
+    } else if (arg == "--help" || arg == "-h") {
+      opts$help <- TRUE
+    } else if (startsWith(arg, "-")) {
+      opts$error <- paste("unknown option", arg)
+      return(opts)
+    } else if (arg %in% modes) {
+      modes_given <- c(modes_given, arg)
+    } else {
+      opts$error <- paste0("unknown mode '", arg, "' (one of ", toString(modes), ")")
+      return(opts)
+    }
+    i <- i + 1L
+  }
+  if (length(modes_given) > 1) {
+    opts$error <- "give one mode only"
+    return(opts)
+  }
+  if (length(modes_given) == 1) {
+    opts$mode <- modes_given
+  }
+  unknown <- setdiff(opts$steps, steps_for(opts$mode))
+  if (length(unknown) > 0) {
+    opts$error <- paste0(
+      "--steps names ",
+      toString(unknown),
+      ", which mode '",
+      opts$mode,
+      "' doesn't run (it runs ",
+      toString(steps_for(opts$mode)),
+      ")"
+    )
+  }
+  opts
+}
+
+# --list: each mode's steps, with the ones this package would skip and why.
+list_steps <- function(uses) {
+  checkmate::assert_list(uses, types = "logical")
+  out <- character()
+  for (mode in modes) {
+    steps <- steps_for(mode)
+    why <- vapply(
+      steps,
+      function(step) {
+        reason <- step_skip_reason(step, uses)
+        if (is.null(reason)) "" else paste0(" (skips: ", reason, ")")
+      },
+      character(1)
+    )
+    out <- c(out, paste0(mode, ": ", paste0(steps, why, collapse = ", ")))
+  }
+  out
+}
+
 main <- function(args) {
   checkmate::assert_character(args, any.missing = FALSE)
-  flags <- c("--update-wordlist", "--no-coverage", "--no-retry")
-  update <- "--update-wordlist" %in% args
-  mode <- setdiff(args, flags)
-  mode <- if (length(mode) == 0) "fast" else mode
-  checkmate::assert_choice(mode, modes, .var.name = "mode")
+  opts <- parse_args(args)
+  if (opts$help) {
+    cli::cat_line(usage_lines)
+    quit(status = 0)
+  }
+  if (!is.null(opts$error)) {
+    cli::cat_line("FAIL usage: ", opts$error)
+    cli::cat_line("Run with --help for the options.")
+    quit(status = 2)
+  }
+  update <- opts$update
+  mode <- opts$mode
   if (!file.exists("DESCRIPTION")) {
     cli::cli_abort("Run the gate from the package root (no DESCRIPTION in {.path {getwd()}}).")
   }
@@ -846,20 +1101,30 @@ main <- function(args) {
   if (is.character(settings)) {
     cli::cat_line("FAIL settings: ", settings, " (fix the Config/cran-gate fields in DESCRIPTION)")
     cli::cat_line("FAILED: settings")
-    quit(status = 1)
+    quit(status = 2)
   }
   uses <- package_uses()
-  run_dir <- run_folder(default_out(), mode)
+  if (opts$list) {
+    cli::cat_line(list_steps(uses))
+    quit(status = 0)
+  }
+  partial <- length(opts$steps) > 0 || !is.null(opts$filter)
+  run_dir <- run_folder(if (is.null(opts$out)) default_out() else opts$out, mode)
   state <- new.env()
   state$statuses <- character()
   state$mode <- mode
-  state$no_coverage <- "--no-coverage" %in% args
-  state$no_retry <- "--no-retry" %in% args
+  state$no_coverage <- opts$no_coverage || !is.null(opts$filter)
+  state$no_retry <- opts$no_retry
+  state$filter <- opts$filter
   state$flaky <- FALSE
   rows <- data.frame(step = character(), status = character(), seconds = numeric(), detail = character())
   cli::cli_h1("CRAN gate: {mode}")
   cli::cat_line("Run folder: ", run_dir)
-  for (step in steps_for(mode)) {
+  ran <- steps_for(mode)
+  if (length(opts$steps) > 0) {
+    ran <- ran[ran %in% c("tools", opts$steps)]
+  }
+  for (step in ran) {
     log <- file.path(run_dir, paste0(step, ".log"))
     file.create(log)
     started <- Sys.time()
@@ -877,6 +1142,14 @@ main <- function(args) {
   statuses <- state$statuses
   failed <- names(statuses)[statuses == "FAIL"]
   cli::cat_line("Run folder: ", run_dir)
+  if (partial) {
+    cli::cat_line(
+      "PARTIAL: only ",
+      toString(ran),
+      if (!is.null(opts$filter)) paste0(", tests filtered by '", opts$filter, "'") else "",
+      " ran; this is not merge evidence."
+    )
+  }
   if (length(failed) > 0) {
     cli::cat_line(failure_report(failed, run_dir, state, whole_logs = identical(Sys.getenv("CI"), "true")))
     code <- exit_code(failed, isTRUE(state$flaky))
@@ -884,7 +1157,7 @@ main <- function(args) {
     cli::cat_line("FAILED: ", paste(failed, collapse = ", "), note)
     quit(status = code)
   }
-  cli::cat_line("All steps passed (", sum(statuses == "SKIP"), " skipped).")
+  cli::cat_line("All steps passed (", sum(statuses == "SKIP"), " skipped)", if (partial) "; partial run." else ".")
   invisible(statuses)
 }
 
@@ -895,7 +1168,7 @@ ensure_gate_packages <- function() {
   if (length(absent) > 0) {
     message("FAIL tools: missing R packages ", toString(absent), "; .libPaths()[1] = ", .libPaths()[1])
     message("FAILED: tools")
-    quit(status = 1)
+    quit(status = 2)
   }
 }
 

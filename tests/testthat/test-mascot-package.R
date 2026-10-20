@@ -107,7 +107,9 @@ describe("experimental help topic badges (#387)", {
       "mascot_theme",
       "mascot_placement",
       "mascot_character",
-      "mascot_characters"
+      "mascot_characters",
+      "mascot_read_character",
+      "mascot_check_character"
     )
     root <- test_path("..", "..")
     db <- if (dir.exists(file.path(root, "man"))) {

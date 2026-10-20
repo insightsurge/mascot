@@ -30,7 +30,7 @@ to keep it where it is dropped, including while minimised.
 \out{<span class='badge text-bg-warning'>Experimental</span>}}}{%
 \strong{[Experimental]}}
 \code{"free"} is experimental: the position it reports and how to restore it
-may change (issue #224). Has no effect inline: an
+may change. Has no effect inline: an
 explicitly supplied value gives an informational message. \code{TRUE}, \code{FALSE} and
 \code{NULL} are not accepted. See the Dragging section.}
 }
@@ -132,5 +132,5 @@ Other mascot helpers:
 \concept{mascot helpers}
 \section{Experimental free dragging}{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
-"free" is experimental: the position it reports and how to restore it may change (issue #224).
+"free" is experimental: the position it reports and how to restore it may change.
 }

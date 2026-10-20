@@ -28,7 +28,7 @@ Every character must define changing \code{wave} and \code{nod} tracks. \code{wa
 change a non-root part channel; \code{nod} may change any channel, including \code{root}.
 Direct objects never enter the process registry. Format version, supported
 capabilities and admission policy version are separate contracts. Built-in
-character ids (including planned characters) are reserved and refused here;
+character ids are reserved and refused here;
 give your character its own id before checking it.
 }
 \examples{

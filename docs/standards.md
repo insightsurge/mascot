@@ -278,7 +278,7 @@ use plain words in help pages:
 - `mascot_theme(css =)`
 - `mascot_placement(drag = "free")`
 - which parts of a character a `bs_theme()` colours
-- `mascot_read_character()` and `mascot_check_character()` (once exported)
+- `mascot_read_character()` and `mascot_check_character()`
 - the character file format
 
 ## 6. Testing

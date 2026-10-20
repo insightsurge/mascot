@@ -2,7 +2,7 @@
 #'
 #' Explore the package's functions, try their controls with live feedback, and
 #' copy the working R code into your own app. This first interface is
-#' experimental and may change before CRAN. Choices belong to the returned
+#' experimental and may change in a later release. Choices belong to the returned
 #' app; no global options are changed.
 #' @param view Which view to open: `"studio"` (the default) for the function
 #'   playground, or `"examples"` for the gallery of bundled examples.

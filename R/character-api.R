@@ -15,7 +15,7 @@
 #'   change a non-root part channel; `nod` may change any channel, including `root`.
 #'   Direct objects never enter the process registry. Format version, supported
 #'   capabilities and admission policy version are separate contracts. Built-in
-#'   character ids (including planned characters) are reserved and refused here;
+#'   character ids are reserved and refused here;
 #'   give your character its own id before checking it.
 #' @seealso [mascot_character_format]
 #' @family mascot helpers

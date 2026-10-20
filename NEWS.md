@@ -130,7 +130,7 @@
 * `update_mascot(id, ..., session = shiny::getDefaultReactiveDomain())` names every update option; `NULL` leaves it unchanged and empty helpers reset settings. `update_mascot()` changes a mascot from the Shiny server: its character, mood, status, bubble, size, placement, theme, motion, click and gesture. Arguments left as `NULL` stay unchanged (#190, #196, #201, #202, #203, #143).
   * An update sent before the mascot appears is kept until it does. The latest state is kept for a later first mascot with the same ID (#193), and only the latest early gesture plays, once (#200).
   * A new `placement` replaces any position the visitor dragged the mascot to (#220).
-  * Invalid values give a warning and leave the mascot unchanged. In Shiny development mode, a mascot that is not found because of a module namespace gets a one-time warning that names the fix (#215).
+  * Invalid values give a warning and leave the mascot unchanged.
 
 ## Minor improvements and fixes
 

@@ -4,8 +4,6 @@
  * Shiny messages use versioned, generation-bound complete state settled by R.
  * A connection-local ledger retains consumed gestures and bubble dismissal through DOM replacement.
  * Browser-only/custom hosts retain the legacy { id, patch } path and its bounded early queue.
- * In Shiny development mode, updates waiting 2 s for "x" while "<namespace>-x" is mounted, or for "<namespace>-x" while
- * "x" is mounted, warn once with the likely namespace fix.
  * Patches are atomic: prepare descriptions/status, ask the engine to validate, then commit host state.
  * Desired character/mood live in data-character/data-mood; data-shown-* and status follow the shown frame.
  * Custom status persists across swaps. Development problems temporarily cover it and use a worried mood;
@@ -94,8 +92,6 @@
     return keys.length === Object.keys(b).length && keys.every((key) => has(b, key) && sameValue(a[key], b[key]));
   };
   const queueLimit = 20;
-  const warnedIds = new Set();
-  const namespaceDelay = 2000;
   let mountSerial = 0;
   const known = new Map();
   const updating = new WeakSet();
@@ -2529,32 +2525,7 @@
       gestureRevision: waiting?.gestureRevision || 0,
       description: prepared.description || current,
     });
-    suggestNamespace(id);
     return true;
-  }
-
-  // Development mode only: a missing ns() in a module UI sends updates to "helper" while the page has "first-helper".
-  // Late mascots are normal (renderUI after a login), so warn only when such a namespaced id is on the page.
-  function suggestNamespace(id) {
-    if (warnedIds.has(id) || !window.Shiny?.inDevMode?.()) return;
-    setTimeout(() => {
-      if (!pending.has(id) || warnedIds.has(id)) return;
-      const ids = [...live].map((record) => record.el.id);
-      // A module UI without ns(): the server updates "first-helper" while the page has "helper".
-      const bare = ids.find((other) => id.endsWith(`-${other}`));
-      // An update from outside the module: the server updates "helper" while the page has "first-helper".
-      const namespaced = ids.find((other) => other.endsWith(`-${id}`));
-      if (!bare && !namespaced) return;
-      warnedIds.add(id);
-      const message = bare
-        ? `no mascot "${id}" is on the page, but "${bare}" is; in a module UI use mascot(id = ns("${bare}"))`
-        : `no mascot "${id}" is on the page, but "${namespaced}" is; update it from inside its module, ` +
-          `where update_mascot("${id}") adds the namespace`;
-      warn(message);
-      window.dispatchEvent(
-        new CustomEvent('shiny:client-message', { detail: { headline: 'mascot', message, status: 'warning' } }),
-      );
-    }, namespaceDelay);
   }
 
   function receive(message) {

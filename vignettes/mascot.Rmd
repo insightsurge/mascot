@@ -522,7 +522,34 @@ review contrast in both modes. Theming keeps the character's shape and
 identity. Keep ordinary error messages beside the fields they describe.
 
 A new named character comes later with `mascot_remix()`.
-The Quarto `shortcode` and fuller static-site guidance are separate upcoming work.
+The Quarto `shortcode` and fuller static-site guidance come in a later release; plain `mascot()` already works in a
+Quarto page (next section).
+
+## Quarto pages
+
+A plain `mascot()` also works in a rendered Quarto page, with no Shiny server. Put it in an R chunk and set its mood and
+status when you write the page:
+
+````markdown
+```{r}
+#| echo: false
+library(mascot) # nolint: undesirable_function_linter.
+mascot("helper", mood = "happy", status = "Rendered with Quarto", placement = "inline")
+```
+````
+
+Things to know:
+
+- The character draws, and shows its status text, when the page loads. A static page has no R session behind it, so
+  nothing changes the mood afterwards and clicks do not reach R. Live updates need Shiny.
+- A mascot floats in the page corner by default. Use `placement = "inline"` to put it in the flow of the page, and give
+  every mascot its own `id`.
+- Inline mascots reserve room above them for a bubble (see Size and placement). On a static page that never shows a
+  bubble, collapse that room with the CSS rule `.mascot-bubble-region { display: none; }`.
+- With a light and a dark theme (for example `theme: {light: cosmo, dark: darkly}`), the mascot follows Quarto's colour
+  toggle (see Theme and light/dark mode). A page with `embed-resources: true` works too.
+- Quarto use is lightly tested: drawing, inline placement, several mascots, the colour toggle and a self-contained
+  page. The Quarto `shortcode` and fuller guidance for static sites are planned for 0.2.0.
 
 ## Check a look before using it
 

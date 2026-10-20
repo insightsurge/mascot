@@ -1,0 +1,1805 @@
+{
+  "format_version": 1,
+  "id": "knurl",
+  "name": "Knurl",
+  "family": "visorfolk",
+  "description": "A single-wheeled repair bot with a clamp arm and screen visor; suits job queues and diagnostics.",
+  "resolved": true,
+  "family_definition": {
+    "id": "visorfolk",
+    "name": "Visorfolk",
+    "description": "Characters with screen faces.",
+    "defaults": {}
+  },
+  "requires": [
+    "parts",
+    "paints",
+    "clip",
+    "outline",
+    "glow",
+    "face_kit",
+    "tracks",
+    "lod"
+  ],
+  "colours": {
+    "body": "#0E9AA7",
+    "body_shade": "#096D76",
+    "body_shine": "#7FE6EE",
+    "copper": "#FF8A3D",
+    "copper_light": "#FFE0B8",
+    "copper_shine": "#FFD1AA",
+    "screen": "#06232A",
+    "screen_glow": "#0C4A52",
+    "feature": "#7CFFE0",
+    "eye_glow": "#7CFFE0",
+    "outline": "#1B1230",
+    "outline_light": "#FFF6E0",
+    "trim": "#24323F",
+    "arm_body": "#0A8795",
+    "arm_socket": "#0A4650",
+    "spanner_handle": "#C7D3E0",
+    "spanner_head": "#E3EBF5",
+    "clamp_base": "#1F6F7A",
+    "antenna": "#9FB4C0",
+    "lamp": "#00E5FF",
+    "lamp_thinking": "#FF8A3D",
+    "lamp_happy": "#26A065",
+    "lamp_worried": "#F03A55",
+    "lamp_celebrating": "#E64A9B",
+    "sweat": "#9DC3E6",
+    "sparkle": "#FFFFFF",
+    "sparkle_outline": "#FF8A3D",
+    "shadow": "#A2AEA7",
+    "shine": "#FFFFFF",
+    "shine_translucent": "rgba(255, 255, 255, 0.6)",
+    "hub_spoke": "#26525E",
+    "hub_rim_light": "#E7FBFF",
+    "hub_rim_mid": "#7FB9C6",
+    "hub_rim_dark": "#3A6E7C",
+    "tyre_dark": "#10163A",
+    "tyre_mid": "#3A4580",
+    "tyre_tick": "#5C69B8"
+  },
+  "follows": {
+    "body_shade": {
+      "from": [
+        "body"
+      ],
+      "shade": "darker",
+      "amount": -0.15
+    },
+    "body_shine": {
+      "from": [
+        "body"
+      ],
+      "shade": "lighter",
+      "amount": 0.2
+    },
+    "copper_light": {
+      "from": [
+        "copper"
+      ],
+      "shade": "lighter",
+      "amount": 0.2
+    },
+    "lamp": {
+      "from": [
+        "feature"
+      ]
+    }
+  },
+  "brand": {
+    "primary": "body",
+    "secondary": "copper"
+  },
+  "contrast": [
+    {
+      "fg": "feature",
+      "bg": "screen",
+      "min": 4.5,
+      "where": "eyes and mouth on the visor screen",
+      "bg_paint": "screen_glow"
+    },
+    {
+      "fg": "outline",
+      "bg": "page_light",
+      "min": 3,
+      "where": "outlined chassis on a light page"
+    }
+  ],
+  "ground": {
+    "centre_height": 83.5,
+    "shadow": {
+      "rx": 72,
+      "ry": 13,
+      "alpha": 0.3,
+      "colour": "shadow"
+    }
+  },
+  "outline": {
+    "width": 3.75,
+    "colour": "outline",
+    "join": "round",
+    "cap": "round",
+    "second": {
+      "width": 6.25,
+      "colour": "outline_light"
+    },
+    "lod": {
+      "micro": {
+        "width": 4,
+        "second": null
+      }
+    }
+  },
+  "paints": {
+    "tyre_gradient": {
+      "type": "radial",
+      "centre": [
+        0,
+        0
+      ],
+      "focus": [
+        -12,
+        -14
+      ],
+      "r0": 4,
+      "r1": 44,
+      "stops": [
+        [
+          0,
+          "tyre_mid"
+        ],
+        [
+          1,
+          "tyre_dark"
+        ]
+      ]
+    },
+    "hub_gradient": {
+      "type": "linear",
+      "from": [
+        -20,
+        -20
+      ],
+      "to": [
+        20,
+        20
+      ],
+      "stops": [
+        [
+          0,
+          "hub_rim_light"
+        ],
+        [
+          0.5,
+          "hub_rim_mid"
+        ],
+        [
+          1,
+          "hub_rim_dark"
+        ]
+      ]
+    },
+    "chassis_gradient": {
+      "type": "linear",
+      "from": [
+        120,
+        190
+      ],
+      "to": [
+        250,
+        282
+      ],
+      "stops": [
+        [
+          0,
+          "body_shine"
+        ],
+        [
+          0.3,
+          "body"
+        ],
+        [
+          1,
+          "body_shade"
+        ]
+      ]
+    },
+    "chassis_gloss": {
+      "type": "radial",
+      "centre": [
+        150,
+        205
+      ],
+      "r0": 2,
+      "r1": 80,
+      "stops": [
+        [
+          0,
+          "shine",
+          0.4
+        ],
+        [
+          1,
+          "shine",
+          0
+        ]
+      ]
+    },
+    "head_gradient": {
+      "type": "linear",
+      "from": [
+        -70,
+        -128
+      ],
+      "to": [
+        70,
+        -10
+      ],
+      "stops": [
+        [
+          0,
+          "body_shine"
+        ],
+        [
+          0.28,
+          "body"
+        ],
+        [
+          1,
+          "body_shade"
+        ]
+      ]
+    },
+    "head_gloss": {
+      "type": "radial",
+      "centre": [
+        -40,
+        -110
+      ],
+      "r0": 2,
+      "r1": 90,
+      "stops": [
+        [
+          0,
+          "shine",
+          0.45
+        ],
+        [
+          1,
+          "shine",
+          0
+        ]
+      ]
+    },
+    "screen_glow": {
+      "type": "radial",
+      "centre": [
+        0,
+        -72
+      ],
+      "r0": 2,
+      "r1": 76,
+      "stops": [
+        [
+          0,
+          "screen_glow"
+        ],
+        [
+          1,
+          "screen"
+        ]
+      ]
+    },
+    "screen_sheen": {
+      "type": "linear",
+      "from": [
+        -62,
+        -114
+      ],
+      "to": [
+        10,
+        -30
+      ],
+      "stops": [
+        [
+          0,
+          "shine",
+          0.22
+        ],
+        [
+          0.4,
+          "shine",
+          0
+        ]
+      ]
+    }
+  },
+  "parts": [
+    {
+      "id": "figure",
+      "at": [
+        -120,
+        -216.8
+      ],
+      "scale": 0.56,
+      "items": []
+    },
+    {
+      "id": "arm_l",
+      "parent": "figure",
+      "at": [
+        122,
+        224
+      ],
+      "rotate": -0.252,
+      "layer": 5,
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              26
+            ]
+          ],
+          "stroke": "arm_body",
+          "width": 13
+        },
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 26,
+          "r": 9,
+          "fill": "arm_socket",
+          "outline": true
+        },
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 26,
+          "r": 3,
+          "fill": "copper"
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "wheel",
+      "parent": "figure",
+      "at": [
+        185,
+        306
+      ],
+      "layer": 8,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 45,
+          "fill": {
+            "paint": "tyre_gradient"
+          },
+          "outline": true
+        },
+        {
+          "shape": "path",
+          "d": "M 33.16 14.02 L 37.76 15.97 M 25.27 25.64 L 28.78 29.20 M 13.53 33.36 L 15.41 37.99 M -0.26 36.00 L -0.30 41.00 M -14.02 33.16 L -15.97 37.76 M -25.64 25.27 L -29.20 28.78 M -33.36 13.53 L -37.99 15.41 M -36.00 -0.26 L -41.00 -0.30 M -33.16 -14.02 L -37.76 -15.97 M -25.27 -25.64 L -28.78 -29.20 M -13.53 -33.36 L -15.41 -37.99 M 0.26 -36.00 L 0.30 -41.00 M 14.02 -33.16 L 15.97 -37.76 M 25.64 -25.27 L 29.20 -28.78 M 33.36 -13.53 L 37.99 -15.41 M 36.00 0.26 L 41.00 0.30",
+          "stroke": "tyre_tick",
+          "width": 3,
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 28,
+          "fill": {
+            "paint": "hub_gradient"
+          },
+          "outline": true
+        },
+        {
+          "shape": "path",
+          "d": "M 5.53 2.34 L 22.11 9.35 M 0.74 5.95 L 2.96 23.82 M -4.79 3.62 L -19.15 14.47 M -5.53 -2.34 L -22.11 -9.35 M -0.74 -5.95 L -2.96 -23.82 M 4.79 -3.62 L 19.15 -14.47",
+          "stroke": "hub_spoke",
+          "width": 4,
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 10,
+          "fill": "copper",
+          "outline": true
+        },
+        {
+          "shape": "circle",
+          "x": -3,
+          "y": -3,
+          "r": 3,
+          "fill": "copper_light",
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "shape": "circle",
+            "x": 0,
+            "y": 0,
+            "r": 45,
+            "fill": "tyre_dark",
+            "outline": true
+          },
+          {
+            "shape": "circle",
+            "x": 0,
+            "y": 0,
+            "r": 20,
+            "fill": "copper",
+            "outline": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "chassis",
+      "parent": "figure",
+      "at": [
+        0,
+        0
+      ],
+      "layer": 10,
+      "items": [
+        {
+          "id": "body",
+          "shape": "path",
+          "d": "M 118.71 207.80 Q 116.00 190.00 134.00 190.00 L 236.00 190.00 Q 254.00 190.00 251.29 207.80 L 242.71 264.20 Q 240.00 282.00 222.00 282.00 L 148.00 282.00 Q 130.00 282.00 127.29 264.20 Z",
+          "fill": {
+            "paint": "chassis_gradient"
+          },
+          "outline": true
+        },
+        {
+          "id": "copper_band",
+          "shape": "rect",
+          "x": 110,
+          "y": 262,
+          "w": 160,
+          "h": 12,
+          "fill": "copper",
+          "clip": "chassis.body",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "copper_shine",
+          "shape": "rect",
+          "x": 110,
+          "y": 262,
+          "w": 160,
+          "h": 3,
+          "fill": "copper_shine",
+          "clip": "chassis.body",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "gloss",
+          "shape": "rect",
+          "x": 110,
+          "y": 190,
+          "w": 160,
+          "h": 92,
+          "fill": {
+            "paint": "chassis_gloss"
+          },
+          "clip": "chassis.body",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "stud_l",
+          "shape": "circle",
+          "x": 132,
+          "y": 200,
+          "r": 3.4,
+          "fill": "copper_light",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "stud_r",
+          "shape": "circle",
+          "x": 238,
+          "y": 200,
+          "r": 3.4,
+          "fill": "copper_light",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "led_bezel",
+          "shape": "circle",
+          "x": 185,
+          "y": 230,
+          "r": 17,
+          "fill": "outline",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "led_lamp",
+          "shape": "circle",
+          "x": 185,
+          "y": 230,
+          "r": 12,
+          "fill": "lamp",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "led_glint",
+          "shape": "circle",
+          "x": 181,
+          "y": 226,
+          "r": 3.4,
+          "fill": "shine",
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "id": "body",
+            "shape": "round_rect",
+            "x": 125,
+            "y": 205,
+            "w": 120,
+            "h": 82,
+            "r": 22,
+            "fill": "body",
+            "outline": true
+          },
+          {
+            "id": "led_lamp",
+            "shape": "circle",
+            "x": 185,
+            "y": 230,
+            "r": 12,
+            "fill": "lamp",
+            "lod": [
+              "full",
+              "small"
+            ]
+          }
+        ]
+      },
+      "glow": {
+        "item": "led_lamp",
+        "colour": "lamp",
+        "blur": 8,
+        "alpha": 1
+      }
+    },
+    {
+      "id": "neck",
+      "parent": "figure",
+      "at": [
+        168,
+        178
+      ],
+      "layer": 20,
+      "items": [
+        {
+          "shape": "round_rect",
+          "x": 0,
+          "y": 0,
+          "w": 34,
+          "h": 24,
+          "r": 8,
+          "fill": "trim",
+          "stroke": "outline",
+          "width": 4
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "head",
+      "parent": "figure",
+      "at": [
+        190,
+        190
+      ],
+      "rotate": -0.1,
+      "layer": 30,
+      "items": [
+        {
+          "id": "antenna_ink",
+          "shape": "path",
+          "d": "M 24 -124 Q 32 -144 40 -162",
+          "stroke": "outline",
+          "width": 9,
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "antenna_stalk",
+          "shape": "path",
+          "d": "M 24 -124 Q 32 -144 40 -162",
+          "stroke": "antenna",
+          "width": 4,
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "antenna_bezel",
+          "shape": "circle",
+          "x": 40,
+          "y": -166,
+          "r": 9,
+          "fill": "outline",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "antenna_lamp",
+          "shape": "circle",
+          "x": 40,
+          "y": -166,
+          "r": 6.4,
+          "fill": "lamp",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "shell",
+          "shape": "round_rect",
+          "x": -78,
+          "y": -128,
+          "w": 156,
+          "h": 118,
+          "r": 38,
+          "fill": {
+            "paint": "head_gradient"
+          },
+          "outline": true
+        },
+        {
+          "id": "head_gloss",
+          "shape": "rect",
+          "x": -90,
+          "y": -140,
+          "w": 180,
+          "h": 140,
+          "fill": {
+            "paint": "head_gloss"
+          },
+          "clip": "head.shell",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "head_copper_band",
+          "shape": "polyline",
+          "points": [
+            [
+              -60,
+              -4
+            ],
+            [
+              60,
+              -4
+            ]
+          ],
+          "stroke": "copper",
+          "width": 5,
+          "clip": "head.shell",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "ear_cap_l",
+          "shape": "round_rect",
+          "x": -90,
+          "y": -90,
+          "w": 16,
+          "h": 44,
+          "r": 8,
+          "fill": "copper",
+          "stroke": "outline",
+          "width": 4,
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "ear_shine_l",
+          "shape": "round_rect",
+          "x": -86,
+          "y": -84,
+          "w": 5,
+          "h": 12,
+          "r": 2.5,
+          "fill": "shine_translucent",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "ear_cap_r",
+          "shape": "round_rect",
+          "x": 74,
+          "y": -90,
+          "w": 16,
+          "h": 44,
+          "r": 8,
+          "fill": "copper",
+          "stroke": "outline",
+          "width": 4,
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "ear_shine_r",
+          "shape": "round_rect",
+          "x": 78,
+          "y": -84,
+          "w": 5,
+          "h": 12,
+          "r": 2.5,
+          "fill": "shine_translucent",
+          "lod": [
+            "full"
+          ]
+        },
+        {
+          "id": "screen",
+          "shape": "round_rect",
+          "x": -62,
+          "y": -114,
+          "w": 124,
+          "h": 86,
+          "r": 28,
+          "fill": "screen",
+          "stroke": "outline",
+          "width": 4
+        },
+        {
+          "id": "screen_glow",
+          "shape": "round_rect",
+          "x": -62,
+          "y": -114,
+          "w": 124,
+          "h": 86,
+          "r": 28,
+          "fill": {
+            "paint": "screen_glow"
+          },
+          "clip": "head.screen",
+          "lod": [
+            "full",
+            "small"
+          ]
+        },
+        {
+          "id": "screen_sheen",
+          "shape": "path",
+          "d": "M -62 -114 L 0 -114 L -50 -28 L -62 -28 Z",
+          "fill": {
+            "paint": "screen_sheen"
+          },
+          "clip": "head.screen",
+          "lod": [
+            "full",
+            "small"
+          ]
+        }
+      ],
+      "variants": {
+        "micro": [
+          {
+            "id": "shell",
+            "shape": "round_rect",
+            "x": -90,
+            "y": -130,
+            "w": 180,
+            "h": 130,
+            "r": 36,
+            "fill": "body",
+            "outline": true
+          },
+          {
+            "id": "screen",
+            "shape": "round_rect",
+            "x": -72,
+            "y": -110,
+            "w": 144,
+            "h": 90,
+            "r": 26,
+            "fill": "screen"
+          }
+        ]
+      }
+    },
+    {
+      "id": "arm_r",
+      "parent": "figure",
+      "at": [
+        246,
+        216
+      ],
+      "rotate": -0.28,
+      "layer": 25,
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              52
+            ]
+          ],
+          "stroke": "arm_body",
+          "width": 15
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "fore_r",
+      "parent": "arm_r",
+      "at": [
+        0,
+        52
+      ],
+      "rotate": 0.12,
+      "layer": 26,
+      "items": [
+        {
+          "shape": "circle",
+          "x": 0,
+          "y": 0,
+          "r": 10,
+          "fill": "copper",
+          "outline": true
+        },
+        {
+          "shape": "circle",
+          "x": -2.5,
+          "y": -2.5,
+          "r": 2.6,
+          "fill": "copper_light"
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              46
+            ]
+          ],
+          "stroke": "arm_body",
+          "width": 15
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "clamp",
+      "parent": "fore_r",
+      "at": [
+        0,
+        46
+      ],
+      "rotate": -2.692,
+      "keep_upright": true,
+      "layer": 27,
+      "items": [
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              -20
+            ],
+            [
+              0,
+              44
+            ]
+          ],
+          "stroke": "outline",
+          "width": 10
+        },
+        {
+          "shape": "polyline",
+          "points": [
+            [
+              0,
+              -20
+            ],
+            [
+              0,
+              44
+            ]
+          ],
+          "stroke": "spanner_handle",
+          "width": 8
+        },
+        {
+          "shape": "arc",
+          "x": 0,
+          "y": 52,
+          "r": 12,
+          "start": 0.5,
+          "end": 5.783,
+          "stroke": "outline",
+          "width": 9
+        },
+        {
+          "shape": "arc",
+          "x": 0,
+          "y": 52,
+          "r": 12,
+          "start": 0.5,
+          "end": 5.783,
+          "stroke": "spanner_head",
+          "width": 5
+        },
+        {
+          "shape": "round_rect",
+          "x": -12,
+          "y": -6,
+          "w": 24,
+          "h": 12,
+          "r": 4,
+          "fill": "clamp_base",
+          "stroke": "outline",
+          "width": 3
+        },
+        {
+          "shape": "round_rect",
+          "x": -13,
+          "y": -12,
+          "w": 10,
+          "h": 26,
+          "r": 5,
+          "fill": "copper",
+          "stroke": "outline",
+          "width": 3
+        },
+        {
+          "shape": "round_rect",
+          "x": 3,
+          "y": -12,
+          "w": 10,
+          "h": 26,
+          "r": 5,
+          "fill": "copper",
+          "stroke": "outline",
+          "width": 3
+        }
+      ],
+      "lod": [
+        "full",
+        "small"
+      ]
+    },
+    {
+      "id": "eye_glints",
+      "parent": "head",
+      "layer": 31,
+      "items": [
+        {
+          "shape": "circle",
+          "x": -36.25,
+          "y": -83.95,
+          "r": 3.74,
+          "fill": "shine",
+          "alpha": 0.9
+        },
+        {
+          "shape": "circle",
+          "x": 25.75,
+          "y": -83.95,
+          "r": 3.74,
+          "fill": "shine",
+          "alpha": 0.9
+        }
+      ],
+      "variants": {
+        "hidden": []
+      },
+      "lod": [
+        "full",
+        "small"
+      ]
+    }
+  ],
+  "anchors": {
+    "crown": {
+      "part": "head",
+      "at": [
+        0,
+        -128
+      ],
+      "description": "Top of the visor head."
+    },
+    "antenna": {
+      "part": "head",
+      "at": [
+        40,
+        -166
+      ],
+      "description": "Antenna tip lamp."
+    },
+    "chest": {
+      "part": "chassis",
+      "at": [
+        185,
+        230
+      ],
+      "description": "Center of the core LED light."
+    },
+    "screen": {
+      "part": "head",
+      "at": [
+        0,
+        -78
+      ],
+      "description": "Center of the screen visor."
+    },
+    "hand_l": {
+      "part": "arm_l",
+      "at": [
+        0,
+        26
+      ],
+      "side": "l",
+      "description": "Far stub arm socket."
+    },
+    "hand_r": {
+      "part": "clamp",
+      "at": [
+        0,
+        0
+      ],
+      "side": "r",
+      "description": "Clamp wrist."
+    },
+    "tool_grip": {
+      "part": "clamp",
+      "at": [
+        0,
+        20
+      ],
+      "description": "Spanner handle grip."
+    },
+    "wheel": {
+      "part": "wheel",
+      "at": [
+        0,
+        0
+      ],
+      "description": "Center of the ground wheel hub."
+    },
+    "sweat": {
+      "part": "head",
+      "at": [
+        72,
+        -120
+      ],
+      "description": "Sweat drop anchor on the head shell."
+    },
+    "sparkle": {
+      "part": "clamp",
+      "at": [
+        0,
+        52
+      ],
+      "description": "Sparkle effect near spanner head."
+    }
+  },
+  "face": {
+    "part": "head",
+    "at": [
+      0,
+      0
+    ],
+    "kit": "knurl_screen",
+    "clip": "head.screen",
+    "eyes": {
+      "y": -78,
+      "spacing": 31
+    },
+    "mouth": {
+      "y": -48
+    },
+    "colours": {
+      "feature": "feature"
+    },
+    "kit_definition": {
+      "id": "knurl_screen",
+      "description": "Knurl glowing screen glyphs with budgeted emission.",
+      "roles": [
+        "feature",
+        "sweat",
+        "sparkle",
+        "sparkle_outline"
+      ],
+      "defaults": {
+        "eyes": "capsule",
+        "mouth": "smile",
+        "brows": "none"
+      },
+      "glow": {
+        "blur": 4,
+        "alpha": 0.4
+      },
+      "eye_styles": {
+        "capsule": {
+          "op": "eye_path",
+          "d": "M -15 -3.5 C -15 -11 -11 -17 -1.5 -17 L 1.5 -17 C 11 -17 15 -11 15 -3.5 L 15 3.5 C 15 11 11 17 1.5 17 L -1.5 17 C -11 17 -15 11 -15 3.5 Z",
+          "fill": "feature"
+        },
+        "focused": {
+          "op": "eye_path",
+          "d": "M -14 -6 L 14 -12 L 14 17 L -14 17 Z",
+          "fill": "feature"
+        },
+        "arc": {
+          "op": "eye_arc",
+          "r": 12,
+          "start": 3.46,
+          "end": 5.97,
+          "width": 5.5,
+          "y": 5,
+          "stroke": "feature"
+        },
+        "slant": {
+          "op": "eye_path",
+          "d": "M -14 -12 L 14 -4 L 14 17 L -14 17 Z",
+          "fill": "feature"
+        },
+        "closed": {
+          "op": "eye_path",
+          "d": "M -14 0 L 14 0",
+          "stroke": "feature",
+          "width": 4
+        }
+      },
+      "brow_styles": {
+        "none": {
+          "op": "brow_path",
+          "d": "M 0 0",
+          "width": 0,
+          "stroke": "feature"
+        },
+        "neutral": {
+          "op": "brow_path",
+          "d": "M -10.5 0 L 10.5 0",
+          "width": 3.5,
+          "stroke": "feature"
+        },
+        "curious": {
+          "op": "brow_path",
+          "d": "M -10.5 -3 L 10.5 3",
+          "width": 3.5,
+          "stroke": "feature"
+        },
+        "worried": {
+          "op": "brow_path",
+          "d": "M -10.5 4 L 10.5 -4",
+          "width": 3.5,
+          "stroke": "feature"
+        }
+      },
+      "mouth_styles": {
+        "smile": {
+          "op": "mouth_path",
+          "box": [
+            14,
+            8
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 -0.1 Q 0 0.8 1 -0.1",
+              "stroke": "feature",
+              "width": 3.5
+            }
+          ]
+        },
+        "flat": {
+          "op": "mouth_path",
+          "box": [
+            14,
+            8
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0 L 1 0",
+              "stroke": "feature",
+              "width": 3.5
+            }
+          ]
+        },
+        "grin": {
+          "op": "mouth_path",
+          "box": [
+            14,
+            8
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0 Q 0 0.3 1 0 C 0.8 1 -0.8 1 -1 0 Z",
+              "fill": "feature",
+              "stroke": "feature",
+              "width": 3
+            }
+          ]
+        },
+        "wavy": {
+          "op": "mouth_path",
+          "box": [
+            14,
+            8
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0.2 Q -0.5 -0.6 0 0 Q 0.5 0.6 1 0.2",
+              "stroke": "feature",
+              "width": 3.5
+            }
+          ]
+        },
+        "wide": {
+          "op": "mouth_path",
+          "box": [
+            14,
+            8
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M -1 0 Q 0 0.3 1 0 C 0.8 1.4 -0.8 1.4 -1 0 Z",
+              "fill": "feature",
+              "stroke": "feature",
+              "width": 3
+            }
+          ]
+        }
+      },
+      "effects": {
+        "sweat": {
+          "op": "sweat_drop",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M 0 -13 C 9 0 9 9 0 9 C -9 9 -9 0 0 -13 Z",
+              "fill": "sweat"
+            }
+          ],
+          "mode": "progress",
+          "travel": 26,
+          "sway": 2,
+          "sway_rate": 12,
+          "fade_at": 0.9
+        },
+        "sparkle": {
+          "op": "sparkle_star",
+          "at": [
+            0,
+            0
+          ],
+          "items": [
+            {
+              "shape": "path",
+              "d": "M 0 -8 L 2 -2 L 8 0 L 2 2 L 0 8 L -2 2 L -8 0 L -2 -2 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1
+            }
+          ],
+          "reduced_items": [
+            {
+              "shape": "path",
+              "d": "M 0 -8 L 2 -2 L 8 0 L 2 2 L 0 8 L -2 2 L -8 0 L -2 -2 Z",
+              "fill": "sparkle",
+              "stroke": "sparkle_outline",
+              "width": 1
+            }
+          ],
+          "mode": "pulse",
+          "amplitude": 0.18,
+          "rate": 9
+        }
+      }
+    }
+  },
+  "poses": {
+    "rest": {
+      "arm_l.rotate": -0.252,
+      "arm_r.rotate": -0.28,
+      "fore_r.rotate": 0.12,
+      "head.rotate": -0.1
+    },
+    "diagnose": {
+      "arm_l.rotate": -0.855,
+      "arm_r.rotate": -0.7,
+      "fore_r.rotate": 2.6,
+      "head.rotate": -0.198
+    },
+    "salute": {
+      "arm_l.rotate": -0.252,
+      "arm_r.rotate": -2.0,
+      "fore_r.rotate": -0.35,
+      "head.rotate": -0.03
+    },
+    "anxious": {
+      "arm_l.rotate": -0.54,
+      "arm_r.rotate": -0.6,
+      "fore_r.rotate": 1.95,
+      "head.rotate": -0.1
+    },
+    "triumph": {
+      "arm_l.rotate": -2.295,
+      "arm_r.rotate": -2.55,
+      "fore_r.rotate": -0.15,
+      "head.rotate": -0.1
+    }
+  },
+  "moods": {
+    "idle": {
+      "status": "Queue idle",
+      "pose": "rest",
+      "face": {
+        "eyes": "capsule",
+        "mouth": "smile",
+        "brows": "none"
+      },
+      "description": "Idle ready state."
+    },
+    "thinking": {
+      "status": "Diagnosing task",
+      "pose": "diagnose",
+      "face": {
+        "eyes": "focused",
+        "mouth": "flat",
+        "brows": "curious",
+        "look_x": 0.7,
+        "look_y": -0.7
+      },
+      "recolour": {
+        "lamp": "lamp_thinking"
+      },
+      "description": "Analysing and diagnosing a task error."
+    },
+    "happy": {
+      "status": "Task repaired",
+      "pose": "salute",
+      "face": {
+        "eyes": "arc",
+        "mouth": "grin",
+        "brows": "none"
+      },
+      "channels": {
+        "root.lift": 1.38,
+        "eye_glints.variant": "hidden"
+      },
+      "recolour": {
+        "lamp": "lamp_happy"
+      },
+      "description": "Repair complete and verified."
+    },
+    "worried": {
+      "status": "Queue error",
+      "pose": "anxious",
+      "face": {
+        "eyes": "slant",
+        "mouth": "wavy",
+        "brows": "worried",
+        "look_x": -0.25,
+        "look_y": 0.1
+      },
+      "recolour": {
+        "lamp": "lamp_worried"
+      },
+      "effects": {
+        "sweat": 0.35
+      },
+      "description": "Task failure detected."
+    },
+    "celebrating": {
+      "status": "All jobs finished",
+      "pose": "triumph",
+      "face": {
+        "eyes": "arc",
+        "mouth": "wide",
+        "brows": "none"
+      },
+      "channels": {
+        "root.lift": 11.52,
+        "eye_glints.variant": "hidden"
+      },
+      "recolour": {
+        "lamp": "lamp_celebrating"
+      },
+      "effects": {
+        "sparkle": true
+      },
+      "description": "Queue cleared with full success."
+    }
+  },
+  "gestures": {
+    "rock": {
+      "description": "Rock gently on the wheel base.",
+      "frames": 18,
+      "tracks": {
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            0.06
+          ],
+          [
+            0.75,
+            -0.03
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      }
+    },
+    "nod": {
+      "frames": 18,
+      "needs": [
+        "head"
+      ],
+      "fallback": "rock",
+      "tracks": {
+        "head.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.25,
+            0.12,
+            "ease_out"
+          ],
+          [
+            0.45,
+            0
+          ],
+          [
+            0.65,
+            0.12,
+            "ease_out"
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      },
+      "description": "A precise head nod."
+    },
+    "wave": {
+      "frames": 30,
+      "needs": [
+        "arm_r",
+        "fore_r"
+      ],
+      "fallback": "rock",
+      "tracks": {
+        "arm_r.rotate": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.2,
+              -1.8
+            ],
+            [
+              0.8,
+              -1.8
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "fore_r.rotate": {
+          "mode": "set",
+          "keys": [
+            [
+              0,
+              null
+            ],
+            [
+              0.2,
+              -0.2
+            ],
+            [
+              0.4,
+              -0.8
+            ],
+            [
+              0.6,
+              -0.2
+            ],
+            [
+              0.8,
+              -0.8
+            ],
+            [
+              1,
+              null
+            ]
+          ]
+        },
+        "root.rotate": [
+          [
+            0,
+            0
+          ],
+          [
+            0.2,
+            -0.025
+          ],
+          [
+            0.8,
+            -0.025
+          ],
+          [
+            1,
+            0
+          ]
+        ]
+      },
+      "description": "A tool salute wave."
+    }
+  },
+  "motion": {
+    "change": {
+      "style": "wiggle",
+      "frames": 18,
+      "angle": 0.06,
+      "height": 8,
+      "swap_at": 0.5
+    }
+  },
+  "lod": {
+    "small": {
+      "hide": [
+        "chassis.gloss",
+        "chassis.stud_l",
+        "chassis.stud_r",
+        "head.head_gloss",
+        "head.ear_shine_l",
+        "head.ear_shine_r"
+      ],
+      "face": {
+        "brows": false
+      }
+    },
+    "micro": {
+      "hide": [
+        "arm_l",
+        "arm_r",
+        "neck"
+      ],
+      "variants": {
+        "wheel": "micro",
+        "chassis": "micro",
+        "head": "micro"
+      },
+      "face": {
+        "scale": 1.2,
+        "brows": false
+      },
+      "glow": false
+    }
+  },
+  "effects": {
+    "sweat": {
+      "anchor": "sweat",
+      "layer": 45
+    },
+    "sparkle": {
+      "anchor": "sparkle",
+      "layer": 45
+    }
+  },
+  "palettes": {
+    "orbit": {
+      "description": "White casing, black visor and cyan lights.",
+      "light": {
+        "body": "#F8FAFC",
+        "arm_body": "#F8FAFC",
+        "clamp_base": "#F8FAFC",
+        "trim": "#CBD5E1",
+        "hub_rim_mid": "#CBD5E1",
+        "hub_rim_dark": "#CBD5E1",
+        "screen": "#0F172A",
+        "screen_glow": "#0F172A",
+        "tyre_dark": "#0F172A",
+        "arm_socket": "#0F172A",
+        "copper": "#38BDF8",
+        "copper_shine": "#38BDF8",
+        "hub_spoke": "#38BDF8",
+        "spanner_head": "#94A3B8",
+        "spanner_handle": "#94A3B8",
+        "antenna": "#94A3B8",
+        "hub_rim_light": "#94A3B8",
+        "feature": "#00F0FF",
+        "eye_glow": "#00F0FF",
+        "outline": "#181828"
+      }
+    },
+    "carbon": {
+      "description": "Gunmetal casing, black tyre and cyan visor.",
+      "light": {
+        "body": "#475569",
+        "arm_body": "#475569",
+        "clamp_base": "#475569",
+        "trim": "#64748B",
+        "hub_rim_mid": "#64748B",
+        "hub_rim_dark": "#64748B",
+        "screen": "#090D16",
+        "screen_glow": "#090D16",
+        "tyre_dark": "#090D16",
+        "arm_socket": "#090D16",
+        "copper": "#94A3B8",
+        "copper_shine": "#94A3B8",
+        "hub_spoke": "#94A3B8",
+        "spanner_head": "#CBD5E1",
+        "spanner_handle": "#CBD5E1",
+        "antenna": "#CBD5E1",
+        "hub_rim_light": "#CBD5E1",
+        "feature": "#22D3EE",
+        "eye_glow": "#22D3EE",
+        "outline": "#181828"
+      }
+    },
+    "cobalt_droid": {
+      "description": "White casing with blue trim and lights.",
+      "light": {
+        "body": "#F1F5F9",
+        "arm_body": "#F1F5F9",
+        "clamp_base": "#F1F5F9",
+        "trim": "#3B82F6",
+        "hub_rim_mid": "#3B82F6",
+        "hub_rim_dark": "#3B82F6",
+        "screen": "#0F172A",
+        "screen_glow": "#0F172A",
+        "tyre_dark": "#0F172A",
+        "arm_socket": "#0F172A",
+        "copper": "#1D4ED8",
+        "copper_shine": "#1D4ED8",
+        "hub_spoke": "#1D4ED8",
+        "spanner_head": "#E11D48",
+        "spanner_handle": "#E11D48",
+        "antenna": "#E11D48",
+        "hub_rim_light": "#E11D48",
+        "feature": "#60A5FA",
+        "eye_glow": "#60A5FA",
+        "outline": "#181828"
+      }
+    },
+    "crimson": {
+      "description": "White casing with red limbs and lights.",
+      "light": {
+        "body": "#F8FAFC",
+        "arm_body": "#F8FAFC",
+        "clamp_base": "#F8FAFC",
+        "trim": "#E2E8F0",
+        "hub_rim_mid": "#E2E8F0",
+        "hub_rim_dark": "#E2E8F0",
+        "screen": "#18181B",
+        "screen_glow": "#18181B",
+        "tyre_dark": "#18181B",
+        "arm_socket": "#18181B",
+        "copper": "#E11D48",
+        "copper_shine": "#E11D48",
+        "hub_spoke": "#E11D48",
+        "spanner_head": "#CBD5E1",
+        "spanner_handle": "#CBD5E1",
+        "antenna": "#CBD5E1",
+        "hub_rim_light": "#CBD5E1",
+        "feature": "#F43F5E",
+        "eye_glow": "#F43F5E",
+        "outline": "#181828"
+      }
+    }
+  },
+  "palette_sources": {
+    "orbit": "character",
+    "carbon": "character",
+    "cobalt_droid": "character",
+    "crimson": "character"
+  },
+  "note": "Picked round-5 drawing: source wheel, trapezoid chassis, tilted visor, far socket stub and upright held spanner. Removed an unpicked star-eye style; celebrating keeps the source eye arcs. Static glints and separate dark spanner strokes preserve source details. Source screen/additive blending, particle sparks, continuous pulse and spring-driven antenna remain gaps. Finite tracks and precomputed static texture are supported authoring options, not missing grammar. No built-in shipping or visual approval is implied. Authored figure scale is 0.56 with a raised, centred origin to retain every tool pose, glow and gesture inside the frame. Explicit glow alpha is 1; the micro chassis retains its lamp while micro glow is off. Fidelity correction: neck is painted after the chassis and before the head, as in the source, retaining its exact 34 by 24 geometry; antenna has the source 9-unit dark under-stroke and 4-unit metal stroke. The source gface fills rounded eye capsules, so the filled mint eyes are retained; scanlines and additive glow remain named omissions."
+}

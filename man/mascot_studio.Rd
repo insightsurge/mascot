@@ -15,8 +15,12 @@ playground, or \code{"examples"} for the gallery of bundled examples.}
 \item{fn}{A function name in the studio's Guide, without parentheses.
 \code{NULL} starts with \code{mascot_mood()}. Used in the studio view only.}
 
-\item{character}{A character ID from the studio's character selector.
-Defaults to the default character of \code{\link[=mascot]{mascot()}}.}
+\item{character}{A built-in character id string from the studio's character
+selector, or a \code{\link[=mascot_character]{mascot_character()}} helper for a built-in character.
+Defaults to the default character of \code{\link[=mascot]{mascot()}}. A checked character object
+or a helper carrying one is refused with advice to use \code{\link[=mascot_preview]{mascot_preview()}}
+or \code{\link[=mascot]{mascot()}} to display it. Checked objects come from
+\code{\link[=mascot_read_character]{mascot_read_character()}} or \code{\link[=mascot_check_character]{mascot_check_character()}}.}
 
 \item{run}{A logical flag. \code{TRUE} launches in an interactive R session;
 \code{FALSE} returns the app without launching it.}
@@ -28,7 +32,7 @@ the value returned by \code{\link[shiny:runApp]{shiny::runApp()}} after the app 
 \description{
 Explore the package's functions, try their controls with live feedback, and
 copy the working R code into your own app. This first interface is
-experimental and may change before CRAN. Choices belong to the returned
+experimental and may change in a later release. Choices belong to the returned
 app; no global options are changed.
 }
 \examples{

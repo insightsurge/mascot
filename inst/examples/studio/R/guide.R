@@ -47,6 +47,8 @@ guide_entry <- function(category, vignette, args = character(), try = list()) {
 }
 
 playground_guide <- list(
+  mascot_read_character = guide_entry("look", "Your first app", "path"),
+  mascot_check_character = guide_entry("look", "Your first app", "x"),
   mascot_character = guide_entry("look", "Your first app", "id"),
   mascot_mood = guide_entry("look", "Moods and status", "name"),
   mascot_moods = guide_entry("look", "Moods and status", "character"),

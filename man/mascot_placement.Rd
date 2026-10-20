@@ -30,7 +30,7 @@ to keep it where it is dropped, including while minimised.
 \out{<span class='badge text-bg-warning'>Experimental</span>}}}{%
 \strong{[Experimental]}}
 \code{"free"} is experimental: the position it reports and how to restore it
-may change (issue #224). Has no effect inline: an
+may change. Has no effect inline: an
 explicitly supplied value gives an informational message. \code{TRUE}, \code{FALSE} and
 \code{NULL} are not accepted. See the Dragging section.}
 }
@@ -113,6 +113,7 @@ Other mascot helpers:
 \code{\link[=mascot_bubble]{mascot_bubble()}},
 \code{\link[=mascot_character]{mascot_character()}},
 \code{\link[=mascot_characters]{mascot_characters()}},
+\code{\link[=mascot_check_character]{mascot_check_character()}},
 \code{\link[=mascot_colour_roles]{mascot_colour_roles()}},
 \code{\link[=mascot_families]{mascot_families()}},
 \code{\link[=mascot_gesture]{mascot_gesture()}},
@@ -123,6 +124,7 @@ Other mascot helpers:
 \code{\link[=mascot_palettes]{mascot_palettes()}},
 \code{\link[=mascot_popup_menu]{mascot_popup_menu()}},
 \code{\link[=mascot_preview]{mascot_preview()}},
+\code{\link[=mascot_read_character]{mascot_read_character()}},
 \code{\link[=mascot_size]{mascot_size()}},
 \code{\link[=mascot_status]{mascot_status()}},
 \code{\link[=mascot_theme]{mascot_theme()}}
@@ -130,5 +132,5 @@ Other mascot helpers:
 \concept{mascot helpers}
 \section{Experimental free dragging}{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
-"free" is experimental: the position it reports and how to restore it may change (issue #224).
+"free" is experimental: the position it reports and how to restore it may change.
 }

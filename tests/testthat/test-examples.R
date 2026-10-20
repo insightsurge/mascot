@@ -1230,7 +1230,7 @@ describe("studio round 4 regression guards", {
     # The one-line hint is the first sentence of the argument's help text, so it cannot depend on the selection.
     text <- hint("mascot_character", "id")
     expect_false(grepl("Selected:", text, fixed = TRUE))
-    expect_match(text, "built-in character", fixed = TRUE)
+    expect_match(text, "known character", fixed = TRUE)
   })
   it("gets character labels and defaults from the package", {
     dir <- dirname(mascot_example("studio", run = FALSE))
@@ -2675,5 +2675,25 @@ describe("studio disabled menus (#350)", {
       expect_true(eval(click_code()$helper)$disabled)
       expect_match(output$code_app, "disabled = TRUE", fixed = TRUE)
     })
+  })
+})
+
+
+describe("the studio public character readers", {
+  it("lists read and check without enabling the authoring panel", {
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    guide <- new.env()
+    sys.source(file.path(dir, "R", "guide.R"), guide)
+    sys.source(file.path(dir, "R", "data.R"), guide)
+    sys.source(file.path(dir, "R", "code.R"), guide)
+    expect_s3_class(eval(guide$code_read_character()), "mascot_character_data")
+    expect_s3_class(eval(guide$code_check_character()), "mascot_character_data")
+    for (fn in c("mascot_read_character", "mascot_check_character")) {
+      expect_s3_class(eval(parse(text = guide$format_call(fn, list()))), "mascot_character_data")
+    }
+    for (fn in c("mascot_read_character", "mascot_check_character")) {
+      expect_true(fn %in% names(guide$playground_guide))
+      expect_true(fn %in% names(guide$playground_controls))
+    }
   })
 })

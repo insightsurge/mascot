@@ -115,6 +115,8 @@ input_event <- function(...) paste0("data-event=\"", c(...), "\"")
 fixed_arg <- function(reason) list(fixed = reason)
 
 playground_controls <- list(
+  mascot_read_character = list(path = fixed_arg("Bundled offline example; copy the call to read your own file.")),
+  mascot_check_character = list(x = fixed_arg("Bundled offline example; copy the call to check your source list.")),
   mascot_character = list(id = input_id("character")),
   mascot_mood = list(name = input_id("mood")),
   mascot_status = list(text = input_id("status_text")),
@@ -280,7 +282,7 @@ character_mistakes <- function(character) {
   result
 }
 
-# Internal authoring coverage is separate from the exported function map until R4b.
+# Future authoring controls stay separate from the public function map.
 studio_character_controls <- list(
   mascot_read_character = list(path = input_id("your_character_file", "your_character_example")),
   mascot_check_character = list(x = input_id("your_character_check")),

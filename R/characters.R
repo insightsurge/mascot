@@ -14,9 +14,13 @@ builtin_characters <- function() {
 #' The helper behind the `character` argument of [mascot()]. Tessa and Sela
 #' are stable built-in characters; Knurl and Neer are experimental.
 #'
-#' @param id A non-empty string naming a built-in character. Defaults to
-#'   `"tessa"`; `NULL` is not accepted.
-#' @returns A `mascot_character` object with `id` and `name` elements.
+#' @param id A non-empty string naming a known character, or checked
+#'   `mascot_character_data` from [mascot_read_character()] or
+#'   [mascot_check_character()]. Defaults to `"tessa"`; `NULL` is not accepted.
+#'   A checked object is used as passed and is not stored anywhere; pass it
+#'   each time you choose that character.
+#' @returns A `mascot_character` helper carrying the character's identity and,
+#'   for a custom character, its checked drawing data.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @details Tessa and Sela are stable: their ids, names, five shared moods,
 #'   gesture names, colour-role names and palette names stay the same in every
@@ -37,10 +41,19 @@ builtin_characters <- function() {
 #' @examples
 #' mascot_character()
 #' mascot_character("tessa")
+#' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+#' mascot_character(mascot_read_character(path))
 mascot_character <- function(id = "tessa") {
   with_mascot_asserts({
-    checkmate::assert_string(id, min.chars = 1)
+    checkmate::assert(
+      checkmate::check_string(id, min.chars = 1),
+      checkmate::check_class(id, "mascot_character_data"),
+      .var.name = "id"
+    )
   })
+  if (inherits(id, "mascot_character_data")) {
+    return(as_character_arg(id, environment()))
+  }
   registry <- mascot_characters()
   if (!id %in% registry$id) {
     abort_choice(id, registry$id, "id", "character", environment())

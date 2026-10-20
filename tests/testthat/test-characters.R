@@ -112,3 +112,17 @@ describe("shipped palette roles and contrast", {
     }
   })
 })
+
+
+describe("mascot_character() checked objects", {
+  it("uses the shared resolver without adding direct objects to the registry", {
+    local_empty_registry()
+    bot <- mascot_read_character(system.file("examples", "characters", "study_bot.json", package = "mascot"))
+    helper <- mascot_character(bot)
+    expect_identical(helper, as_character_arg(bot, environment()))
+    expect_match(as.character(mascot("bot", character = helper)), "study_bot", fixed = TRUE)
+    expect_length(character_data_ids(), 0)
+    bot$name <- "Edited"
+    expect_error(mascot_character(bot), class = "mascot_error_character")
+  })
+})

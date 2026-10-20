@@ -9,7 +9,7 @@
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
 #'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
 #'       lifecycle::badge("experimental"), fixed = TRUE),
-#'   "\nIts purpose, arguments and page layout may change before CRAN.\n}"
+#'   "\nIts purpose, arguments and page layout may change in a later release.\n}"
 #' )
 #' @inheritParams mascot
 #' @param mood A mood name or [mascot_mood()] object, or `NULL` (the default)

@@ -1,4 +1,5 @@
 # The server of the "Theme a mascot" view (theme-ui.R builds its page). Plain helpers first, then the server.
+# It uses only the parts theme-ui.R lists at its top (a test checks it).
 
 # ---- Plain helpers ----------------------------------------------------------------------------------------------
 
@@ -222,8 +223,8 @@ theme_view_server <- function(input, output, session) {
   })
   brand_roles <- shiny::reactive(theme_brand_roles(character()))
   brand <- shiny::reactive(list(
-    primary = input$brand_primary %||% theme_brand_samples[[1]][[1]],
-    secondary = input$brand_secondary %||% theme_brand_samples[[1]][[2]]
+    primary = if (is.null(input$brand_primary)) theme_brand_samples[[1]][[1]] else input$brand_primary,
+    secondary = if (is.null(input$brand_secondary)) theme_brand_samples[[1]][[2]] else input$brand_secondary
   ))
   # Written as your own colours, a brand colour sets its parts in both modes, as a plain list does. The pickers'
   # starting values set nothing: only a colour the user chooses does.

@@ -1,6 +1,18 @@
 # The "Theme a mascot" view (mascot_studio(view = "theme"), ?view=theme): one character, themed with live feedback,
 # and the plain R code to copy. This file builds its page; theme-server.R holds its server. The view uses the
 # studio app's shared parts (R/shared-*.R, R/code.R, www/tokens.css, www/inputs.js), never studio.js.
+#
+# What the view's two files use from the rest of the app, and nothing else (test-studio-theme.R checks it):
+# - R/views.R: studio_view_titles, view_character()
+# - R/shared-ui.R: studio_button(), copy_button()
+# - R/shared-data.R: studio_characters(), studio_palette_choices(), studio_palette_labels(), studio_palette_swap
+# - R/shared-help.R: help_page(), help_arg(), html_text(), studio_help_tail(), studio_bslib_experimental()
+# - R/shared-layout.R: sentence_bar(), sentence_words(), window_bar(), window_footer()
+# - R/shared-colours.R: colour_roles_ui(), colour_roles_server(), colour_input(), palette_cards()
+# - R/shared-run.R: run_real_call()
+# - R/shared-check.R: preview_folder(), contrast_check(), contrast_result_ui(), contrast_stale_ui(),
+#   palette_swap_run()
+# - R/code.R: code_theme(), code_character(), code_mood(), format_call(), format_expr(), pick_style()
 
 # The id of the live mascot. The code shown uses "helper", the id the package's examples use.
 theme_preview_id <- "theme_mascot"

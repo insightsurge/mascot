@@ -17,6 +17,22 @@ theme_files <- function(pattern) {
   stats::setNames(lapply(files, parse), basename(files))
 }
 
+# The names a file assigns at its top level (functions and values).
+defined_functions_and_values <- function(exprs) {
+  names <- vapply(
+    exprs,
+    function(expr) {
+      if (is.call(expr) && identical(expr[[1]], as.name("<-")) && is.name(expr[[2]])) {
+        as.character(expr[[2]])
+      } else {
+        NA_character_
+      }
+    },
+    character(1)
+  )
+  names[!is.na(names)]
+}
+
 defined_functions <- function(exprs) {
   names <- vapply(
     exprs,
@@ -45,6 +61,30 @@ describe("the theme view's files", {
     mine <- unlist(lapply(view, defined_functions))
     expect_gt(length(mine), 5)
     expect_length(intersect(mine, unlist(lapply(shared, defined_functions))), 0)
+  })
+})
+
+describe("the theme view's dependencies", {
+  it("are only the shared files, the code builders and the views table, as theme-ui.R lists them", {
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "R")
+    defined <- list()
+    for (file in list.files(dir, pattern = "[.]R$")) {
+      for (name in defined_functions_and_values(parse(file.path(dir, file)))) {
+        defined[[name]] <- c(defined[[name]], file)
+      }
+    }
+    view <- c("theme-ui.R", "theme-server.R")
+    allowed <- c(view, "code.R", "views.R", grep("^shared-", list.files(dir), value = TRUE))
+    used <- unique(unlist(lapply(view, function(file) all.names(parse(file.path(dir, file))))))
+    used <- intersect(used, names(defined))
+    outside <- used[!vapply(used, function(name) any(defined[[name]] %in% allowed), logical(1))]
+    expect_identical(outside, character(), info = paste(outside, collapse = ", "))
+    # The list at the top of theme-ui.R names every one of them.
+    header <- paste(readLines(file.path(dir, "theme-ui.R"), n = 25L, warn = FALSE), collapse = "\n")
+    from_others <- used[!vapply(used, function(name) any(defined[[name]] %in% view), logical(1))]
+    for (name in from_others) {
+      expect_match(header, paste0("\\b", gsub(".", "[.]", name, fixed = TRUE), "\\b"), info = name)
+    }
   })
 })
 

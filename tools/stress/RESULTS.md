@@ -4,7 +4,8 @@
 R 4.6.1, shiny 1.14.0, shinytest2 0.5.1, chromote 0.5.1, bslib 0.12.0, Chrome 155.0.8059.85 (headless).
 
 **Result: 30 PASS, 0 FAIL** (7 static syntax checks and 23 browser checks). The mascot's Shiny wiring held in
-all five scenarios. No package defect was found.
+all five scenarios; the runner found no package defect. Small probe apps written afterwards found two problems
+outside these scenarios: see [Findings](#findings).
 
 ## What held (browser checks)
 
@@ -29,8 +30,19 @@ failures were mistakes in the harness, not in the package:
 Lesson: when a check times out, print the real host state (the runner now does) and read it before suspecting the package.
 
 ## Findings
-None. Things the checks do not cover: real network loss and session resumption on a deployed server, touch devices,
-and apps with many hundreds of mascots.
+The 30 checks found no package defect. Afterwards (2026-10-21), small probe apps tried three things large apps do that
+these scenarios don't. They were run by hand in headless Chrome and are not part of the runner:
+
+| Probe | What happened | Follow-up |
+| --- | --- | --- |
+| A mascot inside `renderUI()` cached with `bindCache()`, then a page reload (a second session gets the cached HTML) | The second visitor's mascot is stuck: worried, "Mascot UI baseline could not be verified", and it ignores `update_mascot()` | #424 (bug) |
+| 200 `mascot()` calls with different ids | About 0.1 s per call (20.5 s for 200; no faster the second time). Shiny and bslib components take 0.3 to 6 ms | #425 (performance) |
+| Page content removed by JavaScript without `Shiny.unbindAll()`, then put back with `Shiny.bindAll()` | The returning mascot never starts ("duplicate live mascot id"). With `Shiny.unbindAll()` first, it works | Not supported, no issue: Shiny asks apps to unbind inputs before removing them |
+
+The scenarios for #424 and #425 will be added with their fixes, so the runner stays all PASS until then.
+
+Things the checks do not cover: real network loss and session resumption on a deployed server, touch devices, cached
+UI (#424) and pages with many mascots (build time measured in #425; drawing hundreds at once not tried).
 
 ## All PASS lines of the final run
 ```

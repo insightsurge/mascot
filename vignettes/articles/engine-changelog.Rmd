@@ -9,6 +9,21 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-21 — A page that reconnects into a new Shiny session starts the protocol again (#426)
+
+**In brief:** After Shiny reconnects the browser into a new server session (`allowReconnect()` on Shiny Server or
+Connect), mascots take `update_mascot()` calls again. Before, they kept their last state and ignored every update until
+the page was reloaded.
+
+**Technical:** `mascot-host.js` listens to `shiny:sessioninitialized` and, when the session id differs from the one it
+knew, resets each live mascot's applied revision and its gesture and bubble watermarks to zero and publishes the
+snapshot again as a new kind of start, `resume`, keeping the mount and its generation. The new session has issued no
+numbers, so the old ones would have been rejected by both sides. A `template-needed` reply is answered with a `resume`
+snapshot that carries the baseline. The page keeps what it shows until the new session sends a state (the server sends
+nothing at resume unless the app has already called `update_mascot()` in the new session); that state then replaces the
+old one, and the bubble written into the page by `mascot()` is not counted as a new bubble, so a dismissed bubble does not reopen. Within one
+session nothing changes.
+
 ## 2026-10-20 — Removed the module namespace hint (#392)
 
 `mascot-host.js` no longer has `suggestNamespace()`, the two-second development-mode hint for a missing `ns()`. It could

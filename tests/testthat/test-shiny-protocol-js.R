@@ -146,6 +146,61 @@ describe("complete-state browser delivery", {
     expect_equal(r$reopened$remaining, 5)
   })
 
+  it("U1.9 starts the counters again when a reconnect binds the page to a new server session", {
+    js <- protocol_page()
+    r <- js(
+      "(() => {
+      const inputs=[],calls=[],mount=mascot.mount,connect=id=>{window.Shiny.shinyapp.config.sessionId=id;
+        document.dispatchEvent(new Event('shiny:sessioninitialized'));};
+      mascot.host.unmount(el);
+      mascot.mount=(...args)=>{const c=mount(...args),g=c.gesture;c.gesture=name=>{calls.push(name);return g(name);};return c;};
+      mascot.host.mount(el);
+      window.Shiny={shinyapp:{config:{sessionId:null}},setInputValue:(name,value)=>inputs.push({name,value})};
+      connect('one');const first=inputs.length;
+      send(envelope(5,{bubble:{text:'Old',html:false,closable:true,duration:null},status:{mode:'custom',text:'Old'}},
+        {gesture:{name:'nod',revision:5},bubble_revision:4}));
+      const before=read(),sent=inputs.length;connect('one');const sameSession=inputs.length-sent;
+      const generation=before.snapshot.generation,token=before.snapshot.mount_token;
+      connect('two');const resumed=inputs.slice(sent).map(x=>x.value),afterResume=read();
+      // A server session that has not seen this page's template asks for it; the answer is a resume too.
+      send({version:1,kind:'template-needed',id:'a',generation,revision:0,mount_token:token,problem:'Template needed.'});
+      const recovery=inputs.slice(-1)[0].value;
+      // Old numbers would make the page ignore the new session's first states.
+      send(envelope(1,{status:{mode:'custom',text:'New'}},{gesture:{name:'wave',revision:1},bubble_revision:0,restore:true}));
+      const adopted=read();
+      send(envelope(2,{status:{mode:'custom',text:'Next'}},{bubble_revision:1}));
+      const later=read();
+      delete window.Shiny;mascot.mount=mount;
+      return {first,sameSession,resumed,afterResume,adopted,recovery,generation,token,calls,later};})()"
+    )
+    expect_identical(r$first, 0L)
+    expect_identical(r$sameSession, 0L)
+    expect_length(r$resumed, 1)
+    resumed <- r$resumed[[1]]
+    expect_identical(resumed$lifecycle, "resume")
+    expect_identical(resumed$generation, r$generation)
+    expect_identical(resumed$mount_token, r$token)
+    for (counter in c("applied_revision", "gesture_watermark", "bubble_watermark", "dismissed_bubble_revision")) {
+      expect_identical(resumed[[counter]], 0L)
+    }
+    # Until the new session sends a state the page keeps what it shows, bubble included.
+    expect_identical(r$afterResume$status$text, "Old")
+    expect_identical(r$afterResume$bubble$text, "Old")
+    expect_identical(r$adopted$status$text, "New")
+    expect_identical(r$adopted$snapshot$applied_revision, 1L)
+    expect_identical(r$adopted$snapshot$gesture_watermark, 1L)
+    # The new session's state wins: the old session's bubble is gone, and nothing reopens it.
+    expect_null(r$adopted$bubble)
+    expect_identical(r$adopted$snapshot$bubble_watermark, 0L)
+    expect_identical(unlist(r$calls), c("nod", "wave"))
+    expect_identical(r$recovery$lifecycle, "resume")
+    expect_identical(r$recovery$applied_revision, 0L)
+    expect_false(is.null(r$recovery$baseline))
+    expect_identical(r$later$status$text, "Next")
+    expect_identical(r$later$snapshot$applied_revision, 2L)
+    expect_identical(r$later$snapshot$bubble_watermark, 1L)
+  })
+
   it("U1.4/10 restores all state together, uses shown status for ARIA and rejects duplicate live ids", {
     js <- protocol_page()
     r <- js(

@@ -583,7 +583,10 @@ mascot_snapshot <- function(data, session, name) {
       )) ||
       data$generation == 0 ||
       !isTRUE(checkmate::check_string(data$mount_token, min.chars = 1)) ||
-      !isTRUE(checkmate::check_choice(data$lifecycle, c("ready", "mounted", "unmounted", "reconcile", "error")))
+      !isTRUE(checkmate::check_choice(
+        data$lifecycle,
+        c("ready", "resume", "mounted", "unmounted", "reconcile", "error")
+      ))
   ) {
     return(data)
   }
@@ -591,7 +594,7 @@ mascot_snapshot <- function(data, session, name) {
   if (is.null(entry)) {
     # Every token is content-derived, so a baseline built in another session (or process) can be recovered here
     # once the checked baseline in its HTML matches the token. Nothing is recovered without that baseline.
-    if (data$lifecycle %in% c("ready", "reconcile") && grepl("^t[0-9]+-[0-9]+-[0-9]+x*$", data$mount_token)) {
+    if (data$lifecycle %in% c("ready", "resume", "reconcile") && grepl("^t[0-9]+-[0-9]+-[0-9]+x*$", data$mount_token)) {
       entry <- tryCatch(mascot_mount_recover(session, name, data$mount_token, data$baseline), error = function(error) {
         NULL
       })
@@ -628,11 +631,13 @@ mascot_snapshot <- function(data, session, name) {
     return(data)
   }
   newer <- data$generation > record$generation
-  if (newer && !data$lifecycle %in% c("ready", "reconcile", "unmounted")) {
+  if (newer && !data$lifecycle %in% c("ready", "resume", "reconcile", "unmounted")) {
     return(data)
   }
   # Watermarks can survive a lost acknowledgement, but never outrun an issued
-  # action/bubble. An unseen generation has not applied any state yet.
+  # action/bubble. An unseen generation has not applied any state yet. A page that reconnected into this new session
+  # starts from zero too (`resume`): the counters it earned in the old session mean nothing to this one, and the page
+  # sets them back to zero before it announces itself again.
   sent <- record$sent
   max_gesture <- if (is.null(sent)) 0 else sent$gesture
   max_bubble <- if (is.null(sent)) 0 else sent$bubble
@@ -671,7 +676,8 @@ mascot_snapshot <- function(data, session, name) {
     candidate$desired <- prepared$desired
     candidate$context <- prepared$context
     changed <- !identical(record$baseline_identity, entry$identity)
-    if (changed && !"bubble" %in% record$owned) {
+    # A resumed page has already shown (or dismissed) the page's own bubble: it is not news in this session.
+    if (changed && !"bubble" %in% record$owned && data$lifecycle != "resume") {
       candidate$bubble_serial <- mascot_counter(candidate$bubble_serial)
       candidate$bubble_revision <- candidate$bubble_serial
     }
@@ -710,7 +716,10 @@ mascot_snapshot <- function(data, session, name) {
   # An error is an implementation disagreement, never a resend trigger.
   recover <- is.null(record$sent) || record$sent$revision < record$revision || data$lifecycle == "reconcile"
   behind <- data$applied_revision < record$revision && recover
-  if (record$live && data$lifecycle != "error" && (newer || behind)) {
+  # A resumed page still shows what the old session sent. Until the app has said something in this session there is
+  # nothing of its own to send: the UI's defaults would replace the page's last state with a state nobody asked for.
+  untouched <- data$lifecycle == "resume" && !length(record$owned) && is.null(record$pending)
+  if (record$live && data$lifecycle != "error" && !untouched && (newer || behind)) {
     mascot_state_schedule(session, name)
   }
   data

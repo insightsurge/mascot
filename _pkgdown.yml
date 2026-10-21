@@ -38,9 +38,16 @@ navbar:
     intro:
       text: Get started
       href: articles/mascot.html
+    meet:
+      text: Meet your mascots
+      href: articles/meet-your-mascots.html
     changelog:
-      text: Engine changelog
-      href: articles/engine-changelog.html
+      text: Changelog
+      menu:
+        - text: "R package"
+          href: news/index.html
+        - text: "Engine"
+          href: articles/engine-changelog.html
     guide:
       text: Studio guide
       menu:
@@ -105,7 +112,7 @@ navbar:
         - text: "mascot_studio()"
           href: articles/guide-mascot_studio.html
   structure:
-    left: [intro, reference, guide, changelog, news]
+    left: [intro, meet, reference, guide, changelog]
     right: [search, github, lightswitch]
 
 reference:
@@ -156,6 +163,10 @@ articles:
     navbar: ~
     contents:
       - mascot
+  - title: Meet your mascots
+    navbar: ~
+    contents:
+      - articles/meet-your-mascots
   - title: Make your own
     navbar: Make your own
     contents:

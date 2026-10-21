@@ -155,3 +155,41 @@ describe("chrome_close()", {
     expect_error(chrome_close("x"), "browser")
   })
 })
+
+describe("wait_studio_js()", {
+  # A page whose live frame appears after `delay` milliseconds (null before), holding a helper element.
+  frame_app <- function(delay) {
+    shiny::shinyApp(
+      shiny::fluidPage(
+        shiny::tags$script(shiny::HTML(sprintf(
+          "setTimeout(() => { const f = document.createElement('iframe'); f.id = 'live_frame'; f.srcdoc = '<div id=helper data-mood=happy></div>'; document.body.append(f); }, %d);",
+          delay
+        )))
+      ),
+      function(input, output, session) NULL
+    )
+  }
+
+  it("polls again while the frame is missing and returns once the frame holds the element", {
+    skip_without_chrome()
+    skip_if_not_installed("shinytest2")
+    app <- app_driver(frame_app(1500))
+    expect_true(app$get_js("document.getElementById('live_frame') === null"))
+    wait_studio_js(app, "live.dataset.mood === 'happy' && frame.document === live.ownerDocument")
+    expect_true(app$get_js("document.getElementById('live_frame') !== null"))
+  })
+
+  it("fails on the time limit, not on a script error, when the frame never appears", {
+    skip_without_chrome()
+    skip_if_not_installed("shinytest2")
+    app <- app_driver(frame_app(600000))
+    error <- expect_error(wait_studio_js(app, "live.dataset.mood === 'happy'", timeout = 1500))
+    expect_no_match(conditionMessage(error), "Cannot read properties", fixed = TRUE)
+  })
+
+  it("checks its arguments", {
+    expect_error(wait_studio_js("x", "true"), "app")
+    app <- structure(new.env(), class = c("AppDriver", "R6"))
+    expect_error(wait_studio_js(app, ""), "condition")
+  })
+})

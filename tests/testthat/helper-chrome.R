@@ -35,6 +35,40 @@ app_driver <- function(..., env = parent.frame()) {
   app
 }
 
+# Waits that reach into the studio's live frame. The frame is rendered again from time to time, and `getElementById()`
+# then returns null for a moment: a wait script that throws on that fails `app$wait_for_js()` at once, while a script
+# that returns false is polled again (#449). `wait_studio_js()` runs the condition with the frame's window as `frame`
+# (`studio_frame_wait`) and the mascot element inside it as `live` (`studio_live_wait`), and counts a missing frame or
+# element as "not yet". Only waits use it. Clicks, typing and the values a test asserts on keep the strict
+# `studio_frame` and `studio_live` strings, so a missing frame still fails loudly there.
+studio_frame_wait <- "frame"
+studio_live_wait <- "live"
+
+# Wait until `condition` (JavaScript that may use `frame` and `live`) is true in the studio page. `...` is passed to
+# `app$wait_for_js()` (for example `timeout`).
+wait_studio_js <- function(app, condition, ...) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(condition, min.chars = 1)
+  app$wait_for_js(
+    paste0(
+      "(() => { const ",
+      studio_frame_wait,
+      " = document.getElementById('live_frame')?.contentWindow; const ",
+      studio_live_wait,
+      " = ",
+      studio_frame_wait,
+      "?.document.getElementById('helper'); if (!",
+      studio_frame_wait,
+      " || !",
+      studio_live_wait,
+      ") return false; return (",
+      condition,
+      "); })()"
+    ),
+    ...
+  )
+}
+
 # The Chrome shared by the tests that draw with the engine: the running one, or a new one when its process has ended.
 test_browser <- function() {
   browser <- test_browser_env$browser

@@ -234,8 +234,7 @@ local_preview_page <- function(page, env = parent.frame()) {
   dir <- withr::local_tempdir(.local_envir = env)
   file <- file.path(dir, "preview.html")
   htmltools::save_html(page, file, libdir = file.path(dir, "lib"))
-  session <- chromote::ChromoteSession$new(parent = test_browser())
-  withr::defer(session$close(), envir = env)
+  session <- local_chrome_session(env)
   session$Emulation$setDeviceMetricsOverride(width = 1500, height = 1000, deviceScaleFactor = 1, mobile = FALSE)
   session$Page$navigate(paste0("file://", normalizePath(file)))
   evaluate <- function(code) {

@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The "Meet your mascots" article introduces Tessa, Sela, Knurl and Neer, with their five moods drawn live, their status lines, their colour palettes and where each character fits, and a 50-second film, with a transcript, in which the four meet at a bridge (#62).
+
 * The Get started article is rewritten from scratch: a one-minute overview and a first app, then short sections on moods, bubbles, gestures, size, colours, motion, clicks, modules, Quarto pages and updating, with every function linked to its Studio guide page (#39).
 
 * The Get started article has a "Quarto pages" section, and the README and the placement guide mention it: a plain `mascot()` draws in a rendered Quarto page (static, with inline placement recommended); the Quarto `shortcode` comes in 0.2.0 (#412).

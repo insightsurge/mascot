@@ -1,0 +1,355 @@
+---
+title: "Meet your mascots"
+resource_files:
+  - story/story.mp4
+  - story/poster.png
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(mascot) # nolint: undesirable_function_linter.
+```
+
+```{r helpers, echo=FALSE}
+mood_item <- function(char_id, mood) {
+  mascot(
+    paste0(char_id, "-mood-", mood),
+    character = char_id,
+    mood = mood,
+    size = 110,
+    placement = "inline"
+  )
+}
+
+mood_row <- function(char_id) {
+  moods <- c("idle", "thinking", "happy", "worried", "celebrating")
+  htmltools::tags$div(
+    class = "mascot-mood-row",
+    style = paste(
+      "display: flex; flex-wrap: wrap; gap: 1.25rem;",
+      "align-items: flex-start; margin: 1.5rem 0;"
+    ),
+    lapply(moods, function(mood) mood_item(char_id, mood))
+  )
+}
+
+appearance_item <- function(char_id, theme_id, label) {
+  htmltools::tags$div(
+    class = "mascot-gallery-item",
+    style = paste(
+      "display: flex; flex-direction: column; align-items: center;",
+      "width: 96px; text-align: center; margin-bottom: 0.75rem;"
+    ),
+    mascot(
+      paste0(char_id, "-appearance-", theme_id),
+      character = char_id,
+      mood = "idle",
+      size = 84,
+      placement = "inline",
+      motion = FALSE,
+      theme = theme_id
+    ),
+    htmltools::tags$span(
+      style = "font-size: 0.85rem; margin-top: 0.35rem; line-height: 1.2;",
+      label
+    )
+  )
+}
+
+to_sentence_case <- function(x) {
+  clean <- gsub("_", " ", x)
+  paste0(toupper(substr(clean, 1, 1)), substr(clean, 2, nchar(clean)))
+}
+
+appearance_gallery <- function(char_id, native_label = "Original") {
+  pals <- mascot_palettes(char_id)
+  theme_ids <- pals$name
+  labels <- vapply(
+    theme_ids,
+    function(id) {
+      if (id %in% c("original", "night_teal", "lilac_violet")) {
+        native_label
+      } else {
+        to_sentence_case(id)
+      }
+    },
+    character(1),
+    USE.NAMES = FALSE
+  )
+  htmltools::tags$div(
+    class = "mascot-gallery",
+    style = paste(
+      "display: flex; flex-wrap: wrap; gap: 1rem;",
+      "align-items: flex-start; margin: 1rem 0;"
+    ),
+    mapply(
+      function(theme_id, label) appearance_item(char_id, theme_id, label),
+      theme_ids,
+      labels,
+      SIMPLIFY = FALSE,
+      USE.NAMES = FALSE
+    )
+  )
+}
+
+htmltools::tags$style(
+  ".mascot-bubble-region { display: none; } .mascot-gallery-item .mascot-status { display: none; }"
+)
+```
+
+When you add a mascot to a page, you are choosing who sits beside your reader
+and shares the journey. Each of our four characters brings a distinct
+personality, five live moods, and a wardrobe of colour appearances to suit the
+tone of your screen. Tessa and Sela are settled, while Knurl and Neer are still
+finding their final shape.
+
+Here is what a busy afternoon looks like when all four work together.
+
+<video controls preload="metadata" playsinline poster="story/poster.png"
+  style="width: 100%; max-width: 960px; height: auto; border-radius: 8px;"
+  aria-describedby="story-note">
+  <source src="story/story.mp4" type="video/mp4">
+  Your browser cannot play this video. The transcript below tells the same story.
+</video>
+
+<p id="story-note"><em>The Bridge at Five</em>, a 50-second film with no sound. Every character in it
+is a real <code>mascot()</code>, drawn live by the package and filmed on a small stage. The status
+lines you see under them are each character's own lines.</p>
+
+<details>
+<summary>Read the transcript</summary>
+
+A short story with Tessa, Sela, Knurl and Neer. About 50 seconds, no sound.
+This transcript is the text alternative to the film: it says who speaks, what each mascot's
+status line reads, and what happens on screen.
+
+The words in speech bubbles are the characters' own lines for this story. The status lines
+under each mascot come straight from the package: each one is the line that character shows
+for its current mood.
+
+---
+
+**0:00 to 0:03. Title.** *The Bridge at Five. A short story with Tessa, Sela, Knurl and Neer.*
+The sky is going peach and lilac over a quiet stream.
+
+**0:03. Dusk by the stream.** A little wooden bridge arches over the water. It is nearly finished,
+but there's a gap in the middle where one plank is still missing. On the left bank, next to a
+small stack of spare planks, stands Tessa. On the right bank, Sela stands by her timetable board.
+The clock on the board reads 4:50.
+
+The camera drifts in towards Tessa. She looks at the gap and has a think.
+
+- Tessa, status line: *Working out how the parts fit.*
+- **Tessa:** One plank to go.
+
+**0:10. Across the water.** The camera glides over to Sela, who gives a small, satisfied nod.
+
+- Sela, status line: *Schedule is balanced and clear.*
+- **Sela:** Opening at five. Plenty of time.
+
+**0:12. Knurl arrives.** Far away along the bank path, a single-wheeled repair robot comes into view,
+small and a little hazy at first, then larger as it rolls towards us. It is carrying the last plank
+in its clamp.
+
+- Knurl, status line: *Diagnosing task*
+- **Knurl:** Plank incoming.
+
+Knurl rolls up onto the bridge and stops beside the gap.
+
+**0:18. The mishap.** Knurl lowers the plank into the gap. It won't sit flat: it wobbles,
+tips, slips, and drops into the stream with a splash. The picture gives a little shake.
+
+- Knurl, status line: *Queue error*
+- **Knurl:** Plank lost.
+- Sela, status line: *Direct schedule clash detected.* (The clock on her board turns red: 4:52.)
+- **Sela:** Eight minutes to five!
+- Tessa, status line: *One part needs a closer look.*
+- **Tessa:** Where did it go?
+
+The plank bobs away downstream, towards us.
+
+**0:26. Neer.** Ripples spread across the water, and Neer rises out of the stream, right beside
+the floating plank: a calm water elemental with a little shell on her head. At first she simply
+watches.
+
+- Neer, status line: *Nothing has changed.*, then *Checking the inputs.*
+
+She has spotted what went wrong: the plank has two pegs on one side, and they were pointing up.
+
+- **Neer:** Pegs up. Turn it over.
+- Neer, status line: *The form is valid.*
+- Sela, status line: *Reviewing resource conflict.*
+
+**0:32. The fix.** Neer lifts the plank on a spout of water, all the way up to the bridge. Knurl
+catches it in its clamp and turns it over, pegs down. It drops into the gap and clicks into place
+with a little shower of sparkles.
+
+- Knurl, status line: *Task repaired*
+- **Knurl:** Flipped. Fitted.
+- Tessa, status line: *That came together nicely.*
+- **Tessa:** Thank you, Neer!
+- Sela, status line: *Conflict resolved cleanly.*
+
+**0:38. Five o'clock.** Knurl rolls back across to the bank. The camera pulls back, the clock on
+the timetable board reaches 5:00, and the lanterns along the bridge light up one by one. Stars come out,
+and so do a few fireflies. Everyone celebrates, and everyone waves.
+
+- Sela, status line: *All bookings confirmed and locked.*
+- Neer, status line: *All checks passed.*
+- Knurl, status line: *All jobs finished*
+- Tessa, status line: *Finished, and built to last.*
+- **Sela:** Five o'clock. Right on time.
+- **Neer:** The lights changed.
+
+Tessa walks out onto the bridge and stands on the new plank to try it.
+
+- **Tessa:** It holds!
+
+**0:47. End card.** *Meet your mascots.* Tessa, Sela, Knurl and Neer stand in a row, still
+celebrating. *Drawn live, in code, by the mascot package. Five moods each, and a status line for
+every mood.*
+
+</details>
+
+## Tessa
+
+Meet Tessa, the quiet maker of the group. If you place a mascot without naming
+one, Tessa is the friend who steps forward. She belongs to the Hexonians, a
+family of characters built on a hexagonal frame who share a couple of friendly
+moves like waving and nodding. Her name comes from tessellation, hexagons tiling
+a plane without gaps, the way packages fit together cleanly. She began as the
+star of a set of short story animations before joining the package as the
+default character.
+
+Tessa is innocent and always eager to learn. She is calm, hard-working, curious,
+and patient, the maker who thoughtfully picks the right tool and takes the next
+step. Where Neer notices what shifted, Tessa builds. You can recognise her by
+her slimmer teal hexagon body and the silver ring that shimmers now and then.
+She wears hair with a side fringe, a small bow, small studs, hanging arms, and a
+chest badge whose icon shows her mood.
+
+Her status lines sound like someone humming along at a sturdy workbench. At
+rest, she is "Resting, ready for the next piece." Start a run, and she is
+"Working out how the parts fit." If a detail needs fixing, she notes that "One
+part needs a closer look." When things go well, she smiles on "That came
+together nicely" or "Finished, and built to last." That steady, step-by-step
+nature makes her lovely company for tutorials, exploratory tools, teaching
+guides, and package documentation.
+
+Here is Tessa across her five moods:
+
+```{r tessa-moods, echo=FALSE}
+mood_row("tessa")
+```
+
+Tessa wears her own night teal colours by default, but she also comes in nine
+other appearances. Here is her full wardrobe:
+
+```{r tessa-appearances, echo=FALSE}
+appearance_gallery("tessa", "Night teal")
+```
+
+## Sela
+
+If your day involves untangling overlapping appointments, bookings, or shifting
+rosters, Sela is the partner you want beside you. She is also one of the
+Hexonians, sharing that familiar hexagonal silhouette, yet she brings a very
+different rhythm. Sela is the unflappable organiser of the crew, staying calm
+under complexity and keeping plans in order.
+
+Her look is instantly reassuring: a lilac hexagon with deep violet hair,
+flanked by time blocks that sit apart when things are calm, overlap during a
+clash, and slide apart again once sorted. We like to tell a little story about
+her name: it is a soft echo of "cell", one hexagon in a grid, and of "selah", the
+pause at the end of a line. She hears a clash coming and takes a breath before
+fixing it.
+
+Her status updates reflect that composed oversight. When everything lines up,
+she announces that "Schedule is balanced and clear." If two bookings collide,
+she notes that "Direct schedule clash detected." She takes time "Reviewing
+resource conflict," and once cleared, confirms that "Conflict resolved
+cleanly" or "All bookings confirmed and locked." Sela makes wonderful company
+for appointment managers, booking calendars, and resource schedules.
+
+Here is Sela across her five moods:
+
+```{r sela-moods, echo=FALSE}
+mood_row("sela")
+```
+
+Sela arrives in her own lilac violet, but she also comes in twelve other
+appearances. Here is every appearance in her collection:
+
+```{r sela-appearances, echo=FALSE}
+appearance_gallery("sela", "Lilac violet")
+```
+
+## Knurl
+
+Some tasks do not call for conversation; they need a diagnostic scan, a clamp,
+and a steadfast hand. That is where Knurl comes in. Knurl is a repair robot
+belonging to the Visorfolk, a character family whose faces are functional
+screens. Deliberate, steadfast, and mechanically minded, it keeps to two or
+three words at a time.
+
+Visually, Knurl is built for honest workshop duties: a single-wheeled bot with
+a clamp arm and a screen visor. Its name is a nod to a knurl, the
+ridged grip pattern cut into metal handles and knobs, a fitting touch for a
+repair bot designed to grip tricky problems.
+
+Where the others speak in complete sentences, Knurl keeps to clipped readouts.
+When waiting, it shows "Queue idle." Snags bring up "Diagnosing task." A broken
+run triggers "Queue error," while a fix brings a brisk "Task repaired." Once
+clear, it reports "All jobs finished." Knurl is the right companion for
+background queues, batch jobs, pipeline monitors, and diagnostic views.
+
+Here is Knurl running through its five moods:
+
+```{r knurl-moods, echo=FALSE}
+mood_row("knurl")
+```
+
+Knurl appears in its original colours, but it can also take on four
+other appearances. Here is the full set:
+
+```{r knurl-appearances, echo=FALSE}
+appearance_gallery("knurl", "Original")
+```
+
+## Neer
+
+Neer brings a tranquil, liquid presence to the group. She belongs to the
+Elementals family, characters drawn as living elements. Her name means "water"
+in Sanskrit and Hindi, as well as in Tamil and other South Indian languages.
+Like water, she takes on the colours
+of whatever holds her.
+
+Drawn in blue water tones with a shell, Neer is calm, observant, clear, and
+welcoming. When something changes on screen, she notices what shifted and says
+it in a few words. If something looks amiss, she never panics; worry shows as
+attention, not panic.
+
+Her status lines reflect that quiet clarity. When nothing has moved, she shows
+"Nothing has changed." As you type, she is "Checking the inputs." Valid entries
+give "The form is valid." When values need checking, she flags that "Some fields
+need attention," and once everything passes, confirms that "All checks passed."
+That makes Neer ideal company for form checks, data entry reviews, and quality
+control screens.
+
+Here is Neer displaying her five moods:
+
+```{r neer-moods, echo=FALSE}
+mood_row("neer")
+```
+
+Neer starts in her original blue water tones, but she can also flow into five
+other appearances. Here is how she looks in each one:
+
+```{r neer-appearances, echo=FALSE}
+appearance_gallery("neer", "Original")
+```
+
+## Pick a companion
+
+Choose the companion that feels right for your page, and let them keep your
+readers company.

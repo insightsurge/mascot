@@ -1,7 +1,7 @@
 stress_checks <- function(ctx) {
   checkmate::assert_list(ctx, names = "unique")
   app <- ctx$app
-  ctx$known("update from later() arrives without another input", 427L, {
+  ctx$check("update from later() arrives without another input", {
     app$click("schedule")
     ctx$state("helper", "happy", "From later 1")
   })

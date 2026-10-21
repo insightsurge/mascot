@@ -690,3 +690,68 @@ describe("real Shiny bookmark collection", {
     expect_true(all(c("helper", "outer-inner-helper", "x", "outer-inner-password") %in% session$getBookmarkExclude()))
   })
 })
+
+describe("flush requests for updates made outside a reactive event (#427)", {
+  flush_fixture <- function(env = parent.frame()) {
+    f <- protocol_fixture()
+    f$requests <- new.env(parent = emptyenv())
+    f$requests$count <- 0L
+    # The mock session cannot request a flush, so count the calls instead.
+    local_mocked_bindings(
+      mascot_request_flush = function(session) f$requests$count <- f$requests$count + 1L,
+      .env = env
+    )
+    f
+  }
+
+  it("asks Shiny for a flush when an update is scheduled outside a flush, so it need not wait for input", {
+    f <- flush_fixture()
+    withr::defer(f$session$close())
+    protocol_ready(f)
+    update_mascot("helper", status = "From later", session = f$session)
+    expect_gte(f$requests$count, 1L)
+    expect_identical(protocol_flush(f)$state$status$text, "From later")
+  })
+
+  it("coalesces a burst into one flush request and one message", {
+    f <- flush_fixture()
+    withr::defer(f$session$close())
+    protocol_ready(f)
+    f$session$flushReact()
+    f$messages$values <- list()
+    f$requests$count <- 0L
+    for (i in 1:50) {
+      update_mascot("helper", status = paste("Update", i), session = f$session)
+    }
+    expect_identical(f$requests$count, 1L)
+    f$session$flushReact()
+    expect_length(f$messages$values, 1L)
+    expect_identical(f$messages$values[[1]]$state$status$text, "Update 50")
+  })
+
+  it("asks for a flush for a development overlay too", {
+    local_mocked_bindings(dev_mode = function() TRUE)
+    f <- flush_fixture()
+    withr::defer(f$session$close())
+    protocol_ready(f)
+    f$session$flushReact()
+    f$requests$count <- 0L
+    mascot_problem(f$session, f$id, "mascot: helper: a problem")
+    expect_identical(f$requests$count, 1L)
+  })
+
+  it("calls the session's requestFlush() on a real-shaped session and skips the mock", {
+    calls <- 0L
+    fake <- structure(list2env(list(requestFlush = function() calls <<- calls + 1L)), class = "ShinySession")
+    fake$rootScope <- function() fake
+    expect_invisible(mascot_request_flush(fake))
+    expect_identical(calls, 1L)
+    session <- shiny::MockShinySession$new()
+    withr::defer(session$close())
+    expect_invisible(mascot_request_flush(session))
+  })
+
+  it("rejects something that is not a session", {
+    expect_error(mascot_request_flush("x"), "class")
+  })
+})

@@ -41,8 +41,12 @@ Reasons and sources: `docs/standards.md`.
 - Never `continue-on-error`, never weaken a check to get green: fix the cause, or ask the founder.
 - A new check goes into the gate first, with a probe in `test-cran-gate.R` (same folder) that plants a defect and
   expects that step to FAIL, then runs in CI. After changing the gate, `.lintr`, `air.toml` or `biome.json`, run
-  `Rscript tools/test-cran-gate.R` (about a minute today; `static` alone takes
-  seconds): it works on copies in `tempdir()` and must end with "All probes behaved as expected".
+  `Rscript tools/test-cran-gate.R` (a few minutes: the static probes copy mascot, the heavy ones use a tiny
+  generated package; `unit` alone takes seconds, and `heavy tests,coverage` runs only the probes for those steps): it works on
+  copies in `tempdir()` and must end with "All probes behaved as expected". Its "copies in step" check fails while the
+  skill's copy of the gate differs from this one.
+- How CI's jobs map to the gate: `lint.yaml` is `lint`; `R-CMD-check` is `check_full`; `test-coverage` is `tests`;
+  `check-no-suggests` is `nosuggests`. When CI cannot run (Actions minutes used up), run these modes locally instead.
 - PRs that only touch `.claude/` skip the lint and R jobs (`paths-ignore`). A change to the gate (`tools/`) runs
   them, plus `gate-self-test.yaml`, whose clean-copy probe runs the gate on the package.
 

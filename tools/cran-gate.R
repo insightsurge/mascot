@@ -13,12 +13,14 @@
 # In `tests` and `full` the suite runs ONCE, under covr, and the same run gives the test results and the coverage
 # (a package whose tests/ is not the standard testthat layout falls back to a plain run plus a separate covr run).
 # --no-coverage runs the suite plainly, without covr (quicker, no coverage); --no-retry skips the re-run below.
-# When tests fail, the failing files are re-run once without covr: if every one then passes, the line says so
-# ("probable flake") and the gate exits 3; each retried failure is appended to flakes.tsv beside the run folder.
+# When tests fail, the failing files are re-run once in a fresh R process without covr: if every one then passes, the
+# line says so ("probable flake") and the gate exits 3; each retried failure is appended to flakes.tsv beside the run
+# folder. More than 5 failing files is not re-run (a breakage), unless one message accounts for most failures: a
+# cascade (one broken thing, such as a closed browser, failing every later test), which the line names once.
 #
 # Exit codes: 0 every step passed or skipped; 1 a step failed; 2 usage, settings or tools problem (the gate could not
 # judge the package); 3 the only failures are tests that passed on the re-run (a person decides: it is not merge
-# evidence on its own). --steps and --filter give a PARTIAL run, which is not merge evidence either.
+# evidence on its own). --steps, --filter and --no-coverage give a PARTIAL run, which is not merge evidence either.
 #
 # Run it from the package root. It prints one PASS/FAIL/SKIP line per step and a summary, and exits 1 if any step
 # fails. Detailed output goes to a run folder that outlives the gate (its path is printed): one log per step,
@@ -95,10 +97,10 @@ required_packages <- function(mode, uses) {
     pkgs <- c(pkgs, "lintr")
   }
   if (mode %in% c("tests", "full") && uses$tests) {
-    pkgs <- c(pkgs, "covr", "withr", if (uses$testthat) "testthat")
+    pkgs <- c(pkgs, "callr", "covr", "withr", if (uses$testthat) "testthat")
   }
   if (mode %in% c("full", "nosuggests")) {
-    pkgs <- c(pkgs, "pkgbuild", "rcmdcheck")
+    pkgs <- c(pkgs, "pkgbuild", "processx", "rcmdcheck")
   }
   pkgs
 }
@@ -353,12 +355,21 @@ failure_headers <- function(text) {
   trimws(sub("[ ─-]+$", "", found))
 }
 
-check_result <- function(res) {
+# The check's line: counts, and on FAIL the first problem (its header and first line of detail) and the failing tests.
+# With `log`, every problem is written to it in full (the check itself runs quietly).
+check_result <- function(res, log = NULL) {
   checkmate::assert_class(res, "rcmdcheck")
+  checkmate::assert_string(log, null.ok = TRUE)
   counts <- c(errors = length(res$errors), warnings = length(res$warnings), notes = length(res$notes))
   detail <- paste(counts, names(counts), collapse = ", ")
   if (sum(counts) > 0) {
-    first <- strsplit(c(res$errors, res$warnings, res$notes)[1], "\n", fixed = TRUE)[[1]][1]
+    problems <- c(res$errors, res$warnings, res$notes)
+    if (!is.null(log)) {
+      write(c(problems, if (length(res$test_fail) > 0) as.character(unlist(res$test_fail))), log, append = TRUE)
+    }
+    lines <- trimws(strsplit(problems[1], "\n", fixed = TRUE)[[1]])
+    lines <- lines[nzchar(lines)]
+    first <- paste(utils::head(lines, 2), collapse = ": ")
     failing <- failure_headers(as.character(unlist(res$test_fail)))
     tests <- if (length(failing) > 0) {
       more <- if (length(failing) > 3) sprintf(" +%d more", length(failing) - 3) else ""
@@ -372,7 +383,9 @@ check_result <- function(res) {
 }
 
 # CRAN-like check: NOT_CRAN=false so tests behind skip_on_cran() skip as they do on CRAN (devtools::check() sets
-# NOT_CRAN=true by default, which is not what CRAN runs).
+# NOT_CRAN=true by default, which is not what CRAN runs). `_R_CHECK_SYSTEM_CLOCK_=false` checks the files' timestamps
+# against this machine's clock instead of a time server, so a machine without internet gets no "unable to verify
+# current time" note; the timestamps are still checked.
 step_check <- function(tests, log) {
   checkmate::assert_flag(tests)
   checkmate::assert_string(log)
@@ -382,14 +395,14 @@ step_check <- function(tests, log) {
       devtools::check(
         document = FALSE,
         args = args,
-        env_vars = c(NOT_CRAN = "false"),
+        env_vars = c(NOT_CRAN = "false", `_R_CHECK_SYSTEM_CLOCK_` = "false"),
         error_on = "never",
         quiet = TRUE
       )
     },
     log
   )
-  check_result(res)
+  check_result(res, log)
 }
 
 # The first line of a test's message, without testthat's "Error in `eval(code, test_env)`: " prefix, cut to 100
@@ -430,6 +443,47 @@ test_issues <- function(res) {
     message = character()
   )
   do.call(rbind, c(list(empty), unlist(rows, recursive = FALSE)))
+}
+
+# A cascade: one broken thing (a browser that closed, a server that stopped) making many later tests fail with the
+# same message. At least 6 failures across at least 3 files share one message (numbers ignored), and they are at least
+# half of all failures. Returns the message, how many failures and files share it, and the first of them in run order
+# (the place to start looking); NULL when the failures are not a cascade.
+cascade_of <- function(bad) {
+  checkmate::assert_data_frame(bad)
+  if (nrow(bad) < 6) {
+    return(NULL)
+  }
+  key <- gsub("[0-9]+", "N", bad$message)
+  counts <- sort(table(key), decreasing = TRUE)
+  shared <- key == names(counts)[1]
+  files <- unique(bad$file[shared])
+  if (counts[[1]] < 6 || length(files) < 3 || counts[[1]] < nrow(bad) / 2) {
+    return(NULL)
+  }
+  list(
+    message = bad$message[shared][1],
+    n = sum(shared),
+    files = length(files),
+    first = bad[shared, ][1, ],
+    rows = shared
+  )
+}
+
+# The cascade in one phrase, for the FAIL line and the report.
+cascade_text <- function(cascade) {
+  checkmate::assert_list(cascade)
+  first <- cascade$first
+  sprintf(
+    "cascade: %d failures in %d files share one message (%s: %s), the first at %s:%s \"%s\"",
+    cascade$n,
+    cascade$files,
+    first$kind,
+    cascade$message,
+    first$file,
+    first$line,
+    first$test
+  )
 }
 
 # A failure message that reads like a timeout (a wait that ran out), which a package may fix by waiting longer.
@@ -522,6 +576,7 @@ summarise_tests <- function(res, run_dir) {
     numeric()
   }
   bad <- issues[issues$kind != "Warning", , drop = FALSE]
+  cascade <- cascade_of(bad)
   counts <- list(
     expectations = sum(df$nb),
     failed = nrow(bad),
@@ -533,6 +588,7 @@ summarise_tests <- function(res, run_dir) {
     list(
       counts = counts,
       issues = issues,
+      cascade = if (!is.null(cascade)) cascade[c("message", "n", "files", "first")],
       slowest_files = as.list(slow),
       tests = df[setdiff(names(df), "result")]
     ),
@@ -542,7 +598,7 @@ summarise_tests <- function(res, run_dir) {
     digits = NA,
     na = "null"
   )
-  list(counts = counts, issues = issues, bad = bad, slow = slow)
+  list(counts = counts, issues = issues, bad = bad, slow = slow, cascade = cascade)
 }
 
 # The tests step's line: counts and the slowest file on PASS; counts, the first 3 problems and where the details
@@ -566,8 +622,11 @@ tests_result <- function(summary, txt) {
     }
     return(result("PASS", paste0(counts, slowest)))
   }
-  named <- issue_text(utils::head(summary$bad, 3))
-  more <- if (nrow(summary$bad) > 3) sprintf("; +%d more", nrow(summary$bad) - 3) else ""
+  # A cascade is said once, then the first failures it doesn't cover (they may be the real problem).
+  cascade <- summary$cascade
+  shown <- if (is.null(cascade)) summary$bad else summary$bad[!cascade$rows, , drop = FALSE]
+  named <- c(if (!is.null(cascade)) cascade_text(cascade), issue_text(utils::head(shown, 3)))
+  more <- if (nrow(shown) > 3) sprintf("; +%d more", nrow(shown) - 3) else ""
   result("FAIL", paste0(counts, ": ", paste(named, collapse = "; "), more, "; details: ", txt))
 }
 
@@ -621,8 +680,24 @@ tests_under_covr <- function(run_dir, txt, log, state) {
   readRDS(rds)
 }
 
-# After a failed run: re-run only the failing files once, without covr, and say whether they pass then. A pass is
-# reported as a probable flake (the gate exits 3), never as a PASS. More than 5 failing files is a breakage.
+# Runs the test files that match `filter` in a fresh R process, with the package loaded from source, and returns
+# testthat's results. A fresh process starts without whatever the first run left behind (a closed browser, a stopped
+# server, changed options), which is what a re-run is for.
+rerun_fresh <- function(filter, log) {
+  checkmate::assert_string(filter)
+  checkmate::assert_string(log)
+  callr::r(
+    function(filter) devtools::test(filter = filter, stop_on_failure = FALSE, reporter = "summary"),
+    args = list(filter = filter),
+    stdout = log,
+    stderr = "2>&1"
+  )
+}
+
+# After a failed run: re-run only the failing files once, in a fresh R process without covr, and say whether they pass
+# then. A pass is reported as a probable flake (the gate exits 3), never as a PASS. More than 5 failing files is a
+# breakage and is not re-run, unless the failures are a cascade (one broken thing failing many later tests, which a
+# fresh process may not repeat).
 retry_failed <- function(out, state, run_dir, log) {
   checkmate::assert_list(out)
   checkmate::assert_environment(state)
@@ -633,18 +708,20 @@ retry_failed <- function(out, state, run_dir, log) {
   if (isTRUE(state$no_retry) || length(files) == 0) {
     return(out)
   }
-  if (length(files) > 5) {
+  cascade <- !is.null(state$tests$cascade)
+  if (length(files) > 5 && !cascade) {
     return(result("FAIL", paste0(out$detail, "; not re-run: ", length(files), " files failed, that is a breakage")))
   }
+  rerun_log <- file.path(run_dir, "tests-rerun.log")
   again <- tryCatch(
-    run_logged(
-      function() devtools::test(filter = rerun_filter(files), stop_on_failure = FALSE, reporter = "silent"),
-      log
-    ),
-    error = function(e) NULL
+    rerun_fresh(rerun_filter(files), rerun_log),
+    error = function(e) {
+      write(conditionMessage(e), log, append = TRUE)
+      NULL
+    }
   )
   if (is.null(again)) {
-    return(result("FAIL", paste0(out$detail, "; the re-run could not be made")))
+    return(result("FAIL", paste0(out$detail, "; the re-run could not be made (see tests.log)")))
   }
   still <- test_issues(again)
   still <- still[still$kind != "Warning", , drop = FALSE]
@@ -652,8 +729,10 @@ retry_failed <- function(out, state, run_dir, log) {
   state$flaky <- passed
   verdict <- if (passed) "passed (probable flake)" else "failed again"
   append_flakes(file.path(dirname(run_dir), "flakes.tsv"), bad, state$mode, verdict)
-  where <- if (isTRUE(state$single_run)) " without covr" else ""
-  result("FAIL", sprintf("%s; re-run of %d file(s)%s: %s", out$detail, length(files), where, verdict))
+  if (!passed) {
+    verdict <- sprintf("%s (%d failures; see tests-rerun.log)", verdict, nrow(still))
+  }
+  result("FAIL", sprintf("%s; re-run of %d file(s) in a fresh R process: %s", out$detail, length(files), verdict))
 }
 
 step_tests <- function(uses, run_dir, log, state) {
@@ -699,7 +778,7 @@ step_coverage <- function(uses, settings, log, state) {
   withr::local_envvar(NOT_CRAN = "true")
   cov <- state$cov
   if (!inherits(cov, "coverage")) {
-    if (identical(state$statuses[["tests"]], "FAIL")) {
+    if (identical(unname(state$statuses["tests"]), "FAIL")) {
       return(result("SKIP", "tests failed, and covr gives no percentage when a test fails"))
     }
     # The tests step did not run under covr (a non-standard tests/ layout): run covr's own tests run.
@@ -726,7 +805,7 @@ step_coverage <- function(uses, settings, log, state) {
     return(result("PASS", "no R code lines to cover yet"))
   }
   pct <- covr::percent_coverage(cov)
-  after_failure <- if (identical(state$statuses[["tests"]], "FAIL")) " (from a run with failing tests)" else ""
+  after_failure <- if (identical(unname(state$statuses["tests"]), "FAIL")) " (from a run with failing tests)" else ""
   if (pct < settings$coverage) {
     return(
       result(
@@ -821,29 +900,49 @@ step_nosuggests <- function(uses, run_dir, log) {
     return(result("SKIP", "symlinks can't be made here (on Windows they may need privileges)"))
   }
   tarball <- run_logged(function() pkgbuild::build(dest_path = run_dir, quiet = TRUE), log)
-  res <- run_logged(
-    function() {
-      rcmdcheck::rcmdcheck(
-        tarball,
-        args = c("--no-manual", "--as-cran"),
-        libpath = as.character(lib),
-        env = c(
-          `_R_CHECK_FORCE_SUGGESTS_` = "false",
-          `_R_CHECK_CRAN_INCOMING_` = "false",
-          `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
-          R_LIBS_USER = "NULL",
-          R_LIBS_SITE = "NULL",
-          NOT_CRAN = ""
-        ),
-        check_dir = file.path(run_dir, "nosuggests-check"),
-        error_on = "never",
-        quiet = TRUE
-      )
-    },
-    log
+  check_dir <- file.path(run_dir, "nosuggests-check")
+  dir.create(check_dir)
+  # R CMD check is started directly, not through rcmdcheck: rcmdcheck starts it through callr, which puts R's site
+  # library back on the library path, and on Debian and Ubuntu (apt, r2u) that is where every package is installed.
+  nowhere <- file.path(run_dir, "no-library")
+  run <- processx::run(
+    file.path(R.home("bin"), "R"),
+    c("CMD", "check", "--no-manual", "--as-cran", normalizePath(tarball)),
+    wd = check_dir,
+    env = c(
+      "current",
+      R_LIBS = as.character(lib),
+      R_LIBS_USER = nowhere,
+      R_LIBS_SITE = nowhere,
+      `_R_CHECK_FORCE_SUGGESTS_` = "false",
+      `_R_CHECK_CRAN_INCOMING_` = "false",
+      `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
+      `_R_CHECK_SYSTEM_CLOCK_` = "false",
+      NOT_CRAN = ""
+    ),
+    error_on_status = FALSE,
+    stderr_to_stdout = TRUE
   )
-  out <- check_result(res)
-  result(out$status, paste0(out$detail, " (", attr(lib, "linked"), " packages on the library path)"))
+  write(run$stdout, log, append = TRUE)
+  pkg <- read.dcf("DESCRIPTION", fields = "Package")[[1]]
+  check_log <- file.path(check_dir, paste0(pkg, ".Rcheck"), "00check.log")
+  # A check that stopped part-way leaves a log without its Status line, and parsing it would find no problems.
+  if (!file.exists(check_log) || !any(grepl("^Status: ", readLines(check_log, warn = FALSE)))) {
+    lines <- strsplit(run$stdout, "\n", fixed = TRUE)[[1]]
+    lines <- lines[nzchar(trimws(lines))]
+    return(result("FAIL", paste0("R CMD check stopped before the end: ", trimws(utils::tail(lines, 1)))))
+  }
+  res <- rcmdcheck::parse_check(check_log)
+  # Hiding the Suggests is the point of this check, so the note that lists them is expected; any other note counts.
+  expected <- grepl(
+    "^checking package dependencies \\.\\.\\. NOTE\\s+Packages? suggested but not available for checking:",
+    res$notes
+  ) &
+    lengths(regmatches(res$notes, gregexpr("\n", res$notes))) <= 2
+  res$notes <- res$notes[!expected]
+  out <- check_result(res, log)
+  hidden <- if (any(expected)) "; the Suggests were hidden" else ""
+  result(out$status, paste0(out$detail, " (", attr(lib, "linked"), " packages on the library path", hidden, ")"))
 }
 
 step_tarball <- function(settings, log) {
@@ -902,17 +1001,45 @@ run_step <- function(step, mode, update, uses, settings, run_dir, log, state) {
   )
 }
 
+# The versions that decide what the steps report (R and the tools; a different roxygen2 or lintr can change a
+# result), so two runs that disagree can be compared. NA for what isn't installed.
+tool_versions <- function() {
+  pkgs <- c("devtools", "roxygen2", "lintr", "testthat", "covr", "rcmdcheck", "spelling", "pkgdown")
+  installed <- vapply(
+    pkgs,
+    function(pkg) {
+      if (requireNamespace(pkg, quietly = TRUE)) as.character(utils::packageVersion(pkg)) else NA_character_
+    },
+    character(1)
+  )
+  external <- vapply(
+    c(air = "air", biome = "biome"),
+    function(tool) {
+      if (!nzchar(Sys.which(tool))) {
+        return(NA_character_)
+      }
+      out <- suppressWarnings(tryCatch(system2(tool, "--version", stdout = TRUE, stderr = TRUE), error = function(e) {
+        ""
+      }))
+      trimws(sub("^[^0-9]*", "", out[1]))
+    },
+    character(1)
+  )
+  c(R = paste(R.version$major, R.version$minor, sep = "."), platform = R.version$platform, installed, external)
+}
+
 # gate.json in the run folder: the mode and one row per step (status, seconds, detail). Rewritten after every step,
 # so a gate that is stopped part-way still leaves the steps it finished.
-write_gate_json <- function(run_dir, mode, rows) {
+write_gate_json <- function(run_dir, mode, rows, versions = NULL) {
   checkmate::assert_directory_exists(run_dir, access = "w")
   checkmate::assert_string(mode)
   checkmate::assert_data_frame(rows)
+  checkmate::assert_character(versions, names = "unique", null.ok = TRUE)
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
     return(invisible(FALSE)) # the tools step names jsonlite as missing
   }
   jsonlite::write_json(
-    list(mode = mode, run_folder = run_dir, steps = rows),
+    list(mode = mode, run_folder = run_dir, commit = git_head(), versions = as.list(versions), steps = rows),
     file.path(run_dir, "gate.json"),
     auto_unbox = TRUE,
     pretty = TRUE,
@@ -931,11 +1058,26 @@ failure_report <- function(failed, run_dir, state, whole_logs) {
   out <- character()
   bad <- state$tests$bad
   if ("tests" %in% failed && !is.null(bad) && nrow(bad) > 0) {
-    out <- c(
-      out,
-      sprintf("---- tests: the first %d of %d problems (all in tests.json) ----", min(10, nrow(bad)), nrow(bad)),
-      issue_text(utils::head(bad, 10))
+    cascade <- state$tests$cascade
+    heading <- sprintf(
+      "---- tests: the first %d of %d problems (all in tests.json) ----",
+      min(10, nrow(bad)),
+      nrow(bad)
     )
+    if (!is.null(cascade)) {
+      # One line for the cascade, then its first 3 failures and the first failures it doesn't cover.
+      others <- bad[!cascade$rows, , drop = FALSE]
+      heading <- c(
+        paste0("---- tests: ", cascade_text(cascade), " ----"),
+        sprintf(
+          "---- tests: its first 3, then the first %d of the %d other problems (all in tests.json) ----",
+          min(7, nrow(others)),
+          nrow(others)
+        )
+      )
+      bad <- rbind(utils::head(bad[cascade$rows, , drop = FALSE], 3), others)
+    }
+    out <- c(out, heading, issue_text(utils::head(bad, 10)))
   }
   for (step in failed) {
     log <- file.path(run_dir, paste0(step, ".log"))
@@ -964,7 +1106,7 @@ usage_lines <- c(
   "Options:",
   "  --steps a,b    run only these steps of the mode (tools always runs); the run is marked PARTIAL",
   "  --filter RE    run only the test files whose names match RE, plainly, without coverage; PARTIAL",
-  "  --no-coverage  run the tests plainly, without covr and without coverage",
+  "  --no-coverage  run the tests plainly, without covr and without coverage; PARTIAL",
   "  --no-retry     do not re-run failing test files once",
   "  --out DIR      the folder for the run folders (default: CRAN_GATE_OUT, else cran-gate/ in the system temp folder)",
   "  --list         show the steps of each mode and which ones this package would skip, then stop",
@@ -1108,7 +1250,8 @@ main <- function(args) {
     cli::cat_line(list_steps(uses))
     quit(status = 0)
   }
-  partial <- length(opts$steps) > 0 || !is.null(opts$filter)
+  # --no-coverage leaves out what CI's coverage job measures, so in the modes that measure it the run is partial too.
+  partial <- length(opts$steps) > 0 || !is.null(opts$filter) || (opts$no_coverage && mode %in% c("tests", "full"))
   run_dir <- run_folder(if (is.null(opts$out)) default_out() else opts$out, mode)
   state <- new.env()
   state$statuses <- character()
@@ -1118,6 +1261,7 @@ main <- function(args) {
   state$filter <- opts$filter
   state$flaky <- FALSE
   rows <- data.frame(step = character(), status = character(), seconds = numeric(), detail = character())
+  versions <- NULL
   cli::cli_h1("CRAN gate: {mode}")
   cli::cat_line("Run folder: ", run_dir)
   ran <- steps_for(mode)
@@ -1132,7 +1276,10 @@ main <- function(args) {
     secs <- as.numeric(difftime(Sys.time(), started, units = "secs"))
     state$statuses[step] <- res$status
     rows[nrow(rows) + 1L, ] <- list(step, res$status, round(secs, 1), res$detail)
-    write_gate_json(run_dir, mode, rows)
+    if (step == "tools") {
+      versions <- tool_versions()
+    }
+    write_gate_json(run_dir, mode, rows, versions)
     detail <- if (nzchar(res$detail)) paste0(": ", res$detail) else ""
     cli::cat_line(sprintf("%-4s %-10s (%3.0fs)%s", res$status, step, secs, detail))
     if (step == "tools" && res$status == "FAIL") {
@@ -1147,6 +1294,7 @@ main <- function(args) {
       "PARTIAL: only ",
       toString(ran),
       if (!is.null(opts$filter)) paste0(", tests filtered by '", opts$filter, "'") else "",
+      if (opts$no_coverage && is.null(opts$filter)) ", without coverage" else "",
       " ran; this is not merge evidence."
     )
   }

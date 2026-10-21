@@ -459,6 +459,26 @@ heavy_probes <- function() {
     "  expect_false(first)",
     "})"
   )
+  # A cascade: a shared resource (think of one browser for the whole run) closes in the first file, the first time the
+  # suite runs, and every later file that uses it fails with the same message. A fresh process starts a new one.
+  shared_resource <- c(
+    "shared <- new.env()",
+    "use_resource <- function() {",
+    "  if (isTRUE(shared$closed)) stop(\"The shared resource has been closed.\")",
+    "  TRUE",
+    "}"
+  )
+  closes_once <- c(
+    "test_that(\"the shared resource closes the first time\", {",
+    "  counter <- Sys.getenv(\"GATE_PROBE_COUNTER\")",
+    "  if (!file.exists(counter)) {",
+    "    file.create(counter)",
+    "    shared$closed <- TRUE",
+    "  }",
+    "  expect_true(TRUE)",
+    "})"
+  )
+  uses_resource <- c("test_that(\"uses the shared resource\", {", "  expect_true(use_resource())", "})")
   list(
     probe("clean fixture passes in full", "heavy", "full", function(dir) NULL, package = "fixture"),
     probe(
@@ -484,7 +504,7 @@ heavy_probes <- function() {
         if (is.na(folder) || !file.exists(file.path(folder, "tests.json"))) {
           out <- c(out, "the printed run folder is gone or has no tests.json")
         }
-        if (!grepl("re-run of 1 file(s) without covr: failed again", output, fixed = TRUE)) {
+        if (!grepl("re-run of 1 file(s) in a fresh R process: failed again", output, fixed = TRUE)) {
           out <- c(out, "the FAIL line doesn't say the file was re-run and failed again")
         }
         out
@@ -515,7 +535,7 @@ heavy_probes <- function() {
       check_output = function(output) if (grepl("re-run of", output, fixed = TRUE)) "it re-ran" else character()
     ),
     probe(
-      "tests: --no-coverage runs plainly and skips coverage",
+      "tests: --no-coverage runs plainly, skips coverage and is marked PARTIAL",
       "heavy",
       "tests",
       function(dir) NULL,
@@ -523,7 +543,10 @@ heavy_probes <- function() {
       package = "fixture",
       args = "--no-coverage",
       check_output = function(output) {
-        if (grepl("(^|\n)SKIP +coverage[^\n]*--no-coverage", output)) character() else "coverage wasn't skipped"
+        c(
+          if (!grepl("(^|\n)SKIP +coverage[^\n]*--no-coverage", output)) "coverage wasn't skipped",
+          if (!grepl("(^|\n)PARTIAL: [^\n]*without coverage", output)) "the run isn't marked PARTIAL"
+        )
       }
     ),
     probe(
@@ -539,6 +562,39 @@ heavy_probes <- function() {
       check_output = function(output) {
         if (grepl("(^|\n)SKIP +coverage[^\n]*covr gives no percentage", output)) character() else "coverage ran"
       }
+    ),
+    probe(
+      "tests: a cascade in 6 files is said once and re-run in a fresh process, where it passes (exit 3)",
+      "heavy",
+      "tests",
+      function(dir) {
+        plant(dir, "tests/testthat/helper-gate-probe.R", shared_resource)
+        plant(dir, "tests/testthat/test-a-gate-probe.R", closes_once)
+        for (i in 1:6) {
+          plant(dir, sprintf("tests/testthat/test-zz-gate-probe-%d.R", i), uses_resource)
+        }
+      },
+      expect_fail = "tests",
+      detail = "cascade: 6 failures in 6 files share one message",
+      package = "fixture",
+      env = c(GATE_PROBE_COUNTER = file.path(tempdir(), "gate-cascade-counter")),
+      expect_exit = 3L,
+      check_output = function(output) {
+        if (grepl("re-run of 6 file(s) in a fresh R process: passed (probable flake)", output, fixed = TRUE)) {
+          character()
+        } else {
+          "the six files were not re-run, or did not pass"
+        }
+      }
+    ),
+    probe(
+      "coverage: --steps coverage alone runs covr's own run",
+      "heavy",
+      "tests",
+      function(dir) NULL,
+      expect_pass = "coverage",
+      package = "fixture",
+      args = c("--steps", "coverage")
     ),
     probe(
       "coverage: untested code",
@@ -594,6 +650,7 @@ heavy_probes <- function() {
         )
       },
       expect_fail = "nosuggests",
+      detail = "failing tests: Failure ('test-zz-gate-probe.R",
       package = "fixture"
     )
   )
@@ -717,6 +774,11 @@ unit_checks <- function(gate) {
   second <- g$run_folder(parent, "tests")
   txt <- file.path(run_dir, "tests.txt")
   failing <- g$tests_result(g$summarise_tests(run_tests(), run_dir), txt)
+  # testthat's own wording for expect_true(FALSE), which changes between versions.
+  false_message <- tryCatch(
+    testthat::expect_true(FALSE),
+    expectation_failure = function(e) g$first_message_line(conditionMessage(e))
+  )
   json <- jsonlite::read_json(file.path(run_dir, "tests.json"), simplifyVector = TRUE)
   passing <- g$tests_result(g$summarise_tests(run_tests("pass|warn|skip"), second), txt)
   state <- new.env()
@@ -751,6 +813,33 @@ unit_checks <- function(gate) {
   g$append_flakes(flakes, state$tests$bad, "tests", "passed (probable flake)")
   g$append_flakes(flakes, state$tests$bad, "tests", "failed again")
   flake_rows <- utils::read.delim(flakes, stringsAsFactors = FALSE)
+  check_log <- file.path(dir, "check.log")
+  file.create(check_log)
+  g$check_result(check, check_log)
+  # A cascade: one message in 8 files, plus one unrelated failure; and a mix of messages that is not a cascade.
+  closed <- data.frame(
+    file = sprintf("test-page%d.R", 1:8),
+    line = 2L,
+    test = sprintf("page %d draws", 1:8),
+    kind = "Error",
+    message = sprintf("Chromote has been closed (session %d).", 1:8)
+  )
+  other <- data.frame(file = "test-sum.R", line = 3L, test = "sums", kind = "Failure", message = "1 is not 2")
+  cascade_bad <- rbind(closed, other)
+  cascade <- g$cascade_of(cascade_bad)
+  mixed <- closed
+  mixed$message <- sprintf("message %s", letters[1:8])
+  cascade_state <- new.env()
+  cascade_state$tests <- list(bad = cascade_bad, cascade = cascade)
+  cascade_line <- g$tests_result(
+    list(
+      counts = list(expectations = 9L, failed = 9L, warnings = 0L, skipped = 0L),
+      bad = cascade_bad,
+      cascade = cascade
+    ),
+    txt
+  )
+  cascade_report <- g$failure_report("tests", second, cascade_state, whole_logs = FALSE)
   list(
     unit(
       "run folder: <parent>/<YYYYmmdd-HHMMSS>-<mode>, created",
@@ -768,7 +857,7 @@ unit_checks <- function(gate) {
     unit(
       "tests FAIL line: file:line, test name, kind and first message line of each problem",
       grepl("test-error.R:2 \"errors\" (Error: boom)", failing$detail, fixed = TRUE) &&
-        grepl("test-fail.R:2 \"fails\" (Failure: Expected FALSE to be TRUE.)", failing$detail, fixed = TRUE),
+        grepl(sprintf("test-fail.R:2 \"fails\" (Failure: %s)", false_message), failing$detail, fixed = TRUE),
       failing$detail
     ),
     unit(
@@ -826,7 +915,7 @@ unit_checks <- function(gate) {
     unit(
       "re-run filter: picks exactly the failing files, without test- and .R, dots escaped",
       identical(filter_text, "^(a|b\\.c)$") &&
-        grepl("a", "a") &&
+        grepl(filter_text, "a") &&
         !grepl(filter_text, "ab") &&
         grepl(filter_text, "b.c") &&
         !grepl(filter_text, "bxc"),
@@ -887,6 +976,35 @@ unit_checks <- function(gate) {
             pkgdown = TRUE
           ))
         ))
+    ),
+    unit(
+      "check log: the check's problems and failing test output are written in full",
+      any(grepl("checking tests ... ERROR", readLines(check_log), fixed = TRUE)) &&
+        any(grepl("Expected FALSE to be TRUE.", readLines(check_log), fixed = TRUE))
+    ),
+    unit(
+      "cascade: one message (numbers ignored) in 8 files is found, the first in run order; a mix of messages is not",
+      !is.null(cascade) &&
+        cascade$n == 8 &&
+        cascade$files == 8 &&
+        identical(cascade$first$file, "test-page1.R") &&
+        is.null(g$cascade_of(mixed)) &&
+        is.null(g$cascade_of(closed[1:5, ])),
+      if (is.null(cascade)) "no cascade" else g$cascade_text(cascade)
+    ),
+    unit(
+      "cascade: the FAIL line says it once, then names the failure it doesn't cover",
+      grepl("cascade: 8 failures in 8 files share one message", cascade_line$detail, fixed = TRUE) &&
+        grepl("test-sum.R:3 \"sums\"", cascade_line$detail, fixed = TRUE) &&
+        !grepl("test-page2.R", cascade_line$detail, fixed = TRUE),
+      cascade_line$detail
+    ),
+    unit(
+      "cascade: the report says it once, shows its first 3 and the other problems",
+      any(grepl("^---- tests: cascade: 8 failures", cascade_report)) &&
+        sum(grepl("Chromote has been closed", cascade_report)) == 4 &&
+        any(grepl("test-sum.R:3", cascade_report, fixed = TRUE)),
+      paste(cascade_report, collapse = " | ")
     ),
     unit(
       "flake log: one row per retried failure with the re-run result, the header written once",

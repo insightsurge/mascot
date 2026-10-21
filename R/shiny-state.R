@@ -589,8 +589,8 @@ mascot_snapshot <- function(data, session, name) {
   }
   entry <- mascot_mount_lookup(session, name, data$mount_token)
   if (is.null(entry)) {
-    # Only content-derived static tokens can cross a render/server process
-    # boundary. Dynamic tokens remain strictly session-owned.
+    # Every token is content-derived, so a baseline built in another session (or process) can be recovered here
+    # once the checked baseline in its HTML matches the token. Nothing is recovered without that baseline.
     if (data$lifecycle %in% c("ready", "reconcile") && grepl("^t[0-9]+-[0-9]+-[0-9]+x*$", data$mount_token)) {
       entry <- tryCatch(mascot_mount_recover(session, name, data$mount_token, data$baseline), error = function(error) {
         NULL

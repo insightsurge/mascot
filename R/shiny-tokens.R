@@ -131,8 +131,14 @@ mascot_mount_token <- function(id, state, session = shiny::getDefaultReactiveDom
       owner$mounts[[token]] <- NULL
     }
   }
-  store$serial <- mascot_counter(store$serial)
-  token <- paste0("d", store$serial)
+  # The token is content-derived here too, so HTML built inside a session keeps working when it is cached
+  # (`shiny::bindCache()`) and shown to another session: that session finds no entry and recovers the checked
+  # baseline from the HTML (`mascot_mount_recover()`). The specification itself stays in this session; it never
+  # enters the process-wide store, and another session gets nothing it did not already hold in the HTML.
+  token <- paste0("t", mascot_template_key(identity, remember = FALSE))
+  while (!is.null(owner$mounts[[token]])) {
+    token <- paste0(token, "x")
+  }
   owner$mounts[[token]] <- list(spec = spec, identity = identity)
   token
 }
@@ -170,11 +176,15 @@ mascot_mount_retain <- function(session, token) {
 
 #' Deterministic data-only template key (full identities still decide equality)
 #' @noRd
-mascot_template_key <- function(identity) {
+mascot_template_key <- function(identity, remember = TRUE) {
   checkmate::assert_string(identity)
+  checkmate::assert_flag(remember)
   store <- mascot_template_store()
-  for (entry in store$keys) {
-    if (identical(entry$identity, identity)) return(entry$key)
+  # Session content (remember = FALSE) is neither read from nor written to the process-wide cache.
+  if (remember) {
+    for (entry in store$keys) {
+      if (identical(entry$identity, identity)) return(entry$key)
+    }
   }
   bytes <- as.integer(charToRaw(identity))
   left <- right <- 0
@@ -189,7 +199,9 @@ mascot_template_key <- function(identity) {
     "-",
     length(bytes)
   )
-  store$keys <- utils::tail(c(store$keys, list(list(identity = identity, key = key))), mascot_character_cache_limit)
+  if (remember) {
+    store$keys <- utils::tail(c(store$keys, list(list(identity = identity, key = key))), mascot_character_cache_limit)
+  }
   key
 }
 
@@ -246,7 +258,7 @@ mascot_mount_recover <- function(session, id, token, baseline) {
   identity <- character_format_identity(canonical)
   # Checksums identify content, not authority. Collision suffixes are allocated
   # locally; the complete checked identity remains the equality criterion.
-  expected <- paste0("t", mascot_template_key(identity))
+  expected <- paste0("t", mascot_template_key(identity, remember = FALSE))
   if (!identical(sub("x+$", "", token), expected)) {
     cli::cli_abort("UI baseline and mount token disagree.", class = "mascot_error")
   }

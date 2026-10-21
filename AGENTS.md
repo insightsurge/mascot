@@ -54,8 +54,10 @@ package can use it as it is); mascot's choices are in `DESCRIPTION`
   lint job; `nosuggests` reproduces CI's check-no-suggests job without installing anything.
 - A failing run names the failing tests in its FAIL line and keeps a run folder (the path is printed; one log per
   step, `gate.json`, `tests.json`, `flakes.tsv` beside it) that survives the gate. After a failure the failing test
-  files are re-run once without covr. **Exit code 3 means every failing test passed on that re-run (a probable flake):
-  it is never merge evidence without the founder's word; 2 means a settings or tools problem; 1 a step failed.**
+  files are re-run once in a fresh R process without covr (also when one message fails many files, a cascade such as
+  a closed browser, which the FAIL line names once). **Exit code 3 means every failing test passed on that re-run (a
+  probable flake): it is never merge evidence without the founder's word; 2 means a settings or tools problem; 1 a
+  step failed.**
   `--steps`, `--filter` and `--no-coverage` give runs marked PARTIAL, which are not merge evidence either.
 - New spelling words go into `inst/WORDLIST` only after the founder agrees (`--update-wordlist`).
 - The gate has its own test: after changing the gate, `.lintr`, `air.toml` or `biome.json`, run

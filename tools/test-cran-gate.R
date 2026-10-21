@@ -915,6 +915,16 @@ unit_checks <- function(gate) {
       g$first_message_line("<error_x/rlang_error/error/condition>\nError in `f()`:\n! It broke.")
     ),
     unit(
+      "first message line: a long call is shortened to its name, so the message survives the cut",
+      identical(
+        g$first_message_line(paste0(
+          "Error in `app_initialize(self, private, app_dir = app_dir, load_timeout = load_timeout, timeout = timeout)`: ",
+          "The Shiny app failed to start up within 30 seconds."
+        )),
+        "Error in `app_initialize()`: The Shiny app failed to start up within 30 seconds."
+      )
+    ),
+    unit(
       "timeout label: a failure that reads like a wait running out is marked, others are not",
       grepl("[looks like a timeout]", marked, fixed = TRUE) &&
         !grepl("[looks like a timeout]", g$issue_text(state$tests$bad[1, ]), fixed = TRUE),

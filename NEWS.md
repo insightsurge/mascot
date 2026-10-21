@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The Get started article is rewritten from scratch: a one-minute overview and a first app, then short sections on moods, bubbles, gestures, size, colours, motion, clicks, modules, Quarto pages and updating, with every function linked to its Studio guide page (#39).
+
 * The Get started article has a "Quarto pages" section, and the README and the placement guide mention it: a plain `mascot()` draws in a rendered Quarto page (static, with inline placement recommended); the Quarto `shortcode` comes in 0.2.0 (#412).
 
 * `mascot_studio(view = "theme")` and `mascot_example("theme")` open Theme a mascot, a page of the studio's app that themes one character: a palette, your own colours for light and dark mode, CSS variables or your app's brand colours, with the live code to copy. Its Check tab shows every mood in light and dark, checks contrast and runs the common warnings in the package's own words. The studio's More menu opens it in a new tab (#378).

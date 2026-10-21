@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The website's menu has one "Changelog" entry with two pages, "R package" and "Engine", instead of two separate entries (#422).
+
 * The "Meet your mascots" article introduces Tessa, Sela, Knurl and Neer, with their five moods drawn live, their status lines, their colour palettes and where each character fits, and a 50-second film, with a transcript, in which the four meet at a bridge (#62).
 
 * The Get started article is rewritten from scratch: a one-minute overview and a first app, then short sections on moods, bubbles, gestures, size, colours, motion, clicks, modules, Quarto pages and updating, with every function linked to its Studio guide page (#39).

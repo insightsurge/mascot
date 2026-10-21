@@ -30,6 +30,7 @@ The runner temporarily sets `NOT_CRAN=true` to allow these explicit browser tria
 | `07-dynamic-modules/app.R` | Forty modules added and removed at run time, each with a fresh id | runner `07` |
 | `08-dark-mode/app.R` | bslib dark-mode switching from the server; a fixed light theme beside it | runner `08` |
 | `09-bookmark/app.R` | URL bookmarking and an update from `onRestore()` | runner `09` |
+| `10-cache/app.R` | A mascot in a `renderUI()` cached with `bindCache()`, shown to a second session | runner `10` |
 
 Motion is on in 02, 05 and the newer scenarios, so updates, swaps and replacements land while the mascot animates.
 01, 03 and 04 keep `motion = FALSE`; they test wiring, not animation.

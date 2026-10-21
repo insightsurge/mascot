@@ -403,6 +403,24 @@ mascot_state_settle <- function(record, session = NULL) {
   record
 }
 
+#' Ask Shiny to flush this session, as its own update functions do
+#'
+#' Outside a reactive event (a `later::later()` callback, say) nothing else
+#' requests a flush, so an `onFlushed` callback would wait for the next input.
+#' `sendInputMessage()` ends with this same call. Inside a flush it only marks
+#' the session for one more, empty, flush; the mock session has none.
+#' @noRd
+mascot_request_flush <- function(session) {
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
+  # The mock session has a stub that errors ("for internal use only"); its
+  # flushReact() stands in for the flush, so there is nothing to request.
+  if (inherits(session$rootScope(), "MockShinySession")) {
+    return(invisible(NULL))
+  }
+  session$requestFlush()
+  invisible(NULL)
+}
+
 #' Schedule one replaceable latest envelope for this id and flush
 #' @noRd
 mascot_state_schedule <- function(session, key) {
@@ -481,6 +499,7 @@ mascot_state_schedule <- function(session, key) {
     },
     once = TRUE
   )
+  mascot_request_flush(session)
   invisible(NULL)
 }
 
@@ -526,6 +545,7 @@ mascot_problem <- function(session, key, text) {
     },
     once = TRUE
   )
+  mascot_request_flush(session)
   invisible(NULL)
 }
 
@@ -572,8 +592,8 @@ mascot_snapshot <- function(data, session, name) {
   }
   entry <- mascot_mount_lookup(session, name, data$mount_token)
   if (is.null(entry)) {
-    # Only content-derived static tokens can cross a render/server process
-    # boundary. Dynamic tokens remain strictly session-owned.
+    # Every token is content-derived, so a baseline built in another session (or process) can be recovered here
+    # once the checked baseline in its HTML matches the token. Nothing is recovered without that baseline.
     if (data$lifecycle %in% c("ready", "resume", "reconcile") && grepl("^t[0-9]+-[0-9]+-[0-9]+x*$", data$mount_token)) {
       entry <- tryCatch(mascot_mount_recover(session, name, data$mount_token, data$baseline), error = function(error) {
         NULL

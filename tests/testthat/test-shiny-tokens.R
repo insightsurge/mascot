@@ -31,6 +31,80 @@ describe("session and static mascot specifications", {
     expect_length(owner$mounts, 0)
   })
 
+  it("#424 lets a mascot built in one session work from its cached HTML in another session", {
+    a <- protocol_fixture()
+    b <- protocol_fixture()
+    withr::defer(a$session$close())
+    withr::defer(b$session$close())
+    ui <- shiny::withReactiveDomain(a$session, mascot(a$id, status = "Cached", placement = "inline"))
+    token <- ui$attribs[["data-mount-token"]]
+    expect_match(token, "^t[0-9]+-[0-9]+-[0-9]+$")
+    expect_false(is.null(mascot_mount_lookup(a$session, a$id, token)))
+    expect_null(mascot_mount_lookup(b$session, b$id, token))
+    # The specification stays in session A; the process-wide store never holds it.
+    expect_null(mascot_template_store()$items[[token]])
+    # Session B only has the HTML: its first snapshot asks for the baseline the HTML carries.
+    mascot_snapshot(protocol_snapshot(token), b$session, b$id)
+    expect_identical(tail(b$messages$values, 1)[[1]]$kind, "template-needed")
+    expect_null(b$session$userData$mascot_protocol$states[[b$id]])
+    script <- Filter(
+      function(tag) inherits(tag, "shiny.tag") && "data-mascot-baseline" %in% names(tag$attribs),
+      ui$children
+    )[[1]]
+    baseline <- jsonlite::fromJSON(as.character(script$children[[1]]), simplifyVector = FALSE)
+    baseline$character$json <- as.character(ui$children[[1]]$children[[1]])
+    data <- protocol_snapshot(token)
+    data$baseline <- baseline
+    mascot_snapshot(data, b$session, b$id)
+    expect_true(protocol_record(b)$live)
+    shown <- protocol_flush(b)
+    expect_identical(shown$state$status$text, "Cached")
+    update_mascot("helper", mood = "happy", status = "Updated", session = b$session)
+    updated <- protocol_flush(b)
+    expect_identical(updated$state$mood, "happy")
+    expect_identical(updated$state$status$text, "Updated")
+    expect_gt(updated$revision, shown$revision)
+    # A forged or foreign baseline is still refused, and session A is untouched by B.
+    c_ <- protocol_fixture()
+    withr::defer(c_$session$close())
+    forged <- data
+    forged$baseline$status$text <- "Forged"
+    mascot_snapshot(forged, c_$session, c_$id)
+    expect_null(c_$session$userData$mascot_protocol$states[[c_$id]])
+    expect_identical(tail(c_$messages$values, 1)[[1]]$kind, "template-rejected")
+    expect_false(isTRUE(protocol_record(a)$live))
+  })
+
+  it("#424 keeps visitor-specific content out of the process-wide key cache", {
+    store <- mascot_template_store()
+    saved <- store$keys
+    withr::defer(store$keys <- saved)
+    a <- protocol_fixture()
+    b <- protocol_fixture()
+    withr::defer(a$session$close())
+    withr::defer(b$session$close())
+    text <- "Hello visitor 424-private"
+    for (i in 1:20) {
+      ui <- shiny::withReactiveDomain(a$session, mascot(a$id, status = paste(text, i), placement = "inline"))
+    }
+    token <- ui$attribs[["data-mount-token"]]
+    script <- Filter(
+      function(tag) inherits(tag, "shiny.tag") && "data-mascot-baseline" %in% names(tag$attribs),
+      ui$children
+    )[[1]]
+    baseline <- jsonlite::fromJSON(as.character(script$children[[1]]), simplifyVector = FALSE)
+    baseline$character$json <- as.character(ui$children[[1]]$children[[1]])
+    data <- protocol_snapshot(token)
+    data$baseline <- baseline
+    mascot_snapshot(data, b$session, b$id)
+    expect_true(protocol_record(b)$live)
+    remembered <- vapply(store$keys, function(entry) grepl(text, entry$identity, fixed = TRUE), logical(1))
+    expect_false(any(remembered))
+    # The key is the same with or without the cache.
+    expect_identical(mascot_template_key("x", remember = FALSE), mascot_template_key("x"))
+    expect_error(mascot_template_key("x", remember = NA), "Assertion")
+  })
+
   it("U1.9 shares complete templates, caps unbound LRU entries and pins bound descriptors", {
     store <- mascot_template_store()
     # Restore other tests' read-only templates, not a destructive global reset.

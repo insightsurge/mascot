@@ -52,6 +52,9 @@ package can use it as it is); mascot's choices are in `DESCRIPTION`
 - `fast` (default) before every commit; `tests` (the suite once under covr: tests and coverage) before a PR that
   touches `R/` or `tests/`; `full` before a release (it also runs CI's no-Suggests check); `lint` reproduces CI's
   lint job; `nosuggests` reproduces CI's check-no-suggests job without installing anything.
+- `tests` and `full` also fail when a runnable line the branch adds in `R/` is run by no test (`new_lines`, compared
+  with where the branch left `origin/HEAD`; uncommitted work counts). Test the line, or mark a justified one
+  `# nocov` with a comment saying why. The 70% total stays as well.
 - A failing run names the failing tests in its FAIL line and keeps a run folder (the path is printed; one log per
   step, `gate.json`, `tests.json`, `flakes.tsv` beside it) that survives the gate. After a failure the failing test
   files are re-run once in a fresh R process without covr (also when one message fails many files, a cascade such as

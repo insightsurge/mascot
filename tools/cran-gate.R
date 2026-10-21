@@ -5,8 +5,8 @@
 #   Rscript <path to this file> [fast|tests|full|lint|nosuggests] [options]   (--help lists the options)
 #
 #   fast  (default) tools, style, docs in sync, \value, spelling, R CMD check --as-cran without tests
-#   tests           tools, tests (NOT_CRAN=true, so tests that CRAN skips run too) and coverage
-#   full            everything: fast steps, tests, coverage, CRAN-like check with tests, built tarball
+#   tests           tools, tests (NOT_CRAN=true, so tests that CRAN skips run too), coverage and new lines
+#   full            everything: fast steps, tests, coverage, new lines, CRAN-like check with tests, built tarball
 #   lint            the quick static steps only: tools, style, docs in sync, \value, spelling, pkgdown
 #   nosuggests      R CMD check with only the hard dependencies on the library path (CI's check-no-suggests job)
 #
@@ -17,6 +17,10 @@
 # line says so ("probable flake") and the gate exits 3; each retried failure is appended to flakes.tsv beside the run
 # folder. More than 5 failing files is not re-run (a breakage), unless one message accounts for most failures: a
 # cascade (one broken thing, such as a closed browser, failing every later test), which the line names once.
+#
+# new_lines: every runnable line this branch adds in R/ (compared with where it left origin/HEAD, uncommitted and new
+# files included) must be run by a test; `# nocov` leaves out a justified line. It reads the coverage of the same run,
+# and skips outside git, without origin/HEAD, or when no coverage was measured.
 #
 # Exit codes: 0 every step passed or skipped; 1 a step failed; 2 usage, settings or tools problem (the gate could not
 # judge the package); 3 the only failures are tests that passed on the re-run (a person decides: it is not merge
@@ -111,8 +115,8 @@ steps_for <- function(mode) {
   switch(
     mode,
     fast = c("tools", static, "pkgdown", "check_fast"),
-    tests = c("tools", "tests", "coverage"),
-    full = c("tools", static, "pkgdown", "tests", "coverage", "check_full", "nosuggests", "tarball"),
+    tests = c("tools", "tests", "coverage", "new_lines"),
+    full = c("tools", static, "pkgdown", "tests", "coverage", "new_lines", "check_full", "nosuggests", "tarball"),
     lint = c("tools", static, "pkgdown"),
     nosuggests = c("tools", "nosuggests")
   )
@@ -805,6 +809,7 @@ step_coverage <- function(uses, settings, log, state) {
   if (!inherits(cov, "coverage")) {
     return(cov)
   }
+  state$cov <- cov
   if (nrow(as.data.frame(cov)) == 0) {
     return(result("PASS", "no R code lines to cover yet"))
   }
@@ -822,6 +827,132 @@ step_coverage <- function(uses, settings, log, state) {
   result("PASS", sprintf("%.1f%% (%s)%s", pct, limit, after_failure))
 }
 
+# Runs git with these arguments and returns its output, or NULL when git fails or isn't installed.
+git_lines <- function(args) {
+  checkmate::assert_character(args, min.len = 1, any.missing = FALSE)
+  out <- suppressWarnings(tryCatch(
+    system2("git", args, stdout = TRUE, stderr = FALSE),
+    error = function(e) NULL
+  ))
+  if (is.null(out) || !is.null(attr(out, "status"))) NULL else out
+}
+
+# The added lines in `git diff --unified=0` output, as file and line number (new-file side).
+added_lines_in_diff <- function(diff) {
+  checkmate::assert_character(diff, any.missing = FALSE)
+  rows <- list()
+  file <- NA_character_
+  for (line in diff) {
+    if (startsWith(line, "+++ ")) {
+      file <- if (line == "+++ /dev/null") NA_character_ else sub("^\\+\\+\\+ b/", "", line)
+    } else if (startsWith(line, "@@ ") && !is.na(file)) {
+      hunk <- regmatches(line, regexec("\\+([0-9]+)(,([0-9]+))?", line))[[1]]
+      start <- as.integer(hunk[2])
+      count <- if (nzchar(hunk[4])) as.integer(hunk[4]) else 1L
+      if (count > 0) {
+        rows[[length(rows) + 1L]] <- data.frame(file = file, line = seq(start, length.out = count))
+      }
+    }
+  }
+  do.call(rbind, c(list(data.frame(file = character(), line = integer())), rows))
+}
+
+# The lines in R/ that this branch adds, compared with where it left origin/HEAD (or origin/main, origin/master),
+# uncommitted and new files included. A string instead says why there is nothing to compare with.
+branch_added_lines <- function() {
+  if (is.null(git_lines(c("rev-parse", "--is-inside-work-tree")))) {
+    return("not a git repository")
+  }
+  # origin/HEAD names the default branch; a clone without it may still have origin/main or origin/master.
+  known <- Filter(
+    function(ref) !is.null(git_lines(c("rev-parse", "--verify", "--quiet", ref))),
+    c("origin/HEAD", "origin/main", "origin/master")
+  )
+  if (length(known) == 0) {
+    return("no origin/HEAD, origin/main or origin/master to compare with")
+  }
+  base <- git_lines(c("merge-base", "HEAD", known[[1]]))
+  if (length(base) == 0) {
+    return("no common commit with origin/HEAD")
+  }
+  diff <- git_lines(c("diff", "--unified=0", "--no-color", "--no-ext-diff", base[[1]], "--", "R/"))
+  if (is.null(diff)) {
+    return("git diff failed")
+  }
+  added <- added_lines_in_diff(diff)
+  untracked <- git_lines(c("ls-files", "--others", "--exclude-standard", "--", "R/"))
+  for (file in untracked[grepl("\\.[Rr]$", untracked)]) {
+    n <- length(readLines(file, warn = FALSE))
+    if (n > 0) {
+      added <- rbind(added, data.frame(file = file, line = seq_len(n)))
+    }
+  }
+  added
+}
+
+# Line numbers as short ranges: 3, 4, 5, 9 -> "3-5, 9".
+line_ranges <- function(lines) {
+  checkmate::assert_integerish(lines, any.missing = FALSE)
+  lines <- sort(unique(lines))
+  starts <- lines[c(TRUE, diff(lines) != 1)]
+  ends <- lines[c(diff(lines) != 1, TRUE)]
+  paste(ifelse(starts == ends, starts, paste0(starts, "-", ends)), collapse = ", ")
+}
+
+# Every R line this branch adds must be run by a test (a coverage limit alone lets a branch add untested code while
+# the total stays above it). Lines covr doesn't count, such as comments and `# nocov` lines, are left out.
+step_new_lines <- function(uses, log, state) {
+  checkmate::assert_list(uses, types = "logical")
+  checkmate::assert_string(log)
+  checkmate::assert_environment(state)
+  if (!uses$tests) {
+    return(result("SKIP", "the package has no tests/"))
+  }
+  if (!inherits(state$cov, "coverage")) {
+    return(result("SKIP", "no coverage was measured in this run, so there is nothing to compare"))
+  }
+  added <- branch_added_lines()
+  if (is.character(added)) {
+    return(result("SKIP", added))
+  }
+  if (nrow(added) == 0) {
+    return(result("SKIP", "this branch adds no lines in R/"))
+  }
+  tally <- covr::tally_coverage(state$cov, by = "line")
+  tally <- stats::aggregate(value ~ filename + line, data = tally, FUN = max)
+  runnable <- merge(added, tally, by.x = c("file", "line"), by.y = c("filename", "line"))
+  untested <- runnable[runnable$value == 0, , drop = FALSE]
+  after_failure <- if (identical(unname(state$statuses["tests"]), "FAIL")) " (from a run with failing tests)" else ""
+  if (nrow(untested) == 0) {
+    return(
+      result(
+        "PASS",
+        sprintf("%d added runnable lines, every one run by a test%s", nrow(runnable), after_failure)
+      )
+    )
+  }
+  where <- vapply(
+    split(untested$line, untested$file),
+    line_ranges,
+    character(1)
+  )
+  places <- paste0(names(where), ":", where)
+  write(c("Added lines that no test runs:", places), log, append = TRUE)
+  more <- if (length(places) > 3) sprintf(" +%d more files", length(places) - 3) else ""
+  result(
+    "FAIL",
+    sprintf(
+      "%d of %d added runnable lines run by no test: %s%s; %s%s",
+      nrow(untested),
+      nrow(runnable),
+      paste(utils::head(places, 3), collapse = "; "),
+      more,
+      "test them, or mark a justified line `# nocov` with a reason",
+      after_failure
+    )
+  )
+}
+
 # Why a step would skip for this package (NULL: it runs), for --list.
 step_skip_reason <- function(step, uses) {
   checkmate::assert_string(step)
@@ -835,6 +966,7 @@ step_skip_reason <- function(step, uses) {
     pkgdown = if (!uses$pkgdown) "no _pkgdown.yml",
     tests = if (!uses$testthat) "no tests/testthat",
     coverage = if (!uses$tests) "no tests/",
+    new_lines = if (!uses$tests) "no tests/",
     check_full = NULL,
     nosuggests = if (.Platform$OS.type == "windows") "symlinks may need privileges on Windows",
     NULL
@@ -902,6 +1034,22 @@ step_nosuggests <- function(uses, run_dir, log) {
   lib <- nosuggests_library(run_dir, uses)
   if (is.null(lib)) {
     return(result("SKIP", "symlinks can't be made here (on Windows they may need privileges)"))
+  }
+  # R's own library is always on the library path, so a Suggests package installed there (as conda and some Docker
+  # images do) can't be hidden, and a PASS would not mean anything.
+  hidden <- setdiff(description_packages("Suggests"), list.files(lib))
+  visible <- hidden[vapply(hidden, function(pkg) length(find.package(pkg, .Library, quiet = TRUE)) > 0, logical(1))]
+  if (length(visible) > 0) {
+    return(
+      result(
+        "SKIP",
+        paste0(
+          "Suggests installed in R's own library can't be hidden: ",
+          toString(visible),
+          " (install them in a user library to run this check)"
+        )
+      )
+    )
   }
   tarball <- run_logged(function() pkgbuild::build(dest_path = run_dir, quiet = TRUE), log)
   check_dir <- file.path(run_dir, "nosuggests-check")
@@ -997,6 +1145,7 @@ run_step <- function(step, mode, update, uses, settings, run_dir, log, state) {
       check_fast = step_check(tests = FALSE, log),
       tests = step_tests(uses, run_dir, log, state),
       coverage = step_coverage(uses, settings, log, state),
+      new_lines = step_new_lines(uses, log, state),
       check_full = step_check(tests = TRUE, log),
       nosuggests = step_nosuggests(uses, run_dir, log),
       tarball = step_tarball(settings, log)
@@ -1102,7 +1251,7 @@ usage_lines <- c(
   "Usage: Rscript cran-gate.R [fast|tests|full|lint|nosuggests] [options]",
   "",
   "  fast        tools, style, docs in sync, \\value, spelling, pkgdown, R CMD check --as-cran without tests (default)",
-  "  tests       tools, the tests under covr (once) and coverage",
+  "  tests       tools, the tests under covr (once), coverage and the lines this branch adds",
   "  full        everything: fast steps, tests, coverage, CRAN-like check with tests, no-Suggests check, tarball",
   "  lint        the quick static steps only",
   "  nosuggests  R CMD check with only the hard dependencies on the library path (CI's check-no-suggests job)",

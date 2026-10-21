@@ -406,11 +406,12 @@ step_check <- function(tests, log) {
 }
 
 # The first line of a test's message, without testthat's "Error in `eval(code, test_env)`: " prefix, cut to 100
-# characters. A line ending in ":" (cli's "Error in `f()`:") keeps the line after it.
+# characters. A line ending in ":" (cli's "Error in `f()`:") keeps the line after it. Older rlang versions start the
+# message with the error's classes ("<error_x/rlang_error/error/condition>"), which say nothing: that line is skipped.
 first_message_line <- function(message) {
   checkmate::assert_string(message)
   lines <- trimws(strsplit(message, "\n", fixed = TRUE)[[1]])
-  lines <- lines[nzchar(lines)]
+  lines <- lines[nzchar(lines) & !grepl("^<[A-Za-z0-9_./]+>$", lines)]
   if (length(lines) == 0) {
     return("")
   }

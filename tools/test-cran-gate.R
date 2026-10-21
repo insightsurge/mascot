@@ -907,6 +907,14 @@ unit_checks <- function(gate) {
       checked$detail
     ),
     unit(
+      "first message line: rlang's class header is skipped, cli's \"Error in `f()`:\" keeps the line after it",
+      identical(
+        g$first_message_line("<error_x/rlang_error/error/condition>\nError in `f()`:\n! It broke."),
+        "Error in `f()`: ! It broke."
+      ),
+      g$first_message_line("<error_x/rlang_error/error/condition>\nError in `f()`:\n! It broke.")
+    ),
+    unit(
       "timeout label: a failure that reads like a wait running out is marked, others are not",
       grepl("[looks like a timeout]", marked, fixed = TRUE) &&
         !grepl("[looks like a timeout]", g$issue_text(state$tests$bad[1, ]), fixed = TRUE),

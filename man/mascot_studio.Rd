@@ -37,8 +37,10 @@ experimental and may change in a later release. Choices belong to the returned
 app; no global options are changed.
 }
 \examples{
+\dontshow{if (utils::packageVersion("bslib") >= "0.6.0") withAutoprint(\{ # examplesIf}
 app <- mascot_studio(fn = "mascot_theme", run = FALSE)
 inherits(app, "shiny.appobj")
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{\link[=mascot_example]{mascot_example()}}

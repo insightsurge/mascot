@@ -19,7 +19,7 @@ Imports:
     jsonlite,
     shiny
 Suggests: 
-    bslib,
+    bslib (>= 0.6.0),
     chromote,
     covr,
     golem,
@@ -28,7 +28,7 @@ Suggests:
     lifecycle,
     promises,
     rmarkdown,
-    shinytest2,
+    shinytest2 (>= 0.5.0),
     testthat (>= 3.0.0),
     withr
 VignetteBuilder: knitr

@@ -33,6 +33,21 @@ What you get:
 pak::pak("insightsurge/mascot")
 ```
 
+## Try it without writing code
+
+The fastest way to see what `mascot` can do is the studio, a small app that runs on your computer and needs no internet. It is experimental, so its looks may change, and it uses the optional `bslib` and `knitr` packages.
+
+- [`mascot_studio()`](guide-mascot_studio.html) opens the studio. Pick a character, pick a function from the list, change its arguments and watch the mascot react. The R code to copy sits under the picture and always matches what you see.
+- Each function has a short guide page in the studio, with the same text as the website's **Studio guide** menu.
+- `mascot_studio(view = "theme")` (or `mascot_example("theme")`) opens **Theme a mascot**. Choose one character, then try a ready-made palette, your own colours for light and dark mode, or the colours of your app's `bslib` theme. Its **Check** tab shows every mood in light and dark and warns about low contrast, and the code to copy is the shortest `mascot_theme()` call that gives the same look.
+- `mascot_studio(view = "examples")` lists the bundled example apps. You can also open the theme page from the studio's **More** menu.
+- To start on one function or character, name them: `mascot_studio(fn = "mascot_theme", character = "sela")`.
+
+```{r studio-start, eval=FALSE}
+mascot_studio()
+mascot_studio(view = "theme")
+```
+
 ## Your first app
 
 Suppose you have a batch review page where Tessa, the default character, waits in the corner until someone clicks **Finish review**, then smiles and confirms that every row passed. Put this code in an `app.R` file and run it from an interactive R session:
@@ -194,6 +209,7 @@ When your app has its own brand palette or a dark mode switch, you can match the
 - Pass `light` and `dark` lists in [`mascot_theme()`](guide-mascot_theme.html) for separate light and dark colours, or `css` for browser CSS variables (experimental).
 - Pass a `bslib::bs_theme()` to fill the character's primary and secondary brand roles (experimental role mapping).
 - By default, `mode = "auto"` follows `bslib::input_dark_mode()` or Quarto's dark mode, and stays light when the page gives no signal.
+- Not sure which colours to pick? Try them first in **Theme a mascot**: `mascot_studio(view = "theme")`.
 
 ```{r palettes-and-roles}
 mascot_palettes("tessa")
@@ -297,13 +313,13 @@ You can also place [`mascot()`](guide-mascot.html) in a rendered Quarto document
 - The mascot follows Quarto's light and dark theme toggle and works in self-contained pages (`embed-resources: true`).
 - Quarto support is lightly tested so far, and a Quarto `shortcode` is planned for 0.2.0.
 
-````markdown
-```{r}
+Put this in an R chunk of your `.qmd` file:
+
+```r
 #| echo: false
-library(mascot) # nolint: undesirable_function_linter.
+library(mascot)
 mascot("helper", mood = "happy", status = "Rendered with Quarto", placement = "inline")
 ```
-````
 
 ## Check a look before using it
 

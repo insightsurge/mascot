@@ -581,9 +581,10 @@ describe("mascot_example()", {
 })
 
 # A literal scenario name is embedded so the child R process needs no test globals.
-example_driver <- function(name, width = 1100) {
+example_driver <- function(name, width = 1100, env = parent.frame()) {
   checkmate::assert_string(name)
   checkmate::assert_number(width, lower = 1)
+  checkmate::assert_environment(env)
   testthat::skip_if_not_installed("bslib")
   app_function <- function() NULL
   body(app_function) <- substitute(
@@ -593,7 +594,8 @@ example_driver <- function(name, width = 1100) {
     },
     list(NAME = name)
   )
-  app_driver(app_function, width = width, height = 900)
+  # The app belongs to the calling test, not to this helper: stop it when that test ends (#445).
+  app_driver(app_function, width = width, height = 900, env = env)
 }
 
 wait_example_mood <- function(app, id, mood) {

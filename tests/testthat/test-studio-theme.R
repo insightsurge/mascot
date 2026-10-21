@@ -658,15 +658,17 @@ mascot_offset_js <- paste0(
 )
 
 # The theme view in Chrome, started the way mascot_studio(view = "theme") starts it.
-theme_driver <- function(width = 1280, height = 800) {
+theme_driver <- function(width = 1280, height = 800, env = parent.frame()) {
   checkmate::assert_number(width, lower = 1)
   checkmate::assert_number(height, lower = 1)
+  checkmate::assert_environment(env)
   app <- function() NULL
   body(app) <- quote({
     library(mascot)
     mascot::mascot_studio("theme", run = FALSE)
   })
-  app_driver(app, width = width, height = height)
+  # The app belongs to the calling test, not to this helper: stop it when that test ends (#445).
+  app_driver(app, width = width, height = height, env = env)
 }
 
 describe("the theme view in a browser", {

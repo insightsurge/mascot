@@ -167,6 +167,8 @@
 
 ## Minor improvements and fixes
 
+* In a Shiny app that lets the browser reconnect (`session$allowReconnect()`), a mascot takes `update_mascot()` calls again after the browser reconnects into a new server session. Before, it showed its last state, then ignored every update until the page was reloaded. The page keeps what it shows until the new session sends a state, and that state then replaces it (#426).
+
 * `?update_mascot` names the `mascot_update_ignored` condition class, and `?update_mascot` and `?mascot_theme` explain that an unknown palette id is an error in `mascot()` but only a warning in `update_mascot()` (#387).
 
 * The character-file check names both format versions when a file's `format_version` is not supported (#339).

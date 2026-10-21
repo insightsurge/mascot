@@ -81,7 +81,8 @@
   const pending = new Map();
   const playedGestures = new Map();
   // Connection-local action/dismissal ledger survives DOM removal. Complete
-  // state revisions are generation-local; action watermarks never reset.
+  // state revisions are generation-local; action watermarks never reset within one server session.
+  // A reconnect into a new server session starts them again from zero (see resumeSession()).
   const ledgers = new Map();
   const safeCounter = (x) => Number.isSafeInteger(x) && x >= 0;
   const sameValue = (a, b) => {
@@ -240,6 +241,37 @@
     window.jQuery(document).on('shiny:disconnected.mascot-host', disconnectedHandler);
     window.jQuery(document).on('shiny:connected.mascot-host', connectedHandler);
   }
+
+  // After a reconnect Shiny can bind the same page to a NEW server session (allowReconnect on Shiny Server or
+  // Connect). The page keeps its DOM, but the new session has issued no revision, gesture or bubble yet, so the counters
+  // earned in the old one would make it reject this mascot and make the page drop its first updates. The page therefore
+  // starts the protocol again as a 'resume': counters back to zero, the same mount, and a snapshot that tells the new
+  // session this page was already showing something. What the page shows stays until the new session sends a state;
+  // that state then replaces it (the new session knows nothing of the old one's character, bubble or gesture).
+  function resumeSession(record) {
+    const ledger = record.ledger;
+    ledger.applied_revision = 0;
+    ledger.gesture_watermark = 0;
+    ledger.bubble_watermark = 0;
+    ledger.dismissed_bubble_revision = 0;
+    ledger.resumed = true;
+    record.revision = 0;
+    record.recoverySent = false;
+    publish(record, 'resume');
+  }
+
+  let serverSession = window.Shiny?.shinyapp?.config?.sessionId ?? null;
+  function sessionInitialized() {
+    // Shiny fires this after each connection's config message, once the server session exists and can take inputs.
+    const id = window.Shiny?.shinyapp?.config?.sessionId ?? null;
+    if (id === null || id === serverSession) return;
+    const reconnected = serverSession !== null;
+    serverSession = id;
+    if (reconnected) for (const record of live) if (record.ledger?.live) resumeSession(record);
+  }
+  document.addEventListener('shiny:sessioninitialized', sessionInitialized);
+  if (typeof window.jQuery === 'function')
+    window.jQuery(document).on('shiny:sessioninitialized.mascot-host', sessionInitialized);
 
   // Bubble time is independent of the deterministic drawing engine, in seconds.
   function remaining(record) {
@@ -2695,7 +2727,7 @@
           baseline.character.json = character.textContent;
           window.Shiny?.setInputValue?.(
             `${record.el.id}:mascot.state`,
-            { ...snapshot(record, 'ready'), baseline },
+            { ...snapshot(record, ledger.resumed ? 'resume' : 'ready'), baseline },
             { priority: 'event' },
           );
           return;
@@ -2798,6 +2830,7 @@
       if (message.problem) apply(record.el, { problem: message.problem });
       record.completeState = message.state;
       ledger.applied_revision = message.revision;
+      ledger.resumed = false;
       record.revision = message.revision;
       ledger.bubble_watermark = Math.max(ledger.bubble_watermark, message.bubble_revision);
       ledger.bubble = record.bubble ? { ...record.bubble, remaining: remaining(record) } : null;

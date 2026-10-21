@@ -25,7 +25,8 @@ Reproduction sequence:
 5. Shiny reconnects within a few seconds. The app uses `session$allowReconnect("force")`, which Shiny provides
    for testing reconnects locally: as with `allowReconnect(TRUE)` on Shiny Server or Connect, the page reconnects
    into a new server session (the runner checks that the session id changed). Rapid 81 must still show, and
-   Rapid 82 must apply. The second part fails today and is marked KNOWN: #426.
+   Rapid 82 must apply. Shiny sends every input to the new session again, so the app's `slow` and `burst`
+   observers run again there; the new session's state (Neer, from the repeated burst) is what the next update builds on.
 
 After the reconnect, Shiny's own client logs that the `handled` output is "in an unexpected state"; those lines come
 from Shiny, not the mascot, and up to four are allowed.

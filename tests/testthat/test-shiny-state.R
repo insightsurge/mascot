@@ -690,3 +690,123 @@ describe("real Shiny bookmark collection", {
     expect_true(all(c("helper", "outer-inner-helper", "x", "outer-inner-password") %in% session$getBookmarkExclude()))
   })
 })
+
+describe("a page that reconnects into a new server session", {
+  # Shiny gives the new session the page's last input value first: a `mounted` snapshot whose counters were earned in
+  # the old session. The page then announces itself again with `resume`, its counters back at zero.
+  old_session <- function(token, ...) {
+    protocol_snapshot(token, 3, "mounted", applied = 7, gesture = 2, bubble = 3, dismissed = 3, ...)
+  }
+
+  it("ignores the old session's counters, goes live on the page's resume and sends nothing until the app speaks", {
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    token <- mascot(f$id)$attribs[["data-mount-token"]]
+    mascot_snapshot(old_session(token), f$session, f$id)
+    f$session$flushReact()
+    expect_null(protocol_record(f))
+    expect_length(f$messages$values, 0)
+    mascot_snapshot(protocol_snapshot(token, 3, "resume"), f$session, f$id)
+    f$session$flushReact()
+    expect_true(protocol_record(f)$live)
+    expect_identical(protocol_record(f)$generation, 3)
+    # The page still shows what the old session sent; the UI's defaults must not replace it unasked.
+    expect_length(f$messages$values, 0)
+    update_mascot("helper", mood = "thinking", status = "Back", session = f$session)
+    latest <- protocol_flush(f)
+    expect_length(f$messages$values, 1)
+    expect_identical(latest$generation, 3)
+    expect_identical(latest$state$mood, "thinking")
+    expect_identical(latest$state$status$text, "Back")
+    # Counters start again, so the page (whose own are zero) takes the state, and it takes it without animating.
+    expect_gt(latest$revision, 0)
+    expect_identical(latest$gesture_watermark, 0)
+    expect_identical(latest$bubble_revision, 0)
+    expect_null(latest$gesture)
+    expect_true(latest$restore)
+    update_mascot("helper", status = "Again", session = f$session)
+    expect_gt(protocol_flush(f)$revision, latest$revision)
+  })
+
+  it("sends what the app already said in the new session when the page resumes", {
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    token <- mascot(f$id)$attribs[["data-mount-token"]]
+    update_mascot("helper", status = "Said on connect", gesture = "nod", bubble = "Hello again", session = f$session)
+    mascot_snapshot(old_session(token), f$session, f$id)
+    f$session$flushReact()
+    expect_length(f$messages$values, 0)
+    mascot_snapshot(protocol_snapshot(token, 3, "resume"), f$session, f$id)
+    latest <- protocol_flush(f)
+    expect_identical(latest$state$status$text, "Said on connect")
+    expect_identical(latest$state$bubble$text, "Hello again")
+    # These are new in this session even though the old one had reached higher numbers.
+    expect_identical(latest$gesture$name, "nod")
+    expect_gt(latest$gesture$revision, 0)
+    expect_gt(latest$bubble_revision, 0)
+    expect_lt(latest$gesture$revision, 7)
+  })
+
+  it("does not treat the UI's own bubble as news for a page that has already shown it", {
+    fresh <- protocol_fixture()
+    withr::defer(fresh$session$close())
+    token <- mascot(fresh$id, bubble = "From the UI")$attribs[["data-mount-token"]]
+    mascot_snapshot(protocol_snapshot(token, 1, "ready"), fresh$session, fresh$id)
+    update_mascot("helper", status = "Loaded", session = fresh$session)
+    expect_gt(protocol_flush(fresh)$bubble_revision, 0)
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    mascot_snapshot(protocol_snapshot(token, 3, "resume"), f$session, f$id)
+    update_mascot("helper", status = "Back", session = f$session)
+    latest <- protocol_flush(f)
+    expect_identical(latest$bubble_revision, 0)
+    # A bubble the app opens in this session is new.
+    update_mascot("helper", bubble = "From the app", session = f$session)
+    expect_identical(protocol_flush(f)$bubble_revision, 1)
+  })
+
+  it("refuses a resume that carries counters or a foreign token, and a first snapshot that is not a start", {
+    g <- protocol_fixture()
+    withr::defer(g$session$close())
+    token <- mascot(g$id)$attribs[["data-mount-token"]]
+    bad <- list(
+      protocol_snapshot(token, 3, "resume", applied = 1),
+      protocol_snapshot(token, 3, "resume", gesture = 1),
+      protocol_snapshot(token, 3, "resume", bubble = 1),
+      protocol_snapshot(token, 3, "resume", dismissed = 1),
+      protocol_snapshot("foreign", 3, "resume"),
+      old_session(token)
+    )
+    for (candidate in bad) {
+      mascot_snapshot(candidate, g$session, g$id)
+    }
+    expect_null(protocol_record(g))
+    g$session$flushReact()
+    expect_false(any(vapply(g$messages$values, function(x) isTRUE(x$kind == "state"), logical(1))))
+    # The token itself is fine: the same resume with zero counters is accepted.
+    mascot_snapshot(protocol_snapshot(token, 3, "resume"), g$session, g$id)
+    expect_true(protocol_record(g)$live)
+  })
+
+  it("recovers an absent static template when the page resumes", {
+    f <- protocol_fixture()
+    withr::defer(f$session$close())
+    state <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
+    token <- mascot_mount_token(f$id, state, NULL)
+    store <- mascot_template_store()
+    saved <- store$items[[token]]
+    withr::defer(store$items[[token]] <- saved)
+    store$items[[token]] <- NULL
+    data <- protocol_snapshot(token, 3, "resume")
+    mascot_snapshot(data, f$session, f$id)
+    expect_identical(tail(f$messages$values, 1)[[1]]$kind, "template-needed")
+    expect_null(protocol_record(f))
+    data$baseline <- state
+    mascot_snapshot(data, f$session, f$id)
+    expect_true(protocol_record(f)$live)
+    f$session$flushReact()
+    expect_false(any(vapply(f$messages$values, function(x) isTRUE(x$kind == "state"), logical(1))))
+    update_mascot("helper", status = "Recovered", session = f$session)
+    expect_identical(protocol_flush(f)$state$status$text, "Recovered")
+  })
+})

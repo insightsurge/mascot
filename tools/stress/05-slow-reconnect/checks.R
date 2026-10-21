@@ -50,7 +50,7 @@ stress_checks <- function(ctx) {
     }
     state("helper", "thinking", "Rapid 81", character = "neer")
   })
-  ctx$known("updates reach the mascot after reconnect", 426L, {
+  ctx$check("updates reach the mascot after reconnect", {
     app$set_inputs(rapid = 82)
     state("helper", "thinking", "Rapid 82", character = "neer")
   })

@@ -23,8 +23,7 @@ local_character_engine <- function(env = parent.frame()) {
     ),
     page
   )
-  session <- chromote::ChromoteSession$new(parent = test_browser())
-  withr::defer(session$close(), envir = env)
+  session <- local_chrome_session(env)
   loaded <- session$Page$loadEventFired(wait_ = FALSE)
   session$Page$navigate(paste0("file://", normalizePath(page, winslash = "/")), wait_ = FALSE)
   session$wait_for(loaded)

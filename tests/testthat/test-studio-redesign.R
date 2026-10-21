@@ -25,8 +25,13 @@ wait_studio_mood <- function(app, mood) {
   checkmate::assert_r6(app, "AppDriver")
   checkmate::assert_string(mood)
   # Generous: the coverage run instruments the package and the live host takes longer to start.
+  # The frame itself can be missing for a moment while the page renders it again: that means "not yet", so every step
+  # of the lookup is optional and the wait keeps polling instead of failing on a null frame (#446).
   app$wait_for_js(
-    sprintf("%s?.document.getElementById('helper')?.dataset.shownMood === '%s'", studio_frame, mood),
+    sprintf(
+      "document.getElementById('live_frame')?.contentWindow?.document.getElementById('helper')?.dataset.shownMood === '%s'",
+      mood
+    ),
     timeout = 90000
   )
 }

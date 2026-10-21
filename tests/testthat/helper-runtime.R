@@ -78,8 +78,7 @@ local_runtime_page <- function(
     ),
     page
   )
-  session <- chromote::ChromoteSession$new(parent = test_browser())
-  withr::defer(session$close(), envir = env)
+  session <- local_chrome_session(env)
   session$Emulation$setEmulatedMedia(
     features = list(
       list(name = "prefers-reduced-motion", value = if (reduced) "reduce" else "no-preference"),

@@ -91,8 +91,7 @@ describe("R4a characters through real Shiny", {
       )))
     }
     # A second WebSocket connection to the very same R process, not a second app.
-    second <- chromote::ChromoteSession$new(parent = test_browser())
-    withr::defer(second$close())
+    second <- local_chrome_session()
     loaded <- second$Page$loadEventFired(wait_ = FALSE)
     second$Page$navigate(app$get_js("window.location.href"), wait_ = FALSE)
     second$wait_for(loaded)

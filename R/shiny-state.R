@@ -403,6 +403,24 @@ mascot_state_settle <- function(record, session = NULL) {
   record
 }
 
+#' Ask Shiny to flush this session, as its own update functions do
+#'
+#' Outside a reactive event (a `later::later()` callback, say) nothing else
+#' requests a flush, so an `onFlushed` callback would wait for the next input.
+#' `sendInputMessage()` ends with this same call. Inside a flush it only marks
+#' the session for one more, empty, flush; the mock session has none.
+#' @noRd
+mascot_request_flush <- function(session) {
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
+  # The mock session has a stub that errors ("for internal use only"); its
+  # flushReact() stands in for the flush, so there is nothing to request.
+  if (inherits(session$rootScope(), "MockShinySession")) {
+    return(invisible(NULL))
+  }
+  session$requestFlush()
+  invisible(NULL)
+}
+
 #' Schedule one replaceable latest envelope for this id and flush
 #' @noRd
 mascot_state_schedule <- function(session, key) {
@@ -481,6 +499,7 @@ mascot_state_schedule <- function(session, key) {
     },
     once = TRUE
   )
+  mascot_request_flush(session)
   invisible(NULL)
 }
 
@@ -526,6 +545,7 @@ mascot_problem <- function(session, key, text) {
     },
     once = TRUE
   )
+  mascot_request_flush(session)
   invisible(NULL)
 }
 

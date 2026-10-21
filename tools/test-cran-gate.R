@@ -13,7 +13,8 @@
 #   heavy           the same for check_fast, tests, coverage, new_lines, check_full, nosuggests and tarball, on a tiny
 #                   generated package
 #                   (a few minutes, not the hours the real package's own suite would need)
-#   all   (default) all three; static also checks that this folder's gate and the skill's copy are the same files
+#   all   (default) all three; static also checks that this folder's gate and the skill's copy are the same files,
+#                   and that a README.md beside the gate names every mode and option --help lists
 #
 # Run it from the root of a package that passes the gate. Each probe copies the package to tempdir() (tracked and
 # new files in a git repository; nothing git ignores; the heavy probes copy the tiny generated package instead),
@@ -1000,6 +1001,23 @@ unit_checks <- function(gate) {
         identical(g$line_ranges(c(3, 4, 5, 9, 11, 12)), "3-5, 9, 11-12")
     ),
     unit(
+      "README in step: a README beside the gate that misses an option fails, one that names everything passes",
+      local({
+        copy <- file.path(dir, "readme-check")
+        dir.create(copy)
+        file.copy(gate, copy)
+        options <- unique(sub("^  (--[a-z-]+).*$", "\\1", grep("^  --", g$usage_lines, value = TRUE)))
+        everything <- c(paste0("`", g$modes, "`"), options)
+        write(everything, file.path(copy, "README.md"))
+        complete <- readme_in_step(file.path(copy, basename(gate)))$status
+        write(setdiff(everything, "--steps"), file.path(copy, "README.md"))
+        partial <- readme_in_step(file.path(copy, basename(gate)))
+        identical(complete, "PASS") &&
+          identical(partial$status, "FAIL") &&
+          grepl("--steps", partial$detail, fixed = TRUE)
+      })
+    ),
+    unit(
       "timeout label: a failure that reads like a wait running out is marked, others are not",
       grepl("[looks like a timeout]", marked, fixed = TRUE) &&
         !grepl("[looks like a timeout]", g$issue_text(state$tests$bad[1, ]), fixed = TRUE),
@@ -1154,6 +1172,33 @@ copies_in_step <- function(gate) {
   )
 }
 
+# A README.md beside the gate (tools/README.md in a package that keeps one) must name every mode and every option
+# that --help lists, so it can't quietly go stale. Without a README there is nothing to check.
+readme_in_step <- function(gate) {
+  checkmate::assert_file_exists(gate)
+  readme <- file.path(dirname(gate), "README.md")
+  if (!file.exists(readme)) {
+    return(list(status = "SKIP", detail = "no README.md beside the gate"))
+  }
+  g <- new.env()
+  sys.source(gate, envir = g)
+  text <- paste(readLines(readme, warn = FALSE), collapse = "\n")
+  # Options are the lines of --help that start with two spaces and "--".
+  option_lines <- grep("^  --", g$usage_lines, value = TRUE)
+  options <- unique(sub("^  (--[a-z-]+).*$", "\\1", option_lines))
+  missing <- c(
+    g$modes[!vapply(paste0("`", g$modes, "`"), grepl, logical(1), x = text, fixed = TRUE)],
+    options[!vapply(options, grepl, logical(1), x = text, fixed = TRUE)]
+  )
+  if (length(missing) > 0) {
+    return(list(status = "FAIL", detail = paste0(readme, " doesn't mention ", toString(missing), " (see --help)")))
+  }
+  list(
+    status = "PASS",
+    detail = sprintf("README.md names all %d modes and %d options", length(g$modes), length(options))
+  )
+}
+
 run_unit <- function(gate) {
   checkmate::assert_file_exists(gate)
   started <- Sys.time()
@@ -1197,6 +1242,9 @@ main <- function(args) {
     copies <- copies_in_step(gate)
     statuses["copies in step"] <- copies$status
     cli::cat_line(sprintf("%-4s copies in step: %s", copies$status, copies$detail))
+    readme <- readme_in_step(gate)
+    statuses["README in step"] <- readme$status
+    cli::cat_line(sprintf("%-4s README in step: %s", readme$status, readme$detail))
   }
   fixture <- if (any(vapply(probes, function(p) p$package == "fixture", logical(1)))) fixture_package()
   for (probe in probes) {

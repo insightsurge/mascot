@@ -99,9 +99,7 @@ describe("mascot_studio()", {
     expect_identical(examples$get_js("document.getElementById('studio_canvas').dataset.mode"), "examples")
     examples$click(selector = "#studio_menu > summary")
     examples$click(selector = 'a[href="?view=studio"]')
-    examples$wait_for_js(
-      "!!document.getElementById('live_frame')?.contentDocument?.getElementById('helper') && !!document.getElementById('studio_inspector')"
-    )
+    wait_studio_js(examples, "!!document.getElementById('studio_inspector')")
     expect_identical(examples$get_js("new URLSearchParams(location.search).get('view')"), "studio")
     expect_identical(examples$get_js("document.querySelectorAll('#example_name').length"), 1L)
     expect_identical(examples$get_js("document.getElementById('studio_canvas').dataset.mode"), "mascot")

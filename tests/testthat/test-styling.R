@@ -146,8 +146,6 @@ describe("public CSS styling hooks", {
 
   it("shows the styling help and honours panel colours in the studio in both modes", {
     local_shiny_browser()
-    studio_frame <- "document.getElementById('live_frame').contentWindow"
-    studio_live <- paste0(studio_frame, ".document.getElementById('helper')")
     skip_if_not_installed("bslib")
     app <- app_driver(
       function() {
@@ -159,7 +157,7 @@ describe("public CSS styling hooks", {
       height = 900
     )
     withr::defer(app$stop())
-    app$wait_for_js(sprintf("!!%s?.mascot?.host?.state(%s)", studio_frame, studio_live))
+    wait_studio_js(app, sprintf("!!%s?.mascot?.host?.state(%s)", studio_frame_wait, studio_live_wait))
     app$click(selector = "#all_functions")
     app$click(selector = '.pg-index-link[data-value="mascot_theme"]')
     app$wait_for_js("!document.querySelector('#studio_inspector [data-function=mascot_theme]').hidden")
@@ -178,7 +176,7 @@ describe("public CSS styling hooks", {
     ))
     for (mode in c("light", "dark")) {
       app$run_js(sprintf("document.documentElement.dataset.bsTheme='%s'", mode))
-      app$wait_for_js(sprintf("%s.mascot.host.state(%s).mode === '%s'", studio_frame, studio_live, mode))
+      wait_studio_js(app, sprintf("%s.mascot.host.state(%s).mode === '%s'", studio_frame_wait, studio_live_wait, mode))
       expect_identical(
         app$get_js(
           "(() => {const f=document.getElementById('live_frame').contentWindow;const s=f.getComputedStyle(f.document.querySelector('#helper .mascot-bubble'));return [s.backgroundColor,s.color,s.borderTopColor];})()"

@@ -353,7 +353,11 @@ describe("the Your colours tab", {
         dark = list(body = "#c2185b", rim = "#ffcc00"),
         mode = "dark"
       )
-      expect_identical(eval(parse(text = output$theme_code))$attribs$id, "helper")
+      # The dark body colour is low contrast on the dark page, so building the mascot warns, and the colour is kept.
+      # Contrast warnings are switched on here, so the result doesn't depend on what an earlier test left set.
+      withr::local_options(mascot.contrast_warnings = TRUE)
+      expect_warning(generated <- eval(parse(text = output$theme_code)), class = "mascot_contrast")
+      expect_identical(generated$attribs$id, "helper")
       expect_match(output$theme_code, 'palette = "coral_navy"', fixed = TRUE)
       expect_match(output$theme_code, 'mode = "dark"', fixed = TRUE)
       code_theme <- eval(str2lang(output$theme_code)[["theme"]])

@@ -17,6 +17,7 @@ studio_driver <- function(width = 1280, height = 720, env = parent.frame()) {
   app_driver(app, width = width, height = height, env = env)
 }
 
+# Strict lookups for clicks and asserted reads; waits use `wait_studio_js()` (helper-chrome.R).
 studio_frame <- "document.getElementById('live_frame').contentWindow"
 studio_live <- paste0(studio_frame, ".document.getElementById('helper')")
 
@@ -25,15 +26,7 @@ wait_studio_mood <- function(app, mood) {
   checkmate::assert_r6(app, "AppDriver")
   checkmate::assert_string(mood)
   # Generous: the coverage run instruments the package and the live host takes longer to start.
-  # The frame itself can be missing for a moment while the page renders it again: that means "not yet", so every step
-  # of the lookup is optional and the wait keeps polling instead of failing on a null frame (#446).
-  app$wait_for_js(
-    sprintf(
-      "document.getElementById('live_frame')?.contentWindow?.document.getElementById('helper')?.dataset.shownMood === '%s'",
-      mood
-    ),
-    timeout = 90000
-  )
+  wait_studio_js(app, sprintf("live.dataset.shownMood === '%s'", mood), timeout = 90000)
 }
 
 describe("the redesigned studio", {
@@ -253,7 +246,10 @@ describe("studio overlays and live controls", {
     app$click(selector = '[data-call-arg=status]')
     expect_true(app$get_js("document.getElementById('chip_editor_body').contains(window.studioStatus)"))
     app$set_inputs(status_text = "Checking a draft")
-    app$wait_for_js(sprintf("%s.querySelector('.mascot-status').textContent === 'Checking a draft'", studio_live))
+    wait_studio_js(
+      app,
+      sprintf("%s.querySelector('.mascot-status').textContent === 'Checking a draft'", studio_live_wait)
+    )
     app$click(selector = "#chip_inspector")
     expect_true(app$get_js(
       "document.getElementById('studio_inspector').contains(window.studioStatus) && document.querySelectorAll('#status_text').length === 1"
@@ -289,7 +285,7 @@ describe("studio overlays and live controls", {
       bubble_closable = FALSE
     )
     app$click(selector = "#bubble_show")
-    app$wait_for_js(sprintf("%s.querySelector('.mascot-bubble strong')?.textContent === 'Saved'", studio_live))
+    wait_studio_js(app, sprintf("%s.querySelector('.mascot-bubble strong')?.textContent === 'Saved'", studio_live_wait))
     expect_match(app$get_value(output = "code_ui"), "duration = Inf", fixed = TRUE)
     expect_match(app$get_value(output = "code_ui"), "closable = FALSE", fixed = TRUE)
     app$click(selector = "#bubble_clear")
@@ -297,13 +293,16 @@ describe("studio overlays and live controls", {
     app$set_inputs(idle = "false", mood_change = "false", gestures = "false", messages = "bubble")
     app$wait_for_js(sprintf("%s.motion.idle === false && %s.motion.gestures === false", state, state))
     app$set_inputs(position = "bottom-right", drag = "snap", small_mode = "number", small_px = 72)
-    app$wait_for_js(sprintf("%s.dataset.floating === 'true'", studio_live))
+    wait_studio_js(app, sprintf("%s.dataset.floating === 'true'", studio_live_wait))
     app$click(selector = "#phone_width")
-    app$wait_for_js(sprintf(
-      "%s.innerWidth <= 390 && %s.querySelector('.mascot-canvas').getBoundingClientRect().width === 72",
-      studio_frame,
-      studio_live
-    ))
+    wait_studio_js(
+      app,
+      sprintf(
+        "%s.innerWidth <= 390 && %s.querySelector('.mascot-canvas').getBoundingClientRect().width === 72",
+        studio_frame_wait,
+        studio_live_wait
+      )
+    )
     # This is the engine's viewport, rather than a CSS scale of its parent canvas.
     expect_true(app$get_js(sprintf("%s.matchMedia('(max-width: 576px)').matches", studio_frame)))
     app$run_js(sprintf("%s.querySelector('.mascot-minimise').click()", studio_live))
@@ -325,7 +324,7 @@ describe("studio overlays and live controls", {
     app$set_inputs(action_on = FALSE, menu_on = TRUE, menu_items = "finish = Finish review")
     app$wait_for_js(sprintf("%s.click.type === 'menu'", state))
     app$run_js(sprintf("%s.querySelector('.mascot-button').click()", studio_live))
-    app$wait_for_js(sprintf("%s.document.querySelector('[role=menuitem]') !== null", studio_frame))
+    wait_studio_js(app, sprintf("%s.document.querySelector('[role=menuitem]') !== null", studio_frame_wait))
     app$run_js(sprintf("%s.document.querySelector('[role=menuitem]').click()", studio_frame))
     app$wait_for_js(
       "document.getElementById('host_event').textContent.includes('finish') || document.getElementById('code_last').textContent.includes('You chose')"
@@ -472,7 +471,10 @@ describe("E1 studio behaviour in the redesigned UI", {
     app$wait_for_js("!document.querySelector('[data-function=mascot_status]').hidden")
     expect_true(app$get_js("document.getElementById('status_text') === window.originalStatus"))
     app$set_inputs(status_text = "Checking 120 rows")
-    app$wait_for_js(sprintf("%s.querySelector('.mascot-status').textContent === 'Checking 120 rows'", studio_live))
+    wait_studio_js(
+      app,
+      sprintf("%s.querySelector('.mascot-status').textContent === 'Checking 120 rows'", studio_live_wait)
+    )
     app$wait_for_js("document.getElementById('log').textContent.includes('Checking 120 rows')")
     app$set_inputs(mood = "happy")
     wait_studio_mood(app, "happy")
@@ -521,7 +523,7 @@ describe("E1 studio behaviour in the redesigned UI", {
     app$wait_for_js("$('#bubble_duration').data('ionRangeSlider').options.disable === false")
     app$set_inputs(bubble_example = "Small table")
     app$click(selector = "#bubble_show")
-    app$wait_for_js(sprintf("!!%s.querySelector('.mascot-bubble table')", studio_live))
+    wait_studio_js(app, sprintf("!!%s.querySelector('.mascot-bubble table')", studio_live_wait))
     app$set_inputs(
       bubble_text = '<p class="notice">Saved</p>',
       bubble_html = TRUE,
@@ -529,7 +531,10 @@ describe("E1 studio behaviour in the redesigned UI", {
       bubble_closable = FALSE
     )
     app$click(selector = "#bubble_show")
-    app$wait_for_js(sprintf("%s.querySelector('.mascot-bubble .notice')?.textContent === 'Saved'", studio_live))
+    wait_studio_js(
+      app,
+      sprintf("%s.querySelector('.mascot-bubble .notice')?.textContent === 'Saved'", studio_live_wait)
+    )
     code <- app$get_value(output = "code_ui")
     expect_type(parse(text = code), "expression")
     expect_match(code, 'r"(', fixed = TRUE)
@@ -537,7 +542,7 @@ describe("E1 studio behaviour in the redesigned UI", {
     expect_match(code, "duration = Inf", fixed = TRUE)
     expect_match(code, "closable = FALSE", fixed = TRUE)
     app$click(selector = "#bubble_clear")
-    app$wait_for_js(sprintf("!%s.mascot.host.state(%s).bubble", studio_frame, studio_live))
+    wait_studio_js(app, sprintf("!%s.mascot.host.state(%s).bubble", studio_frame_wait, studio_live_wait))
   })
 
   it("reports snap and free drops, minimise and restore, and keeps percentage and phone sizes", {
@@ -592,11 +597,14 @@ describe("E1 studio behaviour in the redesigned UI", {
     app$wait_for_js(sprintf("%s.minimised === false", state))
     app$set_inputs(small_mode = "number", small_px = 72)
     app$click(selector = "#phone_width")
-    app$wait_for_js(sprintf(
-      "%s.innerWidth <= 390 && %s.querySelector('.mascot-canvas').getBoundingClientRect().width === 72",
-      studio_frame,
-      studio_live
-    ))
+    wait_studio_js(
+      app,
+      sprintf(
+        "%s.innerWidth <= 390 && %s.querySelector('.mascot-canvas').getBoundingClientRect().width === 72",
+        studio_frame_wait,
+        studio_live_wait
+      )
+    )
   })
 
   it("changes light and dark roles, CSS variables, contrast results, resets and the family listing", {
@@ -690,10 +698,13 @@ describe("E1 studio behaviour in the redesigned UI", {
     app$click(selector = "#task_run")
     wait_studio_mood(app, "thinking")
     wait_studio_mood(app, "worried")
-    app$wait_for_js(sprintf(
-      "%s.querySelector('.mascot-bubble')?.textContent.includes('Three rows have no batch date.')",
-      studio_live
-    ))
+    wait_studio_js(
+      app,
+      sprintf(
+        "%s.querySelector('.mascot-bubble')?.textContent.includes('Three rows have no batch date.')",
+        studio_live_wait
+      )
+    )
     app$wait_for_js(
       "document.getElementById('status_text').value === 'Check failed' && !document.getElementById('task_run').disabled"
     )
@@ -701,7 +712,7 @@ describe("E1 studio behaviour in the redesigned UI", {
     studio_select_function(app, "mascot_popup_menu")
     app$set_inputs(menu_items = "no equals sign")
     app$set_inputs(menu_on = FALSE)
-    app$wait_for_js(sprintf("%s.mascot.host.state(%s).click.type === 'none'", studio_frame, studio_live))
+    wait_studio_js(app, sprintf("%s.mascot.host.state(%s).click.type === 'none'", studio_frame_wait, studio_live_wait))
     expect_false(grepl("observeEvent(input$helper_menu", app$get_value(output = "code_app"), fixed = TRUE))
     app$click(selector = "#open_code")
     app$click(selector = "#log_clear")
@@ -916,21 +927,30 @@ describe("E1 actions, menus and generated preview in the redesigned UI", {
     expect_identical(app$get_js(paste0("Object.keys(", state, ".click.items).join()")), "finish,about")
     expect_match(app$get_value(output = "code_ui"), 'direction = "right"', fixed = TRUE)
     app$run_js(sprintf("%s.querySelector('.mascot-button').click()", studio_live))
-    app$wait_for_js(sprintf(
-      "!!%s.document.querySelector('.mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=finish]')",
-      studio_frame
-    ))
+    wait_studio_js(
+      app,
+      sprintf(
+        "!!%s.document.querySelector('.mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=finish]')",
+        studio_frame_wait
+      )
+    )
     app$run_js(sprintf(
       "%s.document.querySelector('.mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=finish]').click()",
       studio_frame
     ))
-    app$wait_for_js(sprintf("%s.querySelector('.mascot-bubble')?.textContent.includes('Finish review')", studio_live))
+    wait_studio_js(
+      app,
+      sprintf("%s.querySelector('.mascot-bubble')?.textContent.includes('Finish review')", studio_live_wait)
+    )
     expect_false(grepl("You chose", app$get_value(output = "code_ui"), fixed = TRUE))
     app$run_js(sprintf("%s.querySelector('.mascot-button').click()", studio_live))
-    app$wait_for_js(sprintf(
-      "!!%s.document.querySelector('.mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=about]')",
-      studio_frame
-    ))
+    wait_studio_js(
+      app,
+      sprintf(
+        "!!%s.document.querySelector('.mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=about]')",
+        studio_frame_wait
+      )
+    )
     app$run_js(sprintf(
       "%s.document.querySelector('.mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=about]').click()",
       studio_frame
@@ -1280,32 +1300,38 @@ describe("studio review follow-ups", {
         app$get_js(paste0("[...", overlay, ".querySelectorAll('g[data-anchor]')].map(p=>p.dataset.anchor)")),
         expected
       )
-      app$wait_for_js(paste0(
-        "(() => {const w=",
-        studio_frame,
-        ";const el=",
-        studio_live,
-        ";",
-        "const compiled=w.mascot.parts.compile(w.anchorFixture); const channels=w.mascot.parts.resolveChannels(compiled,'idle');const state=w.mascot.parts.frame(compiled, channels, 'full', {x:150,base_y:270});",
-        "const layer=",
-        overlay,
-        ";const rect=el.querySelector('canvas').getBoundingClientRect();",
-        "const groups=[...layer.querySelectorAll('g[data-anchor]')];",
-        "return groups.every(p=>{const a=state.anchors[p.dataset.anchor]; const d=p.querySelector('circle').getBoundingClientRect(); return Math.abs(d.left+d.width/2-(rect.left+a.matrix[4]/300*rect.width))<1 && Math.abs(d.top+d.height/2-(rect.top+a.matrix[5]/300*rect.height))<1;});})()"
-      ))
+      wait_studio_js(
+        app,
+        paste0(
+          "(() => {const w=",
+          studio_frame_wait,
+          ";const el=",
+          studio_live_wait,
+          ";",
+          "const compiled=w.mascot.parts.compile(w.anchorFixture); const channels=w.mascot.parts.resolveChannels(compiled,'idle');const state=w.mascot.parts.frame(compiled, channels, 'full', {x:150,base_y:270});",
+          "const layer=",
+          overlay,
+          ";const rect=el.querySelector('canvas').getBoundingClientRect();",
+          "const groups=[...layer.querySelectorAll('g[data-anchor]')];",
+          "return groups.every(p=>{const a=state.anchors[p.dataset.anchor]; const d=p.querySelector('circle').getBoundingClientRect(); return Math.abs(d.left+d.width/2-(rect.left+a.matrix[4]/300*rect.width))<1 && Math.abs(d.top+d.height/2-(rect.top+a.matrix[5]/300*rect.height))<1;});})()"
+        )
+      )
       # Real rendered boxes: no labels overlap each other, the canvas or viewport.
-      app$wait_for_js(paste0(
-        "(() => {const w=",
-        studio_frame,
-        ";const rect=",
-        studio_live,
-        ".querySelector('canvas').getBoundingClientRect();",
-        "const labels=[...",
-        overlay,
-        ".querySelectorAll('.pg-anchor-label')].filter(p=>p.getClientRects().length).map(p=>p.getBoundingClientRect());",
-        "const overlaps=(a,b)=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;",
-        "return labels.length>0 && labels.every((r,i)=>r.left>=0 && r.right<=w.innerWidth && r.top>=0 && r.bottom<=w.innerHeight && !overlaps(r,rect) && labels.slice(i+1).every(b=>!overlaps(r,b)));})()"
-      ))
+      wait_studio_js(
+        app,
+        paste0(
+          "(() => {const w=",
+          studio_frame_wait,
+          ";const rect=",
+          studio_live_wait,
+          ".querySelector('canvas').getBoundingClientRect();",
+          "const labels=[...",
+          overlay,
+          ".querySelectorAll('.pg-anchor-label')].filter(p=>p.getClientRects().length).map(p=>p.getBoundingClientRect());",
+          "const overlaps=(a,b)=>a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top;",
+          "return labels.length>0 && labels.every((r,i)=>r.left>=0 && r.right<=w.innerWidth && r.top>=0 && r.bottom<=w.innerHeight && !overlaps(r,rect) && labels.slice(i+1).every(b=>!overlaps(r,b)));})()"
+        )
+      )
       expect_true(app$get_js(paste0(
         "[...",
         overlay,
@@ -1316,11 +1342,11 @@ describe("studio review follow-ups", {
     app$click(selector = '#phone_width')
     verify("tessa")
     app$set_inputs(character = "sela")
-    app$wait_for_js(paste0(studio_live, ".dataset.character === 'sela'"))
+    wait_studio_js(app, paste0(studio_live_wait, ".dataset.character === 'sela'"))
     app$wait_for_js(paste0(overlay, ".querySelectorAll('g[data-anchor]').length === ", nrow(mascot_anchors("sela"))))
     verify("sela")
     app$set_inputs(character = "neer")
-    app$wait_for_js(paste0(studio_live, ".dataset.character === 'neer'"))
+    wait_studio_js(app, paste0(studio_live_wait, ".dataset.character === 'neer'"))
     app$wait_for_js(paste0(overlay, ".querySelectorAll('g[data-anchor]').length === ", nrow(mascot_anchors("neer"))))
     verify("neer")
     app$click(selector = '#show_anchors')
@@ -1437,7 +1463,7 @@ describe("studio sentence controls and overview", {
     app$wait_for_js("window.gestureCalls.length === 3 && window.gestureCalls[2] === 'wave'")
     for (character in c("sela", "neer", "tessa")) {
       app$set_inputs(character = character)
-      app$wait_for_js(paste0(studio_live, ".dataset.character === '", character, "'"))
+      wait_studio_js(app, paste0(studio_live_wait, ".dataset.character === '", character, "'"))
       expected <- jsonlite::toJSON(sort(mascot_gestures(character)$name))
       app$wait_for_js(paste0(
         "JSON.stringify([...document.getElementById('gesture').options].slice(1).map(o=>o.value).sort()) === JSON.stringify(",
@@ -1601,14 +1627,17 @@ describe("studio inline help and movable anchors", {
       "+testPin.querySelector('line').getAttribute('x2') === +testBox.getAttribute('x') + +testBox.getAttribute('width')/2 && +testPin.querySelector('line').getAttribute('y2') === +testBox.getAttribute('y')+8"
     ))
     app$set_inputs(character = "sela")
-    app$wait_for_js(paste0(studio_live, ".dataset.character === 'sela'"))
+    wait_studio_js(app, paste0(studio_live_wait, ".dataset.character === 'sela'"))
     app$set_inputs(character = "tessa")
-    app$wait_for_js(paste0(studio_live, ".dataset.character === 'tessa'"))
-    app$wait_for_js(paste0(
-      "(() => {const g=",
-      studio_frame,
-      ".document.querySelector('[data-anchor=\"'+testMoved.name+'\"]');const r=g?.querySelector('rect');return r && +r.getAttribute('x')===testMoved.x && +r.getAttribute('y')===testMoved.y;})()"
-    ))
+    wait_studio_js(app, paste0(studio_live_wait, ".dataset.character === 'tessa'"))
+    wait_studio_js(
+      app,
+      paste0(
+        "(() => {const g=",
+        studio_frame_wait,
+        ".document.querySelector('[data-anchor=\"'+testMoved.name+'\"]');const r=g?.querySelector('rect');return r && +r.getAttribute('x')===testMoved.x && +r.getAttribute('y')===testMoved.y;})()"
+      )
+    )
     app$click(selector = "#reset_anchors")
     app$wait_for_js("document.getElementById('reset_anchors').hidden")
     app$run_js(paste0(
@@ -1639,11 +1668,14 @@ describe("studio inline help and movable anchors", {
     app$wait_for_js(
       "!document.getElementById('show_anchors').disabled && document.getElementById('no_anchors').hidden"
     )
-    app$wait_for_js(paste0(
-      studio_frame,
-      ".document.querySelectorAll('.pg-anchor-overlay g[data-anchor]').length === ",
-      nrow(mascot_anchors("neer"))
-    ))
+    wait_studio_js(
+      app,
+      paste0(
+        studio_frame_wait,
+        ".document.querySelectorAll('.pg-anchor-overlay g[data-anchor]').length === ",
+        nrow(mascot_anchors("neer"))
+      )
+    )
     expect_setequal(
       app$get_js(paste0(
         studio_frame,
@@ -2210,7 +2242,10 @@ describe("studio palette follow-up (#353)", {
     wait_studio_mood(app, "idle")
     app$set_inputs(palette = "sea_green", mood = "happy")
     wait_studio_mood(app, "happy")
-    app$wait_for_js(paste0(studio_frame, ".mascot.host.state(", studio_live, ").theme.palette === 'sea_green'"))
+    wait_studio_js(
+      app,
+      paste0(studio_frame_wait, ".mascot.host.state(", studio_live_wait, ").theme.palette === 'sea_green'")
+    )
     studio_select_function(app, "update_mascot")
     app$set_inputs(mistake = "An unknown palette in an update")
     app$wait_for_js("document.getElementById('mistake_code').textContent.includes('nothing is dropped')")

@@ -2087,9 +2087,7 @@ describe("studio narrow layout (#341)", {
       checkmate::assert_number(width, lower = 1)
       app <- example_driver("studio", width = width)
       on.exit(app$stop())
-      app$wait_for_js(
-        "document.getElementById('live_frame')?.contentDocument.getElementById('helper')?.dataset.shownMood === 'idle'"
-      )
+      wait_studio_js(app, "live.dataset.shownMood === 'idle'")
       # The bug collapsed the canvas to zero height while its width stayed normal.
       sizes <- app$get_js(
         "(() => {
@@ -3297,17 +3295,21 @@ describe("studio palette sync (#353)", {
       app$run_js(sprintf("document.querySelector('[data-event=menu_long_status][data-value=\"%s\"]').click()", corner))
       app$wait_for_js(sprintf("document.querySelector('input[name=position]:checked')?.value === '%s'", corner))
       app$wait_for_js("document.getElementById('status_text').value.startsWith('Review in progress')")
-      app$wait_for_js(sprintf(
-        "document.getElementById('live_frame').contentDocument.getElementById('helper')?.dataset.position === '%s'",
-        corner
-      ))
+      wait_studio_js(
+        app,
+        sprintf(
+          "live.dataset.position === '%s'",
+          corner
+        )
+      )
       app$run_js(
         "document.getElementById('live_frame').contentDocument.querySelector('#helper button[aria-haspopup=menu]').click()"
       )
       # Real rectangles: the open menu is visible and stays inside the frame, wherever the corner puts it.
-      app$wait_for_js(
+      wait_studio_js(
+        app,
         paste0(
-          "(() => { const d = document.getElementById('live_frame').contentDocument; ",
+          "(() => { const d = frame.document; ",
           "const menu = d.getElementById('helper_popup_menu'); if (!menu || menu.hidden) return false; ",
           "const r = menu.getBoundingClientRect(); const w = d.documentElement; ",
           "return r.top >= 0 && r.left >= 0 && r.bottom <= w.clientHeight && r.right <= w.clientWidth; })()"
@@ -3319,15 +3321,16 @@ describe("studio palette sync (#353)", {
     }
     app$set_inputs(character = "neer")
     app$run_js("document.getElementById('show_anchors').click()")
-    app$wait_for_js(
-      "document.getElementById('live_frame').contentDocument.querySelectorAll('.pg-anchor-label').length === 14"
-    )
+    wait_studio_js(app, "frame.document.querySelectorAll('.pg-anchor-label').length === 14")
     app$set_inputs(character = "tessa")
     for (anchor in c("fringe", "lock", "stud_l", "stud_r")) {
-      app$wait_for_js(sprintf(
-        "!!document.getElementById('live_frame').contentDocument.querySelector('[data-anchor=\"%s\"]')",
-        anchor
-      ))
+      wait_studio_js(
+        app,
+        sprintf(
+          "!!frame.document.querySelector('[data-anchor=\"%s\"]')",
+          anchor
+        )
+      )
     }
   })
 })

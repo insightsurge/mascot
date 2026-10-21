@@ -1,11 +1,12 @@
 # Stress results: issue #172
 
-**Run:** 2026-10-21, branch `test/172-stress-apps`, `Rscript tools/stress/run-stress.R` on macOS arm64.
+**Run:** 2026-10-21, the code now on `main` (after #433, #434 and #435), `Rscript tools/stress/run-stress.R` on
+macOS arm64.
 R 4.6.1, shiny 1.14.0, shinytest2 0.5.1, chromote 0.5.1, bslib 0.12.0, Chrome 155.0.8059.85 (headless).
 
-**Result: 50 PASS, 2 KNOWN, 0 FAIL, 0 SKIP** (11 static syntax checks and 39 browser checks pass). The two KNOWN
-checks are package defects the runner found, tracked in #426 and #427. Small probe apps found two more problems
-outside the runner: see [Findings](#findings).
+**Result: 57 PASS, 0 KNOWN, 0 FAIL, 0 SKIP** (12 static syntax checks and 45 browser checks). The runner and small
+probe apps found four package problems; three are fixed (#424, #426, #427) and one, the build time of `mascot()`, is
+planned for a later release (#425): see [Findings](#findings).
 
 ## What held (browser checks)
 
@@ -15,11 +16,12 @@ outside the runner: see [Findings](#findings).
 | 02 `renderUI()` / `insertUI()` replacement, motion on | 20 re-renders with updates between them, update while absent then insert, a duplicate id, a stale envelope with a higher revision; a swap to Sela with a bubble and a nod, then 3 re-renders; the bubble dismissed, then a re-render; a floating mascot re-rendered 5 times and removed | Latest state kept after every re-render; the duplicate never took ownership; the stale update was ignored; character and bubble survived re-renders and no re-render offered the nod again; the dismissed bubble stayed dismissed; exactly one floating mascot at a time, none left after removal; one duplicate warning (at most 2 allowed) |
 | 03 async (`ExtendedTask`, three observers) | Three observers updating one id before, during and after a delayed task, plus a re-render | Final state was the intended one; no warning storm |
 | 04 heavy JavaScript and overlays | 200 DOM mutations, a custom input binding, notifications, a modal and progress, a high z-index overlay | The mascot kept drawing (canvas has pixels), kept its status, its menu stayed reachable above the overlay, updates applied while a modal was open |
-| 05 slow server, bursts, reconnect, motion on | A 2.5 second handler with queued clicks; 200 updates in one flush, every 50th also swapping the character, opening a bubble and nodding; rapid inputs; a closed websocket and a reconnect | Only the last state remained (Neer, "Burst 200", "Bubble 200") and the page stayed responsive; the worried "connection lost" face appeared; after reconnecting into a new session the page kept its last state. Updates after the reconnect: KNOWN, #426 |
-| 06 updates from outside a reactive event | `update_mascot()` from a promise chain and from a `later()` callback, with nothing else happening | The promise update arrived. The `later()` update waits for the next input: KNOWN, #427 |
+| 05 slow server, bursts, reconnect, motion on | A 2.5 second handler with queued clicks; 200 updates in one flush, every 50th also swapping the character, opening a bubble and nodding; rapid inputs; a closed websocket and a reconnect | Only the last state remained (Neer, "Burst 200", "Bubble 200") and the page stayed responsive; the worried "connection lost" face appeared; after reconnecting into a new session the page kept its last state and the next update reached the mascot (fixed in #435; KNOWN before) |
+| 06 updates from outside a reactive event | `update_mascot()` from a promise chain and from a `later()` callback, with nothing else happening | Both arrived without another input (the `later()` update waited for the next input until #433; KNOWN before) |
 | 07 modules added and removed at run time | 40 cards inserted ten at a time, each a module with a fresh id and an update sent in the same flush as its UI; the 25 oldest removed; one update for every card | Each card showed its own update; removed cards stayed gone; the live ones took the shared update and showed the new face when scrolled into view. The package kept 40 per-id records for 40 ids, 15 of them live (kept until the session ends, by design) |
 | 08 dark-mode switching | `bslib::toggle_dark_mode()` from the server, dark and back, then an update while dark | The mascot with light and dark colours switched mode and body colour both ways; the fixed light mascot stayed light; the update applied in dark mode |
 | 09 bookmark and restore | URL bookmark of a note, then a reload from the bookmark URL with `onRestore()` updating the mascot | The URL held the note and no mascot input; the restored page showed "Restored stress" |
+| 10 a cached `renderUI()` | A mascot inside a `renderUI()` cached with `bindCache()`, an update, then a page reload so a second session gets the cached HTML, and another update | The second session showed the cached mascot with its status and took the update (fixed in #434; the scenario failed 3 checks before the fix) |
 
 ## How the runner got here (for the next person)
 The first browser run (outside the sandbox) gave 13 PASS and 18 FAIL, and the first fixes gave 24 PASS and 6 FAIL. All
@@ -38,30 +40,23 @@ harness again:
 - Built-in characters have one colour set, so dark mode changes nothing visible without a `dark` colour. Scenario 08
   now gives one (`mascot_theme()` takes colours as a list).
 
-The other two failures were real package defects, now #426 and #427.
+The other two failures were real package defects, #426 and #427, since fixed.
 Lesson: when a check times out, print the real host state (the runner does) and read it before suspecting the package;
 then prove a suspected defect with a small app outside the runner.
 
 ## Findings
-Found by the runner (shown as KNOWN until fixed):
+Package problems found, and their fixes:
 
-| Check | What happens | Issue |
-| --- | --- | --- |
-| 05: updates after a reconnect | After Shiny reconnects into a new server session (as `allowReconnect(TRUE)` does on Shiny Server and Connect), the mascot keeps its last state but ignores every later `update_mascot()` until a reload | #426 (bug) |
-| 06: an update from `later()` | `update_mascot()` from a `later()` callback reaches the page only after the next input; Shiny's `updateTextInput()` arrives on its own | #427 (bug) |
+| Problem | Found by | What happened | Status |
+| --- | --- | --- | --- |
+| A mascot inside a `renderUI()` cached with `bindCache()` | probe app, then scenario 10 | The second visitor's mascot was stuck: worried, "Mascot UI baseline could not be verified", ignoring `update_mascot()` | #424, fixed in #434 |
+| Updates after a reconnect | scenario 05 | After Shiny reconnected into a new server session (as `allowReconnect(TRUE)` does on Shiny Server and Connect), the mascot kept its last state but ignored every later `update_mascot()` until a reload | #426, fixed in #435 |
+| An update from `later()` | scenario 06 | `update_mascot()` from a `later()` callback reached the page only after the next input; Shiny's `updateTextInput()` arrives on its own | #427, fixed in #433 |
+| Build time of `mascot()` | probe app | About 0.1 s per call (20.5 s for 200; no faster the second time). Shiny and bslib components take 0.3 to 6 ms | #425, open (performance, milestone Later) |
+| Page content removed by JavaScript without `Shiny.unbindAll()`, then put back with `Shiny.bindAll()` | probe app | The returning mascot never starts ("duplicate live mascot id"). With `Shiny.unbindAll()` first, it works | Not supported, no issue: Shiny asks apps to unbind inputs before removing them |
 
-Found afterwards by small probe apps, run by hand in headless Chrome and not part of the runner:
-
-| Probe | What happened | Follow-up |
-| --- | --- | --- |
-| A mascot inside `renderUI()` cached with `bindCache()`, then a page reload (a second session gets the cached HTML) | The second visitor's mascot is stuck: worried, "Mascot UI baseline could not be verified", and it ignores `update_mascot()` | #424 (bug) |
-| 200 `mascot()` calls with different ids | About 0.1 s per call (20.5 s for 200; no faster the second time). Shiny and bslib components take 0.3 to 6 ms | #425 (performance) |
-| Page content removed by JavaScript without `Shiny.unbindAll()`, then put back with `Shiny.bindAll()` | The returning mascot never starts ("duplicate live mascot id"). With `Shiny.unbindAll()` first, it works | Not supported, no issue: Shiny asks apps to unbind inputs before removing them |
-
-The scenarios for #424 and #425 will be added with their fixes.
-
-Things the checks do not cover: real network loss on a deployed server, touch devices, cached UI (#424), and pages
-with many mascots (build time measured in #425; drawing hundreds at once not tried).
+Things the checks do not cover: real network loss on a deployed server, touch devices, and pages with many mascots
+(build time measured in #425; drawing hundreds at once not tried).
 
 ## Result lines of the final run
 ```
@@ -76,6 +71,7 @@ with many mascots (build time measured in #425; drawing hundreds at once not tri
 07-dynamic-modules syntax: R files parse (static check only)
 08-dark-mode syntax: R files parse (static check only)
 09-bookmark syntax: R files parse (static check only)
+10-cache syntax: R files parse (static check only)
 01-modules eight modules isolated after rapid tabs: held
 01-modules no unexpected warning or error storm: held
 01-modules/golem eight modules isolated after rapid tabs: held
@@ -102,9 +98,9 @@ with many mascots (build time measured in #425; drawing hundreds at once not tri
 05-slow-reconnect rapid inputs settle and page responds: held
 05-slow-reconnect websocket loss shows worried status: held
 05-slow-reconnect reconnect into a new session keeps the page's last state: held
-KNOWN 05-slow-reconnect updates reach the mascot after reconnect: #426
+05-slow-reconnect updates reach the mascot after reconnect: held
 05-slow-reconnect no unexpected warning or error storm: held; 4 expected warnings, at most 4
-KNOWN 06-later update from later() arrives without another input: #427
+06-later update from later() arrives without another input: held
 06-later update from a promise arrives without another input: held
 06-later no unexpected warning or error storm: held
 07-dynamic-modules thirty added cards each start with their own update: held
@@ -117,4 +113,8 @@ KNOWN 06-later update from later() arrives without another input: #427
 09-bookmark the bookmark URL carries the note but not the mascot: held
 09-bookmark a restored session sets the mascot from onRestore(): held
 09-bookmark no unexpected warning or error storm: held
+10-cache the first session takes an update: held
+10-cache a second session shows the cached mascot with its status: held
+10-cache a second session takes an update: held
+10-cache no unexpected warning or error storm: held
 ```

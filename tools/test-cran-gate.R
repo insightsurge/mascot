@@ -10,7 +10,8 @@
 #                   object from a tiny temporary test folder (seconds)
 #   static          a clean copy of the package must pass; then one planted defect per quick step (settings,
 #                   tools, air, biome, docs, lintr, value, spelling) must make that step FAIL
-#   heavy           the same for check_fast, tests, coverage, check_full and tarball, on a tiny generated package
+#   heavy           the same for check_fast, tests, coverage, new_lines, check_full, nosuggests and tarball, on a tiny
+#                   generated package
 #                   (a few minutes, not the hours the real package's own suite would need)
 #   all   (default) all three; static also checks that this folder's gate and the skill's copy are the same files
 #
@@ -241,6 +242,23 @@ fixture_package <- function() {
   dir
 }
 
+# Makes the copy a git repository whose origin/HEAD is its first commit, so the new_lines step has a base to compare
+# with; the probe's own changes come after, uncommitted.
+git_base <- function(dir) {
+  checkmate::assert_directory_exists(dir)
+  git <- function(...) {
+    out <- system2("git", c("-C", shQuote(dir), ...), stdout = TRUE, stderr = TRUE)
+    if (!is.null(attr(out, "status"))) {
+      cli::cli_abort(c("git failed in the probe copy.", out))
+    }
+  }
+  git("init", "-q")
+  git("add", "-A")
+  git("-c", "user.name=gate", "-c", "user.email=gate@example.com", "commit", "-q", "-m", "base")
+  git("update-ref", "refs/remotes/origin/main", "HEAD")
+  git("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+}
+
 # A fresh copy of a directory (the fixture), so one probe's defect never reaches the next.
 copy_dir <- function(from) {
   checkmate::assert_directory_exists(from)
@@ -442,6 +460,12 @@ printed_run_folder <- function(output) {
   if (length(line) == 0) NA_character_ else sub("^Run folder: ", "", line[[1]])
 }
 
+# Whether a package is installed in R's own library, where the nosuggests step can't hide it (it then skips).
+in_r_library <- function(pkg) {
+  checkmate::assert_string(pkg)
+  length(find.package(pkg, .Library, quiet = TRUE)) > 0
+}
+
 heavy_probes <- function() {
   untested <- c("gate_probe <- function(x) {", rep("  x <- x + 1", 100), "  x", "}")
   needs_not_cran <- c(
@@ -597,6 +621,39 @@ heavy_probes <- function() {
       args = c("--steps", "coverage")
     ),
     probe(
+      "new_lines: an added function no test runs is named by its lines",
+      "heavy",
+      "tests",
+      function(dir) {
+        git_base(dir)
+        # The total limit is off, so only new_lines can fail.
+        plant(dir, "DESCRIPTION", "Config/cran-gate/coverage: 0", append = TRUE)
+        plant(dir, "R/zz-gate-probe.R", c("gate_probe <- function(x) {", "  x * 2", "}"))
+      },
+      expect_fail = "new_lines",
+      expect_pass = c("tests", "coverage"),
+      detail = "R/zz-gate-probe.R:",
+      package = "fixture",
+      skip = if (!nzchar(Sys.which("git"))) "git isn't installed here"
+    ),
+    probe(
+      "new_lines: an added function that a test runs passes",
+      "heavy",
+      "tests",
+      function(dir) {
+        git_base(dir)
+        plant(dir, "R/zz-gate-probe.R", c("gate_probe <- function(x) {", "  x * 2", "}"))
+        plant(
+          dir,
+          "tests/testthat/test-zz-gate-probe.R",
+          c("test_that(\"gate_probe doubles\", {", "  expect_equal(fixturepkg:::gate_probe(2), 4)", "})")
+        )
+      },
+      expect_pass = "new_lines",
+      package = "fixture",
+      skip = if (!nzchar(Sys.which("git"))) "git isn't installed here"
+    ),
+    probe(
       "coverage: untested code",
       "heavy",
       "tests",
@@ -651,7 +708,8 @@ heavy_probes <- function() {
       },
       expect_fail = "nosuggests",
       detail = "failing tests: Failure ('test-zz-gate-probe.R",
-      package = "fixture"
+      package = "fixture",
+      skip = if (in_r_library("covr")) "covr is in R's own library here, which the nosuggests step can't hide"
     )
   )
 }
@@ -918,11 +976,28 @@ unit_checks <- function(gate) {
       "first message line: a long call is shortened to its name, so the message survives the cut",
       identical(
         g$first_message_line(paste0(
-          "Error in `app_initialize(self, private, app_dir = app_dir, load_timeout = load_timeout, timeout = timeout)`: ",
+          "Error in `app_initialize(self, private, app_dir = app_dir, load_timeout = load_timeout, ",
+          "timeout = timeout)`: ",
           "The Shiny app failed to start up within 30 seconds."
         )),
         "Error in `app_initialize()`: The Shiny app failed to start up within 30 seconds."
       )
+    ),
+    unit(
+      "new lines: added lines read from git diff, deleted files ignored, and shown as short ranges",
+      identical(
+        g$added_lines_in_diff(c(
+          "+++ b/R/a.R",
+          "@@ -3,0 +4,2 @@",
+          "+x",
+          "+y",
+          "@@ -10 +12 @@",
+          "+++ /dev/null",
+          "@@ -1,2 +0,0 @@"
+        )),
+        data.frame(file = "R/a.R", line = c(4L, 5L, 12L))
+      ) &&
+        identical(g$line_ranges(c(3, 4, 5, 9, 11, 12)), "3-5, 9, 11-12")
     ),
     unit(
       "timeout label: a failure that reads like a wait running out is marked, others are not",

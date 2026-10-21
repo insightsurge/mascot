@@ -47,6 +47,8 @@ Reasons and sources: `docs/standards.md`.
   skill's copy of the gate differs from this one.
 - How CI's jobs map to the gate: `lint.yaml` is `lint`; `R-CMD-check` is `check_full`; `test-coverage` is `tests`;
   `check-no-suggests` is `nosuggests`. When CI cannot run (Actions minutes used up), run these modes locally instead.
+  The gate's `new_lines` step (every added `R/` line run by a test) has no CI job yet: it needs the branch's base,
+  which a shallow CI checkout lacks, so it SKIPs there and runs locally.
 - PRs that only touch `.claude/` skip the lint and R jobs (`paths-ignore`). A change to the gate (`tools/`) runs
   them, plus `gate-self-test.yaml`, whose clean-copy probe runs the gate on the package.
 

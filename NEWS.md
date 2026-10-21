@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `mascot()` inside a `renderUI()` cached with `shiny::bindCache()` now works for every session, not only the first: the second visitor's mascot shows its status and takes `update_mascot()` calls instead of turning worried with "Mascot UI baseline could not be verified" (#424).
+
 * The website's menu has one "Changelog" entry with two pages, "R package" and "Engine", instead of two separate entries (#422).
 
 * The "Meet your mascots" article introduces Tessa, Sela, Knurl and Neer, with their five moods drawn live, their status lines, their colour palettes and where each character fits, and a 50-second film, with a transcript, in which the four meet at a bridge (#62).

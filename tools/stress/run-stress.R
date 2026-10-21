@@ -33,7 +33,8 @@ main <- function() {
     "06-later",
     "07-dynamic-modules",
     "08-dark-mode",
-    "09-bookmark"
+    "09-bookmark",
+    "10-cache"
   )
   if (length(selection)) {
     cases <- cases[startsWith(cases, selection[[1]])]

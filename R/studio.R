@@ -30,7 +30,7 @@
 #'   "\n}"
 #' )
 #' @export
-#' @examples
+#' @examplesIf utils::packageVersion("bslib") >= "0.6.0"
 #' app <- mascot_studio(fn = "mascot_theme", run = FALSE)
 #' inherits(app, "shiny.appobj")
 mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", run = TRUE) {

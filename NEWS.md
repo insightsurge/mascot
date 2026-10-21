@@ -185,6 +185,8 @@
 
 * Exported examples assign mascot tags instead of printing the embedded character data (#350).
 
+* A `bslib::bs_theme()` used as `theme` needs `bslib` 0.6.0 or later. With an older `bslib`, mascot says so clearly instead of failing with an error about `body-bg-dark`, and the studio and its example ask for the same version. The minimum versions of `bslib` (0.6.0) and `shinytest2` (0.5.0) are now declared in `DESCRIPTION` (#431).
+
 * `mascot_motion_settings()` reports invalid `messages` panel names with class `mascot_error_choice` (#350).
 
 * `update_mascot()` help lists every helper reset and explains that each supplied setting replaces the whole group. Module warnings consistently name the local mascot id (#350).

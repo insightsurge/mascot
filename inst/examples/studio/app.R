@@ -3,8 +3,8 @@
 # explanations, data, code builders, Controls and guide pieces) and serves www/ (styles
 # and the colour picker).
 library(shiny)
-if (!requireNamespace("bslib", quietly = TRUE)) {
-  stop("This example needs bslib. Install it before running the app.")
+if (!requireNamespace("bslib", quietly = TRUE) || utils::packageVersion("bslib") < "0.6.0") {
+  stop("This example needs bslib 0.6.0 or later. Install or update it before running the app.")
 }
 library(bslib)
 library(mascot)

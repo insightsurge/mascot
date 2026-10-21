@@ -141,9 +141,31 @@ describe("mascot_theme()", {
     expect_false(any(grepl("primary.*light mode", messages)))
     expect_warning(as_theme_arg(list(body = "white"), environment()), class = "mascot_contrast")
   })
+  it("needs bslib 0.6.0 or later for a bs_theme(), and says so for an older bslib", {
+    skip_if_not_installed("bslib", "0.6.0")
+    expect_true(theme_has_bslib())
+    local_mocked_bindings(bslib_version = function() numeric_version("0.5.0"))
+    expect_false(theme_has_bslib())
+    expect_match(
+      theme_problem(structure(list(), class = "bs_theme")),
+      "`theme` needs bslib 0.6.0 or later for a bs_theme() object.",
+      fixed = TRUE
+    )
+  })
+  it("accepts bslib 0.6.0 itself as the first supported version", {
+    skip_if_not_installed("bslib")
+    local_mocked_bindings(bslib_version = function() numeric_version("0.6.0"))
+    expect_true(theme_has_bslib())
+    expect_null(theme_problem(structure(list(), class = "bs_theme")))
+  })
+  it("treats bslib 0.10.0 as newer than 0.6.0", {
+    skip_if_not_installed("bslib")
+    local_mocked_bindings(bslib_version = function() numeric_version("0.10.0"))
+    expect_true(theme_has_bslib())
+  })
   it("explains an unavailable optional source and checks internal contracts", {
     local_mocked_bindings(theme_has_bslib = function() FALSE)
-    expect_match(theme_problem(structure(list(), class = "bs_theme")), "needs the bslib package")
+    expect_match(theme_problem(structure(list(), class = "bs_theme")), "needs bslib 0.6.0 or later", fixed = TRUE)
     expect_error(as_theme_arg(list(), NULL), "'call'")
     expect_error(as_theme_arg(list(), environment(), "missing"), "must be one of", class = "mascot_error_choice")
     expect_error(theme_problem(NULL, NA_character_), "roles")

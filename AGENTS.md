@@ -46,7 +46,8 @@ starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Ex
 
 ## Quality gate
 Run the gate, `Rscript tools/cran-gate.R [fast|tests|full|lint|nosuggests]`, instead of calling `devtools::check()`,
-lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line per step (`--help` lists the options). The script is generic (any R
+lintr or Air yourself: it sets `NOT_CRAN` correctly per mode and prints one line per step (`--help` lists the options;
+`tools/README.md` explains which mode and option to use when, in plain words). The script is generic (any R
 package can use it as it is); mascot's choices are in `DESCRIPTION`
 (`Config/cran-gate/coverage: 70`, `extra-dirs`) and in `air.toml`, `.lintr` and `biome.json`.
 - `fast` (default) before every commit; `tests` (the suite once under covr: tests and coverage) before a PR that

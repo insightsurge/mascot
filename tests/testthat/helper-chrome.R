@@ -13,8 +13,12 @@ test_browser_env <- new.env(parent = emptyenv())
 browser_timeout <- 30000
 
 # Start a Shiny app in Chrome with the shared timeout for loading and for every wait, click and value it reads.
-app_driver <- function(...) {
-  shinytest2::AppDriver$new(..., load_timeout = browser_timeout, timeout = browser_timeout)
+# The app is stopped when the calling test ends, pass or fail (#432): a test that fails before its own `app$stop()`
+# would otherwise leave the app's R process running until the whole suite ends. Stopping twice is harmless.
+app_driver <- function(..., env = parent.frame()) {
+  app <- shinytest2::AppDriver$new(..., load_timeout = browser_timeout, timeout = browser_timeout)
+  withr::defer(app$stop(), envir = env)
+  app
 }
 
 test_browser <- function() {

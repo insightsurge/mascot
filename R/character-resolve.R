@@ -16,7 +16,8 @@ character_format_merge <- function(base, override, path = "$") {
   result <- base
   for (key in names(override)) {
     result[key] <- list(
-      if (atomic || key == "kit_definition" || !key %in% names(base)) {
+      # An x_ value belongs to whoever wrote it: the override's replaces the base's whole, never merged into it.
+      if (atomic || key == "kit_definition" || startsWith(key, "x_") || !key %in% names(base)) {
         override[[key]]
       } else {
         character_format_merge(base[[key]], override[[key]], paste0(path, ".", key))
@@ -24,6 +25,14 @@ character_format_merge <- function(base, override, path = "$") {
     )
   }
   result
+}
+
+#' Keys of a fixed-field object that are about the object itself: its note and extension keys
+#' @noRd
+character_format_own_keys <- function(x) {
+  checkmate::assert_list(x, null.ok = TRUE)
+  keys <- as.character(names(x))
+  keys[keys == "note" | startsWith(keys, "x_")]
 }
 
 #' Canonical content identity without a hash or a registry side effect
@@ -120,7 +129,7 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
       character_format_abort("family", "$.family_definition", NULL, "Embed the family metadata snapshot.")
     }
     definition <- validate_family(definition)
-    if (any(!startsWith(as.character(names(definition$defaults)), "x_"))) {
+    if (length(setdiff(names(definition$defaults), character_format_own_keys(definition$defaults)))) {
       character_format_abort("family", "$.family_definition.defaults", NULL, "A resolved snapshot has empty defaults.")
     }
     if (!"palette_sources" %in% names(parsed)) {
@@ -162,7 +171,10 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
       )
     }
     defaults <- if (is.null(definition$defaults)) character_object() else definition$defaults
-    result <- character_format_merge(defaults, parsed)
+    # The defaults' own note and x_ keys describe the defaults: they stay in the family snapshot and are not
+    # merged into the character.
+    own <- names(defaults) %in% character_format_own_keys(defaults)
+    result <- character_format_merge(defaults[!own], parsed)
     palettes <- if (is.null(defaults$palettes)) character_object() else defaults$palettes
     sources <- stats::setNames(as.list(rep("family", length(palettes))), names(palettes))
     for (id in names(parsed$palettes)) {
@@ -184,13 +196,14 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
     }
     result$palettes <- palettes
     result$palette_sources <- sources
-    # The snapshot keeps the family's metadata and its extension keys, never its defaults.
+    # The snapshot keeps the family's metadata and its extension keys, and of its defaults only their own note
+    # and extension keys: the defaults themselves are merged into the character.
     result$family_definition <- c(
       list(
         id = definition$id,
         name = definition$name,
         description = definition$description,
-        defaults = character_object()
+        defaults = if (any(own)) defaults[own] else character_object()
       ),
       definition[startsWith(names(definition), "x_")]
     )

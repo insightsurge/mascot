@@ -148,16 +148,17 @@ character_fit_fix <- function(proof) {
   if (is.null(widest)) {
     return(rule)
   }
-  paste0(
-    rule,
-    " The ",
-    proof$band,
-    " band is too big: ",
-    widest$source,
-    " can reach ",
-    format(signif(widest$overflow, 3L), scientific = FALSE, trim = TRUE),
-    " units past the ",
-    widest$side,
-    " edge."
-  )
+  # The proof pads its bounds by a rounding margin, so a part that only touches an edge can fail it.
+  reach <- if (widest$overflow < 0.01) {
+    paste0(" reaches the ", widest$side, " edge.")
+  } else {
+    paste0(
+      " can reach ",
+      format(signif(widest$overflow, 3L), scientific = FALSE, trim = TRUE),
+      " units past the ",
+      widest$side,
+      " edge."
+    )
+  }
+  paste0(rule, " The ", proof$band, " band is too big: ", widest$source, reach)
 }

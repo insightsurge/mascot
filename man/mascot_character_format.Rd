@@ -48,11 +48,14 @@ Unsupported and reserved capabilities used as keys (such as \code{connector} or
 file to a schema. mascot never reads it.
 \item A key that starts with \code{x_}, in any object whose fields the format fixes
 (the character itself, a part, an item, a mood, a gesture, a face and so
-on), is an extension key. Its value can be any JSON value. It is kept when
-the character is checked, resolved and saved, and it is never checked or
-read. In an object whose keys are ids or names (\code{colours}, \code{moods},
-\code{gestures}, \code{palettes} and the other maps), a key that starts with \code{x_} is
-an ordinary id.
+on), is an extension key. Its value can be any JSON value (from R, a list
+or an unnamed vector; a data frame or a named vector is refused). It is
+kept as written when the character is checked, resolved and saved, and it
+is never read; it counts towards the file's size, depth and node limits.
+Resolution keeps the character's own extension keys; those of a family's
+\code{defaults} object stay in the resolved family snapshot. In an object whose
+keys are ids or names (\code{colours}, \code{moods}, \code{gestures}, \code{palettes} and the
+other maps), a key that starts with \code{x_} is an ordinary id.
 \item A \code{note} string, accepted in every fixed-field object, is a comment.
 }
 }

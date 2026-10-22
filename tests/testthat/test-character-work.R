@@ -50,18 +50,12 @@ describe("independent R expanded drawing-work bounds", {
       "$.budgets.micro.painted_items",
       character_format_work(data, graph, behaviour, "micro")
     )
-    # 31 copies of the panel's one item, in its default and raised variants, are counted against micro's 30.
-    limit <- character_format_policy()$bands$micro$painted_items
-    expect_gt(error$value, limit)
+    # Micro paints the 31 copies of the panel's item (its default variant, the larger of the two) and the worn
+    # badge's one item: 32, against micro's limit of 30 painted items in the policy.
+    expect_identical(error$value, 32)
     expect_identical(
       error$fix,
-      paste0(
-        "The micro band needs ",
-        error$value,
-        " painted_items, more than its limit of ",
-        limit,
-        ". Reduce expanded drawing work in this band."
-      )
+      "The micro band needs 32 painted_items, more than its limit of 30. Reduce expanded drawing work in this band."
     )
   })
 

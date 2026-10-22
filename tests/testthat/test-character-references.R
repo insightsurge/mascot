@@ -436,6 +436,34 @@ describe("character_format_references()", {
   })
 })
 
+describe("coordinate errors and brand comments", {
+  it("names the first coordinate outside its range, with the range", {
+    data <- character_format_resolve(format_recipe())
+    data$parts[[1]]$at <- list(10, 5000)
+    error <- format_problem("input_type", "$.parts[0].at", character_format_references(data))
+    expect_identical(error$value, 5000)
+    expect_identical(error$fix, "Keep pivot coordinates within +/-4096, not 5000.")
+    data <- character_format_resolve(format_recipe())
+    data$parts[[1]]$items[[1]]$w <- 0
+    error <- format_problem("input_type", "$.parts[0].items[0].w", character_format_references(data))
+    expect_identical(error$fix, "Use a value above 0 and at most 4096, not 0.")
+    data <- character_format_resolve(format_recipe())
+    data$parts[[1]]$items[[1]] <- list(id = "edge", shape = "path", d = "M0 0L-5000 10Z", fill = "body")
+    error <- format_problem("input_type", "$.parts[0].items[0].d", character_format_references(data))
+    expect_identical(error$value, -5000)
+    expect_identical(error$fix, "Keep path coordinates within +/-4096, not -5000.")
+    expect_error(character_format_within(1, -1, "$", "x"))
+  })
+
+  it("reads a note in brand as a comment, not as a colour role", {
+    data <- character_format_resolve(format_recipe("tessa"))
+    data$brand <- list(primary = "body", secondary = "rim", note = "From the style guide.")
+    expect_no_error(character_format_references(data))
+    data$brand$secondary <- "undeclared"
+    format_problem("missing_reference", "$.brand.secondary", character_format_references(data))
+  })
+})
+
 describe("rules the browser engine also enforces", {
   it("refuses a clip on any kit effect item, in items or reduced_items, naming the clip", {
     data <- character_format_resolve(format_recipe("tessa"))

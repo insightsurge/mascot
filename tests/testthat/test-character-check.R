@@ -214,6 +214,15 @@ describe("character_format_check()", {
     )
     overflow <- as.numeric(sub(".* can reach ([0-9.]+) units.*", "\\1", error$fix))
     expect_gte(overflow, 65)
+    # A part that only touches an edge fails the padded proof; the message says it reaches the edge, not "0 units".
+    touching <- list(band = "small", widest = list(source = "part \"panel\"", side = "left", overflow = 0))
+    expect_identical(
+      character_fit_fix(touching),
+      paste(
+        "Keep every part, movement and effect inside the 300 by 300 frame at this size.",
+        "The small band is too big: part \"panel\" reaches the left edge."
+      )
+    )
     # A proof that failed before measuring anything (a ground shadow lifted out of reach) gives the rule alone.
     expect_identical(
       character_fit_fix(list(verified = FALSE, reason = "shadow_lift_singularity", band = "full")),
@@ -229,6 +238,7 @@ describe("character_format_check()", {
     expect_error(character_format_plain(1))
     expect_error(character_fit_fix(1))
     expect_error(character_fit_widest(list(), character()))
+    expect_error(character_fit_widest(list(c(0, 0, 1, 1)), c("a", "b")))
   })
 })
 

@@ -79,7 +79,7 @@ character_format_bounds <- function(x, max_depth = 32L, max_nodes = 10000L) {
     }
     nodes <- nodes + if (is.list(value)) 1L else max(1L, length(value))
     if (nodes > max_nodes) {
-      character_format_abort("budget", "$", nodes, "Reduce the number of input nodes.")
+      character_format_abort("budget", "$", nodes, character_format_node_fix(max_nodes))
     }
     if (is.numeric(value) && any(is.infinite(value) | is.nan(value))) {
       index <- which(is.infinite(value) | is.nan(value))[[1L]]
@@ -97,7 +97,7 @@ character_format_bounds <- function(x, max_depth = 32L, max_nodes = 10000L) {
     }
     depth <- current$depth + 1L
     if (depth > max_depth) {
-      character_format_abort("budget", "$", depth, "Reduce container nesting depth.")
+      character_format_abort("budget", "$", depth, character_format_depth_fix(max_depth))
     }
     keys <- names(value)
     duplicate <- anyDuplicated(keys)
@@ -110,7 +110,7 @@ character_format_bounds <- function(x, max_depth = 32L, max_nodes = 10000L) {
       )
     }
     if (length(value) + top > max_nodes - nodes) {
-      character_format_abort("budget", "$", nodes, "Reduce the number of input nodes.")
+      character_format_abort("budget", "$", nodes, character_format_node_fix(max_nodes))
     }
     for (index in rev(seq_along(value))) {
       path <- if (is.null(keys)) {
@@ -125,13 +125,38 @@ character_format_bounds <- function(x, max_depth = 32L, max_nodes = 10000L) {
   invisible(nodes)
 }
 
+#' Repair instruction for the node limit, with the limit
+#' @noRd
+character_format_node_fix <- function(limit) {
+  checkmate::assert_count(limit, positive = TRUE)
+  paste0(
+    "The input has more than ",
+    limit,
+    " nodes (values, objects and arrays), its limit. Reduce the number of input nodes."
+  )
+}
+
+#' Repair instruction for the nesting-depth limit, with the limit
+#' @noRd
+character_format_depth_fix <- function(limit) {
+  checkmate::assert_count(limit, positive = TRUE)
+  paste0("The input nests objects and arrays more than ", limit, " deep, its limit. Reduce container nesting depth.")
+}
+
+#' Repair instruction for the byte limit, with the limit
+#' @noRd
+character_format_bytes_fix <- function(limit) {
+  checkmate::assert_count(limit, positive = TRUE)
+  paste0("The input is longer than ", limit, " UTF-8 bytes, its limit. Reduce the UTF-8 input byte length.")
+}
+
 #' Bound JSON nesting lexically and reject repeated decoded object keys
 #' @noRd
 character_format_json <- function(bytes, limits) {
   checkmate::assert_raw(bytes)
   checkmate::assert_list(limits, names = "unique")
   if (length(bytes) > limits$utf8_bytes) {
-    character_format_abort("budget", "$", length(bytes), "Reduce the UTF-8 input byte length.")
+    character_format_abort("budget", "$", length(bytes), character_format_bytes_fix(limits$utf8_bytes))
   }
   text <- tryCatch(rawToChar(bytes), error = function(error) {
     checkmate::assert_class(error, "error")
@@ -157,7 +182,7 @@ character_format_json <- function(bytes, limits) {
     } else if (byte %in% c(91L, 123L)) {
       depth <- depth + 1L
       if (depth > limits$nesting_depth) {
-        character_format_abort("budget", "$", depth, "Reduce container nesting depth.")
+        character_format_abort("budget", "$", depth, character_format_depth_fix(limits$nesting_depth))
       }
     } else if (byte %in% c(93L, 125L)) {
       depth <- depth - 1L
@@ -285,7 +310,17 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
       fail(fix = "Use unique, nonempty object keys.")
     }
     if (!is.null(maximum_length) && length(value) > maximum_length) {
-      fail("budget", "Reduce the number of object entries.")
+      fail(
+        "budget",
+        paste0(
+          "This object has ",
+          length(value),
+          " entries, more than its limit of ",
+          maximum_length,
+          ". Reduce the number of object entries."
+        ),
+        shown = length(value)
+      )
     }
     fields <- rule$fields
     if (kind == "object") {
@@ -299,7 +334,9 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     for (key in keys) {
       child <- paste0(path, ".", key)
       if (kind == "object" && startsWith(key, "x_")) {
-        # An extension key for other tools: kept as it is, never checked or read.
+        # An extension key for other tools: kept as it is and never read; only its shape is checked, so that it
+        # saves as the JSON it stands for.
+        character_format_extension(value[[key]], child)
         next
       }
       if (kind == "map") {
@@ -350,12 +387,17 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     attributes(value) <- NULL
     size <- length(value)
     if (!is.null(rule$min_length) && size < rule$min_length) {
-      fail("input_type", "Use the documented minimum array length.")
+      fail(
+        "input_type",
+        paste0("This array has ", size, " entries; use at least ", rule$min_length, "."),
+        shown = size
+      )
     }
     if (!is.null(maximum_length) && size > maximum_length) {
       fail(
         if (is.null(rule$length_code)) "input_type" else rule$length_code,
-        "Use the documented maximum array length."
+        paste0("This array has ", size, " entries, more than its limit of ", maximum_length, "."),
+        shown = size
       )
     }
     if (isTRUE(rule$unique) && anyDuplicated(value)) {
@@ -420,9 +462,15 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
       (!is.null(rule$exclusive_min) && value <= rule$exclusive_min) ||
       (!is.null(rule$exclusive_max) && value >= rule$exclusive_max)
     if (outside) {
+      # A value one rounding step past a limit would print as the limit itself: show it in full.
+      bounds <- unlist(rule[c("min", "max", "exclusive_min", "exclusive_max")], use.names = FALSE)
+      written <- character_format_shown(value)
+      if (written %in% vapply(bounds, character_format_shown, character(1))) {
+        written <- character_format_shown(value, digits = 17L)
+      }
       fail(
         if (is.null(rule$range_code)) "input_type" else rule$range_code,
-        paste0("Use ", character_format_range(rule), ", not ", character_format_shown(value), "."),
+        paste0("Use ", character_format_range(rule), ", not ", written, "."),
         shown = value
       )
     }
@@ -433,15 +481,46 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
 
 #' One value as an author wrote it, for a message: quoted text or a plain number
 #' @noRd
-character_format_shown <- function(value) {
+character_format_shown <- function(value, digits = 15L) {
   checkmate::assert_atomic(value, len = 1L)
+  checkmate::assert_int(digits, lower = 1L, upper = 22L)
   if (is.character(value)) {
     return(encodeString(value, quote = '"'))
   }
   if (is.logical(value)) {
     return(tolower(as.character(value)))
   }
-  format(value, digits = 15L, scientific = FALSE, trim = TRUE)
+  format(value, digits = digits, scientific = FALSE, trim = TRUE)
+}
+
+#' Stop on the first number outside +/-limit, naming it and the limit
+#'
+#' For coordinate and scale checks that cover several numbers at once: the
+#' error's value is the first number out of range.
+#' @noRd
+character_format_within <- function(values, limit, path, what) {
+  checkmate::assert_numeric(values)
+  checkmate::assert_number(limit, lower = 0, finite = TRUE)
+  checkmate::assert_string(path, min.chars = 1)
+  checkmate::assert_string(what, min.chars = 1)
+  outside <- values[abs(values) > limit]
+  if (length(outside)) {
+    character_format_abort(
+      "input_type",
+      path,
+      outside[[1L]],
+      paste0(
+        "Keep ",
+        what,
+        " within +/-",
+        character_format_shown(limit),
+        ", not ",
+        character_format_shown(outside[[1L]]),
+        "."
+      )
+    )
+  }
+  invisible(values)
 }
 
 #' The allowed values of a choice, for a message
@@ -471,6 +550,35 @@ character_format_range <- function(rule) {
     if (!is.null(rule$exclusive_max)) paste("below", character_format_shown(high))
   )
   sub("^a value at ", "a value of at ", paste("a value", paste(parts, collapse = " and ")))
+}
+
+#' Check that an extension value is plain JSON-shaped data, without reading it
+#'
+#' A data frame, a named vector or a classed object has no single JSON form, so
+#' it would not save as written: it is refused. Lists are walked; nothing else
+#' about the value is looked at.
+#' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
+character_format_extension <- function(value, path) {
+  if (is.object(value) || (is.atomic(value) && !is.null(names(value)))) {
+    character_format_abort(
+      "input_type",
+      path,
+      NULL,
+      paste(
+        "Use plain JSON data in an extension value: a list for an object or array,",
+        "and an unnamed vector for values (not a data frame or a named vector)."
+      )
+    )
+  }
+  if (is.list(value)) {
+    keys <- names(value)
+    for (index in seq_along(value)) {
+      child <- if (is.null(keys)) paste0(path, "[", index - 1L, "]") else paste0(path, ".", keys[[index]])
+      character_format_extension(value[[index]], child)
+    }
+  }
+  invisible(NULL)
 }
 
 #' Kinds of JSON value a plain R value can stand for: scalar, object or array
@@ -622,8 +730,9 @@ character_format_parse <- function(x, from = "list") {
   }
   data <- character_format_node(data, schema$definitions$character, "$", schema$definitions, from != "list")
   character_format_bounds(data, schema$input$nesting_depth, schema$input$structural_nodes)
-  if (from == "list" && nchar(character_format_identity(data), type = "bytes") > schema$input$utf8_bytes) {
-    character_format_abort("budget", "$", NULL, "Reduce the UTF-8 input byte length.")
+  bytes <- if (from == "list") nchar(character_format_identity(data), type = "bytes") else 0L
+  if (bytes > schema$input$utf8_bytes) {
+    character_format_abort("budget", "$", bytes, character_format_bytes_fix(schema$input$utf8_bytes))
   }
   data
 }

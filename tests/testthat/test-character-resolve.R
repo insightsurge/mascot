@@ -155,10 +155,40 @@ describe("extension keys through resolution", {
     resolved <- character_format_resolve(source)
     expect_identical(resolved$family_definition$x_origin, list(tool = "family editor"))
     expect_length(resolved$family_definition$defaults, 0L)
-    resolved$family_definition$defaults <- list(x_note = "kept")
-    expect_identical(character_format_resolve(resolved)$family_definition$defaults, list(x_note = "kept"))
+    resolved$family_definition$defaults <- list(x_note = "kept", note = "A comment.")
+    expect_identical(
+      character_format_resolve(resolved)$family_definition$defaults,
+      list(x_note = "kept", note = "A comment.")
+    )
     resolved$family_definition$defaults <- list(gestures = list(), x_note = "kept")
     format_problem("family", "$.family_definition.defaults", character_format_resolve(resolved))
+  })
+
+  it("never merges a family default's x_ value into the character's own, and keeps the defaults' own keys", {
+    # Given a character and its family defaults that both carry x_editor, and defaults with their own x_ key and note
+    source <- format_recipe("study_bot")
+    source$x_editor <- list(grid = 10)
+    source$outline$x_editor <- list(grid = 10)
+    defaults <- source$family_definition$defaults
+    defaults$x_editor <- list(locked = TRUE)
+    defaults$x_only <- "family data"
+    defaults$note <- "The family's shared defaults."
+    defaults$outline <- list(width = 2, x_editor = list(locked = TRUE), x_family = "inherited")
+    source$family_definition$defaults <- defaults
+    # When it is resolved
+    resolved <- character_format_resolve(source)
+    # Then the character's own x_ values are as written, not merged with the family's
+    expect_identical(resolved$x_editor, list(grid = 10))
+    expect_identical(resolved$outline$x_editor, list(grid = 10))
+    # And an x_ key the character does not have is inherited, like any other default field
+    expect_identical(resolved$outline$x_family, "inherited")
+    # And the defaults object's own x_ keys and note stay with the family, not on the character
+    expect_null(resolved$x_only)
+    expect_identical(resolved$note, source$note)
+    expect_identical(
+      resolved$family_definition$defaults,
+      list(x_editor = list(locked = TRUE), x_only = "family data", note = "The family's shared defaults.")
+    )
   })
 })
 

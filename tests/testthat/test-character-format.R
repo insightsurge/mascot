@@ -563,6 +563,62 @@ describe("version 1 for files written by people and other tools", {
     expect_match(error$fix, "^Use a supported operation, not \"star\": choose one of .*\"circle\"")
   })
 
+  it("gives the limit of each input budget, from the policy", {
+    error <- format_problem("budget", "$", character_format_parse(strrep(" ", 262145), "text"))
+    expect_identical(error$value, 262145L)
+    expect_match(error$fix, "longer than 262144 UTF-8 bytes, its limit", fixed = TRUE)
+    error <- format_problem(
+      "budget",
+      "$",
+      character_format_parse(paste0(strrep("[", 33), "0", strrep("]", 33)), "text")
+    )
+    expect_identical(error$value, 33L)
+    expect_match(error$fix, "more than 32 deep, its limit", fixed = TRUE)
+    error <- format_problem("budget", "$", character_format_parse(list(note = as.list(rep(0, 10000)))))
+    expect_match(error$fix, "more than 10000 nodes (values, objects and arrays), its limit", fixed = TRUE)
+    data <- format_recipe()
+    data$note <- strrep("x", 262144)
+    error <- format_problem("budget", "$", character_format_parse(data))
+    expect_gt(error$value, 262144)
+    expect_match(error$fix, "longer than 262144 UTF-8 bytes", fixed = TRUE)
+    # 65 moods against the policy's 64; 257 parts against its 256
+    data <- format_recipe()
+    data$moods <- stats::setNames(rep(data$moods[1], 65L), paste0("mood_", 1:65))
+    error <- format_problem("budget", "$.moods", character_format_parse(data))
+    expect_identical(error$value, 65L)
+    expect_identical(
+      error$fix,
+      "This object has 65 entries, more than its limit of 64. Reduce the number of object entries."
+    )
+    data <- format_recipe()
+    data$parts <- rep(data$parts[1], 257L)
+    error <- format_problem("budget", "$.parts", character_format_parse(data))
+    expect_identical(error$fix, "This array has 257 entries, more than its limit of 256.")
+    data <- format_recipe()
+    data$gestures$rock$tracks$root.rotate <- list(list(0, 0))
+    error <- format_problem("input_type", "$.gestures.rock.tracks.root.rotate", character_format_parse(data))
+    expect_identical(error$fix, "This array has 1 entries; use at least 2.")
+  })
+
+  it("names a value one rounding step past its limit in full, not as the limit", {
+    data <- format_recipe()
+    data$parts[[1]]$items[[1]]$alpha <- 1 + .Machine$double.eps
+    error <- format_problem("input_type", "$.parts[0].items[0].alpha", character_format_parse(data))
+    expect_identical(error$fix, "Use a value from 0 to 1, not 1.0000000000000002.")
+  })
+
+  it("refuses a data frame or a named vector as an extension value, which has no single JSON form", {
+    data <- format_recipe()
+    data$x_table <- data.frame(a = 1:2)
+    format_problem("input_type", "$.x_table", character_format_parse(data))
+    data <- format_recipe()
+    data$parts[[1]]$x_tool <- list(sizes = c(a = 1, b = 2))
+    error <- format_problem("input_type", "$.parts[0].x_tool.sizes", character_format_parse(data))
+    expect_match(error$fix, "not a data frame or a named vector", fixed = TRUE)
+    data$parts[[1]]$x_tool <- list(sizes = c(1, 2), deep = list(list(TRUE)))
+    expect_identical(character_format_parse(data)$parts[[1]]$x_tool$sizes, c(1, 2))
+  })
+
   it("words every kind of number range from the rule itself", {
     expect_identical(character_format_range(list(min = 0, max = 1)), "a value from 0 to 1")
     expect_identical(character_format_range(list(min = 0, exclusive_max = 1)), "a value of at least 0 and below 1")

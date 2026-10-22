@@ -98,8 +98,8 @@ and mascot keeps it without reading it:
 * A top-level `"$schema"` string, so an editor can link the file to a schema.
 * Any key that starts with `x_` in an object whose fields the format fixes:
   the character itself, a part, an item, a mood, a gesture, the face and so on.
-  Its value can be any JSON value, and it stays in the file when the character
-  is checked and saved. In an object whose keys are ids or names, such as
+  Its value can be any JSON value, and it stays in the file, as written, when
+  the character is checked and saved. It counts towards the file's size limits. In an object whose keys are ids or names, such as
   `colours`, `moods` or `palettes`, a key that starts with `x_` is an ordinary id.
 * A `"note"` string in any of those objects, as a comment.
 

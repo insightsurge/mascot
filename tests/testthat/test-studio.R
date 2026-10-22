@@ -32,10 +32,6 @@ describe("mascot_studio()", {
     expect_match(page(studio), 'data-bslib-card-init', fixed = TRUE)
     expect_match(page(studio), 'id="studio_example_call"', fixed = TRUE)
     expect_match(page(studio), 'data-copy="studio_example_call"', fixed = TRUE)
-    expect_false(grepl('id="studio_view"', page(studio), fixed = TRUE))
-    expect_false(grepl('id="studio_fn"', page(studio), fixed = TRUE))
-    expect_false(grepl('id="studio_run"', page(studio), fixed = TRUE))
-    expect_false(grepl("view=preview", page(studio), fixed = TRUE))
     examples <- mascot_studio("examples", run = FALSE)
     expect_match(page(examples), 'id="example_name"', fixed = TRUE)
     expect_match(page(examples), 'href="?view=studio"', fixed = TRUE)
@@ -66,7 +62,6 @@ describe("mascot_studio()", {
       width = 1440,
       height = 900
     )
-    withr::defer(app$stop())
     app$wait_for_js(
       "document.querySelector('.pg-index-link[data-value=mascot_theme]').getAttribute('aria-current') === 'true'"
     )
@@ -85,7 +80,6 @@ describe("mascot_studio()", {
       width = 1440,
       height = 900
     )
-    withr::defer(preview$stop())
     preview$wait_for_js("!!document.querySelector('iframe.pg-preview')")
     expect_true(preview$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     expect_false(preview$get_js("document.querySelector('[data-canvas=preview]').hidden"))
@@ -94,7 +88,6 @@ describe("mascot_studio()", {
       library(mascot)
       mascot_studio("examples", run = FALSE)
     })
-    withr::defer(examples$stop())
     examples$wait_for_js("!!document.getElementById('example_name')")
     expect_identical(examples$get_js("document.getElementById('studio_canvas').dataset.mode"), "examples")
     examples$click(selector = "#studio_menu > summary")

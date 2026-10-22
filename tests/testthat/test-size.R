@@ -113,9 +113,6 @@ describe("responsive size behaviour and CSS rules", {
   })
   it("defines the phone size rule in mascot.css and reads the same value in R", {
     css_file <- system.file("www", "mascot.css", package = "mascot")
-    if (!nzchar(css_file) || !file.exists(css_file)) {
-      css_file <- testthat::test_path("../../inst/www/mascot.css")
-    }
     lines <- readLines(css_file)
     css_text <- paste(lines, collapse = "\n")
 

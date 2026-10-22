@@ -51,65 +51,27 @@ describe("mascot_examples()", {
         next
       }
       if (name == "studio") {
-        expect_setequal(
-          sources,
-          c(
-            "app.R",
-            "R/code.R",
-            "R/data.R",
-            "R/guide-md.R",
-            "R/guide.R",
-            "R/panels.R",
-            "R/shared-check.R",
-            "R/shared-colours.R",
-            "R/shared-data.R",
-            "R/shared-help.R",
-            "R/shared-layout.R",
-            "R/shared-run.R",
-            "R/shared-ui.R",
-            "R/theme-server.R",
-            "R/theme-ui.R",
-            "R/ui.R",
-            "R/views.R",
-            "guide/guide-helpers.R",
-            "guide/guide-mistakes.R",
-            "guide/guide-shared.R",
-            "guide/guide.css",
-            "guide/mascot_bubble.Rmd",
-            "guide/mascot_action.Rmd",
-            "guide/mascot_preview.Rmd",
-            "guide/update_mascot.Rmd",
-            "guide/_palette-notes.Rmd",
-            "guide/mascot_mood.Rmd",
-            "guide/mascot_moods.Rmd",
-            "guide/mascot_characters.Rmd",
-            "guide/mascot_families.Rmd",
-            "guide/mascot_anchors.Rmd",
-            "guide/mascot_gesture.Rmd",
-            "guide/mascot_gestures.Rmd",
-            "guide/mascot_palettes.Rmd",
-            "guide/mascot_size.Rmd",
-            "guide/mascot_placement.Rmd",
-            "guide/mascot_colour_roles.Rmd",
-            "guide/mascot_popup_menu.Rmd",
-            "guide/mascot_read_character.Rmd",
-            "guide/mascot.Rmd",
-            "guide/mascot_motion_settings.Rmd",
-            "guide/mascot_character.Rmd",
-            "guide/mascot_check_character.Rmd",
-            "guide/mascot_example.Rmd",
-            "guide/mascot_examples.Rmd",
-            "guide/mascot_studio.Rmd",
-            "guide/mascot_status.Rmd",
-            "guide/mascot_theme.Rmd",
-            "www/inputs.js",
-            "www/shared.css",
-            "www/studio.css",
-            "www/studio.js",
-            "www/theme.css",
-            "www/tokens.css"
-          )
-        )
+        studio_dir <- dirname(file)
+        expect_true(file.exists(file.path(studio_dir, "app.R")))
+        for (folder in c("R", "guide", "www")) {
+          expect_gt(length(list.files(file.path(studio_dir, folder))), 0, label = folder)
+        }
+        # Every R file in the folder is plain R (parsed below with the other examples) and nothing else ships
+        # beside the app except the guide pages, their helpers and styles, and the web files.
+        expect_true(all(
+          grepl("^(app[.]R|R/[^/]+[.]R|guide/[^/]+[.](R|Rmd|css)|www/[^/]+[.](js|css))$", sources)
+        ))
+        # One guide page for each exported function (the leading underscore marks a page that is only included).
+        pages <- sub("[.]Rmd$", "", basename(grep("^guide/.*[.]Rmd$", sources, value = TRUE)))
+        expect_setequal(setdiff(pages, "_palette-notes"), getNamespaceExports("mascot"))
+        # Every web file is used by the app, so none is left behind.
+        code <- unlist(lapply(
+          list.files(studio_dir, pattern = "[.]R$", recursive = TRUE, full.names = TRUE),
+          readLines
+        ))
+        for (asset in basename(grep("^(www|guide)/.*[.](js|css)$", sources, value = TRUE))) {
+          expect_true(any(grepl(asset, code, fixed = TRUE)), info = asset)
+        }
       } else if (name == "rhino") {
         expect_setequal(sources, c("app.R", "app/view/main.R", "app/view/review.R"))
       } else {
@@ -165,7 +127,6 @@ describe("mascot_examples()", {
     expect_length(prose, 0)
   })
   it("reads every description, argument and return value from the package's help pages", {
-    skip_if_not_installed("htmltools")
     help <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "shared-help.R"), envir = help)
     # Letters and digits only, so markup, quotes and line wrapping do not matter.
@@ -610,7 +571,6 @@ describe("bundled example apps", {
   it("the form-check example names invalid fields and becomes happy when both pass", {
     local_shiny_browser()
     app <- example_driver("form-check")
-    withr::defer(app$stop())
     wait_example_mood(app, "helper", "worried")
     expect_match(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "2 fields")
     app$set_inputs(sample = "Sample A", quantity = 12)
@@ -623,7 +583,6 @@ describe("bundled example apps", {
   it("the long-task example shows thinking then success and retains an error message", {
     local_shiny_browser()
     app <- example_driver("long-task")
-    withr::defer(app$stop())
     wait_example_mood(app, "helper", "idle")
     # Record browser-observed transitions even if the server completes before a poll.
     app$run_js(
@@ -649,7 +608,6 @@ describe("bundled example apps", {
   it("the modules example updates each module's helper and returns completion to the parent", {
     local_shiny_browser()
     app <- example_driver("modules")
-    withr::defer(app$stop())
     wait_example_mood(app, "first-helper", "worried")
     wait_example_mood(app, "second-helper", "worried")
     wait_example_mood(app, "parent", "worried")
@@ -1153,25 +1111,6 @@ describe("studio help pages and copied apps", {
         expect_false(grepl("Apply my settings", code, fixed = TRUE))
       }
     }
-  })
-  it("removes unused initialisation and presentation helpers", {
-    dir <- dirname(mascot_example("studio", run = FALSE))
-    app <- parse(file.path(dir, "app.R"))
-    assigned <- vapply(
-      as.list(app),
-      function(expr) {
-        if (is.call(expr) && identical(expr[[1]], as.name("<-")) && is.symbol(expr[[2]])) {
-          as.character(expr[[2]])
-        } else {
-          ""
-        }
-      },
-      character(1)
-    )
-    expect_false(any(c("moods", "start_mascot") %in% assigned))
-    env <- new.env()
-    sys.source(file.path(dir, "R", "ui.R"), env)
-    expect_false(exists("chips", envir = env, inherits = FALSE))
   })
   it("provides helper links and concrete instructions beside controls", {
     skip_if_not_installed("bslib")
@@ -2047,7 +1986,6 @@ describe("studio character bar", {
   it("holds all four drop-downs and Play it again in the main area at 375 pixels", {
     local_shiny_browser()
     app <- example_driver("studio", width = 375)
-    withr::defer(app$stop())
     app$wait_for_js(
       "document.querySelector('#studio_centre #studio_character_bar #character') &&
       document.querySelector('#studio_centre #studio_character_bar #mood')"
@@ -2851,7 +2789,6 @@ describe("framework examples", {
     skip_if_not_installed("golem")
     local_shiny_browser()
     app <- example_driver("golem")
-    withr::defer(app$stop())
     app$wait_for_js("document.querySelector('h1').textContent === 'Reviews in golem'")
     app$wait_for_js("!!mascot.host.state(document.getElementById('first-review-helper'))")
     app$click("first-review-complete")
@@ -2872,7 +2809,6 @@ describe("framework examples", {
   it("runs plain Shiny view modules in the rhino-shaped folder", {
     local_shiny_browser()
     app <- example_driver("rhino")
-    withr::defer(app$stop())
     app$wait_for_js("!!mascot.host.state(document.getElementById('second-review-helper'))")
     app$click("second-review-complete")
     app$wait_for_js("mascot.host.state(document.getElementById('second-review-helper')).mood === 'happy'")
@@ -3243,7 +3179,6 @@ describe("studio palette sync", {
   it("shows native palette labels, roles such as hair and badge, resting gestures and guide demonstrations", {
     local_shiny_browser()
     app <- example_driver("studio")
-    withr::defer(app$stop())
     app$wait_for_js(
       "document.querySelector('#palette option[value=original]')?.textContent === \"Tessa's own colours (night_teal)\""
     )

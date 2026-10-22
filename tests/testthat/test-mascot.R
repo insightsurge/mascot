@@ -360,7 +360,6 @@ describe("mascot() clicks in a Shiny browser", {
         })
       })
     })
-    withr::defer(app$stop())
     app$wait_for_js("!!document.querySelector('#module-menu .mascot-menu-toggle')")
     # Given an action: each click and each Enter on it reaches its module's server.
     app$click(selector = "#module-helper .mascot-button")
@@ -722,7 +721,6 @@ describe("the engine version", {
         }
       )
     })
-    withr::defer(app$stop())
     app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper')) != null")
     expect_identical(app$get_js("window.mascot.version"), version)
   })

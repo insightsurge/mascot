@@ -139,7 +139,6 @@ describe("update_mascot() in a browser", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$wait_for_js("document.querySelector('#helper').dataset.shownMood === 'idle'")
     app$click("think")
     app$wait_for_js("document.querySelector('#helper').dataset.shownMood === 'thinking'")
@@ -177,7 +176,6 @@ describe("update_mascot() in a browser", {
       }
       shiny::shinyApp(shiny::fluidPage(module_ui("mod")), function(input, output, session) module_server("mod"))
     })
-    withr::defer(app$stop())
     app$click("mod-go")
     app$wait_for_js("document.querySelector('#mod-helper').dataset.shownMood === 'happy'")
     expect_identical(
@@ -207,7 +205,6 @@ describe("update_mascot() in a browser", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$click("prepare")
     expect_null(app$get_js("document.getElementById('late')"))
     app$click("show")
@@ -304,7 +301,6 @@ describe("server bubbles and gestures in a browser", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$run_js(
       "window.mascotErrors = []; const originalError = console.error;
       console.error = (...args) => { window.mascotErrors.push(args.map(String).join(' ')); originalError(...args); };
@@ -583,7 +579,6 @@ describe("size and placement in a Shiny browser", {
         }
       )
     })
-    withr::defer(app$stop())
     app$wait_for_js("document.querySelector('#helper canvas').width === 96 * devicePixelRatio")
     app$click("notice")
     app$wait_for_js("document.getElementById('shiny-notification-mascot-notice') !== null")
@@ -668,7 +663,6 @@ describe("size and placement in a Shiny browser", {
         function(input, output, session) module_server("mod")
       )
     })
-    withr::defer(app$stop())
     app$wait_for_js("mascot.host.state(document.getElementById('mod-helper')) !== null")
     expect_equal(app$get_js("document.querySelector('#mod-helper canvas').getBoundingClientRect().width"), 0)
     app$set_inputs(tabs = "Helper")
@@ -713,7 +707,6 @@ describe("floating mascots in dynamic module UI", {
         function(input, output, session) module_server("mod")
       )
     })
-    withr::defer(app$stop())
     app$click(selector = "a[data-value='Helper']")
     app$wait_for_js("Shiny.shinyapp.$inputValues['.clientdata_output_mod-dynamic_hidden'] === false")
     app$wait_for_js("document.querySelector('#mod-helper canvas')?.getBoundingClientRect().width === 64")
@@ -823,7 +816,6 @@ describe("theme in a Shiny browser", {
         }
       )
     })
-    withr::defer(app$stop())
     app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper'))?.colours.body === '#1F6FEB'")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).mode"), "light")
     app$run_js(
@@ -916,7 +908,6 @@ describe("motion in a Shiny browser", {
         }
       )
     })
-    withr::defer(app$stop())
     app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper')) !== null")
     app$run_js("window.originalCanvas=document.querySelector('#helper canvas')")
     app$set_inputs(animate = FALSE)
@@ -1008,7 +999,6 @@ describe("popup menu in a Shiny browser", {
         })
       })
     })
-    withr::defer(app$stop())
     app$wait_for_js("!!document.querySelector('#module-helper .mascot-menu-toggle')")
     for (i in 1:2) {
       app$click(selector = "#module-helper .mascot-menu-toggle")
@@ -1054,7 +1044,6 @@ describe("documented Shiny settings", {
       list(APP = expression)
     )
     app <- app_driver(app_function)
-    withr::defer(app$stop())
     app$wait_for_js("!!window.mascot?.host?.state(document.getElementById('helper'))")
     app$set_inputs(idle = FALSE)
     app$wait_for_js("document.getElementById('helper').dataset.idle==='false'")
@@ -1073,7 +1062,6 @@ describe("documented Shiny settings", {
     app_function <- function() NULL
     body(app_function) <- as.call(c(list(quote(`{`), quote(library(mascot))), as.list(expressions)))
     app <- app_driver(app_function)
-    withr::defer(app$stop())
     app$wait_for_js("!!document.querySelector('#demo-helper .mascot-menu-toggle')")
     for (i in 1:2) {
       app$click(selector = "#demo-helper .mascot-menu-toggle")
@@ -1151,7 +1139,6 @@ describe("retained mascot updates", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     expect_null(app$get_js("document.querySelector('.mascot')"))
     app$click("prepare")
     app$click("show")
@@ -1192,7 +1179,6 @@ describe("bubble visibility in Shiny tabs", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$click("say")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).bubble !== null")
     app$click(selector = "a[data-value='Other']")
@@ -1390,7 +1376,6 @@ describe("nested modules across tabs", {
       list(DIR = normalizePath(test_path("apps", "modules-tabs")))
     )
     app <- app_driver(app_function, width = 900, height = 700)
-    withr::defer(app$stop())
     app$run_js("window.helperState=id=>mascot.host.state(document.getElementById(id+'-review-helper'));")
     app$wait_for_js("!!helperState('first') && !!helperState('second')")
     app$wait_for_js("document.getElementById('second-review-helper').dataset.sourceHidden === 'true'")

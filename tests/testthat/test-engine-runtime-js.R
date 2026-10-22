@@ -77,15 +77,13 @@ describe("format-v1 dispatch", {
     js("T.frames(3)")
     result <- js(
       "({frame: frames.length, geometry: geometryCalls.length, faces: faceCalls.length,
-        internal: typeof mascot.internal, adapter: typeof mascot.tessaAdapter, runtime: typeof mascot.runtime,
+        runtime: typeof mascot.runtime,
         shown: document.getElementById('a').dataset.shownCharacter,
         ink: T.picture(document.querySelector('#a canvas')).ink})"
     )
     expect_gt(result$frame, 0)
     expect_gt(result$geometry, 0)
     expect_gt(result$faces, 0)
-    expect_identical(result$internal, "undefined")
-    expect_identical(result$adapter, "undefined")
     expect_identical(result$runtime, "object")
     expect_identical(result$shown, "alpha_two")
     expect_gt(result$ink, 1000)

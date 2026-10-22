@@ -51,7 +51,6 @@ describe("a format-v1 character through the Shiny state protocol", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$wait_for_js("window.mascot?.host.state(document.getElementById('helper'))?.snapshot.applied_revision > 0")
     app$run_js(
       "window.gestures = [];
@@ -137,7 +136,6 @@ describe("a format-v1 character through the Shiny state protocol", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$wait_for_js("window.mascot?.host.state(document.getElementById('helper'))?.snapshot.applied_revision > 0")
     app$run_js(
       sprintf(
@@ -247,7 +245,6 @@ describe("a format-v1 character through the Shiny state protocol", {
       ui <- shiny::fluidPage(shiny::tagList(inner_ui("outer-inner")))
       shiny::shinyApp(ui, function(input, output, session) inner("outer-inner"))
     })
-    withr::defer(app$stop())
     app$wait_for_js(
       "window.mascot?.host.state(document.getElementById('outer-inner-helper'))?.snapshot.applied_revision > 0"
     )
@@ -310,7 +307,6 @@ describe("a format-v1 character through the Shiny state protocol", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$wait_for_js(
       "!!document.querySelector('#menu .mascot-menu-toggle') && !!document.querySelector('#float canvas')"
     )
@@ -361,7 +357,6 @@ describe("named palettes through the real Shiny host", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$run_js(
       "window.helper = () => document.getElementById('helper'); window.state = () => mascot.host.state(helper());"
     )

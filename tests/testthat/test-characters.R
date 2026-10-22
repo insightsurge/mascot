@@ -28,7 +28,6 @@ describe("mascot_character()", {
 
 describe("character_json()", {
   it("reads valid JSON and escapes closing script sequences", {
-    skip_if_not_installed("jsonlite")
     text <- character_json("tessa")
     expect_type(text, "character")
     expect_length(text, 1)
@@ -41,7 +40,6 @@ describe("character_json()", {
     expect_identical(jsonlite::fromJSON(escaped)$text, "</script></div>")
   })
   it("keeps every built-in character's moods in the shared order", {
-    skip_if_not_installed("jsonlite")
     for (id in builtin_characters()$id) {
       expect_identical(names(jsonlite::fromJSON(character_json(id))$moods), mascot_moods()$name)
     }

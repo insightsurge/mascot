@@ -1,0 +1,19 @@
+# Built from DESCRIPTION when the citation is asked for, so it stays in step with the package. The year is the
+# publication or build date (a source checkout has neither, so it falls back to the current year).
+year <- sub("^(\\d{4}).*$", "\\1", c(meta$`Date/Publication`, meta$Packaged, format(Sys.Date(), "%Y"))[1L])
+# The installed DESCRIPTION has both fields; a source checkout has only Authors@R.
+authors <- if (is.null(meta$`Authors@R`)) {
+  as.person(meta$Author)
+} else {
+  eval(parse(text = meta$`Authors@R`))
+}
+urls <- strsplit(meta$URL, "[[:space:]]*,[[:space:]]*")[[1L]]
+
+bibentry(
+  bibtype = "Manual",
+  title = paste0(meta$Package, ": ", meta$Title),
+  author = authors,
+  year = year,
+  note = paste("R package version", meta$Version),
+  url = urls[1L]
+)

@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `citation("mascot")` gives a proper reference with a BibTeX entry, and the website's authors page shows it (#472).
+
 * The website's search results open on the site being read. Before, each result opened the future GitHub Pages address, which does not exist yet (#457).
 
 * The website's long Studio guide menu becomes a short Guides menu: a Studio guide page that lists every function's guide under the studio's groups, Make your own character, and All articles (#452).

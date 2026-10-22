@@ -27,7 +27,7 @@ mood_table <- function() {
 #'   moods), and a character column `fallback` (the mood used instead when this
 #'   one is not available, or `NA`). Shared moods have no `fallback`.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
-#'   names and types. The first column is the value you pass to the matching function.
+#'   names and types.
 #' @family mascot helpers
 #' @seealso [mascot()], [mascot_mood()]
 #' @export
@@ -72,8 +72,7 @@ mascot_moods <- function(character = NULL) {
 #' @param name A non-empty mood id: a lowercase letter followed by lowercase
 #'   letters, digits or underscores. Defaults to `"idle"`; `NULL` is not accepted.
 #'   See [mascot_moods()] for the available moods.
-#' @returns A `mascot_mood` object with a `name` element.
-#' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @returns A `mascot_mood` object. Its fields are internal; pass it on rather than reading them.
 #' @details
 #' This helper checks only the form of the id. [mascot()], [update_mascot()]
 #' and [mascot_preview()] check whether the chosen character declares that mood.

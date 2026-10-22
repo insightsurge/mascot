@@ -29,7 +29,6 @@ describe("mascot_gesture()", {
     expect_null(arg_problem("jump", "gesture"))
     expect_null(arg_problem(mascot_gesture("wave"), "gesture"))
     expect_null(arg_problem(structure(list(name = "jump"), class = "mascot_gesture"), "gesture"))
-    expect_no_error(check_arg("jump", "gesture", environment()))
   })
 })
 

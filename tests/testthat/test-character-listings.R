@@ -385,8 +385,8 @@ describe("humanised role descriptions", {
 })
 
 
-describe("R4a public listing documentation", {
-  it("keeps checked and registered forms for R4b and documents every family column", {
+describe("public listing documentation", {
+  it("keeps checked and registered forms off the listing pages and documents every family column", {
     # mascot_character() documents checked character data from 0.1.0 (#339), so it is not listed here.
     pages <- c(
       "mascot",
@@ -408,7 +408,7 @@ describe("R4a public listing documentation", {
       if (page == "mascot_families") {
         value <- Filter(function(node) identical(attr(node, "Rd_tag"), "\\value"), rd)[[1]]
         value <- paste(unlist(value), collapse = "")
-        for (fact in c("character", "supplying a family snapshot", "NA", "built-in family")) {
+        for (fact in c("character", "NA", "every family that ships with mascot")) {
           expect_match(value, fact, fixed = TRUE)
         }
       }

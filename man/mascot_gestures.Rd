@@ -19,7 +19,7 @@ the next choice when this one cannot play, or \code{NA}), and an integer column
 is the length of the movement that actually plays: a \code{"wave"} that falls
 back to a rock reports the length of the rock. Frames run at 30 per second.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
-names and types. The first column is the value you pass to the matching function.
+names and types.
 }
 \description{
 Gestures play a quick movement once, without changing the mascot's mood.

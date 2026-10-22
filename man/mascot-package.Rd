@@ -25,10 +25,9 @@ errors, and \code{mascot_error_file} for character file errors.
 
 \code{mascot_palette_dropped} warns when a character swap drops a palette the
 incoming character lacks. Development diagnostics use
-\code{mascot_gesture_dropped} when a pending gesture
-cannot play, \code{mascot_click_dropped} when a click needs an unavailable mood or
-gesture, and \code{mascot_template_evicted} when unused UI templates leave the
-cache. Each inherits \code{mascot_warning}.
+\code{mascot_gesture_dropped} when a pending gesture cannot play and
+\code{mascot_template_evicted} when unused UI templates leave the cache. Each
+inherits \code{mascot_warning}.
 }
 
 \section{Options}{

@@ -1,8 +1,6 @@
 describe("character_data_register() and character_data_get()", {
   it("registers, retrieves, and lists valid checked Anchor Probe with custom family preserved", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
 
     recipe <- format_recipe("anchor_probe")
     checked <- character_format_check(recipe)
@@ -23,9 +21,7 @@ describe("character_data_register() and character_data_get()", {
   })
 
   it("treats differently ordered object keys as idempotent and retains array order in identity", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
 
     recipe1 <- format_recipe("anchor_probe")
     recipe2 <- recipe1[rev(names(recipe1))]
@@ -57,9 +53,7 @@ describe("character_data_register() and character_data_get()", {
   })
 
   it("errors on same id with different valid content and leaves original intact", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
 
     recipe <- format_recipe("anchor_probe")
     checked <- character_format_check(recipe)
@@ -75,9 +69,7 @@ describe("character_data_register() and character_data_get()", {
   })
 
   it("rejects replacing built-in character tessa while preserving public mascot_character()", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
 
     tessa_recipe <- format_recipe("tessa")
     checked_tessa <- character_format_check(tessa_recipe, builtin = TRUE)
@@ -96,11 +88,9 @@ describe("character_data_register() and character_data_get()", {
 })
 
 describe("character store reserved ids and retrieved values", {
-  it("reserves the planned built-in ids before they ship", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
-    for (id in c("neer", "alpha_visor", "knurl")) {
+  it("refuses to register a built-in id", {
+    local_empty_registry()
+    for (id in c("neer", "knurl")) {
       recipe <- format_recipe()
       recipe$id <- id
       format_problem("identity", "$.id", character_data_register(character_format_check(recipe, builtin = TRUE)))
@@ -109,9 +99,7 @@ describe("character store reserved ids and retrieved values", {
   })
 
   it("isolates nested metadata and manifests edited by separate callers", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
     checked <- character_format_check(format_recipe())
     character_data_register(checked)
     first <- character_data_get("anchor_probe")
@@ -124,9 +112,7 @@ describe("character store reserved ids and retrieved values", {
 
 describe("character store validation and isolation", {
   it("prevents unchecked lists, forged classes, and mutated anchors from poisoning the store", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
 
     raw_recipe <- format_recipe("anchor_probe")
     expect_error(character_data_register(raw_recipe))
@@ -158,9 +144,7 @@ describe("character store validation and isolation", {
   })
 
   it("reports unknown custom ids and validates all arguments", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
 
     format_problem("missing_reference", "$.id", character_data_get("unknown_custom_id"))
 
@@ -182,16 +166,10 @@ describe("character store validation and isolation", {
     expect_error(character_data_get("kebab-case"))
     expect_error(character_data_get("1leading_digit"))
     expect_error(character_data_get(c("a", "b")))
-
-    expect_error(character_data_reset(1))
-    expect_error(character_data_reset("invalid"))
-    expect_error(character_data_reset(list(wrong = 1)))
   })
 
   it("rejects registration inside an active reactive domain while allowing retrieval", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
 
     probe <- character_format_check(format_recipe("anchor_probe"))
     character_data_register(probe)
@@ -212,16 +190,12 @@ describe("character store validation and isolation", {
   })
 
   it("restores entries that existed before a test-local registry change", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
     recipe <- format_recipe()
     recipe$id <- "sentinel"
     character_data_register(character_format_check(recipe))
     trial <- function() {
-      saved <- character_data_snapshot()
-      withr::defer(character_data_reset(saved))
-      character_data_reset()
+      local_empty_registry()
       character_data_register(character_format_check(format_recipe()))
     }
     trial()
@@ -230,33 +204,13 @@ describe("character store validation and isolation", {
   })
 
   it("leaves no global option state or leaked entries across tests", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
     opts_before <- options()
-    character_data_reset()
+    local_empty_registry()
     probe <- character_format_check(format_recipe("anchor_probe"))
     character_data_register(probe)
     expect_identical(character_data_ids(), "anchor_probe")
-    character_data_reset()
+    local_empty_registry()
     expect_identical(character_data_ids(), character())
     expect_identical(options(), opts_before)
-  })
-})
-
-describe("character store snapshot validation", {
-  it("rejects mismatched names and reserved ids without changing existing state", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
-    checked <- character_format_check(format_recipe())
-    character_data_register(checked)
-    saved <- character_data_snapshot()
-    format_problem("identity", "$.id", character_data_reset(list(items = list(foo = checked), order = "foo")))
-    expect_identical(character_data_snapshot(), saved)
-    builtin <- character_format_check(format_recipe("tessa"), builtin = TRUE)
-    format_problem("identity", "$.id", character_data_reset(list(items = list(tessa = builtin), order = "tessa")))
-    expect_identical(character_data_snapshot(), saved)
-    character_data_reset(saved)
-    expect_identical(character_data_snapshot(), saved)
   })
 })

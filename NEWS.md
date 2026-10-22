@@ -6,6 +6,18 @@
 
 * mascot needs `shiny` 1.8.1 or later, and `bslib` 0.7.0 or later where it uses `bslib` (a `bs_theme()` as `theme`, the studio and the examples): the long-task example and the `update_mascot()` help use `shiny::ExtendedTask` and `bslib::input_task_button()`, which those versions introduced. Both versions install on R 4.1 (#483).
 
+* `mascot()`, `update_mascot()`, `mascot_preview()` and `mascot_colour_roles()`: the message for an unknown palette that another character has says each palette belongs to its own character (#462).
+
+* `mascot_check_character()` and `mascot_read_character()` say how to fix a character that is too big for its frame: keep every part, movement and effect inside the 300 by 300 frame at that size (#462).
+
+* `mascot_check_character()` and `mascot_read_character()` accept `alpha_visor` as the id of your own character (#462).
+
+* `mascot_examples()` says the `long-task` example needs promises and later (#462).
+
+* In `mascot_studio()`, the colour swatches update as soon as the colours change (#462).
+
+* The development condition `mascot_click_dropped` is gone: no public helper could raise it, so no app loses a warning it could see (#462).
+
 * Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).
 
 * The engine draws only characters with `format_version` 1, the format of every built-in character and every character the R functions accept. A description in the 0.0.2 data shape (`inst/characters/tessa.json` in 0.0.2) is no longer drawn: the browser refuses it with an error. Every page loads about 87 KB less JavaScript (#463).

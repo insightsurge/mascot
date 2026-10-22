@@ -21,9 +21,7 @@
 #'   clicks are not sent, and screen readers announce the button as unavailable.
 #'   Defaults to `FALSE`. Use it while the action makes no sense, such as during
 #'   a long task, and send `mascot_action(..., disabled = FALSE)` afterwards.
-#' @returns A `mascot_action` object with `label`, `tooltip` and `disabled`
-#'   elements.
-#' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @returns A `mascot_action` object. Its fields are internal; pass it on rather than reading them.
 #' @family mascot helpers
 #' @seealso [mascot()], [update_mascot()], [mascot_popup_menu()]
 #' @details
@@ -105,7 +103,7 @@ click_problem <- function(x) {
     }
     return(NULL)
   }
-  # A named vector was the menu shortcut before `click` replaced `popup_menu`.
+  # A named vector is not a click; the hint points to mascot_popup_menu() for a menu.
   if (is.character(x) && !is.null(names(x))) {
     return(paste0(
       "`click` got a named vector; for a menu, wrap it in mascot_popup_menu(), such as ",

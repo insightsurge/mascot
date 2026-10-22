@@ -4,8 +4,8 @@
 #' copy the working R code into your own app. The studio is
 #' experimental and may change in a later release. Choices belong to the returned
 #' app; no global options are changed.
-#' @param view Which view to open: `"studio"` (the default) for the function
-#'   playground, `"examples"` for the gallery of bundled examples, or `"theme"`
+#' @param view Which view to open: `"studio"` (the default) for the studio, one
+#'   page per function, `"examples"` for the gallery of bundled examples, or `"theme"`
 #'   to theme one character.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param fn A function name in the studio's Guide, without parentheses.
@@ -48,7 +48,7 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
     if (!is.null(resolved$data)) {
       cli::cli_abort(
         paste0(
-          "The studio currently needs a built-in character id from its selector (or a helper for one). ",
+          "The studio needs a built-in character id from its selector (or a helper for one). ",
           "Use {.fn mascot_preview} or {.fn mascot} with this checked character object ",
           "or its mascot_character() helper."
         ),
@@ -71,7 +71,7 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
     valid <- switch(
       arg,
       view = names(views$studio_view_titles),
-      fn = names(guide$playground_guide),
+      fn = names(guide$studio_guide),
       character = unname(data$studio_characters())
     )
     if (!is.null(value) && !value %in% valid) abort_choice(value, valid, arg, arg, environment())

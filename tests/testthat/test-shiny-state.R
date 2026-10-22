@@ -26,16 +26,11 @@ describe("R-settled latest mascot state", {
       "hapy"
     )
     expect_identical(protocol_record(f), before)
-    for (bad in list(
-      list(gesture = "absent", status = list(mode = "custom", text = "Wrong")),
-      list(
-        click = list(type = "action", label = "Help", tooltip = FALSE, disabled = FALSE, gesture = "absent"),
-        bubble = list(clear = TRUE)
-      )
-    )) {
-      expect_warning(send_update(f$session, "helper", bad), "gesture")
-      expect_identical(protocol_record(f), before)
-    }
+    expect_warning(
+      send_update(f$session, "helper", list(gesture = "absent", status = list(mode = "custom", text = "Wrong"))),
+      "gesture"
+    )
+    expect_identical(protocol_record(f), before)
     expect_warning(send_update(f$session, "helper", list(unknown = 1, bubble = list(clear = TRUE))), "Unknown")
     expect_warning(
       send_update(f$session, "helper", list(status = list(mode = "custom", text = strrep("x", 262145)))),
@@ -213,7 +208,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(f)$desired$character$id, "other_probe")
   })
 
-  it("U1.4 recomputes every ownership row and adapts unowned palettes and click groups", {
+  it("U1.4 recomputes every ownership row and adapts unowned palettes", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()
     withr::defer(f$session$close())
@@ -221,10 +216,10 @@ describe("R-settled latest mascot state", {
     y <- protocol_character(FALSE, "other_probe")
     baseline <- mascot_state_defaults(x)
     baseline$theme$palette <- "sea"
-    baseline$click <- list(type = "action", label = "Help", tooltip = FALSE, disabled = FALSE, gesture = "spin")
+    baseline$click <- list(type = "action", label = "Help", tooltip = FALSE, disabled = FALSE)
     protocol_ready(f, state = baseline)
     protocol_flush(f)
-    expect_warning(
+    expect_no_warning(
       send_update(
         f$session,
         "helper",
@@ -236,16 +231,14 @@ describe("R-settled latest mascot state", {
           placement = placement_wire(mascot_placement("inline")),
           motion = as_motion_arg(FALSE, environment())
         )
-      ),
-      "click",
-      class = "mascot_click_dropped"
+      )
     )
     expect_identical(protocol_record(f)$desired$theme, mascot_empty_theme())
     newer <- mascot_state_defaults(x)
     newer$mood <- "processing"
     newer$theme$palette <- "sea"
     newer$click <- baseline$click
-    expect_warning(protocol_ready(f, 2, state = newer), "click", class = "mascot_click_dropped")
+    expect_no_warning(protocol_ready(f, 2, state = newer))
     r <- protocol_record(f)
     expect_identical(r$desired$character$id, "other_probe")
     expect_identical(r$desired$mood, "idle")
@@ -253,7 +246,6 @@ describe("R-settled latest mascot state", {
     expect_identical(r$desired$size$size, 96)
     expect_false(r$desired$placement$floating)
     expect_false(r$desired$motion$gestures)
-    expect_null(r$desired$click$gesture)
     expect_false("click" %in% r$owned)
     h <- protocol_fixture()
     withr::defer(h$session$close())
@@ -265,7 +257,7 @@ describe("R-settled latest mascot state", {
       conditions <<- c(conditions, class(w)[[1]])
       invokeRestart("muffleWarning")
     })
-    expect_setequal(conditions, c("mascot_palette_dropped", "mascot_click_dropped"))
+    expect_setequal(conditions, "mascot_palette_dropped")
     expect_null(protocol_record(h)$desired$theme$palette)
     expect_false(any(c("theme", "click") %in% protocol_record(h)$owned))
     # Unowned character follows the new UI; retained mood follows outgoing fallback.

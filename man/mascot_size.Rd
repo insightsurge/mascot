@@ -19,8 +19,7 @@ the same size on every screen. A number of pixels or a percentage string
 sets the phone size explicitly for both floating and inline mascots.}
 }
 \value{
-A \code{mascot_size} object with \code{size} and \code{small_screen} elements.
-The returned object's fields are internal; pass the object on rather than reading its fields.
+A \code{mascot_size} object. Its fields are internal; pass it on rather than reading them.
 }
 \description{
 Control the size of the mascot in pixels or as a percentage. Percentage

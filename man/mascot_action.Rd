@@ -27,9 +27,7 @@ Defaults to \code{FALSE}. Use it while the action makes no sense, such as during
 a long task, and send \code{mascot_action(..., disabled = FALSE)} afterwards.}
 }
 \value{
-A \code{mascot_action} object with \code{label}, \code{tooltip} and \code{disabled}
-elements.
-The returned object's fields are internal; pass the object on rather than reading its fields.
+A \code{mascot_action} object. Its fields are internal; pass it on rather than reading them.
 }
 \description{
 Turn the mascot into a button for one action of your Shiny app, such as

@@ -31,9 +31,7 @@
 #' @param closable A logical flag, defaulting to `TRUE`, to show a close button.
 #'   `FALSE` hides the button; the Escape key still closes the bubble. `NULL`
 #'   is not accepted.
-#' @returns A `mascot_bubble` object with `text`, `html`, `duration`, and
-#'   `closable` elements. `text` is a plain string or `NULL`; `html` is a flag.
-#' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @returns A `mascot_bubble` object. Its fields are internal; pass it on rather than reading them.
 #' @family mascot helpers
 #' @seealso [mascot()], [update_mascot()], [mascot_popup_menu()]
 #' @export
@@ -50,7 +48,7 @@ mascot_bubble <- function(text = NULL, ..., duration = 5, closable = TRUE) {
     } else {
       checkmate::assert_string(text, min.chars = 1, null.ok = TRUE)
     }
-    # NULL used to mean "stay"; it gets its own hint instead of checkmate's generic type message.
+    # NULL gets its own hint (use Inf to keep the bubble open) instead of checkmate's generic type message.
     if (is.null(duration)) {
       cli::cli_abort(
         "{.arg duration} cannot be NULL; use {.code duration = Inf} to keep the bubble open.",

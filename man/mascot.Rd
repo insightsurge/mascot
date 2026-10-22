@@ -25,8 +25,8 @@ the server; \code{\link[=update_mascot]{update_mascot()}} adds the module namesp
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
-\item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object (Knurl and
-Neer are experimental). Defaults to \code{"tessa"}. \code{NULL} is not accepted.}
+\item{character}{A character id such as \code{"tessa"}, or a \code{\link[=mascot_character]{mascot_character()}}
+helper (Knurl and Neer are experimental). Defaults to \code{"tessa"}. \code{NULL} is not accepted.}
 
 \item{mood}{A mood name or \code{\link[=mascot_mood]{mascot_mood()}} object. Defaults to \code{"idle"}.
 See \code{\link[=mascot_moods]{mascot_moods()}} for available choices. \code{NULL} is not accepted.}

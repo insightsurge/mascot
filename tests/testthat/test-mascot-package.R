@@ -87,7 +87,6 @@ describe("B2 condition reference", {
       "mascot_error_file",
       "mascot_palette_dropped",
       "mascot_gesture_dropped",
-      "mascot_click_dropped",
       "mascot_template_evicted",
       "mascot_update_ignored",
       "mascot_contrast",

@@ -35,9 +35,7 @@ explicitly supplied value gives an informational message. \code{TRUE}, \code{FAL
 \code{NULL} are not accepted. See the Dragging section.}
 }
 \value{
-A \code{mascot_placement} object with \code{position}, \code{minimise} and \code{drag}
-elements.
-The returned object's fields are internal; pass the object on rather than reading its fields.
+A \code{mascot_placement} object. Its fields are internal; pass it on rather than reading them.
 }
 \description{
 Floating mascots sit in a window corner (by default, \code{"bottom-right"}), 1rem

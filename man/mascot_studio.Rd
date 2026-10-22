@@ -7,8 +7,8 @@
 mascot_studio(view = "studio", ..., fn = NULL, character = "tessa", run = TRUE)
 }
 \arguments{
-\item{view}{Which view to open: \code{"studio"} (the default) for the function
-playground, \code{"examples"} for the gallery of bundled examples, or \code{"theme"}
+\item{view}{Which view to open: \code{"studio"} (the default) for the studio, one
+page per function, \code{"examples"} for the gallery of bundled examples, or \code{"theme"}
 to theme one character.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}

@@ -5,8 +5,7 @@
 #' follows the shown mood.
 #' @param text A non-empty string for the label (for example `"Saving..."`), or
 #'   `NULL` (the default) to follow the mood.
-#' @returns A `mascot_status` object with one `text` element, which may be `NULL`.
-#' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @returns A `mascot_status` object. Its fields are internal; pass it on rather than reading them.
 #' @family mascot helpers
 #' @seealso [mascot()], [update_mascot()]
 #' @export

@@ -9,8 +9,8 @@
 #' appears are kept until it appears.
 #'
 #' @inheritParams mascot
-#' @param character A character name or [mascot_character()] object. `NULL`
-#'   (the default) leaves the character unchanged.
+#' @param character A character id such as `"tessa"`, or a [mascot_character()]
+#'   helper. `NULL` (the default) leaves the character unchanged.
 #' @param mood A mood name or [mascot_mood()] object. `NULL` (the default)
 #'   leaves the mood unchanged.
 #' @param status A non-empty string or [mascot_status()] object. `NULL`
@@ -272,7 +272,7 @@ update_mascot <- function(
   theme_result <- if (!is.null(theme)) {
     tryCatch(
       list(
-        value = mascot_update_theme(
+        value = as_theme_arg(
           theme,
           environment(),
           if (is.null(character)) {
@@ -376,11 +376,10 @@ update_mascot <- function(
 
 #' Send one update, applying the module namespace once
 #' @noRd
-send_update <- function(session, id, patch, replay = FALSE) {
+send_update <- function(session, id, patch) {
   checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   checkmate::assert_list(patch, names = "unique")
-  checkmate::assert_flag(replay)
   key <- mascot_binding_id(session, id)
   warning_id <- substring(key, nchar(session$ns("")) + 1L)
   # Development overlays are diagnostics, not accepted desired state/actions.
@@ -431,23 +430,6 @@ send_update <- function(session, id, patch, replay = FALSE) {
   owner$states[[key]] <- next_record
   mascot_state_schedule(session, key)
   invisible(NULL)
-}
-
-#' Merge the latest arguments using the browser queue's replacement rules
-#' @noRd
-merge_update_patch <- function(previous, patch) {
-  checkmate::assert_list(previous, names = "unique")
-  checkmate::assert_list(patch, names = "unique")
-  if (is.null(patch$problem)) {
-    previous$problem <- NULL
-  }
-  if (!is.null(patch$character)) {
-    previous$mood <- NULL
-  }
-  for (key in names(patch)) {
-    previous[key] <- patch[key]
-  }
-  previous
 }
 
 #' Whether client-side problem messages should be shown

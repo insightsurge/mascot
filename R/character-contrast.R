@@ -25,7 +25,7 @@ character_colour <- function(colour, path = "$.colours") {
   c(values[1:3] / 255, values[[4L]])
 }
 
-#' Apply the existing bounded HSL follow adjustment
+#' Apply the bounded HSL follow adjustment
 #' @noRd
 character_colour_follow <- function(colour, rule) {
   checkmate::assert_numeric(colour, len = 4L, lower = 0, upper = 1, any.missing = FALSE)

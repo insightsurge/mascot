@@ -10,7 +10,7 @@ mascot_examples()
 A data frame with character columns \code{name}, \code{title} and \code{description},
 in teaching order. \code{name} is accepted by \code{\link[=mascot_example]{mascot_example()}}.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
-names and types. The first column is the value you pass to the matching function.
+names and types.
 }
 \description{
 Start with the studio: every exported function and argument, live, with
@@ -18,7 +18,8 @@ explanations and the code to copy. \code{"theme"} is a page of the same app that
 themes one character and gives the code to copy. The other examples show one
 scenario each. All work offline. The studio, the theme page and the
 single-file examples need optional \code{bslib}, and the studio also needs
-optional \code{knitr}; the \code{golem} example needs optional \code{golem}. The rhino-shaped
+optional \code{knitr}; the \code{long-task} example needs optional \code{promises} and
+\code{later}, and the \code{golem} example needs optional \code{golem}. The rhino-shaped
 example uses plain Shiny without rhino or box.
 }
 \examples{

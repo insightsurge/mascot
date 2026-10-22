@@ -5,12 +5,13 @@
 #' themes one character and gives the code to copy. The other examples show one
 #' scenario each. All work offline. The studio, the theme page and the
 #' single-file examples need optional `bslib`, and the studio also needs
-#' optional `knitr`; the `golem` example needs optional `golem`. The rhino-shaped
+#' optional `knitr`; the `long-task` example needs optional `promises` and
+#' `later`, and the `golem` example needs optional `golem`. The rhino-shaped
 #' example uses plain Shiny without rhino or box.
 #' @returns A data frame with character columns `name`, `title` and `description`,
 #'   in teaching order. `name` is accepted by [mascot_example()].
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
-#'   names and types. The first column is the value you pass to the matching function.
+#'   names and types.
 #' @family mascot examples
 #' @seealso [mascot_example()]
 #' @export
@@ -31,7 +32,7 @@ mascot_examples <- function() {
     description = c(
       "Every function and argument, live, with explanations and the code to copy.",
       "A worried helper names invalid fields and becomes happy when both pass.",
-      "Thinking during a slow step, then success or a lasting error bubble.",
+      "Thinking during a slow step, then success or a lasting error bubble. Requires promises and later.",
       "Two module helpers and a parent-owned floating helper.",
       "A palette, your own or your brand's colours, the code to copy and every mood checked. Requires bslib.",
       "Function-built UI, golem runtime options and two nested review modules. Requires golem.",

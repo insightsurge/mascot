@@ -6,13 +6,10 @@ character_data_store$order <- character()
 character_data_verified <- new.env(parent = emptyenv())
 character_data_verified$items <- list()
 
-#' Character ids reserved for built-in characters, shipped or planned
-#'
-#' Includes the 0.1.0 candidates so a custom character registered now cannot
-#' collide with a built-in added later.
+#' Character ids a custom character cannot use: the built-in ids
 #' @noRd
 character_data_reserved <- function() {
-  unique(c(builtin_characters()$id, "tessa", "neer", "alpha_visor", "knurl"))
+  builtin_characters()$id
 }
 
 #' Verify internal checked character data
@@ -57,8 +54,8 @@ character_data_verify <- function(x) {
 #' Registers a verified character recipe for the lifetime of the R process.
 #' Registration inside an active reactive domain is rejected. Re-registering
 #' identical content is idempotent; conflicting content with an existing custom
-#' or reserved built-in identifier raises an error. Normal registration verifies
-#' entries once; the internal reset helper also verifies restored snapshots.
+#' or reserved built-in identifier raises an error. Registration verifies each
+#' entry once.
 #' @noRd
 character_data_register <- function(x) {
   checkmate::assert_class(x, "mascot_character_data")
@@ -123,39 +120,4 @@ character_data_get <- function(id) {
 #' @noRd
 character_data_ids <- function() {
   character_data_store$order
-}
-
-#' Snapshot the internal character data store
-#' @noRd
-character_data_snapshot <- function() {
-  list(
-    items = character_data_store$items,
-    order = character_data_store$order
-  )
-}
-
-#' Reset or restore the internal character data store
-#' @noRd
-character_data_reset <- function(state = NULL) {
-  checkmate::assert_list(state, names = "unique", null.ok = TRUE)
-  if (is.null(state)) {
-    character_data_store$items <- list()
-    character_data_store$order <- character()
-  } else {
-    checkmate::assert_names(names(state), identical.to = c("items", "order"))
-    checkmate::assert_list(state$items, names = "unique")
-    checkmate::assert_character(state$order, any.missing = FALSE, unique = TRUE)
-    if (length(state$items) || length(state$order)) {
-      checkmate::assert_names(names(state$items), identical.to = state$order)
-    }
-    state$items <- lapply(state$items, character_data_verify)
-    for (id in state$order) {
-      if (!identical(id, state$items[[id]]$id)) {
-        character_format_abort("identity", "$.id", state$items[[id]]$id, "Match each snapshot key to its character id.")
-      }
-    }
-    character_data_store$items <- state$items
-    character_data_store$order <- state$order
-  }
-  invisible(NULL)
 }

@@ -91,23 +91,11 @@ describe("I1 format-v1 dispatch", {
     expect_gt(result$ink, 1000)
   })
 
-  it("never reaches the legacy drawing code for a format-v1 character", {
-    js <- local_runtime_page(
-      tags = list(mascot("a", character = alpha, motion = FALSE, placement = "inline")),
-      characters = list(alpha),
-      before_mount = "window.legacyCalls = 0; const original = mascot.drawing.character;
-        mascot.drawing.character = (...a) => { legacyCalls++; return original(...a); };"
-    )
-    js("T = {frames: async (n) => { for (let i = 0; i < n; i++) await new Promise(requestAnimationFrame); }}")
-    js("T.frames(3)")
-    expect_equal(js("legacyCalls"), 0)
-  })
-
   it("draws default Tessa through format-v1 runtime modules", {
-    legacy <- local_host_page(size = 160)
-    install_runtime_helpers(legacy)
-    legacy("T.frames(3)")
-    expected <- legacy("T.picture(document.querySelector('#a canvas'))")
+    host <- local_host_page(size = 160)
+    install_runtime_helpers(host)
+    host("T.frames(3)")
+    expected <- host("T.picture(document.querySelector('#a canvas'))")
     js <- local_runtime_page(
       tags = list(mascot("a", size = 160, placement = "inline")),
       before_mount = spies_js
@@ -116,55 +104,21 @@ describe("I1 format-v1 dispatch", {
     js("T.frames(3)")
     result <- js(
       "({picture: T.picture(document.querySelector('#a canvas')), frames: frames.length,
-      geometry: geometryCalls.length, faces: faceCalls.length, drawn: typeof mascot.drawing.character})"
+      geometry: geometryCalls.length, faces: faceCalls.length})"
     )
-    expect_gt(expected$ink, 1000)
     expect_gt(result$picture$ink, 1000)
+    expect_identical(result$picture, expected)
     expect_gt(result$frames, 0)
     expect_gt(result$geometry, 0)
     expect_gt(result$faces, 0)
   })
 
-  it("rejects a format-v1 character in a legacy player, and a legacy character in a format-v1 player, before any change", {
-    blob_json <- paste(
-      readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
-      collapse = "\n"
+  it("names the missing character when a page has no description of it", {
+    js <- local_runtime_page(tags = list(mascot("a", size = 160, placement = "inline")))
+    message <- js(
+      "(() => { try { mascot.readCharacter('nobody'); return 'no error'; } catch (e) { return e.message; } })()"
     )
-    js <- page_with(
-      tags = list(
-        mascot("a", character = alpha, motion = FALSE, placement = "inline"),
-        shiny::tags$div(
-          id = "b",
-          `data-mascot` = "",
-          `data-character` = "blob",
-          shiny::tags$script(
-            type = "application/json",
-            `data-mascot-character` = "blob",
-            shiny::HTML(blob_json)
-          ),
-          shiny::tags$canvas(class = "mascot-canvas"),
-          shiny::tags$span(class = "mascot-status", "Idle")
-        )
-      )
-    )
-    result <- js(
-      "(() => {
-        const legacy = mascot.readCharacter('blob', document.getElementById('b'));
-        const plain = mascot.mount(T.canvas(), legacy, { x: 150, baseY: 270, reduced: false });
-        plain.pause();
-        const v1 = T.player('alpha_two');
-        const errors = {};
-        try { plain.update({ character: T.load('alpha_two') }); } catch (e) { errors.legacy = e.message; }
-        try { v1.controller.update({ character: legacy }); } catch (e) { errors.v1 = e.message; }
-        return { errors, legacy: plain.current(), v1: v1.controller.current() };
-      })()"
-    )
-    expect_match(result$errors$legacy, "format-v1 character cannot replace a legacy character")
-    expect_match(result$errors$v1, "legacy character cannot replace a format-v1 character")
-    expect_identical(result$legacy$character, "blob")
-    expect_false(result$legacy$swapping)
-    expect_identical(result$v1$character, "alpha_two")
-    expect_false(result$v1$swapping)
+    expect_match(message, "no description of the character 'nobody'", fixed = TRUE)
   })
 })
 
@@ -1294,6 +1248,318 @@ describe("I1 the player's contract", {
   })
 })
 
+# A harness for the player contract: animation frames run only when the test fires them (a timestamp in ms; the player
+# turns it into frames at 30 per second), the reduced-motion preference is a stub the test sets, and the harness counts
+# each clear of a canvas (one per drawn frame), the opacity of each composite and the last frame number the player
+# asked its tracks for. `a` is Alpha Two and `b` is Alpha Three. Players are destroyed and the stubs restored afterwards.
+contract_js <- function(code) {
+  checkmate::assert_string(code)
+  paste(
+    "(() => {",
+    "const raf = window.requestAnimationFrame, cancel = window.cancelAnimationFrame, match = window.matchMedia;",
+    "const motion = mascot.motion, queued = new Map(), listeners = new Set(), players = [], composites = [];",
+    "let id = 0, clears = 0, lastFrame = null;",
+    "const media = { matches: false, addEventListener: (type, fn) => listeners.add(fn),",
+    "  removeEventListener: (type, fn) => listeners.delete(fn) };",
+    "window.requestAnimationFrame = (fn) => { queued.set(++id, fn); return id; };",
+    "window.cancelAnimationFrame = (n) => queued.delete(n); window.matchMedia = () => media;",
+    "const frameAt = motion.tracks.frameAt;",
+    "mascot.motion = { ...motion, tracks: { ...motion.tracks,",
+    "  frameAt: (tracks, state, n, options) => { lastFrame = n; return frameAt(tracks, state, n, options); } } };",
+    "const a = T.load('alpha_two'), b = T.load('alpha_three');",
+    "const fire = (t) => { const batch = [...queued.values()]; queued.clear(); batch.forEach((fn) => fn(t)); };",
+    "const preference = (value) => { media.matches = value; listeners.forEach((fn) => fn({ matches: value })); };",
+    "const attempt = (fn) => { try { fn(); } catch (e) { return e.message; } return 'no error'; };",
+    "const mount = (options = {}, character = a) => {",
+    "  const c = T.canvas(), ctx = c.getContext('2d'), clear = ctx.clearRect.bind(ctx), image = ctx.drawImage.bind(ctx);",
+    "  ctx.clearRect = (...args) => { clears++; return clear(...args); };",
+    "  ctx.drawImage = (...args) => { composites.push(ctx.globalAlpha); return image(...args); };",
+    "  const p = mascot.mount(c, character, { x: 150, baseY: 270, ...options }); players.push(p); return { c, ctx, p };",
+    "};",
+    "try {",
+    code,
+    "} finally {",
+    "  players.forEach((p) => p.destroy()); mascot.motion = motion;",
+    "  window.requestAnimationFrame = raf; window.cancelAnimationFrame = cancel; window.matchMedia = match;",
+    "} })()",
+    sep = "\n"
+  )
+}
+
+describe("the player contract on a format-v1 character", {
+  it("refuses an onChange that is not a function before drawing or adding a listener", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const errors = [null, 42, 'bad', {}].map((onChange) => attempt(() => mount({ onChange })));
+      return { errors, drawn: clears, listeners: listeners.size, queue: queued.size };"
+    ))
+    expect_identical(unlist(r$errors), rep("mascot: onChange: expected a function", 4))
+    expect_equal(r$drawn, 0)
+    expect_equal(r$listeners, 0)
+    expect_equal(r$queue, 0)
+  })
+
+  it("reports a throwing onChange once through console.error and carries on playing to rest", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const error = console.error; let reports = 0, callbacks = 0;
+      console.error = (...args) => { if (args[0] === 'mascot: onChange callback failed') reports++; };
+      try {
+        const { p } = mount({ onChange: () => { callbacks++; throw new Error('host failed'); } });
+        p.update({ character: b }); fire(0); fire(1000); fire(2000); fire(5000); fire(6000);
+        const result = { reports, callbacks, current: p.current(), rest: lastFrame, queue: queued.size };
+        p.destroy(); p.seek(0); p.update({ mood: 'happy' }); result.afterDestroy = callbacks;
+        return result;
+      } finally { console.error = error; }"
+    ))
+    expect_equal(r$reports, 1)
+    # Mounted (a, still), the swap starts (a, swapping), b fades in at frame 30, the swap ends at frame 60.
+    expect_equal(r$callbacks, 4)
+    expect_identical(r$current$character, "alpha_three")
+    expect_false(r$current$swapping)
+    # The swap started a 150-frame activity window (five seconds at 30 fps); the player rests at its end.
+    expect_equal(r$rest, 150)
+    expect_equal(r$queue, 0)
+    expect_equal(r$afterDestroy, 4)
+  })
+
+  it("lets an onChange callback update or destroy its player, with no stale notification or animation frame", {
+    js <- page_with()
+    r <- js(contract_js(
+      "let p, callbacks = 0; const events = [];
+      const mounted = mount({ onChange: (s) => {
+        callbacks++; events.push(`${s.character}:${s.swapping}`);
+        if (p && s.swapping && s.character === a.id) p.update({ reduced: true });
+        else if (p && s.character === b.id && !s.swapping) p.destroy();
+      } });
+      p = mounted.p; p.update({ character: b }); fire(0); p.redraw(); fire(100);
+      return { callbacks, events, queue: queued.size, listeners: listeners.size, current: p.current() };"
+    ))
+    # Reduced motion finishes the swap at once, inside the callback that announced it; the next one destroys.
+    expect_equal(r$callbacks, 3)
+    expect_identical(unlist(r$events), c("alpha_two:false", "alpha_two:true", "alpha_three:false"))
+    expect_equal(r$queue, 0)
+    expect_equal(r$listeners, 0)
+    expect_identical(r$current$character, "alpha_three")
+  })
+
+  it("keeps a swap's timeline through pause and play in either phase, and ignores a stale animation frame", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const rows = [];
+      for (const n of [15, 45]) {
+        const { p } = mount(); p.update({ character: b }); fire(0); fire((n * 1000) / 30);
+        p.pause(); const paused = clears; fire(10000);
+        const frozen = clears === paused && queued.size === 0;
+        p.play(); fire(20000); fire(20500); const resumed = lastFrame - n;
+        const stale = [...queued.values()][0], snapshot = JSON.stringify(p.current()), count = clears;
+        p.destroy(); stale(30000);
+        rows.push({ frozen, resumed, inert: clears === count && JSON.stringify(p.current()) === snapshot,
+          queue: queued.size });
+      }
+      const { p } = mount(); p.update({ character: b }); fire(0); fire(500); p.pause(); p.play(); fire(1000); fire(30000);
+      return { rows, rest: lastFrame, restQueue: queued.size, listeners: listeners.size };"
+    ))
+    for (row in r$rows) {
+      expect_true(row$frozen)
+      # Half a second after play is 15 frames on from where pause stopped: the paused time is not counted.
+      expect_equal(row$resumed, 15)
+      expect_true(row$inert)
+      expect_equal(row$queue, 0)
+    }
+    # Play during a swap does not renew activity: the player still rests at the window the swap opened at frame 0.
+    expect_equal(r$rest, 150)
+    expect_equal(r$restQueue, 0)
+    # Only the last player is still alive and listening.
+    expect_equal(r$listeners, 1)
+  })
+
+  it("redraws the same picture at rest and in both swap phases without moving time, state or animation frames", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const { c, p } = mount(); const rows = [];
+      for (const n of [0, 21, 51, 200]) {
+        if (n === 21) { p.seek(6); p.update({ character: b }); }
+        p.seek(n);
+        const image = c.toDataURL(), snapshot = JSON.stringify(p.current()), seen = lastFrame;
+        const requests = [...queued.entries()], count = clears;
+        p.redraw();
+        rows.push({ n, swapping: p.current().swapping, picture: image === c.toDataURL(),
+          state: snapshot === JSON.stringify(p.current()), frame: lastFrame === seen, drawn: clears - count,
+          raf: requests.length === queued.size && requests.every(([key, fn]) => queued.get(key) === fn) });
+      }
+      return rows;"
+    ))
+    expect_identical(vapply(r, function(x) x$swapping, logical(1)), c(FALSE, TRUE, TRUE, FALSE))
+    for (row in r) {
+      expect_true(row$picture, info = row$n)
+      expect_true(row$state, info = row$n)
+      expect_true(row$frame, info = row$n)
+      expect_equal(row$drawn, 1, info = row$n)
+      expect_true(row$raf, info = row$n)
+    }
+  })
+
+  it("redraws without resetting the running clock, and draws nothing new while paused", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const { p } = mount(); fire(0); fire(200); const first = lastFrame;
+      p.redraw(); fire(300); const next = lastFrame;
+      p.pause(); const snapshot = JSON.stringify(p.current()), pausedQueue = queued.size;
+      p.redraw(); fire(10000);
+      return { first, next, paused: lastFrame, unchanged: snapshot === JSON.stringify(p.current()), pausedQueue,
+        queue: queued.size };"
+    ))
+    # 200 ms is frame 6 and 300 ms frame 9, counted from the same origin before and after the redraw.
+    expect_equal(r$first, 6)
+    expect_equal(r$`next`, 9)
+    expect_equal(r$paused, 9)
+    expect_true(r$unchanged)
+    expect_equal(r$pausedQueue, 0)
+    expect_equal(r$queue, 0)
+  })
+
+  it("accepts colour overrides at the edges of each form and refuses malformed or out-of-range ones whole", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const { c, p } = mount(); p.pause();
+      const drawn = () => geometryCalls.filter((g) => g.id !== 'shadow').at(-1).colours.shell;
+      const valid = ['#ABC', '#ab12CD', 'rgb(0, 255, 2.5)', 'rgba(255, 0, .5, 0)', 'rgba(1,2,3,1)', 'rgba(1,2,3,.25)'];
+      const accepted = valid.map((value) => [attempt(() => p.update({ colours: { shell: value } })), drawn()]);
+      const before = { sum: T.picture(c).sum, current: JSON.stringify(p.current()), clears, shell: drawn() };
+      const invalid = ['rgb(1..2, 2, 3)', 'rgb(256, 2, 3)', 'rgb(-1, 2, 3)', 'rgb(1, 2, 3, .5)', 'rgba(1, 2, 3)',
+        'rgba(1, 2, 3, 1.1)', 'rgba(1, 2, 3, .)', 'rgba(1, 2, 3, -0.1)', '#abcd', 'red'];
+      const refused = invalid.map((value) => attempt(() => p.update({ character: b, colours: { shell: value } })));
+      return { valid, accepted, invalid, refused, unchanged: T.picture(c).sum === before.sum &&
+        JSON.stringify(p.current()) === before.current && clears === before.clears && drawn() === before.shell };"
+    ))
+    for (i in seq_along(r$valid)) {
+      expect_identical(r$accepted[[i]][[1]], "no error", info = r$valid[[i]])
+      expect_identical(r$accepted[[i]][[2]], r$valid[[i]], info = r$valid[[i]])
+    }
+    for (i in seq_along(r$invalid)) {
+      expect_match(r$refused[[i]], "update.colours.shell", fixed = TRUE, info = r$invalid[[i]])
+      expect_match(r$refused[[i]], r$invalid[[i]], fixed = TRUE, info = r$invalid[[i]])
+    }
+    expect_true(r$unchanged)
+  })
+
+  it("keeps two players on two canvases independent, and each follows the visitor's preference", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const one = mount(), two = mount(); one.p.pause(); two.p.pause();
+      two.p.seek(15); const before = T.picture(two.c).sum;
+      one.p.update({ character: b, colours: { shell: '#123456' } }); one.p.seek(15);
+      const out = { one: one.p.current(), two: two.p.current() };
+      two.p.seek(15); out.twoSame = T.picture(two.c).sum === before;
+      one.p.destroy(); out.listeners = listeners.size;
+      two.p.seek(20); out.twoInk = T.picture(two.c).ink;
+      preference(true); two.p.update({ character: b });
+      out.reduced = two.p.current();
+      return out;"
+    ))
+    expect_identical(r$one$character, "alpha_two")
+    expect_true(r$one$swapping)
+    expect_identical(r$two$character, "alpha_two")
+    expect_false(r$two$swapping)
+    expect_true(r$twoSame)
+    expect_equal(r$listeners, 1)
+    expect_gt(r$twoInk, 1000)
+    # Under the visitor's reduced-motion preference the swap is an instant change.
+    expect_identical(r$reduced$character, "alpha_three")
+    expect_false(r$reduced$swapping)
+  })
+
+  it("refuses a description without format_version 1 in mount(), update() and the host, before any change", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const plain = { id: 'plain', name: 'Plain', format_version: 2 };
+      const mounted = attempt(() => mount({}, plain));
+      const afterMount = { clears, listeners: listeners.size, queue: queued.size };
+      const { p } = mount(); p.pause(); const before = JSON.stringify(p.current());
+      const updated = attempt(() => p.update({ character: plain }));
+      const el = document.getElementById('a'), warnings = [], warn = console.warn;
+      console.warn = (...args) => warnings.push(args.join(' '));
+      try {
+        mascot.host.receive({ id: 'a', patch: { character: { id: 'plain', name: 'Plain', json: JSON.stringify(plain) } } });
+      } finally { console.warn = warn; }
+      return { mounted, afterMount, updated, unchanged: JSON.stringify(p.current()) === before, warnings,
+        hosted: mascot.host.state(el).character };"
+    ))
+    expect_identical(r$mounted, "mascot: expected a character with format_version 1")
+    expect_equal(r$afterMount$clears, 0)
+    expect_equal(r$afterMount$listeners, 0)
+    expect_equal(r$afterMount$queue, 0)
+    expect_identical(r$updated, "mascot: update.character: expected a character with format_version 1")
+    expect_true(r$unchanged)
+    expect_length(r$warnings, 1)
+    expect_match(r$warnings[[1]], "expected a character with format_version 1", fixed = TRUE)
+    expect_identical(r$hosted, "alpha_two")
+  })
+})
+
+describe("the swapTiming mount option", {
+  it("refuses a value that is not an object of positive finite frame counts, before drawing", {
+    js <- page_with()
+    r <- js(contract_js(
+      "const values = [null, 'slow', [], { typo: 1 }, { outFrames: 0 }, { inFrames: -1 }, { outFrames: Infinity },
+        { inFrames: NaN }, { inFrames: '30' }];
+      const errors = values.map((swapTiming) => attempt(() => mount({ swapTiming })));
+      return { errors, drawn: clears, listeners: listeners.size };"
+    ))
+    errors <- unlist(r$errors)
+    expect_length(errors, 9)
+    expect_true(all(startsWith(errors, "mascot: swapTiming")), info = paste(errors, collapse = " | "))
+    expect_match(errors[[2]], "expected an object")
+    expect_match(errors[[3]], "expected an object")
+    expect_match(errors[[4]], "swapTiming.typo: unknown field 'typo'", fixed = TRUE)
+    for (i in 5:9) {
+      expect_match(errors[[i]], "expected a positive finite frame duration", info = i)
+    }
+    expect_equal(r$drawn, 0)
+    expect_equal(r$listeners, 0)
+  })
+
+  # The character shown at each frame of a swap that starts at frame 0, and whether it is still swapping.
+  swap_rows_js <- function(timing, frames) {
+    sprintf(
+      "const { p } = mount({ swapTiming: %s }); p.pause(); p.update({ character: b });
+      return [%s].map((f) => { p.seek(f); const s = p.current(); return `${f}:${s.character === a.id ? 'a' : 'b'}:${s.swapping}`; });",
+      timing,
+      paste(frames, collapse = ", ")
+    )
+  }
+
+  it("rounds each duration to whole frames, at least one", {
+    js <- page_with()
+    # 2.4 rounds to 2 frames out and 0.2 to 0, raised to 1 frame in: a three-frame swap.
+    expect_identical(
+      unlist(js(contract_js(swap_rows_js("{ outFrames: 2.4, inFrames: 0.2 }", 0:4)))),
+      c("0:a:true", "1:a:true", "2:b:true", "3:b:false", "4:b:false")
+    )
+    # 0.4 is raised to 1 frame out and 2.6 rounds to 3 in: a four-frame swap.
+    expect_identical(
+      unlist(js(contract_js(swap_rows_js("{ outFrames: 0.4, inFrames: 2.6 }", 0:5)))),
+      c("0:a:true", "1:b:true", "2:b:true", "3:b:true", "4:b:false", "5:b:false")
+    )
+  })
+
+  it("caps each duration at 150 frames before fitting the swap into the 150-frame activity window", {
+    js <- page_with()
+    # Capped, 1000 and 30 become 150 and 30; fitted to 150 frames, the fade-out takes 150 * 150 / 180 = 125 of them.
+    # Uncapped it would take round(150 * 1000 / 1030) = 146.
+    expect_identical(
+      unlist(js(contract_js(swap_rows_js("{ outFrames: 1000, inFrames: 30 }", c(124, 125, 149, 150))))),
+      c("124:a:true", "125:b:true", "149:b:true", "150:b:false")
+    )
+    # Very large values neither overflow nor outlast the window: 150 and 150 share it equally.
+    expect_identical(
+      unlist(js(contract_js(swap_rows_js("{ outFrames: 1e300, inFrames: 1e300 }", c(74, 75, 149, 150))))),
+      c("74:a:true", "75:b:true", "149:b:true", "150:b:false")
+    )
+  })
+})
+
 # A gesture trigger runs a track-mode kit effect (only those have frames). This gives the kit's sparkle one: 30 frames.
 track_sparkle_js <- paste(
   "window.trackSparkle = (ch) => { const k = ch.face.kit_definition.effects.sparkle;",
@@ -1509,37 +1775,6 @@ describe("I1 seeking before the action", {
     expect_true(length(r$sparkle) > 0)
     expect_true(all(unlist(r$sparkle) == 1))
     expect_true(all(unlist(r$frame) == 0))
-  })
-})
-
-describe("I1 host replacement without a mood", {
-  it("rejects a format-v1 character that replaces a legacy one with the controller's message, not a compile error", {
-    blob_json <- paste(
-      readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
-      collapse = "\n"
-    )
-    tessa_json <- paste(
-      readLines(system.file("format", "characters", "tessa.json", package = "mascot")),
-      collapse = "\n"
-    )
-    m <- as.character(mascot("b", motion = FALSE, placement = "inline"))
-    m <- sub('data-character="tessa"', 'data-character="blob"', m, fixed = TRUE)
-    m <- sub('data-mascot-character="tessa"', 'data-mascot-character="blob"', m, fixed = TRUE)
-    m <- sub(tessa_json, blob_json, m, fixed = TRUE)
-    js <- page_with(tags = list(shiny::HTML(m)))
-    r <- js(
-      "(() => {
-        const el = document.getElementById('b'), warnings = [], original = console.warn;
-        console.warn = (...a) => warnings.push(a.join(' '));
-        try {
-          mascot.host.receive({ id: 'b', patch: { character: { id: 'alpha_two', name: 'Alpha Two', json: CHARACTERS.alpha_two.json } } });
-        } finally { console.warn = original; }
-        return { warnings, character: mascot.host.state(el).character };
-      })()"
-    )
-    expect_length(r$warnings, 1)
-    expect_match(r$warnings[[1]], "a format-v1 character cannot replace a legacy character here")
-    expect_identical(r$character, "blob")
   })
 })
 

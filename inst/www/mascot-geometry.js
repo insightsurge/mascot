@@ -763,7 +763,7 @@
     counts._active_parts = activeParts;
     return counts;
   };
-  // E5b policy caps per detail band: the metrics this engine counts, mirroring inst/format/policy-v1.json (a test
+  // Policy caps per detail band: the metrics this engine counts, mirroring inst/format/policy-v1.json (a test
   // compares them).
   const bandCaps = Object.freeze({
     full: Object.freeze({

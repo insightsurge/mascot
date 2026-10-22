@@ -2,6 +2,10 @@
 
 * Help pages and messages say what the package does now. The unknown-palette warning says each palette belongs to its own character; a character too big for its frame is told to keep every part, movement and effect inside the 300 by 300 frame; `mascot_examples()` says the `long-task` example needs promises and later; and the studio's colour swatches update as soon as the colours change (#462).
 
+* Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).
+
+* The engine draws only characters with `format_version` 1, the format of every built-in character and every character the R functions accept. A description in the 0.0.2 data shape (`inst/characters/tessa.json` in 0.0.2) is no longer drawn: the browser refuses it with an error. Every page loads about 87 KB less JavaScript (#463).
+
 * The website's top menu underlines the page you are on (#474).
 
 * The website's search results open on the site being read. Before, each result opened the future GitHub Pages address, which does not exist yet (#457).

@@ -873,8 +873,7 @@ describe("mascot.host responsive size", {
     skip_without_chrome()
     js <- local_host_page()
     js(
-      "window.poses=[]; if (mascot.geometry) { const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{poses.push(s); return origGeo(ctx,c,s,colours,o);}}; } const draw=mascot.draw;
-      mascot.draw=(ctx,ch,options)=>{poses.push(options.pose);return draw(ctx,ch,options);};
+      "window.poses=[]; if (mascot.geometry) { const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{poses.push(s); return origGeo(ctx,c,s,colours,o);}}; }
       window.resizeTo = size => mascot.host.receive({id:'a',patch:{size:{size,small_screen:null}}});"
     )
     # Each size changes the backing canvas, so each one redraws.
@@ -2286,21 +2285,6 @@ describe("mascot.host gaze (#241)", {
     expect_identical(r$queuedAtMount, 0L)
     expect_identical(r$queued, 0L)
   })
-  it("leaves eyes without visible pupils, or without pupil travel, exactly as they were", {
-    skip_without_chrome()
-    js <- local_engine_page()
-    # Happy eyes are closed arcs: no pupils to move.
-    expect_identical(js(draw_js('{mood:"happy",lookY:-1}')), js(draw_js('{mood:"happy"}')))
-    expect_false(identical(js(draw_js('{mood:"idle",lookY:-1}')), js(draw_js('{mood:"idle"}'))))
-    # A character whose pupils have no travel keeps its look in every direction.
-    still <- "(() => { const ch=structuredClone(window.mascot.readCharacter('tessa'));
-      ch.id='still'; ch.face.style={...(ch.face.style||{}),pupil:{lookX:0,lookY:0}};
-      const draw=pose=>{const c=document.createElement('canvas');c.width=c.height=300;
-        window.mascot.draw(c.getContext('2d'),ch,{x:150,baseY:280,pose,frame:0});return c.toDataURL();};
-      const rest=draw({mood:'idle'});
-      return [{lookY:-1},{lookY:1},{look:-1},{look:1}].every(p=>draw({mood:'idle',...p})===rest); })()"
-    expect_true(js(still))
-  })
   it("re-aims the gaze when the character changes while the menu is open", {
     skip_without_chrome()
     js <- local_host_page(
@@ -3637,8 +3621,7 @@ describe("restoring from minimised", {
       app$wait_for_js("mascot.host.state(document.getElementById('tessa')) !== null")
       app$run_js(
         "window.drawCount = 0;
-        const origDraw = mascot.draw, origGeo = mascot.geometry?.draw;
-        mascot.draw = (...args) => { window.drawCount++; return origDraw(...args); };
+        const origGeo = mascot.geometry?.draw;
         if (mascot.geometry) {
           mascot.geometry = { ...mascot.geometry, draw: (...args) => {
             if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') window.drawCount++;
@@ -3737,11 +3720,7 @@ describe("mascot.host speed budgets (#295)", {
         spacer.style.height = '3000px';
         document.body.append(spacer);
         const calls = [];
-        const origDraw = mascot.draw, origGeo = mascot.geometry?.draw;
-        mascot.draw = (ctx, ch, options) => {
-          calls.push(options.frame);
-          return origDraw(ctx, ch, options);
-        };
+        const origGeo = mascot.geometry?.draw;
         if (mascot.geometry) {
           mascot.geometry = { ...mascot.geometry, draw: (...args) => {
             if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') calls.push(args[4]?.frame ?? 0);
@@ -3766,7 +3745,6 @@ describe("mascot.host speed budgets (#295)", {
         const activeWhileLive = observers.size;
         mascot.host.unmount(el);
         const activeAfterUnmount = observers.size;
-        mascot.draw = origDraw;
         if (origGeo) mascot.geometry = { ...mascot.geometry, draw: origGeo };
         window.IntersectionObserver = NativeIntersection;
         return {
@@ -3797,11 +3775,10 @@ describe("mascot.host speed budgets (#295)", {
     js <- local_host_page(reduced = FALSE, viewport = c(800, 600))
     r <- js(
       "(async () => {
-        const el=document.getElementById('a'),mount=mascot.mount,draw=mascot.draw,origGeo=mascot.geometry?.draw;
+        const el=document.getElementById('a'),mount=mascot.mount,origGeo=mascot.geometry?.draw;
         mascot.host.unmount(el);
         let controller,draws=0;
         mascot.mount=(...args)=>(controller=mount(...args));
-        mascot.draw=(...args)=>{draws++;return draw(...args);};
         if (mascot.geometry) {
           mascot.geometry = { ...mascot.geometry, draw: (...args) => {
             if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') draws++;
@@ -3818,7 +3795,7 @@ describe("mascot.host speed budgets (#295)", {
           window.scrollTo(0,0);await frames();
           return {offscreen,returned:!mascot.host.state(el).offscreen,draws:draws-before};
         } finally {
-          mascot.mount=mount;mascot.draw=draw;
+          mascot.mount=mount;
           if (origGeo) mascot.geometry = { ...mascot.geometry, draw: origGeo };
         }
       })()"

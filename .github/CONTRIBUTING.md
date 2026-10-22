@@ -125,7 +125,8 @@ their licence. See the section on bundled files in [`docs/standards.md`](https:/
 ## Conduct and data
 
 Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md). Be kind and patient, and give feedback on
-the work, not the person. To report a security problem, do not open an issue: follow the [security policy](SECURITY.md).
-For questions, use [Discussions](https://github.com/insightsurge/mascot/discussions) rather than an issue.
+the work, not the person. To report a security problem, do not open an issue: follow the
+[security policy](SECURITY.md). For questions, use [Discussions](https://github.com/insightsurge/mascot/discussions)
+rather than an issue.
 
 Never put real personal, patient or client data in code, tests, issues, examples or screenshots. Use synthetic data.

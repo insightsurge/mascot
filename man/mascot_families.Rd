@@ -9,8 +9,8 @@ mascot_families()
 \value{
 A data frame with character columns \code{id} (the value you pass to the
 \code{family} argument of \code{\link[=mascot_characters]{mascot_characters()}}), \code{name}, \code{description} and
-\code{character} (\code{NA} for a built-in family). The family of the default
-character comes first.
+\code{character} (\code{NA} for every family that ships with mascot). The family of the
+default character comes first.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types.
 }

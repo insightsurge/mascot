@@ -33,6 +33,7 @@ describe("mascot_examples()", {
     expect_identical(anyDuplicated(examples$name), 0L)
     expect_identical(examples$title[examples$name == "theme"], "Theme a mascot")
     expect_match(examples$description[examples$name == "theme"], "Requires bslib")
+    expect_match(examples$description[examples$name == "long-task"], "Requires promises and later", fixed = TRUE)
   })
   it("copies single-file scenarios and the studio and rhino folders, and builds it without a server", {
     # mascot is already attached by the test run; attaching it here would detach it on exit.

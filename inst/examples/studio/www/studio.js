@@ -304,14 +304,23 @@
   }
   // The swatches show the colours the live mascot uses. They change only after a mascot:update message, a
   // light/dark switch or a new live frame (both reach syncHost()), or when Shiny draws the pickers again. The
-  // host applies a page switch on its next animation frame, so paint on the frame after that.
+  // host applies a page switch on its next animation frame, so paint on the frame after that. A change that
+  // arrives while a paint is pending asks for one more paint after it.
   let swatchFrame = null;
+  let swatchAgain = false;
   function scheduleSwatches() {
-    if (swatchFrame !== null) return;
+    if (swatchFrame !== null) {
+      swatchAgain = true;
+      return;
+    }
     swatchFrame = requestAnimationFrame(() => {
       swatchFrame = requestAnimationFrame(() => {
         swatchFrame = null;
         paintSwatches();
+        if (swatchAgain) {
+          swatchAgain = false;
+          scheduleSwatches();
+        }
       });
     });
   }

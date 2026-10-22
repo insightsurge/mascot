@@ -18,7 +18,7 @@ A data frame with character columns \code{id} (the value you pass to
 family \code{id}), and logical columns \code{is_default} (\code{TRUE} only for the
 character \code{\link[=mascot]{mascot()}} uses when you name none) and \code{built_in} (\code{TRUE} for
 characters shipped with the package), and \code{lifecycle} (\code{"stable"} or
-\code{"experimental"}), and \code{palettes} (comma-separated palette ids; informal
+\code{"experimental"} for every character that ships with mascot), and \code{palettes} (comma-separated palette ids; informal
 text for reading, so its exact shape is not promised: use \code{\link[=mascot_palettes]{mascot_palettes()}}
 for ids you rely on).
 A base data frame. Columns may be added at the end in later versions; existing columns keep their

@@ -274,20 +274,33 @@ describe("mascot_studio() inspector keys and colour swatches in Chrome", {
       c("Home", "controls"),
       c("End", "guide")
     )
-    for (step in steps) {
-      app$run_js(sprintf(
-        "{ const tab = %s; tab.focus(); tab.dispatchEvent(new KeyboardEvent('keydown', { key: '%s', bubbles: true })); }",
-        selected,
-        step[[1]]
-      ))
-      app$wait_for_js(sprintf(
-        "%s?.dataset.inspectorTab === '%s' && document.activeElement === %s",
-        selected,
-        step[[2]],
-        selected
-      ))
-      expect_identical(app$get_js(paste0(selected, ".dataset.inspectorTab")), step[[2]])
+    press <- function(steps) {
+      for (step in steps) {
+        app$run_js(sprintf(
+          "{ const tab = %s; tab.focus(); tab.dispatchEvent(new KeyboardEvent('keydown', { key: '%s', bubbles: true })); }",
+          selected,
+          step[[1]]
+        ))
+        app$wait_for_js(sprintf(
+          "%s?.dataset.inspectorTab === '%s' && document.activeElement === %s",
+          selected,
+          step[[2]],
+          selected
+        ))
+        expect_identical(app$get_js(paste0(selected, ".dataset.inspectorTab")), step[[2]])
+      }
     }
+    press(steps)
+    # With two tabs left, a fixed count of three would point past the last tab.
+    app$run_js("document.querySelector('[data-inspector-tab=help]').remove();")
+    press(list(
+      c("ArrowRight", "controls"),
+      c("ArrowRight", "guide"),
+      c("ArrowLeft", "controls"),
+      c("ArrowLeft", "guide"),
+      c("Home", "controls"),
+      c("End", "guide")
+    ))
   })
   it("repaints the colour swatches for the mode in use when the page switches between light and dark", {
     local_shiny_browser()

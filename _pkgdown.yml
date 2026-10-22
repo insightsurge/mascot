@@ -47,71 +47,17 @@ navbar:
           href: news/index.html
         - text: "Engine"
           href: articles/engine-changelog.html
-    guide:
-      text: Studio guide
+    guides:
+      text: Guides
       menu:
-        - text: "Character and mood"
-        - text: "mascot_character()"
-          href: articles/guide-mascot_character.html
-        - text: "mascot_read_character()"
-          href: articles/guide-mascot_read_character.html
-        - text: "mascot_check_character()"
-          href: articles/guide-mascot_check_character.html
-        - text: "mascot_mood()"
-          href: articles/guide-mascot_mood.html
-        - text: "mascot_moods()"
-          href: articles/guide-mascot_moods.html
-        - text: "mascot_characters()"
-          href: articles/guide-mascot_characters.html
-        - text: "mascot_families()"
-          href: articles/guide-mascot_families.html
-        - text: "mascot_anchors()"
-          href: articles/guide-mascot_anchors.html
-        - text: "Messages and clicks"
-        - text: "mascot_status()"
-          href: articles/guide-mascot_status.html
-        - text: "mascot_bubble()"
-          href: articles/guide-mascot_bubble.html
-        - text: "mascot_action()"
-          href: articles/guide-mascot_action.html
-        - text: "mascot_popup_menu()"
-          href: articles/guide-mascot_popup_menu.html
-        - text: "Motion and gestures"
-        - text: "mascot_motion_settings()"
-          href: articles/guide-mascot_motion_settings.html
-        - text: "mascot_gesture()"
-          href: articles/guide-mascot_gesture.html
-        - text: "mascot_gestures()"
-          href: articles/guide-mascot_gestures.html
-        - text: "Size and placement"
-        - text: "mascot_size()"
-          href: articles/guide-mascot_size.html
-        - text: "mascot_placement()"
-          href: articles/guide-mascot_placement.html
-        - text: "Colours and theme"
-        - text: "mascot_colour_roles()"
-          href: articles/guide-mascot_colour_roles.html
-        - text: "mascot_palettes()"
-          href: articles/guide-mascot_palettes.html
-        - text: "mascot_theme()"
-          href: articles/guide-mascot_theme.html
-        - text: "Wiring it in Shiny"
-        - text: "mascot()"
-          href: articles/guide-mascot.html
-        - text: "update_mascot()"
-          href: articles/guide-update_mascot.html
-        - text: "Preview page"
-        - text: "mascot_preview()"
-          href: articles/guide-mascot_preview.html
-        - text: "Bundled examples"
-        - text: "mascot_examples()"
-          href: articles/guide-mascot_examples.html
-        - text: "mascot_example()"
-          href: articles/guide-mascot_example.html
-        - text: "mascot_studio()"
-          href: articles/guide-mascot_studio.html
+        - text: "Studio guide: every function"
+          href: articles/studio-guide.html
+        - text: "Make your own character"
+          href: articles/write-your-own-character.html
+        - text: "All articles"
+          href: articles/index.html
   structure:
-    left: [intro, meet, reference, guide, changelog]
+    left: [intro, meet, guides, reference, changelog]
     right: [search, github, lightswitch]
 
 reference:
@@ -178,4 +124,5 @@ articles:
     navbar: ~
     desc: The guide pages of the mascot studio, one per function. Their source is in inst/examples/studio/guide/.
     contents:
+      - articles/studio-guide
       - starts_with("articles/guide-")

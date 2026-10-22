@@ -1770,7 +1770,7 @@ describe("studio guide pages", {
     expect_match(as.character(helpers$guide_fn_link("mascot_moods")), 'href="guide-mascot_moods.html"', fixed = TRUE)
     expect_error(helpers$guide_fn_link(1), "string")
   })
-  it("has a website article and a navbar link for every guide page", {
+  it("has a website article for every guide page, listed on the guide index the navbar links", {
     articles <- test_path("..", "..", "vignettes", "articles")
     config <- test_path("..", "..", "_pkgdown.yml")
     skip_if_not(
@@ -1781,6 +1781,21 @@ describe("studio guide pages", {
     stubs <- sub("^guide-(.*)[.]Rmd$", "\\1", list.files(articles, pattern = "^guide-.*[.]Rmd$"))
     expect_setequal(stubs, pages)
     navbar <- paste(readLines(config, warn = FALSE), collapse = "\n")
+    expect_match(navbar, "href: articles/studio-guide.html", fixed = TRUE)
+    # The index (vignettes/articles/studio-guide.Rmd) lists each page under its studio group.
+    groups <- new.env()
+    sys.source(file.path(dirname(guide_dir()), "R", "guide.R"), envir = groups)
+    expect_true(file.exists(file.path(articles, "studio-guide.Rmd")))
+    category <- vapply(
+      pages,
+      function(page) {
+        entry <- groups$playground_guide[[page]]
+        if (is.null(entry)) NA_character_ else entry$category
+      },
+      character(1)
+    )
+    grouped <- category %in% names(groups$playground_categories)
+    expect_true(all(grouped), info = toString(pages[!grouped]))
     for (page in pages) {
       stub <- paste(readLines(file.path(articles, paste0("guide-", page, ".Rmd")), warn = FALSE), collapse = "\n")
       # The stub includes the page by name and sets up the helpers from the installed package.
@@ -1791,7 +1806,6 @@ describe("studio guide pages", {
         fixed = TRUE,
         info = page
       )
-      expect_match(navbar, paste0("href: articles/guide-", page, ".html"), fixed = TRUE, info = page)
     }
   })
   # The website knit of a page: no studio, so no widgets, but every character, the live box and the real messages.

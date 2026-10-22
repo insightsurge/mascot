@@ -1,0 +1,47 @@
+---
+title: "Studio guide"
+---
+
+The mascot studio (`mascot_studio()`) explains every function on a page of its own: what it does, what to try, and
+the common mistakes. The same pages are here, grouped the way the studio groups them.
+
+```{r setup, include = FALSE}
+studio <- system.file("examples", "studio", package = "mascot")
+# The studio's own grouping (plain data): the groups, and the group of each function.
+groups <- new.env()
+sys.source(file.path(studio, "R", "guide.R"), envir = groups)
+pages <- sub("[.]Rmd$", "", list.files(file.path(studio, "guide"), pattern = "^[^_].*[.]Rmd$"))
+
+# One line per function: the title of its help page.
+help_titles <- function() {
+  titles <- character()
+  for (rd in tools::Rd_db("mascot")) {
+    tag <- function(tag) Filter(function(el) identical(attr(el, "Rd_tag"), tag), rd)
+    title <- trimws(gsub("\\s+", " ", paste(unlist(tag("\\title")), collapse = "")))
+    aliases <- unlist(tag("\\alias"))
+    titles[aliases] <- title
+  }
+  titles
+}
+titles <- help_titles()
+```
+
+```{r groups, echo = FALSE}
+category <- vapply(groups$playground_guide, `[[`, character(1), "category")
+sections <- lapply(names(groups$playground_categories), function(id) {
+  group <- groups$playground_categories[[id]]
+  fns <- intersect(names(category)[category == id], pages)
+  if (length(fns) == 0L) {
+    return(character())
+  }
+  c(
+    paste("##", group$title),
+    "",
+    group$summary,
+    "",
+    sprintf("- [`%s()`](guide-%s.html): %s", fns, fns, titles[fns]),
+    ""
+  )
+})
+knitr::asis_output(paste(unlist(sections), collapse = "\n"))
+```

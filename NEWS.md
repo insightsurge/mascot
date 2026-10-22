@@ -1,5 +1,9 @@
 # mascot (development version)
 
+* The website's search results open on the site being read. Before, each result opened the future GitHub Pages address, which does not exist yet (#457).
+
+* The website's long Studio guide menu becomes a short Guides menu: a Studio guide page that lists every function's guide under the studio's groups, Make your own character, and All articles (#452).
+
 * The website has a simpler look in light and dark mode: a narrower font that is easier to read, teal colours, one still glow instead of the moving background, and text capped at a comfortable line length. Code is no longer split with hyphens on phones (#451).
 
 * `mascot()` inside a `renderUI()` cached with `shiny::bindCache()` now works for every session, not only the first: the second visitor's mascot shows its status and takes `update_mascot()` calls instead of turning worried with "Mascot UI baseline could not be verified" (#424).

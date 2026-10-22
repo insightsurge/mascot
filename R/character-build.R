@@ -1,6 +1,7 @@
 #' Internal authoring constructors for the character format
 #'
-#' Internal: not exported, and only the tests call them; saving and registering characters from R builds on them.
+#' Internal and not exported. Only the tests call the `character_author_*()` constructors; saving and registering
+#' characters from R will build on them.
 #'
 #' These build typed source components and a source specification. They touch no
 #' registry and write no files.

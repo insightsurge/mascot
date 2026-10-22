@@ -1,10 +1,10 @@
 # mascot (development version)
 
-* The warning for a palette another character has says each palette belongs to its own character (#462).
+* `mascot()`, `update_mascot()`, `mascot_preview()` and `mascot_colour_roles()`: the message for an unknown palette that another character has says each palette belongs to its own character (#462).
 
-* `mascot_check_character()` and `mascot_read_character()` tell a character that is too big for its frame to keep every part, movement and effect inside the 300 by 300 frame at that size (#462).
+* `mascot_check_character()` and `mascot_read_character()` say how to fix a character that is too big for its frame: keep every part, movement and effect inside the 300 by 300 frame at that size (#462).
 
-* `alpha_visor` is no longer a reserved id: your own character may use it (#462).
+* `mascot_check_character()` and `mascot_read_character()` accept `alpha_visor` as the id of your own character (#462).
 
 * `mascot_examples()` says the `long-task` example needs promises and later (#462).
 

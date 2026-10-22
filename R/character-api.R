@@ -94,7 +94,8 @@ mascot_read_character <- function(path) {
 
 #' Register a checked character for this R process
 #'
-#' Internal: not exported; the tests and the studio's hidden "Your character" panel call it.
+#' Internal: not exported. The tests call it, and the studio's hidden "Your character" panel shows it in the
+#' code it writes.
 #'
 #' Register during app start-up or development. Inside a Shiny reactive domain,
 #' pass the checked object directly instead; visitor objects must stay private.

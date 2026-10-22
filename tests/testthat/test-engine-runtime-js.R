@@ -91,23 +91,11 @@ describe("I1 format-v1 dispatch", {
     expect_gt(result$ink, 1000)
   })
 
-  it("never reaches the legacy drawing code for a format-v1 character", {
-    js <- local_runtime_page(
-      tags = list(mascot("a", character = alpha, motion = FALSE, placement = "inline")),
-      characters = list(alpha),
-      before_mount = "window.legacyCalls = 0; const original = mascot.drawing.character;
-        mascot.drawing.character = (...a) => { legacyCalls++; return original(...a); };"
-    )
-    js("T = {frames: async (n) => { for (let i = 0; i < n; i++) await new Promise(requestAnimationFrame); }}")
-    js("T.frames(3)")
-    expect_equal(js("legacyCalls"), 0)
-  })
-
   it("draws default Tessa through format-v1 runtime modules", {
-    legacy <- local_host_page(size = 160)
-    install_runtime_helpers(legacy)
-    legacy("T.frames(3)")
-    expected <- legacy("T.picture(document.querySelector('#a canvas'))")
+    host <- local_host_page(size = 160)
+    install_runtime_helpers(host)
+    host("T.frames(3)")
+    expected <- host("T.picture(document.querySelector('#a canvas'))")
     js <- local_runtime_page(
       tags = list(mascot("a", size = 160, placement = "inline")),
       before_mount = spies_js
@@ -116,55 +104,13 @@ describe("I1 format-v1 dispatch", {
     js("T.frames(3)")
     result <- js(
       "({picture: T.picture(document.querySelector('#a canvas')), frames: frames.length,
-      geometry: geometryCalls.length, faces: faceCalls.length, drawn: typeof mascot.drawing.character})"
+      geometry: geometryCalls.length, faces: faceCalls.length})"
     )
     expect_gt(expected$ink, 1000)
     expect_gt(result$picture$ink, 1000)
     expect_gt(result$frames, 0)
     expect_gt(result$geometry, 0)
     expect_gt(result$faces, 0)
-  })
-
-  it("rejects a format-v1 character in a legacy player, and a legacy character in a format-v1 player, before any change", {
-    blob_json <- paste(
-      readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
-      collapse = "\n"
-    )
-    js <- page_with(
-      tags = list(
-        mascot("a", character = alpha, motion = FALSE, placement = "inline"),
-        shiny::tags$div(
-          id = "b",
-          `data-mascot` = "",
-          `data-character` = "blob",
-          shiny::tags$script(
-            type = "application/json",
-            `data-mascot-character` = "blob",
-            shiny::HTML(blob_json)
-          ),
-          shiny::tags$canvas(class = "mascot-canvas"),
-          shiny::tags$span(class = "mascot-status", "Idle")
-        )
-      )
-    )
-    result <- js(
-      "(() => {
-        const legacy = mascot.readCharacter('blob', document.getElementById('b'));
-        const plain = mascot.mount(T.canvas(), legacy, { x: 150, baseY: 270, reduced: false });
-        plain.pause();
-        const v1 = T.player('alpha_two');
-        const errors = {};
-        try { plain.update({ character: T.load('alpha_two') }); } catch (e) { errors.legacy = e.message; }
-        try { v1.controller.update({ character: legacy }); } catch (e) { errors.v1 = e.message; }
-        return { errors, legacy: plain.current(), v1: v1.controller.current() };
-      })()"
-    )
-    expect_match(result$errors$legacy, "format-v1 character cannot replace a legacy character")
-    expect_match(result$errors$v1, "legacy character cannot replace a format-v1 character")
-    expect_identical(result$legacy$character, "blob")
-    expect_false(result$legacy$swapping)
-    expect_identical(result$v1$character, "alpha_two")
-    expect_false(result$v1$swapping)
   })
 })
 
@@ -1532,13 +1478,14 @@ describe("the player contract on a format-v1 character", {
       return { mounted, afterMount, updated, unchanged: JSON.stringify(p.current()) === before, warnings,
         hosted: mascot.host.state(el).character };"
     ))
-    expect_match(r$mounted, "^mascot: ")
+    expect_identical(r$mounted, "mascot: expected a character with format_version 1")
     expect_equal(r$afterMount$clears, 0)
     expect_equal(r$afterMount$listeners, 0)
     expect_equal(r$afterMount$queue, 0)
-    expect_match(r$updated, "^mascot: update\\.character: ")
+    expect_identical(r$updated, "mascot: update.character: expected a character with format_version 1")
     expect_true(r$unchanged)
     expect_length(r$warnings, 1)
+    expect_match(r$warnings[[1]], "expected a character with format_version 1", fixed = TRUE)
     expect_identical(r$hosted, "alpha_two")
   })
 })
@@ -1820,37 +1767,6 @@ describe("I1 seeking before the action", {
     expect_true(length(r$sparkle) > 0)
     expect_true(all(unlist(r$sparkle) == 1))
     expect_true(all(unlist(r$frame) == 0))
-  })
-})
-
-describe("I1 host replacement without a mood", {
-  it("rejects a format-v1 character that replaces a legacy one with the controller's message, not a compile error", {
-    blob_json <- paste(
-      readLines(testthat::test_path("fixtures", "characters", "blob.json"), encoding = "UTF-8"),
-      collapse = "\n"
-    )
-    tessa_json <- paste(
-      readLines(system.file("format", "characters", "tessa.json", package = "mascot")),
-      collapse = "\n"
-    )
-    m <- as.character(mascot("b", motion = FALSE, placement = "inline"))
-    m <- sub('data-character="tessa"', 'data-character="blob"', m, fixed = TRUE)
-    m <- sub('data-mascot-character="tessa"', 'data-mascot-character="blob"', m, fixed = TRUE)
-    m <- sub(tessa_json, blob_json, m, fixed = TRUE)
-    js <- page_with(tags = list(shiny::HTML(m)))
-    r <- js(
-      "(() => {
-        const el = document.getElementById('b'), warnings = [], original = console.warn;
-        console.warn = (...a) => warnings.push(a.join(' '));
-        try {
-          mascot.host.receive({ id: 'b', patch: { character: { id: 'alpha_two', name: 'Alpha Two', json: CHARACTERS.alpha_two.json } } });
-        } finally { console.warn = original; }
-        return { warnings, character: mascot.host.state(el).character };
-      })()"
-    )
-    expect_length(r$warnings, 1)
-    expect_match(r$warnings[[1]], "a format-v1 character cannot replace a legacy character here")
-    expect_identical(r$character, "blob")
   })
 })
 

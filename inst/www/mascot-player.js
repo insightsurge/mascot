@@ -1,24 +1,36 @@
 /**
  * Character-format v1 runtime (mascot.runtime): compiles a checked character once, draws it through the format-v1
  * modules (mascot.parts, mascot.geometry, mascot.faces and mascot.motion.tracks) and moves it with a per-canvas
- * player. The host mounts a character with format_version 1 here through mascot.mount(); every other character keeps
- * the legacy player in mascot-motion.js. Load mascot-parts.js, mascot-geometry.js, mascot-faces.js and
- * mascot-motion.js first (any order among the four; they are only read when a character is compiled).
+ * player. The host mounts every character here through mascot.mount(). Load mascot-parts.js, mascot-geometry.js,
+ * mascot-faces.js and mascot-motion.js first (any order among the four; they are only read when a character is
+ * compiled).
  *
  * Nothing here reads a clock or calls Math.random(). A frame is a pure function of the compiled character, the state
  * and the frame number, so the player can seek. Compile once per character object (a weak cache that also keeps
  * failures); the detail-band budget is computed once per character and band; a frame builds no compiled data.
  *
- * Player contract (the same as the legacy player, so the host drives both alike): update({ mood, pose, colours,
- * reduced, character, messages, ...switches }) validates the whole patch before any state changes; gesture(name),
- * setMood(name), seek(n), redraw(), setBand(name), pause(), play(), holdVisibility(held), destroy(), current(), and
- * the onChange(snapshot) callback. Differences from the legacy player, all because the data is different:
+ * The player contract the host relies on:
+ *   - update({ mood, pose, colours, reduced, character, messages, ...switches }) validates the whole patch before any
+ *     state changes. gesture(name), setMood(name), seek(n), redraw(), setBand(name), pause(), play(),
+ *     holdVisibility(held), destroy(), current() and the onChange(snapshot) callback complete it.
  *   - pose is the held host look, { 'face.look_x': -1..1|null, 'face.look_y': -1..1|null }; a character without a
  *     gaze-capable face rejects it, so the host sends no gaze channels to faceless or no-gaze kits.
- *   - a swap without a mood chooses the incoming mood by the contract's fallback chain (mascot.parts.swapMood).
- *   - a format-v1 character cannot swap into a legacy one (or back); update() rejects it before any state changes.
+ *   - The five-second rule: mount, a mood change, a gesture, a held-look change, a swap and play after pause start a
+ *     new activity window of the character's idle frames (at most 150: five seconds at 30 fps). At its end the player
+ *     draws the resting frame once and stops asking for animation frames. Play during a swap does not renew it.
+ *   - A swap (update({ character }) with another id) fades the outgoing character out, then the incoming one in, over
+ *     the swapTiming mount option (30 and 30 frames by default; mascot.motion.shared.swapTiming). A swap without a mood
+ *     chooses the incoming mood by the format's fallback chain (mascot.parts.swapMood). The same id is an ordinary
+ *     update; reduced motion or swap: false makes the change instant. A swap composites the character once through a
+ *     private canvas, so the alpha of a part cannot bypass the fade.
+ *   - onChange(snapshot) receives the first current() snapshot, then one for each change of the shown id, mood or
+ *     swapping. An exception in it is reported once per player through console.error and does not stop the player.
+ *     Nothing is notified after destroy().
+ *   - redraw() repeats the current frame, at rest too, without changing time, state or animation frames, and is inert
+ *     after destroy(). Hosts use it after a canvas resize or a change of the drawing transform.
  *
- * Internal. Reserved for the character-format v1 contract: engine-format-proposal.md sections 2.3 and 3.16.
+ * Internal: not a supported API. The character format is documented in ?mascot_character_format and its schema,
+ * inst/format/character-v1.json.
  */
 (() => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: loaded with a <script> tag (a classic script, not a module)
@@ -963,7 +975,7 @@
       let target = current.entry;
       if (Object.hasOwn(patch, 'character')) {
         if (!isFormat(patch.character))
-          throw new Error('mascot: update.character: a legacy character cannot replace a format-v1 character here');
+          throw new Error('mascot: update.character: expected a character with format_version 1');
         let incoming;
         try {
           incoming = compile(patch.character);

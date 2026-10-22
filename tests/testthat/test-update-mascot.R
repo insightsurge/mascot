@@ -828,7 +828,7 @@ describe("theme in a Shiny browser", {
     app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper'))?.colours.body === '#1F6FEB'")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).mode"), "light")
     app$run_js(
-      "window.drawnBodies=[];if (mascot.geometry) { const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{if (colours?.body) drawnBodies.push(colours.body); return origGeo(ctx,c,s,colours,o);}}; } const draw=mascot.draw;mascot.draw=(ctx,ch,options)=>{drawnBodies.push(options.colours.body || ch.colours.body);return draw(ctx,ch,options)}"
+      "window.drawnBodies=[];if (mascot.geometry) { const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{if (colours?.body) drawnBodies.push(colours.body); return origGeo(ctx,c,s,colours,o);}}; }"
     )
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === '#9EC5FE'")
@@ -1458,7 +1458,7 @@ describe("nested modules across tabs", {
     expect_identical(app$get_js("helperState('first').placement.position"), "top-right")
     expect_false(app$get_js("helperState('first').motion.others"))
     # Static and renderUI mascots share every engine resource, even after remount.
-    for (file in c("mascot.js", "mascot-draw.js", "mascot-motion.js", "mascot-host.js")) {
+    for (file in c("mascot.js", "mascot-motion.js", "mascot-player.js", "mascot-host.js")) {
       expect_equal(app$get_js(sprintf("document.querySelectorAll('script[src$=\"/%s\"]').length", file)), 1)
     }
     expect_equal(app$get_js("document.querySelectorAll('link[href$=\"/mascot.css\"]').length"), 1)

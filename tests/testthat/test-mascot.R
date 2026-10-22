@@ -1,8 +1,7 @@
-# The engine files, in load order: the legacy drawing and motion files, the format-v1 modules (parts, geometry and faces
-# before the player that uses them), the format-v1 player, then the host that mounts either.
+# The engine files, in load order: the shared helpers, the format-v1 modules (parts, geometry and faces), the motion
+# tracks the host reads when it loads, the player that uses them all, then the host.
 engine_scripts <- c(
   "mascot.js",
-  "mascot-draw.js",
   "mascot-parts.js",
   "mascot-geometry.js",
   "mascot-faces.js",

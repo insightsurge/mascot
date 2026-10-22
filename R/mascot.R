@@ -531,7 +531,6 @@ mascot_dependency <- function() {
     package = "mascot",
     script = c(
       "mascot.js",
-      "mascot-draw.js",
       "mascot-parts.js",
       "mascot-geometry.js",
       "mascot-faces.js",

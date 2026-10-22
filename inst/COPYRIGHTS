@@ -4,14 +4,12 @@ The package as a whole: Copyright (c) Harsh Verma; MIT licence (see LICENSE).
 No third-party JavaScript, CSS or fonts are bundled.
 
 inst/www/mascot.js
-inst/www/mascot-draw.js
-    Source: drawing code first written by Harsh Verma for the R Engineering Playbook's trailer engine
-    (tools/animate/engine.js in that site's repository, commit bf1aa9a),
-    copied and adapted for this package.
+    Source: the mascot drawing engine. It began as the animation code the author wrote for the R Engineering
+    Playbook site, and has grown here into an engine of its own, built around the version 1 character format.
     Copyright (c) Harsh Verma. Licence: MIT.
 
 inst/www/mascot-motion.js
-    Source: motion and canvas player written for this package.
+    Source: character-format v1 motion tracks and the guards the player shares, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
 inst/www/mascot-host.js

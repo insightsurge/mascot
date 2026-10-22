@@ -2,12 +2,33 @@
 title: "Engine changelog"
 ---
 
-This article records changes to the browser engine in `inst/www/` (`mascot.js`, `mascot-draw.js`,
-`mascot-motion.js`, `mascot-host.js`, `mascot-parts.js`, `mascot-geometry.js`,
-`mascot-faces.js`, `mascot-player.js` and `mascot.css`), newest first. User-facing R functions and arguments are
+This article records changes to the browser engine in `inst/www/` (`mascot.js`, `mascot-motion.js`,
+`mascot-host.js`, `mascot-parts.js`, `mascot-geometry.js`, `mascot-faces.js`, `mascot-player.js` and `mascot.css`),
+newest first. User-facing R functions and arguments are
 covered in `NEWS.md`.
 
 # mascot (development version)
+
+## 2026-10-22 — The engine has one drawing path (#463)
+
+**In brief:** The engine draws characters with `format_version` 1 only, the format of every built-in character and of
+every character the R functions accept. The second drawing path, for the data shape of 0.0.2, could not be reached
+from R and is removed: about 2,090 lines and 88 KB less JavaScript on every page. Nothing drawn through the R
+functions changes.
+
+**Technical:**
+
+* `mascot-draw.js` is removed, and `mascot_dependency()` no longer lists it.
+* `mascot.js` keeps `fps`, `readCharacter()` and `validColour()`; `draw()`, `validateCharacter()` and
+  `checkCharacter()` are removed. Its load-twice guard now keys on `readCharacter`.
+* `mascot-motion.js` keeps `mascot.motion.tracks`, `mascot.motion.shared` (with `swapTiming`),
+  `mascot.motion.settings` and `mascot.motion.panels`; the player for the 0.0.2 shape, `mascot.motion.pose()`,
+  `mascot.motion.frame()` and `mascot.motion.validate()` are removed. `mascot.mount()` always mounts with
+  `mascot.runtime`.
+* `mascot-player.js`: its header holds the player contract. `update({ character })` with a description that is not
+  format version 1 fails with "update.character: expected a character with format_version 1".
+* `mascot-host.js`: validation, the detail band check (`mascot.runtime.check()`), the gaze, the restore control and
+  a swap without a mood always take the format-v1 route; the branches for the 0.0.2 shape are removed.
 
 ## 2026-10-21 — A page that reconnects into a new Shiny session starts the protocol again (#426)
 

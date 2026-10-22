@@ -545,13 +545,27 @@ describe("the engine and the R checker agree on the version-1 rules", {
     for (base in c("tessa", "alpha_visor")) {
       recipe <- format_recipe(base)
       recipe$id <- paste0(base, "_ext")
+      # The fixed-field objects whose key names are map names elsewhere: face.styles (Tessa) and a gesture's effect
+      # trigger (Alpha Visor, whose micro budget has room for one more effect); and for Tessa a reusable shape and a
+      # ref item that draws it, so the ref item's own keys are checked too.
       if (base == "tessa") {
-        # A reusable shape and a ref item that draws it, so the ref item's own keys are checked too.
         recipe$shapes <- list(dot = list(shape = "circle", r = 3, fill = "feature"))
         recipe$parts[[1]]$items <- c(recipe$parts[[1]]$items, list(list(shape = "ref", use = "dot", x = 0, y = -40)))
+        recipe$face$styles <- list(eyes = list())
+      } else {
+        recipe$gestures$wave$effects <- list(list(effect = "sparkle", anchor = "sparkle", at = 0.3))
       }
       plain <- character_format_check(recipe)
-      extended <- character_format_check(format_with_extensions(recipe))
+      probed <- format_with_extensions(recipe)
+      # An x_ key whose name has the reserved separator, where the engine's id walk looks at keys.
+      if (base == "tessa") {
+        probed$face$styles$x_my__tool <- 1
+        expect_true("$.face.styles.x_probe" %in% names(format_extension_paths(probed)))
+      } else {
+        probed$gestures$wave$effects[[1]]$x_my__tool <- 1
+        expect_true("$.gestures.wave.effects[0].x_probe" %in% names(format_extension_paths(probed)))
+      }
+      extended <- character_format_check(probed)
       expect_gt(length(format_extension_paths(unclass(extended))), 40L)
       result <- engine_run(js, extended)
       expect_null(result$code, info = result$message)
@@ -584,6 +598,33 @@ describe("the engine and the R checker agree on the version-1 rules", {
     expect_gt(result$a$ink, 1000)
     expect_identical(result$b, result$a)
     expect_identical(result$status[[2]], result$status[[1]])
+  })
+
+  it("mounts a character whose brand has a note and an x_ key under a bslib brand theme, as without them", {
+    testthat::skip_if_not_installed("bslib")
+    theme <- bslib::bs_theme(primary = "#1f6feb", secondary = "#966600")
+    recipe <- format_recipe("tessa")
+    recipe$id <- "tessa_brand"
+    plain <- runtime_character(character_format_check(recipe))
+    recipe$id <- "tessa_brand_noted"
+    recipe$brand$note <- "From the style guide."
+    recipe$brand$x_source <- "style guide v3"
+    noted <- runtime_character(character_format_check(recipe))
+    js <- local_runtime_page(
+      tags = list(
+        mascot("a", character = plain, theme = theme, motion = FALSE, placement = "inline"),
+        mascot("b", character = noted, theme = theme, motion = FALSE, placement = "inline")
+      )
+    )
+    install_runtime_helpers(js)
+    js("T.frames(3)")
+    result <- js(
+      "({a: T.picture(document.querySelector('#a canvas')), b: T.picture(document.querySelector('#b canvas')),
+        shown: document.getElementById('b').dataset.shownCharacter})"
+    )
+    expect_identical(result$shown, "tessa_brand_noted")
+    expect_gt(result$a$ink, 1000)
+    expect_identical(result$b, result$a)
   })
 
   it("accepts a note where R accepts one: motion, a track object, the bands and a mood's face", {
@@ -640,6 +681,18 @@ describe("the engine and the R checker agree on the version-1 rules", {
     data$face$kit_definition$effects$sweat$fade_at <- 0.99
     expect_no_error(character_format_check(data))
     expect_null(engine_run(js, data)$code)
+    # The largest number below 1 (1 - epsilon / 2) passes both. JSON text would round it to 1, so the engine gets it
+    # set in the page.
+    data$face$kit_definition$effects$sweat$fade_at <- 1 - .Machine$double.eps / 2
+    expect_lt(data$face$kit_definition$effects$sweat$fade_at, 1)
+    expect_no_error(character_format_check(data))
+    json <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null", digits = NA)
+    expect_null(js(paste0(
+      "(() => { const c = ",
+      json,
+      "; c.face.kit_definition.effects.sweat.fade_at = 1 - Number.EPSILON / 2; ",
+      "return c.face.kit_definition.effects.sweat.fade_at < 1 ? engineRun(c).code ?? null : 'rounded'; })()"
+    )))
   })
 
   it("refuses an undeclared outline.lod.<band>.second.colour in both; the engine meets it in that band", {

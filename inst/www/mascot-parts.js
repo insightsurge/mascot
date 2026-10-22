@@ -465,11 +465,12 @@
         if (idFields.has(field) && typeof value === 'string') checkId(value, path);
         return;
       }
-      const map = idMaps.has(field);
-      if (map) {
-        for (const id of Object.keys(value)) checkId(id, `${path}.${id}`);
+      // The walk goes by key name, not by position in the format, so it cannot tell an x_ extension key of a
+      // fixed-field object (never read) from an x_ id in a map. It skips both: R checks a map's ids in full first.
+      if (idMaps.has(field)) {
+        for (const id of Object.keys(value)) if (!extension(id)) checkId(id, `${path}.${id}`);
       }
-      for (const [key, entry] of Object.entries(value)) if (map || !extension(key)) visit(entry, `${path}.${key}`, key);
+      for (const [key, entry] of Object.entries(value)) if (!extension(key)) visit(entry, `${path}.${key}`, key);
     };
     visit(source, '$');
     if (Array.isArray(source.wear)) {

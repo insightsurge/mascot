@@ -210,7 +210,9 @@
         fail('input_type', `$.effects.${id}`, 'Only track effects have frames and tracks.');
       // The effect's own settings live in the kit definition; errors point there, as in R.
       const kitPath = `$.face.kit_definition.effects.${id}`;
-      if (effect.mode === 'progress') number(effect.fade_at ?? 0.9, `${kitPath}.fade_at`, 0, 1 - Number.EPSILON);
+      // fade_at is below 1, as in R: a drop that fades from 1 never shows its fade.
+      if (effect.mode === 'progress' && number(effect.fade_at ?? 0.9, `${kitPath}.fade_at`, 0, 1) >= 1)
+        fail('input_type', `${kitPath}.fade_at`, 'Use a value of at least 0 and below 1.');
       if (effect.mode === 'pulse') {
         number(effect.amplitude ?? 0.18, `${kitPath}.amplitude`, 0, 0.5);
         number(effect.rate ?? 9, `${kitPath}.rate`, Number.MIN_VALUE, 30);

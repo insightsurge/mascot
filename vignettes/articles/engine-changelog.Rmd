@@ -19,15 +19,19 @@ one. An unknown capability is named in the error, and errors about kit effect se
 
 * `mascot-parts.js`: an unknown name in `requires` gives "This file needs the capability ..." with the name. The
   band overrides (`lod`, its bands and their face flags) and a mood's face controls (and its reduced face) skip a
-  `note` and keys that start with `x_`; the id walk does not descend into an extension key of a fixed-field object.
+  `note` and keys that start with `x_`. The id walk never reads an `x_` key, in any object (R checks the ids of a
+  map in full first).
   `mascot.parts.capabilities` lists the supported and reserved capability names, for the parity test with the format
   policy.
 * `mascot-motion.js`: a track object and the `motion`, `motion.change` and `motion.idle` objects accept a `note` and
   `x_` keys, and the motion settings never read them.
+* `mascot-host.js`: with a brand theme, the host fills only the `primary` and `secondary` slots of a character's
+  `brand`, so a `note` or an `x_` key there no longer stops the mount.
 * `mascot-geometry.js`: a `ref` item accepts `x_` keys beside its overrides.
 * `mascot-faces.js`: a clip on a kit effect item is refused at
   `$.face.kit_definition.effects.<id>.items[<n>].clip` (or `reduced_items`), and the `fade_at`, `amplitude` and `rate`
-  checks report `$.face.kit_definition.effects.<id>.<setting>`, the paths the R checker uses.
+  checks report `$.face.kit_definition.effects.<id>.<setting>`, the paths the R checker uses. `fade_at` must be below
+  1, as in R, rather than at most `1 - Number.EPSILON`.
 
 ## 2026-10-22 — A readable engine version, and comments that say what the code does (#464)
 

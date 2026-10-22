@@ -1,0 +1,77 @@
+name: Bug report
+description: Something is broken or behaves differently from the documentation.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Use made-up or bundled data. Remove private data, credentials, machine paths and private links from examples, output and screenshots.
+        This form also covers faults in docs, the site, CI and public AI instructions. A short example is enough; you do not need to diagnose the cause.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Main area
+      description: Choose where you see the problem. Mention other affected areas below.
+      options:
+        - JS engine (canvas and animation; inst/www/)
+        - R (package API, Shiny or studio)
+        - General (docs, site, CI, tooling or AI instructions)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: What happened, and what did you expect?
+      description: One or two sentences. Include the relevant error message, if there is one. A screenshot is optional.
+    validations:
+      required: true
+  - type: textarea
+    id: reprex
+    attributes:
+      label: Minimal reproducible example (reprex)
+      description: |
+        Paste the smallest runnable R example, Shiny app, or HTML/JS example and the steps that show the fault. Use reprex::reprex() for R if available; it is not required.
+        For docs, site, tooling or instruction faults, give the public page or repository-relative file, a small example and exact steps. Use fenced code blocks for code.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: mascot version
+      description: 'Use packageVersion("mascot"). Add the commit if known. For a repository or site report without an installed package, write "Not installed" and give the commit or public page if known.'
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: 'For anything seen in a browser, including canvas, Shiny, studio or the site, give its name and version. Otherwise write "Not applicable". Write "Not sure" if you cannot find the version.'
+    validations:
+      required: true
+  - type: dropdown
+    id: reduced-motion
+    attributes:
+      label: Is prefers-reduced-motion on?
+      description: The browser setting follows the system's reduced-motion preference. For JS engine or other visual bugs, choose On, Off or Not sure.
+      options:
+        - "On"
+        - "Off"
+        - Not sure
+        - Not applicable (no browser involved)
+    validations:
+      required: true
+  - type: textarea
+    id: session
+    attributes:
+      label: Environment details (optional)
+      description: 'For R problems, paste sessionInfo() or sessioninfo::session_info() if available. For browser problems, add the operating system and version. Remove private details and paths before posting; a short summary is fine.'
+      render: text
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: One short checklist item describing the result that would count as fixed.
+      placeholder: "- [ ] The example produces the expected result."
+    validations:
+      required: true

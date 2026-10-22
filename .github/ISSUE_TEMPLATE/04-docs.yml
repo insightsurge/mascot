@@ -1,0 +1,43 @@
+name: Documentation change
+description: Suggest a clearer explanation, missing guide or documentation correction.
+labels: [documentation, "area: docs"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. For a failing example, broken site behaviour or other reproducible fault, use Bug report. Use AI instructions for AGENTS.md, CLAUDE.md or .claude/ changes.
+        Share only public links or repository-relative files. Leave out private data, credentials and machine paths.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Main area being documented
+      description: Select the subject of the explanation, rather than the format of the file.
+      options:
+        - JS engine (canvas and animation; inst/www/)
+        - R (package API, Shiny or studio)
+        - General (docs, site, CI or tooling)
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Page, help topic or repository-relative file
+      description: Include the section if known, or say where a missing explanation would help.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What needs explaining or correcting?
+      description: Say what a reader needs to understand. Suggested wording is welcome but optional.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: One checklist item describing what the reader should understand or be able to do.
+      placeholder: "- [ ] The page explains ..."
+    validations:
+      required: true

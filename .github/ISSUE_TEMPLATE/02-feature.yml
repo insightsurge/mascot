@@ -1,0 +1,41 @@
+name: New feature
+description: Propose a capability that mascot does not have.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Keep this short; a proposed outcome is enough to start a discussion.
+        Use public examples and made-up data. Leave out private data, credentials, machine paths and private links. Release decisions belong to the package creator.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Main area
+      description: Choose the main area; mention others in the goal if needed.
+      options:
+        - JS engine (canvas and animation; inst/www/)
+        - R (package API, Shiny or studio)
+        - General (docs, site, CI or tooling)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: What should a user be able to do, and why?
+      description: One short use case. Describe the outcome; a technical design is optional.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: One or two checklist items showing how someone could tell it works. These can be refined during discussion.
+      placeholder: "- [ ] A user can ..."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Example or affected users (optional)
+      description: A small public example, workaround, related issue or relevant row in docs/consumers.md. For public AI instruction changes, use the AI instructions form.

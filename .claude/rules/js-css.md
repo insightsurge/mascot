@@ -28,7 +28,7 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   default; public `--mascot-panel-*` and `--mascot-restore-*` colour hooks (`?mascot_styling`) win over them and copied
   page colours. Other mascot custom properties use the private `--_mascot-*` prefix. Follow the page for dark mode
   (`[data-bs-theme]`, then Quarto's
-  `quarto-dark`/`quarto-light` body classes); with no signal, light (founder, 2026-10-09). bslib stays in Suggests.
+  `quarto-dark`/`quarto-light` body classes); with no signal, light. bslib stays in Suggests.
 - **house (WCAG 2.2):** status text beside every mascot in a `role="status"` element (the mood never carries meaning
   alone); when not clickable, the canvas has `role="img"` and an `aria-label` naming the mood (no keyboard stop); with a
   click, a native button named by its label wraps it (#257); `prefers-reduced-motion` is honoured in

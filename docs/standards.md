@@ -188,8 +188,8 @@ The engine is most of what a user sees, so it has its own rules. All of these ar
   both Bootstrap and copied page colours, including in bslib apps. The deliberate public list lives in
   `?mascot_styling`; every other mascot custom property uses the private `--_mascot-*` prefix. Character colours
   are controlled by `mascot_theme()`.
-- Follow dark mode by watching `data-bs-theme` and Quarto's body classes; with no signal, light (founder, 2026-10-09:
-  a plain page in an OS dark mode stays light, so the drawing and the bubble match the page).
+- Follow dark mode by watching `data-bs-theme` and Quarto's body classes; with no signal, light (a plain page in
+  an OS dark mode stays light, so the drawing and the bubble match the page).
 - bslib is in `Suggests`, never `Imports`. 0.1.0 ships no fonts: the status text and speech bubble use the host
   page's font (the app's bslib theme, the Quarto or pkgdown site), never a font service.
 
@@ -315,8 +315,8 @@ run it:
 
 | Layer | When it runs | Status |
 |---|---|---|
-| Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; merging a PR (`gh pr merge`) asks the maintainer for confirmation each time; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
-| The gate (`/cran-gate`, section 7.2) | On demand, before a commit or PR | In place |
+| Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; merging a PR (`gh pr merge`) asks for confirmation each time; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
+| The gate (`Rscript tools/cran-gate.R`, section 7.2) | On demand, before a commit or PR | In place |
 | CI | On every PR and push to `main` (the full platform matrix on `main`, weekly and on demand); it cannot be skipped | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
@@ -325,13 +325,8 @@ green, then ask before merging.
 
 ### 7.2 The gate
 
-```sh
-Rscript tools/cran-gate.R [fast|tests|full|lint] [--update-wordlist]
-```
-
-Run it from the package root. Each step prints `PASS`, `FAIL` or `SKIP` with a detail. Full output goes to a log file
-in `tempdir()`, whose path is printed. The script exits with status 1 if any step fails. A missing tool is a failure,
-never a silent skip. The script checks its own arguments with checkmate and is linted like any other code.
+How to run it, which mode when, every option, the exit codes and the run folder: `tools/README.md` (and
+`Rscript tools/cran-gate.R --help`; `--list` shows each mode's steps). This section keeps the reasons.
 
 **The gate is a generic, self-contained script.** `tools/cran-gate.R` and its self-test `tools/test-cran-gate.R`
 name nothing about mascot, so another R package can copy them as they are. What is specific to a package is kept
@@ -343,65 +338,31 @@ out of the script:
   (default 5, at most 9 because CRAN's limit is 10; mascot keeps 5) and `extra-dirs` (more folders to format-check
   and lint; mascot lists `tools`, which holds the gate itself).
 
-| Step | fast | tests | full | lint | What it does |
-|---|---|---|---|---|---|
-| `tools` | yes | yes | yes | yes | Checks that the needed R packages, Air (when there is an `air.toml`) and Biome (when there is a `biome.json` and `inst/` has JS or CSS) are installed; prints `.libPaths()[1]` |
-| `air` | yes |  | yes | yes | `air format --check` on the package and the extra folders |
-| `biome` | yes |  | yes | yes | `biome ci inst`; SKIP only while `inst/` has no JS or CSS |
-| `docs` | yes |  | yes | yes | Runs `devtools::document()` and fails if `man/`, `NAMESPACE` or `DESCRIPTION` changed (the roxygen version fields are ignored) |
-| `lintr` | yes |  | yes | yes | `lintr::lint_package()` and `lintr::lint_dir()` on each extra folder; any lint fails |
-| `value` | yes |  | yes | yes | Fails for any exported function of the package that has no help page or no `\value` |
-| `spelling` | yes |  | yes | yes | `spelling::spell_check_package()`; any unknown word fails |
-| `check_fast` | yes |  |  |  | `R CMD check --as-cran --no-tests` with `NOT_CRAN=false`; fails on any error, warning or note |
-| `tests` |  | yes | yes |  | `devtools::test()` with `NOT_CRAN=true`, so Chrome tests run |
-| `coverage` |  | yes | yes |  | `covr::package_coverage()`; fails under the limit in `DESCRIPTION` (70 percent here) |
-| `check_full` |  |  | yes |  | CRAN-like `R CMD check --as-cran` with tests and `NOT_CRAN=false`; fails on any error, warning or note |
-| `tarball` |  |  | yes |  | Builds the tarball; fails over the size limit (5 MB here) or if any `inst/` file is missing from it |
+A missing tool stops the gate, never a silent skip. The gate writes to the repository in two deliberate cases only:
+`document()` may rewrite `man/`, `NAMESPACE` and `DESCRIPTION` (the step then fails and names the files), and
+`--update-wordlist` rewrites `inst/WORDLIST`, which is never run without showing the words first (see 7.4).
 
-Notes:
-
-- `tests` mode is tests and coverage only. The PR gate is `fast` plus `tests` (or `full`), plus CI.
-- `--update-wordlist` adds unknown words to `inst/WORDLIST` and is never run without showing the words first (see 7.4).
-- The gate writes to the repository in two deliberate cases: `document()` may rewrite `man/`, `NAMESPACE` and
-  `DESCRIPTION` (the step then fails and names the files), and `--update-wordlist` rewrites `inst/WORDLIST`.
-- In a git worktree, set `R_LIBS` to the main checkout's library, since renv keeps that library outside the repo.
-  The `tools` step prints which library is in use.
-- A setting outside its range (for example `tarball-mb: 12`) stops the gate with `FAIL settings`.
-
-**The gate's self-test.** A check that cannot fail protects nothing, so the gate has its own test:
-`test-cran-gate.R [all|static|heavy]`, beside the gate. Each probe copies the package to `tempdir()`, plants one defect
-(an unformatted file, code with lints, a misspelt word, a failing test, untested code, a check note, a file
-in `inst/` that the build leaves out, a missing tool) and runs the gate on the copy. The probe passes when the gate
-exits 1 with `FAIL` for the step that should catch the defect; a clean copy must pass. One probe also shows that the
-`tests` step runs with `NOT_CRAN=true` and the CRAN-like check with `NOT_CRAN=false`. The repository is never changed.
-Probes for steps a package does not use are skipped, so the self-test works in any package. Run it after changing the gate, `.lintr`, `air.toml` or `biome.json`; a new gate step gets its probe in the same pull
-request. `static` takes seconds, `all` about a minute today.
+**The gate's self-test.** A check that cannot fail protects nothing, so the gate has its own test,
+`tools/test-cran-gate.R`. Each probe copies the package (or a tiny generated one) to `tempdir()`, plants one defect
+(an unformatted file, code with lints, a misspelt word, a failing test, untested code, a check note, a file in `inst/`
+that the build leaves out, a missing tool) and runs the gate on the copy; the probe passes when the gate fails that
+step. A clean copy must pass, and the repository is never changed. Probes for steps a package does not use are
+skipped, so the self-test works in any package. A new gate step gets its probe in the same pull request.
 
 ### 7.3 CI workflows
 
+What each workflow runs, and the gate mode that reproduces it locally: `tools/README.md` ("The gate and CI").
 
-**Temporary while the repo is private (#113).** Private repos get a limited number of Actions minutes (macOS counts
-10x, Windows 2x), and on 2026-09-30 they ran out. Until the repo is public, pull requests run `R CMD check` on Ubuntu
-only, and docs-only changes skip the R jobs. When the repo goes
-public, before the CRAN submission, these workarounds are removed and every pull request runs all five platforms
-again (#115).
+Every pull request runs the full matrix (macOS, Windows and four Ubuntu R versions); keep new jobs on Ubuntu unless
+the platform is the point.
 
-| Workflow file | What it runs | What it blocks |
-|---|---|---|
-| `R-CMD-check.yaml` | `R CMD check --as-cran`: Ubuntu (R release) on pull requests; macOS and Windows (release) and Ubuntu (R-devel, release, oldrel-1) on pushes to `main`, every Monday and on demand, to save Actions minutes; `error-on: note`; `NOT_CRAN` unset, so Chrome tests skip as on CRAN | Any error, warning or note (on a PR: Ubuntu release; on `main` and weekly: all five platforms, including R-devel) |
-| `test-coverage.yaml` | covr on Ubuntu with `NOT_CRAN=true`, so Chrome tests count | Coverage under the limit in `DESCRIPTION` (70 percent); no code yet means no gate yet |
-| `lint.yaml` | Air 0.11.0, Biome 2.5.14, then the gate in `lint` mode | Formatting, JS and CSS lint, docs out of sync, lints, missing `\value`, unknown words |
-| `gate-self-test.yaml` | The gate's self-test (`all`), only when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change, and on demand | A gate step that no longer fails on the defect it exists to catch |
-| `check-no-suggests.yaml` | `R CMD check --as-cran` with only hard dependencies installed (plus testthat, knitr and rmarkdown) and a step that prints which `Suggests` are installed | Any unguarded use of a `Suggests` package; CRAN runs this check too |
-| `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build (`tools/build-site.R`), uploaded as an artifact; from `main` only (pushes and by hand), never on pull requests, because the site will need a private theme package that outside contributors can't install | A broken site configuration or build; no deploy until the repo is public |
-| `gitleaks.yml` | Secret scan over the full history | A committed secret |
-| `release.yml` | On a change to `DESCRIPTION` on `main`: tags `vx.y.z` and creates a GitHub release from the `NEWS.md` section | Nothing; it does nothing for a development version |
-
-Ubuntu runners are pinned (`ubuntu-26.04`; macOS and Windows use `-latest`), all workflows use `permissions: read-all`
-(gitleaks and release ask for the little more they need), and cancel superseded runs. Actions from `actions/` and
-`r-lib/` are pinned by major tag; other third-party actions by full commit SHA with a `# vX.Y.Z` comment, because a tag
-can be moved and a SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep the Air and Biome
-versions in `lint.yaml` and `gate-self-test.yaml` in step with the local installs and with `biome.json`.
+The site is built from `main` only, never on pull requests (#127): a site build may need packages that outside
+contributors' pull requests can't install. Ubuntu runners are pinned (`ubuntu-26.04`; macOS and Windows use
+`-latest`) so an image change is a deliberate edit. Workflows take the least permissions they need and cancel
+superseded runs (except a release, and secret scans on `main`). Actions from `actions/` and `r-lib/` are pinned by
+major tag; other third-party actions by full commit SHA with a `# vX.Y.Z` comment, because a tag can be moved and a
+SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep the Air and Biome versions in
+`lint.yaml` and `gate-self-test.yaml` in step with the local installs and with `biome.json`.
 
 ### 7.4 Tools
 
@@ -410,8 +371,7 @@ versions in `lint.yaml` and `gate-self-test.yaml` in step with the local install
 - **Biome** (formatter and linter for JS and CSS, https://biomejs.dev). `biome.json` covers `inst/**/*.js` and
   `inst/**/*.css`: two-space indent, width 120, single quotes, the `recommended` lint rules. It is build-ignored. The
   gate skips it only while `inst/` has no JS or CSS; once there is any, it is required and a missing binary fails.
-- **lintr** (`.lintr`). Line length 120. Object names are `snake_case` or symbols, plus the Shiny names
-  `mascotOutput` and `renderMascot` (reserved names). The `:::`, `<<-` and `->>` operators are flagged. The banned
+- **lintr** (`.lintr`). Line length 120. Object names are `snake_case` or symbols. The `:::`, `<<-` and `->>` operators are flagged. The banned
   function list is short and each entry has a reason:
 
   | Banned | Reason | Label |
@@ -437,7 +397,7 @@ versions in `lint.yaml` and `gate-self-test.yaml` in step with the local install
 |---|---|
 | Pre-commit framework | One maintainer and no shared clone yet; it needs a Python tool. The gate and CI cover the same checks. Revisit when others commit |
 | Codecov | The repository is private. The 70 percent gate runs inside the coverage workflow. Optional once public |
-| Screenshot tests in the test suite and CI | They differ between operating systems and Chrome versions. Values, DOM state and draw-call hashes are stable. A manual-only visual baseline runner exists for engine acceptance (`tools/visual/`, workflow `engine-visual`); its baselines are provisional until canonical Ubuntu captures are published |
+| Screenshot tests in the test suite and CI | They differ between operating systems and Chrome versions. Values, DOM state and draw-call hashes are stable. |
 | jest or vitest | JS logic is kept small and tested through shinytest2. `node --test` is the fallback if pure functions grow |
 | TypeScript and a build step | Only needed for TypeScript or npm libraries. Plain JS is its own source and needs no Node in CI |
 | htmlwidgets | An extra dependency built around plots; `htmlDependency()` plus an output binding is enough |
@@ -446,24 +406,10 @@ versions in `lint.yaml` and `gate-self-test.yaml` in step with the local install
 | Licence-audit, CLA and codemeta bots | One maintainer and the licence record is `inst/COPYRIGHTS`; a bot adds upkeep without a reader |
 | Posit's shiny-workflows | bslib's own workflow calls that setup overkill for most R packages; we copy r-lib's standard workflows |
 
-## 9. Pre-submission checklist (M6)
+## 9. Releases
 
-Run these before submitting to CRAN:
-
-1. The gate's `full` mode passes (`/cran-gate full`).
-2. `urlchecker::url_check()` reports nothing.
-3. `spelling::spell_check_package()` reports nothing.
-4. `devtools::check(remote = TRUE, manual = TRUE)` gives 0 errors, 0 warnings and 0 notes apart from the expected
-   "New submission" note.
-5. `devtools::check_win_devel()`, `devtools::check_mac_release()` and `rhub::rhub_check()` are clean.
-6. `cran-comments.md` lists test environments and results, explains GxP, and says there are no reverse dependencies.
-7. The `NEWS.md` heading is `# mascot 0.1.0` and the version is set with `usethis::use_version()`.
-8. `inst/COPYRIGHTS`, each `OFL.txt` and the `cph` entries agree with what is in `inst/`.
-9. The repository is public, `URL` and `BugReports` resolve, and the website is live. CI runs the full platform
-   matrix on every pull request again (the private-repo workarounds are removed, #115).
-10. `riskmetric` has been run on the package and the score recorded.
-11. Submit with `devtools::submit_cran()`. After acceptance: the release workflow tags the release, then bump back to a
-    `.9000` development version.
+Releases, CRAN submissions and their checklist are the package creator's. A contributor never changes the version
+or the release headings in `NEWS.md`.
 
 ## 10. Sources
 

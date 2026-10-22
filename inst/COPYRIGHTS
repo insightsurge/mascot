@@ -6,7 +6,7 @@ No third-party JavaScript, CSS or fonts are bundled.
 inst/www/mascot.js
 inst/www/mascot-draw.js
     Source: drawing code first written by Harsh Verma for the R Engineering Playbook's trailer engine
-    (https://github.com/insightsurge/r-engineering-playbook, tools/animate/engine.js, commit bf1aa9a),
+    (tools/animate/engine.js in that site's repository, commit bf1aa9a),
     copied and adapted for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 

@@ -1,0 +1,43 @@
+name: AI instructions change
+description: Improve the public contributor instructions in AGENTS.md, CLAUDE.md or .claude/.
+labels: [chore, "area: ai-skills"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form concerns the repository's public instructions. For an instruction or command that fails, use Bug report so the version and minimal reproduction are included.
+        Search existing issues first. Cite only repository-relative files and public examples. Leave out personal configuration, credentials, private data, machine paths, private links and conversation transcripts.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Main area the instruction covers
+      description: Choose General for instructions about contributing across the repository. Mention other affected areas below.
+      options:
+        - JS engine (canvas and animation; inst/www/)
+        - R (package API, Shiny or studio)
+        - General (docs, site, CI or tooling)
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Public instruction file and section
+      description: Name AGENTS.md, CLAUDE.md or a file in .claude/, and its relevant section. For a missing instruction, say where it belongs.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What instruction should change, and why?
+      description: Give a short public example of the ambiguity, missing guidance or proposed rule. Suggested wording is optional.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: One checklist item showing how someone could check that the instruction is clear and agrees with the contributor guide.
+      placeholder: "- [ ] The instruction explains ..."
+    validations:
+      required: true

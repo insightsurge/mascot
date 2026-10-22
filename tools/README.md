@@ -9,7 +9,6 @@ Scripts for working on mascot. None of them ship with the package (`tools/` is i
 | `build-site.R` | Builds the pkgdown site into `site/` |
 | `character-coverage.R` | Line coverage of the character files only, without the full tests run |
 | `stress/` | Shiny apps that try to break the mascot, run by hand in Chrome (see `stress/README.md`) |
-| `visual/` | Visual baselines for the characters (see `visual/README.md`) |
 
 Run every script from the package root, for example `Rscript tools/cran-gate.R`.
 
@@ -24,8 +23,9 @@ SKIP biome      (  0s): no JS or CSS in inst/ yet
 ```
 
 A SKIP always says why. Every run keeps a **run folder** (its path is printed): one log per check, `gate.json` (every
-check's result, the commit and the tool versions) and, after the tests, `tests.json` with every failing test. You
-never need to re-run the gate just to find out what failed.
+check's result, the commit and the tool versions) and, after the tests, `tests.json` with every failing test. `flakes.tsv`, one level up (shared by every run), lists the tests
+that failed and were re-run, with the outcome. The folder survives the gate. You never need
+to re-run the gate just to find out what failed.
 
 ### Which mode when
 
@@ -34,7 +34,7 @@ never need to re-run the gate just to find out what failed.
 | Mode | Run it | What it checks |
 |---|---|---|
 | `fast` (the default) | Before every commit | Formatting, lint, help pages in sync, a `\value` on every export, spelling, the pkgdown index, R CMD check without tests |
-| `tests` | Before a PR that touches `R/` or `tests/` | The whole test suite (Chrome tests too) once under covr, coverage of at least 70%, and `new_lines`: every R line the branch adds is run by a test |
+| `tests` | Before a PR that touches `R/` or `tests/` | The whole test suite (Chrome tests too) once under covr, coverage of at least 70%, and `new_lines`: every R line the branch adds since it left `origin/HEAD` (uncommitted work counts) is run by a test |
 | `full` | Before a release | All of `fast` and `tests`, R CMD check with tests as CRAN runs it, the check without Suggests, and the package size |
 | `lint` | For a quick style check, or to reproduce CI's lint job | The static checks only |
 | `nosuggests` | When CI's no-Suggests job fails, or before a release | R CMD check with only the required packages, as CRAN also checks |
@@ -52,7 +52,7 @@ In short: `fast` while working, `tests` before a PR, `full` before a release.
 | `--out <folder>` | Put the run folder somewhere else (or set `CRAN_GATE_OUT`) | Yes |
 | `--list` | Show each mode's checks and which ones this package skips | Nothing runs |
 | `--help` | Show every option and the exit codes | Nothing runs |
-| `--update-wordlist` | Add the unknown words to `inst/WORDLIST`, only after the founder agrees to them | Yes |
+| `--update-wordlist` | Add the unknown words to `inst/WORDLIST`, only after the package creator agrees to them | Yes |
 
 A **PARTIAL** run is useful while working, but it isn't proof. Merge evidence is a full `tests` (or `full`) run that
 exits with 0.
@@ -64,21 +64,29 @@ exits with 0.
 | 0 | Every check passed, or skipped with a reason |
 | 1 | A check failed: its line says what to fix |
 | 2 | The gate couldn't judge the package: a tool is missing or a setting is wrong |
-| 3 | Only tests failed, and every one passed when re-run: probably a flake. Never merge evidence without the founder's word |
+| 3 | Only tests failed, and every one passed when re-run: probably a flake. Never merge evidence without the package creator's word |
 
 When tests fail, the gate re-runs the failing files once in a fresh R session. When one broken thing (a closed
 browser, say) fails many tests with the same message, the line names it once as a "cascade".
 
 ### The gate and CI
 
-| CI job | Gate mode |
-|---|---|
-| `lint.yaml` | `lint` |
-| `R-CMD-check.yaml` | the `check_full` step of `full` |
-| `test-coverage.yaml` | `tests` |
-| `check-no-suggests.yaml` | `nosuggests` |
+Only `lint.yaml` runs the gate itself; the other jobs run R CMD check or covr directly. The last column is the gate
+mode that checks the same thing locally, which is the evidence when CI can't run (no Actions minutes).
 
-When CI can't run (no Actions minutes), these modes are the evidence instead.
+| Workflow | What it runs | Locally |
+|---|---|---|
+| `R-CMD-check.yaml` | `R CMD check --as-cran`, failing on any note, with `NOT_CRAN` unset (Chrome tests skip). On every pull request, push to `main`, every Monday and on demand: macOS and Windows (R release) and Ubuntu (R devel, release, previous release and 4.1) | the `check_full` step of `full` |
+| `test-coverage.yaml` | The tests with `NOT_CRAN: true` (Chrome tests run) and the coverage limit from `DESCRIPTION` | `tests` |
+| `check-no-suggests.yaml` | R CMD check with the required packages only, as CRAN also checks | `nosuggests` |
+| `lint.yaml` | The gate in `lint` mode, with Air and Biome at pinned versions | `lint` |
+| `gate-self-test.yaml` | The gate's self-test, when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change (and on demand) | `Rscript tools/test-cran-gate.R` |
+| `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build, from `main` only | `Rscript tools/build-site.R` |
+| `gitleaks.yml` | A scan for committed secrets | |
+| `release.yml` | The tag and GitHub release when a release version reaches `main` | |
+
+Dependabot keeps the actions current. The gate's `new_lines` step has
+no CI job: it needs the branch's base, which CI's shallow checkout lacks, so it runs locally.
 
 ### Changing the gate
 

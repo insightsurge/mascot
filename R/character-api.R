@@ -229,9 +229,12 @@ format.mascot_character_data <- function(x, ...) {
 #'
 #' Start from `system.file("examples", "characters", "study_bot.json", package = "mascot")`.
 #' Edit a plain list or JSON source and check it again. A checked object is opaque.
-#' Source files can use current family defaults. A resolved file embeds its family
-#' defaults and face kits, so it does not depend on the installed package's defaults;
-#' saving a resolved file from R is planned for a later release.
+#' A source file names its `family` and gives that family's definition in
+#' `family_definition` (`id`, `name`, `description` and optional `defaults`, such as
+#' shared gestures and palettes); a custom character cannot take a definition from
+#' the installed package. A resolved file has its family defaults merged in and
+#' embeds its face kits, so it does not depend on the installed package; saving a
+#' resolved file from R is planned for a later release.
 #'
 #' Checks stop at the first problem, giving a diagnostic code, JSON path, value
 #' and repair instruction. Input byte, depth and node limits and drawing budgets

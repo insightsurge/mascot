@@ -54,8 +54,10 @@ against the format rules:
 * `id`: A unique lowercase identifier (`"study_bot"`). Built-in character ids
   (`"tessa"`, `"sela"`, `"knurl"`, `"neer"`) are reserved and refused.
 * `name`: The human-readable name shown in titles and summaries (`"Study Bot"`).
-* `family`: The character family (`"visorfolk"`). Source recipes can reference a
-  family definition for shared default gestures and palettes.
+* `family`: The character family (`"visorfolk"`). Every character names one, and
+  a custom character also gives the family's definition in `family_definition`:
+  its `id`, `name`, `description` and optional `defaults`, such as gestures and
+  palettes the character takes unless it defines its own.
 * `requires`: Declared engine capabilities. `study_bot` requires `"parts"`,
   `"outline"`, `"clip"`, `"face_kit"`, `"glow"`, `"tracks"`, and `"lod"`.
   Unsupported and reserved capabilities are refused.

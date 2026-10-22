@@ -95,8 +95,6 @@ panel_character_bar <- function(moods = mascot_moods(character), character = for
 
 panel_look <- function() {
   inspector_category(
-    playground_categories$look$title,
-    value = "look",
     fn_heading("mascot_read_character"),
     arg_field(
       "mascot_read_character",
@@ -169,8 +167,6 @@ panel_look <- function() {
 
 panel_messages <- function() {
   inspector_category(
-    playground_categories$messages$title,
-    value = "messages",
     fn_heading("mascot_status"),
     arg_field(
       "mascot_status",
@@ -316,8 +312,6 @@ panel_messages <- function() {
 
 panel_motion <- function(gestures = mascot_gestures()) {
   inspector_category(
-    playground_categories$motion$title,
-    value = "motion",
     fn_heading("mascot_motion_settings"),
     input_switch("motion_on", "Animate", TRUE),
     arg_field("mascot_motion_settings", "...", NULL),
@@ -386,8 +380,6 @@ panel_motion <- function(gestures = mascot_gestures()) {
 
 panel_layout <- function() {
   inspector_category(
-    playground_categories$layout$title,
-    value = "layout",
     fn_heading("mascot_size"),
     arg_field("mascot_size", "...", NULL),
     arg_field(
@@ -582,8 +574,6 @@ panel_colours <- function() {
 
 panel_wiring <- function() {
   inspector_category(
-    playground_categories$wiring$title,
-    value = "wiring",
     fn_heading("mascot"),
     arg_field("mascot", "...", NULL),
     arg_field(
@@ -715,24 +705,8 @@ panel_preview <- function(moods = mascot_moods()) {
   )
 }
 
-# The two example functions open the Examples view, which has its own controls.
-panel_views <- function() {
-  tagList(lapply(c("mascot_examples", "mascot_example"), function(fn) {
-    inspector_function(
-      fn,
-      tags$a(
-        class = "btn btn-outline-primary btn-sm",
-        href = "?view=examples",
-        target = "_blank",
-        rel = "noopener",
-        "Open Examples"
-      ),
-      div(class = "pg-note", "This view has its own controls and opens in a new tab.")
-    )
-  }))
-}
-
-# Internal R4a review panel, omitted unless explicitly enabled before launch.
+# The "Your character" panel for checking a character file; omitted unless the option
+# mascot.internal.character_panel is TRUE at launch.
 panel_your_character <- function() {
   if (!isTRUE(getOption("mascot.internal.character_panel", FALSE))) {
     return(NULL)

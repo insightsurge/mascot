@@ -71,7 +71,7 @@ mascot_studio <- function(view = "studio", ..., fn = NULL, character = "tessa", 
     valid <- switch(
       arg,
       view = names(views$studio_view_titles),
-      fn = names(guide$playground_guide),
+      fn = names(guide$studio_guide),
       character = unname(data$studio_characters())
     )
     if (!is.null(value) && !value %in% valid) abort_choice(value, valid, arg, arg, environment())

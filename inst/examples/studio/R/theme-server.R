@@ -132,7 +132,8 @@ theme_stack_parts <- function(
   )
 }
 
-# The stack line as HTML: "Palette: coral_navy · Your colours: none · ...", with a clear button per layer in use.
+# The stack line as HTML ("Palette: coral_navy", "Your colours: none", ...), a middle dot between parts, with a
+# clear button per layer in use.
 theme_stack_ui <- function(parts) {
   checkmate::assert_data_frame(parts)
   checkmate::assert_names(names(parts), must.include = c("key", "label", "value", "clear"))
@@ -148,14 +149,14 @@ theme_stack_ui <- function(parts) {
           `data-event` = "stack_clear",
           `data-value` = parts$key[[i]],
           `aria-label` = paste("Clear", parts$label[[i]]),
-          "×"
+          "\u00d7"
         )
       }
     )
   })
   separated <- unlist(
     lapply(seq_along(items), function(i) {
-      if (i == 1L) list(items[[i]]) else list(shiny::tags$span(class = "theme-stack-dot", "·"), items[[i]])
+      if (i == 1L) list(items[[i]]) else list(shiny::tags$span(class = "theme-stack-dot", "\u00b7"), items[[i]])
     }),
     recursive = FALSE
   )

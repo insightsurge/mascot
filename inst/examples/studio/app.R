@@ -11,7 +11,7 @@ library(mascot)
 
 # Shiny loads R/ before this file; this covers sessions that turned that off with
 # options(shiny.autoload.r = FALSE). Shiny runs this file from the app's folder.
-if (!exists("playground_guide")) {
+if (!exists("studio_guide")) {
   for (file in sort(list.files("R", pattern = "[.]R$", full.names = TRUE))) {
     source(file, local = TRUE)
   }
@@ -20,7 +20,7 @@ if (!exists("playground_guide")) {
 examples <- mascot_examples()
 
 start <- lapply(defaults, code_pair)
-# The canvas opts into inline placement; a plain mascot() now floats in the bottom-right corner.
+# The canvas opts into inline placement; a plain mascot() floats in the bottom-right corner.
 start$placement <- code_placement(position = "inline")
 start$bubble <- code_bubble(welcome, FALSE, 8, TRUE)
 start$click <- code_menu(default_menu)
@@ -102,7 +102,6 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
             "Reset anchors"
           ),
           tags$span(id = "reduced_motion", role = "status"),
-          if (!is.null(studio_character_hint())) tags$span(class = "pg-hint", studio_character_hint()),
           uiOutput("stage_note", inline = TRUE, class = "pg-stage-note")
         ),
         div(class = "pg-stage", `data-canvas` = "mascot", uiOutput("live_host", class = "pg-live-host")),
@@ -341,26 +340,10 @@ example_browser <- function() {
     uiOutput("example_result")
   )
 }
-examples_page <- example_browser()
-
 view_from_request <- function(request) {
   checkmate::assert(checkmate::check_list(request), checkmate::check_environment(request), .var.name = "request")
   query <- shiny::parseQueryString(if (is.null(request$QUERY_STRING)) "" else request$QUERY_STRING)
   if (is.null(query$view) || !query$view %in% names(views)) "studio" else query$view
-}
-
-view_link <- function(label, view, new_tab = TRUE) {
-  checkmate::assert_string(label)
-  checkmate::assert_string(view)
-  checkmate::assert_flag(new_tab)
-  bslib::nav_item(tags$a(
-    class = "nav-link",
-    href = paste0("?view=", view),
-    target = if (new_tab) "_blank",
-    rel = "noopener",
-    label,
-    if (new_tab) shiny::icon("arrow-up-right-from-square", class = "small ms-1")
-  ))
 }
 
 # The page of the studio and examples views; the query string chooses what it opens on.
@@ -372,7 +355,7 @@ studio_view_ui <- function(query, view) {
   if (!requireNamespace("knitr", quietly = TRUE)) {
     stop("The studio needs knitr for its guide pages. Install it before running the app.")
   }
-  fn <- if (!is.null(query$fn) && query$fn %in% names(playground_guide)) query$fn else "mascot_mood"
+  fn <- if (!is.null(query$fn) && query$fn %in% names(studio_guide)) query$fn else "mascot_mood"
   tagList(
     tags$head(
       tags$link(rel = "stylesheet", href = "tokens.css"),
@@ -411,7 +394,8 @@ studio_server <- function(input, output, session) {
   last_call <- reactiveVal("No update yet. Change a setting in Controls.")
   log <- reactiveVal(list())
   selected_function <- reactiveVal("mascot_mood")
-  # R4a authoring stays session-local; this panel never registers visitor data.
+  # The "Your character" panel (off by default) keeps an uploaded file in this session only; it never
+  # registers visitor data.
   uploaded_character <- reactiveVal(NULL)
   uploaded_filename <- reactiveVal("study_bot.json")
   mascot_read_character <- function(path) {
@@ -652,7 +636,7 @@ studio_server <- function(input, output, session) {
 
   # Clicks on buttons that carry data-event and data-value arrive as input$<event>.
   observeEvent(input$select_function, {
-    req(input$select_function %in% names(playground_guide))
+    req(input$select_function %in% names(studio_guide))
     selected_function(input$select_function)
   })
   observeEvent(input$open_guide, {

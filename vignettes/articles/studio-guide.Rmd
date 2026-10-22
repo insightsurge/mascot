@@ -27,9 +27,9 @@ titles <- help_titles()
 ```
 
 ```{r groups, echo = FALSE}
-category <- vapply(groups$playground_guide, `[[`, character(1), "category")
-sections <- lapply(names(groups$playground_categories), function(id) {
-  group <- groups$playground_categories[[id]]
+category <- vapply(groups$studio_guide, `[[`, character(1), "category")
+sections <- lapply(names(groups$studio_categories), function(id) {
+  group <- groups$studio_categories[[id]]
   fns <- intersect(names(category)[category == id], pages)
   if (length(fns) == 0L) {
     return(character())

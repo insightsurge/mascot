@@ -106,6 +106,8 @@ that shows the problem and your package version; use synthetic data.
 
 For contributions, read the [contributor guide](https://github.com/insightsurge/mascot/blob/main/.github/CONTRIBUTING.md),
 including its [conduct and data guidance](https://github.com/insightsurge/mascot/blob/main/.github/CONTRIBUTING.md#conduct-and-data).
+Everyone taking part is asked to follow the [code of conduct](https://github.com/insightsurge/mascot/blob/main/.github/CODE_OF_CONDUCT.md).
+To report a security problem privately, see the [security policy](https://github.com/insightsurge/mascot/blob/main/.github/SECURITY.md).
 The [engineering standards](https://github.com/insightsurge/mascot/blob/main/docs/standards.md) explain the package's
 checks and conventions.
 

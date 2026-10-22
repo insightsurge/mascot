@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 # Pull requests: one group per branch, superseded scans are cancelled. main: one group per commit, so every pushed
 # commit is scanned.
@@ -16,7 +15,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  scan:
+  gitleaks:
+    name: gitleaks
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
     steps:
       - uses: actions/checkout@v7
@@ -26,3 +26,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # No GITLEAKS_LICENSE: not required for repos on a personal account.
+          # No pull-request comments: a fork's token is read-only, so a comment would fail the scan.
+          GITLEAKS_ENABLE_COMMENTS: false

@@ -4,6 +4,8 @@
 
 * The engine draws only characters with `format_version` 1, the format of every built-in character and every character the R functions accept. A description in the 0.0.2 data shape (`inst/characters/tessa.json` in 0.0.2) is no longer drawn: the browser refuses it with an error. Every page loads about 88 KB less JavaScript (#463).
 
+* The website's top menu underlines the page you are on (#474).
+
 * The website's search results open on the site being read. Before, each result opened the future GitHub Pages address, which does not exist yet (#457).
 
 * The website's long Studio guide menu becomes a short Guides menu: a Studio guide page that lists every function's guide under the studio's groups, Make your own character, and All articles (#452).

@@ -32,6 +32,13 @@ template:
     border-radius-lg: "0.8rem"
     link-underline-offset: "0.2em"
 
+# pkgdown links the code of conduct and the contributing guide in the home page sidebar by itself, and builds
+# SECURITY.html from .github/SECURITY.md, but has no sidebar entry for it.
+home:
+  links:
+    - text: Security policy
+      href: SECURITY.html
+
 navbar:
   components:
     intro:
@@ -106,23 +113,18 @@ reference:
 
 articles:
   - title: Get started
-    navbar: ~
     contents:
       - mascot
   - title: Meet your mascots
-    navbar: ~
     contents:
       - articles/meet-your-mascots
   - title: Make your own
-    navbar: Make your own
     contents:
       - articles/write-your-own-character
   - title: Changelog
-    navbar: Changelog
     contents:
       - articles/engine-changelog
   - title: Studio guide
-    navbar: ~
     desc: The guide pages of the mascot studio, one per function. Their source is in inst/examples/studio/guide/.
     contents:
       - articles/studio-guide

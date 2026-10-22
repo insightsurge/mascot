@@ -705,8 +705,8 @@ panel_preview <- function(moods = mascot_moods()) {
   )
 }
 
-# The "Your character" panel for checking a character file; omitted unless the option
-# mascot.internal.character_panel is TRUE at launch.
+# Internal: the "Your character" panel for checking a character file, shown only when the tests set the option
+# mascot.internal.character_panel to TRUE at launch.
 panel_your_character <- function() {
   if (!isTRUE(getOption("mascot.internal.character_panel", FALSE))) {
     return(NULL)

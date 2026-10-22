@@ -197,7 +197,8 @@ describe("character_format_check()", {
     format_problem("capability", "$.requires", character_format_check(data, builtin = TRUE))
     data <- format_recipe()
     data$parts[[1]]$at <- list(180, -60)
-    format_problem("budget", "$.frame_fit.full", character_format_check(data))
+    error <- format_problem("budget", "$.frame_fit.full", character_format_check(data))
+    expect_identical(error$fix, "Keep every part, movement and effect inside the 300 by 300 frame at this size.")
   })
 
   it("checks every argument before work", {

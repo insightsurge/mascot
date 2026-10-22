@@ -10,6 +10,8 @@
 
 * In `mascot_studio()`, the colour swatches update as soon as the colours change (#462).
 
+* The development condition `mascot_click_dropped` is gone: no public helper could raise it, so no app loses a warning it could see (#462).
+
 * Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).
 
 * The engine draws only characters with `format_version` 1, the format of every built-in character and every character the R functions accept. A description in the 0.0.2 data shape (`inst/characters/tessa.json` in 0.0.2) is no longer drawn: the browser refuses it with an error. Every page loads about 87 KB less JavaScript (#463).

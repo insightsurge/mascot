@@ -92,7 +92,7 @@ You can try the bundled Shiny apps before writing your own code.
 
 - [`mascot_examples()`](`r paste0(site_url, "articles/guide-mascot_examples.html")`) lists the seven bundled example apps in teaching order.
 - [`mascot_example()`](`r paste0(site_url, "articles/guide-mascot_example.html")`) runs an example by name, or returns the path to its `app.R` with `run = FALSE`.
-- [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`) (experimental) opens an interactive studio where you can click through every function and copy the code.
+- [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`) (experimental) opens an app where you can click through every function and copy the code.
 
 ```{r open-example-list}
 mascot_examples()

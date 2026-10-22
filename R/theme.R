@@ -251,7 +251,7 @@ theme_problem <- function(x, roles = NULL) {
   }
   if (inherits(x, "bs_theme")) {
     if (!theme_has_bslib()) {
-      return("`theme` needs bslib 0.6.0 or later for a bs_theme() object.")
+      return("`theme` needs bslib 0.7.0 or later for a bs_theme() object.")
     }
     return(NULL)
   }
@@ -485,11 +485,11 @@ theme_tag <- function(theme) {
   )
 }
 
-#' Optional bslib availability, separate from reading a theme: installed and 0.6.0 or later
-#' (the first version with the `body-bg-dark` variable and `popover()`)
+#' Optional bslib availability, separate from reading a theme: installed and 0.7.0 or later, the version
+#' DESCRIPTION asks for (`body-bg-dark` and `popover()` came in 0.6.0, `input_task_button()` in 0.7.0)
 #' @noRd
 theme_has_bslib <- function() {
-  requireNamespace("bslib", quietly = TRUE) && bslib_version() >= "0.6.0"
+  requireNamespace("bslib", quietly = TRUE) && bslib_version() >= "0.7.0"
 }
 
 #' The installed bslib version; called only after requireNamespace() has found bslib

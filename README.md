@@ -27,7 +27,7 @@ pak::pak("insightsurge/mascot")
 ## Try the studio
 
 Explore the characters and functions in a local app, change the controls and copy the R code that matches what you
-see. The studio is experimental and needs the optional packages `bslib` (0.6.0 or later) and `knitr` installed.
+see. The studio is experimental and needs the optional packages `bslib` (0.7.0 or later) and `knitr` installed.
 
 ```r
 mascot::mascot_studio()

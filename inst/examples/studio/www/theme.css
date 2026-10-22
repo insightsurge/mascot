@@ -263,10 +263,6 @@
   border-left-color: var(--bs-warning);
 }
 
-.theme-note.is-ok {
-  border-left-color: var(--bs-success);
-}
-
 .theme-message {
   margin: 0.25rem 0 0;
   font-size: 0.8rem;

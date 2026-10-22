@@ -13,7 +13,7 @@
 #'   `mascot_error_argument` and `mascot_error`, with `argument`, `code` and `value`.
 #'   Every character must define changing `wave` and `nod` tracks. `wave` must
 #'   change a non-root part channel; `nod` may change any channel, including `root`.
-#'   Direct objects never enter the process registry. Format version, supported
+#'   A checked object is not stored anywhere: pass it each time. Format version, supported
 #'   capabilities and admission policy version are separate contracts. Built-in
 #'   character ids are reserved and refused here;
 #'   give your character its own id before checking it.
@@ -102,11 +102,11 @@ mascot_read_character <- function(path) {
 #' @param x A checked `mascot_character_data` object. `NULL` is not accepted.
 #' @returns The character id, invisibly.
 #' @seealso [mascot_check_character()], [mascot_characters()]
-#' @keywords internal
+#' @noRd
 #' @examples
 #' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
-#' bot <- mascot:::mascot_read_character(path)
-#' mascot:::mascot_register_character(bot)
+#' bot <- mascot_read_character(path)
+#' mascot_register_character(bot)
 mascot_register_character <- function(x) {
   character_api_asserts(checkmate::assert_class(x, "mascot_character_data"), "x", x)
   attr(x, "mascot_origin") <- "registry"
@@ -134,12 +134,12 @@ mascot_register_character <- function(x) {
 #'   dots inherit `mascot_error_dots` with `names`; content and argument problems
 #'   are described in [mascot_check_character()].
 #' @seealso [mascot_read_character()], [mascot_character_format]
-#' @keywords internal
+#' @noRd
 #' @examples
 #' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
-#' bot <- mascot:::mascot_read_character(path)
+#' bot <- mascot_read_character(path)
 #' out <- tempfile("study-bot-", tmpdir = tempdir(), fileext = ".json")
-#' mascot:::mascot_save_character(bot, out)
+#' mascot_save_character(bot, out)
 #' unlink(out)
 mascot_save_character <- function(x, path, ..., overwrite = FALSE) {
   character_api_asserts(checkmate::assert_class(x, "mascot_character_data"), "x", x)
@@ -229,9 +229,8 @@ format.mascot_character_data <- function(x, ...) {
 #'
 #' Start from `system.file("examples", "characters", "study_bot.json", package = "mascot")`.
 #' Edit a plain list or JSON source and check it again. A checked object is opaque.
-#' Source files can use current family defaults. A resolved file embeds its family
-#' defaults and face kits, so it does not depend on the installed package's defaults;
-#' saving a resolved file from R is planned for a later release.
+#' Source files can use the installed package's family defaults. A resolved file
+#' embeds its family defaults and face kits, so it does not depend on them.
 #'
 #' Checks stop at the first problem, giving a diagnostic code, JSON path, value
 #' and repair instruction. Input byte, depth and node limits and drawing budgets

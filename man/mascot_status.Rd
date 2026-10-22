@@ -11,8 +11,7 @@ mascot_status(text = NULL)
 \code{NULL} (the default) to follow the mood.}
 }
 \value{
-A \code{mascot_status} object with one \code{text} element, which may be \code{NULL}.
-The returned object's fields are internal; pass the object on rather than reading its fields.
+A \code{mascot_status} object. Its fields are internal; pass it on rather than reading them.
 }
 \description{
 Sets the text label shown next to the mascot. Text is always shown as plain

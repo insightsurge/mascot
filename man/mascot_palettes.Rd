@@ -17,7 +17,7 @@ A data frame with character columns \code{name} (the palette id),
 it takes from its family. The character's own palettes follow in the
 order its author wrote them. With \code{character = NULL}, a final \code{character} column names each id.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
-names and types. The first column is the value you pass to the matching function.
+names and types.
 }
 \description{
 A palette is a ready-made set of colours for a character, in light and dark

@@ -1,4 +1,4 @@
-#' Internal authoring constructors for the character format (B1)
+#' Internal authoring constructors for the character format
 #'
 #' These build typed source components and a source specification. They are not
 #' exported (the format is not frozen), touch no registry and write no files.

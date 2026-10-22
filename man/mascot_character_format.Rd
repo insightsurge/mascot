@@ -17,9 +17,8 @@ the character marks for small sizes. Text is displayed as text, never HTML.
 \details{
 Start from \code{system.file("examples", "characters", "study_bot.json", package = "mascot")}.
 Edit a plain list or JSON source and check it again. A checked object is opaque.
-Source files can use current family defaults. A resolved file embeds its family
-defaults and face kits, so it does not depend on the installed package's defaults;
-saving a resolved file from R is planned for a later release.
+Source files can use the installed package's family defaults. A resolved file
+embeds its family defaults and face kits, so it does not depend on them.
 
 Checks stop at the first problem, giving a diagnostic code, JSON path, value
 and repair instruction. Input byte, depth and node limits and drawing budgets

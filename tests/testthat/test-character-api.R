@@ -396,16 +396,14 @@ describe("one character resolver at all authoring consumers", {
     expect_identical(mascot_id_state(session, "helper")$context$data$name, "Study Bot")
   })
 
-  it("runs the four offline authoring examples and has an installed format guide", {
+  it("runs the offline authoring examples and has an installed format guide", {
     local_empty_registry()
     # Source tree during development; the installed help database under R CMD check and coverage (no man/ there).
     root <- test_path("..", "..")
     db <- if (dir.exists(file.path(root, "man"))) tools::Rd_db(dir = root) else tools::Rd_db("mascot")
     for (fn in c(
       "mascot_check_character",
-      "mascot_read_character",
-      "mascot_register_character",
-      "mascot_save_character"
+      "mascot_read_character"
     )) {
       rd <- db[[paste0(fn, ".Rd")]]
       expect_false(is.null(rd), info = fn)

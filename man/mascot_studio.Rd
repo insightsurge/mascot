@@ -7,8 +7,8 @@
 mascot_studio(view = "studio", ..., fn = NULL, character = "tessa", run = TRUE)
 }
 \arguments{
-\item{view}{Which view to open: \code{"studio"} (the default) for the function
-playground, \code{"examples"} for the gallery of bundled examples, or \code{"theme"}
+\item{view}{Which view to open: \code{"studio"} (the default) for the studio, one
+page per function, \code{"examples"} for the gallery of bundled examples, or \code{"theme"}
 to theme one character.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}
@@ -37,7 +37,7 @@ experimental and may change in a later release. Choices belong to the returned
 app; no global options are changed.
 }
 \examples{
-\dontshow{if (utils::packageVersion("bslib") >= "0.6.0") withAutoprint(\{ # examplesIf}
+\dontshow{if (requireNamespace("bslib", quietly = TRUE) && utils::packageVersion("bslib") >= "0.6.0") withAutoprint(\{ # examplesIf}
 app <- mascot_studio(fn = "mascot_theme", run = FALSE)
 inherits(app, "shiny.appobj")
 \dontshow{\}) # examplesIf}

@@ -43,12 +43,14 @@ describe("mascot()", {
         `data-minimising` = "true",
         `data-restoring` = "true",
         `data-messages` = "bubble,tooltip,menu",
-        `data-others` = "true"
+        `data-others` = "true",
+        `data-mascot-version` = as.character(utils::packageVersion("mascot"))
       )
     )
     html <- sub('(?s)(<script[^>]*>).*?(</script>)', '\\1[character JSON]\\2', as.character(tag), perl = TRUE)
     html <- sub('(?s)(<script[^>]*data-mascot-baseline[^>]*>).*?(</script>)', '\\1[UI baseline]\\2', html, perl = TRUE)
     html <- sub('data-mount-token="[^"]+"', 'data-mount-token="[UI specification token]"', html)
+    html <- sub('data-mascot-version="[^"]+"', 'data-mascot-version="[package version]"', html)
     expect_snapshot(cat(html))
     dep <- htmltools::findDependencies(tag)[[1]]
     expect_identical(dep$name, "mascot")
@@ -633,10 +635,12 @@ describe("quiet exported examples (#350)", {
 })
 
 # A page saved by htmltools, as Quarto, R Markdown and mascot_preview() pages are, opened in Chrome. `extra` is HTML
-# added after the page's own scripts. Returns a function that evaluates JavaScript there; console warnings are recorded
-# in window.warnings from the start.
-local_version_page <- function(tag, extra = NULL, env = parent.frame()) {
+# added after the page's own scripts. `strip` removes the scripts' data-mascot-version attributes, as pandoc before
+# 3.7.0.2 does when it embeds scripts in a self-contained page. Returns a function that evaluates JavaScript there;
+# console warnings are recorded in window.warnings from the start.
+local_version_page <- function(tag, extra = NULL, strip = FALSE, env = parent.frame()) {
   checkmate::assert_character(extra, null.ok = TRUE)
+  checkmate::assert_flag(strip)
   skip_without_chrome()
   dir <- withr::local_tempdir(.local_envir = env)
   page <- file.path(dir, "page.html")
@@ -644,6 +648,10 @@ local_version_page <- function(tag, extra = NULL, env = parent.frame()) {
     "window.warnings = []; const warn = console.warn; console.warn = (...a) => { warnings.push(a.join(' ')); warn(...a); };"
   )))
   htmltools::save_html(htmltools::tagList(recorder, tag, if (!is.null(extra)) htmltools::HTML(extra)), page)
+  if (strip) {
+    html <- readLines(page)
+    writeLines(gsub('(<script[^>]*) data-mascot-version="[^"]*"', "\\1", html), page)
+  }
   session <- local_chrome_session(env)
   loaded <- session$Page$loadEventFired(wait_ = FALSE)
   session$Page$navigate(paste0("file://", normalizePath(page)), wait_ = FALSE)
@@ -666,6 +674,13 @@ describe("the engine version", {
     expect_identical(js("window.mascot.version"), version)
     expect_identical(js("window.warnings.length"), 0L)
     js <- local_version_page(mascot_preview())
+    expect_identical(js("window.mascot.version"), version)
+  })
+
+  it("comes from the mascot element when the page dropped the script's attribute", {
+    expect_identical(mascot("a")$attribs$`data-mascot-version`, version)
+    js <- local_version_page(mascot("a", placement = "inline"), strip = TRUE)
+    expect_identical(js("document.querySelector('script[data-mascot-version]')"), NULL)
     expect_identical(js("window.mascot.version"), version)
   })
 

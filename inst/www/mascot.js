@@ -7,7 +7,8 @@
  *
  * window.mascot.version is the version of the R package this engine belongs to: R gives this file's script tag a
  * data-mascot-version attribute. A page that loads a second engine of another version keeps the first one and says so
- * once in the console.
+ * once in the console. Where a page drops the script's attributes, the host takes the version from the first mascot it
+ * mounts, which carries the same attribute.
  */
 (() => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: loaded with a <script> tag (a classic script, not a module)

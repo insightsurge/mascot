@@ -106,11 +106,19 @@ describe("I1 format-v1 dispatch", {
       "({picture: T.picture(document.querySelector('#a canvas')), frames: frames.length,
       geometry: geometryCalls.length, faces: faceCalls.length})"
     )
-    expect_gt(expected$ink, 1000)
     expect_gt(result$picture$ink, 1000)
+    expect_identical(result$picture, expected)
     expect_gt(result$frames, 0)
     expect_gt(result$geometry, 0)
     expect_gt(result$faces, 0)
+  })
+
+  it("names the missing character when a page has no description of it", {
+    js <- local_runtime_page(tags = list(mascot("a", size = 160, placement = "inline")))
+    message <- js(
+      "(() => { try { mascot.readCharacter('nobody'); return 'no error'; } catch (e) { return e.message; } })()"
+    )
+    expect_match(message, "no description of the character 'nobody'", fixed = TRUE)
   })
 })
 

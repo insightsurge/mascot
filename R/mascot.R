@@ -281,6 +281,7 @@ mascot <- function(
     `data-restoring` = tolower(as.character(motion$restoring)),
     `data-messages` = paste(unlist(motion$messages), collapse = ","),
     `data-others` = tolower(as.character(motion$others)),
+    `data-mascot-version` = getNamespaceVersion("mascot")[[1]],
     htmltools::tags$script(
       type = "application/json",
       `data-mascot-character` = character$id,
@@ -525,7 +526,8 @@ arg_problem <- function(x, arg) {
 #'
 #' The first script carries the package version in `data-mascot-version`, so the engine knows its own version
 #' (`window.mascot.version`) on every page the dependency renders into: Shiny apps, `mascot_preview()` and Quarto or
-#' R Markdown pages.
+#' R Markdown pages. Each `mascot()` element carries the same attribute, for pages that drop the script's attributes
+#' (pandoc before 3.7.0.2 does when it embeds scripts in a self-contained page).
 #' @noRd
 mascot_dependency <- function() {
   version <- getNamespaceVersion("mascot")[[1]]

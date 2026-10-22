@@ -4,17 +4,18 @@ The package as a whole: Copyright (c) Harsh Verma; MIT licence (see LICENSE).
 No third-party JavaScript, CSS or fonts are bundled.
 
 inst/www/mascot.js
+inst/www/mascot-parts.js
+inst/www/mascot-geometry.js
+inst/www/mascot-faces.js
+inst/www/mascot-motion.js
+inst/www/mascot-player.js
+inst/www/mascot-host.js
     Source: the mascot drawing engine. It began as the animation code the author wrote for the R Engineering
     Playbook site, and has grown here into an engine of its own, built around the version 1 character format.
     Copyright (c) Harsh Verma. Licence: MIT.
 
-inst/www/mascot-motion.js
-    Source: character-format v1 motion tracks and the guards the player shares, written for this package.
-    Copyright (c) Harsh Verma. Licence: MIT.
-
-inst/www/mascot-host.js
 inst/www/mascot.css
-    Source: page host and layout written for this package.
+    Source: page layout and styles written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
 vignettes/figures/*.png
@@ -47,14 +48,6 @@ tests/testthat/fixtures/format/*.json
     Source: character-format reference recipes written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
-inst/www/mascot-parts.js
-    Source: character-format v1 affine parts and anchor implementation written for this package.
-    Copyright (c) Harsh Verma. Licence: MIT.
-
-inst/www/mascot-geometry.js
-    Source: character-format v1 canvas geometry, paints, outlines and world clips written for this package.
-    Copyright (c) Harsh Verma. Licence: MIT.
-
 inst/format/characters/tessa.json
     Source: Tessa's complete resolved version 1 character data, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
@@ -82,15 +75,6 @@ inst/format/policy-v1.json
 
 tests/testthat/fixtures/format/invalid/*.json
     Source: deliberately malformed character-format reference inputs written for this package.
-    Copyright (c) Harsh Verma. Licence: MIT.
-
-inst/www/mascot-faces.js
-    Source: generic character-format face-kit and effect operations written for this package.
-    Copyright (c) Harsh Verma. Licence: MIT.
-
-inst/www/mascot-player.js
-    Source: character-format v1 runtime (compile once, draw through the format-v1 modules, per-canvas player) written for
-    this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
 inst/examples/characters/study_bot.json

@@ -1992,6 +1992,9 @@
 
   function mount(el) {
     if (records.has(el)) return true;
+    // A self-contained page built with pandoc before 3.7.0.2 drops the engine script's data attributes; every mascot
+    // element carries the version too, so the engine still knows it.
+    if (ns.version == null && el.dataset.mascotVersion) ns.version = el.dataset.mascotVersion;
     const authoritative = ledgers.get(el.id);
     if (authoritative?.live) {
       warn(`duplicate live mascot id "${el.id}"; the first binding remains authoritative`);
@@ -2188,7 +2191,7 @@
         forceConnectionMood(record);
         show(record, record.controller.current());
       }
-      if (band && cssWidth(canvas) > 0) record.band = band;
+      if (cssWidth(canvas) > 0) record.band = band;
       listenBubble(record);
       listenDrag(record);
       replaceClick(record, record.click);

@@ -24,7 +24,7 @@
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
 #'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
 #'       lifecycle::badge("experimental"), fixed = TRUE),
-#'   "\nIts arguments, results and diagnostics may change in 0.1.x.\n}"
+#'   "\nIts arguments, results and diagnostics may change in a later release.\n}"
 #' )
 #' @export
 #' @examples
@@ -79,7 +79,7 @@ mascot_check_character <- function(x) {
 #'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
 #'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
 #'       lifecycle::badge("experimental"), fixed = TRUE),
-#'   "\nIts arguments, results and diagnostics may change in 0.1.x.\n}"
+#'   "\nIts arguments, results and diagnostics may change in a later release.\n}"
 #' )
 #' @export
 #' @examples
@@ -217,7 +217,8 @@ format.mascot_character_data <- function(x, ...) {
 
 #' Character format version 1
 #'
-#' An offline guide to the internal character authoring route. Descriptions are
+#' A guide to the character file format read by [mascot_read_character()] and
+#' [mascot_check_character()]. Descriptions are
 #' JSON objects with `format_version = 1`, `requires`, `id`, `name`, `description`,
 #' a `family`, colours, ground, parts and five shared moods (`idle`, `thinking`,
 #' `happy`, `worried`, `celebrating`). Optional anchors, palettes, face kits and
@@ -230,8 +231,7 @@ format.mascot_character_data <- function(x, ...) {
 #' Edit a plain list or JSON source and check it again. A checked object is opaque.
 #' Source files can use current family defaults. A resolved file embeds its family
 #' defaults and face kits, so it does not depend on the installed package's defaults;
-#' saving a resolved file from R is planned for 0.1.x. Registered family snapshots
-#' are metadata and never become defaults for other source files.
+#' saving a resolved file from R is planned for a later release.
 #'
 #' Checks stop at the first problem, giving a diagnostic code, JSON path, value
 #' and repair instruction. Input byte, depth and node limits and drawing budgets
@@ -241,14 +241,24 @@ format.mascot_character_data <- function(x, ...) {
 #' `system.file("format", package = "mascot")`.
 #'
 #' @section Compatibility:
-#' Version-1 files keep loading through 0.1.x.
-#' The checker may only get stricter in a new format version, except for a
-#' documented security or resource-safety fix, which includes a diagnostic and
-#' migration guidance. New features arrive as a new capability name in `requires`.
-#' A breaking change means format version 2, with both versions accepted.
-#' Files are never upgraded silently. A resolved file is self-contained.
+#' The format is experimental and its future direction is open; these points hold
+#' either way. Additions (new optional keys, wider ranges, new categories) stay in
+#' format version 1, so existing files keep working. A file that uses an addition
+#' lists it in `requires`, and an older version of mascot then stops with an error
+#' naming it instead of drawing it wrongly. Only a change that would break existing
+#' files introduces format version 2; retiring an older format version is announced
+#' in NEWS at least one release ahead. The checker may only get stricter in a new
+#' format version, except for a documented security or resource-safety fix, which
+#' comes with a diagnostic and migration guidance. Files are never modified or
+#' upgraded silently. A resolved file is self-contained.
 #'
 #' @name mascot_character_format
+#' @evalRd paste0(
+#'   "\\section{Experimental}{\n",
+#'   sub("\\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}",
+#'       "\\out{<span class='badge text-bg-warning'>Experimental</span>}",
+#'       lifecycle::badge("experimental"), fixed = TRUE),
+#'   "\nWhat the format accepts may grow in a later release; version-1 files keep loading (see Compatibility).\n}"
+#' )
 #' @seealso [mascot_check_character()], [mascot_read_character()]
-#' @keywords internal
 NULL

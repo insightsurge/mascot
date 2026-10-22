@@ -1,7 +1,7 @@
 #' Launch the interactive mascot studio
 #'
 #' Explore the package's functions, try their controls with live feedback, and
-#' copy the working R code into your own app. This first interface is
+#' copy the working R code into your own app. The studio is
 #' experimental and may change in a later release. Choices belong to the returned
 #' app; no global options are changed.
 #' @param view Which view to open: `"studio"` (the default) for the function

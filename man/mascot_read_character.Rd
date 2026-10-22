@@ -54,5 +54,5 @@ Other mascot helpers:
 \concept{mascot helpers}
 \section{Experimental}{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
-Its arguments, results and diagnostics may change in 0.1.x.
+Its arguments, results and diagnostics may change in a later release.
 }

@@ -7,12 +7,11 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(mascot) # nolint: undesirable_function_linter.
 ```
 
-"Make your own character" is coming soon to mascot. In version 0.1.0, you can
-already read and check a character file using `mascot_read_character()` and
+You can read and check a character file using `mascot_read_character()` and
 `mascot_check_character()`. Both functions are experimental, and their
-arguments, results and diagnostics may change in 0.1.x.
+arguments, results and diagnostics may change in a later release.
 
-Saving and registering characters and palettes will arrive in 0.1.x. The mascot
+Saving and registering characters and palettes are planned for a later release. The mascot
 studio does not take custom characters yet, but you can preview your own
 character offline and use it directly in Shiny apps.
 
@@ -106,8 +105,8 @@ items, as they would appear in a part:
 {"shape": "arc", "x": 0, "y": 0, "r": 20, "start": 0.5, "end": 5.78, "stroke": "outline", "width": 3}
 ```
 
-The format keeps some ideas reserved for later versions, and the checker refuses
-them today, for example morphing between shapes, particles, blending, outfits and
+The format reserves some capabilities, and the checker refuses
+them, for example morphing between shapes, particles, blending, outfits and
 accessories that any character can wear, and connecting items to each other. A
 character in format version 1 is drawn from the items above and animated with
 gestures (movement tracks on its parts).
@@ -208,38 +207,23 @@ ui <- fluidPage(
 `mascot_theme()` checks colour role names against the selected character when
 the mascot renders, so custom role names such as `screen` are fully supported.
 
-## What stays the same
+## What you can rely on
 
-The character format is designed with stability in mind:
+The format is experimental and its future direction is open. These points hold either way:
 
-* **Compatibility promise**: Version-1 character files will keep loading
-  throughout the 0.1.x release series.
-* **Predictable validation**: The checker only becomes stricter in a new format
-  version, except for documented security or resource-safety fixes.
-* **Additive features**: New capabilities arrive as new capability names in
-  `requires`, leaving existing files untouched.
-* **No silent migrations**: Breaking changes will introduce format version 2,
-  with the engine accepting both versions. Character files are never modified or
-  upgraded silently.
-
-## Going further
-
-Faces and moods, writing your own gestures, palettes and dark mode, and drawing
-for small sizes each deserve more room than this article has. A longer series
-on these topics is planned for the author's blog.
-
-## Coming soon
-
-Upcoming releases in the 0.1.x series will expand support for custom characters:
-
-* **Saving characters**: An export function (`mascot_save_character()`) to write
-  self-contained, resolved JSON files with embedded family metadata and face kits.
-* **Session registration**: Registering a checked character for the R process
-  (`mascot_register_character()`) during application start-up so you can refer to
-  it by name.
-* **Palette registration**: Registering custom colour palettes across characters.
-* **Studio integration**: The mascot studio's **Your character** panel, allowing
-  you to upload, inspect and preview custom characters interactively.
+* **Additions stay in version 1**: new optional keys, wider ranges and new
+  categories keep the format at version 1, so existing files keep working.
+* **Clear errors on older versions**: a file that uses an addition lists it in
+  `requires`; an older version of mascot then stops with an error naming it,
+  instead of drawing it wrongly.
+* **Breaking changes mean version 2**: only a change that would break existing
+  files introduces format version 2. Retiring an older format version is
+  announced in NEWS at least one release ahead.
+* **Predictable validation**: the checker only becomes stricter in a new format
+  version, except for documented security or resource-safety fixes, which come
+  with a diagnostic and migration guidance.
+* **No silent migrations**: character files are never modified or upgraded
+  silently.
 
 ```{r cleanup, include=FALSE}
 unlink(copy)

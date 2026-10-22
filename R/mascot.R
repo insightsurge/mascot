@@ -1,7 +1,8 @@
 #' Add a mascot to a page
 #'
 #' Draw a character with a mood, a status line and an optional message bubble.
-#' The status shows the capitalised mood word until the app sets its own text.
+#' The status shows the character's line for the mood until the app sets its own
+#' text (the `status` column of `mascot_moods(character)`).
 #' It follows the mood again when [mascot_status()] is supplied without text.
 #'
 #' @param id A required non-empty string without whitespace, unique on the

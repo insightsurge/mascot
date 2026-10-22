@@ -218,17 +218,20 @@ widget's rendered output (section 6). Every change in `inst/www/` adds an entry 
 ## 4. Bundled files and licences
 
 - `inst/COPYRIGHTS` lists every bundled file: what it is, where it came from, who holds the copyright and under which
-  licence. It records the engine (Harsh Verma, MIT, born in the playbook site's `tools/animate/`) and, once any are
-  bundled, each font. 0.1.0 bundles no fonts; they may come with static images and trailers (later releases).
+  licence. It records the engine (the package creator, MIT) and, once any are bundled, each font. 0.1.0 bundles no
+  fonts; they may come with static images and trailers in later releases.
   `inst/COPYRIGHTS` is the file Writing R Extensions names (**CRAN**).
-- Each font folder has its own `OFL.txt`. Both fonts (Hanken Grotesk and JetBrains Mono, the website's fonts) are under
+- Where third parties contributed code, list them with `ctb` or `cph`.
+
+**When fonts are bundled:**
+
+- Each font folder must have its own `OFL.txt`. Both fonts (Hanken Grotesk and JetBrains Mono, the website's fonts) are under
   the SIL Open Font Licence 1.1 and have no Reserved Font Name (checked 2026-10-22), so subset files keep their names.
 - Each font project is added to `Authors@R` with the `cph` role and a `comment` saying which font it is (the pattern
   bslib uses). `Copyright: See inst/COPYRIGHTS` may be added if a reviewer asks (**CRAN**).
 - Fonts are subset to the Latin range and shipped as WOFF2 to keep the tarball small (**house**).
-- Where third parties contributed code, list them with `ctb` or `cph`.
 
-**Acceptance checklist for the engine port** (and for any later JS, CSS, font or Lua file):
+**Acceptance checklist for bundled JS, CSS, font or Lua files:**
 
 1. Every shipped JS, CSS, font and Lua file is present in the built tarball (the gate's tarball step checks that
    each file under `inst/` is shipped).
@@ -254,11 +257,12 @@ widget's rendered output (section 6). Every change in `inst/www/` adds an entry 
 
 **Dependencies:**
 
-- Keep `Imports` small: htmltools, shiny, checkmate, cli, and perhaps rlang or jsonlite. Each new import needs a
+- Keep `Imports` small: checkmate, cli, htmltools, jsonlite and shiny. Each additional import needs a
   reason (**house**).
 - Call functions as `pkg::fn()`. No `library()` or `require()` in package code (**CRAN**).
-- Optional features use `Suggests` (chromote, av, shinyvalidate, shinytest2, quarto, bslib, spelling) and are guarded
-  with `rlang::check_installed()` or `requireNamespace()`. Tests use `skip_if_not_installed()` (**CRAN**).
+- Optional and development packages use `Suggests`: bslib (>= 0.6.0), chromote, covr, golem, knitr, later, lifecycle,
+  promises, rmarkdown, shinytest2 (>= 0.5.0), testthat (>= 3.0.0) and withr. Optional features check availability
+  with `requireNamespace()` before use. Tests use `skip_if_not_installed()` (**CRAN**).
 - Avoid `:::` into shiny or bslib: it is fragile, and reviewers flag it (**CRAN** for base packages, house for the
   rest).
 
@@ -376,7 +380,7 @@ SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep
 
   | Banned | Reason | Label |
   |---|---|---|
-  | `library`, `require` | Declare the package and call `pkg::fn()`; use `requireNamespace()` or `rlang::check_installed()` | CRAN |
+  | `library`, `require` | Declare the package and call `pkg::fn()`; use `requireNamespace()` for optional packages | CRAN |
   | `attach` | Do not change the user's search path | CRAN |
   | `setwd` | Use `withr::local_dir()` or a path argument | CRAN |
   | `Sys.setenv` | Use `withr::local_envvar()` | CRAN |
@@ -410,6 +414,23 @@ SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep
 
 Releases, CRAN submissions and their checklist are the package creator's. A contributor never changes the version
 or the release headings in `NEWS.md`.
+
+### Package versions
+
+- Patch releases contain compatible fixes, including fixes to experimental features.
+- Minor releases add features and deprecations. Before 1.0.0, announced breaking changes also use a minor release.
+- Deprecations are kept for at least one release before removal.
+- A CRAN release is tagged after CRAN accepts it.
+
+### Character format compatibility
+
+The format is experimental and its future direction is open; these points hold either way. Additions (new optional
+keys, wider ranges, new categories) stay in format version 1, so existing files keep working. A file that uses an
+addition lists it in `requires`, and an older version of mascot then stops with an error naming it instead of drawing
+it wrongly. Only a change that would break existing files introduces format version 2; retiring an older format
+version is announced in NEWS at least one release ahead. The checker may only get stricter in a new format version,
+except for a documented security or resource-safety fix, which comes with a diagnostic and migration guidance. Files
+are never modified or upgraded silently. Resolved files are self-contained.
 
 ## 10. Sources
 

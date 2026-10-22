@@ -10,7 +10,7 @@ if (!in_studio()) guide_try_live("mascot_check_character")
 htmltools::div(
   class = "pg-note",
   htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
-  " Its arguments, results and diagnostics, and the file format, may change in 0.1.x."
+  " Its arguments, results and diagnostics, and the file format, may change in a later release."
 )
 ```
 
@@ -44,7 +44,7 @@ htmltools::tags$pre(htmltools::tags$code(paste0(
 ```
 
 `r guide_fn_link("mascot_read_character")` reads and checks a file in one step. The studio takes the
-built-in characters only for now; custom characters in the studio are coming soon.
+built-in characters only.
 
 ```{r mascot_check_character-mistakes, echo = FALSE}
 if (!in_studio()) guide_mistakes_html("mascot_check_character", studio_character)

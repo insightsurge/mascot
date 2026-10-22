@@ -15,7 +15,7 @@ Depends:
 Imports: 
     checkmate,
     cli,
-    htmltools,
+    htmltools (>= 0.5.1),
     jsonlite,
     shiny
 Suggests: 

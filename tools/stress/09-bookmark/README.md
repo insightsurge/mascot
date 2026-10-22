@@ -14,7 +14,7 @@ Should hold:
 - The URL has the note and no mascot input; the restored page shows "Restored <note>", not the pre-bookmark state.
 
 From the checkout root, run `Rscript tools/stress/run-stress.R 09` with the
-R environment described in the parent README. See [../RESULTS.md](../RESULTS.md) for observed results.
+R environment described in the parent README.
 
 Reproduction sequence:
 

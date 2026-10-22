@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# cran-gate version: 2026-10-21
+# cran-gate version: 2026-10-22
 # Self-test for the CRAN gate (cran-gate.R, in the same folder): a check that can't fail protects nothing.
 #
 #   Rscript <path to this file> [all|unit|static|heavy] [step,step,...]
@@ -13,8 +13,8 @@
 #   heavy           the same for check_fast, tests, coverage, new_lines, check_full, nosuggests and tarball, on a tiny
 #                   generated package
 #                   (a few minutes, not the hours the real package's own suite would need)
-#   all   (default) all three; static also checks that this folder's gate and the skill's copy are the same files,
-#                   and that a README.md beside the gate names every mode and option --help lists
+#   all   (default) all three; static also compares this folder's scripts with CRAN_GATE_COPY_DIR when set,
+#                   and checks that a README.md beside the gate names every mode and option --help lists
 #
 # Run it from the root of a package that passes the gate. Each probe copies the package to tempdir() (tracked and
 # new files in a git repository; nothing git ignores; the heavy probes copy the tiny generated package instead),
@@ -29,7 +29,7 @@
 groups <- c("all", "unit", "static", "heavy")
 rscript <- file.path(R.home("bin"), "Rscript")
 
-# The gate is the file next to this one, wherever the skill is installed.
+# The gate is the file next to this one, wherever the scripts are installed.
 gate_path <- function() {
   file_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
   if (length(file_arg) == 0) {
@@ -443,12 +443,13 @@ static_probes <- function(uses) {
     probe(
       "pkgdown: a reference entry for a topic that doesn't exist",
       "static",
-      "lint",
+      "fast",
       function(dir) {
         plant(dir, "_pkgdown.yml", c("reference:", "- title: Everything", "  contents:", "  - not_a_topic"))
       },
       expect_fail = "pkgdown",
       package = "fixture",
+      args = c("--steps", "pkgdown"),
       skip = if (!requireNamespace("pkgdown", quietly = TRUE)) "pkgdown isn't installed here"
     )
   )
@@ -1129,10 +1130,9 @@ unit_checks <- function(gate) {
   )
 }
 
-# The gate and this self-test live twice: in the repository and in the skill folder (the skill's copy is the one real
-# source). When both exist and this run is from somewhere else, they must be the same files; elsewhere (CI, another
-# machine) there is nothing to compare and the check is skipped.
-skill_scripts <- function() path.expand("~/.agents/skills/cran-gate/scripts")
+# Compare the gate and this self-test with the folder in CRAN_GATE_COPY_DIR when set.
+# Without a comparison folder there is nothing to compare and the check is skipped.
+copy_scripts <- function() Sys.getenv("CRAN_GATE_COPY_DIR")
 
 version_line <- function(path) {
   checkmate::assert_file_exists(path)
@@ -1143,26 +1143,29 @@ version_line <- function(path) {
 copies_in_step <- function(gate) {
   checkmate::assert_file_exists(gate)
   here <- normalizePath(dirname(gate))
-  there <- skill_scripts()
+  there <- copy_scripts()
+  if (!nzchar(there)) {
+    return(list(status = "SKIP", detail = "CRAN_GATE_COPY_DIR is unset"))
+  }
   if (!dir.exists(there)) {
-    return(list(status = "SKIP", detail = "no skill copy of the gate on this machine"))
+    return(list(status = "FAIL", detail = paste("CRAN_GATE_COPY_DIR names no folder:", there)))
   }
   if (identical(here, normalizePath(there))) {
-    return(list(status = "SKIP", detail = "this run is from the skill copy itself"))
+    return(list(status = "SKIP", detail = "this run is from the comparison copy itself"))
   }
   files <- c("cran-gate.R", "test-cran-gate.R")
   same <- file.exists(file.path(there, files)) &
     tools::md5sum(file.path(here, files)) == tools::md5sum(file.path(there, files))
   differ <- files[!same]
   if (length(differ) == 0) {
-    return(list(status = "PASS", detail = paste("same files as the skill copy, version", version_line(gate))))
+    return(list(status = "PASS", detail = paste("same files as the comparison copy, version", version_line(gate))))
   }
   copy <- paste0("cp ", file.path(here, differ), " ", file.path(there, differ), collapse = "; ")
   list(
     status = "FAIL",
     detail = paste0(
       toString(differ),
-      " differ from the skill copy (here: ",
+      " differ from the comparison copy (here: ",
       version_line(file.path(here, differ[[1]])),
       ", there: ",
       if (file.exists(file.path(there, differ[[1]]))) version_line(file.path(there, differ[[1]])) else "missing",

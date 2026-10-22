@@ -1,33 +1,28 @@
-# R
+# Session files
 .Rproj.user/
 .Rhistory
 .RData
 .Renviron
 
-# OS
+# Operating system files
 .DS_Store
 
-# Local-only working notes (managed with the handoff skill, installed per user)
+# Local working notes, not shared
 dev/handoffs/
 
-# Claude Code: personal settings stay local
+# Local tool settings stay out of git
 .claude/settings.local.json
-
-# Codex: project config with this machine's paths stays local
 .codex/
 
-# Local renv: dev packages for working on mascot; the package itself doesn't use renv
+# Local development libraries and startup files
 renv/
 renv.lock
 .Rprofile
 
-# R CMD build and check output
+# Package build and check output
 *.Rcheck/
 mascot_*.tar.gz
 
-# pkgdown site (built into site/, not docs/)
+# Generated site and temporary files
 site/
 .*.md.hold
-
-# Cached visual archives and decoded captures; retained copies belong on design-assets
-dev/visual-baselines/

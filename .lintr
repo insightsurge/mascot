@@ -1,8 +1,7 @@
 linters: linters_with_defaults(
     line_length_linter = line_length_linter(120),
     object_name_linter = object_name_linter(
-      styles = c("snake_case", "symbols"),
-      regexes = c(shiny_api = "^(mascotOutput|renderMascot)$")
+      styles = c("snake_case", "symbols")
     ),
     undesirable_function_linter = undesirable_function_linter(
       fun = c(

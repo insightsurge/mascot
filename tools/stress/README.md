@@ -1,7 +1,7 @@
-# Shiny stress apps (#172)
+# Shiny stress apps
 
 Run from this checkout's root with `RENV_CONFIG_AUTOLOADER_ENABLED=FALSE` and `R_LIBS`
-set to your existing development library (see the repository's working instructions).
+set to your existing development library.
 Do not restore renv or install packages to run these apps.
 
 ```sh
@@ -32,8 +32,8 @@ The runner temporarily sets `NOT_CRAN=true` to allow these explicit browser tria
 | `09-bookmark/app.R` | URL bookmarking and an update from `onRestore()` | runner `09` |
 | `10-cache/app.R` | A mascot in a `renderUI()` cached with `bindCache()`, shown to a second session | runner `10` |
 
-Motion is on in 02, 05 and the newer scenarios, so updates, swaps and replacements land while the mascot animates.
-01, 03 and 04 keep `motion = FALSE`; they test wiring, not animation.
+Motion is on in 02 and 05-09, so updates, swaps and replacements land while the mascot animates.
+01, 03, 04 and 10 keep `motion = FALSE`; they test wiring, not animation.
 
 For interactive inspection, first run `pkgload::load_all(".")`, then
 `shiny::runApp("tools/stress/02-replacement")` (substitute any app folder above).
@@ -66,5 +66,5 @@ raises its revision and changes its payload, retaining the obsolete generation.
 Scenario 05 uses `session$allowReconnect("force")`, which Shiny provides for testing reconnects locally: as on Shiny
 Server or Connect, the page reconnects into a new server session.
 
-[RESULTS.md](RESULTS.md) records observations and limitations. Package code is never
-fixed by these tools; confirmed failures belong in follow-up issues.
+Read each run's assertion lines and final summary for failures, known issues and skips.
+Package code is never fixed by these tools; confirmed failures belong in follow-up issues.

@@ -13,7 +13,7 @@ Should hold:
   documented connection-loss text; after the reconnect the page keeps its last state and takes the next update.
 
 From the checkout root, run `Rscript tools/stress/run-stress.R 05` with the
-R environment described in the parent README. See [../RESULTS.md](../RESULTS.md) for observed results.
+R environment described in the parent README.
 
 Reproduction sequence:
 

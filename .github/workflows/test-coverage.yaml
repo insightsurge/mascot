@@ -5,23 +5,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    # TEMPORARY while the repo is private (#113; removed when it goes public, #115): changes that can't affect the
-    # package skip this job (project docs, agent files, templates, the site's theme).
-    paths-ignore:
-      - "docs/**"
-      - "dev/**"
-      - ".claude/**"
-      - ".agents/**"
-      - "CLAUDE.md"
-      - "AGENTS.md"
-      - "LICENSE.md"
-      - ".github/CONTRIBUTING.md"
-      - ".github/ISSUE_TEMPLATE/**"
-      - ".github/pull_request_template.md"
-      - ".github/release.yml"
-      - "pkgdown/**"
-      - "_pkgdown.yml"
-      - "tools/build-site.R"
   workflow_dispatch:
 
 name: test-coverage
@@ -60,15 +43,11 @@ jobs:
             install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
           )
           print(cov)
-          if (nrow(as.data.frame(cov)) == 0) {
-            message("No R code lines to cover yet: the coverage gate applies once there is code.")
-          } else {
-            pct <- covr::percent_coverage(cov)
-            message(sprintf("Line coverage: %.1f%%", pct))
-            limit <- as.numeric(read.dcf("DESCRIPTION", fields = "Config/cran-gate/coverage")[[1]])
-            if (is.na(limit)) limit <- 70
-            if (pct < limit) stop(sprintf("Coverage %.1f%% is under %g%%.", pct, limit), call. = FALSE)
-          }
+          pct <- covr::percent_coverage(cov)
+          message(sprintf("Line coverage: %.1f%%", pct))
+          limit <- as.numeric(read.dcf("DESCRIPTION", fields = "Config/cran-gate/coverage")[[1]])
+          if (is.na(limit)) limit <- 70
+          if (pct < limit) stop(sprintf("Coverage %.1f%% is under %g%%.", pct, limit), call. = FALSE)
         shell: Rscript {0}
 
       - name: Show testthat output

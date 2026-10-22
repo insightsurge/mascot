@@ -18,7 +18,7 @@ Should hold:
 - Duplicate-id warnings are expected here; more than two fail the run.
 
 From the checkout root, run `Rscript tools/stress/run-stress.R 02` with the
-R environment described in the parent README. See [../RESULTS.md](../RESULTS.md) for observed results.
+R environment described in the parent README.
 
 Reproduction sequence:
 

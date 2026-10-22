@@ -9,9 +9,15 @@ permissions:
   contents: read
   pull-requests: write
 
+# Pull requests: one group per branch, superseded scans are cancelled. main: one group per commit, so every pushed
+# commit is scanned.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   scan:
-    runs-on: ubuntu-26.04  # pinned: moved deliberately ahead of the ubuntu-latest rollout
+    runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
     steps:
       - uses: actions/checkout@v7
         with:

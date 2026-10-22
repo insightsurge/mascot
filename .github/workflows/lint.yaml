@@ -4,23 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    # TEMPORARY while the repo is private (#113; removed when it goes public, #115): changes that can't affect the
-    # package skip this job (project docs, agent files, templates, the site's theme).
-    paths-ignore:
-      - "docs/**"
-      - "dev/**"
-      - ".claude/**"
-      - ".agents/**"
-      - "CLAUDE.md"
-      - "AGENTS.md"
-      - "LICENSE.md"
-      - ".github/CONTRIBUTING.md"
-      - ".github/ISSUE_TEMPLATE/**"
-      - ".github/pull_request_template.md"
-      - ".github/release.yml"
-      - "pkgdown/**"
-      - "_pkgdown.yml"
-      - "tools/build-site.R"
   workflow_dispatch:
 
 name: lint

@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The example character `study_bot.json` has an antenna: its `wave` gesture swings the antenna and `nod` tilts the head, instead of both falling back to a whole-character tilt for parts it did not have (#483).
+
 * mascot needs `shiny` 1.8.1 or later, and `bslib` 0.7.0 or later where it uses `bslib` (a `bs_theme()` as `theme`, the studio and the examples): the long-task example and the `update_mascot()` help use `shiny::ExtendedTask` and `bslib::input_task_button()`, which those versions introduced. Both versions install on R 4.1 (#483).
 
 * Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).

@@ -112,7 +112,7 @@ never change. A wave needs a changing track on a non-root part; a nod can change
 
 **In brief:** Sela, Knurl and Neer looked heavier in the engine than in their drawings. The outline is now painted
 under the shape's colour, as in the drawings: only its outer half shows, and its light edge sits outside the shape
-instead of inside it. Their outline widths grow by half so the visible line keeps a clear weight (the founder chose this
+instead of inside it. Their outline widths grow by half so the visible line keeps a clear weight (the package creator chose this
 from three options). Tessa has no outlined parts and does not change.
 
 **Technical:**

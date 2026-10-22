@@ -34,8 +34,8 @@ a character drawn in code shows a mood and animates when the mood changes. What 
    becomes the commit message on `main`: keep it a Conventional Commit.
 
 `main` is protected by a ruleset: changes reach it only through a pull request, and the required checks must pass.
-The first time you open a pull request from a fork, CI waits for a maintainer to approve the run; this is expected,
-so there is no need to ask. Please leave "Allow edits by maintainers" on, so a maintainer can fix a small thing
+CI on a pull request from a fork waits for a maintainer to approve the run; this is expected, so there is no need to
+ask. Please leave "Allow edits by maintainers" on, so a maintainer can fix a small thing
 (a typo, a failing format check) on your branch instead of asking you to.
 
 Stacked pull requests are fine. Base the second one on the branch below it, and say so in its description.

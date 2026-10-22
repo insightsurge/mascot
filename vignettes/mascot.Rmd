@@ -27,7 +27,7 @@ What you get:
 - **Offline by design:** ships every script and style in the package, and shows a worried face if Shiny disconnects.
 - **A studio to explore:** [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`) (experimental) lets you try every function live and copy the R code.
 
-`mascot` is not on CRAN yet. Install the development version from GitHub with `pak`:
+Install the development version of `mascot` from GitHub with `pak`:
 
 ```{r install, eval=FALSE}
 # install.packages("pak")
@@ -39,7 +39,7 @@ pak::pak("insightsurge/mascot")
 The fastest way to see what `mascot` can do is the studio, a small app that runs on your computer and needs no internet. It is experimental, so its looks may change, and it uses the optional `bslib` and `knitr` packages.
 
 - [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`) opens the studio. Pick a character, pick a function from the list, change its arguments and watch the mascot react. The R code to copy sits under the picture and always matches what you see.
-- Each function has a short guide page in the studio, with the same text as the website's **Studio guide** menu.
+- Each function has a short guide page in the studio, with the same text as the website's guide pages (**Guides** menu, **Studio guide: every function**).
 - `mascot_studio(view = "theme")` (or `mascot_example("theme")`) opens **Theme a mascot**. Choose one character, then try a ready-made palette, your own colours for light and dark mode, or the colours of your app's `bslib` theme. Its **Check** tab shows every mood in light and dark and warns about low contrast, and the code to copy is the shortest `mascot_theme()` call that gives the same look.
 - `mascot_studio(view = "examples")` lists the bundled example apps. You can also open the theme page from the studio's **More** menu.
 - To start on one function or character, name them: `mascot_studio(fn = "mascot_theme", character = "sela")`.
@@ -381,7 +381,7 @@ update_mascot(
 
 ## Where next
 
-- **Studio guide pages:** open the **Studio guide** menu on the website (or inside [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`)) for visual guides to [`mascot()`](`r paste0(site_url, "articles/guide-mascot.html")`), [`update_mascot()`](`r paste0(site_url, "articles/guide-update_mascot.html")`), [`mascot_theme()`](`r paste0(site_url, "articles/guide-mascot_theme.html")`) and every other export.
+- **Studio guide pages:** open **Guides** > **Studio guide: every function** on the website (or the **Guide** tab inside [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`)) for visual guides to [`mascot()`](`r paste0(site_url, "articles/guide-mascot.html")`), [`update_mascot()`](`r paste0(site_url, "articles/guide-update_mascot.html")`), [`mascot_theme()`](`r paste0(site_url, "articles/guide-mascot_theme.html")`) and every other export.
 - **Package reference:** check the **Reference** menu (or `?mascot`, `?"mascot-package"` and `?mascot_styling` in R) for all argument details, condition classes and CSS variables.
 - **Bundled example apps:** use [`mascot_examples()`](`r paste0(site_url, "articles/guide-mascot_examples.html")`) and [`mascot_example()`](`r paste0(site_url, "articles/guide-mascot_example.html")`) to copy working apps for form checks, slow tasks, modules, `golem` and `rhino`.
 - **Custom characters (experimental):** read [Write your own character](`r paste0(site_url, "articles/write-your-own-character.html")`) to see how [`mascot_read_character()`](`r paste0(site_url, "articles/guide-mascot_read_character.html")`) and [`mascot_check_character()`](`r paste0(site_url, "articles/guide-mascot_check_character.html")`) read and check a character file.

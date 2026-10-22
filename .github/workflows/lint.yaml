@@ -17,6 +17,7 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
+    timeout-minutes: 15  # Air, Biome and lintr (longest recent run: 4 min)
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 

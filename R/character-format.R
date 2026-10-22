@@ -175,9 +175,14 @@ character_format_json <- function(bytes, limits) {
 }
 
 #' Validate and normalise one node against a closed structural definition
+#'
+#' A key that starts with `x_` in a fixed-field object is an extension key: its
+#' value is any plain data, kept as it is and never checked or read. `on_object`,
+#' when given, is applied to every fixed-field object after it is checked (the
+#' semantic checks use it to drop the extension keys).
 #' @noRd
 # Per-node helper: callers assert inputs (house exception, r-code.md).
-character_format_node <- function(value, rule, path, definitions, json_source = FALSE) {
+character_format_node <- function(value, rule, path, definitions, json_source = FALSE, on_object = NULL) {
   if (!is.null(rule$ref)) {
     rule <- utils::modifyList(definitions[[rule$ref]], rule[setdiff(names(rule), "ref")], keep.null = TRUE)
   }
@@ -189,11 +194,11 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
   }
   maximum_length <- if (is.null(rule$input_limit)) rule$max_length else attr(definitions, "input")[[rule$input_limit]]
   kind <- rule$type
-  fail <- function(code = "input_type", fix = "Supply a value of the declared type.") {
+  fail <- function(code = "input_type", fix = "Supply a value of the declared type.", shown = NULL) {
     if (!is.null(rule$pattern) && identical(rule$pattern, definitions$colour_map$values$pattern)) {
       character_format_abort(code, path, value, "Use #RGB, #RRGGBB or rgba(r, g, b, a), for example #3F82FF.")
     }
-    character_format_abort(code, path, NULL, fix)
+    character_format_abort(code, path, shown, fix)
   }
   if (kind == "union") {
     # Only alternatives of the value's kind can match, so a string never meets an
@@ -210,7 +215,7 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     first <- NULL
     for (alternative in candidates) {
       attempt <- tryCatch(
-        list(ok = TRUE, value = character_format_node(value, alternative, path, definitions, json_source)),
+        list(ok = TRUE, value = character_format_node(value, alternative, path, definitions, json_source, on_object)),
         mascot_error_character = function(error) list(ok = FALSE, error = error)
       )
       if (attempt$ok) {
@@ -229,9 +234,20 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     }
     variant <- rule$variants[[value[[key]]]]
     if (is.null(variant)) {
-      character_format_abort("capability", paste0(path, ".", key), value[[key]], "Use a supported operation.")
+      character_format_abort(
+        "capability",
+        paste0(path, ".", key),
+        value[[key]],
+        paste0(
+          "Use a supported operation, not ",
+          character_format_shown(value[[key]]),
+          ": choose one of ",
+          character_format_choices(names(rule$variants)),
+          "."
+        )
+      )
     }
-    return(character_format_node(value, definitions[[variant]], path, definitions, json_source))
+    return(character_format_node(value, definitions[[variant]], path, definitions, json_source, on_object))
   }
   if (kind == "numeric_tree") {
     if (is.numeric(value) && all(is.finite(value))) {
@@ -245,7 +261,14 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     attributes(result) <- if (is.null(names(value))) NULL else list(names = names(value))
     for (index in seq_along(value)) {
       key <- if (is.null(names(value))) paste0("[", index - 1L, "]") else paste0(".", names(value)[[index]])
-      result[index] <- list(character_format_node(value[[index]], rule, paste0(path, key), definitions, json_source))
+      result[index] <- list(character_format_node(
+        value[[index]],
+        rule,
+        paste0(path, key),
+        definitions,
+        json_source,
+        on_object
+      ))
     }
     return(result)
   }
@@ -275,6 +298,10 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     }
     for (key in keys) {
       child <- paste0(path, ".", key)
+      if (kind == "object" && startsWith(key, "x_")) {
+        # An extension key for other tools: kept as it is, never checked or read.
+        next
+      }
       if (kind == "map") {
         if (!grepl(rule$key_pattern, key, perl = TRUE)) {
           fix <- if (grepl("__", key, fixed = TRUE)) {
@@ -294,7 +321,7 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
           character_format_abort("unknown_key", child, key, "Remove this unrecognised field.")
         }
       }
-      value[key] <- list(character_format_node(value[[key]], next_rule, child, definitions, json_source))
+      value[key] <- list(character_format_node(value[[key]], next_rule, child, definitions, json_source, on_object))
     }
     if (kind == "object") {
       for (key in setdiff(names(fields), keys)) {
@@ -306,6 +333,9 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
             definitions
           ))
         }
+      }
+      if (!is.null(on_object)) {
+        value <- on_object(value)
       }
     }
     return(value)
@@ -338,7 +368,8 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
         next_rule,
         paste0(path, "[", index - 1L, "]"),
         definitions,
-        json_source
+        json_source,
+        on_object
       ))
     }
     return(value)
@@ -357,7 +388,16 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     fail()
   }
   if (!is.null(rule$choices) && !value %in% unlist(rule$choices, use.names = FALSE)) {
-    fail(fix = "Choose one of the documented values.")
+    fail(
+      fix = paste0(
+        "Choose one of ",
+        character_format_choices(unlist(rule$choices, use.names = FALSE)),
+        ", not ",
+        character_format_shown(value),
+        "."
+      ),
+      shown = value
+    )
   }
   if (is.character(value)) {
     if (!is.null(rule$forbid) && grepl(rule$forbid, value, fixed = TRUE)) {
@@ -377,13 +417,60 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
   } else if (is.numeric(value)) {
     outside <- (!is.null(rule$min) && value < rule$min) ||
       (!is.null(rule$max) && value > rule$max) ||
-      (!is.null(rule$exclusive_min) && value <= rule$exclusive_min)
+      (!is.null(rule$exclusive_min) && value <= rule$exclusive_min) ||
+      (!is.null(rule$exclusive_max) && value >= rule$exclusive_max)
     if (outside) {
-      fail(if (is.null(rule$range_code)) "input_type" else rule$range_code, "Use a value in the documented range.")
+      fail(
+        if (is.null(rule$range_code)) "input_type" else rule$range_code,
+        paste0("Use ", character_format_range(rule), ", not ", character_format_shown(value), "."),
+        shown = value
+      )
     }
   }
   attributes(value) <- NULL
   value
+}
+
+#' One value as an author wrote it, for a message: quoted text or a plain number
+#' @noRd
+character_format_shown <- function(value) {
+  checkmate::assert_atomic(value, len = 1L)
+  if (is.character(value)) {
+    return(encodeString(value, quote = '"'))
+  }
+  if (is.logical(value)) {
+    return(tolower(as.character(value)))
+  }
+  format(value, digits = 15L, scientific = FALSE, trim = TRUE)
+}
+
+#' The allowed values of a choice, for a message
+#' @noRd
+character_format_choices <- function(choices) {
+  checkmate::assert_atomic(choices, min.len = 1L)
+  shown <- vapply(choices, character_format_shown, character(1), USE.NAMES = FALSE)
+  if (length(shown) == 1L) {
+    return(shown)
+  }
+  paste(paste(shown[-length(shown)], collapse = ", "), "or", shown[[length(shown)]])
+}
+
+#' The allowed range of a number rule, for a message
+#' @noRd
+character_format_range <- function(rule) {
+  checkmate::assert_list(rule)
+  low <- if (!is.null(rule$min)) rule$min else rule$exclusive_min
+  high <- if (!is.null(rule$max)) rule$max else rule$exclusive_max
+  if (!is.null(rule$min) && !is.null(rule$max)) {
+    return(paste("a value from", character_format_shown(low), "to", character_format_shown(high)))
+  }
+  parts <- c(
+    if (!is.null(rule$min)) paste("at least", character_format_shown(low)),
+    if (!is.null(rule$exclusive_min)) paste("above", character_format_shown(low)),
+    if (!is.null(rule$max)) paste("at most", character_format_shown(high)),
+    if (!is.null(rule$exclusive_max)) paste("below", character_format_shown(high))
+  )
+  sub("^a value at ", "a value of at ", paste("a value", paste(parts, collapse = " and ")))
 }
 
 #' Kinds of JSON value a plain R value can stand for: scalar, object or array
@@ -506,25 +593,30 @@ character_format_parse <- function(x, from = "list") {
     }
     character_format_abort("version", "$.format_version", version, fix)
   }
-  required <- character_format_node(
-    data$requires,
-    schema$definitions$character$fields$requires,
-    "$.requires",
-    schema$definitions,
-    from != "list"
-  )
+  # The version-1 capabilities are implicit: `requires` is optional and names
+  # only capabilities beyond version 1. It is read before the full walk, so a
+  # file that needs a newer mascot stops here with the capability named. A
+  # version-1 name in the list is accepted, so older files keep loading.
+  required <- if ("requires" %in% names(data)) {
+    character_format_node(
+      data$requires,
+      schema$definitions$character$fields$requires,
+      "$.requires",
+      schema$definitions,
+      from != "list"
+    )
+  }
   for (index in seq_along(required)) {
     if (!required[[index]] %in% unlist(schema$capabilities, use.names = FALSE)) {
-      reserved <- required[[index]] %in% unlist(schema$reserved_unsupported, use.names = FALSE)
       character_format_abort(
         "capability",
         paste0("$.requires[", index - 1L, "]"),
         required[[index]],
-        if (reserved) {
-          "This capability is not supported by this version of mascot."
-        } else {
-          "Use supported engine capabilities."
-        }
+        paste0(
+          "This file needs the capability ",
+          character_format_shown(required[[index]]),
+          ", which is not supported by this version of mascot. Update mascot, or remove it from requires."
+        )
       )
     }
   }

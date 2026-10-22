@@ -602,7 +602,17 @@ character_format_work <- function(x, graph, behaviour, band = "full") {
         "budget",
         paste0("$.budgets.", band, ".", metric),
         result[[metric]],
-        "Reduce expanded drawing work in this band."
+        paste0(
+          "The ",
+          band,
+          " band needs ",
+          format(result[[metric]], digits = 15L, scientific = FALSE, trim = TRUE),
+          " ",
+          metric,
+          ", more than its limit of ",
+          format(limits[[metric]], digits = 15L, scientific = FALSE, trim = TRUE),
+          ". Reduce expanded drawing work in this band."
+        )
       )
     }
   }

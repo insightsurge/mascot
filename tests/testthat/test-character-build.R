@@ -4,12 +4,12 @@ describe("the authoring constructors", {
     draft <- author_study_bot()
     # When it is checked
     checked <- character_check(draft)
-    # Then it equals the reference fixture, apart from the order of `requires`
+    # Then it equals the reference fixture, apart from `requires`: the fixture lists the version-1 capabilities,
+    # which are implicit, so the constructors write none
     reference <- character_format_check(format_recipe("study_bot"))
     expect_s3_class(draft, "mascot_character_spec")
     expect_s3_class(checked, "mascot_character_data")
-    expect_setequal(unlist(checked$requires), unlist(reference$requires))
-    expect_identical(unlist(checked$requires), c("parts", "clip", "outline", "glow", "face_kit", "tracks", "lod"))
+    expect_null(checked$requires)
     checked$requires <- reference$requires
     expect_identical(character_format_identity(checked), character_format_identity(reference))
     expect_identical(attr(character_check(draft), "mascot_manifest")$playable$wave, "rock")
@@ -24,8 +24,12 @@ describe("the authoring constructors", {
     expect_identical(character_check(draft, families = families)$id, "study_bot")
   })
 
-  it("does not let a source specification pass the checked-data reader", {
-    format_problem("capability", "$.requires", character_format_check(unclass(author_study_bot())))
+  it("checks an unclassed specification as the same plain source", {
+    draft <- author_study_bot()
+    expect_identical(
+      attr(character_format_check(unclass(draft)), "mascot_manifest")$identity,
+      attr(character_check(draft), "mascot_manifest")$identity
+    )
   })
 
   it("rejects a mutated checked component at the next consuming boundary", {
@@ -342,9 +346,10 @@ describe("character_author_build()", {
     expect_s3_class(spec, "mascot_character_spec")
     expect_named(
       spec,
-      c("format_version", "id", "name", "family", "description", "requires", "colours", "ground", "parts", "moods")
+      c("format_version", "id", "name", "family", "description", "colours", "ground", "parts", "moods")
     )
-    expect_identical(spec$requires, list())
+    expect_null(spec$requires)
+    expect_identical(base(requires = "paints")$requires, list("paints"))
     expect_identical(spec$ground, list(centre_height = 60))
   })
 
@@ -424,14 +429,11 @@ describe("character_author_build()", {
     )
   })
 
-  it("computes requires at check time and honours extras, reporting unknown capabilities", {
-    expect_identical(
-      unlist(character_check(author_study_bot())$requires),
-      c("parts", "clip", "outline", "glow", "face_kit", "tracks", "lod")
-    )
-    extra <- character_check(author_study_bot(requires = "paints"))
-    expect_true("paints" %in% unlist(extra$requires))
-    format_problem("capability", "$.requires[7]", character_check(author_study_bot(requires = "teleport")))
+  it("keeps only the capabilities the caller declares, and names an unknown one", {
+    expect_null(character_check(author_study_bot())$requires)
+    expect_identical(character_check(author_study_bot(requires = "paints"))$requires, list("paints"))
+    error <- format_problem("capability", "$.requires[0]", character_check(author_study_bot(requires = "teleport")))
+    expect_match(conditionMessage(error), "needs the capability \"teleport\"")
   })
 })
 

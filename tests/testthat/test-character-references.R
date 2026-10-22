@@ -436,6 +436,39 @@ describe("character_format_references()", {
   })
 })
 
+describe("rules the browser engine also enforces", {
+  it("refuses a clip on any kit effect item, in items or reduced_items, naming the clip", {
+    data <- character_format_resolve(format_recipe("tessa"))
+    data$face$kit_definition$effects$sweat$items[[2]]$clip <- "body.shell"
+    error <- format_problem(
+      "capability",
+      "$.face.kit_definition.effects.sweat.items[1].clip",
+      character_format_references(data)
+    )
+    expect_identical(error$value, "body.shell")
+    data <- character_format_resolve(format_recipe("tessa"))
+    data$face$kit_definition$effects$sparkle$reduced_items <- list(
+      list(shape = "circle", r = 2, fill = "sparkle", clip = "body.shell")
+    )
+    format_problem(
+      "capability",
+      "$.face.kit_definition.effects.sparkle.reduced_items[0].clip",
+      character_format_references(data)
+    )
+  })
+
+  it("checks the colours of every band's outline, at the path where each is written", {
+    data <- character_format_resolve(format_recipe("tessa"))
+    data$outline$lod <- list(small = list(width = 2, second = list(colour = "undeclared", width = 1)))
+    error <- format_problem("missing_reference", "$.outline.lod.small.second.colour", character_format_references(data))
+    expect_identical(error$value, "undeclared")
+    data$outline$lod$small$second$colour <- "outline"
+    expect_no_error(character_format_references(data))
+    data$lod$micro$outline <- list(width = 1, colour = "undeclared")
+    format_problem("missing_reference", "$.lod.micro.outline.colour", character_format_references(data))
+  })
+})
+
 describe("reference resolution beyond the default recipes", {
   it("rejects an absent parent and resolves declared reusable geometry", {
     data <- character_format_resolve(format_recipe())

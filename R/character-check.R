@@ -1,48 +1,19 @@
-#' Check capability declarations against resolved format constructs
+#' The data the semantic checks read: checked data without its extension keys
+#'
+#' Extension keys (`x_` keys in fixed-field objects) belong to other tools. The
+#' checked data keeps them; the reference, movement, drawing-work, frame-fit and
+#' contrast checks read this copy, so they never interpret one.
 #' @noRd
-character_format_capabilities <- function(x, graph, work) {
-  checkmate::assert_list(x)
-  checkmate::assert_list(graph)
-  checkmate::assert_list(work)
-  used <- "parts"
-  if (!is.null(x$face)) {
-    used <- c(used, "face_kit")
-  }
-  if (length(x$paints)) {
-    used <- c(used, "paints")
-  }
-  if (any(vapply(work, function(cost) cost[["clip_applications"]] > 0, logical(1)))) {
-    used <- c(used, "clip")
-  }
-  if (any(vapply(work, function(cost) cost[["glow_emitters"]] > 0, logical(1)))) {
-    used <- c(used, "glow")
-  }
-  if (
-    any(vapply(x$gestures, function(gesture) length(gesture$tracks) > 0, logical(1))) ||
-      any(vapply(graph$kit$effects, function(effect) identical(effect$mode, "track"), logical(1)))
-  ) {
-    used <- c(used, "tracks")
-  }
-  pending <- list(x)
-  while (length(pending)) {
-    value <- pending[[length(pending)]]
-    pending <- pending[-length(pending)]
-    if (!is.list(value)) {
-      next
-    }
-    if ("lod" %in% names(value) && length(value$lod)) {
-      used <- c(used, "lod")
-    }
-    if (isTRUE(value$outline)) {
-      used <- c(used, "outline")
-    }
-    pending <- c(pending, unname(value[vapply(value, is.list, logical(1))]))
-  }
-  missing <- setdiff(unique(used), unlist(x$requires))
-  if (length(missing)) {
-    character_format_abort("capability", "$.requires", missing, "Declare every capability used by the resolved recipe.")
-  }
-  invisible(unique(used))
+character_format_plain <- function(x) {
+  checkmate::assert_list(x, names = "unique")
+  schema <- character_format_schema()
+  character_format_node(
+    x,
+    schema$definitions$character,
+    "$",
+    schema$definitions,
+    on_object = function(object) object[!startsWith(as.character(names(object)), "x_")]
+  )
 }
 
 #' Check the required greeting and acknowledgement movements
@@ -124,36 +95,36 @@ character_format_check <- function(
     )
   }
   resolved <- character_format_resolve(parsed, families, kits, parsed = TRUE)
-  character_check_gestures(resolved, movement = FALSE)
-  graph <- character_format_references(resolved)
-  behaviour <- character_format_behaviour(resolved, graph)
-  character_check_gestures(resolved)
+  plain <- character_format_plain(resolved)
+  character_check_gestures(plain, movement = FALSE)
+  graph <- character_format_references(plain)
+  behaviour <- character_format_behaviour(plain, graph)
+  character_check_gestures(plain)
   work <- stats::setNames(
     lapply(c("full", "small", "micro"), function(band) {
-      character_format_work(resolved, graph, behaviour, band)
+      character_format_work(plain, graph, behaviour, band)
     }),
     c("full", "small", "micro")
   )
-  character_format_capabilities(resolved, graph, work)
   fit <- stats::setNames(
     lapply(names(work), function(band) {
-      proof <- character_format_fit(resolved, graph, behaviour, band)
+      proof <- character_format_fit(plain, graph, behaviour, band)
       if (!isTRUE(proof$verified)) {
         character_format_abort(
           "budget",
           paste0("$.frame_fit.", band),
           proof$bounds,
-          "Keep every part, movement and effect inside the 300 by 300 frame at this size."
+          character_fit_fix(proof)
         )
       }
       proof
     }),
     names(work)
   )
-  contrast <- character_format_contrast(resolved, builtin = builtin)
+  contrast <- character_format_contrast(plain, builtin = builtin)
   manifest <- list(
     format_version = 1L,
-    policy_version = 1L,
+    policy_version = as.integer(character_format_policy()$policy_version),
     identity = character_format_identity(resolved),
     playable = behaviour$playable,
     work = work,
@@ -163,4 +134,30 @@ character_format_check <- function(
   class(resolved) <- c("mascot_character_data", "list")
   attr(resolved, "mascot_manifest") <- manifest
   resolved
+}
+
+#' The repair instruction for a character that does not fit its frame
+#'
+#' Names what reaches furthest outside the 300 by 300 frame, by how much and on
+#' which side, so the author knows what to move or shrink.
+#' @noRd
+character_fit_fix <- function(proof) {
+  checkmate::assert_list(proof, names = "unique")
+  rule <- "Keep every part, movement and effect inside the 300 by 300 frame at this size."
+  widest <- proof$widest
+  if (is.null(widest)) {
+    return(rule)
+  }
+  paste0(
+    rule,
+    " The ",
+    proof$band,
+    " band is too big: ",
+    widest$source,
+    " can reach ",
+    format(signif(widest$overflow, 3L), scientific = FALSE, trim = TRUE),
+    " units past the ",
+    widest$side,
+    " edge."
+  )
 }

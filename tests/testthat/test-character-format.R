@@ -467,3 +467,160 @@ describe("character format diagnostics", {
     expect_error(character_format_abort("missing_reference", "$", choices = NA_character_), "choices")
   })
 })
+
+describe("version 1 for files written by people and other tools", {
+  it("accepts a top-level $schema string, keeps it, and refuses it elsewhere or as another type", {
+    data <- format_recipe()
+    data$`$schema` <- "https://example.org/mascot/character-v1.json"
+    expect_identical(character_format_parse(data)$`$schema`, data$`$schema`)
+    text <- as.character(jsonlite::toJSON(data, auto_unbox = TRUE, null = "null", digits = NA))
+    expect_identical(character_format_parse(text, "text")$`$schema`, data$`$schema`)
+    data$`$schema` <- 1
+    format_problem("input_type", "$.$schema", character_format_parse(data))
+    data <- format_recipe()
+    data$parts[[1]]$`$schema` <- "https://example.org/part.json"
+    format_problem("unknown_key", "$.parts[0].$schema", character_format_parse(data))
+  })
+
+  it("keeps an x_ key in any fixed-field object as written, whatever its value, without checking it", {
+    data <- format_recipe()
+    value <- format_extension_value()
+    data$x_tool <- value
+    data$parts[[1]]$x_layer <- "locked"
+    data$parts[[1]]$items[[1]]$x_hint <- list(1, "two", TRUE, NULL)
+    data$outline$x_editor <- 3.5
+    data$moods$happy$x_mood <- list()
+    parsed <- character_format_parse(data)
+    expect_identical(parsed$x_tool, value)
+    expect_identical(parsed$parts[[1]]$x_layer, "locked")
+    expect_identical(parsed$parts[[1]]$items[[1]]$x_hint, list(1, "two", TRUE, NULL))
+    expect_identical(parsed$outline$x_editor, 3.5)
+    expect_identical(parsed$moods$happy$x_mood, list())
+    # The same file read as JSON text keeps every extension key too (JSON reads 1 back as an integer).
+    text <- as.character(jsonlite::toJSON(data, auto_unbox = TRUE, null = "null", digits = NA))
+    expect_equal(format_extension_paths(character_format_parse(text, "text")), format_extension_paths(parsed))
+  })
+
+  it("adds an x_ key to every fixed-field object of a whole character and still reads it", {
+    data <- format_recipe("tessa")
+    probed <- format_with_extensions(data)
+    paths <- names(format_extension_paths(probed))
+    # Fixed-field objects at several depths: the character, a part, an item, a mood and a gesture track.
+    expect_true(all(c("$.x_probe", "$.parts[0].x_probe", "$.parts[0].items[0].x_probe") %in% paths))
+    expect_true(any(grepl("^[$][.]moods[.]happy[.]x_probe$", paths)))
+    expect_identical(format_extension_paths(character_format_parse(probed)), format_extension_paths(probed))
+  })
+
+  it("treats an x_ key in a map as an ordinary id, which is checked like any other", {
+    data <- format_recipe()
+    data$colours$x_red <- "#ff0000"
+    expect_identical(character_format_parse(data)$colours$x_red, "#ff0000")
+    data$colours$x_red <- "red"
+    format_problem("input_type", "$.colours.x_red", character_format_parse(data))
+  })
+
+  it("makes requires optional and names an unknown capability, with the way out", {
+    data <- format_recipe()
+    data$requires <- NULL
+    expect_null(character_format_parse(data)$requires)
+    data$requires <- list()
+    expect_identical(character_format_parse(data)$requires, list())
+    data["requires"] <- list(NULL)
+    format_problem("input_type", "$.requires", character_format_parse(data))
+    data$requires <- list("parts", "teleport")
+    error <- format_problem("capability", "$.requires[1]", character_format_parse(data))
+    expect_identical(error$value, "teleport")
+    expect_identical(
+      error$fix,
+      paste0(
+        "This file needs the capability \"teleport\", which is not supported by this version of mascot. ",
+        "Update mascot, or remove it from requires."
+      )
+    )
+    data$requires <- list("morph")
+    error <- format_problem("capability", "$.requires[0]", character_format_parse(data))
+    expect_match(error$fix, "needs the capability \"morph\"", fixed = TRUE)
+  })
+
+  it("gives the value and its choices or range when a value is out of bounds", {
+    data <- format_recipe()
+    data$outline$cap <- "pointy"
+    error <- format_problem("input_type", "$.outline.cap", character_format_parse(data))
+    expect_identical(error$value, "pointy")
+    expect_identical(error$fix, "Choose one of \"butt\", \"round\" or \"square\", not \"pointy\".")
+    data <- format_recipe()
+    data$ground$centre_height <- -5
+    error <- format_problem("input_type", "$.ground.centre_height", character_format_parse(data))
+    expect_identical(error$value, -5)
+    expect_identical(error$fix, "Use a value of at least 0, not -5.")
+    data <- format_recipe()
+    data$parts[[1]]$items[[1]]$alpha <- 1.5
+    error <- format_problem("input_type", "$.parts[0].items[0].alpha", character_format_parse(data))
+    expect_identical(error$fix, "Use a value from 0 to 1, not 1.5.")
+    data <- format_recipe()
+    data$parts[[1]]$items[[1]]$shape <- "star"
+    error <- format_problem("capability", "$.parts[0].items[0].shape", character_format_parse(data))
+    expect_match(error$fix, "^Use a supported operation, not \"star\": choose one of .*\"circle\"")
+  })
+
+  it("words every kind of number range from the rule itself", {
+    expect_identical(character_format_range(list(min = 0, max = 1)), "a value from 0 to 1")
+    expect_identical(character_format_range(list(min = 0, exclusive_max = 1)), "a value of at least 0 and below 1")
+    expect_identical(character_format_range(list(exclusive_min = 0, max = 30)), "a value above 0 and at most 30")
+    expect_identical(character_format_range(list(max = 0.5)), "a value of at most 0.5")
+    expect_identical(character_format_shown(TRUE), "true")
+    expect_identical(character_format_shown(0.1 + 0.2), "0.3")
+    expect_identical(character_format_choices("only"), "\"only\"")
+    expect_error(character_format_range(1))
+    expect_error(character_format_shown(list()))
+    expect_error(character_format_choices(list()))
+  })
+
+  it("refuses a kit effect fade_at of 1, which the engine cannot fade at", {
+    schema <- character_format_schema()
+    kit <- jsonlite::fromJSON(
+      system.file("format", "kits", "classic.json", package = "mascot", mustWork = TRUE),
+      simplifyVector = FALSE
+    )
+    effect <- kit$effects$sweat
+    effect$fade_at <- 0.99
+    expect_identical(
+      character_format_node(effect, schema$definitions$kit_effect, "$.e", schema$definitions)$fade_at,
+      0.99
+    )
+    effect$fade_at <- 1
+    error <- format_problem(
+      "input_type",
+      "$.e.fade_at",
+      character_format_node(effect, schema$definitions$kit_effect, "$.e", schema$definitions)
+    )
+    expect_identical(error$fix, "Use a value of at least 0 and below 1, not 1.")
+  })
+})
+
+describe("the format policy file", {
+  it("holds only limits and lists that the code reads", {
+    policy <- character_format_policy()
+    expect_named(
+      policy,
+      c("policy_version", "format_version", "status", "input", "capabilities", "reserved_unsupported", "bands"),
+      ignore.order = TRUE
+    )
+    # Each input limit is read: the parser's three bounds, and the others through the schema's input_limit.
+    schema_text <- paste(readLines(system.file("format", "character-v1.json", package = "mascot")), collapse = "\n")
+    for (limit in setdiff(names(policy$input), c("utf8_bytes", "nesting_depth", "structural_nodes"))) {
+      expect_match(schema_text, paste0("\"input_limit\": \"", limit, "\""), fixed = TRUE, info = limit)
+    }
+    # Each band lists exactly the drawing-work metrics that character_format_work() counts.
+    data <- character_format_resolve(format_recipe())
+    graph <- character_format_references(data)
+    behaviour <- character_format_behaviour(data, graph)
+    for (band in c("full", "small", "micro")) {
+      expect_setequal(names(policy$bands[[band]]), names(character_format_work(data, graph, behaviour, band)))
+    }
+    expect_identical(
+      attr(character_format_check(format_recipe()), "mascot_manifest")$policy_version,
+      as.integer(policy$policy_version)
+    )
+  })
+})

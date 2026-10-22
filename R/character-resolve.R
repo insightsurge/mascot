@@ -120,7 +120,7 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
       character_format_abort("family", "$.family_definition", NULL, "Embed the family metadata snapshot.")
     }
     definition <- validate_family(definition)
-    if (length(definition$defaults)) {
+    if (any(!startsWith(as.character(names(definition$defaults)), "x_"))) {
       character_format_abort("family", "$.family_definition.defaults", NULL, "A resolved snapshot has empty defaults.")
     }
     if (!"palette_sources" %in% names(parsed)) {
@@ -184,11 +184,15 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
     }
     result$palettes <- palettes
     result$palette_sources <- sources
-    result$family_definition <- list(
-      id = definition$id,
-      name = definition$name,
-      description = definition$description,
-      defaults = character_object()
+    # The snapshot keeps the family's metadata and its extension keys, never its defaults.
+    result$family_definition <- c(
+      list(
+        id = definition$id,
+        name = definition$name,
+        description = definition$description,
+        defaults = character_object()
+      ),
+      definition[startsWith(names(definition), "x_")]
     )
     result$resolved <- TRUE
   }

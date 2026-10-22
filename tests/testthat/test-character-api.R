@@ -202,6 +202,14 @@ describe("mascot_read_character() and mascot_check_character()", {
       "Detail overrides: small, micro\nFrom: object",
       fixed = TRUE
     )
+    # A note or an extension key in lod is not a band
+    plain$lod <- list(micro = list(glow = FALSE), note = "Small sizes.", x_tool = 1)
+    noted <- mascot_check_character(plain)
+    expect_match(
+      paste(capture.output(print(noted)), collapse = "\n"),
+      "Detail overrides: micro\nFrom: object",
+      fixed = TRUE
+    )
     expect_identical(withVisible(print.mascot_character_data(bot))$visible, FALSE)
     expect_error(print.mascot_character_data(list()), "class")
     expect_error(print.mascot_character_data(bot, extra = TRUE), class = "mascot_error_character")

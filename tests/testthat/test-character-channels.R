@@ -645,3 +645,16 @@ describe("format-v1 character channels, recolour, item overrides and swap fallba
     expect_identical(res$path, "$.moods.happy")
   })
 })
+
+describe("comments in mood face controls", {
+  it("reads a note in a mood's face, or its reduced face, as a comment and not as a control", {
+    data <- format_recipe("tessa")
+    data$id <- "tessa_noted"
+    plain <- character_format_check(data)
+    data$moods$happy$face$note <- "A wide smile."
+    data$moods$happy$reduced <- list(face = list(note = "Still smiling."))
+    noted <- character_format_check(data)
+    expect_identical(noted$moods$happy$face$note, "A wide smile.")
+    expect_identical(attr(noted, "mascot_manifest")$work, attr(plain, "mascot_manifest")$work)
+  })
+})

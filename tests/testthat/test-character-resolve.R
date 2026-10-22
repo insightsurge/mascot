@@ -148,6 +148,20 @@ describe("character_format_resolve()", {
   })
 })
 
+describe("extension keys through resolution", {
+  it("keeps the family's extension keys in the resolved snapshot, and allows them in its empty defaults", {
+    source <- format_recipe("study_bot")
+    source$family_definition$x_origin <- list(tool = "family editor")
+    resolved <- character_format_resolve(source)
+    expect_identical(resolved$family_definition$x_origin, list(tool = "family editor"))
+    expect_length(resolved$family_definition$defaults, 0L)
+    resolved$family_definition$defaults <- list(x_note = "kept")
+    expect_identical(character_format_resolve(resolved)$family_definition$defaults, list(x_note = "kept"))
+    resolved$family_definition$defaults <- list(gestures = list(), x_note = "kept")
+    format_problem("family", "$.family_definition.defaults", character_format_resolve(resolved))
+  })
+})
+
 describe("B2 reserved palette ids", {
   it("rejects every style alias in source and resolved characters", {
     for (id in c("minimal", "pastel", "vivid", "corporate", "earthy", "night")) {

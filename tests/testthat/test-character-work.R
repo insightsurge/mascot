@@ -45,7 +45,24 @@ describe("independent R expanded drawing-work bounds", {
     }
     graph <- character_format_references(data)
     behaviour <- character_format_behaviour(data, graph)
-    format_problem("budget", "$.budgets.micro.painted_items", character_format_work(data, graph, behaviour, "micro"))
+    error <- format_problem(
+      "budget",
+      "$.budgets.micro.painted_items",
+      character_format_work(data, graph, behaviour, "micro")
+    )
+    # 31 copies of the panel's one item, in its default and raised variants, are counted against micro's 30.
+    limit <- character_format_policy()$bands$micro$painted_items
+    expect_gt(error$value, limit)
+    expect_identical(
+      error$fix,
+      paste0(
+        "The micro band needs ",
+        error$value,
+        " painted_items, more than its limit of ",
+        limit,
+        ". Reduce expanded drawing work in this band."
+      )
+    )
   })
 
   it("rejects lod.full as an unknown key at its path, since full is not an authored override", {

@@ -118,7 +118,6 @@ describe("mascot_studio() Shift+E in the inspector", {
       width = 1440,
       height = 900
     )
-    withr::defer(app$stop())
     chrome <- app$get_chromote_session()
     # A trusted key press, as a person types it: the browser inserts the text unless the page prevents it.
     shift_e <- function() {

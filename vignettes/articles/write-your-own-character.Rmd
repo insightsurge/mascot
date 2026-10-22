@@ -207,19 +207,22 @@ ui <- fluidPage(
 `mascot_theme()` checks colour role names against the selected character when
 the mascot renders, so custom role names such as `screen` are fully supported.
 
-## What stays the same
+## What you can rely on
 
-The character format is designed with stability in mind:
+The format is experimental and its future direction is open. These points hold either way:
 
-* **Compatibility promise**: Version-1 character files keep loading until a
-  breaking change introduces format version 2. Retiring an older format version is
+* **Additions stay in version 1**: new optional keys, wider ranges and new
+  categories keep the format at version 1, so existing files keep working.
+* **Clear errors on older versions**: a file that uses an addition lists it in
+  `requires`; an older version of mascot then stops with an error naming it,
+  instead of drawing it wrongly.
+* **Breaking changes mean version 2**: only a change that would break existing
+  files introduces format version 2. Retiring an older format version is
   announced in NEWS at least one release ahead.
-* **Predictable validation**: The checker only becomes stricter in a new format
-  version, except for documented security or resource-safety fixes, with a
-  diagnostic and migration guidance.
-* **Additive features**: New capabilities arrive as new capability names in
-  `requires`, leaving existing files untouched.
-* **No silent migrations**: Character files are never modified or upgraded
+* **Predictable validation**: the checker only becomes stricter in a new format
+  version, except for documented security or resource-safety fixes, which come
+  with a diagnostic and migration guidance.
+* **No silent migrations**: character files are never modified or upgraded
   silently.
 
 ```{r cleanup, include=FALSE}

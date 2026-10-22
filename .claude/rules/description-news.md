@@ -16,19 +16,14 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 - **CRAN:** `Authors@R` names every copyright holder: Harsh Verma (`aut`, `cre`, `cph`), and one `cph` entry with a
   `comment` for each third party whose files ship (for example the font projects), plus `ctb` for contributors.
 - **house:** `Language: en-GB` (British spelling in the docs); `License: MIT + file LICENSE` (the CRAN stub, never
-  edited by hand); `Imports` minimal; version `x.y.z.9000` on `main`.
+  edited by hand); `Imports` minimal; the version is the package creator's to change.
 
 ## NEWS.md (tidyverse style; the source of each GitHub release)
 - **house:** every user-facing change adds its bullet in the same PR; internal changes (CI, refactors, tests) are
   left out unless users notice them.
-- **CRAN:** R CMD check needs a version number in at least one heading, so **until 0.1.0** each milestone has its own
-  release heading (`# mascot 0.0.2`, `# mascot 0.0.3`, ...) and work between milestones goes under a
-  `# mascot (development version)` heading on top, which the milestone's release PR renames to its version heading; a
-  new milestone only when the founder decides, or an agent suggests one and the founder agrees; the 0.1.0 release PR
-  gathers the user-facing changes under `# mascot 0.1.0`. Each milestone section before 0.1.0 carries the line
-  `Development milestone; not released on CRAN.` directly below its heading. After 0.1.0: `# mascot (development
-  version)` at the top; `usethis::use_version()` turns it into `# mascot x.y.z`. Never edit a released section except
-  to fix a typo, or to add that milestone line.
+- **house:** new bullets go under `# mascot (development version)` at the top. Version numbers, release headings and
+  which change ships in which release are the package creator's: never change them in a feature PR. Never edit a
+  released section.
 - **house:** one change per bullet, written for users, present tense, starting with the function or feature,
   ending with the issue or PR number: `` `update_mascot()` gains a `message` argument for a speech bubble (#30).``
   Where one function has several changes, one bullet per function with indented sub-bullets for its arguments and

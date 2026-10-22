@@ -7,10 +7,10 @@ paths:
 
 Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md`.
 
-- **house:** coverage of at least 70% of lines (`/cran-gate tests`; the limit is `Config/cran-gate/coverage` in
-  `DESCRIPTION`, which CI reads too; CRAN itself does not check coverage); a PR never
+- **house:** coverage of at least 70% of lines (`Rscript tools/cran-gate.R tests`; the limit is
+  `Config/cran-gate/coverage` in `DESCRIPTION`, which CI reads too; CRAN itself does not check coverage); a PR never
   lowers it. `# nocov` only for code that truly can't run in a test, with the reason beside it.
-- **house:** testthat 3rd edition, BDD style: one test file per R file (`R/mood.R` → `tests/testthat/test-mood.R`);
+- **house:** testthat 3rd edition, BDD style: one test file per R file (`R/moods.R` → `tests/testthat/test-moods.R`);
   `describe("update_mascot()", { it("changes the mood after the wiggle", { ... }) })`, with `describe()` naming the
   function or behaviour and `it()` stating the expected behaviour in plain words; `# Given / # When / # Then`
   where it helps. Cover the happy path, every checkmate assertion (a test that it fails with a clear message),

@@ -1,0 +1,41 @@
+name: Enhance existing behaviour
+description: Improve something mascot already does.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. If existing behaviour is broken, use Bug report.
+        Use public examples and made-up data. Leave out private data, credentials, machine paths and private links. Release decisions belong to the package creator.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Main area
+      description: Choose the main area; mention others below if needed.
+      options:
+        - JS engine (canvas and animation; inst/www/)
+        - R (package API, Shiny or studio)
+        - General (docs, site, CI or tooling)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What happens now, and what would help?
+      description: Name the existing function or behaviour and give a short use case for the improvement.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: One or two checklist items describing the proposed result.
+      placeholder: "- [ ] A user can ..."
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Existing uses to consider (optional)
+      description: Could this change a default or break an example? Link a public example or relevant row in docs/consumers.md if known. For public AI instruction changes, use the AI instructions form.

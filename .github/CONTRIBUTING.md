@@ -10,24 +10,27 @@ a character drawn in code shows a mood and animates when the mood changes. What 
 - **Dev packages**: from the package root, run `pak::local_install_dev_deps()` (or `devtools::install_dev_deps()`).
 - **Air**, the formatter for R code: <https://posit-dev.github.io/air/>. Use version 0.11.0, the one CI uses.
 - **Biome**, the formatter and linter for JavaScript and CSS in `inst/`: <https://biomejs.dev>. Use version 2.5.14.
-  You only need it once `inst/` holds JavaScript or CSS. Until then the gate skips it.
+- **The gate's packages**: devtools, roxygen2, lintr, spelling and jsonlite; also covr, callr and withr for the
+  `tests` mode, and rcmdcheck, pkgbuild and processx for `full`. If one is missing, the gate stops and names it.
 - **Google Chrome or Chromium**, for the shinytest2 tests.
-- **renv (optional)**: the maintainer keeps the dev packages in a local renv that is not committed. For a package
-  project, renv keeps the library outside the repository. In a git worktree, set `R_LIBS` to the path that
-  `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout.
+- **Git worktrees**: if you use renv, it keeps a package project's library outside the repository, so in a worktree
+  set `R_LIBS` to the path that `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout.
 
 ## Workflow
 
 1. **Start with an issue.** State the goal and a "done when" checklist. Ask first if the change is large.
 2. **Make a branch** from `main` for that issue.
 3. **Commit with Conventional Commits**, short: `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `ci:`, `refactor:`.
+   Commits carry your own name and email; no AI attribution in commits, PR descriptions or comments (no
+   `Co-authored-by` line naming an AI tool, no "Generated with" lines). The full rules for people and coding
+   assistants are in [`AGENTS.md`](https://github.com/insightsurge/mascot/blob/main/AGENTS.md).
 4. **Open a pull request** that starts with an "In brief" section (one plain sentence and a few bullets, for a reader
    with no context), says `Closes #n` (`n` is the issue number), and fills in the template: what is new and what is
    fixed (plain words first, then function and file names), before and after, scenarios to try, and the checklist.
    Delete the sections that do not apply.
-5. **Label the pull request** with one type (`enhancement`, `bug`, `documentation`, `chore`) and one or more
-   `area: *` labels. The release notes are built from these labels.
-6. **The maintainer merges** once CI is green.
+5. **Suggest labels** in the pull request: one type (`enhancement`, `bug`, `documentation`, `chore`) and one or more
+   `area: *`. The package creator applies them; the release notes are built from them.
+6. **The package creator merges** once CI is green.
 
 Stacked pull requests are fine. Base the second one on the branch below it, and say so in its description.
 
@@ -41,16 +44,18 @@ Rscript tools/cran-gate.R tests    # tests and coverage: before a pull request t
 Rscript tools/cran-gate.R full     # everything, including the built tarball: before a release
 ```
 
-The gate is a plain R script in `tools/`; it needs nothing else installed beyond the package's development tools.
+The gate is a plain R script in `tools/`; it needs the packages listed under Setup. Which mode to run when, every
+option and the exit codes are in [`tools/README.md`](https://github.com/insightsurge/mascot/blob/main/tools/README.md).
 
 - `fast` checks formatting (Air and Biome), that `man/` and `NAMESPACE` match the roxygen2 comments, lint, that every
   export has `@returns`, spelling, and `R CMD check --as-cran` without the tests.
 - `tests` runs the tests with `NOT_CRAN=true`, so the Chrome tests run, and then measures coverage. Coverage must be
   at least 70%.
-- The gate prints one `PASS`, `FAIL` or `SKIP` line for each step, then a summary. It exits with status 1 if any
-  step fails. The detailed output goes to a log file, and the path is printed. Open the log only for a failing step.
-- **Spelling**: unknown words fail the gate. Check that a word is correct (a name or a technical term), then add it to
-  `inst/WORDLIST` by running the gate with `--update-wordlist`. Do not add a misspelling.
+- The gate prints one `PASS`, `FAIL` or `SKIP` line for each step, then a summary, and keeps a run folder with one
+  log per step (its path is printed). Open a log only for a failing step.
+- **Spelling**: unknown words fail the gate. If a word is correct (a name or a technical term), list it in your pull
+  request; it goes into `inst/WORDLIST` (the gate's `--update-wordlist`) once the package creator agrees. Do not add a
+  misspelling.
 - The docs step runs `devtools::document()`, so it may rewrite `man/`, `NAMESPACE` or `DESCRIPTION`. If it fails,
   review the regenerated files and commit them; the next run passes.
 - If you change the gate itself (the script, `.lintr`, `air.toml` or `biome.json`), also run
@@ -58,10 +63,9 @@ The gate is a plain R script in `tools/`; it needs nothing else installed beyond
   of the package and checks that the gate fails for each. The gate is generic (other packages use it as it is),
   so keep anything specific to mascot out of it.
 
-CI runs these workflows, and all of them must be green: `R-CMD-check` (Ubuntu on pull requests; macOS, Windows, R-devel
-and the previous R release as well on `main`, weekly and on demand), `check-no-suggests`, `lint`,
-`test-coverage` and `gitleaks`. `R CMD check` must give 0 errors, 0 warnings and 0 notes. Passing the gate locally
-does not replace CI.
+CI must be green on every pull request, and `R CMD check` must give 0 errors, 0 warnings and 0 notes. The workflows,
+and the gate mode that reproduces each one locally, are listed in `tools/README.md`. Passing the gate locally does
+not replace CI.
 
 ## Code in short
 
@@ -81,7 +85,7 @@ The full list, with reasons, is in [`docs/standards.md`](https://github.com/insi
 
 - Use testthat 3rd edition in BDD style: `describe()` names the function or behaviour, and `it()` states the expected
   behaviour in plain words.
-- One test file per R file: `R/mood.R` is tested in `tests/testthat/test-mood.R`.
+- One test file per R file: `R/moods.R` is tested in `tests/testthat/test-moods.R`.
 - Cover the happy path, every argument check, edge cases and every bug fix.
 - Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN.
 - Use `shiny::testServer()` for server logic.

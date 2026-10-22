@@ -26,4 +26,4 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   ('Shiny', 'Quarto'), and in backticks or links in Rd.
 - **house:** wording: plain, British English; "built for GxP work", never "validated" or "GxP compliant"; never an
   employer, client or internal system; no unmeasured numbers. New words the spell check doesn't know go into
-  `inst/WORDLIST` only after the founder agrees they're real.
+  `inst/WORDLIST` only after the package creator agrees they're real.

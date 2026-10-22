@@ -29,7 +29,7 @@ the browser console, instead of ignoring the second without a word.
 
 **In brief:** The engine draws characters with `format_version` 1 only, the format of every built-in character and of
 every character the R functions accept. The second drawing path, for the data shape of 0.0.2, could not be reached
-from R and is removed: about 2,090 lines and 88 KB less JavaScript on every page. Nothing drawn through the R
+from R and is removed: about 2,090 lines and 87 KB less JavaScript on every page. Nothing drawn through the R
 functions changes.
 
 **Technical:**

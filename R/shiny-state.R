@@ -125,6 +125,11 @@ mascot_state_defaults <- function(character) {
 }
 
 #' Obtain checked metadata without registering visitor-created content
+#'
+#' A context holds the character's checked data and the identity of its
+#' source (`source_identity`), both made once per content. Built-in characters
+#' never change in a process, so their contexts stay for the whole process;
+#' other content shares a small cache keyed by its complete JSON text.
 #' @noRd
 mascot_state_character <- function(wire) {
   checkmate::assert_list(wire, names = "unique")
@@ -133,6 +138,10 @@ mascot_state_character <- function(wire) {
   checkmate::assert_string(wire$name, min.chars = 1)
   checkmate::assert_string(wire$json, min.chars = 1)
   cache <- mascot_template_store()
+  builtin <- cache$builtins[[wire$id]]
+  if (!is.null(builtin) && identical(wire$json, builtin$wire$json) && identical(wire$name, builtin$wire$name)) {
+    return(builtin)
+  }
   hit <- match(wire$json, vapply(cache$characters, function(x) x$wire$json, character(1)))
   if (!is.na(hit)) {
     context <- cache$characters[[hit]]
@@ -141,7 +150,8 @@ mascot_state_character <- function(wire) {
     }
     return(context)
   }
-  if (wire$id %in% builtin_characters()$id && identical(wire$json, character_json(wire$id))) {
+  shipped <- wire$id %in% builtin_characters()$id && identical(wire$json, character_json(wire$id))
+  if (shipped) {
     data <- character_catalogue_get(wire$id)
   } else {
     data <- character_format_check(wire$json, from = "text")
@@ -157,9 +167,14 @@ mascot_state_character <- function(wire) {
     identity = identity,
     token = paste0("c", mascot_template_key(identity)),
     source = parsed,
+    source_identity = character_identity_piece(parsed),
     roles = names(parsed$colours)
   )
-  cache$characters <- utils::tail(c(cache$characters, list(context)), mascot_character_cache_limit)
+  if (shipped) {
+    cache$builtins[[wire$id]] <- context
+  } else {
+    cache$characters <- utils::tail(c(cache$characters, list(context)), mascot_character_cache_limit)
+  }
   context
 }
 

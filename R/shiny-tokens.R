@@ -24,6 +24,7 @@ mascot_template_store <- function() {
     mascot_templates$tick <- 0
     mascot_templates$limits <- character_format_policy()$input
     mascot_templates$characters <- list()
+    mascot_templates$builtins <- list()
     mascot_templates$keys <- list()
   }
   mascot_templates
@@ -84,7 +85,9 @@ mascot_mount_token <- function(id, state, session = shiny::getDefaultReactiveDom
   checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"), null.ok = TRUE)
   spec <- list(id = id, state = state)
   canonical <- spec
-  canonical$state$character$json <- mascot_state_character(state$character)$source
+  # The character's source identity is made once per content (see mascot_state_character()); the result is the
+  # same string as for the full source.
+  canonical$state$character$json <- mascot_state_character(state$character)$source_identity
   identity <- character_format_identity(canonical)
   store <- mascot_template_store()
   if (is.null(session)) {
@@ -248,7 +251,7 @@ mascot_mount_recover <- function(session, id, token, baseline) {
   prepared <- mascot_state_prepare(list(desired = list(), context = NULL), baseline)
   spec <- list(id = id, state = prepared$desired)
   canonical <- spec
-  canonical$state$character$json <- prepared$context$source
+  canonical$state$character$json <- prepared$context$source_identity
   identity <- character_format_identity(canonical)
   # Checksums identify content, not authority. Collision suffixes are allocated
   # locally; the complete checked identity remains the equality criterion.

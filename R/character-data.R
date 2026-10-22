@@ -5,6 +5,10 @@ character_data_store$order <- character()
 # Verified content cache: canonical resolved content only, never visitor ids or provenance.
 character_data_verified <- new.env(parent = emptyenv())
 character_data_verified$items <- list()
+# Objects already verified, each with its result; an exact copy of one is not checked again.
+character_data_verified$seen <- list()
+# JSON text written for verified objects, so a custom character's text is written once per object.
+character_data_verified$texts <- list()
 
 #' Character ids a custom character cannot use: the built-in ids
 #' @noRd
@@ -14,13 +18,21 @@ character_data_reserved <- function() {
 
 #' Verify internal checked character data
 #'
-#' Checks structure and canonical content at every boundary. A bounded cache
-#' reuses semantic checks and derived manifests by complete content identity;
-#' a cache miss reconstructs them. Caller-supplied classes, resolved flags and
-#' derived manifest fields never bypass verification.
+#' Checks structure and canonical content at every boundary. An object
+#' identical to one verified before (every value, attribute and number bit for
+#' bit) returns that result without parsing it again; any edit makes a
+#' different object, which is checked. A bounded cache reuses semantic checks
+#' and derived manifests by complete content identity; a cache miss
+#' reconstructs them. Caller-supplied classes, resolved flags and derived
+#' manifest fields never bypass verification.
 #' @noRd
 character_data_verify <- function(x) {
   checkmate::assert_class(x, "mascot_character_data")
+  for (entry in character_data_verified$seen) {
+    if (identical(x, entry$input, num.eq = FALSE)) {
+      return(entry$verified)
+    }
+  }
   parsed <- character_format_parse(x)
   identity <- character_format_identity(parsed)
   # Shipped data may use the reserved id only when it matches the package copy.
@@ -29,12 +41,12 @@ character_data_verify <- function(x) {
       x$id %in% builtin_characters()$id &&
       identical(identity, character_format_identity(character_catalogue_builtin(x$id)))
   ) {
-    return(character_catalogue_builtin(x$id))
+    return(character_data_seen(x, character_catalogue_builtin(x$id)))
   }
   items <- character_data_verified$items
   hit <- which(vapply(items, function(item) identical(attr(item, "mascot_manifest")$identity, identity), logical(1)))
   if (length(hit) && identical(attr(x, "mascot_manifest")$identity, identity)) {
-    return(items[[hit[[1L]]]])
+    return(character_data_seen(x, items[[hit[[1L]]]]))
   }
   verified <- character_format_check(x)
   if (!identical(attr(x, "mascot_manifest")$identity, attr(verified, "mascot_manifest")$identity)) {
@@ -46,7 +58,32 @@ character_data_verify <- function(x) {
     )
   }
   character_data_verified$items <- utils::tail(c(items, list(verified)), 16L)
+  character_data_seen(x, verified)
+}
+
+#' Remember an object that passed verification, with its result
+#' @noRd
+character_data_seen <- function(x, verified) {
+  checkmate::assert_class(x, "mascot_character_data")
+  checkmate::assert_class(verified, "mascot_character_data")
+  entry <- list(input = x, verified = verified)
+  character_data_verified$seen <- utils::tail(c(character_data_verified$seen, list(entry)), 16L)
   verified
+}
+
+#' JSON text of verified data, written once for each object
+#' @noRd
+character_data_json <- function(verified) {
+  checkmate::assert_class(verified, "mascot_character_data")
+  for (entry in character_data_verified$texts) {
+    if (identical(verified, entry$verified, num.eq = FALSE)) {
+      return(entry$json)
+    }
+  }
+  json <- character_json_write(verified)
+  entry <- list(verified = verified, json = json)
+  character_data_verified$texts <- utils::tail(c(character_data_verified$texts, list(entry)), 16L)
+  json
 }
 
 #' Register checked character data in the internal store

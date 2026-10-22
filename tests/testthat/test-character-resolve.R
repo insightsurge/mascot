@@ -146,6 +146,17 @@ describe("character_format_resolve()", {
       character_format_identity(list(a = list(2, 1)))
     ))
   })
+
+  it("#494 lets a ready-made identity piece stand in for its part, and only such a piece", {
+    part <- list(b = 2, a = list(1, "x"))
+    whole <- '{"a":1,"s":{"a":[1,"x"],"b":2}}'
+    expect_identical(character_format_identity(list(a = 1, s = part)), whole)
+    expect_identical(character_format_identity(list(a = 1, s = character_identity_piece(part))), whole)
+    # Text that only claims to be JSON stays text, as it always was.
+    claimed <- structure('{"x":1}', class = "json")
+    expect_identical(character_format_identity(list(a = claimed)), '{"a":"{\\"x\\":1}"}')
+    expect_error(character_identity_piece("text"), "Assertion")
+  })
 })
 
 describe("B2 reserved palette ids", {

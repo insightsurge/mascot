@@ -278,6 +278,62 @@ describe("static template recovery", {
     expect_silent(mascot_mount_recover(f$session, f$id, token, state))
   })
 
+  it("#494 gives the same content the same token and a changed custom character a new one", {
+    source <- format_recipe()
+    source$id <- "token_probe"
+    source$name <- "Token Probe"
+    checked <- character_format_check(source)
+    source$name <- "Token Probe Two"
+    changed <- character_format_check(source)
+    token <- function(character, id = "probe") mascot(id, character = character)$attribs[["data-mount-token"]]
+    first <- token(checked)
+    expect_match(first, "^t[0-9]+-[0-9]+-[0-9]+$")
+    expect_identical(token(checked), first)
+    expect_identical(token(mascot_character(checked)), first)
+    expect_false(identical(token(changed), first))
+    expect_identical(token("tessa"), token("tessa"))
+    expect_false(identical(token("tessa"), token("sela")))
+    # The token is the key of the complete canonical specification, whose source part is made once per content.
+    base <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
+    full <- list(id = "probe", state = base)
+    full$state$character$json <- jsonlite::fromJSON(character_json("tessa"), simplifyVector = FALSE)
+    expect_identical(
+      mascot_mount_token("probe", base, NULL),
+      paste0("t", mascot_template_key(character_format_identity(full), remember = FALSE))
+    )
+  })
+
+  it("#494 keeps built-in character contexts for the whole process, apart from the custom cache", {
+    store <- mascot_template_store()
+    saved <- as.list(store)
+    withr::defer({
+      rm(list = ls(store), envir = store)
+      list2env(saved, envir = store)
+    })
+    store$characters <- store$builtins <- list()
+    wire <- list(id = "tessa", name = "Tessa", json = character_json("tessa"))
+    first <- mascot_state_character(wire)
+    expect_identical(names(store$builtins), "tessa")
+    expect_length(store$characters, 0)
+    custom <- protocol_character()
+    for (i in 1:(mascot_character_cache_limit + 2)) {
+      custom$json <- paste0(protocol_character()$json, strrep(" ", i))
+      mascot_state_character(custom)
+    }
+    original <- character_catalogue_get
+    calls <- new.env(parent = emptyenv())
+    calls$n <- 0L
+    local_mocked_bindings(character_catalogue_get = function(...) {
+      calls$n <- calls$n + 1L
+      original(...)
+    })
+    expect_identical(mascot_state_character(wire), first)
+    expect_identical(calls$n, 0L)
+    expect_identical(as.character(first$source_identity), character_format_identity(first$source))
+    wire$name <- "Forged"
+    expect_error(mascot_state_character(wire), "disagree")
+  })
+
   it("reuses checked JSON and keys, rejects changed identities and bounds immutable caches", {
     store <- mascot_template_store()
     saved <- as.list(store)

@@ -221,8 +221,8 @@ widget's rendered output (section 6). Every change in `inst/www/` adds an entry 
   licence. It records the engine (Harsh Verma, MIT, born in the playbook site's `tools/animate/`) and, once any are
   bundled, each font. 0.1.0 bundles no fonts; they may come with static images and trailers (later releases).
   `inst/COPYRIGHTS` is the file Writing R Extensions names (**CRAN**).
-- Each font folder has its own `OFL.txt`. Both fonts are under the SIL Open Font Licence 1.1 and have no Reserved
-  Font Name (checked 2026-09-29), so subset files keep their names.
+- Each font folder has its own `OFL.txt`. Both fonts (Hanken Grotesk and JetBrains Mono, the website's fonts) are under
+  the SIL Open Font Licence 1.1 and have no Reserved Font Name (checked 2026-10-22), so subset files keep their names.
 - Each font project is added to `Authors@R` with the `cph` role and a `comment` saying which font it is (the pattern
   bslib uses). `Copyright: See inst/COPYRIGHTS` may be added if a reviewer asks (**CRAN**).
 - Fonts are subset to the Latin range and shipped as WOFF2 to keep the tarball small (**house**).

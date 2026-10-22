@@ -1,7 +1,6 @@
-# pkgdown site with the R Engineering Playbook's look (#25).
-# Colours come from the playbook's _brand.yml (blog variant), itself copied from the website repo's brand/
-# (source of truth); fonts are the playbook's self-hosted latin subsets (OFL, pkgdown/assets/fonts/).
-# The aurora background and the dark palette are in pkgdown/extra.css.
+# pkgdown site (#451): Hanken Grotesk and JetBrains Mono (self-hosted, OFL, pkgdown/assets/fonts/), teal on a
+# cool ground in light and dark. The colours below are repeated as tokens in pkgdown/extra.css, which also holds
+# the glow, the reading width and the component styles: change both together.
 url: https://insightsurge.github.io/mascot/   # GitHub Pages, once the repo is public
 # docs/ holds the project's own notes, so the site builds into site/ (git- and build-ignored).
 destination: site
@@ -10,28 +9,28 @@ template:
   bootstrap: 5
   light-switch: true
   bslib:
-    bg: "#F5F6F4"          # stone-25
-    fg: "#16201B"          # stone-ink
-    primary: "#16201B"     # stone-ink (the blog surface uses ink for buttons)
-    secondary: "#525D57"   # stone-600
-    success: "#1D6B45"     # green-600
-    info: "#2F5F86"        # blue-600
-    warning: "#7A5A12"     # ochre-600
-    danger: "#A33A30"      # red-600
-    link-color: "#1D5A43"  # forest-700
-    base_font: "Space Grotesk"
-    heading_font: "Space Grotesk"
+    bg: "#F5FAFC"
+    fg: "#172E36"
+    body-bg-dark: "#101E22"
+    body-color-dark: "#E7F3F5"
+    primary: "#145C68"
+    secondary: "#3C5861"
+    success: "#1D6B45"
+    info: "#2F5F86"
+    warning: "#7A5A12"
+    danger: "#A33A30"
+    link-color: "#145C68"
+    link-color-dark: "#8CE1E4"
+    base_font: "Hanken Grotesk"
+    heading_font: "Hanken Grotesk"
     code_font: "JetBrains Mono"
-    border-radius: 8px
-    border-radius-sm: 6px
-    border-radius-lg: 12px
-    link-underline-offset: 0.2em
-  includes:
-    before_body: |
-      <div class="site-aurora-bg" aria-hidden="true">
-        <div class="site-aurora-bg__glows"><div class="site-aurora__glow"></div></div>
-        <div class="site-aurora__grain"></div>
-      </div>
+    font-size-root: "17px"
+    line-height-base: 1.65
+    headings-font-weight: 650
+    border-radius: "0.6rem"
+    border-radius-sm: "0.35rem"
+    border-radius-lg: "0.8rem"
+    link-underline-offset: "0.2em"
 
 navbar:
   components:
@@ -125,8 +124,8 @@ reference:
       - update_mascot
   - title: Helpers
     desc: >
-      Knurl and Neer (mascot_character(), mascot_characters()), mascot_theme(css =) and
-      mascot_placement(drag = "free") are experimental.
+      Knurl and Neer (mascot_character(), mascot_characters()), mascot_read_character(),
+      mascot_check_character(), mascot_theme(css =) and mascot_placement(drag = "free") are experimental.
     contents:
       - mascot_character
       - mascot_read_character

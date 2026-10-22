@@ -149,7 +149,7 @@ mappings continue to work without change.
   The host detects format version 1 and dispatches Tessa to `mascot.runtime.mount()`.
 * Public colour role mapping: all public colour role names (`body`, `rim`, `limb`, `sleeve`, `eyelid`, `blush`,
   `accessory`, and related roles) are preserved in `mascot_colour_roles("tessa")`. Internal role mappings ensure theme overrides
-  map seamlessly onto the format-v1 recipe.
+  map directly onto the format-v1 recipe.
 * The restore button label for Tessa becomes "Restore Tessa, <shown status>" (e.g. "Restore Tessa, Resting, ready for the next piece."), matching
   format-v1 character conventions.
 * `inst/www/mascot-player.js`: `ns.geometry.draw()` receives frame elapsed time and active colour overrides in options;
@@ -538,7 +538,7 @@ containers; the host now reports minimise and restore actions back to the server
   development-mode `shiny:client-message` warning when a server gesture is skipped because
   `gestures = false`.
 
-## 2026-10-12 — Automatic phone sizing and pre-CRAN patch contract (`2bd43fa`, `c9ef831`, #259, #261, #264, #266)
+## 2026-10-12 — Automatic phone sizing and patch contract (`2bd43fa`, `c9ef831`, #259, #261, #264, #266)
 
 **In brief:** Floating mascots cap their default size at 96 pixels on narrow screens (`<= 575.98px`) when
 `small_screen = "auto"`.

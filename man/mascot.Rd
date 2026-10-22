@@ -82,7 +82,8 @@ An \code{htmltools} tag with the mascot's web dependency attached.
 }
 \description{
 Draw a character with a mood, a status line and an optional message bubble.
-The status shows the capitalised mood word until the app sets its own text.
+The status shows the character's line for the mood until the app sets its own
+text (the \code{status} column of \code{mascot_moods(character)}).
 It follows the mood again when \code{\link[=mascot_status]{mascot_status()}} is supplied without text.
 }
 \details{

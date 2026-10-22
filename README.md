@@ -2,46 +2,113 @@
 
 [![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml)
 
-Live, mood-driven mascots for R: a character drawn in code that shows a mood in your Shiny app or Quarto site and
-animates when the mood changes. You set its mood from your server code, for example while your app computes or a form
-fails validation. It follows light and dark mode, and takes its colours from your brand. No AI needed to use it.
+Live, mood-driven mascots for Shiny apps and Quarto sites. A character drawn in code shows a mood and gives a short
+wiggle when the mood changes, with status text beside it so the face never carries meaning alone.
 
-**Status:** early development, before 0.1.0. Not on CRAN yet.
+Set the mood from R when a form needs attention or a task finishes. Mascots follow light and dark mode, can use your
+brand colours, work offline and respect reduced-motion settings. The package is built for `GxP` work: use it alongside
+your app's field errors and results.
 
-**Experimental (may change in 0.1.x):** Knurl and Neer, `mascot_studio()`, `mascot_preview()`, `mascot_theme(css =)`, `drag = "free"`, the mapping of `bs_theme()` colours to a character's parts, and the character file format. Tessa and Sela are stable.
+**Status:** early development, before 0.1.0; not on CRAN yet. Some features are
+[experimental](#development-status).
 
-**Make your own character: coming soon.** In 0.1.0 a character file can be read and checked (experimental); saving and registering characters and palettes follow in 0.1.x.
-
-- Scope, users and planned releases: [`docs/scope.md`](https://github.com/insightsurge/mascot/blob/main/docs/scope.md)
-- Known users: [`docs/consumers.md`](https://github.com/insightsurge/mascot/blob/main/docs/consumers.md)
-- Plan: the milestones and the epic tree under issue #1
-
-## In a Quarto page
-
-A plain `mascot()` draws in a rendered Quarto page (static: the mood and status are set when you render). Put it in an
-R chunk, with inline placement:
-
-```r
-mascot("helper", mood = "happy", status = "Rendered with Quarto", placement = "inline")
-```
-
-The Get started article has the details and caveats. A Quarto `shortcode` comes in 0.2.0.
+[Get started](https://insightsurge.github.io/mascot/articles/mascot.html) ·
+[Meet your mascots](https://insightsurge.github.io/mascot/articles/meet-your-mascots.html) ·
+[Function reference](https://insightsurge.github.io/mascot/reference/index.html)
 
 ## Installation
 
-mascot is not on CRAN yet, and its GitHub repository is private for now. Once it is public, install the
-development version with:
+mascot needs R 4.1.0 or later. CRAN installation will be available after 0.1.0 is accepted. For now, install the
+development version from GitHub.
 
 ```r
 # install.packages("pak")
 pak::pak("insightsurge/mascot")
 ```
 
-## Development
+## Try the studio
 
-How to set up, the workflow and the checks every change passes: [`CONTRIBUTING.md`](.github/CONTRIBUTING.md).
-The engineering standards, with the CRAN rules and our own: [`docs/standards.md`](https://github.com/insightsurge/mascot/blob/main/docs/standards.md).
+Explore the characters and functions in a local app, change the controls and copy the R code that matches what you
+see. The studio is experimental and needs the optional packages `bslib` (0.6.0 or later) and `knitr` installed.
+
+```r
+mascot::mascot_studio()
+```
+
+Run this in an interactive R session. The studio works offline and currently offers built-in characters only. See
+the [studio guide](https://insightsurge.github.io/mascot/articles/studio-guide.html) for each function.
+
+## In a Shiny app
+
+Put this in `app.R` and run it. Click **Say hello** to change Tessa's mood from idle to happy and update the status
+text. A short wiggle accompanies the change unless the visitor has requested reduced motion.
+
+```r
+library(shiny)
+library(mascot)
+
+ui <- fluidPage(
+  mascot(
+    "helper",
+    mood = "idle",
+    status = "Ready to greet you",
+    placement = "inline"
+  ),
+  actionButton("greet", "Say hello")
+)
+
+server <- function(input, output, session) {
+  observeEvent(input$greet, {
+    update_mascot("helper", mood = "happy", status = "Hello!")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+The four built-in characters are Tessa, Sela, Knurl and Neer. They share five moods: `"idle"`, `"thinking"`,
+`"happy"`, `"worried"` and `"celebrating"`. Use `mascot()` in the UI and `update_mascot()` in the server to reflect
+your app's state. The [Get started article](https://insightsurge.github.io/mascot/articles/mascot.html) covers forms,
+long tasks, themes and more examples.
+
+## In a Quarto page
+
+Put this in an R chunk in a Quarto HTML page:
+
+```r
+mascot::mascot("helper", mood = "happy", status = "Rendered with Quarto", placement = "inline")
+```
+
+This is static: the mood and status are set when the page is rendered. It does not receive live Shiny updates. See
+[Get started](https://insightsurge.github.io/mascot/articles/mascot.html) for details and caveats. A Quarto `shortcode`
+is planned for 0.2.0.
+
+## Development status
+
+Tessa and Sela are stable. The following are experimental and may change in a later release: Knurl and Neer,
+`mascot_studio()`, `mascot_preview()`, `mascot_theme(css =)`, `drag = "free"`, the mapping of `bslib::bs_theme()`
+colours to character parts, and the character file format.
+
+You can read a local JSON character file with `mascot_read_character()` or check JSON text or a parsed list with
+`mascot_check_character()`. Both functions are experimental; their arguments, results and diagnostics may change
+in a later release. You can preview a checked character and use it in Shiny, but the studio does not accept it yet. Public
+functions for saving and registering characters and palettes are planned for a later release. See
+[Make your own character](https://insightsurge.github.io/mascot/articles/write-your-own-character.html).
+
+The [scope and planned releases](https://github.com/insightsurge/mascot/blob/main/docs/scope.md) and
+[known users](https://github.com/insightsurge/mascot/blob/main/docs/consumers.md) give the wider context.
+
+## Getting help and contributing
+
+Start with the [documentation](https://insightsurge.github.io/mascot/). To report a bug or suggest a feature,
+[open an issue](https://github.com/insightsurge/mascot/issues) using the appropriate form. Include a small example
+that shows the problem and your package version; use synthetic data.
+
+For contributions, read the [contributor guide](https://github.com/insightsurge/mascot/blob/main/.github/CONTRIBUTING.md),
+including its [conduct and data guidance](https://github.com/insightsurge/mascot/blob/main/.github/CONTRIBUTING.md#conduct-and-data).
+The [engineering standards](https://github.com/insightsurge/mascot/blob/main/docs/standards.md) explain the package's
+checks and conventions.
 
 ## Licence
 
-MIT © Harsh Verma. See [`LICENSE.md`](LICENSE.md).
+MIT. See the [licence](https://github.com/insightsurge/mascot/blob/main/LICENSE.md).

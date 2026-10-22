@@ -1,68 +1,77 @@
-# mascot: scope (draft, updated 2026-10-17)
+# mascot: scope
 
-An R package for **live, mood-driven mascots** in Shiny apps and Quarto sites. A character drawn in code shows a
-mood and animates when the mood changes: a short wiggle, then the new face. It works out of the box, with no AI.
-AI only helps through optional skills, which the user's own agent runs: wiring the mascot into an app, building a
-theme from a brand, and, much later, writing trailer stories.
+mascot adds live, mood-driven characters to Shiny apps and Quarto HTML pages. A character drawn in code shows a
+mood and gives a short wiggle when the mood changes, with status text beside it. The package works offline and is
+built for GxP work: it supports an app's field errors and results without replacing them.
 
-The idea and the engine come from the R Engineering Playbook site, where the character Tessa stars in short
-trailers. That site is the package's first user (`docs/consumers.md`).
+## Characters in 0.1.0
 
-## The characters
-Four built-in characters in the first release, then more in later releases, each with its own shape, colours,
-personality and voice, all drawn on one multi-character engine. Tessa (the default) and Sela are stable: their id,
-name, moods, gesture names and colour role names stay the same in every release. Knurl and Neer are experimental and
-may still change. Moods, a wave and a nod, light and dark mode and (from 0.2.0) a shared wardrobe work for every
-character.
-
-| Character | Meaning | Nature | Look (picks for now) | Release |
+| Character | Meaning | Nature | Appearance | Status |
 |---|---|---|---|---|
-| **Tessa**, she/her | from tessellation | calm, hardworking, always learning; the maker | the R hex sticker in forest green with an ochre rim (decided: the playbook's character) | 0.1.0, the default, stable |
-| **Sela**, she/her | a second hexagon | the organiser | a pointy-top hex with a sweeping bob | 0.1.0, stable |
-| **Knurl**, it/its | a robot | the repair bot | a wheeled chassis with a visor and a clamp arm holding a wrench | 0.1.0, experimental |
-| **Neer** (नीर), she/her | water | calm, observant, clear, welcoming; says in few words what changed | a wave crest with small arms and feet, water blues | 0.1.0, experimental |
-| **Ojas** (ओजस्), he/him | vitality, radiance | shiny, forgiving, bright, wise; says a mistake can be mended | sunrise gold with arms and feet; shape still open | 0.3.0 |
+| **Tessa**, she/her | from tessellation | calm, hardworking, curious and patient; the maker | a teal hexagon with a silver rim, hair, a small bow, studs, arms and a chest badge showing the mood; her own colours are `night_teal` | the default, stable |
+| **Sela**, she/her | a second hexagon | the organiser | a lilac hexagon with deep violet hair and time blocks; her own colours are `lilac_violet` | stable |
+| **Knurl**, it/its | a robot | the repair bot | a wheeled chassis with a visor and a clamp arm holding a spanner | experimental |
+| **Neer** (नीर), she/her | water | calm, observant, clear and welcoming; says in a few words what changed | a water-blue wave crest with a shell, small arms and feet | experimental |
 
-The full design of each character (options, colour themes with contrast, moods, accessories, motion, voices,
-risks) is in the character design records, kept on the `design-assets` branch (`characters/`).
+Tessa and Sela have stable ids, names, moods, gesture names and colour role names. Knurl and Neer may change.
+All four share five moods (`idle`, `thinking`, `happy`, `worried` and `celebrating`), a wave and a nod, light and
+dark mode, and palette presets.
 
-## Target users and use cases, by confidence
+## What 0.1.0 provides
 
-| Confidence | User | Use cases |
-|---|---|---|
-| High | Shiny developers | Mood set from the server when a form fails or a task runs (automatic `shinyvalidate` and busy-event helpers follow in 0.2.0); a busy mood instead of a spinner; empty-state hints; message bubbles ("Take a break, this part is long"); brand colours and light/dark mode for free; later, a quiet hint giver that explains inputs and outputs |
-| High | The R Engineering Playbook site (first user) | Mascot in articles through a Quarto shortcode, following the site's light/dark toggle |
-| High | Open-source package maintainers | A mascot for their package: README and pkgdown hero; later avatars, hex stickers, release clips |
-| High | Teachers and workshop authors | Mascot in Quarto slides and tutorials; cheering learners on in Shiny exercises; hints for terms |
-| Medium | Pharma and other regulated teams | Data-entry, review and QC apps with a calm mascot; later hints that explain field definitions, units and ranges; offline and reproducible; no AI images (a pharma pack after 0.1.0: calm palettes plus calmer defaults) |
-| Medium | R coders using AI coding agents | A skill wires the mascot into their app or builds their theme |
-| Medium | Quarto, pkgdown and blogdown site owners | Shortcode, themes from `_brand.yml` |
-| Low | Marketing and data-comms teams working in R | Launch clips (needs trailers, later) |
-| Low | R user groups and conferences | Event mascots |
+- A Shiny widget, `mascot()`, with moods set from the server through `update_mascot()`, for example while a task
+  runs or a form needs attention.
+- A short wiggle on mood changes, one-off gestures and motion controls that respect reduced-motion settings.
+- Status text, message bubbles and a click action or menu. A mascot can float in a window corner or sit inline.
+  Floating mascots can be minimised and restored, with corner snapping or experimental free dragging.
+- Light and dark mode following `bslib::input_dark_mode()` and Quarto's toggle. A page with no theme signal stays
+  light; the system setting alone does not change it.
+- Themes from palettes, explicit light and dark colours, CSS variables or `bslib::bs_theme()`.
+  A `_brand.yml` file can be supplied through `bs_theme(brand =)`.
+- Bundled example apps and an experimental studio that demonstrates every exported function and argument.
+- Experimental functions to read and check a local character file, preview the checked character offline and use
+  it in Shiny. The studio accepts built-in characters only. Saving and registering characters and palettes are
+  planned for a later release.
+- Static mascots in rendered Quarto HTML pages: the mood and status are set when the page is rendered, with no live
+  Shiny updates. A Quarto shortcode is planned for 0.2.0.
 
-## Works without AI (0.1.0)
-Tessa, Sela, Knurl and Neer with the five moods (idle, thinking, happy, worried, celebrating) with smooth transitions, set from your app with
-`update_mascot()` (for example while a task runs or a form fails); message bubbles; light and dark mode following
-bslib's `input_dark_mode()`, Quarto's toggle or the system setting; themes from `_brand.yml`, a `bs_theme()` or CSS;
-a floating, fixed, inline or dismissible card that never covers Shiny's own messages; a gallery app with a character
-chooser; palettes for each character; a studio that shows every function and argument. The Quarto shortcode
-follows in 0.2.0.
+The experimental features are Knurl and Neer, `mascot_studio()`, `mascot_preview()`, `mascot_theme(css =)`,
+`drag = "free"`, the mapping of `bs_theme()` colours to character parts, `mascot_read_character()`,
+`mascot_check_character()` and the character file format. The format's compatibility promise is in the
+[engineering standards](https://github.com/insightsurge/mascot/blob/main/docs/standards.md#9-releases).
 
-## Releases (draft)
-| Release | Theme | Contents |
-|---|---|---|
-| 0.1.0 | Live mascot | Tessa and Sela (stable), Knurl and Neer (experimental) on a multi-character engine; moods with wiggle-then-change; a wave and a nod for every character; light/dark; themes and palette presets; the Shiny widget, `update_mascot()`, message bubble, click menu, placement; the gallery and the studio (experimental); make your own character is coming soon (in 0.1.0 a character file can be read and checked, experimental; saving and registering characters and palettes follow in 0.1.x); groundwork for hints. The first CRAN release: the R interface comes first, because the Quarto shortcode and the AI skills build on it |
-| 0.2.0 | Quarto, static assets and pharma | The Quarto extension and shortcode (the playbook site's first use); the busy mood driven by Shiny's own busy events and the `shinyvalidate` validator binding; AI skills for Claude, Codex and Gemini; a shared wardrobe (outfits, accessories, held items any character can wear); avatars (PNG/SVG); hex stickers; the pharma pack (calm palettes bundled with calmer motion and wording defaults), if 0.1.0 is received well |
-| 0.3.0 | Ojas and the builder | Ojas; a visual character builder; more shapes; SVG and Lottie export |
-| Later | Hints and app events | A quiet hint giver, off by default: a help list in the bubble, a "what's this?" mode, hints when validation fails, dragging the mascot onto an element; reactions to custom app events |
-| Later | Trailers | A trailer base built on the static helpers, then trailers, then storyboard YAML |
-| Later | Packs as packages | Packs (bundles of palettes plus optional defaults) split into their own packages |
+## Who it is for
+
+| User | Use cases |
+|---|---|
+| Shiny developers | Forms, long tasks, queues, empty-state hints, message bubbles and brand colours |
+| Package maintainers | A mascot in documentation and pkgdown pages |
+| Teachers and workshop authors | Quarto tutorials and Shiny exercises |
+| Pharma and other regulated teams | Data-entry, review and QC apps with offline drawing, clear status text and controlled motion |
+| Quarto, pkgdown and blogdown site owners | Static mascots and light/dark themes; a shortcode is planned |
+| R developers using coding assistants | Planned integration and theming skills |
+| Marketing and data communications teams, user groups and conferences | Planned static assets, event mascots and release clips |
+
+[Known users](https://github.com/insightsurge/mascot/blob/main/docs/consumers.md) lists adoption and checks for each
+app or site.
+
+## Planned releases
+
+These are plans, not available features or delivery guarantees.
+
+| Release | Focus |
+|---|---|
+| 0.1.0 | First CRAN release: the characters, Shiny interface, themes, examples and experimental studio and character-file functions described above |
+| After 0.1.0 | Public functions for saving and registering characters and palettes |
+| 0.2.0 | Quarto extension and shortcode; Shiny busy events and `shinyvalidate` binding; integration and theming skills; shared outfits, accessories and held items; PNG/SVG avatars and hex stickers; a pharma pack with calm palettes, motion and wording defaults |
+| 0.3.0 | Ojas (ओजस्, he/him), a character named for vitality and radiance, in sunrise gold with arms and feet, with his shape to be decided; a visual character builder, more shapes, SVG and Lottie export |
+| Later | Optional hints in the bubble, a "what's this?" mode, hints on validation errors and dragging onto elements; custom app events; trailers and storyboard YAML built on static helpers; packs of palettes and optional defaults distributed as packages |
 
 ## Principles
-- Draw everything in code, in the user's brand colours; no AI images.
-- Accessible: readable status text beside every mood, reduced motion respected, the card can be dismissed; hints
-  never replace or hide an error message.
-- Quiet by default: nothing pops up uninvited.
-- The package never calls an AI model; skills are files the user's own agent runs.
-- Tested and defensive: at least 70% test coverage, shinytest2 for Shiny behaviour, arguments checked with checkmate.
-- Wording: "built for GxP work", never "validated" or "compliant".
+
+- Draw characters in code, using the user's colours, with no external model service.
+- Keep readable status text beside each mood, honour reduced motion, and let visitors minimise the floating
+  mascot. Hints never replace or hide an error message.
+- Keep interaction quiet by default: nothing pops up uninvited.
+- Check arguments with checkmate, test Shiny behaviour with shinytest2, and keep at least 70% R line coverage.
+- Use the wording "built for GxP work".

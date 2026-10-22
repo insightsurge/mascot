@@ -76,6 +76,7 @@ reference:
       - mascot_character
       - mascot_read_character
       - mascot_check_character
+      - mascot_character_format
       - mascot_mood
       - mascot_size
       - mascot_placement

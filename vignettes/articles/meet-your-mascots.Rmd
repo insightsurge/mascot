@@ -97,11 +97,9 @@ htmltools::tags$style(
 )
 ```
 
-When you add a mascot to a page, you are choosing who sits beside your reader
-and shares the journey. Each of our four characters brings a distinct
-personality, five live moods, and a wardrobe of colour appearances to suit the
-tone of your screen. Tessa and Sela are settled, while Knurl and Neer are still
-finding their final shape.
+Each of the four characters has a distinct personality, five moods and a set of
+colour palettes. Tessa and Sela are stable; Knurl and Neer are experimental and
+may change.
 
 Here is what a busy afternoon looks like when all four work together.
 
@@ -217,14 +215,12 @@ Meet Tessa, the quiet maker of the group. If you place a mascot without naming
 one, Tessa is the friend who steps forward. She belongs to the Hexonians, a
 family of characters built on a hexagonal frame who share a couple of friendly
 moves like waving and nodding. Her name comes from tessellation, hexagons tiling
-a plane without gaps, the way packages fit together cleanly. She began as the
-star of a set of short story animations before joining the package as the
-default character.
+a plane without gaps, the way packages fit together cleanly.
 
 Tessa is innocent and always eager to learn. She is calm, hard-working, curious,
 and patient, the maker who thoughtfully picks the right tool and takes the next
 step. Where Neer notices what shifted, Tessa builds. You can recognise her by
-her slimmer teal hexagon body and the silver ring that shimmers now and then.
+her slim teal hexagon body and the silver ring that shimmers now and then.
 She wears hair with a side fringe, a small bow, small studs, hanging arms, and a
 chest badge whose icon shows her mood.
 
@@ -233,7 +229,7 @@ rest, she is "Resting, ready for the next piece." Start a run, and she is
 "Working out how the parts fit." If a detail needs fixing, she notes that "One
 part needs a closer look." When things go well, she smiles on "That came
 together nicely" or "Finished, and built to last." That steady, step-by-step
-nature makes her lovely company for tutorials, exploratory tools, teaching
+nature suits tutorials, exploratory tools, teaching
 guides, and package documentation.
 
 Here is Tessa across her five moods:
@@ -257,7 +253,7 @@ Hexonians, sharing that familiar hexagonal silhouette, yet she brings a very
 different rhythm. Sela is the unflappable organiser of the crew, staying calm
 under complexity and keeping plans in order.
 
-Her look is instantly reassuring: a lilac hexagon with deep violet hair,
+She is a lilac hexagon with deep violet hair,
 flanked by time blocks that sit apart when things are calm, overlap during a
 clash, and slide apart again once sorted. We like to tell a little story about
 her name: it is a soft echo of "cell", one hexagon in a grid, and of "selah", the
@@ -268,8 +264,8 @@ Her status updates reflect that composed oversight. When everything lines up,
 she announces that "Schedule is balanced and clear." If two bookings collide,
 she notes that "Direct schedule clash detected." She takes time "Reviewing
 resource conflict," and once cleared, confirms that "Conflict resolved
-cleanly" or "All bookings confirmed and locked." Sela makes wonderful company
-for appointment managers, booking calendars, and resource schedules.
+cleanly" or "All bookings confirmed and locked." Sela suits
+appointment managers, booking calendars, and resource schedules.
 
 Here is Sela across her five moods:
 
@@ -333,7 +329,7 @@ Her status lines reflect that quiet clarity. When nothing has moved, she shows
 "Nothing has changed." As you type, she is "Checking the inputs." Valid entries
 give "The form is valid." When values need checking, she flags that "Some fields
 need attention," and once everything passes, confirms that "All checks passed."
-That makes Neer ideal company for form checks, data entry reviews, and quality
+Neer suits form checks, data entry reviews, and quality
 control screens.
 
 Here is Neer displaying her five moods:

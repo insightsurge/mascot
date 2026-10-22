@@ -4,7 +4,8 @@
 \alias{mascot_character_format}
 \title{Character format version 1}
 \description{
-An offline guide to the internal character authoring route. Descriptions are
+A guide to the character file format read by \code{\link[=mascot_read_character]{mascot_read_character()}} and
+\code{\link[=mascot_check_character]{mascot_check_character()}}. Descriptions are
 JSON objects with \code{format_version = 1}, \code{requires}, \code{id}, \code{name}, \code{description},
 a \code{family}, colours, ground, parts and five shared moods (\code{idle}, \code{thinking},
 \code{happy}, \code{worried}, \code{celebrating}). Optional anchors, palettes, face kits and
@@ -18,8 +19,7 @@ Start from \code{system.file("examples", "characters", "study_bot.json", package
 Edit a plain list or JSON source and check it again. A checked object is opaque.
 Source files can use current family defaults. A resolved file embeds its family
 defaults and face kits, so it does not depend on the installed package's defaults;
-saving a resolved file from R is planned for 0.1.x. Registered family snapshots
-are metadata and never become defaults for other source files.
+saving a resolved file from R is planned for a later release.
 
 Checks stop at the first problem, giving a diagnostic code, JSON path, value
 and repair instruction. Input byte, depth and node limits and drawing budgets
@@ -30,15 +30,18 @@ distinct. The installed grammar and policy live in
 }
 \section{Compatibility}{
 
-Version-1 files keep loading through 0.1.x.
+Version-1 files keep loading until a breaking change introduces format version 2.
+Retiring an older format version is announced in NEWS at least one release ahead.
 The checker may only get stricter in a new format version, except for a
 documented security or resource-safety fix, which includes a diagnostic and
 migration guidance. New features arrive as a new capability name in \code{requires}.
-A breaking change means format version 2, with both versions accepted.
-Files are never upgraded silently. A resolved file is self-contained.
+Files are never modified or upgraded silently. A resolved file is self-contained.
 }
 
 \seealso{
 \code{\link[=mascot_check_character]{mascot_check_character()}}, \code{\link[=mascot_read_character]{mascot_read_character()}}
 }
-\keyword{internal}
+\section{Experimental}{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\out{<span class='badge text-bg-warning'>Experimental</span>}}}{\strong{[Experimental]}}
+What the format accepts may grow in a later release; version-1 files keep loading (see Compatibility).
+}

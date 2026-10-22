@@ -111,10 +111,6 @@ To report a security problem privately, see the [security policy](https://github
 The [engineering standards](https://github.com/insightsurge/mascot/blob/main/docs/standards.md) explain the package's
 checks and conventions.
 
-## Citing mascot
-
-To cite the package, run `citation("mascot")` in R. It prints the reference and a BibTeX entry.
-
 ## Licence
 
 MIT. See the [licence](https://github.com/insightsurge/mascot/blob/main/LICENSE.md).

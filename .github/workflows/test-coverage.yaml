@@ -1,7 +1,8 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (test-coverage.yaml), without Codecov
 # (the repo is private). Fails when line coverage is under the limit in DESCRIPTION (Config/cran-gate/coverage,
-# 70% when the field is missing), the same limit the gate uses. A pull request is held to the limit in its base
-# branch's DESCRIPTION, so it cannot lower its own limit; a push to main reads the checked-out DESCRIPTION.
+# 70% when the field is missing), the same limit the gate uses. A pull request is held to the higher of its base
+# branch's limit and its own, so a pull request cannot lower the limit by editing DESCRIPTION; changes to this
+# workflow are reviewed like any other change. A push to main reads the checked-out DESCRIPTION.
 on:
   push:
     branches: [main]
@@ -59,13 +60,18 @@ jobs:
           print(cov)
           pct <- covr::percent_coverage(cov)
           message(sprintf("Line coverage: %.1f%%", pct))
-          limit_file <- "DESCRIPTION"
-          if (Sys.getenv("EVENT_NAME") == "pull_request") {
-            limit_file <- file.path(Sys.getenv("RUNNER_TEMP"), "base-DESCRIPTION")
-            if (!file.exists(limit_file)) stop("The base branch's DESCRIPTION was not read.", call. = FALSE)
+          if (Sys.getenv("EVENT_NAME") == "pull_request" &&
+            !file.exists(file.path(Sys.getenv("RUNNER_TEMP"), "base-DESCRIPTION"))) {
+            stop("The base branch's DESCRIPTION was not read.", call. = FALSE)
           }
-          limit <- as.numeric(read.dcf(limit_file, fields = "Config/cran-gate/coverage")[[1]])
-          if (is.na(limit)) limit <- 70
+          read_limit <- function(file) {
+            value <- as.numeric(read.dcf(file, fields = "Config/cran-gate/coverage")[[1]])
+            if (is.na(value)) 70 else value
+          }
+          limit <- read_limit("DESCRIPTION")
+          if (Sys.getenv("EVENT_NAME") == "pull_request") {
+            limit <- max(read_limit(file.path(Sys.getenv("RUNNER_TEMP"), "base-DESCRIPTION")), limit)
+          }
           if (pct < limit) stop(sprintf("Coverage %.1f%% is under %g%%.", pct, limit), call. = FALSE)
         shell: Rscript {0}
 

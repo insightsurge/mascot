@@ -117,7 +117,7 @@ describe("character_format_check()", {
     cases <- jsonlite::fromJSON(test_path("fixtures", "format", "diagnostic-expected.json"), simplifyVector = FALSE)
     ref_names <- c("anchor_probe.json", "alpha_visor.json", "study_bot.json", "study_bot-resolved.json", "tessa.json")
     ref_leaves <- lapply(ref_names, function(nm) {
-      extract_leaves(jsonlite::fromJSON(test_path("fixtures", "format", nm), simplifyVector = FALSE))
+      extract_leaves(format_recipe(sub("\\.json$", "", nm)))
     })
     names(ref_leaves) <- ref_names
 

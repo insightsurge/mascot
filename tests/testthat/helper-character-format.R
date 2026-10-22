@@ -1,6 +1,14 @@
-format_recipe <- function(id = "anchor_probe") {
+# The file of a format recipe: study_bot is the package's own example character, the other ids are test fixtures.
+format_recipe_path <- function(id = "anchor_probe") {
   checkmate::assert_string(id)
-  jsonlite::fromJSON(test_path("fixtures", "format", paste0(id, ".json")), simplifyVector = FALSE)
+  if (identical(id, "study_bot")) {
+    return(system.file("examples", "characters", "study_bot.json", package = "mascot", mustWork = TRUE))
+  }
+  test_path("fixtures", "format", paste0(id, ".json"))
+}
+
+format_recipe <- function(id = "anchor_probe") {
+  jsonlite::fromJSON(format_recipe_path(id), simplifyVector = FALSE)
 }
 
 format_problem <- function(code, path, expression) {

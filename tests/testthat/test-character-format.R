@@ -1,7 +1,7 @@
 describe("character_format_parse()", {
   it("reads each canonical structural recipe without claiming semantic acceptance", {
     for (id in c("anchor_probe", "tessa", "alpha_visor", "study_bot")) {
-      file <- test_path("fixtures", "format", paste0(id, ".json"))
+      file <- format_recipe_path(id)
       parsed <- character_format_parse(file, from = "file")
       expect_identical(parsed$id, id)
       expect_type(parsed, "list")

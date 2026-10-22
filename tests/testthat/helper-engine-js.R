@@ -7,6 +7,25 @@ skip_without_chrome <- function() {
   testthat::skip_if(is.null(chromote::find_chrome()), "no Chrome or Chromium found")
 }
 
+# The message of a JavaScript exception that Chrome reports. An Error has a description; a thrown value that is not an
+# Error (`throw 'x'`) has none, so the text Chrome gives and the thrown value are used instead.
+page_exception_message <- function(details) {
+  description <- details$exception$description
+  if (is.character(description) && length(description) == 1L && nzchar(description)) {
+    return(description)
+  }
+  text <- details$text
+  value <- details$exception$value
+  parts <- c(
+    if (is.character(text) && length(text) == 1L && nzchar(text)) text,
+    if (is.atomic(value) && length(value) == 1L && !is.na(value)) as.character(value)
+  )
+  if (length(parts) == 0L) {
+    return("The page threw a value that is not an error, and Chrome gave no text for it.")
+  }
+  paste(parts, collapse = ": ")
+}
+
 # Opens a blank page with the engine's drawing and motion files loaded (no host) and returns a function that evaluates
 # JavaScript there. A JavaScript exception stops the test with its message.
 local_engine_page <- function(env = parent.frame()) {
@@ -45,7 +64,7 @@ local_engine_page <- function(env = parent.frame()) {
   function(js) {
     result <- session$Runtime$evaluate(js, returnByValue = TRUE)
     if (!is.null(result$exceptionDetails)) {
-      stop(result$exceptionDetails$exception$description)
+      stop(page_exception_message(result$exceptionDetails), call. = FALSE)
     }
     result$result$value
   }
@@ -145,7 +164,7 @@ local_host_page <- function(
   evaluate <- function(js) {
     result <- session$Runtime$evaluate(js, returnByValue = TRUE, awaitPromise = TRUE)
     if (!is.null(result$exceptionDetails)) {
-      stop(result$exceptionDetails$exception$description)
+      stop(page_exception_message(result$exceptionDetails), call. = FALSE)
     }
     result$result$value
   }

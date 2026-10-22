@@ -17,12 +17,15 @@ the character marks for small sizes. Text is displayed as text, never HTML.
 \details{
 Start from \code{system.file("examples", "characters", "study_bot.json", package = "mascot")}.
 Edit a plain list or JSON source and check it again. A checked object is opaque.
-Source files can use the installed package's family defaults. A resolved file
-embeds its family defaults and face kits, so it does not depend on them.
+A source file names its \code{family} and gives that family's definition in
+\code{family_definition} (\code{id}, \code{name}, \code{description} and optional \code{defaults}, such as
+shared gestures and palettes); a custom character cannot take a definition from
+the installed package. A resolved file has its family defaults merged in and
+embeds its face kits, so it does not depend on the installed package.
 
-Checks stop at the first problem, giving a diagnostic code, JSON path, value
-and repair instruction. Input byte, depth and node limits and drawing budgets
-are enforced for all input forms. Unsupported and reserved capabilities are
+Checks stop at the first problem, giving a diagnostic code, the JSON path and a
+repair instruction, and the value where one is at fault. Input byte, depth and
+node limits and drawing budgets are enforced for all input forms. Unsupported and reserved capabilities are
 refused. Format version, capability set and admission policy version are
 distinct. The installed grammar and policy live in
 \code{system.file("format", package = "mascot")}.

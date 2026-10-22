@@ -106,6 +106,13 @@ articles go in `vignettes/articles/` (website only, not shipped); compress PNGs 
 - CI green, then **the package creator merges**. `main` is protected by a ruleset (a pull request and the required
   checks); pull requests are squash-merged, so the PR title becomes the commit message.
 
+## Issues and pull requests
+- One issue per piece of work. When a decision changes the plan (scope, a rename, a dropped item), edit the issue
+  description so it says the current plan; add dated comments for progress and other updates.
+- Your PR ticks the boxes it delivers. When it closes an issue, say in one line which boxes stay open and where they
+  went.
+- Paste check results as their summary lines, without local paths (home folder, R library, temporary files).
+
 ## Working as an agent
 - Work only in the worktree or branch you were given. Don't commit, push, merge or open PRs unless the task says
   so; never force-push.

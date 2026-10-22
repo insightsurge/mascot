@@ -71,7 +71,7 @@ describe("mascot exports", {
     expect_true(all(startsWith(setdiff(exports, c("mascot", "update_mascot")), "mascot_")))
   })
 })
-describe("B2 condition reference", {
+describe("condition reference", {
   it("documents every condition callers can handle", {
     root <- test_path("..", "..")
     db <- if (dir.exists(file.path(root, "man"))) tools::Rd_db(dir = root) else tools::Rd_db("mascot")
@@ -97,7 +97,7 @@ describe("B2 condition reference", {
   })
 })
 
-describe("experimental help topic badges (#387)", {
+describe("experimental help topic badges", {
   it("shows the experimental badge on each experimental help topic", {
     # Keep this list in step with "Experimental in 0.1.0" in docs/standards.md.
     topics <- c(

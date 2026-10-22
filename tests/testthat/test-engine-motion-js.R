@@ -270,7 +270,7 @@ describe("format-v1 tracks", {
     expect_equal(unlist(r$instance), 0.5)
     expect_equal(r$none, 0)
     expect_length(r$moving, 0)
-    # Frame 40 is 4 frames into a wave that started at 36 (30 frames long); the finished nod no longer blocks it.
+    # Frame 40 is 4 frames into a wave that started at 36 (30 frames long); the finished nod does not block it.
     expect_lt(r$extra, 1.25)
     expect_equal(r$viaChange, -3)
     expect_identical(r$anchor, list(code = "missing_reference", path = "$.gestures.nod.effects[0]"))
@@ -316,11 +316,10 @@ describe("deterministic idle extra scheduling", {
       "const rest = () => ({});",
       "const o = { settings, rest };",
       "const f1 = (n, s = {}) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, ...s }, n, o).channels['root.lift'];",
-      "const f2 = (n, s = {}) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, ...s }, n, o).channels['root.lift'];",
-      "const fDiffSeed = (n) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 99 }, n, o).channels['root.lift'];",
       "const fSuppressed = (n) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, extraAt: null }, n, o).channels['root.lift'];",
+      # The same call twice gives the same series.
       "const series1 = Array.from({ length: 100 }, (_, n) => f1(n));",
-      "const series2 = Array.from({ length: 100 }, (_, n) => f2(n));",
+      "const series2 = Array.from({ length: 100 }, (_, n) => f1(n));",
       "const seriesSuppressed = Array.from({ length: 100 }, (_, n) => fSuppressed(n));",
       "const hasNod1 = series1.some(v => typeof v === 'number' && v < -2);",
       "const hasNodSuppressed = seriesSuppressed.some(v => v !== undefined);",

@@ -335,7 +335,7 @@ describe("the studio's controls", {
         }
       }
     }
-    # A menu has no shortcut since click replaced popup_menu; its label is kept only when written.
+    # A menu has no shortcut; its label is kept only when written.
     labelled <- code$code_menu(c(about = "About"), "auto", "Help and settings")
     expect_identical(labelled$short, labelled$helper)
     expect_identical(eval(labelled$helper), mascot_popup_menu(c(about = "About"), label = "Help and settings"))
@@ -430,7 +430,7 @@ describe("the studio's controls", {
       expect_no_warning(html <- as.character(ui$selected_guide(fn)), message = "could not be built")
       expect_false(grepl("could not be built", html, fixed = TRUE), info = fn)
       expect_match(html, paste0('data-guide-function="', fn, '"'), fixed = TRUE)
-      # Function code now has one pinned output outside the Guide; no duplicate id.
+      # Function code has one pinned output outside the Guide; no duplicate id.
       expect_false(grepl('id="code_function"', html, fixed = TRUE))
       expect_match(html, "pg-guide-piece", fixed = TRUE)
       # The Guide shows the help page's description, details and value; each argument's text is in Controls.
@@ -608,7 +608,7 @@ wait_example_mood <- function(app, id, mood) {
 }
 
 describe("bundled example apps", {
-  it("E2 form-check names invalid fields and becomes happy when both pass", {
+  it("the form-check example names invalid fields and becomes happy when both pass", {
     local_shiny_browser()
     app <- example_driver("form-check")
     withr::defer(app$stop())
@@ -621,7 +621,7 @@ describe("bundled example apps", {
     wait_example_mood(app, "helper", "worried")
     expect_match(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "1 field")
   })
-  it("E3 long-task shows thinking then success and retains an error message", {
+  it("the long-task example shows thinking then success and retains an error message", {
     local_shiny_browser()
     app <- example_driver("long-task")
     withr::defer(app$stop())
@@ -647,7 +647,7 @@ describe("bundled example apps", {
     wait_example_mood(app, "helper", "happy")
     expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).bubble"))
   })
-  it("E4 modules update their own helpers and return completion to the parent", {
+  it("the modules example updates each module's helper and returns completion to the parent", {
     local_shiny_browser()
     app <- example_driver("modules")
     withr::defer(app$stop())
@@ -664,7 +664,7 @@ describe("bundled example apps", {
   })
 })
 
-describe("studio round 4 regression guards", {
+describe("studio inspector labels, colour groups and menu ids", {
   it("labels the active placement with the character and keeps inspector hints independent of selection", {
     skip_if_not_installed("bslib")
     app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
@@ -1082,7 +1082,7 @@ describe("studio state and built previews", {
 })
 
 
-describe("studio round 8 help and copied apps", {
+describe("studio help pages and copied apps", {
   it("keeps a missing help page local while strict lookup still fails", {
     skip_if_not_installed("bslib")
     app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
@@ -2076,7 +2076,7 @@ describe("studio character bar", {
   })
 })
 
-describe("studio narrow layout (#341)", {
+describe("studio narrow layout", {
   it("shows the canvas and the mascot at phone and tablet widths without horizontal scrolling", {
     local_shiny_browser()
     check_width <- function(width) {
@@ -2147,7 +2147,7 @@ studio_start_values <- function(page) {
   values
 }
 
-describe("studio safeguards (#248)", {
+describe("each studio control's update, generated code and default", {
   it("changes each control's argument in the update sent and in the generated code", {
     parts <- studio_parts()
     start <- studio_start_values(parts$page)
@@ -2591,7 +2591,7 @@ describe("studio safeguards (#248)", {
   })
 })
 
-describe("studio phone overlays (#265)", {
+describe("studio phone overlays", {
   it("uses an opaque floating inspector and a bottom sheet on narrow screens", {
     css <- paste(readLines(system.file("examples", "studio", "www", "studio.css", package = "mascot")), collapse = "\n")
     expect_match(css, "background: var(--studio-panel)", fixed = TRUE)
@@ -2601,7 +2601,7 @@ describe("studio phone overlays (#265)", {
   })
 })
 
-describe("studio code builders with a CSS map (#395)", {
+describe("studio code builders with a CSS map", {
   it("writes each role's own CSS variable, and the value of each variable the app sets", {
     code <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "code.R"), envir = code)
@@ -2626,7 +2626,7 @@ describe("studio code builders with a CSS map (#395)", {
     }
     expect_error(code$whole_app_code('mascot("helper")', NULL, "mascot", "#111111"), "names\\(css_values\\)")
   })
-  it("gives the studio the same code as before: its accent variable and that variable's value", {
+  it("writes the studio's accent variable and that variable's value into the generated code", {
     parts <- studio_parts()
     start <- studio_start_values(parts$page)
     shiny::testServer(get("studio_server", parts$env), {
@@ -2643,7 +2643,7 @@ describe("studio code builders with a CSS map (#395)", {
   })
 })
 
-describe("studio shared tokens and inputs (#395)", {
+describe("studio shared tokens and inputs", {
   it("loads the shared tokens and inputs before the studio's own files", {
     page <- studio_parts()$page
     at <- function(file) regexpr(paste0('"', file, '"'), page, fixed = TRUE)[[1]]
@@ -2667,7 +2667,7 @@ describe("studio shared tokens and inputs (#395)", {
   })
 })
 
-describe("studio bubble controls (#249)", {
+describe("studio bubble controls", {
   it("shows the chosen example even when Show arrives before the browser fills the inputs", {
     parts <- studio_parts()
     start <- studio_start_values(parts$page)
@@ -2711,13 +2711,13 @@ describe("studio bubble controls (#249)", {
 })
 
 describe("studio engine behaviours", {
-  it("explains beside the menu direction that the mascot looks towards its menu and bubble (#241)", {
+  it("explains beside the menu direction that the mascot looks towards its menu and bubble", {
     page <- studio_parts()$page
     note <- regexpr("the mascot looks towards the side the menu opened on", page, fixed = TRUE)[[1]]
     expect_gt(note, regexpr('id="menu_direction"', page, fixed = TRUE)[[1]])
     expect_match(page, "It also looks towards a bubble.", fixed = TRUE)
   })
-  it("shows action clicks live and answers an action with a wave (#349)", {
+  it("shows action clicks live and answers an action with a wave", {
     parts <- studio_parts()
     start <- studio_start_values(parts$page)
     expect_match(parts$page, 'id="click_last"', fixed = TRUE)
@@ -2760,7 +2760,7 @@ describe("mascot_example() named arguments", {
 })
 
 
-describe("studio API review", {
+describe("studio UI call and contrast warnings", {
   it("generates an id-first UI call and shows the delayed UI example from the help", {
     skip_if_not_installed("bslib")
     app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
@@ -3134,7 +3134,7 @@ describe("studio palette controls", {
   })
 })
 
-describe("studio disabled menus (#350)", {
+describe("studio disabled menus", {
   it("sends a disabled menu and shows its reproducible helper call", {
     parts <- studio_parts()
     shiny::testServer(get("studio_server", parts$env), {
@@ -3148,7 +3148,7 @@ describe("studio disabled menus (#350)", {
   })
 })
 
-describe("studio palette sync (#353)", {
+describe("studio palette sync", {
   it("maps every listed role to light, dark, CSS and generated theme overrides", {
     parts <- studio_parts()
     builder <- get("code_theme", parts$env)
@@ -3164,7 +3164,7 @@ describe("studio palette sync (#353)", {
             expect_match(html, paste0('id="', mode, "_", role, '"'), fixed = TRUE)
           }
         }
-        # Arbitrary roles travel through all three override fields without an old role allow-list.
+        # Arbitrary roles travel through all three override fields; no role allow-list limits them.
         overrides <- stats::setNames(rep("#123456", nrow(roles)), roles$role)
         css <- stats::setNames(rep("--studio-accent", nrow(roles)), roles$role)
         theme <- eval(builder("mascot", overrides, overrides, "auto", css, "", "", palette)$helper)
@@ -3241,7 +3241,7 @@ describe("studio palette sync (#353)", {
     )
     expect_match(html, paste(character$name, "has no anchors"), fixed = TRUE)
   })
-  it("shows native palette labels, new roles, resting gestures and guide demonstrations in the browser", {
+  it("shows native palette labels, roles such as hair and badge, resting gestures and guide demonstrations", {
     local_shiny_browser()
     app <- example_driver("studio")
     withr::defer(app$stop())
@@ -3332,7 +3332,7 @@ describe("studio palette sync (#353)", {
 })
 
 
-describe("studio palette follow-up (#353)", {
+describe("studio palette guide and examples", {
   it("derives borrowed and made-up ids and shows the messages from real calls", {
     parts <- studio_parts()
     withr::local_options(list(cli.width = 1000, cli.num_colors = 1))
@@ -3513,7 +3513,7 @@ describe("studio palette follow-up (#353)", {
   })
 })
 
-describe("studio review fixes (#353)", {
+describe("studio colour inputs, demonstration labels and guide notes", {
   it("gives a translucent colour role a text box, so it is never sent as a solid override", {
     parts <- studio_parts()
     for (id in c("knurl", "neer")) {
@@ -3648,7 +3648,7 @@ describe("studio review fixes (#353)", {
   })
 })
 
-describe("experimental labels in the studio (#353)", {
+describe("experimental labels in the studio", {
   it("shows the help pages' own Experimental sections beside the functions and controls they name", {
     parts <- studio_parts()
     env <- parts$env

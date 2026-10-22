@@ -61,6 +61,7 @@ local_host_page <- function(
   click = NULL,
   shiny_menu = FALSE
 ) {
+  skip_without_chrome()
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
   all_scripts <- vapply(mascot_dependency()$script, function(script) script$src, character(1))
@@ -77,7 +78,6 @@ local_host_page <- function(
     sub('"id": "tessa"', '"id": "blob"', tessa_format_v1, fixed = TRUE),
     fixed = TRUE
   )
-  blob_v1 <- sub('    "rim": "#d9b35c",\n', "", blob_v1, fixed = TRUE)
   blob_v1 <- gsub('"rim"', '"body"', blob_v1, fixed = TRUE)
   writeLines(
     c(
@@ -105,7 +105,7 @@ local_host_page <- function(
           'if (compiled?.source?.parts?.[0]?.id !== "ground_shadow" && colours?.body) {',
           'const overrides = { ...(options?.overrides ?? {}) };',
           'const coloursWithAliases = { ...colours, bodyHighlight: colours.body_highlight, blushStrong: colours.blush_strong, accessoryDetail: colours.accessory_detail, sparkleOutline: colours.sparkle_outline, eyeWhite: colours.eye_white };',
-          'themeDraws.push({character: compiled?.source?.id || "tessa", colours: coloursWithAliases, overrides: overrides});',
+          'themeDraws.push({character: compiled.source.id, colours: coloursWithAliases, overrides: overrides});',
           '} return origGeo(ctx, compiled, state, colours, options); } }; }',
           '</script>'
         )
@@ -181,8 +181,7 @@ host_motion_js <- function(code) {
 ",
     "mascot.geometry = { ...mascot.geometry, draw: (ctx, compiled, state, colours, options) => {
       const p = players[players.length - 1];
-      const cur = p?.current?.();
-      const chId = compiled?.source?.id || cur?.character || 'tessa';
+      const chId = compiled.source.id;
       if (compiled?.source?.parts?.[0]?.id !== 'ground_shadow') {
         const poseObj = p?._lastPose || {};
         const pose = {
@@ -209,7 +208,7 @@ host_motion_js <- function(code) {
               look: patch.pose['face.look_x'] !== undefined && patch.pose['face.look_x'] !== null ? patch.pose['face.look_x'] : undefined,
               lookY: patch.pose['face.look_y'] !== undefined && patch.pose['face.look_y'] !== null ? patch.pose['face.look_y'] : undefined
             };
-            calls.push({ character: p.current()?.character || 'tessa', frame: 0, pose, colours: {} });
+            calls.push({ character: p.current().character, frame: 0, pose, colours: {} });
           }
           return origUp.call(p, patch);
         };

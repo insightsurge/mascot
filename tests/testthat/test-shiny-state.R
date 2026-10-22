@@ -1,5 +1,5 @@
 describe("R-settled latest mascot state", {
-  it("U1.1 rejects mixed target failures atomically, naming the id", {
+  it("rejects mixed target failures atomically, naming the id", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     protocol_ready(f)
@@ -48,7 +48,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(f), before)
   })
 
-  it("U1.1 coalesces versioned development diagnostics without accepting rejected values", {
+  it("coalesces versioned development diagnostics without accepting rejected values", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()
     withr::defer(f$session$close())
@@ -75,7 +75,7 @@ describe("R-settled latest mascot state", {
     expect_match(latest$problem, "missing")
   })
 
-  it("U1.2 compacts original calls by field owners within conservative guard buckets", {
+  it("compacts original calls by field owners within conservative guard buckets", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     expect_length(mascot_state_fields, 10)
@@ -116,7 +116,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(g)$desired$status$text, "1000")
   })
 
-  it("U1.2 rejects guard 21 without changing the earlier buffer and replaces whole helpers", {
+  it("rejects guard 21 without changing the earlier buffer and replaces whole helpers", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     for (i in 1:20) {
@@ -165,7 +165,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(g)$desired$bubble$text, "New")
   })
 
-  it("U1.3 settles the prefix against the first valid explicit character and never buffers characters", {
+  it("settles the prefix against the first valid explicit character and never buffers characters", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     x <- protocol_character()
@@ -208,7 +208,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(f)$desired$character$id, "other_probe")
   })
 
-  it("U1.4 recomputes every ownership row and adapts unowned palettes", {
+  it("recomputes every ownership row and adapts unowned palettes", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()
     withr::defer(f$session$close())
@@ -282,7 +282,7 @@ describe("R-settled latest mascot state", {
     expect_gt(protocol_record(g)$revision, revision)
   })
 
-  it("U1.4 maps retained role overrides to the incoming wire vocabulary", {
+  it("maps retained role overrides to the incoming wire vocabulary", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     protocol_ready(f)
@@ -305,7 +305,7 @@ describe("R-settled latest mascot state", {
     expect_null(protocol_flush(f)$state$theme$light$bodyHighlight)
   })
 
-  it("U1.5-6 progresses without outcomes, ignores old lifecycle, and coalesces explicit reconciliation", {
+  it("progresses without outcomes, ignores old lifecycle, and coalesces explicit reconciliation", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     token <- protocol_ready(f, state = mascot_state_defaults(protocol_character()))
@@ -352,7 +352,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_record(f)$generation, 4)
   })
 
-  it("U1.6 rejects foreign tokens, unsupported snapshots and impossible counters without mutation", {
+  it("rejects foreign tokens, unsupported snapshots and impossible counters without mutation", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     token <- protocol_ready(f)
@@ -383,7 +383,7 @@ describe("R-settled latest mascot state", {
     expect_length(f$messages$values, count)
   })
 
-  it("U1.6 validates a first snapshot before allocating state and never learns a target from unmount", {
+  it("validates a first snapshot before allocating state and never learns a target from unmount", {
     token <- mascot("untouched")$attribs[["data-mount-token"]]
     session <- shiny::MockShinySession$new()
     withr::defer(session$close())
@@ -403,7 +403,7 @@ describe("R-settled latest mascot state", {
     expect_identical(protocol_flush(f)$state$status$text, "Before target")
   })
 
-  it("U1.7 keeps only the latest gesture and consumes an unavailable winner before sending", {
+  it("keeps only the latest gesture and consumes an unavailable winner before sending", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()
     withr::defer(f$session$close())
@@ -448,7 +448,7 @@ describe("R-settled latest mascot state", {
     expect_warning(expect_null(protocol_flush(g)$gesture), "cannot play")
   })
 
-  it("U1.7 discards an incompatible pending gesture before startup or after an explicit unmounted change", {
+  it("discards an incompatible pending gesture before startup or after an explicit unmounted change", {
     local_mocked_bindings(dev_mode = function() TRUE)
     x <- protocol_character()
     y <- protocol_character(FALSE, "other_probe")
@@ -469,7 +469,7 @@ describe("R-settled latest mascot state", {
     }
   })
 
-  it("U1.8 gives explicit identical bubbles new revisions but identical UI remounts keep theirs", {
+  it("gives explicit identical bubbles new revisions but identical UI remounts keep theirs", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     base <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
@@ -616,7 +616,7 @@ describe("palette wire assertions", {
   })
 })
 
-describe("B2 mount diagnostics and private inputs", {
+describe("mount diagnostics and private inputs", {
   it("adds the development overlay when a buffered update fails at mount", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()
@@ -803,7 +803,7 @@ describe("a page that reconnects into a new server session", {
   })
 })
 
-describe("flush requests for updates made outside a reactive event (#427)", {
+describe("flush requests for updates made outside a reactive event", {
   flush_fixture <- function(env = parent.frame()) {
     f <- protocol_fixture()
     f$requests <- new.env(parent = emptyenv())

@@ -1,6 +1,16 @@
-format_recipe <- function(id = "anchor_probe") {
+# The file of a format recipe. All ids are test fixtures. "study_bot" maps to study_bot_frozen.json, a frozen copy of the
+# shipped example, so tests that check exact content do not change when the shipped example changes. Tests about the
+# shipped file itself read it with system.file().
+format_recipe_path <- function(id = "anchor_probe") {
   checkmate::assert_string(id)
-  jsonlite::fromJSON(test_path("fixtures", "format", paste0(id, ".json")), simplifyVector = FALSE)
+  if (identical(id, "study_bot")) {
+    return(test_path("fixtures", "format", "study_bot_frozen.json"))
+  }
+  test_path("fixtures", "format", paste0(id, ".json"))
+}
+
+format_recipe <- function(id = "anchor_probe") {
+  jsonlite::fromJSON(format_recipe_path(id), simplifyVector = FALSE)
 }
 
 format_problem <- function(code, path, expression) {

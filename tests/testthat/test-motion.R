@@ -73,7 +73,7 @@ describe("mascot_motion_settings()", {
     expect_snapshot(error = TRUE, as_motion_arg("sometimes", environment()))
   })
 
-  it("rejects malformed stored settings without accepting an old helper", {
+  it("rejects malformed settings objects and an object of another motion class", {
     for (bad in list(
       list(),
       list(idle = TRUE),
@@ -117,7 +117,7 @@ describe("mascot_motion_settings()", {
 })
 
 
-describe("motion shortcut equivalence (#349)", {
+describe("motion shortcut equivalence", {
   it("uses reduced poses and drag transitions when all movement follows others off", {
     expect_identical(
       as_motion_arg(mascot_motion_settings(others = FALSE), environment()),
@@ -126,7 +126,7 @@ describe("motion shortcut equivalence (#349)", {
   })
 })
 
-describe("motion panel choices (#350)", {
+describe("motion panel choices", {
   it("reports unknown panels with the choice class and valid panel names", {
     expect_error(
       mascot_motion_settings(messages = c("menu", "dialog")),

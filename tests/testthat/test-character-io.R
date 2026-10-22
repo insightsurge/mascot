@@ -66,7 +66,7 @@ describe("character_save() and character_read()", {
     expect_identical(list.files(dirname(path)), "study_bot.json")
   })
 
-  it("reports a denied write with the exact path and removes its temporary file", {
+  it("reports a read-only folder with the exact path and leaves nothing in it", {
     skip_on_os("windows")
     skip_if(identical(Sys.info()[["user"]], "root"), "root can write to read-only folders")
     checked <- character_check(author_study_bot())
@@ -75,7 +75,9 @@ describe("character_save() and character_read()", {
     withr::defer(Sys.chmod(folder, "755"))
     path <- file.path(folder, "study_bot.json")
     error <- tryCatch(character_save(checked, path), error = identity)
-    expect_true(inherits(error, "mascot_error_file") || inherits(error, "simpleError"))
+    expect_s3_class(error, "mascot_error_file")
+    expect_identical(error$path, path)
+    expect_match(conditionMessage(error), path, fixed = TRUE)
     expect_false(file.exists(path))
     expect_length(list.files(folder, all.files = TRUE, no.. = TRUE), 0)
   })

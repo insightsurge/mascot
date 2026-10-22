@@ -269,7 +269,7 @@ describe("public argument error classes", {
   })
 })
 
-describe("B2 drag choices", {
+describe("drag choices", {
   it("uses the choice class for unknown strings and logical migration errors", {
     expect_error(mascot_placement(drag = "wrong"), class = "mascot_error_choice")
     expect_error(mascot_placement(drag = TRUE), class = "mascot_error_choice")

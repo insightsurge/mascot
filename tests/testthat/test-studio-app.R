@@ -29,7 +29,7 @@ wait_studio_mood <- function(app, mood) {
   wait_studio_js(app, sprintf("live.dataset.shownMood === '%s'", mood), timeout = 90000)
 }
 
-describe("the redesigned studio", {
+describe("the studio's live host", {
   it("starts an isolated live host and updates mood through the existing control", {
     local_shiny_browser()
     app <- studio_driver()
@@ -44,7 +44,7 @@ describe("the redesigned studio", {
   })
 })
 
-studio_redesign_parts <- function() {
+studio_app_parts <- function() {
   skip_without_studio_packages("studio")
   app <- shiny::shinyAppDir(system.file("examples", "studio", package = "mascot"))
   list(
@@ -59,7 +59,7 @@ studio_redesign_parts <- function() {
 
 describe("studio signature routes", {
   it("makes every mascot formal a call chip with an existing function route", {
-    parts <- studio_redesign_parts()
+    parts <- studio_app_parts()
     chip_builder <- get("call_chips", parts$env)
     route <- get("studio_route", parts$env)
     initial <- get("start", parts$env)
@@ -81,14 +81,14 @@ describe("studio signature routes", {
     expect_error(chip_builder(initial, "unknown"), "Assertion on 'style' failed")
   })
   it("searches every export and formal and keeps each input id unique", {
-    page <- studio_redesign_parts()$page
+    page <- studio_app_parts()$page
     for (fn in getNamespaceExports("mascot")) {
       expect_match(page, paste0('data-search-function="', fn, '"'), fixed = TRUE)
       for (arg in names(formals(getExportedValue("mascot", fn)))) {
         expect_match(page, paste0('id="search_', fn, '_', gsub("[.]", "dot", arg), '"'), fixed = TRUE)
       }
     }
-    search <- as.character(get("studio_search", studio_redesign_parts()$env)())
+    search <- as.character(get("studio_search", studio_app_parts()$env)())
     expect_length(
       regmatches(search, gregexpr('role="option"', search, fixed = TRUE))[[1]],
       length(getNamespaceExports("mascot"))
@@ -404,7 +404,7 @@ describe("studio overlays and live controls", {
   })
 })
 
-# The old E1 scenario now reaches functions through the overlay and reads the real iframe host.
+# Opens a function through the functions overlay, as a visitor does, and waits until only its inspector shows.
 studio_select_function <- function(app, fn) {
   checkmate::assert_r6(app, "AppDriver")
   checkmate::assert_string(fn)
@@ -430,7 +430,7 @@ studio_colour <- function(app, id, value) {
   ))
 }
 
-describe("E1 studio behaviour in the redesigned UI", {
+describe("studio behaviour for each function", {
   it("selects every function and preserves mounted controls, help, guides and code views", {
     local_shiny_browser()
     app <- studio_driver(width = 1440, height = 900)
@@ -724,7 +724,7 @@ describe("E1 studio behaviour in the redesigned UI", {
 
 describe("studio demonstration server routes", {
   it("starts the live studio and example source handlers together for either URL view", {
-    parts <- studio_redesign_parts()
+    parts <- studio_app_parts()
     initial <- list(
       character = "tessa",
       mood = "idle",
@@ -790,7 +790,7 @@ describe("studio demonstration server routes", {
     }
   })
   it("filters both character tables and shows update activity inside its inspector", {
-    parts <- studio_redesign_parts()
+    parts <- studio_app_parts()
     expect_match(parts$page, 'id="wiring_log"', fixed = TRUE)
     expect_match(parts$page, 'id="send_many"', fixed = TRUE)
     expect_match(parts$page, 'id="mistake_run"', fixed = TRUE)
@@ -885,7 +885,7 @@ describe("studio demonstration server routes", {
   })
 })
 
-describe("E1 actions, menus and generated preview in the redesigned UI", {
+describe("studio actions, menus and generated preview", {
   it("honours labels, tooltips, disabled actions, menu direction and real click and choice events", {
     local_shiny_browser()
     app <- studio_driver()
@@ -1015,7 +1015,7 @@ describe("E1 actions, menus and generated preview in the redesigned UI", {
   })
 })
 
-describe("E1 function descriptions in the new flyout", {
+describe("studio function descriptions in the flyout", {
   it("only shows truncated descriptions on hover and closes the previous tooltip", {
     local_shiny_browser()
     app <- studio_driver()
@@ -1160,9 +1160,9 @@ describe("small current-configuration editors", {
   })
 })
 
-describe("studio review follow-ups", {
+describe("studio code arguments, chips, anchors and menus", {
   it("separates comma-delimited arguments from one-off gesture code", {
-    parts <- studio_redesign_parts()
+    parts <- studio_app_parts()
     chips <- get("call_chips", parts$env)(get("start", parts$env), "short")
     html <- as.character(chips)
     args <- setdiff(names(formals(mascot)), "...")
@@ -1390,7 +1390,7 @@ describe("studio review follow-ups", {
 
 describe("studio sentence controls and overview", {
   it("renders inline sentence words with help-page tooltips and per-argument Rd overviews", {
-    parts <- studio_redesign_parts()
+    parts <- studio_app_parts()
     for (id in c("character", "palette", "mood", "gesture")) {
       expect_match(parts$page, paste0('<select[^>]*aria-label="', tools::toTitleCase(id), '"[^>]*id="', id, '"'))
     }
@@ -1789,7 +1789,7 @@ describe("studio phone layout", {
 
 describe("studio inspector rail", {
   it("renders three labelled toolbar buttons and keeps the mobile opener out of the top strip", {
-    parts <- studio_redesign_parts()
+    parts <- studio_app_parts()
     rail <- as.character(get("studio_right_rail", parts$env)())
     expect_match(rail, 'role="toolbar" aria-label="Inspector views"', fixed = TRUE)
     expect_false(grepl('role="tab', rail, fixed = TRUE))
@@ -1922,9 +1922,9 @@ describe("studio inspector rail", {
   })
 })
 
-describe("the next studio review round", {
+describe("studio host choices, reading tabs, dock and examples browser", {
   it("offers two host choices, discoverable functions, editable chips and structured Help", {
-    parts <- studio_redesign_parts()
+    parts <- studio_app_parts()
     page <- parts$page
     expect_match(
       page,
@@ -2179,7 +2179,7 @@ describe("the next studio review round", {
 })
 
 
-describe("studio palette follow-up (#353)", {
+describe("studio palette help and warnings", {
   it("opens the helper's own help from a chip and the mascot() inspector from the call name", {
     local_shiny_browser()
     app <- studio_driver(width = 1440, height = 900)

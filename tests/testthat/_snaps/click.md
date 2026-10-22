@@ -14,7 +14,7 @@
     Output
       mascot_action("Open help")
 
-# the click argument / rejects a named vector, the old menu shortcut, with a hint to wrap it
+# the click argument / rejects a named vector of menu choices with a hint to wrap it in mascot_popup_menu()
 
     Code
       mascot(id = "helper", click = c(help = "Help", about = "About"))

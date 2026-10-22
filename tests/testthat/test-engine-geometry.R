@@ -87,7 +87,7 @@ describe("character-format geometry and painting", {
     expect_equal(result$counts$path_numbers, 8)
     expect_equal(result$counts$gradient_uses, 2)
     expect_equal(result$alpha, .5)
-    expect_equal(result$pixel[[4]], 16, tolerance = 1)
+    expect_near(result$pixel[[4]], 16, 1)
   })
 
   it("scales reusable-shape outlines with the geometry", {
@@ -121,7 +121,7 @@ describe("character-format geometry and painting", {
     result <- js(
       "(() => {const c=document.createElement('canvas');c.width=300;c.height=300;const ctx=c.getContext('2d');const ch={format_version:1,ground:{centre_height:0},paints:{spot:{type:'radial',centre:[0,0],r1:20,stops:[[0,'red',.5],[1,'red',.5]]}},parts:[{id:'disc',at:[0,-30],items:[{shape:'circle',r:15,fill:{paint:'spot'}}]}]};const p=mascot.parts.compile(ch);const state=mascot.parts.frame(p);mascot.geometry.draw(ctx,p,state,{red:'rgba(255,0,0,0.5)'});let error;try {mascot.geometry.draw(ctx,p,state,{});}catch(e){error=e.code;}return {alpha:ctx.getImageData(150,240,1,1).data[3],error,transform:ctx.getTransform().e};})()"
     )
-    expect_equal(result$alpha, 64, tolerance = 1)
+    expect_near(result$alpha, 64, 1)
     expect_identical(result$error, "invalid_colour")
     expect_equal(result$transform, 0)
   })
@@ -244,7 +244,7 @@ describe("character-format geometry and painting", {
       })()"
     )
     expect_gt(result$full[[4]], 0)
-    expect_equal(result$half[[4]], round(result$full[[4]] * 0.5), tolerance = 1)
+    expect_near(result$half[[4]], round(result$full[[4]] * 0.5), 1)
   })
 
   it("combines accounting across draw calls with blur maximum and active-parts set union", {
@@ -390,7 +390,7 @@ describe("character-format geometry and painting", {
   })
 })
 
-describe("E5b per-band work bound and policy caps", {
+describe("per-band work bound and policy caps", {
   it("keeps the browser's band caps equal to the shared policy for every metric it counts", {
     skip_without_chrome()
     js <- local_character_engine()

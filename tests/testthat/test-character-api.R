@@ -421,7 +421,7 @@ describe("one character resolver at all authoring consumers", {
   })
 })
 
-describe("B2 checked character display", {
+describe("printing a checked character", {
   it("formats compactly and wraps print assertion failures", {
     x <- mascot_check_character(format_recipe("study_bot"))
     text <- format(x)

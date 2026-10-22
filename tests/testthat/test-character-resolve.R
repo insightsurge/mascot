@@ -148,7 +148,7 @@ describe("character_format_resolve()", {
   })
 })
 
-describe("B2 reserved palette ids", {
+describe("reserved palette ids", {
   it("rejects every style alias in source and resolved characters", {
     for (id in c("minimal", "pastel", "vivid", "corporate", "earthy", "night")) {
       for (fixture in c("study_bot", "study_bot-resolved")) {

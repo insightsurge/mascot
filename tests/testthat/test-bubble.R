@@ -45,11 +45,11 @@ describe("bubble internals", {
   })
 })
 
-describe("bubble review regressions", {
+describe("mascot_bubble() tags and a NULL duration", {
   it("rejects NULL duration with a hint to use Inf", {
     expect_error(mascot_bubble("Ready", duration = NULL), "duration = Inf", class = "mascot_error")
   })
-  it("G6 renders tags and tag lists as HTML and rejects dependencies clearly", {
+  it("renders tags and tag lists as HTML and rejects dependencies clearly", {
     bubble <- mascot_bubble(shiny::tags$strong("Saved"))
     expect_identical(bubble$text, "<strong>Saved</strong>")
     expect_true(bubble$html)
@@ -98,7 +98,7 @@ describe("public argument error classes", {
 })
 
 
-describe("mascot_bubble() removal safeguards (#349)", {
+describe("mascot_bubble() without text", {
   it("requires text whenever duration or closable is explicitly supplied", {
     for (options in list(list(duration = 5), list(duration = 10), list(closable = TRUE), list(closable = FALSE))) {
       expect_error(do.call(mascot_bubble, options), "text.*NULL", class = "mascot_error")

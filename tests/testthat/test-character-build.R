@@ -1,6 +1,6 @@
 describe("the authoring constructors", {
   it("builds the complete small character and matches the reference source fixture", {
-    # Given the proposal's example written with the constructors
+    # Given study_bot written with the constructors
     draft <- author_study_bot()
     # When it is checked
     checked <- character_check(draft)
@@ -435,7 +435,7 @@ describe("character_author_build()", {
   })
 })
 
-describe("review fixes: family component lists, positive bounds, keyed ids and dots order", {
+describe("family component lists, positive bounds, keyed ids and dots order", {
   track <- character_author_track("root.rotate", list(list(0, 0), list(1, 0)))
   tilt <- character_author_gesture("tilt", "A tilt.", 18, list(track))
 

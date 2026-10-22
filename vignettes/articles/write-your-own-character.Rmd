@@ -63,9 +63,9 @@ against the format rules:
   `screen`, `feature`, and `accent`).
 * `ground`: Where the character stands: its centre height (`centre_height: 60`).
 * `outline`: The width of the outline and the colour role it uses.
-* `parts`: The pieces the character is built from (in this file `head` and
-  `badge_disc`). A part can sit inside another part, and each part holds
-  drawn items, such as the `shell` and `visor` shapes inside `head`.
+* `parts`: The pieces the character is built from (in this file `head`,
+  `antenna` and `badge_disc`). A part can sit inside another part, and each part
+  holds drawn items, such as the `shell` and `visor` shapes inside `head`.
 * `anchors`: Named points on parts for attaching accessories or badges.
 * `face`: Which part carries the face (`part`), the face `kit` (`"screen"`),
   where it sits (`at`), a `clip`, and the `eyes` and `mouth` settings.
@@ -73,7 +73,8 @@ against the format rules:
   support: `idle`, `thinking`, `happy`, `worried`, and `celebrating`.
 * `gestures`: Named motion tracks. Every character must define moving `wave` and
   `nod` gestures: `wave` must move at least one non-root part (such as a hand or
-  antenna), while `nod` may move any channel, including `root`.
+  antenna), while `nod` may move any channel, including `root`. In this file
+  `wave` swings the `antenna` and `nod` tilts the `head`.
 * `palettes`: Alternative colour collections (such as `"sea_glass"`).
 * `contrast`: Accessibility rules that verify contrast between foreground and
   background colour roles.

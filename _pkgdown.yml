@@ -32,6 +32,13 @@ template:
     border-radius-lg: "0.8rem"
     link-underline-offset: "0.2em"
 
+# pkgdown links the code of conduct and the contributing guide in the home page sidebar by itself, and builds
+# SECURITY.html from .github/SECURITY.md, but has no sidebar entry for it.
+home:
+  links:
+    - text: Security policy
+      href: SECURITY.html
+
 navbar:
   components:
     intro:

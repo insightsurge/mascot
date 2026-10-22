@@ -1,6 +1,6 @@
 # mascot (development version)
 
-* `mascot()` builds its tag in a few milliseconds instead of about 80 ms for a built-in character, and about 700 ms for your own checked character, on every call after the first. It works out a character's identity once per R process, or once per checked object, instead of on every call; the tags and mount tokens stay the same (#494).
+* `mascot()` builds its tag in under 15 ms instead of about 80 ms for a built-in character, and about 800 ms for your own checked character, on every call after the first. It works out a character's identity once per R process, or once per checked object, instead of on every call; the tags and mount tokens stay the same (#494).
 
 * `mascot()`, `update_mascot()`, `mascot_preview()` and `mascot_colour_roles()`: the message for an unknown palette that another character has says each palette belongs to its own character (#462).
 

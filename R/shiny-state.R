@@ -166,7 +166,6 @@ mascot_state_character <- function(wire) {
     data = data,
     identity = identity,
     token = paste0("c", mascot_template_key(identity)),
-    source = parsed,
     source_identity = character_identity_piece(parsed),
     roles = names(parsed$colours)
   )

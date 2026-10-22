@@ -140,6 +140,41 @@ describe("#494 verified objects are not checked again", {
     expect_error(character_data_seen(checked, list()), "Assertion")
   })
 
+  it("keeps 16 objects and 16 texts, and checks the oldest object again once it has left", {
+    saved <- as.list(character_data_verified)
+    withr::defer(list2env(saved, envir = character_data_verified))
+    character_data_verified$seen <- character_data_verified$texts <- list()
+    checked <- character_format_check(format_recipe("anchor_probe"))
+    character_data_verify(checked)
+    original_write <- character_json_write
+    original_parse <- character_format_parse
+    calls <- new.env(parent = emptyenv())
+    calls$write <- calls$parse <- 0L
+    local_mocked_bindings(
+      character_json_write = function(x) {
+        calls$write <- calls$write + 1L
+        if (identical(x, checked)) original_write(x) else "{}"
+      },
+      character_format_parse = function(...) {
+        calls$parse <- calls$parse + 1L
+        original_parse(...)
+      }
+    )
+    character_data_json(checked)
+    for (i in 1:16) {
+      other <- structure(list(id = paste0("other_", i)), class = "mascot_character_data")
+      character_data_seen(other, other)
+      character_data_json(other)
+    }
+    expect_length(character_data_verified$seen, 16L)
+    expect_length(character_data_verified$texts, 16L)
+    expect_identical(calls$write, 17L)
+    character_data_verify(checked)
+    expect_gt(calls$parse, 0L)
+    character_data_json(checked)
+    expect_identical(calls$write, 18L)
+  })
+
   it("writes a verified object's JSON text once and gives the same text as writing it", {
     saved <- as.list(character_data_verified)
     withr::defer(list2env(saved, envir = character_data_verified))

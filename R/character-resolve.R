@@ -27,35 +27,35 @@ character_format_merge <- function(base, override, path = "$") {
 }
 
 #' Canonical content identity without a hash or a registry side effect
-#'
-#' A value from `character_identity_piece()` stands for the identity it
-#' holds and is written as it is, so a large part (a character's source) is
-#' made canonical once instead of on every call. The result is the same string
-#' as for the original value. Any other `json` class is dropped first, so only
-#' a piece made here is written as it is.
 #' @noRd
 character_format_identity <- function(x) {
   checkmate::assert_list(x)
-  canonical <- function(value) {
-    checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
-    if (!is.list(value)) {
-      if (inherits(value, "json") && !inherits(value, "mascot_identity_piece")) {
-        value <- unclass(value)
-      }
-      return(value)
-    }
-    if (!is.null(names(value))) {
-      value <- value[order(names(value), method = "radix")]
-    }
-    for (index in seq_along(value)) {
-      value[index] <- list(canonical(value[[index]]))
-    }
-    value
-  }
-  as.character(jsonlite::toJSON(canonical(x), auto_unbox = TRUE, null = "null", digits = NA, json_verbatim = TRUE))
+  as.character(jsonlite::toJSON(character_format_canonical(x), auto_unbox = TRUE, null = "null", digits = NA))
 }
 
-#' A part's identity, ready to stand in for that part in a larger identity
+#' Canonical form of a value: names sorted at every level, values otherwise kept
+#'
+#' A `json` class is dropped from every value, so text that claims to be JSON
+#' is always written as text.
+#' @noRd
+character_format_canonical <- function(value) {
+  checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
+  if (!is.list(value)) {
+    return(if (inherits(value, "json")) unclass(value) else value)
+  }
+  if (!is.null(names(value))) {
+    value <- value[order(names(value), method = "radix")]
+  }
+  for (index in seq_along(value)) {
+    value[index] <- list(character_format_canonical(value[[index]]))
+  }
+  value
+}
+
+#' A character source's identity, made once and put into a mount specification's identity
+#'
+#' Only `mascot_spec_identity()` writes this piece as it is, and only at the
+#' character source; anywhere else it is text like any other.
 #' @noRd
 character_identity_piece <- function(x) {
   checkmate::assert_list(x)

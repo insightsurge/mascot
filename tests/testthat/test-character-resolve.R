@@ -147,14 +147,16 @@ describe("character_format_resolve()", {
     ))
   })
 
-  it("#494 lets a ready-made identity piece stand in for its part, and only such a piece", {
+  it("#494 writes text that claims to be JSON, or an identity piece, as text in a content identity", {
     part <- list(b = 2, a = list(1, "x"))
-    whole <- '{"a":1,"s":{"a":[1,"x"],"b":2}}'
-    expect_identical(character_format_identity(list(a = 1, s = part)), whole)
-    expect_identical(character_format_identity(list(a = 1, s = character_identity_piece(part))), whole)
-    # Text that only claims to be JSON stays text, as it always was.
+    expect_identical(character_format_identity(list(a = 1, s = part)), '{"a":1,"s":{"a":[1,"x"],"b":2}}')
+    # Only mascot_spec_identity() writes a piece as it is, so a piece elsewhere is not the content it names.
+    piece <- character_identity_piece(part)
+    expect_identical(character_format_identity(list(a = 1, s = piece)), '{"a":1,"s":"{\\"a\\":[1,\\"x\\"],\\"b\\":2}"}')
     claimed <- structure('{"x":1}', class = "json")
     expect_identical(character_format_identity(list(a = claimed)), '{"a":"{\\"x\\":1}"}')
+    expect_identical(character_format_canonical(list(b = claimed, a = 1)), list(a = 1, b = '{"x":1}'))
+    expect_error(character_format_canonical(mean), "Assertion")
     expect_error(character_identity_piece("text"), "Assertion")
   })
 })

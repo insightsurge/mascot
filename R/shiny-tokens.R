@@ -84,11 +84,7 @@ mascot_mount_token <- function(id, state, session = shiny::getDefaultReactiveDom
   checkmate::assert_list(state, names = "unique")
   checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"), null.ok = TRUE)
   spec <- list(id = id, state = state)
-  canonical <- spec
-  # The character's source identity is made once per content (see mascot_state_character()); the result is the
-  # same string as for the full source.
-  canonical$state$character$json <- mascot_state_character(state$character)$source_identity
-  identity <- character_format_identity(canonical)
+  identity <- mascot_spec_identity(spec, mascot_state_character(state$character)$source_identity)
   store <- mascot_template_store()
   if (is.null(session)) {
     for (token in names(store$items)) {
@@ -138,6 +134,23 @@ mascot_mount_token <- function(id, state, session = shiny::getDefaultReactiveDom
   }
   owner$mounts[[token]] <- list(spec = spec, identity = identity)
   token
+}
+
+#' Identity of a mount specification, with its character source as one ready-made piece
+#'
+#' The same string as `character_format_identity()` of the specification with
+#' the parsed character source in place of its JSON text: the source's
+#' identity is made once per content (see `mascot_state_character()`) and
+#' written as it is, here only.
+#' @noRd
+mascot_spec_identity <- function(spec, source) {
+  checkmate::assert_list(spec, names = "unique")
+  checkmate::assert_names(names(spec), permutation.of = c("id", "state"))
+  checkmate::assert_list(spec$state$character, names = "unique")
+  checkmate::assert_class(source, "mascot_identity_piece")
+  canonical <- character_format_canonical(spec)
+  canonical$state$character$json <- source
+  as.character(jsonlite::toJSON(canonical, auto_unbox = TRUE, null = "null", digits = NA, json_verbatim = TRUE))
 }
 
 #' Look up only a specification issued for this binding and session
@@ -250,9 +263,7 @@ mascot_mount_recover <- function(session, id, token, baseline) {
   mascot_baseline_check(baseline)
   prepared <- mascot_state_prepare(list(desired = list(), context = NULL), baseline)
   spec <- list(id = id, state = prepared$desired)
-  canonical <- spec
-  canonical$state$character$json <- prepared$context$source_identity
-  identity <- character_format_identity(canonical)
+  identity <- mascot_spec_identity(spec, prepared$context$source_identity)
   # Checksums identify content, not authority. Collision suffixes are allocated
   # locally; the complete checked identity remains the equality criterion.
   expected <- paste0("t", mascot_template_key(identity, remember = FALSE))

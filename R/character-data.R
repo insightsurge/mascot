@@ -2,12 +2,13 @@ character_data_store <- new.env(parent = emptyenv())
 character_data_store$items <- list()
 character_data_store$order <- character()
 
-# Verified content cache: canonical resolved content only, never visitor ids or provenance.
+# Verification caches, each bounded to 16 entries and holding character content only, never visitor ids.
 character_data_verified <- new.env(parent = emptyenv())
+# Verified results, keyed by their complete content identity.
 character_data_verified$items <- list()
-# Objects already verified, each with its result; an exact copy of one is not checked again.
+# The objects callers passed in, as given, each with its verified result; an exact copy is not checked again.
 character_data_verified$seen <- list()
-# JSON text written for verified objects, so a custom character's text is written once per object.
+# Verified objects with the JSON text written for them, so that text is written once per object.
 character_data_verified$texts <- list()
 
 #' Character ids a custom character cannot use: the built-in ids
@@ -21,7 +22,10 @@ character_data_reserved <- function() {
 #' Checks structure and canonical content at every boundary. An object
 #' identical to one verified before (every value, attribute and number bit for
 #' bit) returns that result without parsing it again; any edit makes a
-#' different object, which is checked. A bounded cache reuses semantic checks
+#' different object, which is checked. `identical()` treats strings with the
+#' same characters in different encodings (UTF-8 and latin1) as equal; that is
+#' safe here because the full check writes both as the same UTF-8 JSON, so they
+#' have the same content identity and would get the same result. A bounded cache reuses semantic checks
 #' and derived manifests by complete content identity; a cache miss
 #' reconstructs them. Caller-supplied classes, resolved flags and derived
 #' manifest fields never bypass verification.

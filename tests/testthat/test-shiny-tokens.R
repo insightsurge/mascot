@@ -303,6 +303,24 @@ describe("static template recovery", {
     )
   })
 
+  it("#494 writes the character source piece as it is only in a mount specification's identity", {
+    base <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
+    spec <- list(id = "probe", state = base)
+    full <- spec
+    full$state$character$json <- list(b = 2, a = list(1, "x"))
+    piece <- character_identity_piece(full$state$character$json)
+    expect_identical(mascot_spec_identity(spec, piece), character_format_identity(full))
+    expect_match(mascot_spec_identity(spec, piece), '"json":{"a":[1,"x"],"b":2}', fixed = TRUE)
+    # The same piece as status text is text: it never gives the same identity as other content.
+    forged <- spec
+    forged$state$status <- list(mode = "custom", text = piece)
+    expect_false(identical(mascot_spec_identity(forged, piece), mascot_spec_identity(spec, piece)))
+    expect_match(mascot_spec_identity(forged, piece), '"text":"{\\"a\\"', fixed = TRUE)
+    expect_error(mascot_spec_identity(spec, "text"), "Assertion")
+    expect_error(mascot_spec_identity(list(id = "probe"), piece), "Assertion")
+    expect_error(mascot_spec_identity(list(id = "probe", state = list()), piece), "Assertion")
+  })
+
   it("#494 keeps built-in character contexts for the whole process, apart from the custom cache", {
     store <- mascot_template_store()
     saved <- as.list(store)
@@ -329,7 +347,8 @@ describe("static template recovery", {
     })
     expect_identical(mascot_state_character(wire), first)
     expect_identical(calls$n, 0L)
-    expect_identical(as.character(first$source_identity), character_format_identity(first$source))
+    shipped <- jsonlite::fromJSON(character_json("tessa"), simplifyVector = FALSE)
+    expect_identical(as.character(first$source_identity), character_format_identity(shipped))
     wire$name <- "Forged"
     expect_error(mascot_state_character(wire), "disagree")
   })

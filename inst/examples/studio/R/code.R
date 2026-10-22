@@ -350,7 +350,7 @@ whole_app_code <- function(ui, click_handler, packages, css_values = NULL) {
 }
 
 
-# The public file-first route, kept separate from the future character editor.
+# The call that reads the bundled Study Bot character file.
 code_read_character <- function() {
   quote(mascot_read_character(system.file("examples", "characters", "study_bot.json", package = "mascot")))
 }

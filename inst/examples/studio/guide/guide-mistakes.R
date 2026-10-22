@@ -6,7 +6,7 @@
 guide_mistake_base <- list(
   `Borrow another character's palette` = list(
     code = NULL,
-    why = "mascot() errors and lists this character's palettes. The hint names another character that has this id; palettes cannot be borrowed between characters yet."
+    why = "mascot() errors and lists this character's palettes. The hint names another character that has this id; each palette belongs to its own character."
   ),
   `A made-up palette id` = list(
     code = NULL,

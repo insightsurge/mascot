@@ -457,7 +457,7 @@ theme_check_tab <- function() {
       " The page mascot_preview() builds for this theme: every mood in light and dark, at your size and smaller.",
       " It checks only colours you supplied; palette colours never warn."
     ),
-    # inputs.js shows "Building…" on the button until the page is shown.
+    # inputs.js shows "Building..." on the button until the page is shown.
     shiny::actionButton(
       "check_preview",
       "Show every mood",

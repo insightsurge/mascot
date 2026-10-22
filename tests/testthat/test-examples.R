@@ -146,22 +146,22 @@ describe("mascot_examples()", {
     guide <- new.env()
     sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "guide.R"), envir = guide)
     exports <- getNamespaceExports("mascot")
-    expect_setequal(names(guide$playground_guide), exports)
+    expect_setequal(names(guide$studio_guide), exports)
     for (fn in exports) {
-      entry <- guide$playground_guide[[fn]]
+      entry <- guide$studio_guide[[fn]]
       # The category, the vignette section and, per argument, where it can be tried: no description, argument
       # text or return value (those are read from the help page).
       expect_setequal(names(entry), c("category", "vignette", "args"))
       expect_setequal(as.character(names(entry$args)), as.character(names(formals(getExportedValue("mascot", fn)))))
-      expect_true(entry$category %in% names(guide$playground_categories), info = fn)
+      expect_true(entry$category %in% names(guide$studio_categories), info = fn)
       expect_true(nzchar(entry$vignette), info = fn)
       for (arg in names(entry$args)) {
         expect_true(all(names(entry$args[[arg]]) %in% "try"), info = paste(fn, arg))
-        expect_true(is.null(entry$args[[arg]]$try) || entry$args[[arg]]$try %in% names(guide$playground_categories))
+        expect_true(is.null(entry$args[[arg]]$try) || entry$args[[arg]]$try %in% names(guide$studio_categories))
       }
     }
     # Everything left is a short label, never a sentence of explanation.
-    prose <- Filter(function(text) nchar(text) > 40, unlist(lapply(guide$playground_guide, unlist)))
+    prose <- Filter(function(text) nchar(text) > 40, unlist(lapply(guide$studio_guide, unlist)))
     expect_length(prose, 0)
   })
   it("reads every description, argument and return value from the package's help pages", {
@@ -394,7 +394,7 @@ describe("the studio's controls", {
         } else {
           "none: required"
         }
-        expect_null(ui$playground_guide[[fn]]$args[[arg]]$default, info = paste(fn, arg))
+        expect_null(ui$studio_guide[[fn]]$args[[arg]]$default, info = paste(fn, arg))
         expect_identical(ui$argument_default(fn, arg), expected, info = paste(fn, arg))
         # Inspect the text of the actual badge, popover paragraph and guide code tag.
         field <- ui$arg_field(fn, arg, htmltools::tags$span("Control"))
@@ -511,7 +511,7 @@ describe("the studio's controls", {
         next
       }
       for (arg in names(formals(getExportedValue("mascot", fn)))) {
-        control <- data$playground_controls[[fn]][[arg]]
+        control <- data$studio_controls[[fn]][[arg]]
         expect_false(is.null(control), info = paste(fn, arg))
         if (is.list(control)) {
           expect_true(nzchar(control$fixed), info = paste(fn, arg))
@@ -902,7 +902,7 @@ describe("studio state and built previews", {
       unchanged <- shiny::reactiveValuesToList(state)
       custom_messages <- list()
       guide <- get("selected_guide", envir = env)
-      for (fn in names(get("playground_guide", envir = env))) {
+      for (fn in names(get("studio_guide", envir = env))) {
         expect_match(as.character(guide(fn)), "Warnings, errors and common mistakes", fixed = TRUE)
         session$setInputs(select_function = fn)
         html <- output$guide$html
@@ -967,14 +967,6 @@ describe("studio state and built previews", {
         }
       }
       expect_false(grepl("<(button|input|select|textarea)\\b|data-event=", output$placement_map$html, perl = TRUE))
-      guide_page <- get("guide_content", envir = env)
-      for (category in c("preview", "examples")) {
-        expect_false(grepl(
-          "<(button|input|select|textarea)\\b|data-event=",
-          as.character(guide_page(category)),
-          perl = TRUE
-        ))
-      }
       expect_identical(shiny::reactiveValuesToList(state), unchanged)
       expect_length(Filter(function(x) startsWith(x$type, "mascot:"), custom_messages), 0)
       modal_messages <- list()
@@ -1162,16 +1154,6 @@ describe("studio round 8 help and copied apps", {
       }
     }
   })
-  it("shows the single-character hint only when one character file is shipped", {
-    env <- new.env()
-    sys.source(file.path(dirname(mascot_example("studio", run = FALSE)), "R", "data.R"), env)
-    directory <- withr::local_tempdir()
-    file.create(file.path(directory, "tessa.json"))
-    expect_identical(env$studio_character_hint(directory), "Tessa is the only built-in character so far.")
-    file.create(file.path(directory, c("one.json", "two.json")))
-    expect_null(env$studio_character_hint(directory))
-    expect_null(env$studio_character_hint())
-  })
   it("removes unused initialisation and presentation helpers", {
     dir <- dirname(mascot_example("studio", run = FALSE))
     app <- parse(file.path(dir, "app.R"))
@@ -1210,7 +1192,6 @@ describe("studio round 8 help and copied apps", {
     }
     expect_match(page, "Inspector", fixed = TRUE)
     expect_match(page, "Click or tap the mascot to open its menu", fixed = TRUE)
-    expect_false(grepl("is the only built-in character so far", get("html_text", env)(page), fixed = TRUE))
     expect_match(as.character(get("guide_help", env)("mascot")), 'vignette("mascot", package = "mascot")', fixed = TRUE)
     expect_match(
       as.character(get("function_visual", env)("mascot_mood")),
@@ -1789,12 +1770,12 @@ describe("studio guide pages", {
     category <- vapply(
       pages,
       function(page) {
-        entry <- groups$playground_guide[[page]]
+        entry <- groups$studio_guide[[page]]
         if (is.null(entry)) NA_character_ else entry$category
       },
       character(1)
     )
-    grouped <- category %in% names(groups$playground_categories)
+    grouped <- category %in% names(groups$studio_categories)
     expect_true(all(grouped), info = toString(pages[!grouped]))
     for (page in pages) {
       stub <- paste(readLines(file.path(articles, paste0("guide-", page, ".Rmd")), warn = FALSE), collapse = "\n")
@@ -2413,7 +2394,7 @@ describe("studio safeguards (#248)", {
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
       example_run = "the Examples view, not the mascot"
     )
-    controls <- unlist(get("playground_controls", parts$env))
+    controls <- unlist(get("studio_controls", parts$env))
     format_call <- get("format_call", parts$env)
     mapped <- unique(gsub('^id="|"$', "", grep("^id=", controls, value = TRUE)))
     events <- unique(gsub(
@@ -2431,7 +2412,7 @@ describe("studio safeguards (#248)", {
         }
         do.call(session$setInputs, start)
         studio_go_live(session)
-        updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
+        updates <- function() session$userData$mascot_protocol$states[[session$ns("helper")]]
         before <- updates()
         for (inputs in case$inputs) {
           do.call(session$setInputs, inputs)
@@ -2743,7 +2724,7 @@ describe("studio engine behaviours", {
       do.call(session$setInputs, start)
       studio_go_live(session)
       expect_match(output$click_last, "Nothing yet", fixed = TRUE)
-      updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
+      updates <- function() session$userData$mascot_protocol$states[[session$ns("helper")]]
       # Turning the action on sends it, and the switches take turns.
       session$setInputs(action_on = TRUE)
       session$elapse(700)
@@ -3135,7 +3116,7 @@ describe("studio palette controls", {
       session$setInputs(character = "knurl")
       expect_identical(messages$palette$value, "original")
       expect_false(grepl('theme = "coral_navy"', output$code_ui, fixed = TRUE))
-      updates <- function() session$userData$mascot_updates[[session$ns("helper")]]
+      updates <- function() session$userData$mascot_protocol$states[[session$ns("helper")]]
       previous <- updates()$revision
       session$setInputs(gesture = "wave")
       expect_gt(updates()$revision, previous)
@@ -3219,13 +3200,13 @@ describe("studio palette sync (#353)", {
       session$setInputs(palette_swap = "kept")
       expect_identical(output$palette_swap_result, "Palette coral_navy kept for Sela")
       expect_identical(
-        session$userData$mascot_updates[[session$ns("palette_swap_demo")]]$desired$theme$palette,
+        session$userData$mascot_protocol$states[[session$ns("palette_swap_demo")]]$desired$theme$palette,
         "coral_navy"
       )
       session$setInputs(palette_swap = "dropped")
       expect_match(output$palette_swap_result, "mascot_palette_dropped:", fixed = TRUE)
       expect_match(output$palette_swap_result, "own colours are used", fixed = TRUE)
-      expect_null(session$userData$mascot_updates[[session$ns("palette_swap_demo")]]$desired$theme$palette)
+      expect_null(session$userData$mascot_protocol$states[[session$ns("palette_swap_demo")]]$desired$theme$palette)
       for (corner in c("top-right", "bottom-right")) {
         session$setInputs(menu_long_status = corner)
         expect_identical(messages$position$value, corner)
@@ -3355,7 +3336,7 @@ describe("studio palette follow-up (#353)", {
     parts <- studio_parts()
     withr::local_options(list(cli.width = 1000, cli.num_colors = 1))
     for (id in unname(get("studio_characters", parts$env)())) {
-      palettes <- get("studio_mistake_palettes", parts$env)(id)
+      palettes <- get("guide_mistake_palettes", parts$env)(id)
       expect_false(palettes$borrowed %in% mascot_palettes(id)$name)
       other_ids <- setdiff(builtin_characters()$id, id)
       other_palettes <- unlist(lapply(other_ids, function(other) mascot_palettes(other)$name))
@@ -3375,7 +3356,10 @@ describe("studio palette follow-up (#353)", {
         message <- cli::ansi_strip(conditionMessage(error))
         expect_match(message, paste0('Unknown palette "', call[["theme"]], '" for character "', id, '"'), fixed = TRUE)
         expect_match(message, paste0('Choose "', mascot_palettes(id)$name[[1L]], '"'), fixed = TRUE)
-        expect_identical(grepl("palettes cannot be borrowed", message, fixed = TRUE), name != "A made-up palette id")
+        expect_identical(
+          grepl("each palette belongs to its own character", message, fixed = TRUE),
+          name != "A made-up palette id"
+        )
         expect_match(guide, as.character(htmltools::htmlEscape(paste("Error:", message))), fixed = TRUE)
         expect_match(guide, as.character(htmltools::htmlEscape(mistakes[[name]]$why)), fixed = TRUE)
       }
@@ -3387,7 +3371,7 @@ describe("studio palette follow-up (#353)", {
           state = mascot_state_defaults(list(id = id, name = mascot_character(id)$name, json = character_json(id)))
         )
         update_mascot("helper", theme = mascot_palettes(id)$name[[2L]], session = mock)
-        before <- serialize(mock$userData$mascot_updates, NULL)
+        before <- serialize(mock$userData$mascot_protocol$states, NULL)
         env <- new.env(parent = parts$env)
         env$session <- mock
         code <- get("guide_mistake_calls", parts$env)("update_mascot", id)[["An unknown palette in an update"]]
@@ -3401,15 +3385,15 @@ describe("studio palette follow-up (#353)", {
         message <- cli::ansi_strip(conditionMessage(warning))
         expect_match(message, '`update_mascot()` left mascot "helper" unchanged.', fixed = TRUE)
         expect_match(message, paste0('Unknown palette "', palettes$borrowed, '"'), fixed = TRUE)
-        expect_match(message, "palettes cannot be borrowed between characters yet.", fixed = TRUE)
+        expect_match(message, "each palette belongs to its own character.", fixed = TRUE)
         expect_false(inherits(warning, "mascot_palette_dropped"))
-        expect_identical(serialize(mock$userData$mascot_updates, NULL), before)
+        expect_identical(serialize(mock$userData$mascot_protocol$states, NULL), before)
         guide <- as.character(get("guide_mistakes", parts$env)("update_mascot", id))
         expect_match(guide, as.character(htmltools::htmlEscape(paste("Warning:", message))), fixed = TRUE)
       })
       mock$close()
     }
-    expect_error(get("studio_mistake_palettes", parts$env)(1), "character")
+    expect_error(get("guide_mistake_palettes", parts$env)(1), "character")
   })
   it("uses a swap example whose palette Tessa and Sela share and Knurl lacks", {
     parts <- studio_parts()
@@ -3556,7 +3540,7 @@ describe("studio review fixes (#353)", {
         do.call(session$setInputs, c(list(theme_source = "mascot"), untouched))
         session$elapse(400)
         expect_false(grepl("theme =", output$code_ui, fixed = TRUE), info = who)
-        sent <- session$userData$mascot_updates[[session$ns("helper")]]$desired$theme
+        sent <- session$userData$mascot_protocol$states[[session$ns("helper")]]$desired$theme
         expect_length(sent$light, 0L)
       })
     }
@@ -3572,7 +3556,7 @@ describe("studio review fixes (#353)", {
       do.call(session$setInputs, c(list(theme_source = "mascot"), untouched))
       session$elapse(400)
       session$setInputs(character = "sela")
-      sent <- session$userData$mascot_updates[[session$ns("helper")]]$desired$theme
+      sent <- session$userData$mascot_protocol$states[[session$ns("helper")]]$desired$theme
       expect_length(sent$light, 0L)
       # A colour the user did change is carried over, for a role Sela has too.
       shared <- intersect(tessa$role, mascot_colour_roles("sela")$role)[[1L]]
@@ -3580,7 +3564,7 @@ describe("studio review fixes (#353)", {
       session$elapse(400)
       do.call(session$setInputs, stats::setNames(list("#123456"), paste0("colours-light_", shared)))
       session$setInputs(character = "sela")
-      carried <- session$userData$mascot_updates[[session$ns("helper")]]$desired$theme
+      carried <- session$userData$mascot_protocol$states[[session$ns("helper")]]$desired$theme
       expect_identical(tolower(unlist(carried$light)[[1L]]), "#123456")
     })
   })
@@ -3639,7 +3623,6 @@ describe("studio review fixes (#353)", {
       "mascot_placement_ignored",
       "mascot_palette_dropped",
       "mascot_gesture_dropped",
-      "mascot_click_dropped",
       "mascot_template_evicted"
     )) {
       expect_match(guide, class, fixed = TRUE)
@@ -3661,11 +3644,6 @@ describe("studio review fixes (#353)", {
       collapse = "\n"
     )
     expect_match(page, "has no brand parts", fixed = TRUE)
-  })
-  it("counts the built-in characters from the package listing", {
-    env <- studio_guide_env()
-    expect_null(env$studio_character_hint())
-    expect_error(env$studio_character_hint(1), "directory")
   })
 })
 
@@ -3720,8 +3698,8 @@ describe("the studio public character readers", {
       expect_s3_class(eval(parse(text = guide$format_call(fn, list()))), "mascot_character_data")
     }
     for (fn in c("mascot_read_character", "mascot_check_character")) {
-      expect_true(fn %in% names(guide$playground_guide))
-      expect_true(fn %in% names(guide$playground_controls))
+      expect_true(fn %in% names(guide$studio_guide))
+      expect_true(fn %in% names(guide$studio_controls))
     }
   })
   it("offers the check example to copy only, with no note about editing it", {

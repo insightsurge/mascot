@@ -23,15 +23,15 @@ path <- mascot::mascot_example("form-check", run = FALSE)
 file.copy(path, "app.R", overwrite = FALSE)
 ```
 
-Choose a destination without an existing `app.R`. For the multi-file playground,
-`golem` and rhino-shaped examples, copy the whole containing folder instead so
+Choose a destination without an existing `app.R`. For the multi-file examples
+(`"studio"`, `golem` and the rhino-shaped one), copy the whole containing folder instead so
 that their supporting files stay together. The `golem` example needs golem;
 the single-file scenarios need Shiny, bslib and mascot.
 
 ### Run one
 
 To explore all functions before adapting a single scenario, open the bundled
-playground from an interactive R console:
+app that shows every function, from an interactive R console:
 
 ```r
 mascot::mascot_example("studio")

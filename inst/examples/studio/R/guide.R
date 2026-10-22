@@ -5,7 +5,7 @@
 # and when this file holds prose. Shiny sources this file before app.R attaches mascot, so it
 # holds plain data only.
 
-playground_categories <- list(
+studio_categories <- list(
   look = list(
     title = "Character and mood",
     summary = "Who is drawn and how they feel. A mood changes the face, the pose and the default status text."
@@ -46,7 +46,7 @@ guide_entry <- function(category, vignette, args = character(), try = list()) {
   list(category = category, vignette = vignette, args = stats::setNames(entries, args))
 }
 
-playground_guide <- list(
+studio_guide <- list(
   mascot_read_character = guide_entry("look", "Your first app", "path"),
   mascot_check_character = guide_entry("look", "Your first app", "x"),
   mascot_character = guide_entry("look", "Your first app", "id"),

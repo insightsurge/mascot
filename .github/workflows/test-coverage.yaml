@@ -18,6 +18,7 @@ concurrency:
 jobs:
   test-coverage:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
+    timeout-minutes: 90  # the whole suite with Chrome under covr: about 40 min on a laptop
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       # Run the tests CRAN skips (shinytest2 needs Chrome, which the runner has), so they count towards coverage.

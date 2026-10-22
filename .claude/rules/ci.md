@@ -23,7 +23,7 @@ Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate 
   temporary host; GitHub Pages takes over when it goes public (#115).
 - Every workflow: the least permissions it needs (`permissions: read-all`, or only the write scopes its jobs use), a
   `concurrency` group (with `cancel-in-progress`, except where a cancelled run on `main` would leave pushed commits
-  unscanned or a release half done), Ubuntu pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions
+  unscanned or a release half done), a `timeout-minutes` on every job (a few times its longest recent run), Ubuntu pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions
   outside `actions/` and `r-lib/` by commit SHA with a version comment.
 - Keep new jobs on Ubuntu unless the platform is the point (macOS minutes count 10x, Windows 2x).
 - Never `continue-on-error`, never weaken a check to get green: fix the cause, or ask the package creator.

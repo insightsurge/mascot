@@ -18,6 +18,7 @@ concurrency:
 jobs:
   check-no-suggests:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
+    timeout-minutes: 30  # one R CMD check without the Suggests (longest recent run: 5 min)
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# cran-gate version: 2026-10-21
+# cran-gate version: 2026-10-22
 # CRAN gate: one command that says whether an R package would pass CRAN's checks, before you submit it.
 #
 #   Rscript <path to this file> [fast|tests|full|lint|nosuggests] [options]   (--help lists the options)
@@ -7,7 +7,7 @@
 #   fast  (default) tools, style, docs in sync, \value, spelling, R CMD check --as-cran without tests
 #   tests           tools, tests (NOT_CRAN=true, so tests that CRAN skips run too), coverage and new lines
 #   full            everything: fast steps, tests, coverage, new lines, CRAN-like check with tests, built tarball
-#   lint            the quick static steps only: tools, style, docs in sync, \value, spelling, pkgdown
+#   lint            the quick static steps only: tools, style, docs in sync, \value, spelling
 #   nosuggests      R CMD check with only the hard dependencies on the library path (CI's check-no-suggests job)
 #
 # In `tests` and `full` the suite runs ONCE, under covr, and the same run gives the test results and the coverage
@@ -117,7 +117,7 @@ steps_for <- function(mode) {
     fast = c("tools", static, "pkgdown", "check_fast"),
     tests = c("tools", "tests", "coverage", "new_lines"),
     full = c("tools", static, "pkgdown", "tests", "coverage", "new_lines", "check_full", "nosuggests", "tarball"),
-    lint = c("tools", static, "pkgdown"),
+    lint = c("tools", static),
     nosuggests = c("tools", "nosuggests")
   )
 }

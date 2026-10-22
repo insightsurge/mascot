@@ -4,7 +4,6 @@
 (^|/)\.DS_Store$
 ^\.github$
 ^\.claude$
-^\.agents$
 ^CLAUDE\.md$
 ^AGENTS\.md$
 ^dev$
@@ -16,7 +15,6 @@
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
 ^LICENSE\.md$
-^README\.Rmd$
 ^\.codex$
 ^renv$
 ^renv\.lock$

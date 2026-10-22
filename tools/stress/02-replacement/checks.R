@@ -1,5 +1,5 @@
 # Duplicate-id diagnostics are deliberate here; count them so a storm still fails.
-# The 2026-10-21 run logged one; the cap allows one more bind attempt.
+# The cap allows a duplicate-id diagnostic and one more bind attempt.
 stress_expected_warnings <- list(pattern = "duplicate live mascot id|Duplicate input binding", max = 2L)
 
 stress_checks <- function(ctx) {

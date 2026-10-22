@@ -15,7 +15,7 @@ Should hold:
   the number shows how that grows in a long session.
 
 From the checkout root, run `Rscript tools/stress/run-stress.R 07` with the
-R environment described in the parent README. See [../RESULTS.md](../RESULTS.md) for observed results.
+R environment described in the parent README.
 
 Reproduction sequence:
 

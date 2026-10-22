@@ -1,5 +1,5 @@
 # After a forced reconnect, Shiny's own client reports outputs "in an unexpected state" (not mascot
-# messages). The 2026-10-21 run logged four such lines for the one `handled` output.
+# messages). The cap allows four such lines for the one `handled` output.
 stress_expected_warnings <- list(pattern = "is in an unexpected state of", max = 4L)
 
 stress_checks <- function(ctx) {

@@ -1,8 +1,8 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (pkgdown.yaml).
 # Builds the pkgdown site from main only (a rule, #127): on every push to main, and by hand on main. Never on pull
-# requests: the site will take its theme from a private theme package, which pull requests from outside contributors
-# can't install. Uploads the site as an artifact (download, unzip, open index.html) and deploys keylessly to Firebase
-# until GitHub Pages takes over when the repo is public (#195, #115). Setup: docs/deploy.md.
+# requests: a site build may need packages that pull requests from outside contributors can't install. Uploads the
+# site as an artifact (download, unzip, open index.html) and deploys keylessly to Firebase until GitHub Pages takes
+# over when the repo is public (#195, #115).
 on:
   push:
     branches: [main]

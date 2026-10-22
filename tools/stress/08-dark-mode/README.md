@@ -14,7 +14,7 @@ Should hold:
   apply while the page is dark.
 
 From the checkout root, run `Rscript tools/stress/run-stress.R 08` with the
-R environment described in the parent README. See [../RESULTS.md](../RESULTS.md) for observed results.
+R environment described in the parent README.
 
 Reproduction sequence:
 

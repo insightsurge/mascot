@@ -11,7 +11,7 @@ Should hold:
 - The explicit last observer wins; task completion and re-render retain the intended state without unexpected warnings.
 
 From the checkout root, run `Rscript tools/stress/run-stress.R 03` with the
-R environment described in the parent README. See [../RESULTS.md](../RESULTS.md) for observed results.
+R environment described in the parent README.
 
 Reproduction sequence:
 

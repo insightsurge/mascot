@@ -1,6 +1,7 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (test-coverage.yaml), without Codecov
 # (the repo is private). Fails when line coverage is under the limit in DESCRIPTION (Config/cran-gate/coverage,
-# 70%), the same limit the gate uses.
+# 70% when the field is missing), the same limit the gate uses. A pull request is held to the limit in its base
+# branch's DESCRIPTION, so it cannot lower its own limit; a push to main reads the checked-out DESCRIPTION.
 on:
   push:
     branches: [main]
@@ -36,7 +37,19 @@ jobs:
           extra-packages: any::covr
           needs: coverage
 
+      # The base branch name comes in through env, never written into the script, so it can't inject commands.
+      - name: Read the coverage limit from the base branch (pull requests)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --depth=1 origin "refs/heads/${BASE_REF}"
+          git show FETCH_HEAD:DESCRIPTION > "${RUNNER_TEMP}/base-DESCRIPTION"
+        shell: bash
+
       - name: Test coverage (at least the limit in DESCRIPTION)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,
@@ -46,7 +59,12 @@ jobs:
           print(cov)
           pct <- covr::percent_coverage(cov)
           message(sprintf("Line coverage: %.1f%%", pct))
-          limit <- as.numeric(read.dcf("DESCRIPTION", fields = "Config/cran-gate/coverage")[[1]])
+          limit_file <- "DESCRIPTION"
+          if (Sys.getenv("EVENT_NAME") == "pull_request") {
+            limit_file <- file.path(Sys.getenv("RUNNER_TEMP"), "base-DESCRIPTION")
+            if (!file.exists(limit_file)) stop("The base branch's DESCRIPTION was not read.", call. = FALSE)
+          }
+          limit <- as.numeric(read.dcf(limit_file, fields = "Config/cran-gate/coverage")[[1]])
           if (is.na(limit)) limit <- 70
           if (pct < limit) stop(sprintf("Coverage %.1f%% is under %g%%.", pct, limit), call. = FALSE)
         shell: Rscript {0}

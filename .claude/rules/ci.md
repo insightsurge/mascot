@@ -16,8 +16,9 @@ Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate 
   `air.toml`, `.lintr` and `biome.json`.
 - R-CMD-check fails on any note (`error-on: '"note"'`) and mimics CRAN (`NOT_CRAN` unset, so Chrome tests skip);
   only the remote CRAN-incoming checks are off. The coverage job runs the tests with `NOT_CRAN: true` and reads the
-  coverage limit from `DESCRIPTION`. Keep `lint.yaml`'s and `gate-self-test.yaml`'s Air and Biome versions equal to
-  the local installs and `biome.json`'s schema.
+  coverage limit from `DESCRIPTION` (on a pull request, the base branch's, so a PR can't lower its own limit). Keep
+  `lint.yaml`'s and `gate-self-test.yaml`'s Air and Biome versions equal to the local installs and `biome.json`'s
+  schema.
 - The site is built **from `main` only, never on pull requests** (a rule, #127: a site build may need packages that
   outside contributors' pull requests can't install). While the repo is private it deploys from `main` to a
   temporary host; GitHub Pages takes over when it goes public (#115).

@@ -21,12 +21,11 @@ A source file names its \code{family} and gives that family's definition in
 \code{family_definition} (\code{id}, \code{name}, \code{description} and optional \code{defaults}, such as
 shared gestures and palettes); a custom character cannot take a definition from
 the installed package. A resolved file has its family defaults merged in and
-embeds its face kits, so it does not depend on the installed package; saving a
-resolved file from R is planned for a later release.
+embeds its face kits, so it does not depend on the installed package.
 
-Checks stop at the first problem, giving a diagnostic code, JSON path, value
-and repair instruction. Input byte, depth and node limits and drawing budgets
-are enforced for all input forms. Unsupported and reserved capabilities are
+Checks stop at the first problem, giving a diagnostic code, the JSON path and a
+repair instruction, and the value where one is at fault. Input byte, depth and
+node limits and drawing budgets are enforced for all input forms. Unsupported and reserved capabilities are
 refused. Format version, capability set and admission policy version are
 distinct. The installed grammar and policy live in
 \code{system.file("format", package = "mascot")}.

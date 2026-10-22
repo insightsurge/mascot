@@ -37,7 +37,7 @@ experimental and may change in a later release. Choices belong to the returned
 app; no global options are changed.
 }
 \examples{
-\dontshow{if (utils::packageVersion("bslib") >= "0.7.0") withAutoprint(\{ # examplesIf}
+\dontshow{if (requireNamespace("bslib", quietly = TRUE) && utils::packageVersion("bslib") >= "0.7.0") withAutoprint(\{ # examplesIf}
 app <- mascot_studio(fn = "mascot_theme", run = FALSE)
 inherits(app, "shiny.appobj")
 \dontshow{\}) # examplesIf}

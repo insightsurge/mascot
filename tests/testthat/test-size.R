@@ -119,9 +119,6 @@ describe("responsive size behaviour and CSS rules", {
     lines <- readLines(css_file)
     css_text <- paste(lines, collapse = "\n")
 
-    # Required comment
-    expect_true(grepl("Phone size chosen by the founder in the studio.", css_text, fixed = TRUE))
-
     # CSS rule present
     expect_true(grepl(".mascot[data-floating=\"true\"][data-small-screen=\"auto\"]", css_text, fixed = TRUE))
     expect_true(grepl("min(var(--_mascot-size-default, 160px), 96px)", css_text, fixed = TRUE))

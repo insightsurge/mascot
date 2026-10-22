@@ -310,7 +310,7 @@
       : (compiled.items?.[moodId] ?? {});
   };
 
-  // E5b detail bands. The host passes the band from the canvas's untransformed CSS width, compared unrounded:
+  // Detail bands. The host passes the band from the canvas's untransformed CSS width, compared unrounded:
   // full from 128 px, small from 48 px, micro below 48 px. Micro never inherits small.
   const bands = ['full', 'small', 'micro'];
   const bandFor = (width) => {
@@ -336,7 +336,7 @@
         }
         if (override.glow !== undefined && typeof override.glow !== 'boolean')
           problem('input_type', `${path}.glow`, 'Use true or false.');
-        // Drawing-budget diagnostics use code budget and root path $ (contract); the message names the band and key.
+        // Drawing-budget diagnostics use code budget and root path $; the message names the band and key.
         if (band === 'micro' && override.glow === true)
           problem(
             'budget',
@@ -362,7 +362,7 @@
     });
   };
 
-  // Reserved capabilities (contract 3.18) are rejected with code capability, never ignored or partly run.
+  // Reserved capabilities (?mascot_character_format) are rejected with code capability, never ignored or partly run.
   // Position decides, not the name of the parent key. A reserved name counts only as a key of a fixed-field object.
   // The fixed objects come from inst/format/character-v1.json: an `object` type with `fields` is fixed (R closes it
   // too). A `map` takes data-named keys (ids, colour and recolour roles, track targets, style ids), so only its values

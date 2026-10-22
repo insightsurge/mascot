@@ -1,4 +1,4 @@
-# The drawing engine in inst/www/ has no R file of its own: these tests draw with it in headless Chrome.
+# The engine in inst/www/ has no R file of its own: these tests run it in headless Chrome.
 
 skip_without_chrome <- function() {
   testthat::skip_on_cran()
@@ -7,7 +7,8 @@ skip_without_chrome <- function() {
   testthat::skip_if(is.null(chromote::find_chrome()), "no Chrome or Chromium found")
 }
 
-# Opens a blank page with the engine's files loaded and returns a function that evaluates JavaScript there.
+# Opens a blank page with the engine's drawing and motion files loaded (no host) and returns a function that evaluates
+# JavaScript there.
 local_engine_page <- function(env = parent.frame()) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
@@ -15,25 +16,16 @@ local_engine_page <- function(env = parent.frame()) {
     www,
     c(
       "mascot.js",
-      "mascot-draw.js",
       "mascot-motion.js",
       "mascot-parts.js",
       "mascot-geometry.js",
       "mascot-faces.js"
     )
   )
-  tessa <- testthat::test_path("fixtures", "characters", "tessa.json")
-  blob <- testthat::test_path("fixtures", "characters", "blob.json")
   page <- file.path(dir, "page.html")
   writeLines(
     c(
       "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>engine</title></head><body>",
-      "<script type=\"application/json\" data-mascot-character=\"tessa\">",
-      readLines(tessa, encoding = "UTF-8"),
-      "</script>",
-      "<script type=\"application/json\" data-mascot-character=\"blob\">",
-      readLines(blob, encoding = "UTF-8"),
-      "</script>",
       unlist(lapply(c("classic", "screen"), function(id) {
         c(
           sprintf('<script type="application/json" data-mascot-kit="%s">', id),
@@ -51,28 +43,6 @@ local_engine_page <- function(env = parent.frame()) {
   session$Page$navigate(paste0("file://", normalizePath(page, winslash = "/")), wait_ = FALSE)
   session$wait_for(loaded)
   function(js) session$Runtime$evaluate(js, returnByValue = TRUE)$result$value
-}
-
-# Draws a character from the page on a new canvas and returns the picture as a PNG data URL.
-draw_js <- function(pose, frame = 0, character = "tessa") {
-  sprintf(
-    paste(
-      "(() => { const c = document.createElement('canvas'); c.width = 300; c.height = 300;",
-      "window.mascot.draw(c.getContext('2d'), window.mascot.readCharacter('%s'), { x: 150, baseY: 280, pose: %s, frame: %d });",
-      "return c.toDataURL(); })()"
-    ),
-    character,
-    pose,
-    frame
-  )
-}
-
-# Runs `code` in the page and returns the message of the error it throws (or "no error").
-error_js <- function(code) {
-  sprintf(
-    "(() => { const ch = window.mascot.readCharacter('tessa'); try { %s; } catch (e) { return e.message; } return 'no error'; })()",
-    code
-  )
 }
 
 # Host integration page: real packaged assets and real markup, with motion reduced before navigation.
@@ -93,7 +63,7 @@ local_host_page <- function(
 ) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
-  all_scripts <- mascot_dependency()$script
+  all_scripts <- vapply(mascot_dependency()$script, function(script) script$src, character(1))
   pre_host <- file.path(www, all_scripts[all_scripts != "mascot-host.js"])
   host_script <- file.path(www, "mascot-host.js")
   page <- file.path(dir, "host.html")
@@ -129,11 +99,8 @@ local_host_page <- function(
       sprintf('<script src="file://%s"></script>', normalizePath(pre_host)),
       if (record_colours) {
         paste0(
-          '<script>window.themeDraws=[];const originalDraw=mascot.draw;',
-          'mascot.draw=function(ctx,ch,options){themeDraws.push({character:ch.id,',
-          'colours:{...ch.colours,...options.colours},overrides:{...options.colours}});',
-          'return originalDraw(ctx,ch,options);};',
-          'if (mascot.geometry) { const origGeo = mascot.geometry.draw;',
+          '<script>window.themeDraws=[];',
+          '{ const origGeo = mascot.geometry.draw;',
           'mascot.geometry = { ...mascot.geometry, draw: function(ctx, compiled, state, colours, options) {',
           'if (compiled?.source?.parts?.[0]?.id !== "ground_shadow" && colours?.body) {',
           'const overrides = { ...(options?.overrides ?? {}) };',
@@ -206,15 +173,13 @@ host_motion_js <- function(code) {
   paste0(
     "(() => {const el=document.getElementById('a');mascot.host.unmount(el);
 ",
-    "const mount=mascot.mount,draw=mascot.draw,origGeo=mascot.geometry?.draw,raf=window.requestAnimationFrame,cancel=window.cancelAnimationFrame;
+    "const mount=mascot.mount,origGeo=mascot.geometry.draw,raf=window.requestAnimationFrame,cancel=window.cancelAnimationFrame;
 ",
     "const queued=new Map(),calls=[],players=[];let id=0;
 ",
     "window.requestAnimationFrame=fn=>{queued.set(++id,fn);return id;};window.cancelAnimationFrame=n=>queued.delete(n);
 ",
-    "mascot.draw=(ctx,ch,options)=>{calls.push({character:ch.id,...options});return draw(ctx,ch,options);};
-",
-    "if (mascot.geometry) { mascot.geometry = { ...mascot.geometry, draw: (ctx, compiled, state, colours, options) => {
+    "mascot.geometry = { ...mascot.geometry, draw: (ctx, compiled, state, colours, options) => {
       const p = players[players.length - 1];
       const cur = p?.current?.();
       const chId = compiled?.source?.id || cur?.character || 'tessa';
@@ -228,7 +193,7 @@ host_motion_js <- function(code) {
         calls.push({ character: chId, frame: options?.frame ?? 0, pose, colours: { ...colours } });
       }
       return origGeo(ctx, compiled, state, colours, options);
-    } }; }
+    } };
 ",
     "mascot.mount=(...args)=>{
       const p=mount(...args);
@@ -258,7 +223,7 @@ host_motion_js <- function(code) {
 ",
     "try{mascot.host.mount(el);const controller=players[0];",
     code,
-    "}finally{mascot.host.unmount(el);mascot.mount=mount;mascot.draw=draw;if (origGeo) mascot.geometry = { ...mascot.geometry, draw: origGeo };window.requestAnimationFrame=raf;window.cancelAnimationFrame=cancel;}})()"
+    "}finally{mascot.host.unmount(el);mascot.mount=mount;mascot.geometry = { ...mascot.geometry, draw: origGeo };window.requestAnimationFrame=raf;window.cancelAnimationFrame=cancel;}})()"
   )
 }
 

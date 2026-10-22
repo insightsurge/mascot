@@ -21,6 +21,8 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   No `mascotOutput()`/`renderMascot()`, no htmlwidgets.
 - **house:** one global namespace (`window.mascot`), guard against loading twice, state kept per element, several
   mascots per page, no listeners left behind.
+- **house:** the engine is versioned with the package (`window.mascot.version`, passed from R on the first engine
+  script); character files keep `format_version` 1.
 - **house:** configuration through `data-*` attributes or a `<script type="application/json">` block. No `eval`,
   `new Function`, inline `<script>`, inline `style=` for layout or `javascript:` URLs (mascot adds no inline script
   of its own; Shiny itself still uses some).

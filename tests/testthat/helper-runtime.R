@@ -60,7 +60,7 @@ local_runtime_page <- function(
   skip_without_chrome()
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot", mustWork = TRUE)
-  scripts <- file.path(www, mascot_dependency()$script)
+  scripts <- file.path(www, vapply(mascot_dependency()$script, function(script) script$src, character(1)))
   wires <- lapply(characters, function(x) list(id = x$id, name = x$name, json = x$json))
   names(wires) <- vapply(characters, function(x) x$id, character(1))
   page <- file.path(dir, "runtime.html")

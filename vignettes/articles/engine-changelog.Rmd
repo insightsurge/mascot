@@ -2,12 +2,49 @@
 title: "Engine changelog"
 ---
 
-This article records changes to the browser engine in `inst/www/` (`mascot.js`, `mascot-draw.js`,
-`mascot-motion.js`, `mascot-host.js`, `mascot-parts.js`, `mascot-geometry.js`,
-`mascot-faces.js`, `mascot-player.js` and `mascot.css`), newest first. User-facing R functions and arguments are
+This article records changes to the browser engine in `inst/www/` (`mascot.js`, `mascot-motion.js`,
+`mascot-host.js`, `mascot-parts.js`, `mascot-geometry.js`, `mascot-faces.js`, `mascot-player.js` and `mascot.css`),
+newest first. User-facing R functions and arguments are
 covered in `NEWS.md`.
 
 # mascot (development version)
+
+## 2026-10-22 — A readable engine version, and comments that say what the code does (#464)
+
+**In brief:** `window.mascot.version` gives the version of mascot that a page runs, in Shiny apps, `mascot_preview()`
+and Quarto or R Markdown pages. A page that loads a second engine of another version keeps the first and says so in
+the browser console, instead of ignoring the second without a word.
+
+**Technical:**
+
+* `mascot_dependency()` gives the `mascot.js` script tag a `data-mascot-version` attribute with the package version;
+  `mascot.js` reads it into `window.mascot.version` (`null` when a page loads the file without it). Its load-twice
+  guard warns once through `console.warn` when the second copy has another version.
+* Comments in `mascot-host.js`, `mascot-player.js`, `mascot-parts.js`, `mascot-geometry.js` and `mascot.css` say what
+  the code does now, without internal stage names or references to documents outside the package.
+* `mascot-player.js` reads a gesture track's key values as `k.value` (normalised keys are always objects), and
+  `mascot-host.js` drops a check for a missing description that an earlier line already makes.
+
+## 2026-10-22 — The engine has one drawing path (#463)
+
+**In brief:** The engine draws characters with `format_version` 1 only, the format of every built-in character and of
+every character the R functions accept. The second drawing path, for the data shape of 0.0.2, could not be reached
+from R and is removed: about 2,090 lines and 87 KB less JavaScript on every page. Nothing drawn through the R
+functions changes.
+
+**Technical:**
+
+* `mascot-draw.js` is removed, and `mascot_dependency()` no longer lists it.
+* `mascot.js` keeps `fps`, `readCharacter()` and `validColour()`; `draw()`, `validateCharacter()` and
+  `checkCharacter()` are removed. Its load-twice guard now keys on `readCharacter`.
+* `mascot-motion.js` keeps `mascot.motion.tracks`, `mascot.motion.shared` (with `swapTiming`),
+  `mascot.motion.settings` and `mascot.motion.panels`; the player for the 0.0.2 shape, `mascot.motion.pose()`,
+  `mascot.motion.frame()` and `mascot.motion.validate()` are removed. `mascot.mount()` always mounts with
+  `mascot.runtime`.
+* `mascot-player.js`: its header holds the player contract. `update({ character })` with a description that is not
+  format version 1 fails with "update.character: expected a character with format_version 1".
+* `mascot-host.js`: validation, the detail band check (`mascot.runtime.check()`), the gaze, the restore control and
+  a swap without a mood always take the format-v1 route; the branches for the 0.0.2 shape are removed.
 
 ## 2026-10-21 — A page that reconnects into a new Shiny session starts the protocol again (#426)
 
@@ -75,7 +112,7 @@ never change. A wave needs a changing track on a non-root part; a nod can change
 
 **In brief:** Sela, Knurl and Neer looked heavier in the engine than in their drawings. The outline is now painted
 under the shape's colour, as in the drawings: only its outer half shows, and its light edge sits outside the shape
-instead of inside it. Their outline widths grow by half so the visible line keeps a clear weight (the founder chose this
+instead of inside it. Their outline widths grow by half so the visible line keeps a clear weight (the package creator chose this
 from three options). Tessa has no outlined parts and does not change.
 
 **Technical:**

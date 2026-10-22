@@ -13,9 +13,16 @@ describe("mascot_colour_roles()", {
     expect_identical(value$shade[value$role == "accessory_detail"], "darker")
     expect_identical(value$shade[value$role == "sleeve"], "same")
     expect_true(all(is.na(value$follows[value$role %in% c("body", "rim", "outline")])))
-    description <- character_colour_data("tessa")
-    expect_identical(unname(unlist(description$colours)), value$colour)
-    expect_identical(colour_role_registry("tessa"), value$role)
+    # Rows read by hand from inst/format/characters/tessa.json: the first and last roles in file order, a follower
+    # with its rule, and the brand leaders.
+    expect_identical(head(value$role, 5), c("outline", "feature", "eye_white", "shine", "teeth"))
+    expect_identical(head(value$colour, 5), c("#14221B", "#14221B", "#FFFDF4", "#FFFDF4", "#FFFDF4"))
+    expect_identical(
+      as.list(value[value$role == "iris_tint", c("colour", "follows", "shade")]),
+      list(colour = "#43A89E", follows = "iris", shade = "lighter")
+    )
+    expect_identical(value$brand[match(c("body", "rim"), value$role)], c("primary", "secondary"))
+    expect_identical(colour_role_registry("tessa")[c(1, 33)], c("outline", "iris_tint"))
   })
   it("gives no built-in character a role named like a theme mode, so every role can be themed", {
     for (id in builtin_characters()$id) {

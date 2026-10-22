@@ -563,7 +563,7 @@ describe("I1 character swaps", {
     )
     expect_identical(swapping, c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE))
     # Opacity is (1 - f / 30) while fading out and (f - 30) / 30 while fading in.
-    expect_equal(peak, round(255 * c(1, 0.5, 1 / 30, 0, 0.5, 29 / 30, 1, 1)), tolerance = 0.02)
+    expect_near(peak, round(255 * c(1, 0.5, 1 / 30, 0, 0.5, 29 / 30, 1, 1)), 2)
     expect_equal(r$rows[[4]]$ink, 0)
     expect_identical(
       lapply(r$events, unlist),
@@ -676,8 +676,8 @@ describe("I1 character swaps", {
     # Opacity was 2/3 at frame 10; the entrance lasts 30 * (1 - 2/3) = 10 frames and rises evenly to full.
     expect_true(r$seen[["19"]]$swapping)
     expect_false(r$seen[["20"]]$swapping)
-    expect_equal(r$alpha[["10"]], round(255 * 2 / 3), tolerance = 0.02)
-    expect_equal(r$alpha[["15"]], round(255 * (2 / 3 + 1 / 3 * 0.5)), tolerance = 0.02)
+    expect_near(r$alpha[["10"]], round(255 * 2 / 3), 2)
+    expect_near(r$alpha[["15"]], round(255 * (2 / 3 + 1 / 3 * 0.5)), 2)
     expect_equal(r$alpha[["20"]], 255)
   })
 
@@ -768,7 +768,7 @@ describe("I1 character swaps", {
     expect_equal(r$line, 7)
     expect_true(r$same)
     # The caller's alpha multiplies the fade: 0.9 * 0.5 of 255.
-    expect_equal(r$peak, round(255 * 0.9 * 0.5), tolerance = 0.02)
+    expect_near(r$peak, round(255 * 0.9 * 0.5), 2)
   })
 })
 

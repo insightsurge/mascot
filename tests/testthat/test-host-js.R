@@ -799,16 +799,17 @@ describe("mascot.host responsive size", {
       el.before(parentBox); parentBox.append(el);"
     )
     # The parent's content width is 500 - 40 padding - 4 border = 456.
-    expect_equal(
+    # Chrome lays out in steps of 1/64 pixel, so the box measures 91.1875.
+    expect_near(
       host_layout(js, "return el.querySelector('canvas').getBoundingClientRect().width;"),
       91.2,
-      tolerance = 0.03
+      0.1
     )
     js("parentBox.style.width = '300px'")
-    expect_equal(
+    expect_near(
       host_layout(js, "return el.querySelector('canvas').getBoundingClientRect().width;"),
       51.2,
-      tolerance = 0.03
+      0.1
     )
     js("parentBox.style.width = '100px'")
     result <- host_layout(
@@ -1757,7 +1758,7 @@ describe("mascot.host popup menu", {
           focus: document.activeElement === el.querySelector('[role=menuitem]')};
       })()"
       )
-      expect_equal(result$gap, 8, tolerance = 1)
+      expect_near(result$gap, 8, 1)
       expect_gte(result$top, 16)
       expect_lte(result$bottom, 884)
       expect_true(result$focus)
@@ -1976,19 +1977,19 @@ describe("mascot.host popup menu", {
       })()"
       )
       if (dir == "top") {
-        expect_equal(res$gapTop, 8, tolerance = 1)
+        expect_near(res$gapTop, 8, 1)
         expect_gte(res$menuTop, 16)
       } else if (dir == "bottom") {
-        expect_equal(res$gapBottom, 8, tolerance = 1)
+        expect_near(res$gapBottom, 8, 1)
         expect_lte(res$menuBottom, 784)
       } else if (dir == "left") {
-        expect_equal(res$gapLeft, 8, tolerance = 1)
+        expect_near(res$gapLeft, 8, 1)
         expect_gte(res$menuLeft, 16)
-        expect_equal(res$menuMidY, res$inkMidY, tolerance = 2)
+        expect_near(res$menuMidY, res$inkMidY, 2)
       } else if (dir == "right") {
-        expect_equal(res$gapRight, 8, tolerance = 1)
+        expect_near(res$gapRight, 8, 1)
         expect_lte(res$menuRight, 784)
-        expect_equal(res$menuMidY, res$inkMidY, tolerance = 2)
+        expect_near(res$menuMidY, res$inkMidY, 2)
       }
     }
   })
@@ -2019,7 +2020,7 @@ describe("mascot.host popup menu", {
       expect_false(res$overlaps)
       if (corner == "top-left") {
         expect_identical(res$side, "bottom")
-        expect_equal(res$gap, 8, tolerance = 1)
+        expect_near(res$gap, 8, 1)
       } else {
         expect_identical(res$side, "top")
       }
@@ -2042,7 +2043,7 @@ describe("mascot.host popup menu", {
       return { gap: menu.top - status.bottom, side: el.querySelector('.mascot-menu').dataset.side };
     })()"
     )
-    expect_equal(res_top$gap, 8, tolerance = 1)
+    expect_near(res_top$gap, 8, 1)
     expect_identical(res_top$side, "bottom")
 
     js_bottom <- local_host_page(
@@ -2071,7 +2072,7 @@ describe("mascot.host popup menu", {
       return { gap: inkTop - menu.bottom };
     })()"
     )
-    expect_equal(res_bottom$gap, 8, tolerance = 1)
+    expect_near(res_bottom$gap, 8, 1)
 
     js_left <- local_host_page(
       click = mascot_popup_menu(c(about = "About"), direction = "left"),
@@ -2096,7 +2097,7 @@ describe("mascot.host popup menu", {
       return { gap: menu.left - inkRight };
     })()"
     )
-    expect_equal(res_left$gap, 8, tolerance = 1)
+    expect_near(res_left$gap, 8, 1)
 
     js_right <- local_host_page(
       click = mascot_popup_menu(c(about = "About"), direction = "right"),
@@ -2121,7 +2122,7 @@ describe("mascot.host popup menu", {
       return { gap: inkLeft - menu.right };
     })()"
     )
-    expect_equal(res_right$gap, 8, tolerance = 1)
+    expect_near(res_right$gap, 8, 1)
 
     js_auto <- local_host_page(
       click = mascot_popup_menu(c(about = "About"), direction = "left"),
@@ -2177,7 +2178,7 @@ describe("mascot.host popup menu", {
       };
     })()"
     )
-    expect_equal(result$gap, 8, tolerance = 1)
+    expect_near(result$gap, 8, 1)
     expect_lt(result$menuLeft, result$cornerLeft)
     expect_gt(result$menuLeft, 200)
   })
@@ -2325,7 +2326,7 @@ describe("mascot.host gaze (#241)", {
       expect_identical(frames$same, mood == "happy", info = mood)
     }
   })
-  it("mirrors the horizontal look for a mirrored character, so it still faces the menu", {
+  it("sends the look in page terms for a mirrored character, for the player to flip back", {
     skip_without_chrome()
     js <- local_host_page(
       click = mascot_popup_menu(c(about = "About"), direction = "left"),
@@ -2336,8 +2337,10 @@ describe("mascot.host gaze (#241)", {
     )
     js(spy_poses_js)
     js(drag_js)
+    # A mirrored copy of Tessa: its idle mood turns the body round (root.flip -1). The host sends the look in page
+    # terms; the player turns it back from the frame it shows (test-engine-runtime-js.R).
     js(
-      "const ch=structuredClone(mascot.readCharacter('tessa'));ch.id='mirror';
+      "const ch=structuredClone(mascot.readCharacter('tessa'));ch.id='mirror';ch.moods.idle.channels['root.flip']=-1;
       mascot.host.receive({id:'a',patch:{character:{id:'mirror',name:'Mirror',json:JSON.stringify(ch)}}});"
     )
     js("dragBy(el.querySelector('canvas'), 300, 300)")

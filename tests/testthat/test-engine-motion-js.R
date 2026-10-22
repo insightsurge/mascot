@@ -316,11 +316,10 @@ describe("deterministic idle extra scheduling", {
       "const rest = () => ({});",
       "const o = { settings, rest };",
       "const f1 = (n, s = {}) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, ...s }, n, o).channels['root.lift'];",
-      "const f2 = (n, s = {}) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, ...s }, n, o).channels['root.lift'];",
-      "const fDiffSeed = (n) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 99 }, n, o).channels['root.lift'];",
       "const fSuppressed = (n) => t.frameAt(compiled, { mood: 'idle', activeAt: 0, activeUntil: 150, seed: 42, extraAt: null }, n, o).channels['root.lift'];",
+      # The same call twice gives the same series.
       "const series1 = Array.from({ length: 100 }, (_, n) => f1(n));",
-      "const series2 = Array.from({ length: 100 }, (_, n) => f2(n));",
+      "const series2 = Array.from({ length: 100 }, (_, n) => f1(n));",
       "const seriesSuppressed = Array.from({ length: 100 }, (_, n) => fSuppressed(n));",
       "const hasNod1 = series1.some(v => typeof v === 'number' && v < -2);",
       "const hasNodSuppressed = seriesSuppressed.some(v => v !== undefined);",

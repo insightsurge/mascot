@@ -77,7 +77,6 @@ local_host_page <- function(
     sub('"id": "tessa"', '"id": "blob"', tessa_format_v1, fixed = TRUE),
     fixed = TRUE
   )
-  blob_v1 <- sub('    "rim": "#d9b35c",\n', "", blob_v1, fixed = TRUE)
   blob_v1 <- gsub('"rim"', '"body"', blob_v1, fixed = TRUE)
   writeLines(
     c(

@@ -651,15 +651,19 @@
         sy = 1,
         opacity = 1,
         reduced = false;
+      // The sweat and sparkle maths is mascot.parts.sweatProgress() and sparklePulse(); the effect value is checked
+      // here first, so an invalid one names this effect.
       if (effect.mode === 'progress') {
-        const u = number(control, `$.effects.${id}`, 0, 1),
-          fade = effect.fade_at ?? 0.9;
-        x = (effect.sway ?? 2) * Math.sin(u * (effect.sway_rate ?? 12));
-        y = u * (effect.travel ?? 26);
-        opacity = u <= fade ? 1 : (1 - u) / (1 - fade);
+        ({ x, y, opacity } = ns.parts.sweatProgress(number(control, `$.effects.${id}`, 0, 1), effect));
+      } else if (effect.mode === 'pulse') {
+        const pulse = ns.parts.sparklePulse(frame / 30, effect, {
+          reduced: options.reduced,
+          frame,
+          activity_deadline: deadline,
+        });
+        reduced = pulse.reduced;
+        sx = sy = pulse.scale;
       } else if (options.reduced) reduced = true;
-      else if (effect.mode === 'pulse')
-        sx = sy = 1 + (effect.amplitude ?? 0.18) * Math.sin((effect.rate ?? 9) * (Math.min(frame, deadline) / 30));
       else {
         const values = own(options.effect_states, id);
         if (!values) fail('capability', `$.effects.${id}`, 'Supply the bounded track state from the track scheduler.');

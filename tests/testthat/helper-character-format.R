@@ -1,8 +1,10 @@
-# The file of a format recipe: study_bot is the package's own example character, the other ids are test fixtures.
+# The file of a format recipe. All ids are test fixtures. "study_bot" maps to study_bot_frozen.json, a frozen copy of the
+# shipped example, so tests that check exact content do not change when the shipped example changes. Tests about the
+# shipped file itself read it with system.file().
 format_recipe_path <- function(id = "anchor_probe") {
   checkmate::assert_string(id)
   if (identical(id, "study_bot")) {
-    return(system.file("examples", "characters", "study_bot.json", package = "mascot", mustWork = TRUE))
+    return(test_path("fixtures", "format", "study_bot_frozen.json"))
   }
   test_path("fixtures", "format", paste0(id, ".json"))
 }

@@ -91,7 +91,7 @@ aside,
 .row > * {
   min-width: 0;
 }
-main :is(p, ul, ol, blockquote, dd) {
+main :is(p, ul, ol, dd) {
   max-width: 64ch;
   overflow-wrap: anywhere;
 }
@@ -103,11 +103,6 @@ main :is(img, svg, video, iframe) {
 }
 main :is(img, video) {
   height: auto;
-}
-main figure {
-  max-width: 100%;
-  margin-inline: 0;
-  background: var(--m-ground);
 }
 main :is(a, code),
 aside a {
@@ -145,10 +140,12 @@ nav.navbar {
 .navbar .nav-link {
   color: var(--m-muted);
 }
-.navbar .nav-link:is(:hover, :focus, .active) {
+/* pkgdown marks the current page on the list item, not on its link. */
+.navbar .nav-link:is(:hover, :focus),
+.navbar .nav-item.active > .nav-link {
   color: var(--m-ink);
 }
-.navbar .nav-link.active {
+.navbar .nav-item.active > .nav-link {
   text-decoration: underline;
   text-underline-offset: 0.4em;
 }
@@ -167,7 +164,6 @@ nav.navbar {
   border-color: var(--m-rule);
 }
 .form-control,
-.form-select,
 #search-input {
   color: var(--m-ink);
   background-color: var(--m-ground);
@@ -178,8 +174,7 @@ nav.navbar {
   color: var(--m-muted);
   opacity: 1;
 }
-.form-control:focus,
-.form-select:focus {
+.form-control:focus {
   color: var(--m-ink);
   background-color: var(--m-ground);
   border-color: var(--m-accent);
@@ -265,9 +260,7 @@ main .btn-copy-ex {
   min-width: 2.75rem;
   min-height: 2.75rem;
 }
-.card,
-.card-header,
-.card-footer {
+.card {
   background: var(--m-ground);
   color: var(--m-ink);
   border-color: var(--m-rule);
@@ -275,18 +268,6 @@ main .btn-copy-ex {
 .card {
   border-radius: 0.8rem;
   box-shadow: none;
-}
-main :is(blockquote, .callout, .alert) {
-  background: var(--m-ground);
-  color: var(--m-ink);
-  border: 1px solid var(--m-rule);
-  border-left: 3px solid var(--m-accent);
-  border-radius: 0.4rem;
-  padding: 1rem 1.2rem;
-  margin-block: 1.5rem;
-}
-main :is(blockquote, .callout, .alert) a {
-  color: var(--m-accent);
 }
 main table {
   --bs-table-color: var(--m-ink);
@@ -348,8 +329,7 @@ footer a {
 /* Bootstrap still owns navbar collapse and the column breakpoints. */
 @media (max-width: 767.98px) {
   body > .container,
-  nav.navbar > .container,
-  footer .container {
+  nav.navbar > .container {
     padding-inline: 1rem;
   }
   main {
@@ -358,11 +338,6 @@ footer a {
   main pre {
     font-size: 0.875rem;
     padding: 1rem;
-  }
-  main .ref-index :is(dt, dd) {
-    float: none;
-    width: 100%;
-    margin-left: 0;
   }
   aside {
     margin-top: 2rem;
@@ -381,16 +356,6 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background: radial-gradient(ellipse 45rem 32rem at 100% 0, var(--m-strong), var(--m-ground) 100%);
-}
-main .ref-index {
-  background: var(--m-ground);
-  border: 1px solid var(--m-rule);
-  border-radius: 0.8rem;
-  padding: 1rem;
-  margin-block: 1rem 2rem;
-}
-main .ref-index :is(dt, dd) {
-  padding-block: 0.55rem;
 }
 @media print {
   body::before {

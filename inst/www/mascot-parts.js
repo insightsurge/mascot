@@ -319,19 +319,24 @@
     return width >= 128 ? 'full' : width >= 48 ? 'small' : 'micro';
   };
   const plainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+  // An x_ key in a fixed-field object is an extension key for other tools: accepted, kept and never read. A note is
+  // a comment. Neither is a field, so the loops over a fixed object's keys skip both (R does the same).
+  const extension = (key) => key.startsWith('x_');
+  const annotation = (key) => key === 'note' || extension(key);
   const bandOverrideKeys = ['hide', 'outline', 'face', 'glow', 'variants', 'note'];
-  const faceFlagKeys = ['scale', 'lashes', 'brows', 'iris'];
+  const faceFlagKeys = ['scale', 'lashes', 'brows', 'iris', 'note'];
   // Rejects unknown band names and keys, and micro glow, at compile time: policy wins, nothing is dropped silently.
   const checkBands = (source) => {
     if (source.lod !== undefined) {
       if (!plainObject(source.lod)) problem('input_type', '$.lod', 'Use an object of band overrides.');
       for (const [band, override] of Object.entries(source.lod)) {
+        if (annotation(band)) continue;
         const path = `$.lod.${band}`;
         // full is the file as written, not an authored override (R rejects lod.full the same way).
         if (!['small', 'micro'].includes(band)) problem('unknown_key', path, 'Author lod.small or lod.micro only.');
         if (!plainObject(override)) problem('input_type', path, 'Use an object of band overrides.');
         for (const key of Object.keys(override)) {
-          if (!bandOverrideKeys.includes(key))
+          if (!bandOverrideKeys.includes(key) && !extension(key))
             problem('unknown_key', `${path}.${key}`, 'Use hide, outline, face, glow, variants or note.');
         }
         if (override.glow !== undefined && typeof override.glow !== 'boolean')
@@ -346,7 +351,7 @@
         if (override.face !== undefined) {
           if (!plainObject(override.face)) problem('input_type', `${path}.face`, 'Use an object of face flags.');
           for (const key of Object.keys(override.face)) {
-            if (!faceFlagKeys.includes(key))
+            if (!faceFlagKeys.includes(key) && !extension(key))
               problem('unknown_key', `${path}.face.${key}`, 'Use scale, lashes, brows or iris.');
           }
         }
@@ -384,12 +389,7 @@
     'vividness',
   ];
   const unsupported = (path, name) => {
-    const reserved = reservedCapabilities.includes(name);
-    problem(
-      'capability',
-      path,
-      reserved ? `"${name}" is not supported by this version of mascot.` : 'Use supported engine capabilities.',
-    );
+    problem('capability', path, `"${name}" is not supported by this version of mascot.`);
   };
   // A fixed-field object: reject each reserved key it has.
   const fixed = (object, path) => {
@@ -465,10 +465,11 @@
         if (idFields.has(field) && typeof value === 'string') checkId(value, path);
         return;
       }
-      if (idMaps.has(field)) {
+      const map = idMaps.has(field);
+      if (map) {
         for (const id of Object.keys(value)) checkId(id, `${path}.${id}`);
       }
-      for (const [key, entry] of Object.entries(value)) visit(entry, `${path}.${key}`, key);
+      for (const [key, entry] of Object.entries(value)) if (map || !extension(key)) visit(entry, `${path}.${key}`, key);
     };
     visit(source, '$');
     if (Array.isArray(source.wear)) {
@@ -548,6 +549,7 @@
     fixed(lod, '$.lod');
     if (!plainObject(lod)) return;
     for (const band of Object.keys(lod)) {
+      if (annotation(band)) continue;
       const path = `$.lod.${band}`;
       fixed(lod[band], path);
       if (!plainObject(lod[band])) continue;
@@ -647,9 +649,16 @@
   const compile = (character) => {
     if (!character || !Array.isArray(character.parts)) problem('input_type', '$.parts', 'Supply a part array.');
     if (character.format_version !== 1) problem('version', '$.format_version', 'Use character format 1.');
+    // The version-1 capabilities are implicit: requires is optional and names only capabilities beyond version 1.
     if (Array.isArray(character.requires)) {
       character.requires.forEach((name, index) => {
-        if (!supportedCapabilities.includes(name)) unsupported(`$.requires[${index}]`, name);
+        if (!supportedCapabilities.includes(name))
+          problem(
+            'capability',
+            `$.requires[${index}]`,
+            `This file needs the capability "${String(name)}", which is not supported by this version of mascot. ` +
+              'Update mascot, or remove it from requires.',
+          );
       });
     }
     fixed(character, '$');
@@ -807,6 +816,7 @@
         const moodBase = applyChannels(base, mood.channels, `${path}.channels`, rules);
         if (mood.face) {
           for (const [key, val] of Object.entries(mood.face)) {
+            if (annotation(key)) continue;
             const target = `face.${key}`;
             const rule = rules[target];
             if (!rule) problem('missing_reference', `${path}.face.${key}`, 'Name a declared channel target.');
@@ -832,6 +842,7 @@
           }
           if (mood.reduced.face) {
             for (const [key, val] of Object.entries(mood.reduced.face)) {
+              if (annotation(key)) continue;
               const target = `face.${key}`;
               const rule = rules[target];
               if (!rule) problem('missing_reference', `${path}.reduced.face.${key}`, 'Name a declared channel target.');
@@ -1043,6 +1054,11 @@
   };
 
   ns.parts = Object.freeze({
+    // The capability names this engine knows, for the R/JS parity test.
+    capabilities: Object.freeze({
+      supported: Object.freeze([...supportedCapabilities]),
+      reserved: Object.freeze([...reservedCapabilities]),
+    }),
     identity,
     own,
     multiply,

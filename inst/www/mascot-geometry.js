@@ -135,7 +135,8 @@
         'clip',
       ];
       for (const key of Object.keys(item))
-        if (!allowed.includes(key)) fail('unknown_key', `${path}.${key}`, 'Remove this ref override.');
+        if (!allowed.includes(key) && !key.startsWith('x_'))
+          fail('unknown_key', `${path}.${key}`, 'Remove this ref override.');
       style = { ...definition };
       for (const key of ['id', 'fill', 'stroke', 'width', 'alpha', 'outline', 'cap', 'join', 'lod', 'clip']) {
         if (Object.hasOwn(item, key)) style[key] = item[key];

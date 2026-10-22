@@ -391,12 +391,15 @@ describe("character-format geometry and painting", {
 })
 
 describe("E5b per-band work bound and policy caps", {
-  it("keeps the browser's band caps equal to the shared policy for every metric it counts", {
+  it("keeps the browser's band caps equal to the shared policy, metric for metric", {
     skip_without_chrome()
     js <- local_character_engine()
     caps <- js("mascot.geometry.bandCaps")
     policy <- character_format_policy()$bands
+    expect_setequal(names(caps), names(policy))
     for (band in c("full", "small", "micro")) {
+      # The policy holds no band setting that the engine does not count.
+      expect_setequal(names(caps[[band]]), names(policy[[band]]))
       for (metric in names(caps[[band]])) {
         expect_equal(unname(unlist(caps[[band]][[metric]])), policy[[band]][[metric]], info = paste(band, metric))
       }

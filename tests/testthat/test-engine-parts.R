@@ -488,3 +488,188 @@ describe("reserved names in fixed and data positions in compile()", {
     expect_identical(result$path, "$.family_definition.defaults.moods.happy.follow")
   })
 })
+
+describe("the engine and the R checker agree on the version-1 rules", {
+  # A page with every engine file and no mounted mascot. engineRun() mounts one character on its own canvas, draws it
+  # in each band, through wave and nod and in another mood, and returns the pictures, or the error it threw.
+  local_rules_page <- function(env = parent.frame()) {
+    js <- local_runtime_page(tags = list(), reduced = FALSE, env = env)
+    js(
+      "window.engineRun = (character) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 300;
+        canvas.height = 300;
+        let player = null;
+        const pictures = [];
+        const shot = () => pictures.push(canvas.toDataURL());
+        try {
+          player = mascot.mount(canvas, character);
+          shot();
+          for (const band of ['small', 'micro', 'full']) { player.setBand(band); shot(); }
+          for (const name of ['wave', 'nod']) { player.gesture(name); for (const n of [4, 9, 15]) { player.seek(n); shot(); } }
+          player.setMood('worried');
+          player.seek(40);
+          shot();
+          return { pictures };
+        } catch (e) {
+          return { code: e.code ?? null, path: e.path ?? null, message: String(e.message ?? e) };
+        } finally {
+          player?.destroy();
+        }
+      }; true"
+    )
+    js
+  }
+  # The engine's verdict on a plain list (a checked character, perhaps edited after the check).
+  engine_run <- function(js, data) {
+    json <- jsonlite::toJSON(unclass(data), auto_unbox = TRUE, null = "null", digits = NA)
+    js(paste0("engineRun(", json, ")"))
+  }
+  tessa <- function() unclass(runtime_data("tessa_two", "Tessa Two", base = "tessa"))
+  alpha <- function() unclass(runtime_data())
+
+  it("accepts a top-level $schema string in both, and draws exactly as without it", {
+    js <- local_rules_page()
+    for (data in list(tessa(), alpha())) {
+      data$`$schema` <- "https://example.org/mascot/character-v1.json"
+      expect_identical(character_format_check(data)$`$schema`, data$`$schema`)
+      with_schema <- engine_run(js, data)
+      data$`$schema` <- NULL
+      expect_null(with_schema$code)
+      expect_identical(with_schema$pictures, engine_run(js, data)$pictures)
+    }
+  })
+
+  it("accepts an x_ key in every fixed-field object in both, and never reads one: the pictures do not change", {
+    js <- local_rules_page()
+    for (base in c("tessa", "alpha_visor")) {
+      recipe <- format_recipe(base)
+      recipe$id <- paste0(base, "_ext")
+      if (base == "tessa") {
+        # A reusable shape and a ref item that draws it, so the ref item's own keys are checked too.
+        recipe$shapes <- list(dot = list(shape = "circle", r = 3, fill = "feature"))
+        recipe$parts[[1]]$items <- c(recipe$parts[[1]]$items, list(list(shape = "ref", use = "dot", x = 0, y = -40)))
+      }
+      plain <- character_format_check(recipe)
+      extended <- character_format_check(format_with_extensions(recipe))
+      expect_gt(length(format_extension_paths(unclass(extended))), 40L)
+      result <- engine_run(js, extended)
+      expect_null(result$code, info = result$message)
+      expect_length(result$pictures, 11L)
+      expect_identical(result$pictures, engine_run(js, plain)$pictures, info = base)
+    }
+  })
+
+  it("draws a character with extension keys through mascot() and the host exactly as without them", {
+    recipe <- format_recipe("tessa")
+    recipe$id <- "tessa_plain"
+    plain <- runtime_character(character_format_check(recipe))
+    recipe$id <- "tessa_probe"
+    probed <- runtime_character(character_format_check(format_with_extensions(recipe)))
+    js <- local_runtime_page(
+      tags = list(
+        mascot("a", character = plain, motion = FALSE, placement = "inline"),
+        mascot("b", character = probed, motion = FALSE, placement = "inline")
+      )
+    )
+    install_runtime_helpers(js)
+    js("T.frames(3)")
+    result <- js(
+      "({a: T.picture(document.querySelector('#a canvas')), b: T.picture(document.querySelector('#b canvas')),
+        shown: document.getElementById('b').dataset.shownCharacter,
+        status: [document.querySelector('#a [role=status]').textContent,
+          document.querySelector('#b [role=status]').textContent]})"
+    )
+    expect_identical(result$shown, "tessa_probe")
+    expect_gt(result$a$ink, 1000)
+    expect_identical(result$b, result$a)
+    expect_identical(result$status[[2]], result$status[[1]])
+  })
+
+  it("accepts a note where R accepts one: motion, a track object, the bands and a mood's face", {
+    js <- local_rules_page()
+    data <- tessa()
+    plain <- engine_run(js, data)
+    data$motion$note <- "Slow and calm."
+    data$motion$change$note <- "A small wiggle."
+    data$gestures$wave$tracks$arm_r.rotate$note <- "The right arm waves."
+    data$lod$note <- "Small sizes."
+    data$lod$micro$face$note <- "No lashes."
+    data$moods$happy$face$note <- "A wide smile."
+    expect_no_error(character_format_check(data))
+    noted <- engine_run(js, data)
+    expect_null(noted$code, info = noted$message)
+    expect_identical(noted$pictures, plain$pictures)
+  })
+
+  it("draws without requires or with the version-1 list, and stops on an unknown capability, naming it", {
+    js <- local_rules_page()
+    data <- tessa()
+    data$requires <- NULL
+    expect_no_error(character_format_check(data))
+    expect_null(engine_run(js, data)$code)
+    data$requires <- as.list(unlist(character_format_policy()$capabilities))
+    expect_no_error(character_format_check(data))
+    expect_null(engine_run(js, data)$code)
+    data$requires <- list("parts", "teleport")
+    format_problem("capability", "$.requires[1]", character_format_check(data))
+    result <- engine_run(js, data)
+    expect_identical(result$code, "capability")
+    expect_identical(result$path, "$.requires[1]")
+    expect_match(result$message, "needs the capability \"teleport\"", fixed = TRUE)
+  })
+
+  it("refuses a clip on a kit effect item in both, at the same path", {
+    js <- local_rules_page()
+    data <- tessa()
+    data$face$kit_definition$effects$sweat$items[[2]]$clip <- "body.belly"
+    format_problem("capability", "$.face.kit_definition.effects.sweat.items[1].clip", character_format_check(data))
+    result <- engine_run(js, data)
+    expect_identical(result$code, "capability")
+    expect_identical(result$path, "$.face.kit_definition.effects.sweat.items[1].clip")
+  })
+
+  it("refuses a kit effect fade_at of 1 in both, at the same path, and accepts one just below", {
+    js <- local_rules_page()
+    data <- tessa()
+    data$face$kit_definition$effects$sweat$fade_at <- 1
+    format_problem("input_type", "$.face.kit_definition.effects.sweat.fade_at", character_format_check(data))
+    result <- engine_run(js, data)
+    expect_identical(result$code, "input_type")
+    expect_identical(result$path, "$.face.kit_definition.effects.sweat.fade_at")
+    data$face$kit_definition$effects$sweat$fade_at <- 0.99
+    expect_no_error(character_format_check(data))
+    expect_null(engine_run(js, data)$code)
+  })
+
+  it("refuses an undeclared outline.lod.<band>.second.colour in both; the engine meets it in that band", {
+    js <- local_rules_page()
+    data <- tessa()
+    # The engine paints an outline only under items that ask for one, so give the body's first item one.
+    data$parts[[1]]$items[[1]]$outline <- TRUE
+    data$outline$lod <- list(small = list(second = list(colour = "undeclared", width = 1)))
+    format_problem("missing_reference", "$.outline.lod.small.second.colour", character_format_check(data))
+    result <- engine_run(js, data)
+    expect_identical(result$code, "invalid_colour")
+    # The full band, drawn first, has no second outline: the engine meets the colour only at the small band.
+    expect_identical(
+      js(paste0(
+        "(() => { const c = ",
+        jsonlite::toJSON(data, auto_unbox = TRUE, null = "null", digits = NA),
+        "; const p = mascot.mount(document.createElement('canvas'), c); p.destroy(); return 'drawn'; })()"
+      )),
+      "drawn"
+    )
+    data$outline$lod$small$second$colour <- "outline"
+    expect_no_error(character_format_check(data))
+    expect_null(engine_run(js, data)$code)
+  })
+
+  it("knows the same capability names as the format policy", {
+    js <- local_rules_page()
+    policy <- character_format_policy()
+    names <- js("mascot.parts.capabilities")
+    expect_identical(unlist(names$supported), unlist(policy$capabilities))
+    expect_identical(unlist(names$reserved), unlist(policy$reserved_unsupported))
+  })
+})

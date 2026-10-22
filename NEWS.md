@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The website has a simpler look in light and dark mode: a narrower font that is easier to read, teal colours, one still glow instead of the moving background, and text capped at a comfortable line length. Code is no longer split with hyphens on phones (#451).
+
 * `mascot()` inside a `renderUI()` cached with `shiny::bindCache()` now works for every session, not only the first: the second visitor's mascot shows its status and takes `update_mascot()` calls instead of turning worried with "Mascot UI baseline could not be verified" (#424).
 
 * `update_mascot()` called from a `later::later()` callback, or any other code outside a reactive event, now reaches the mascot straight away instead of waiting for the next input on the page (#427).

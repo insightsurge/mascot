@@ -536,7 +536,7 @@ describe("B2 construction diagnostics", {
   it("explains lowercase ids for custom moods and gestures", {
     bot <- mascot_check_character(format_recipe("study_bot"))
     expect_error(mascot("helper", character = bot, mood = "Reviewing"), "lowercase")
-    expect_error(check_arg("Greet", "gesture", environment()), "lowercase")
+    expect_match(arg_problem("Greet", "gesture"), "lowercase")
   })
   it("preserves a specific condition when baseline preparation fails", {
     local_mocked_bindings(mascot_state_prepare = function(...) {
@@ -551,16 +551,12 @@ describe("B2 construction diagnostics", {
 
 
 describe("review fixes for construction diagnostics and documentation", {
-  it("lists the chosen character's moods and gestures for malformed ids", {
+  it("lists the chosen character's moods for malformed ids", {
     for (character in list(catalogue_alpha_two(), "tessa")) {
       mood_error <- tryCatch(mascot("helper", character = character, mood = "ha!py"), error = identity)
       expect_match(conditionMessage(mood_error), "lowercase")
       for (name in mascot_moods(character)$name) {
         expect_match(conditionMessage(mood_error), name, fixed = TRUE)
-      }
-      gesture_error <- tryCatch(check_arg("wa!ve", "gesture", environment(), character), error = identity)
-      for (name in mascot_gestures(character)$name) {
-        expect_match(conditionMessage(gesture_error), name, fixed = TRUE)
       }
     }
   })

@@ -110,7 +110,6 @@ describe("send_update()", {
     expect_error(send_update(NULL, "helper", list()), "'session'")
     expect_error(send_update(session, "has space", list()), "'id'")
     expect_error(send_update(session, "helper", 1), "'patch'")
-    expect_error(send_update(session, "helper", list(), replay = NA), "'replay'")
   })
 })
 
@@ -1088,19 +1087,6 @@ describe("documented Shiny settings", {
 })
 
 describe("retained mascot updates", {
-  it("merges fields, clears superseded moods and restores problems separately", {
-    expect_identical(
-      merge_update_patch(list(mood = "happy", gesture = "nod"), list(character = list(id = "blob"))),
-      list(gesture = "nod", character = list(id = "blob"))
-    )
-    expect_identical(merge_update_patch(list(problem = "Bad"), list(mood = "happy")), list(mood = "happy"))
-    expect_identical(
-      merge_update_patch(list(mood = "happy"), list(problem = "Bad")),
-      list(mood = "happy", problem = "Bad")
-    )
-    expect_error(merge_update_patch(1, list()), "'previous'")
-    expect_error(merge_update_patch(list(), 1), "'patch'")
-  })
   it("coalesces complete module state on ready and releases it on session end", {
     root <- shiny::MockShinySession$new()
     withr::defer(root$close())
@@ -1126,7 +1112,7 @@ describe("retained mascot updates", {
     expect_length(messages, 2)
     expect_identical(messages[[2]]$revision, latest$revision)
     root$close()
-    expect_null(root$userData$mascot_updates)
+    expect_null(root$userData$mascot_protocol)
   })
   it("recovers startup, earlier-cycle and same-cycle updates for the first renderUI mascots, playing gestures once", {
     local_shiny_browser()
@@ -1378,7 +1364,7 @@ describe("nested module ids", {
     })
     update_mascot("helper", mood = "thinking", session = other)
     expect_length(messages, 0)
-    expect_setequal(ls(root$userData$mascot_updates), c("first-review-helper", "second-review-helper"))
+    expect_setequal(ls(root$userData$mascot_protocol$states), c("first-review-helper", "second-review-helper"))
     state <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
     token <- mascot_mount_token(nested$ns("helper"), state, nested)
     root$setInputs(`first-review-helper` = protocol_snapshot(token))

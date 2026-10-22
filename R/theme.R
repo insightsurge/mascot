@@ -142,10 +142,7 @@ theme_role_pattern_cache <- new.env(parent = emptyenv())
 #' @noRd
 theme_role_pattern <- function() {
   if (is.null(theme_role_pattern_cache$pattern)) {
-    definitions <- character_format_schema()$definitions
-    id <- definitions$id$pattern
-    key <- definitions$colour_map$key_pattern
-    theme_role_pattern_cache$pattern <- if (!is.null(key) && identical(key, id)) key else id
+    theme_role_pattern_cache$pattern <- character_format_schema()$definitions$colour_map$key_pattern
   }
   theme_role_pattern_cache$pattern
 }
@@ -412,11 +409,6 @@ as_theme_arg <- function(x, call, character = NULL) {
     x <- structure(list(palette = NULL, light = x, dark = x, mode = "auto", css = NULL), class = "mascot_theme")
   }
   roles <- if (is.null(character)) NULL else colour_role_registry(character)
-  engine <- if (is.null(character)) {
-    NULL
-  } else {
-    names(character_colour_data(character)$colours)
-  }
   convert <- function(map, field) {
     checkmate::assert_list(map, null.ok = TRUE)
     checkmate::assert_string(field)
@@ -442,9 +434,6 @@ as_theme_arg <- function(x, call, character = NULL) {
           )
         }
       }
-    }
-    if (!is.null(character)) {
-      names(value) <- engine[match(names(map), colour_role_names(engine))]
     }
     value
   }
@@ -562,8 +551,8 @@ theme_palette_problem <- function(palette, data) {
 
 #' Name the other characters that have a palette of this name
 #'
-#' Palettes cannot be borrowed between characters yet, so an unknown palette
-#' that another character has is worth a pointer.
+#' Each palette belongs to its own character, so an unknown palette that another
+#' character has is worth a pointer.
 #' @noRd
 theme_palette_owner_hint <- function(palette, data) {
   checkmate::assert_string(palette, min.chars = 1)
@@ -578,7 +567,7 @@ theme_palette_owner_hint <- function(palette, data) {
     if (length(owners) > 1L) " have" else " has",
     " a palette called ",
     encodeString(palette, quote = '\"'),
-    "; palettes cannot be borrowed between characters yet."
+    "; each palette belongs to its own character."
   )
 }
 
@@ -592,14 +581,13 @@ theme_palette_colours <- function(palette, data) {
     cli::cli_abort("{problem}", class = "mascot_error")
   }
   definition <- character_palettes(data)[[palette]]
-  roles <- names(data$colours)
   maps <- lapply(c("light", "dark"), function(mode) {
     map <- if (mode == "dark" && !is.null(definition$dark)) definition$dark else definition$light
     if (!length(map)) {
       return(NULL)
     }
     value <- lapply(names(map), function(role) theme_colour(map[[role]], role))
-    names(value) <- roles[match(colour_role_names(names(map)), colour_role_names(roles))]
+    names(value) <- names(map)
     value
   })
   names(maps) <- c("light", "dark")

@@ -3436,17 +3436,13 @@ describe("studio palette follow-up (#353)", {
       expect_match(html, paste0(example$role, ' = "', example$colour, '"'), fixed = TRUE)
       # The wire keeps the palette base separate from the explicit role; the host applies explicit roles last.
       wire <- as_theme_arg(theme, environment(), id)
-      engine_role <- names(character_colour_data(id)$colours)[match(
-        example$role,
-        colour_role_names(names(character_colour_data(id)$colours))
-      )]
-      expect_identical(tolower(wire$light[[engine_role]]), example$colour)
+      expect_identical(tolower(wire$light[[example$role]]), example$colour)
       expect_false(
         tolower(
-          if (is.null(wire$palette_colours$light[[engine_role]])) {
+          if (is.null(wire$palette_colours$light[[example$role]])) {
             example$base
           } else {
-            wire$palette_colours$light[[engine_role]]
+            wire$palette_colours$light[[example$role]]
           }
         ) ==
           example$colour

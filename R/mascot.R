@@ -9,8 +9,8 @@
 #'   page. In a Shiny module use `ns("helper")` in the UI and `"helper"` in
 #'   the server; [update_mascot()] adds the module namespace once.
 #' @param ... Must be empty. Forces the arguments after it to be named.
-#' @param character A character name or [mascot_character()] object (Knurl and
-#'   Neer are experimental). Defaults to `"tessa"`. `NULL` is not accepted.
+#' @param character A character id such as `"tessa"`, or a [mascot_character()]
+#'   helper (Knurl and Neer are experimental). Defaults to `"tessa"`. `NULL` is not accepted.
 #' @param mood A mood name or [mascot_mood()] object. Defaults to `"idle"`.
 #'   See [mascot_moods()] for available choices. `NULL` is not accepted.
 #' @param status A non-empty string or [mascot_status()] object. `NULL` (the
@@ -193,7 +193,7 @@ mascot <- function(
   bubble <- as_bubble_arg(bubble, environment())
   size <- as_size_arg(size, environment())
   placement <- as_placement_arg(placement, environment())
-  theme <- mascot_update_theme(theme, environment(), if (is.null(character$data)) character$id else character$data)
+  theme <- as_theme_arg(theme, environment(), if (is.null(character$data)) character$id else character$data)
   motion <- as_motion_arg(motion, environment())
   click <- as_click_arg(click, environment())
   if (...length() > 0L) {
@@ -372,10 +372,7 @@ as_status_arg <- function(x, call) {
 #' Check a build-time argument with the public call attached
 #' @noRd
 check_arg <- function(x, arg, call, character = NULL) {
-  checkmate::assert_choice(
-    arg,
-    c("character", "mood", "status", "bubble", "gesture", "size", "placement", "theme", "motion", "click")
-  )
+  checkmate::assert_choice(arg, c("mood", "status", "bubble", "size", "placement", "theme", "motion", "click"))
   checkmate::assert_environment(call)
   if (!is.null(character)) {
     character_catalogue_assert(character)
@@ -385,12 +382,8 @@ check_arg <- function(x, arg, call, character = NULL) {
   if (is.null(problem)) {
     return(invisible(NULL))
   }
-  if (arg == "character" && isTRUE(checkmate::check_string(x, min.chars = 1))) {
-    valid <- builtin_characters()$id
-    abort_choice(x, valid, arg, arg, call)
-  }
-  if (arg %in% c("mood", "gesture") && !is.null(character)) {
-    valid <- if (arg == "mood") mascot_moods(character)$name else mascot_gestures(character)$name
+  if (arg == "mood" && !is.null(character)) {
+    valid <- mascot_moods(character)$name
     cli::cli_abort(
       c("{problem}", "i" = "Choose {.or {.val {valid}}}."),
       call = call,
@@ -514,9 +507,6 @@ arg_problem <- function(x, arg) {
     }
     suffix <- if (arg == "status") "; use mascot_status() to follow the mood" else ""
     return(paste0("`", arg, "` must be a non-empty string or a ", helper, "() object", suffix, "."))
-  }
-  if (arg %in% c("status", "bubble")) {
-    return(NULL)
   }
   NULL
 }

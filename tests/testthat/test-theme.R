@@ -38,7 +38,7 @@ describe("mascot_theme()", {
     expect_identical(css$css, list(body_highlight = "--team-blue"))
   })
   it("suggests the closest colour role for a misspelt one, and nothing when no role is close", {
-    roles <- colour_role_registry()
+    roles <- colour_role_registry("tessa")
     expect_match(theme_map_problem(list(bdoy = "blue"), "light", roles), 'Did you mean "body"?', fixed = TRUE)
     far <- theme_map_problem(list(zzzzzzzz = "blue"), "light", roles)
     expect_no_match(far, "Did you mean", fixed = TRUE)

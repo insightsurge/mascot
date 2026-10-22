@@ -627,34 +627,6 @@ character_format_references <- function(x) {
         if (is.null(x$face$colours)) character_object() else x$face$colours
       )
     }
-    if (
-      effect$op == "sweat_drop" &&
-        !effect$mode %in% c("progress", "track") ||
-        effect$op == "sparkle_star" && !effect$mode %in% c("pulse", "track")
-    ) {
-      character_format_abort(
-        "input_type",
-        paste0("$.face.kit_definition.effects.", id, ".mode"),
-        effect$mode,
-        "Use a supported effect operation/mode pair."
-      )
-    }
-    if (effect$mode == "progress" && "reduced_items" %in% names(effect)) {
-      character_format_abort(
-        "input_type",
-        paste0("$.face.kit_definition.effects.", id, ".reduced_items"),
-        NULL,
-        "Progress effects retain their static geometry under reduction."
-      )
-    }
-    if (effect$mode != "track" && any(c("frames", "tracks") %in% names(effect))) {
-      character_format_abort(
-        "input_type",
-        paste0("$.face.kit_definition.effects.", id),
-        NULL,
-        "Only track-mode effects declare frames and tracks."
-      )
-    }
   }
   graph$kit <- kit
   graph

@@ -23,7 +23,7 @@ fills, \code{primary} and \code{secondary}, comma-separated).
 Roles without a follow rule have \code{NA} in \code{follows} and \code{shade}; roles that
 fill no brand slot have \code{NA} in \code{brand}.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
-names and types. The first column is the value you pass to the matching function.
+names and types.
 }
 \description{
 Lists a character's colour roles (its colour parts) with their own colours,

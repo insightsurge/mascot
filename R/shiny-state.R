@@ -150,13 +150,14 @@ mascot_state_character <- function(wire) {
     cli::cli_abort("Character identity and checked content disagree.", class = "mascot_error")
   }
   identity <- attr(data, "mascot_manifest")$identity
+  parsed <- jsonlite::fromJSON(wire$json, simplifyVector = FALSE)
   context <- list(
     wire = wire,
     data = data,
     identity = identity,
     token = paste0("c", mascot_template_key(identity)),
-    source = jsonlite::fromJSON(wire$json, simplifyVector = FALSE),
-    roles = names(jsonlite::fromJSON(wire$json, simplifyVector = FALSE)$colours)
+    source = parsed,
+    roles = names(parsed$colours)
   )
   cache$characters <- utils::tail(c(cache$characters, list(context)), mascot_character_cache_limit)
   context
@@ -210,16 +211,10 @@ mascot_state_theme <- function(theme, data, strict = TRUE, roles = names(data$co
     }
   }
   for (field in c("light", "dark", "css")) {
-    # Legacy camel-case roles are the current engine's spelling.
-    valid <- roles
-    wrong <- if (!length(theme[[field]])) {
-      logical()
-    } else {
-      !colour_role_names(names(theme[[field]])) %in% colour_role_names(valid)
-    }
+    wrong <- if (!length(theme[[field]])) logical() else !names(theme[[field]]) %in% roles
     if (any(wrong)) {
       if (strict) {
-        hint <- theme_role_hint(colour_role_names(names(theme[[field]])[wrong]), colour_role_names(roles))
+        hint <- theme_role_hint(names(theme[[field]])[wrong], roles)
         cli::cli_abort(
           c(
             "Unknown theme colour role {.val {names(theme[[field]])[wrong]}} for {.val {data$id}}.{hint}",
@@ -231,36 +226,8 @@ mascot_state_theme <- function(theme, data, strict = TRUE, roles = names(data$co
       theme[[field]] <- theme[[field]][!wrong]
       if (!length(theme[[field]])) theme[field] <- list(NULL)
     }
-    if (length(theme[[field]])) {
-      names(theme[[field]]) <- roles[match(colour_role_names(names(theme[[field]])), colour_role_names(roles))]
-      checkmate::assert_names(names(theme[[field]]), type = "unique")
-    }
   }
   theme
-}
-
-#' Check target-dependent click action groups independently
-#' @noRd
-mascot_state_click <- function(click, data, strict = TRUE) {
-  checkmate::assert_list(click, names = "unique")
-  checkmate::assert_list(data)
-  checkmate::assert_flag(strict)
-  # Current click helpers have only independent action/menu groups. Future
-  # character-dependent groups declare their callable mood/gesture here.
-  for (field in intersect(c("mood", "gesture"), names(click))) {
-    available <- if (field == "mood") names(data$moods) else names(data$gestures)
-    if (!click[[field]] %in% available) {
-      if (strict) {
-        cli::cli_abort("Unavailable click {.val {field}} {.val {click[[field]]}}.")
-      }
-      mascot_diagnostic(
-        "mascot_click_dropped",
-        paste0("Unavailable click ", field, " group cleared for '", data$id, "'.")
-      )
-      click[[field]] <- NULL
-    }
-  }
-  click
 }
 
 #' Prepare a whole immutable patch before committing any part of it
@@ -302,7 +269,6 @@ mascot_state_prepare <- function(record, patch, restore = FALSE) {
   if (!is.null(patch$gesture) && !patch$gesture %in% names(context$data$gestures)) {
     abort_choice(patch$gesture, names(context$data$gestures), "gesture", "gesture", environment())
   }
-  next_state$click <- mascot_state_click(next_state$click, context$data, !restore && !is.null(patch$click))
   next_state$theme <- mascot_state_theme(
     next_state$theme,
     context$data,
@@ -461,11 +427,6 @@ mascot_state_schedule <- function(session, key) {
         record$pending <- NULL
       }
       state <- record$desired
-      # Target-dependent click groups are an internal extension point; the
-      # current public helpers expose independent actions/menus only. Keep
-      # their availability metadata outside the closed native-click payload.
-      click_groups <- state$click[intersect(c("mood", "gesture"), names(state$click))]
-      state$click[c("mood", "gesture")] <- NULL
       # Always self-contained: safe after page cache reclamation or lost acks.
       state$character$content_token <- record$context$token
       envelope <- list(
@@ -480,9 +441,6 @@ mascot_state_schedule <- function(session, key) {
         restore = record$restore,
         problem = owner$problems[[key]]
       )
-      if (length(click_groups)) {
-        envelope$extensions <- list(click_groups = click_groups)
-      }
       record$sent <- list(
         revision = record$revision,
         gesture = max(record$gesture_watermark, if (is.null(record$pending)) 0 else record$pending$revision),
@@ -552,6 +510,7 @@ mascot_problem <- function(session, key, text) {
 #' Validate safe counters without accepting fractional or infinite values
 #' @noRd
 mascot_safe_counter <- function(value) {
+  # value is untrusted browser input: check_* deliberately returns FALSE instead of failing.
   isTRUE(checkmate::check_number(value, lower = 0, upper = 9007199254740991)) && value == floor(value)
 }
 
@@ -731,14 +690,6 @@ mascot_snapshot <- function(data, session, name) {
   checkmate::assert_string(libname)
   checkmate::assert_string(pkgname)
   shiny::registerInputHandler("mascot.state", mascot_snapshot, force = TRUE)
-}
-
-#' Normalise existing public theme forms at the shared boundary
-#' @noRd
-mascot_update_theme <- function(x, call, character = NULL) {
-  checkmate::assert_environment(call)
-  character_catalogue_assert(character, nullable = TRUE)
-  as_theme_arg(x, call, character)
 }
 
 #' Structural preflight independent of an unknown target

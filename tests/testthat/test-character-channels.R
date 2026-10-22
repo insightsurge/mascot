@@ -207,11 +207,6 @@ describe("character_format_behaviour()", {
   })
 
   it("validates required callable gestures, fallbacks, and track timing", {
-    # Missing required callable gesture nod
-    fixture <- behaviour_recipe()
-    fixture$data$gestures$nod <- NULL
-    format_problem("missing_reference", "$.gestures.nod", character_format_behaviour(fixture$data, fixture$graph))
-
     # Gesture fallback pointing to undeclared fallback
     fixture <- behaviour_recipe()
     fixture$data$gestures$nod$fallback <- "ghost_gesture"

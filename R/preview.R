@@ -73,9 +73,9 @@ mascot_preview <- function(
   bubble <- as_bubble_arg(bubble, environment())
   size <- as_size_arg(size, environment())
   invisible(as_motion_arg(motion, environment()))
-  # Resolve once. Replace only slice 4's per-role contrast warnings with one list.
+  # Resolve once, muffling the per-role contrast warnings: one combined warning follows.
   resolved <- withCallingHandlers(
-    mascot_update_theme(theme, environment(), if (is.null(character$data)) character$id else character$data),
+    as_theme_arg(theme, environment(), if (is.null(character$data)) character$id else character$data),
     warning = function(warning) {
       checkmate::assert_class(warning, "warning")
       if (inherits(warning, "mascot_contrast")) {
@@ -198,7 +198,7 @@ preview_surfaces <- function(theme) {
   value
 }
 
-#' Collect supplied-role contrast findings with the existing calculation
+#' Collect supplied-role contrast findings with theme_contrast()
 #' @noRd
 preview_contrast <- function(theme, backgrounds) {
   checkmate::assert_list(theme, null.ok = TRUE)
@@ -216,7 +216,7 @@ preview_contrast <- function(theme, backgrounds) {
     for (role in setdiff(names(map), names(theme$css))) {
       ratio <- theme_contrast(map[[role]], backgrounds[[mode]])
       if (ratio < 3) {
-        value[nrow(value) + 1L, ] <- list(colour_role_names(role), map[[role]], backgrounds[[mode]], ratio, mode)
+        value[nrow(value) + 1L, ] <- list(role, map[[role]], backgrounds[[mode]], ratio, mode)
       }
     }
   }

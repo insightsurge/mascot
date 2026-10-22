@@ -408,7 +408,7 @@ describe("public listing documentation", {
       if (page == "mascot_families") {
         value <- Filter(function(node) identical(attr(node, "Rd_tag"), "\\value"), rd)[[1]]
         value <- paste(unlist(value), collapse = "")
-        for (fact in c("character", "NA", "built-in family")) {
+        for (fact in c("character", "NA", "every family that ships with mascot")) {
           expect_match(value, fact, fixed = TRUE)
         }
       }

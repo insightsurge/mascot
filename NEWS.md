@@ -1,6 +1,14 @@
 # mascot (development version)
 
-* Help pages and messages say what the package does now. The unknown-palette warning says each palette belongs to its own character; a character too big for its frame is told to keep every part, movement and effect inside the 300 by 300 frame; `mascot_examples()` says the `long-task` example needs promises and later; and the studio's colour swatches update as soon as the colours change (#462).
+* `mascot()`, `update_mascot()`, `mascot_preview()` and `mascot_colour_roles()`: the message for an unknown palette that another character has says each palette belongs to its own character (#462).
+
+* `mascot_check_character()` and `mascot_read_character()` say how to fix a character that is too big for its frame: keep every part, movement and effect inside the 300 by 300 frame at that size (#462).
+
+* `mascot_check_character()` and `mascot_read_character()` accept `alpha_visor` as the id of your own character (#462).
+
+* `mascot_examples()` says the `long-task` example needs promises and later (#462).
+
+* In `mascot_studio()`, the colour swatches update as soon as the colours change (#462).
 
 * Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).
 

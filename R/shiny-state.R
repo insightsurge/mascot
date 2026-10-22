@@ -311,17 +311,14 @@ mascot_state_accept <- function(record, patch) {
 mascot_state_buffer <- function(record, patch) {
   checkmate::assert_list(record, names = "unique")
   checkmate::assert_list(patch, names = "unique")
-  dependent <- patch[intersect(c("mood", "gesture", "theme", "click"), names(patch))]
-  # Only shared mood/gesture vocabularies and character-independent clicks are
-  # proved universal. Retain all other data, never just the last invalid guard.
+  dependent <- patch[intersect(c("mood", "gesture", "theme"), names(patch))]
+  # Only the shared mood and gesture vocabularies hold for every character.
+  # Retain all other data, never just the last invalid guard.
   if (!is.null(dependent$mood) && dependent$mood %in% mood_table()$name) {
     dependent$mood <- NULL
   }
   if (!is.null(dependent$gesture) && dependent$gesture %in% gesture_table()$name) {
     dependent$gesture <- NULL
-  }
-  if (!is.null(dependent$click) && !any(c("mood", "gesture") %in% names(dependent$click))) {
-    dependent$click <- NULL
   }
   if (!is.null(dependent$theme) && all(vapply(dependent$theme, is.null, logical(1)))) {
     dependent$theme <- NULL

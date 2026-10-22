@@ -389,7 +389,14 @@ character_format_node <- function(value, rule, path, definitions, json_source = 
     if (!is.null(rule$min_length) && size < rule$min_length) {
       fail(
         "input_type",
-        paste0("This array has ", size, " entries; use at least ", rule$min_length, "."),
+        paste0(
+          "This array has ",
+          size,
+          if (size == 1L) " entry" else " entries",
+          "; use at least ",
+          rule$min_length,
+          "."
+        ),
         shown = size
       )
     }
@@ -490,7 +497,9 @@ character_format_shown <- function(value, digits = 15L) {
   if (is.logical(value)) {
     return(tolower(as.character(value)))
   }
-  format(value, digits = digits, scientific = FALSE, trim = TRUE)
+  plain <- format(value, digits = digits, scientific = FALSE, trim = TRUE)
+  # A very large or very small number reads better in scientific notation than as hundreds of digits.
+  if (nchar(plain) > 20L) format(value, digits = digits, scientific = TRUE, trim = TRUE) else plain
 }
 
 #' Stop on the first number outside +/-limit, naming it and the limit

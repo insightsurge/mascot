@@ -164,6 +164,27 @@ describe("extension keys through resolution", {
     format_problem("family", "$.family_definition.defaults", character_format_resolve(resolved))
   })
 
+  it("merges a map entry called x_calm from the family defaults like any other id", {
+    # Given family defaults with two equal moods, calm and x_calm, and a character that words both statuses
+    source <- format_recipe("study_bot")
+    mood <- source$moods$idle
+    source$family_definition$defaults$moods <- list(calm = mood, x_calm = mood)
+    source$moods$calm <- list(status = "Calm")
+    source$moods$x_calm <- list(status = "Calm")
+    # When it is resolved, x_calm (an id in the moods map, not an extension key) is merged field by field like calm
+    resolved <- character_format_resolve(source)
+    expect_identical(resolved$moods$x_calm, resolved$moods$calm)
+    expect_identical(resolved$moods$x_calm$status, "Calm")
+    expect_identical(resolved$moods$x_calm$description, mood$description)
+  })
+
+  it("lists only a fixed object's note and extension keys as its own keys", {
+    expect_identical(character_format_own_keys(list(a = 1, note = "n", x_b = 2)), c("note", "x_b"))
+    expect_identical(character_format_own_keys(NULL), character())
+    expect_error(character_format_own_keys("x_a"))
+    expect_error(character_format_own_keys(1))
+  })
+
   it("never merges a family default's x_ value into the character's own, and keeps the defaults' own keys", {
     # Given a character and its family defaults that both carry x_editor, and defaults with their own x_ key and note
     source <- format_recipe("study_bot")

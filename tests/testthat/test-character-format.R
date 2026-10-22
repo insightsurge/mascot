@@ -597,7 +597,7 @@ describe("version 1 for files written by people and other tools", {
     data <- format_recipe()
     data$gestures$rock$tracks$root.rotate <- list(list(0, 0))
     error <- format_problem("input_type", "$.gestures.rock.tracks.root.rotate", character_format_parse(data))
-    expect_identical(error$fix, "This array has 1 entries; use at least 2.")
+    expect_identical(error$fix, "This array has 1 entry; use at least 2.")
   })
 
   it("names a value one rounding step past its limit in full, not as the limit", {
@@ -627,6 +627,25 @@ describe("version 1 for files written by people and other tools", {
     expect_identical(character_format_shown(TRUE), "true")
     expect_identical(character_format_shown(0.1 + 0.2), "0.3")
     expect_identical(character_format_choices("only"), "\"only\"")
+    # A very small or very large number is shown in scientific notation, not as hundreds of digits.
+    # (-1e-300 has no exact double; at 15 digits it may print as -9.99999999999999e-301, which is the same number.)
+    tiny <- character_format_shown(-1e-300)
+    expect_lte(nchar(tiny), 22L)
+    expect_match(tiny, "^-[0-9.]+e-30[01]$")
+    expect_equal(as.numeric(tiny), -1e-300, tolerance = 1e-12)
+    expect_identical(character_format_shown(1e25), "1e+25")
+    expect_identical(character_format_shown(123456.5), "123456.5")
+    expect_error(character_format_shown(1, digits = 0L))
+    expect_error(character_format_shown(1, digits = 1.5))
+    # The repair instructions for the input limits take a positive whole limit.
+    expect_match(character_format_node_fix(10L), "more than 10 nodes", fixed = TRUE)
+    expect_match(character_format_depth_fix(3L), "more than 3 deep", fixed = TRUE)
+    expect_match(character_format_bytes_fix(100L), "longer than 100 UTF-8 bytes", fixed = TRUE)
+    for (fix in list(character_format_node_fix, character_format_depth_fix, character_format_bytes_fix)) {
+      expect_error(fix(0L))
+      expect_error(fix(-1L))
+      expect_error(fix("10"))
+    }
     expect_error(character_format_range(1))
     expect_error(character_format_shown(list()))
     expect_error(character_format_choices(list()))

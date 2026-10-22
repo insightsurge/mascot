@@ -1,6 +1,5 @@
-# The "complete small character built in R" from the builder proposal (section 4),
-# written with the internal authoring constructors. `family` can be replaced to
-# test a known-family id.
+# The complete small character built in R (study_bot), written with the internal authoring constructors. `family`
+# can be replaced to test a known-family id.
 author_study_bot <- function(family = author_visorfolk(), ...) {
   rows <- list(list(0, 0), list(0.3, 0.08), list(1, 0))
   shell <- character_author_shape(

@@ -169,8 +169,8 @@ describe("character_format_check()", {
         is_under <- is_under | is_removal_exception
       }
 
-      # The anchor probe now has the required non-root wave track; invalid
-      # recipes based on it inherit that shared valid-track change.
+      # The anchor probe has a non-root wave track (panel.rotate) that the invalid recipes based on it do not carry;
+      # that difference is not drift.
       is_under <- is_under | startsWith(diff_keys, "$.gestures.wave.tracks.panel.rotate")
 
       expect_true(

@@ -490,7 +490,7 @@ describe("mascot.host bubbles", {
 
 
 describe("mascot.host bubble layout", {
-  it("R4 reserves the same mascot and status positions through message changes in either theme", {
+  it("reserves the same mascot and status positions through message changes in either theme", {
     skip_without_chrome()
     js <- local_host_page()
     result <- js(
@@ -561,8 +561,8 @@ describe("mascot.host bubble layout", {
   })
 })
 
-describe("host review regressions", {
-  it("R1 validates against each target's mood set in either unrelated mount order", {
+describe("mascot.host mood validation per target", {
+  it("validates against each target's mood set in either unrelated mount order", {
     skip_without_chrome()
     js <- local_host_page()
     result <- js(
@@ -608,7 +608,10 @@ describe("host review regressions", {
       expect_null(outcome$known$bubble)
     }
   })
-  it("A1 consumes Escape only when it closes a bubble", {
+})
+
+describe("mascot.host bubble keys, colours and focus", {
+  it("consumes Escape only when it closes a bubble", {
     skip_without_chrome()
     js <- local_host_page(bubble = mascot_bubble("Ready", duration = Inf))
     result <- js(
@@ -630,7 +633,7 @@ describe("host review regressions", {
     expect_true(result$firstPrevented)
     expect_false(result$secondPrevented)
   })
-  it("A2 drops each invalid queued patch whole before later updates can revive its bubble", {
+  it("drops each invalid queued patch whole before later updates can revive its bubble", {
     skip_without_chrome()
     js <- local_host_page()
     result <- js(
@@ -663,7 +666,7 @@ describe("host review regressions", {
     }
     expect_identical(result$kept$text, "Kept")
   })
-  it("A3 follows explicit dark and light themes without Bootstrap variables", {
+  it("follows explicit dark and light themes without Bootstrap variables", {
     skip_without_chrome()
     js <- local_host_page(bubble = mascot_bubble("Ready", duration = Inf))
     result <- js(
@@ -682,7 +685,7 @@ describe("host review regressions", {
     expect_identical(result$dark$tail, result$dark$background)
     expect_identical(result$light$background, "rgb(255, 255, 255)")
   })
-  it("A3 colours the bubble from the page's signal, never from the system preference alone", {
+  it("colours the bubble from the page's signal, never from the system preference alone", {
     skip_without_chrome()
     js <- local_host_page(bubble = mascot_bubble("Ready", duration = Inf), scheme = "dark")
     result <- js(
@@ -701,7 +704,7 @@ describe("host review regressions", {
     expect_identical(result$quarto, "rgb(33, 37, 41)")
     expect_identical(result$rootLight, "rgb(255, 255, 255)")
   })
-  it("G3 skips static text in tab order and still pauses while the close button has focus", {
+  it("skips static text in tab order and still pauses while the close button has focus", {
     skip_without_chrome()
     js <- local_host_page()
     install_bubble_clock(js)
@@ -721,7 +724,7 @@ describe("host review regressions", {
     expect_equal(result$remaining, 3)
     expect_equal(result$timers, 0)
   })
-  it("G4 focuses the mascot only when closing would remove the focused bubble content", {
+  it("focuses the mascot only when closing would remove the focused bubble content", {
     skip_without_chrome()
     js <- local_host_page()
     result <- js(
@@ -749,7 +752,7 @@ describe("host review regressions", {
     expect_true(result$linkFocus)
     expect_true(result$replaceFocus)
   })
-  it("G5 keeps the close button at least 24 by 24 CSS pixels at a small font size", {
+  it("keeps the close button at least 24 by 24 CSS pixels at a small font size", {
     skip_without_chrome()
     js <- local_host_page(bubble = mascot_bubble("Ready", duration = Inf))
     result <- js(
@@ -874,7 +877,7 @@ describe("mascot.host responsive size", {
     skip_without_chrome()
     js <- local_host_page()
     js(
-      "window.poses=[]; if (mascot.geometry) { const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{poses.push(s); return origGeo(ctx,c,s,colours,o);}}; }
+      "window.poses=[]; { const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{poses.push(s); return origGeo(ctx,c,s,colours,o);}}; }
       window.resizeTo = size => mascot.host.receive({id:'a',patch:{size:{size,small_screen:null}}});"
     )
     # Each size changes the backing canvas, so each one redraws.
@@ -1134,7 +1137,7 @@ describe("mascot.host restore feedback", {
 })
 
 
-describe("size and placement review regressions", {
+describe("mascot.host inline bubbles and floating placement", {
   it("keeps an inline bubble inside a container that clips overflow, such as a bslib card", {
     skip_without_chrome()
     js <- local_host_page(
@@ -1156,7 +1159,7 @@ describe("size and placement review regressions", {
     expect_gte(result$left, result$cardLeft + 7.99)
     expect_lte(result$right, result$cardRight - 7.99)
   })
-  it("settles the inline bubble shift when page CSS turns the shift off, as mascot_preview() does (#244)", {
+  it("settles the inline bubble shift when page CSS turns the shift off, as mascot_preview() does", {
     skip_without_chrome()
     js <- local_host_page(
       size = 48,
@@ -1184,7 +1187,7 @@ describe("size and placement review regressions", {
       "none"
     )
   })
-  it("S3-R1 keeps small inline bubbles inside either viewport edge and preserves reserved space", {
+  it("keeps small inline bubbles inside either viewport edge and preserves reserved space", {
     skip_without_chrome()
     for (size in list(48, mascot_size(120, small_screen = 48))) {
       js <- local_host_page(
@@ -1222,7 +1225,7 @@ describe("size and placement review regressions", {
       expect_equal(after$statusY, result$statusY)
     }
   })
-  it("S3-R2 moves focus before hiding a placement control without stealing focus elsewhere", {
+  it("moves focus before hiding a placement control without stealing focus elsewhere", {
     skip_without_chrome()
     js <- local_host_page(placement = mascot_placement("bottom-right", minimise = TRUE))
     for (floating in c(TRUE, FALSE)) {
@@ -1242,7 +1245,7 @@ describe("size and placement review regressions", {
     )
     expect_true(host_layout(js, "return document.activeElement===other;"))
   })
-  it("S3-R3 escapes transformed parents, follows their visibility and theme, and returns inline to its source", {
+  it("escapes transformed parents, follows their visibility and theme, and returns inline to its source", {
     skip_without_chrome()
     js <- local_host_page(viewport = c(800, 800), bubble = mascot_bubble("Ready", duration = Inf))
     js(
@@ -1284,7 +1287,7 @@ describe("size and placement review regressions", {
 })
 
 describe("mascot.host themes", {
-  it("T4 draws original colours by default and replaces and clears overrides", {
+  it("draws original colours by default and replaces and clears overrides", {
     skip_without_chrome()
     js <- local_host_page(record_colours = TRUE)
     result <- js(
@@ -1307,7 +1310,7 @@ describe("mascot.host themes", {
     expect_length(result$reset$overrides, 0)
     expect_identical(result$state$current$mood, "idle")
   })
-  it("T213 fills followers per mode, preserves supplied roles and reapplies rules after swaps", {
+  it("fills followers per mode, preserves supplied roles and reapplies rules after swaps", {
     skip_without_chrome()
     js <- local_host_page(record_colours = TRUE)
     result <- js(
@@ -1325,7 +1328,7 @@ describe("mascot.host themes", {
     expect_identical(result$pink$limb, "#c2185b")
     expect_gt(mean(grDevices::col2rgb(result$pink$bodyHighlight)), mean(grDevices::col2rgb("#c2185b")))
     expect_identical(result$pink$outline, "#14221B")
-    # The bow has its own colour now: a supplied body or rim does not reach it.
+    # The bow has its own colour: a supplied body or rim does not reach it.
     expect_identical(result$pink$accessory, "#DD89BA")
     expect_identical(result$supplied$sleeve, "#123456")
     expect_identical(result$supplied$limb, "#966600")
@@ -1336,7 +1339,7 @@ describe("mascot.host themes", {
     expect_identical(dark$sleeve, "#f2a6cf")
     expect_identical(dark$limb, "#f2a6cf")
   })
-  it("T213 reproduces Tessa's original derived colours within three RGB units", {
+  it("reproduces Tessa's original derived colours within three RGB units", {
     skip_without_chrome()
     description <- character_colour_data("tessa")
     js <- suppressWarnings(local_host_page(
@@ -1354,7 +1357,7 @@ describe("mascot.host themes", {
       expect_true(max(difference) <= 3, info = role)
     }
   })
-  it("T4 follows Bootstrap and Quarto, ignores system preference and honours explicit modes", {
+  it("follows Bootstrap and Quarto, ignores system preference and honours explicit modes", {
     skip_without_chrome()
     theme <- mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"), mode = "auto")
     js <- local_host_page(theme = theme, record_colours = TRUE)
@@ -1390,7 +1393,7 @@ describe("mascot.host themes", {
     )
     expect_identical(colour(), "#1F6FEB")
   })
-  it("T4 defaults pages without a signal to light despite a dark system preference", {
+  it("defaults pages without a signal to light despite a dark system preference", {
     skip_without_chrome()
     implicit <- local_host_page(
       theme = mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe")),
@@ -1405,7 +1408,7 @@ describe("mascot.host themes", {
     )
     expect_identical(explicit("themeDraws.at(-1).colours.body"), "#1F6FEB")
   })
-  it("T4 keeps palettes across swaps and drops only roles absent from the incoming drawing", {
+  it("keeps palettes across swaps and drops only roles absent from the incoming drawing", {
     skip_without_chrome()
     js <- local_host_page(record_colours = TRUE)
     result <- js(
@@ -1422,7 +1425,7 @@ describe("mascot.host themes", {
     expect_false("rim" %in% names(result$incoming$overrides))
     expect_identical(result$returning$colours$rim, "#ffa500")
   })
-  it("T4 resolves brand leaders afresh and keeps themes when queued before mounting", {
+  it("resolves brand leaders afresh and keeps themes when queued before mounting", {
     skip_without_chrome()
     skip_if_not_installed("bslib")
     js <- suppressWarnings(local_host_page(
@@ -1451,7 +1454,7 @@ describe("mascot.host themes", {
     expect_identical(result$queued$colours$body, "#abcdef")
     expect_false("rim" %in% names(result$queued$overrides))
   })
-  it("T4 reads CSS sources, falls back to original colours and warns once without rejecting low contrast", {
+  it("reads CSS sources, falls back to original colours and warns once without rejecting low contrast", {
     skip_without_chrome()
     js <- local_host_page(record_colours = TRUE)
     result <- js(
@@ -1476,7 +1479,7 @@ describe("mascot.host themes", {
     expect_identical(css_colour("initial"), "#079C9B")
     expect_true(js("cssWarnings.filter(x=>x.includes('--missing')).length === 1"))
   })
-  it("T4 preserves source CSS and mode when floating and themes restore controls without recolouring the bubble", {
+  it("preserves source CSS and mode when floating and themes restore controls without recolouring the bubble", {
     skip_without_chrome()
     js <- local_host_page(bubble = mascot_bubble("Ready", duration = Inf), record_colours = TRUE)
     js(
@@ -1506,7 +1509,7 @@ describe("mascot.host themes", {
     expect_identical(result$bubble, "rgb(255, 255, 255)")
     expect_identical(result$mode, "light")
   })
-  it("T4 rejects an entire bad theme patch before changing drawings, host state or markup", {
+  it("rejects an entire bad theme patch before changing drawings, host state or markup", {
     skip_without_chrome()
     js <- local_host_page(theme = mascot_theme(mode = "light"), record_colours = TRUE)
     result <- js(
@@ -1524,7 +1527,7 @@ describe("mascot.host themes", {
     expect_true(all(unlist(result$same)))
     expect_length(result$warnings, 10)
   })
-  it("T4 shares and removes mode observers and retains the media listener only for auto or floating bubbles", {
+  it("shares and removes mode observers and retains the media listener only for auto or floating bubbles", {
     skip_without_chrome()
     js <- local_host_page(theme = mascot_theme(mode = "light"))
     result <- js(
@@ -1553,7 +1556,7 @@ describe("mascot.host themes", {
 })
 
 describe("mascot.host motion", {
-  it("M5 makes faces instant with motion off and schedules no motion frames", {
+  it("makes faces instant with motion off and schedules no motion frames", {
     skip_without_chrome()
     js <- local_host_page(reduced = FALSE, motion = FALSE)
     r <- js(host_motion_js(
@@ -1568,7 +1571,7 @@ describe("mascot.host motion", {
     expect_equal(r$queue, 0)
     expect_equal(r$draws, 0)
   })
-  it("M5 honours the real visitor preference when motion is TRUE", {
+  it("honours the real visitor preference when motion is TRUE", {
     skip_without_chrome()
     js <- local_host_page(reduced = TRUE, motion = TRUE)
     r <- js(host_motion_js(
@@ -1581,7 +1584,7 @@ describe("mascot.host motion", {
     expect_equal(r$queue, 0)
     expect_equal(r$draws, 0)
   })
-  it("M5 swaps instantly with swap off, retains the theme and still animates moods", {
+  it("swaps instantly with swap off, retains the theme and still animates moods", {
     skip_without_chrome()
     js <- local_host_page(
       reduced = FALSE,
@@ -1607,7 +1610,7 @@ describe("mascot.host motion", {
     expect_true(any(unlist(r$frames) > 0))
     expect_equal(r$players, 1)
   })
-  it("M5 stops a running swap on the live controller and rejects whole bad updates", {
+  it("stops a running swap on the live controller and rejects whole bad updates", {
     skip_without_chrome()
     js <- local_host_page(reduced = FALSE)
     r <- js(host_motion_js(
@@ -1644,7 +1647,7 @@ describe("mascot.host motion", {
     expect_identical(r$queuedMotion, as_motion_arg(FALSE, environment()))
     expect_identical(r$motion, as_motion_arg(mascot_motion_settings(swap = FALSE), environment()))
   })
-  it("M5 removes restore growth and bubble animation while retaining the focus glow", {
+  it("removes restore growth and bubble animation while retaining the focus glow", {
     skip_without_chrome()
     js <- local_host_page(
       reduced = FALSE,
@@ -1684,7 +1687,7 @@ drag_js <- paste(
 )
 
 describe("mascot.host popup menu", {
-  it("P6 toggles by pointer, sends repeated event choices, holds the pose and clears it without motion", {
+  it("toggles by pointer, sends repeated event choices, holds the pose and clears it without motion", {
     skip_without_chrome()
     js <- local_host_page(
       click = mascot_popup_menu(c(about = "<b>About</b>", help = "Help")),
@@ -1820,7 +1823,7 @@ describe("mascot.host popup menu", {
     expect_gte(result$left, 7)
     expect_gte(result$right, 7)
   })
-  it("P6 Enter and Space always operate the toggle and navigation stays in its menu", {
+  it("Enter and Space always operate the toggle and navigation stays in its menu", {
     skip_without_chrome()
     js <- local_host_page(
       click = mascot_popup_menu(c(about = "About", help = "Help", more = "More")),
@@ -1852,7 +1855,7 @@ describe("mascot.host popup menu", {
     expect_identical(r$home, "about")
     expect_true(r$focus)
   })
-  it("P6 clears bubbles on opening, rejects whole bad patches and removes menu controls safely", {
+  it("clears bubbles on opening, rejects whole bad patches and removes menu controls safely", {
     skip_without_chrome()
     js <- local_host_page(
       click = mascot_popup_menu(c(about = "About")),
@@ -1877,7 +1880,7 @@ describe("mascot.host popup menu", {
     expect_identical(r$image, "img")
     expect_true(r$focus)
   })
-  it("P6 keeps multiple mascots independent, preserves menus across swaps and cleans up outside listeners", {
+  it("keeps multiple mascots independent, preserves menus across swaps and cleans up outside listeners", {
     skip_without_chrome()
     js <- local_host_page(click = mascot_popup_menu(c(about = "About")), shiny_menu = TRUE, motion = FALSE)
     r <- js(
@@ -1903,7 +1906,7 @@ describe("mascot.host popup menu", {
     expect_equal(r$added, r$removed)
     expect_identical(r$event, list("module-helper_menu", "about", list(priority = "event")))
   })
-  it("P6 hides static menus and keeps restore clicks separate from menus in a top floating corner", {
+  it("hides static menus and keeps restore clicks separate from menus in a top floating corner", {
     skip_without_chrome()
     static <- local_host_page(click = mascot_popup_menu(c(about = "About")))
     expect_false(static("!!document.querySelector('.mascot-menu-toggle')"))
@@ -2193,7 +2196,7 @@ spy_poses_js <- paste(
   "mascot.host.mount(el);mascot.mount=mount;"
 )
 
-describe("mascot.host gaze (#241)", {
+describe("mascot.host gaze", {
   looks <- list(
     top = list(face.look_x = NULL, face.look_y = -1),
     bottom = list(face.look_x = NULL, face.look_y = 1),
@@ -2370,7 +2373,7 @@ press_key <- function(js, key, repeat_key = FALSE) {
   invisible(NULL)
 }
 
-describe("mascot.host click (#257)", {
+describe("mascot.host click", {
   clicks <- "menuEvents.filter(e => e[0] === 'a_click')"
   it("rejects whitespace-only action and menu labels without applying any part of the patch", {
     skip_without_chrome()
@@ -2659,7 +2662,7 @@ describe("mascot.host click (#257)", {
   })
 })
 
-describe("mascot.host action tooltip (#257)", {
+describe("mascot.host action tooltip", {
   hover <- function(target, related = "null", type = "mouse") {
     sprintf(
       "%s.dispatchEvent(new PointerEvent('%s',{bubbles:true,pointerType:'%s',relatedTarget:%s}))",
@@ -2841,8 +2844,8 @@ describe("mascot.host action tooltip (#257)", {
   })
 })
 
-describe("mascot.host review corrections", {
-  it("A1 keeps short-screen menu choices reachable in every corner and inline", {
+describe("mascot.host menus on short screens and while scrolling", {
+  it("keeps short-screen menu choices reachable in every corner and inline", {
     skip_without_chrome()
     for (position in c("top-left", "top-right", "bottom-left", "bottom-right", "inline")) {
       js <- local_host_page(
@@ -2868,7 +2871,7 @@ describe("mascot.host review corrections", {
       expect_lte(result$last, 305)
     }
   })
-  it("A2 returns focus to the visible menu after either placement fallback", {
+  it("returns focus to the visible menu after either placement fallback", {
     skip_without_chrome()
     js <- local_host_page(
       click = mascot_popup_menu(c(about = "About")),
@@ -2897,7 +2900,7 @@ describe("mascot.host review corrections", {
     expect_true(all(unlist(result$outcomes)))
     expect_true(result$outside)
   })
-  it("C3 uses neutral action controls and hides them completely while the menu is open", {
+  it("uses neutral action controls and hides them completely while the menu is open", {
     skip_without_chrome()
     js <- local_host_page(
       click = mascot_popup_menu(c(about = "About")),
@@ -2947,7 +2950,7 @@ describe("mascot.host review corrections", {
     ))
     session$Emulation$setTouchEmulationEnabled(enabled = FALSE)
   })
-  it("A1 follows notifications and inline scrolling and releases the shared scroll listener", {
+  it("follows notifications and inline scrolling and releases the shared scroll listener", {
     skip_without_chrome()
     js <- local_host_page(
       click = mascot_popup_menu(c(
@@ -3079,7 +3082,7 @@ describe("mount replies racing live updates", {
 })
 
 describe("mascot.host dragging", {
-  it("D1 snaps to the nearest corner, reports it, opens bubbles inwards and keeps a click for the menu", {
+  it("snaps to the nearest corner, reports it, opens bubbles inwards and keeps a click for the menu", {
     skip_without_chrome()
     js <- local_host_page(
       placement = mascot_placement("bottom-right", drag = "snap"),
@@ -3143,7 +3146,7 @@ describe("mascot.host dragging", {
     }
     expect_equal(host_layout(js, "return innerHeight-document.getElementById('a').getBoundingClientRect().bottom;"), 16)
   })
-  it("D2 keeps a free drop inside the window, after resizes, until a placement update replaces it", {
+  it("keeps a free drop inside the window, after resizes, until a placement update replaces it", {
     skip_without_chrome()
     js <- local_host_page(
       placement = mascot_placement("top-left", drag = "free"),
@@ -3212,7 +3215,7 @@ describe("mascot.host dragging", {
     expect_true(result$placed)
     expect_null(result$dropped)
   })
-  it("D3 ignores other controls and stops dragging after placement changes", {
+  it("ignores other controls and stops dragging after placement changes", {
     skip_without_chrome()
     js <- local_host_page(
       placement = mascot_placement("bottom-right", minimise = TRUE, drag = "snap"),
@@ -3250,7 +3253,7 @@ describe("mascot.host dragging", {
       list(TRUE, FALSE, 0L)
     )
   })
-  it("D4 animates a snap unless motion is reduced or off, and removes its listeners on unmount", {
+  it("animates a snap unless motion is reduced or off, and removes its listeners on unmount", {
     skip_without_chrome()
     for (case in list(list(reduced = FALSE, motion = TRUE, n = 1L), list(reduced = FALSE, motion = FALSE, n = 0L))) {
       js <- local_host_page(
@@ -3275,7 +3278,7 @@ describe("mascot.host dragging", {
     )
     expect_identical(result, list(TRUE, TRUE, "snap"))
   })
-  it("D5 drags the restore button to a new corner, suppresses the ending click and restores on a still click", {
+  it("drags the restore button to a new corner, suppresses the ending click and restores on a still click", {
     skip_without_chrome()
     js <- local_host_page(
       placement = mascot_placement(drag = "snap"),
@@ -3349,7 +3352,7 @@ describe("mascot.host dragging", {
       )
     )
   })
-  it("D6 reports a minimised free drop, keeps it inside the window and cancels it on a placement update", {
+  it("reports a minimised free drop, keeps it inside the window and cancels it on a placement update", {
     skip_without_chrome()
     js <- local_host_page(
       placement = mascot_placement("top-left", drag = "free"),
@@ -3624,13 +3627,11 @@ describe("restoring from minimised", {
       app$wait_for_js("mascot.host.state(document.getElementById('tessa')) !== null")
       app$run_js(
         "window.drawCount = 0;
-        const origGeo = mascot.geometry?.draw;
-        if (mascot.geometry) {
-          mascot.geometry = { ...mascot.geometry, draw: (...args) => {
-            if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') window.drawCount++;
-            return origGeo(...args);
-          } };
-        }"
+        const origGeo = mascot.geometry.draw;
+        mascot.geometry = { ...mascot.geometry, draw: (...args) => {
+          if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') window.drawCount++;
+          return origGeo(...args);
+        } };"
       )
       app$click(selector = "#tessa .mascot-minimise")
       app$wait_for_js("document.getElementById('tessa').dataset.minimised === 'true'")
@@ -3660,7 +3661,7 @@ describe("restoring from minimised", {
   })
 })
 
-describe("mascot.host speed budgets (#295)", {
+describe("mascot.host speed budgets", {
   it("ignores unrelated class toggles and batches relevant mutations into one measure frame", {
     skip_without_chrome()
     js <- local_host_page(theme = mascot_theme(mode = "auto"))
@@ -3723,13 +3724,11 @@ describe("mascot.host speed budgets (#295)", {
         spacer.style.height = '3000px';
         document.body.append(spacer);
         const calls = [];
-        const origGeo = mascot.geometry?.draw;
-        if (mascot.geometry) {
-          mascot.geometry = { ...mascot.geometry, draw: (...args) => {
-            if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') calls.push(args[4]?.frame ?? 0);
-            return origGeo(...args);
-          } };
-        }
+        const origGeo = mascot.geometry.draw;
+        mascot.geometry = { ...mascot.geometry, draw: (...args) => {
+          if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') calls.push(args[4]?.frame ?? 0);
+          return origGeo(...args);
+        } };
         mascot.host.mount(el);
         await frames(4);
         const onscreenDraws = calls.length;
@@ -3778,16 +3777,14 @@ describe("mascot.host speed budgets (#295)", {
     js <- local_host_page(reduced = FALSE, viewport = c(800, 600))
     r <- js(
       "(async () => {
-        const el=document.getElementById('a'),mount=mascot.mount,origGeo=mascot.geometry?.draw;
+        const el=document.getElementById('a'),mount=mascot.mount,origGeo=mascot.geometry.draw;
         mascot.host.unmount(el);
         let controller,draws=0;
         mascot.mount=(...args)=>(controller=mount(...args));
-        if (mascot.geometry) {
-          mascot.geometry = { ...mascot.geometry, draw: (...args) => {
-            if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') draws++;
-            return origGeo(...args);
-          } };
-        }
+        mascot.geometry = { ...mascot.geometry, draw: (...args) => {
+          if (args[1]?.source?.parts?.[0]?.id !== 'ground_shadow') draws++;
+          return origGeo(...args);
+        } };
         const spacer=document.createElement('div');spacer.style.height='3000px';document.body.append(spacer);
         const frames=async()=>{for(let i=0;i<6;i++)await new Promise(requestAnimationFrame);};
         try {
@@ -3928,7 +3925,7 @@ describe("detail bands on the host", {
   })
 })
 
-describe("disabled menu activation (#350)", {
+describe("disabled menu activation", {
   it("keeps keyboard focus and aria-disabled while refusing pointer and keyboard activation", {
     skip_without_chrome()
     js <- local_runtime_page(

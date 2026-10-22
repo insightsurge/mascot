@@ -15,7 +15,7 @@ describe("complete-state browser delivery", {
     js
   }
 
-  it("U1.5-6 ignores other generations, equal revisions and whole-state invariant failures", {
+  it("ignores other generations, equal revisions and whole-state invariant failures", {
     js <- protocol_page()
     r <- js(
       "(() => {
@@ -43,7 +43,7 @@ describe("complete-state browser delivery", {
     expect_identical(r$latest$snapshot$applied_revision, 2L)
   })
 
-  it("U1.7 consumes once through a lost acknowledgement, remount and terminated generation", {
+  it("consumes once through a lost acknowledgement, remount and terminated generation", {
     js <- protocol_page(motion = FALSE)
     r <- js(
       "(() => {
@@ -69,7 +69,7 @@ describe("complete-state browser delivery", {
     expect_identical(r$latest$status$text, "New")
   })
 
-  it("U1.7 never schedules a played gesture twice when its acknowledgement is lost", {
+  it("never schedules a played gesture twice when its acknowledgement is lost", {
     js <- protocol_page()
     r <- js(
       "(() => {
@@ -84,7 +84,7 @@ describe("complete-state browser delivery", {
     expect_identical(r$after$gesture_watermark, r$before$gesture_watermark)
   })
 
-  it("U1.7 consumes swap and reduced-motion discards without losing coupled fields", {
+  it("consumes swap and reduced-motion discards without losing coupled fields", {
     js <- protocol_page()
     r <- js(
       "(() => {
@@ -105,7 +105,7 @@ describe("complete-state browser delivery", {
     expect_identical(r$restored$character, "blob")
   })
 
-  it("U1.7 terminates before synchronous unmount notification listeners can deliver an action", {
+  it("terminates before synchronous unmount notification listeners can deliver an action", {
     js <- protocol_page()
     r <- js(
       "(() => {
@@ -120,7 +120,7 @@ describe("complete-state browser delivery", {
     expect_identical(r$after$gesture_watermark, 2L)
   })
 
-  it("U1.8 retains bubble dismissal and remaining lifetime while explicit new revisions reopen", {
+  it("retains bubble dismissal and remaining lifetime while explicit new revisions reopen", {
     js <- protocol_page()
     install_bubble_clock(js)
     r <- js(
@@ -146,7 +146,7 @@ describe("complete-state browser delivery", {
     expect_equal(r$reopened$remaining, 5)
   })
 
-  it("U1.9 starts the counters again when a reconnect binds the page to a new server session", {
+  it("starts the counters again when a reconnect binds the page to a new server session", {
     js <- protocol_page()
     r <- js(
       "(() => {
@@ -201,7 +201,7 @@ describe("complete-state browser delivery", {
     expect_identical(r$later$snapshot$bubble_watermark, 1L)
   })
 
-  it("U1.4/10 restores all state together, uses shown status for ARIA and rejects duplicate live ids", {
+  it("restores all state together, uses shown status for ARIA and rejects duplicate live ids", {
     js <- protocol_page()
     r <- js(
       "(() => {

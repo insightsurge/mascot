@@ -33,7 +33,7 @@ describe("mascot_gesture()", {
 })
 
 describe("gesture help", {
-  it("G2 names nod and wave in the name argument's help", {
+  it("names nod and wave in the name argument's help", {
     path <- system.file("man", "mascot_gesture.Rd", package = "mascot")
     rd <- if (nzchar(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[["mascot_gesture.Rd"]]
     arguments <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\arguments"), rd)[[1]]

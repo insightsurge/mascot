@@ -1,5 +1,5 @@
 describe("session and static mascot specifications", {
-  it("U1.9 mounts static UI in independent sessions and rejects foreign dynamic defaults", {
+  it("mounts static UI in independent sessions and rejects foreign dynamic defaults", {
     ui <- mascot("shared", bubble = "Static")
     token <- ui$attribs[["data-mount-token"]]
     a <- protocol_fixture()
@@ -31,7 +31,7 @@ describe("session and static mascot specifications", {
     expect_length(owner$mounts, 0)
   })
 
-  it("#424 lets a mascot built in one session work from its cached HTML in another session", {
+  it("lets a mascot built in one session work from its cached HTML in another session", {
     a <- protocol_fixture()
     b <- protocol_fixture()
     withr::defer(a$session$close())
@@ -75,7 +75,7 @@ describe("session and static mascot specifications", {
     expect_false(isTRUE(protocol_record(a)$live))
   })
 
-  it("#424 keeps visitor-specific content out of the process-wide key cache", {
+  it("keeps visitor-specific content out of the process-wide key cache", {
     store <- mascot_template_store()
     saved <- store$keys
     withr::defer(store$keys <- saved)
@@ -105,7 +105,7 @@ describe("session and static mascot specifications", {
     expect_error(mascot_template_key("x", remember = NA), "Assertion")
   })
 
-  it("U1.9 shares complete templates, caps unbound LRU entries and pins bound descriptors", {
+  it("shares complete templates, caps unbound LRU entries and pins bound descriptors", {
     store <- mascot_template_store()
     # Restore other tests' read-only templates, not a destructive global reset.
     saved <- as.list(store)
@@ -144,7 +144,7 @@ describe("session and static mascot specifications", {
     expect_null(g$session$userData$mascot_protocol$states$helper)
   })
 
-  it("U1.9 reclaims superseded dynamic content and sends self-contained recovery", {
+  it("reclaims superseded dynamic content and sends self-contained recovery", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
     base <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))

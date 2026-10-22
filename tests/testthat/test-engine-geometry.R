@@ -390,7 +390,7 @@ describe("character-format geometry and painting", {
   })
 })
 
-describe("E5b per-band work bound and policy caps", {
+describe("per-band work bound and policy caps", {
   it("keeps the browser's band caps equal to the shared policy for every metric it counts", {
     skip_without_chrome()
     js <- local_character_engine()

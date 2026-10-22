@@ -5,8 +5,8 @@
 # of the system temp directory: R deletes tempdir() when the session ends. Slow CI runners can need more than
 # chromote's default 10 seconds to start Chrome, hence the longer timeout.
 #
-# A Chrome that crashes would fail every later browser test with "Chromote has been closed." (one run had 384 such
-# failures). So each Chrome is checked when a test asks for it and replaced when its process has ended, and a Chrome
+# A Chrome that crashes would fail every later browser test with "Chromote has been closed.". So each Chrome is
+# checked when a test asks for it and replaced when its process has ended, and a Chrome
 # that keeps dying stops the browser tests with a visible skip instead of a loop. Two Chromes are shared: this file's
 # browser (engine pages, `local_chrome_session()`) and chromote's default one, which shinytest2 uses for every app.
 # `browser` and `default` hold the Chromes started here; `restarts` counts replacements across both (#446).

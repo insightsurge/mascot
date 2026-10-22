@@ -164,7 +164,7 @@ describe("public argument error classes", {
   })
 })
 
-describe("B2 studio choices", {
+describe("studio choices", {
   it("classifies unknown view, function and character choices", {
     expect_error(mascot_studio(view = "wrong", run = FALSE), class = "mascot_error_choice")
     expect_error(mascot_studio(fn = "wrong", run = FALSE), class = "mascot_error_choice")
@@ -172,7 +172,7 @@ describe("B2 studio choices", {
   })
 })
 
-describe("mascot_studio() views (#395)", {
+describe("mascot_studio() views", {
   page <- function(app, query = "") {
     as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
   }

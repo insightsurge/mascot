@@ -38,7 +38,7 @@ local_character_engine <- function(env = parent.frame()) {
 }
 
 
-# Small complete face fixtures keep browser assertions independent of the host/adapter.
+# Small complete face fixtures keep browser assertions independent of the host.
 local_face_engine <- function(env = parent.frame()) {
   checkmate::assert_environment(env)
   js <- local_character_engine(env)

@@ -270,7 +270,7 @@ describe("format-v1 tracks", {
     expect_equal(unlist(r$instance), 0.5)
     expect_equal(r$none, 0)
     expect_length(r$moving, 0)
-    # Frame 40 is 4 frames into a wave that started at 36 (30 frames long); the finished nod no longer blocks it.
+    # Frame 40 is 4 frames into a wave that started at 36 (30 frames long); the finished nod does not block it.
     expect_lt(r$extra, 1.25)
     expect_equal(r$viaChange, -3)
     expect_identical(r$anchor, list(code = "missing_reference", path = "$.gestures.nod.effects[0]"))

@@ -259,7 +259,7 @@ local_preview_page <- function(page, env = parent.frame()) {
 }
 
 describe("mascot_preview() in Chrome", {
-  it("P1 draws every labelled mood and size with genuinely light/dark surfaces and steady faces", {
+  it("draws every labelled mood and size with genuinely light/dark surfaces and steady faces", {
     skip_without_chrome()
     js <- local_preview_page(mascot_preview())
     expect_identical(js("document.querySelectorAll('.mascot canvas').length"), 40L)
@@ -307,7 +307,7 @@ describe("mascot_preview() in Chrome", {
       "Array.from(document.querySelectorAll('.mascot-bubble-region')).every(el=>getComputedStyle(el).height==='0px' && getComputedStyle(el).visibility==='hidden')"
     ))
   })
-  it("P2 draws both supplied palettes despite source mode, keeps warnings and static placement/menu semantics", {
+  it("draws both supplied palettes despite source mode, keeps warnings and static placement/menu semantics", {
     skip_without_chrome()
     page <- suppressWarnings(mascot_preview(
       mood = "happy",
@@ -344,7 +344,7 @@ describe("mascot_preview() in Chrome", {
       rep(c(96L, 160L, 96L, 24L), 2)
     )
   })
-  it("P3 keeps percentage and narrow-screen sizes in the requested column only", {
+  it("keeps percentage and narrow-screen sizes in the requested column only", {
     skip_without_chrome()
     js <- local_preview_page(mascot_preview(
       mood = "idle",
@@ -365,7 +365,7 @@ describe("mascot_preview() in Chrome", {
 })
 
 describe("mascot_preview() of a format-v1 character in Chrome", {
-  it("I1 draws every mood at 160, 160, 96 and 24 px offline, each in the detail band its width asks for", {
+  it("draws every mood at 160, 160, 96 and 24 px offline, each in the detail band its width asks for", {
     skip_without_chrome()
     character <- runtime_character(runtime_data(edit = function(recipe) {
       recipe$moods$thinking$status <- "Reading the logs"
@@ -409,7 +409,7 @@ describe("mascot_preview() of a format-v1 character in Chrome", {
 })
 
 describe("mascot_preview() bubbles in Chrome", {
-  it("P4 keeps every bubble inside its own cell at each size, in light and dark, wide or narrow and scrolled", {
+  it("keeps every bubble inside its own cell at each size, in light and dark, wide or narrow and scrolled", {
     skip_without_chrome()
     # Bubble boxes that leave their own cell, or show over another cell, as "cell" or "cell/other" indexes. Each
     # panel's table scrolls sideways and clips what is out of view, so only the visible parts are compared.
@@ -458,7 +458,7 @@ describe("mascot_preview() bubbles in Chrome", {
 })
 
 describe("bslib preview dark surface in Chrome", {
-  it("P213 paints the dark panel with body-bg-dark", {
+  it("paints the dark panel with body-bg-dark", {
     skip_without_chrome()
     skip_if_not_installed("bslib")
     theme <- bslib::bs_theme(version = 5, bg = "#fefefe", fg = "#222222")
@@ -507,7 +507,7 @@ describe("public argument error classes", {
   })
 })
 
-describe("B2 preview contract", {
+describe("preview contract", {
   it("removes inert arguments and compares 160, 96 and 24 pixels", {
     expect_false(any(c("placement", "click") %in% names(formals(mascot_preview))))
     expect_error(mascot_preview(placement = "inline"), class = "mascot_error_dots")

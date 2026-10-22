@@ -148,7 +148,7 @@ describe("public argument error classes", {
 })
 
 
-describe("mascot_popup_menu() safeguards (#349)", {
+describe("mascot_popup_menu() argument safeguards", {
   it("requires items whenever direction, label or tooltip is explicitly supplied", {
     for (options in list(
       list(direction = "auto"),
@@ -172,7 +172,7 @@ describe("mascot_popup_menu() safeguards (#349)", {
   })
 })
 
-describe("popup menu input contract (#349)", {
+describe("popup menu input contract", {
   it("toggles by pointer and keyboard without clicks and sends each item choice", {
     js <- local_runtime_page(
       tags = list(mascot("helper", placement = "inline", motion = FALSE, click = mascot_popup_menu(c(help = "Help")))),
@@ -206,7 +206,7 @@ describe("popup menu input contract (#349)", {
   })
 })
 
-describe("disabled popup menus (#350)", {
+describe("disabled popup menus", {
   it("validates and sends the disabled flag, including the empty-helper safeguard", {
     expect_false(mascot_popup_menu(c(help = "Help"))$disabled)
     expect_true(as_click_arg(mascot_popup_menu(c(help = "Help"), disabled = TRUE), environment())$disabled)

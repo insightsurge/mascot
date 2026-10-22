@@ -370,7 +370,7 @@ describe("cold-start palette validation", {
   })
 })
 
-describe("B2 theme diagnostics", {
+describe("theme diagnostics", {
   it("lists valid roles and classifies invalid mode choices", {
     problem <- theme_map_problem(list(typo = "red"), "theme", c("body", "rim"))
     expect_match(problem, "body", fixed = TRUE)

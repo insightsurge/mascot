@@ -324,8 +324,8 @@ describe("server bubbles and gestures in a browser", {
   })
 })
 
-describe("update review regressions", {
-  it("R2 renders a deferred tag once and sends that exact result", {
+describe("update_mascot() deferred tags, sessions and gesture help", {
+  it("renders a deferred tag once and sends that exact result", {
     calls <- new.env(parent = emptyenv())
     calls$count <- 0L
     calls$patches <- list()
@@ -346,7 +346,7 @@ describe("update review regressions", {
       expect_true(calls$patches[[1]]$bubble$html)
     })
   })
-  it("R2 warns without sending when deferred tag rendering fails", {
+  it("warns without sending when deferred tag rendering fails", {
     calls <- new.env(parent = emptyenv())
     calls$count <- 0L
     calls$patches <- list()
@@ -372,7 +372,7 @@ describe("update review regressions", {
     expect_named(calls$patches[[1]], "problem")
     expect_match(calls$patches[[1]]$problem, "Cannot render message")
   })
-  it("G7 diagnoses an unnamed session before warning about runtime values", {
+  it("diagnoses an unnamed session before warning about runtime values", {
     shiny::testServer(function(input, output, session) {}, {
       expect_error(update_mascot("helper", mood = "happy", session), "session")
       for (arg in c("character", "mood", "status", "bubble")) {
@@ -386,7 +386,7 @@ describe("update review regressions", {
       expect_error(update_mascot("helper", misplaced, session = NULL), "session")
     }
   })
-  it("G1 and G6 send untimed rendered tags and warn for unsupported dependencies", {
+  it("sends untimed rendered tags and warns for unsupported dependencies", {
     calls <- new.env(parent = emptyenv())
     calls$patches <- list()
     local_mocked_bindings(
@@ -412,7 +412,7 @@ describe("update review regressions", {
       expect_length(calls$patches, 3)
     })
   })
-  it("G2 names nod and wave in the gesture argument's help", {
+  it("names nod and wave in the gesture argument's help", {
     path <- system.file("man", "update_mascot.Rd", package = "mascot")
     rd <- if (nzchar(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[["update_mascot.Rd"]]
     arguments <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\arguments"), rd)[[1]]
@@ -484,7 +484,7 @@ describe("update_mascot() size and placement", {
     shiny::testServer(function(input, output, session) {}, {
       bad_size <- mascot_size()
       bad_size$small_screen <- "0%"
-      # A helper built before simplify_when_small was removed carries an extra field.
+      # A size helper with a field that mascot_size() does not make (simplify_when_small) is refused.
       bad_fields <- mascot_size()
       bad_fields$simplify_when_small <- TRUE
       for (x in list(23, Inf, "24px", bad_size, bad_fields)) {
@@ -682,7 +682,7 @@ describe("size and placement in a Shiny browser", {
 
 
 describe("floating mascots in dynamic module UI", {
-  it("S3-R3 preserves tab visibility, avoids duplicate bindings and tears down the original controller on replacement", {
+  it("preserves tab visibility, avoids duplicate bindings and tears down the original controller on replacement", {
     local_shiny_browser()
     app <- app_driver(function() {
       library(mascot)
@@ -807,7 +807,7 @@ describe("update_mascot() themes", {
 })
 
 describe("theme in a Shiny browser", {
-  it("T4 follows a bslib dark-mode input with no mode argument or server theme updates", {
+  it("follows a bslib dark-mode input with no mode argument or server theme updates", {
     local_shiny_browser()
     skip_if_not_installed("bslib")
     app <- app_driver(function() {
@@ -827,7 +827,7 @@ describe("theme in a Shiny browser", {
     app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper'))?.colours.body === '#1F6FEB'")
     expect_identical(app$get_js("mascot.host.state(document.getElementById('helper')).mode"), "light")
     app$run_js(
-      "window.drawnBodies=[];if (mascot.geometry) { const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{if (colours?.body) drawnBodies.push(colours.body); return origGeo(ctx,c,s,colours,o);}}; }"
+      "window.drawnBodies=[];{ const origGeo=mascot.geometry.draw; mascot.geometry = { ...mascot.geometry, draw: (ctx,c,s,colours,o)=>{if (colours?.body) drawnBodies.push(colours.body); return origGeo(ctx,c,s,colours,o);}}; }"
     )
     app$run_js("document.getElementById('dark_mode').shadowRoot.querySelector('button').click()")
     app$wait_for_js("mascot.host.state(document.getElementById('helper')).colours.body === '#9EC5FE'")
@@ -900,7 +900,7 @@ describe("update_mascot() motion", {
 })
 
 describe("motion in a Shiny browser", {
-  it("M5 changes motion from an app setting without replacing the canvas", {
+  it("changes motion from an app setting without replacing the canvas", {
     local_shiny_browser()
     app <- app_driver(function() {
       library(mascot)
@@ -986,7 +986,7 @@ describe("update_mascot() popup menu", {
 })
 
 describe("popup menu in a Shiny browser", {
-  it("P6 receives repeated choices in a module and opens the app's modal", {
+  it("receives repeated choices in a module and opens the app's modal", {
     local_shiny_browser()
     app <- app_driver(function() {
       library(mascot)
@@ -1024,7 +1024,7 @@ describe("popup menu in a Shiny browser", {
 
 
 describe("documented Shiny settings", {
-  it("D4 runs the help example for idle movement and a nod", {
+  it("runs the help example for idle movement and a nod", {
     local_shiny_browser()
     rd <- local_help_page("mascot_motion_settings")
     con <- textConnection("code", "w", local = TRUE)
@@ -1064,7 +1064,7 @@ describe("documented Shiny settings", {
     app$set_inputs(idle = TRUE)
     app$wait_for_js("document.getElementById('helper').dataset.idle==='true'")
   })
-  it("D4 runs the complete module help block and receives repeated choices", {
+  it("runs the complete module help block and receives repeated choices", {
     local_shiny_browser()
     rd <- local_help_page("mascot_popup_menu")
     details <- Filter(function(x) identical(attr(x, "Rd_tag"), "\\details"), rd)[[1]]
@@ -1452,7 +1452,7 @@ describe("nested modules across tabs", {
 })
 
 
-describe("inline helper errors in update_mascot() (#349)", {
+describe("inline helper errors in update_mascot()", {
   it("sends the development overlay text when helpers fail", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()
@@ -1528,7 +1528,7 @@ describe("inline helper errors in update_mascot() (#349)", {
   })
 })
 
-describe("update documentation (#350)", {
+describe("update documentation", {
   it("lists every helper reset and whole-setting replacement", {
     skip_if_not(file.exists(test_path("..", "..", "R", "update-mascot.R")), "Source-only roxygen check")
     lines <- readLines(test_path("..", "..", "R", "update-mascot.R"))
@@ -1557,7 +1557,7 @@ describe("update documentation (#350)", {
   })
 })
 
-describe("module warning ids (#350)", {
+describe("module warning ids", {
   it("uses the local id for early and state validation warnings and overlays", {
     local_mocked_bindings(dev_mode = function() TRUE)
     root <- shiny::MockShinySession$new()
@@ -1601,7 +1601,7 @@ describe("module warning ids (#350)", {
 })
 
 
-describe("settle overlay in a cold-start update (#350)", {
+describe("settle overlay in a cold-start update", {
   it("keeps the worried overlay when a buffered update fails as the anchor call settles", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()

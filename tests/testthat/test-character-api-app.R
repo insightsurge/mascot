@@ -1,4 +1,4 @@
-describe("R4a characters through real Shiny", {
+describe("characters in a real Shiny app", {
   it("mounts every built-in through mascot() and changes its mood", {
     local_shiny_browser()
     app <- app_driver(function() {

@@ -30,7 +30,13 @@ a character drawn in code shows a mood and animates when the mood changes. What 
    Delete the sections that do not apply.
 5. **Suggest labels** in the pull request: one type (`enhancement`, `bug`, `documentation`, `chore`) and one or more
    `area: *`. The package creator applies them; the release notes are built from them.
-6. **The package creator merges** once CI is green.
+6. **The package creator merges** once CI is green. Pull requests are squash-merged, so the pull request title
+   becomes the commit message on `main`: keep it a Conventional Commit.
+
+`main` is protected by a ruleset: changes reach it only through a pull request, and the required checks must pass.
+CI on a pull request from a fork waits for a maintainer to approve the run; this is expected, so there is no need to
+ask. Please leave "Allow edits by maintainers" on, so a maintainer can fix a small thing
+(a typo, a failing format check) on your branch instead of asking you to.
 
 Stacked pull requests are fine. Base the second one on the branch below it, and say so in its description.
 
@@ -118,6 +124,9 @@ their licence. See the section on bundled files in [`docs/standards.md`](https:/
 
 ## Conduct and data
 
-Be kind and patient. Give feedback on the work, not the person.
+Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md). Be kind and patient, and give feedback on
+the work, not the person. To report a security problem, do not open an issue: follow the
+[security policy](SECURITY.md). For questions, use [Discussions](https://github.com/insightsurge/mascot/discussions)
+rather than an issue.
 
 Never put real personal, patient or client data in code, tests, issues, examples or screenshots. Use synthetic data.

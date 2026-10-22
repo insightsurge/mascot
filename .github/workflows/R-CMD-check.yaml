@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  R-CMD-check:
+  check:
     runs-on: ${{ matrix.config.os }}
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
@@ -65,3 +65,17 @@ jobs:
           error-on: '"note"'
           upload-snapshots: true
           build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'
+
+  # One check name for the branch ruleset to require: it fails unless every matrix job above succeeded.
+  R-CMD-check:
+    needs: check
+    if: always()
+    runs-on: ubuntu-26.04
+    name: R-CMD-check
+    steps:
+      - name: Require every matrix job to succeed
+        env:
+          RESULT: ${{ needs.check.result }}
+        run: |
+          echo "Matrix result: ${RESULT}"
+          test "${RESULT}" = "success"

@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* Help pages and messages say what the package does now. The unknown-palette warning says each palette belongs to its own character; a character too big for its frame is told to keep every part, movement and effect inside the 300 by 300 frame; `mascot_examples()` says the `long-task` example needs promises and later; and the studio's colour swatches update as soon as the colours change (#462).
+
 * The website's top menu underlines the page you are on (#474).
 
 * The website's search results open on the site being read. Before, each result opened the future GitHub Pages address, which does not exist yet (#457).

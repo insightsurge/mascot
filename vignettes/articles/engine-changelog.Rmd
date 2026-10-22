@@ -9,6 +9,22 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-22 — A readable engine version, and comments that say what the code does (#464)
+
+**In brief:** `window.mascot.version` gives the version of mascot that a page runs, in Shiny apps, `mascot_preview()`
+and Quarto or R Markdown pages. A page that loads a second engine of another version keeps the first and says so in
+the browser console, instead of ignoring the second without a word.
+
+**Technical:**
+
+* `mascot_dependency()` gives the `mascot.js` script tag a `data-mascot-version` attribute with the package version;
+  `mascot.js` reads it into `window.mascot.version` (`null` when a page loads the file without it). Its load-twice
+  guard warns once through `console.warn` when the second copy has another version.
+* Comments in `mascot-host.js`, `mascot-player.js`, `mascot-parts.js`, `mascot-geometry.js` and `mascot.css` say what
+  the code does now, without internal stage names or references to documents outside the package.
+* `mascot-player.js` reads a gesture track's key values as `k.value` (normalised keys are always objects), and
+  `mascot-host.js` drops a check for a missing description that an earlier line already makes.
+
 ## 2026-10-22 — The engine has one drawing path (#463)
 
 **In brief:** The engine draws characters with `format_version` 1 only, the format of every built-in character and of

@@ -4,6 +4,10 @@
  * The small helpers every other engine file shares: the frame rate, reading a character description from the page and
  * the colour guard. Drawing is deterministic: a frame is a pure function of the character, its state and a frame
  * number. The engine never reads the clock to draw and never calls Math.random().
+ *
+ * window.mascot.version is the version of the R package this engine belongs to: R gives this file's script tag a
+ * data-mascot-version attribute. A page that loads a second engine of another version keeps the first one and says so
+ * once in the console.
  */
 (() => {
   // biome-ignore lint/suspicious/noRedundantUseStrict: loaded with a <script> tag (a classic script, not a module)
@@ -11,7 +15,18 @@
 
   const ns = window.mascot || {};
   window.mascot = ns;
-  if (ns.readCharacter) return;
+  const version = document.currentScript?.dataset.mascotVersion ?? null;
+  if (ns.readCharacter) {
+    if (version !== null && typeof ns.version === 'string' && version !== ns.version)
+      console.warn(
+        `mascot: this page loads engine version ${version} after version ${ns.version}; ` +
+          `version ${ns.version} stays in use. Load one version of mascot per page.`,
+      );
+    return;
+  }
+
+  /** The package version of this engine, or null when the page loaded the file without it. */
+  ns.version = version;
 
   /** Frames per second: converts animation-frame timestamps into the frame numbers the player draws. */
   ns.fps = 30;

@@ -1801,5 +1801,5 @@
     "cobalt_droid": "character",
     "crimson": "character"
   },
-  "note": "Picked round-5 drawing: source wheel, trapezoid chassis, tilted visor, far socket stub and upright held spanner. Removed an unpicked star-eye style; celebrating keeps the source eye arcs. Static glints and separate dark spanner strokes preserve source details. Source screen/additive blending, particle sparks, continuous pulse and spring-driven antenna remain gaps. Finite tracks and precomputed static texture are supported authoring options, not missing grammar. No built-in shipping or visual approval is implied. Authored figure scale is 0.56 with a raised, centred origin to retain every tool pose, glow and gesture inside the frame. Explicit glow alpha is 1; the micro chassis retains its lamp while micro glow is off. Fidelity correction: neck is painted after the chassis and before the head, as in the source, retaining its exact 34 by 24 geometry; antenna has the source 9-unit dark under-stroke and 4-unit metal stroke. The source gface fills rounded eye capsules, so the filled mint eyes are retained; scanlines and additive glow remain named omissions."
+  "note": "Knurl is a single-wheeled repair bot with a trapezoid chassis, a tilted screen visor and a clamp arm that holds a spanner."
 }

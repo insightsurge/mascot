@@ -522,22 +522,30 @@ arg_problem <- function(x, arg) {
 }
 
 #' Offline runtime dependency
+#'
+#' The first script carries the package version in `data-mascot-version`, so the engine knows its own version
+#' (`window.mascot.version`) on every page the dependency renders into: Shiny apps, `mascot_preview()` and Quarto or
+#' R Markdown pages.
 #' @noRd
 mascot_dependency <- function() {
+  version <- getNamespaceVersion("mascot")[[1]]
+  files <- c(
+    "mascot.js",
+    "mascot-parts.js",
+    "mascot-geometry.js",
+    "mascot-faces.js",
+    "mascot-motion.js",
+    "mascot-player.js",
+    "mascot-host.js"
+  )
+  scripts <- lapply(files, function(file) list(src = file))
+  scripts[[1]]$`data-mascot-version` <- version
   htmltools::htmlDependency(
     name = "mascot",
-    version = getNamespaceVersion("mascot")[[1]],
+    version = version,
     src = "www",
     package = "mascot",
-    script = c(
-      "mascot.js",
-      "mascot-parts.js",
-      "mascot-geometry.js",
-      "mascot-faces.js",
-      "mascot-motion.js",
-      "mascot-player.js",
-      "mascot-host.js"
-    ),
+    script = scripts,
     stylesheet = "mascot.css",
     all_files = FALSE
   )

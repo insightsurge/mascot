@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).
+
 * The engine draws only characters with `format_version` 1, the format of every built-in character and every character the R functions accept. A description in the 0.0.2 data shape (`inst/characters/tessa.json` in 0.0.2) is no longer drawn: the browser refuses it with an error. Every page loads about 88 KB less JavaScript (#463).
 
 * The website's search results open on the site being read. Before, each result opened the future GitHub Pages address, which does not exist yet (#457).

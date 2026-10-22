@@ -2466,7 +2466,7 @@
     "night_bay": "character",
     "monsoon": "character"
   },
-  "note": "Source: the picked drawing improved.md and recovered drawNeer in the report. Crest variants preserve exact cubic controls at each held mood; no background wave. Slim outline follows founder preference. Gaps: continuous numeric flex/body rebuilding between held moods; animated screen caustics; particles; radial iris gradient and original pupil ratio; shell spring; open-mouth inner tongue/teeth clipping. Only static supported geometry is included. Nod/wave are explicitly root-tilt fallbacks, not the unsupported crest-flex gesture. Source Canvas arc in shell converted to cubic within 0.006 source units. Micro omits the inner band to retain the two eye clips within the cap; this is an explicit detail simplification. Body y coordinates bake the picked drawing’s exact 0.88 path-only compression; sheen/surface remain in their original source space. Authored figure scale is 0.60 with a raised origin so the complete arm rotation envelopes fit the frame; source geometry and all held arm angles are unchanged. Fidelity correction: restored the source dark water-depth fill and local white gleam, and paint a slim dark contour after the inner band. The flat role-only band uses the source middle-stop blue/alpha; the source gradient stroke remains approximated, without extending v1 stroke typing.",
+  "note": "Neer is a blue wave crest with two arms, small feet and bubbles, drawn with a slim dark outline.",
   "contrast": [
     {
       "fg": "feature",

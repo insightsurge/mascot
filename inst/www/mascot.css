@@ -228,7 +228,7 @@ body.quarto-dark {
     --_mascot-size: var(--_mascot-size-small, var(--_mascot-size-default, 160px));
   }
 
-  /* Phone size chosen by the founder in the studio. */
+  /* On a phone, a floating mascot whose small-screen size is "auto" is at most 96 px. */
   .mascot[data-floating="true"][data-small-screen="auto"] {
     --_mascot-size: min(var(--_mascot-size-default, 160px), 96px);
   }

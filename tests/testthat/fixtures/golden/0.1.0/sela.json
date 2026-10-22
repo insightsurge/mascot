@@ -1747,5 +1747,5 @@
     "lilac_dusk": "character",
     "sea_green": "character"
   },
-  "note": "Source: picked round5.md and the recovered drawing source drawSela lines 90-113. True source geometry, coordinates, palette, and features. Preserves source coordinates inside figure parent at [-144, -253.44] scale 0.72 mapping source ground 352 to 270. Format gaps: dynamic time block clipping/hatching, procedural honeycomb canvas texture, dual-rotation group lag, shadowBlur glow on canvas, fine procedural hair strands. Fidelity correction: source four-tip gold sparkle at radius 13/inner ratio 0.22 and rotation 0.2, without an outline; restored the body radial gleam and purple shadow colour. Fringe pink/cyan paths, widths and alpha already match the source; no arbitrary highlight brightening."
+  "note": "Sela is a lilac Hexonian with a pink and cyan fringe and floating time blocks."
 }

@@ -10,6 +10,11 @@ engine_scripts <- c(
   "mascot-host.js"
 )
 
+# The file names a dependency's scripts load, in order.
+script_files <- function(dep) {
+  vapply(dep$script, function(script) script$src, character(1))
+}
+
 describe("mascot()", {
   it("returns the accessible tag structure and a runtime dependency", {
     tag <- mascot(id = "helper")
@@ -48,9 +53,9 @@ describe("mascot()", {
     dep <- htmltools::findDependencies(tag)[[1]]
     expect_identical(dep$name, "mascot")
     expect_identical(dep$version, as.character(utils::packageVersion("mascot")))
-    expect_identical(dep$script, engine_scripts)
+    expect_identical(script_files(dep), engine_scripts)
     # Every listed file ships with the package, so a page works offline.
-    expect_true(all(file.exists(file.path(system.file("www", package = "mascot"), dep$script))))
+    expect_true(all(file.exists(file.path(system.file("www", package = "mascot"), script_files(dep)))))
     expect_identical(dep$stylesheet, "mascot.css")
     expect_identical(dep$package, "mascot")
     expect_false(dep$all_files)
@@ -501,7 +506,7 @@ describe("mascot resources in modules", {
     dependencies <- htmltools::renderTags(ui())$dependencies
     engine <- Filter(function(dep) dep$name == "mascot", dependencies)
     expect_length(engine, 1)
-    expect_identical(engine[[1]]$script, engine_scripts)
+    expect_identical(script_files(engine[[1]]), engine_scripts)
     expect_identical(engine[[1]]$stylesheet, "mascot.css")
     expect_identical(engine[[1]]$src$file, system.file("www", package = "mascot"))
     expect_false(grepl("https?://", engine[[1]]$src$file))
@@ -624,5 +629,100 @@ describe("quiet exported examples (#350)", {
         }
       }
     }
+  })
+})
+
+# A page saved by htmltools, as Quarto, R Markdown and mascot_preview() pages are, opened in Chrome. `extra` is HTML
+# added after the page's own scripts. Returns a function that evaluates JavaScript there; console warnings are recorded
+# in window.warnings from the start.
+local_version_page <- function(tag, extra = NULL, env = parent.frame()) {
+  checkmate::assert_character(extra, null.ok = TRUE)
+  skip_without_chrome()
+  dir <- withr::local_tempdir(.local_envir = env)
+  page <- file.path(dir, "page.html")
+  recorder <- htmltools::tags$head(htmltools::tags$script(htmltools::HTML(
+    "window.warnings = []; const warn = console.warn; console.warn = (...a) => { warnings.push(a.join(' ')); warn(...a); };"
+  )))
+  htmltools::save_html(htmltools::tagList(recorder, tag, if (!is.null(extra)) htmltools::HTML(extra)), page)
+  session <- local_chrome_session(env)
+  loaded <- session$Page$loadEventFired(wait_ = FALSE)
+  session$Page$navigate(paste0("file://", normalizePath(page)), wait_ = FALSE)
+  session$wait_for(loaded)
+  function(js) session$Runtime$evaluate(js, returnByValue = TRUE)$result$value
+}
+
+describe("the engine version", {
+  version <- as.character(utils::packageVersion("mascot"))
+
+  it("gives the engine's first script the package version, and no other script", {
+    dep <- mascot_dependency()
+    attributes <- lapply(dep$script, function(script) script[names(script) != "src"])
+    expect_identical(attributes[[1]], list(`data-mascot-version` = version))
+    expect_true(all(lengths(attributes[-1]) == 0))
+  })
+
+  it("is the package version in a page saved by htmltools and in mascot_preview()", {
+    js <- local_version_page(mascot("a", placement = "inline"))
+    expect_identical(js("window.mascot.version"), version)
+    expect_identical(js("window.warnings.length"), 0L)
+    js <- local_version_page(mascot_preview())
+    expect_identical(js("window.mascot.version"), version)
+  })
+
+  it("is the package version in a rendered R Markdown page", {
+    testthat::skip_if_not_installed("rmarkdown")
+    testthat::skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
+    skip_without_chrome()
+    dir <- withr::local_tempdir()
+    source <- file.path(dir, "page.Rmd")
+    writeLines(
+      c(
+        "---",
+        "title: Version",
+        "output:",
+        "  html_document:",
+        "    self_contained: false",
+        "---",
+        "",
+        "```{r, echo = FALSE}",
+        "mascot::mascot('a', placement = 'inline')",
+        "```"
+      ),
+      source
+    )
+    output <- rmarkdown::render(source, quiet = TRUE, envir = new.env(), intermediates_dir = dir)
+    session <- local_chrome_session()
+    loaded <- session$Page$loadEventFired(wait_ = FALSE)
+    session$Page$navigate(paste0("file://", normalizePath(output)), wait_ = FALSE)
+    session$wait_for(loaded)
+    expect_identical(session$Runtime$evaluate("window.mascot.version", returnByValue = TRUE)$result$value, version)
+  })
+
+  it("is the package version in a Shiny app, also when the mascot arrives through renderUI()", {
+    local_shiny_browser()
+    app <- app_driver(function() {
+      library(mascot)
+      shiny::shinyApp(
+        shiny::fluidPage(shiny::uiOutput("later")),
+        function(input, output, session) {
+          output$later <- shiny::renderUI(mascot("helper", placement = "inline"))
+        }
+      )
+    })
+    withr::defer(app$stop())
+    app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper')) != null")
+    expect_identical(app$get_js("window.mascot.version"), version)
+  })
+
+  it("keeps the first engine and warns once when a page loads a second engine of another version", {
+    www <- normalizePath(system.file("www", "mascot.js", package = "mascot"))
+    again <- function(v) sprintf('<script src="file://%s" data-mascot-version="%s"></script>', www, v)
+    js <- local_version_page(mascot("a", placement = "inline"), extra = c(again(version), again("99.0.0")))
+    warnings <- js("window.warnings")
+    expect_identical(js("window.mascot.version"), version)
+    # The same version again is no conflict; the other version is named with the one that stays in use.
+    expect_length(warnings, 1)
+    expect_match(warnings[[1]], sprintf("engine version 99.0.0 after version %s", version), fixed = TRUE)
+    expect_match(warnings[[1]], "Load one version of mascot per page", fixed = TRUE)
   })
 })

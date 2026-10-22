@@ -73,7 +73,7 @@
     const face = source.face ?? null;
     const byId = new Map(parts.parts.map((part) => [part.id, part]));
     // Gaze moves only elliptical pupils. A faceless character, or a kit whose eyes are all arcs, paths or dots,
-    // has no gaze channels at all (contract 3.16).
+    // has no gaze channels at all.
     const eyeStyles = { ...face?.kit_definition?.eye_styles, ...face?.styles?.eyes };
     const gaze = face !== null && Object.values(eyeStyles).some((style) => style.op === 'eye_ellipse');
     // The draw order is fixed by the data: parts by (layer, array order), the face at its owner's layer + 0.5 and
@@ -379,7 +379,7 @@
         const trackEntry = gesture.tracks?.find((t) => t.target === target);
         if (!trackEntry) continue;
         const track = trackEntry.track;
-        const keys = track.keys.map((k) => (Array.isArray(k) ? k[1] : k?.value));
+        const keys = track.keys.map((k) => k.value);
         if (track.mode === 'add') {
           for (const b of bases) {
             for (const k of keys) {
@@ -420,7 +420,7 @@
     return ranges;
   };
 
-  // The browser's upper bound on the painted work of a character in one band, by the contract's componentwise rule:
+  // The browser's upper bound on the painted work of a character in one band, by the format's componentwise rule:
   // the main anatomy, plus for each exclusive accessory slot the largest declared accessory (not the product of the
   // choices), blur by maximum, face bound, ground shadow and concurrent kit effects (#304). Computed once per compiled
   // character and band; refuses before anything is painted.
@@ -834,7 +834,7 @@
     return true;
   }
 
-  /** The mood to show after the character changes: the contract's fallback chain, then idle. */
+  /** The mood to show after the character changes: the format's fallback chain, then idle. */
   function swapMood(from, mood, to) {
     return ns.parts.swapMood(compile(from).source, mood, compile(to).source);
   }
@@ -882,7 +882,7 @@
     const shadow = entry.shadow;
     const lift = channels['root.lift'] ?? 0;
     if (shadow && channels['root.scale_x'] !== 0 && channels['root.scale_y'] !== 0) {
-      // Not squashed; shrinks and fades with lift (contract 3.6). Lifts below -100 are held there: the formula
+      // Not squashed; shrinks and fades with lift. Lifts below -100 are held there: the formula
       // divides by 1 + lift / 200.
       const k = 1 / (1 + Math.max(lift, -100) / 200);
       shadowChannels['ground_shadow.scale_x'] = k * (0.6 + 0.4 * (channels['root.scale_x'] ?? 1));

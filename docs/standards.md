@@ -178,6 +178,9 @@ The engine is most of what a user sees, so it has its own rules. All of these ar
   Revisit only if a standalone viewer or print method is wanted.
 - One namespace, `window.mascot`. Guard against double loading, keep state per element, support several mascots on
   one page, and leave no global listeners behind.
+- The engine is versioned with the package: `window.mascot.version` is the package version, which R passes as a
+  `data-mascot-version` attribute on the first engine script, and a page that loads a second engine of another
+  version warns in the console. Character files keep their own `format_version`, 1 (see section 9).
 - Configuration comes through `data-*` attributes (or a `<script type="application/json">` data block).
 - No `eval`, no `new Function`, no inline `<script>` of our own, no inline `style=` for layout.
 

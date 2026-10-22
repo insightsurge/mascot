@@ -3,7 +3,7 @@
  * A Shiny input binding mounts for its initial value/subscribe and destroys on unsubscribe; static pages mount at DOM ready.
  * Shiny messages use versioned, generation-bound complete state settled by R.
  * A connection-local ledger retains consumed gestures and bubble dismissal through DOM replacement.
- * Browser-only/custom hosts retain the legacy { id, patch } path and its bounded early queue.
+ * Browser-only and custom hosts use the plain { id, patch } route and its bounded early queue.
  * Patches are atomic: prepare descriptions/status, ask the engine to validate, then commit host state.
  * Desired character/mood live in data-character/data-mood; data-shown-* and status follow the shown frame.
  * Custom status persists across swaps. Development problems temporarily cover it and use a worried mood;
@@ -144,13 +144,13 @@
   function engineValidate(description, request) {
     ns.runtime.validate(description, request);
   }
-  // E5b, internal: the untransformed CSS width of a canvas in px (a transform does not change it). 0 means not laid out
+  // The untransformed CSS width of a canvas in px (a transform does not change it). 0 means not laid out
   // (display: none, a hidden tab): such a width decides no band.
   const cssWidth = (canvas) => {
     const value = getComputedStyle(canvas).width;
     return value.endsWith('px') ? parseFloat(value) : 0;
   };
-  // E5b, internal: one diagnostic per band and canvas, through the host's warn() route.
+  // One diagnostic per band and canvas, through the host's warn() route.
   function reportBand(record, band, error) {
     record.reportedBands ??= new Set();
     if (record.reportedBands.has(band)) return;
@@ -921,7 +921,7 @@
   function gazePose(record, side) {
     const description = record.descriptions.get(record.character);
     // Held look goes to face.look_x and face.look_y in page terms; a faceless or no-gaze character gets no gaze
-    // channels. The runtime flips the horizontal look back from the root flip of the frame it shows (contract 3.16).
+    // channels. The runtime flips the horizontal look back from the root flip of the frame it shows.
     if (!ns.runtime.compile(description).gaze) return {};
     return {
       'face.look_x': side === 'left' ? -1 : side === 'right' ? 1 : null,
@@ -1341,9 +1341,9 @@
     }
     measureMenu(record);
     measureTooltip(record);
-    // E5b, internal only: the band follows the untransformed CSS width (not the transformed rectangle). setBand() is
-    // atomic: a band over budget throws before anything changes, so the old band stays, measuring goes on, and the
-    // refusal is reported once per band. It never throws out of measure(). The public default never gets here.
+    // The detail band follows the untransformed CSS width (not the transformed rectangle). setBand() is atomic: a band
+    // over budget throws before anything changes, so the old band stays, measuring goes on, and the refusal is
+    // reported once per band. It never throws out of measure().
     // setBand() reports whether it drew: a band that is already set draws nothing, so the redraw below still runs.
     // A width of 0 decides nothing, so the band waits for the first real width.
     let drawn = false;
@@ -2160,7 +2160,7 @@
       layout(record);
       const resolved = resolveTheme(record.theme, description, record.anchor || el, true);
       commitPalette(record, description, resolved);
-      // E5b, internal only: mount at the band the canvas measures, so a small mascot never draws a full-band frame.
+      // Mount at the band the canvas measures, so a small mascot never draws a full-band frame.
       // A band over budget mounts at full with one warning. A width not laid out yet (0) mounts at full and leaves
       // record.band undefined, so the first real measure decides.
       let band = 'full';
@@ -2426,7 +2426,7 @@
         throw new Error('same character id has different content');
       description = cached || supplied;
       if (!description) throw new Error('character content cache miss');
-      if (!description || description.id !== ch.id) throw new Error('character id does not match its description');
+      if (description.id !== ch.id) throw new Error('character id does not match its description');
       engineValidate(description, {});
       enginePatch.character = description;
       changed = ch.id !== current?.id;

@@ -63,7 +63,7 @@ local_host_page <- function(
 ) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
-  all_scripts <- mascot_dependency()$script
+  all_scripts <- vapply(mascot_dependency()$script, function(script) script$src, character(1))
   pre_host <- file.path(www, all_scripts[all_scripts != "mascot-host.js"])
   host_script <- file.path(www, "mascot-host.js")
   page <- file.path(dir, "host.html")

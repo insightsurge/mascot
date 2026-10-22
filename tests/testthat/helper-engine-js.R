@@ -61,6 +61,7 @@ local_host_page <- function(
   click = NULL,
   shiny_menu = FALSE
 ) {
+  skip_without_chrome()
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
   all_scripts <- vapply(mascot_dependency()$script, function(script) script$src, character(1))

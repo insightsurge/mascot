@@ -29,6 +29,7 @@ browser_timeout <- 30000
 # chromote's default Chrome is checked first, because shinytest2 opens every app in it.
 app_driver <- function(..., env = parent.frame()) {
   checkmate::assert_environment(env)
+  testthat::skip_if_not_installed("shinytest2")
   chrome_ensure_default()
   app <- shinytest2::AppDriver$new(..., load_timeout = browser_timeout, timeout = browser_timeout)
   withr::defer(app$stop(), envir = env)
@@ -70,7 +71,9 @@ wait_studio_js <- function(app, condition, ...) {
 }
 
 # The Chrome shared by the tests that draw with the engine: the running one, or a new one when its process has ended.
+# It skips the calling test first on CRAN or without Chrome, so no test starts a Chrome there.
 test_browser <- function() {
+  skip_without_chrome()
   browser <- test_browser_env$browser
   if (!is.null(browser)) {
     problem <- chrome_problem(browser)
@@ -100,8 +103,10 @@ local_chrome_session <- function(env = parent.frame()) {
 
 # Make chromote's default Chrome (the one shinytest2 uses) a running one. The first Chrome is started here, with the same
 # settings as the shared one; after that a dead one is replaced. chromote itself would start a replacement, but without
-# these settings, without the restart limit and without a close at the end of the run.
+# these settings, without the restart limit and without a close at the end of the run. It skips first, as test_browser()
+# does.
 chrome_ensure_default <- function() {
+  skip_without_chrome()
   if (chromote::has_default_chromote_object()) {
     problem <- chrome_problem(chromote::default_chromote_object())
     if (is.null(problem)) {

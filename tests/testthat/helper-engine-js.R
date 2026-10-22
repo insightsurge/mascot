@@ -8,7 +8,7 @@ skip_without_chrome <- function() {
 }
 
 # Opens a blank page with the engine's drawing and motion files loaded (no host) and returns a function that evaluates
-# JavaScript there.
+# JavaScript there. A JavaScript exception stops the test with its message.
 local_engine_page <- function(env = parent.frame()) {
   dir <- withr::local_tempdir(.local_envir = env)
   www <- system.file("www", package = "mascot")
@@ -42,7 +42,13 @@ local_engine_page <- function(env = parent.frame()) {
   loaded <- session$Page$loadEventFired(wait_ = FALSE)
   session$Page$navigate(paste0("file://", normalizePath(page, winslash = "/")), wait_ = FALSE)
   session$wait_for(loaded)
-  function(js) session$Runtime$evaluate(js, returnByValue = TRUE)$result$value
+  function(js) {
+    result <- session$Runtime$evaluate(js, returnByValue = TRUE)
+    if (!is.null(result$exceptionDetails)) {
+      stop(result$exceptionDetails$exception$description)
+    }
+    result$result$value
+  }
 }
 
 # Host integration page: real packaged assets and real markup, with motion reduced before navigation.

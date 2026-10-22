@@ -62,6 +62,14 @@ describe("test_browser()", {
   })
 })
 
+describe("local_engine_page()", {
+  it("raises a JavaScript exception instead of returning NULL", {
+    skip_without_chrome()
+    js <- local_engine_page()
+    expect_error(js("missing_function()"), "ReferenceError")
+  })
+})
+
 describe("app_driver()", {
   it("opens the app in a new default Chrome when the old one has been closed", {
     skip_without_chrome()

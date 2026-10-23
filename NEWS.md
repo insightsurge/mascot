@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* A page carries each built-in character's data once, and only for the characters its mascots use. Before, every `mascot()` tag carried its character's whole data: a page with five Tessa mascots saved by `htmltools::save_html()` drops from 263 KB to 59 KB, and a `renderUI()` that redraws eight cards with Tessa sends 72 KB instead of 475 KB on each update. The data travels as an HTML dependency named after the character, so it works in Shiny apps (also with `renderUI()`, `insertUI()` and modals), saved and self-contained pages, and Quarto or R Markdown documents. Your own characters keep their data inside their tag, as before (#497).
+
 * In `mascot_studio()`, a capital E can be typed in every text field of the inspector, such as the status text, bubble content, action label or menu name. Shift+E widens or narrows the Help and Guide panel only when the focus is not in a field (#482).
 
 * The example character `study_bot.json` has an antenna: its `wave` gesture swings the antenna and its `nod` gesture tilts the head about its centre (the head is the top-level part, so the whole body turns with it), instead of both falling back to a whole-character tilt (#483).

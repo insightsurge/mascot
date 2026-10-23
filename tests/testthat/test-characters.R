@@ -59,8 +59,10 @@ describe("character_dependency()", {
         dep$head,
         paste0('<script type="application/json" data-mascot-character="', id, '">', character_json(id), "</script>")
       )
-      # No files: nothing to copy next to a saved page or to serve from a Shiny app.
-      expect_identical(dep$src, list(href = ""))
+      # On disk (Quarto needs that) but with no files, so a saved page gets no extra folder.
+      expect_identical(dep$src, list(file = "format/characters"))
+      expect_identical(dep$package, "mascot")
+      expect_false(dep$all_files)
       expect_null(dep$script)
       expect_null(dep$stylesheet)
     }

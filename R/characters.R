@@ -84,7 +84,8 @@ character_json <- function(id) {
 #' custom character carries in its tag into the page head. htmltools and Shiny add a dependency once per page by name,
 #' so five Tessas carry Tessa's data once, and a page carries only the characters it uses. Shiny adds a dependency's
 #' head before it inserts the HTML of `renderUI()`, `insertUI()` or a modal, so the data is on the page when the engine
-#' mounts. The dependency has no files: `href = ""` keeps htmltools from copying a folder and Shiny from serving one.
+#' mounts. The dependency lists no files, so nothing is copied next to a saved page. Its source is the folder of the
+#' character files because Quarto refuses a dependency that is not on disk.
 #' @noRd
 character_dependency <- function(id) {
   checkmate::assert_choice(id, builtin_characters()$id)
@@ -96,8 +97,10 @@ character_dependency <- function(id) {
   htmltools::htmlDependency(
     name = paste0("mascot-character-", id),
     version = getNamespaceVersion("mascot")[[1]],
-    src = c(href = ""),
-    head = as.character(block)
+    src = "format/characters",
+    package = "mascot",
+    head = as.character(block),
+    all_files = FALSE
   )
 }
 

@@ -36,7 +36,7 @@ describe("mascot_preview()", {
     expect_match(as.character(page), "No supplied colours fall below 3:1", fixed = TRUE)
     expect_setequal(
       vapply(htmltools::findDependencies(page), function(x) x$name, character(1)),
-      c("mascot", "mascot-preview")
+      c("mascot", "mascot-character-tessa", "mascot-preview")
     )
   })
   it("accepts every helper and preserves status, bubbles and the requested size settings", {

@@ -9,6 +9,23 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-23 — A built-in character's data once per page (#497)
+
+**In brief:** A built-in character's data block sits once in the page head, however many mascots use the character;
+a custom character's block stays inside its mascot element. Nothing drawn changes.
+
+**Technical:**
+
+* `mascot()` no longer puts the `<script type="application/json" data-mascot-character="<id>">` block of a built-in
+  character inside the tag. An HTML dependency named `mascot-character-<id>` puts the same block in the page head;
+  `htmltools` and Shiny add it once per page by name, and Shiny adds it before it inserts the HTML of `renderUI()`,
+  `insertUI()` or a modal, so it is on the page before the engine mounts.
+* `mascot.js` has `characterScript(id, scope)`, which finds the block: with a mascot element as `scope`, the
+  element's own block first, then a block outside every mascot element (the page's copy), never a block inside another
+  mascot. `readCharacter(id, scope)` parses what it finds; with no scope it searches the whole page, as before.
+* `mascot-host.js` takes the character text for a `template-needed` recovery through `characterScript()`, so a mascot
+  whose character data is in the page head recovers as before.
+
 ## 2026-10-23 — Character format version 1 settled for outside authors (#493)
 
 **In brief:** The engine accepts what the R checker accepts and refuses what it refuses: `requires` is optional, a

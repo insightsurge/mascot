@@ -98,7 +98,7 @@ describe("mascot_examples()", {
         # bslib's inline icons name the SVG namespace, which is not a request.
         html <- gsub("http://www.w3.org/2000/svg", "", html, fixed = TRUE)
         # External navbar links are navigation only; assets must remain local.
-        for (link in c("https://github.com/insightsurge/mascot", "https://mascot-pkg.web.app/")) {
+        for (link in c("https://github.com/insightsurge/mascot", "https://insightsurge.github.io/mascot/")) {
           html <- gsub(paste0('href="', link, '"'), "", html, fixed = TRUE)
         }
         expect_false(any(grepl("https?://", html)), info = name)
@@ -429,7 +429,7 @@ describe("the studio's controls", {
     expect_false(grepl('id="code_toggle"', pages[[1]], fixed = TRUE))
     expect_match(pages[[1]], 'href="?view=examples"', fixed = TRUE)
     expect_match(pages[[1]], 'href="https://github.com/insightsurge/mascot"', fixed = TRUE)
-    expect_match(pages[[1]], 'href="https://mascot-pkg.web.app/"', fixed = TRUE)
+    expect_match(pages[[1]], 'href="https://insightsurge.github.io/mascot/"', fixed = TRUE)
     expect_match(pages[[1]], "Package website", fixed = TRUE)
     # mascot_preview() is in the studio page: its canvas part and its controls.
     expect_match(pages[[1]], 'data-canvas="preview"', fixed = TRUE)

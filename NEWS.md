@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The website is now at <https://insightsurge.github.io/mascot/>, and the studio's "Package website" link and its guide links point there (#115).
+
 * A page carries each built-in character's data once, and only for the characters its mascots use. Before, every `mascot()` tag carried its character's whole data: a page with five Tessa mascots saved by `htmltools::save_html()` drops from 263 KB to 59 KB, and a `renderUI()` that redraws eight cards with Tessa sends 72 KB instead of 475 KB on each update. The data travels as an HTML dependency named after the character, so it works in Shiny apps (also with `renderUI()`, `insertUI()` and modals), saved and self-contained pages, and Quarto or R Markdown documents. Your own characters keep their data inside their tag, as before (#497).
 
 * The help pages read more plainly: stiff or vague wording in 19 help topics and the studio's guide summaries is rewritten, with every argument, default and link kept. The `update_mascot()` help now points to `theme`, not `character`, for the `mascot_palette_dropped` warning (#486).
@@ -56,7 +58,7 @@
 
 * `mascot_studio(view = "theme")` and `mascot_example("theme")` open Theme a mascot, a page of the studio's app that themes one character: a palette, your own colours for light and dark mode, CSS variables or your app's brand colours, with the live code to copy. Its Check tab shows every mood in light and dark, checks contrast and runs the common warnings in the package's own words. The studio's More menu opens it in a new tab (#378).
 
-* The redesigned studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).
+* The studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).
 
 * The studio's Guide is written once, as R Markdown pages in `inst/examples/studio/guide/` (one per function, 26 in all), and the website shows the same pages in a new Studio guide menu. The studio now needs the optional package `knitr` (#353).
 

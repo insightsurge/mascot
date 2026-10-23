@@ -24,5 +24,4 @@
 ^tools$
 ^biome\.json$
 ^site$
-^firebase\.json$
 ^vignettes/articles$

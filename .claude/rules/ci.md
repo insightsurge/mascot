@@ -20,8 +20,8 @@ Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate 
   `lint.yaml`'s and `gate-self-test.yaml`'s Air and Biome versions equal to the local installs and `biome.json`'s
   schema.
 - The site is built **from `main` only, never on pull requests** (a rule, #127: a site build may need packages that
-  outside contributors' pull requests can't install). While the repo is private it deploys from `main` to a
-  temporary host; GitHub Pages takes over when it goes public (#115).
+  outside contributors' pull requests can't install). It deploys from `main` to GitHub Pages
+  (#115).
 - Every workflow: the least permissions it needs (`permissions: read-all`, or only the write scopes its jobs use), a
   `concurrency` group (with `cancel-in-progress`, except where a cancelled run on `main` would leave pushed commits
   unscanned or a release half done), a `timeout-minutes` on every job (a few times its longest recent run), Ubuntu pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions

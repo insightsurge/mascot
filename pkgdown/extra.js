@@ -1,8 +1,7 @@
 // Search results that open on the site being read (#457). pkgdown writes each page's full address into
-// search.json, built from `url:` in _pkgdown.yml, and its search opens that address as it is. Until the site
-// is served there (GitHub Pages, #115), that address is missing, so results open nothing in a local preview or
-// on any other host. pkgdown loads the index with fetch(), so this rewrites the addresses in it to the folder
-// that holds search.json.
+// search.json, built from `url:` in _pkgdown.yml, and its search opens that address as it is. In a local preview
+// or on any other host, that address is a different site, so results would leave the site being read. pkgdown
+// loads the index with fetch(), so this rewrites the addresses in it to the folder that holds search.json.
 (() => {
   const fetchIndex = window.fetch;
   window.fetch = async (resource, ...rest) => {

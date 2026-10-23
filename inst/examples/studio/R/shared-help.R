@@ -226,7 +226,7 @@ vignette_anchor <- function(heading) {
 }
 
 vignette_url <- function(heading) {
-  paste0("https://mascot-pkg.web.app/articles/mascot.html#", vignette_anchor(heading))
+  paste0("https://insightsurge.github.io/mascot/articles/mascot.html#", vignette_anchor(heading))
 }
 
 # ---- Notes quoted from the help pages ---------------------------------------------------------

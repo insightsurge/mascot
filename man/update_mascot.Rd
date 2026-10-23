@@ -197,6 +197,64 @@ contributes its bubble, status or other fields. A replacement with the same id
 receives the latest accepted state; only the latest pending gesture can play,
 once. Dismissed bubbles stay dismissed through replacement; an explicit bubble
 update starts a new bubble, including when its text is unchanged.
+
+\strong{Several calls in one flush.} A flush is one round of Shiny reacting to
+inputs. Shiny sends the mascot one message when it ends, built from every
+call made in it, setting by setting: a call changes only the settings it
+names, and when two calls name the same setting the later call wins. If a
+reaction to a click sets \code{mood = "happy"} and a state observer sets
+\code{mood = "worried"} in the same flush, the observer that runs last decides the
+face and the other mood is never shown. \code{status} and \code{bubble} work the same
+way, and only the latest \code{gesture} plays. Give each setting one owner, so no
+call can overwrite another's:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{# The event reaction owns the bubble and gesture, the observer owns the mood.
+observeEvent(input$save, \{
+  update_mascot("helper", bubble = "Saved", gesture = "nod")
+\})
+observe(\{
+  update_mascot("helper", mood = if (valid()) "idle" else "worried")
+\})
+}\if{html}{\out{</div>}}
+
+\strong{After a custom status.} A custom status stays until you replace it or
+hand it back with \code{status = mascot_status()}. A call that sets only \code{mood}
+changes the face and leaves the status text as it was, so "Fitting the
+model" can sit beside a happy face. To let the status follow the mood again,
+send \code{update_mascot("helper", mood = "happy", status = mascot_status())}.
+
+\strong{What a re-created mascot takes from its UI call.} A mascot that
+\code{\link[shiny:renderUI]{shiny::renderUI()}} draws again, or that is removed and added back, receives
+the latest accepted state (see "Queued updates"). For each setting an earlier
+accepted call to \code{update_mascot()} has set, the value in the \code{\link[=mascot]{mascot()}} call
+is ignored; the settings the server never set come from the \code{\link[=mascot]{mascot()}} call.
+A \code{mood}, \code{status} or \code{size} in the UI call therefore only matters until the
+server first sets that setting, and after that the UI call can use the
+defaults. A call that changes \code{character} also sets the mood (adapted to the
+new character), so after it the UI call's \code{mood} is ignored too.
+
+\strong{A mascot in a modal.} The mascot is off the page while the modal is
+closed. Updates sent then are kept, as under "Queued updates", and applied
+when the modal opens: the last value of each setting, a bubble sent in the
+meantime, and a gesture, which plays once as the mascot appears. So it can
+open with the mood, status or an unfinished bubble from the last visit, or
+with whatever was sent while the modal was closed. To open it clean, reset
+those settings as the modal opens (a reset is an update, so it also replaces
+the UI call's values for them) and send no gesture while it is closed. A
+reset cannot cancel a gesture already sent. Sending updates only while the
+modal is open avoids what was sent while it was closed, but not the state
+left from the last visit.
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{observeEvent(input$help, \{
+  update_mascot(
+    "helper",
+    mood = mascot_mood(),
+    status = mascot_status(),
+    bubble = mascot_bubble()
+  )
+  showModal(modalDialog(mascot("helper"), title = "Help"))
+\})
+}\if{html}{\out{</div>}}
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

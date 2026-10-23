@@ -1,7 +1,7 @@
 # pkgdown site (#451): Hanken Grotesk and JetBrains Mono (self-hosted, OFL, pkgdown/assets/fonts/), teal on a
 # cool ground in light and dark. The colours below are repeated as tokens in pkgdown/extra.css, which also holds
 # the glow, the reading width and the component styles: change both together.
-url: https://insightsurge.github.io/mascot/   # GitHub Pages, once the repo is public
+url: https://insightsurge.github.io/mascot/   # GitHub Pages
 # docs/ holds the project's own notes, so the site builds into site/ (git- and build-ignored).
 destination: site
 

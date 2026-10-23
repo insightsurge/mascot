@@ -59,7 +59,7 @@ jobs:
       - uses: r-lib/actions/check-r-package@v2
         env:
           # Skip only the remote CRAN-incoming checks: they always give a "New submission" note for an
-          # unreleased package (explained in cran-comments.md when we submit) and can't reach a private repo's URLs.
+          # unreleased package (explained in cran-comments.md when we submit).
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
         with:
           args: 'c("--no-manual", "--as-cran")'

@@ -54,7 +54,7 @@ jobs:
 
       - uses: r-lib/actions/check-r-package@v2
         env:
-          # As in R-CMD-check.yaml: skip only the remote CRAN-incoming checks ("New submission", private-repo URLs).
+          # As in R-CMD-check.yaml: skip only the remote CRAN-incoming checks (the "New submission" note).
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_FORCE_SUGGESTS_: false
         with:

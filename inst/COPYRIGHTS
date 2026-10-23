@@ -18,10 +18,6 @@ inst/www/mascot.css
     Source: page layout and styles written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
-vignettes/figures/*.png
-    Source: screenshots of the bundled example apps captured locally in Chrome.
-    Copyright (c) Harsh Verma. Licence: MIT.
-
 inst/examples/studio/www/inputs.js
 inst/examples/studio/www/shared.css
 inst/examples/studio/www/studio.css

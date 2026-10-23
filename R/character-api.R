@@ -210,7 +210,8 @@ format.mascot_character_data <- function(x, ...) {
   if (is.null(origin)) {
     origin <- "object"
   }
-  bands <- names(checked$lod)
+  # lod's fields are the two bands; a note or an extension key there is not a band.
+  bands <- intersect(c("small", "micro"), names(checked$lod))
   c(
     paste0(checked$id, ": ", checked$name, " (", checked$family, ")"),
     paste("Moods:", paste(names(checked$moods), collapse = ", ")),
@@ -224,7 +225,7 @@ format.mascot_character_data <- function(x, ...) {
 #'
 #' A guide to the character file format read by [mascot_read_character()] and
 #' [mascot_check_character()]. Descriptions are
-#' JSON objects with `format_version = 1`, `requires`, `id`, `name`, `description`,
+#' JSON objects with `format_version = 1`, `id`, `name`, `description`,
 #' a `family`, colours, ground, parts and five shared moods (`idle`, `thinking`,
 #' `happy`, `worried`, `celebrating`). Optional anchors, palettes, face kits and
 #' gestures describe their own supported names. Palette ids cannot be `original`
@@ -240,12 +241,48 @@ format.mascot_character_data <- function(x, ...) {
 #' the installed package. A resolved file has its family defaults merged in and
 #' embeds its face kits, so it does not depend on the installed package.
 #'
+#' Drawing coordinates are design units in a 300 by 300 frame. The point where
+#' the character stands on the ground is `(0, 0)`: 150 units from the left edge
+#' and 270 from the top. `y` grows downwards, so a part above the ground has a
+#' negative `y`. Every part, movement and effect must stay inside the frame at
+#' every detail size.
+#'
+#' @section Capabilities and `requires`:
+#' Every version-1 mascot draws the eight version-1 capabilities: `parts`,
+#' `paints`, `clip`, `outline`, `glow`, `face_kit`, `tracks` and `lod`. They are
+#' implicit: a file needs no `requires` field. `requires` lists only
+#' capabilities added after version 1. A file that lists the version-1 names
+#' keeps loading. A name this version of mascot does not know, or a reserved
+#' one, stops the check with an error that names it and says to update mascot.
+#' Unsupported and reserved capabilities used as keys (such as `connector` or
+#' `morph`) are refused too.
+#'
+#' @section Keys for other tools:
+#' * A top-level `$schema` string is accepted and kept, so an editor can link the
+#'   file to a schema. mascot never reads it.
+#' * A key that starts with `x_`, in any object whose fields the format fixes
+#'   (the character itself, a part, an item, a mood, a gesture, a face and so
+#'   on), is an extension key. Its value can be any JSON value (from R, a list
+#'   or an unnamed vector; a data frame or a named vector is refused). It is
+#'   kept as written when the character is checked, resolved and saved, and it
+#'   is never read; it counts towards the file's size, depth and node limits.
+#'   Resolution keeps the character's own extension keys; those of a family's
+#'   `defaults` object stay in the resolved family snapshot. In an object whose
+#'   keys are ids or names (`colours`, `moods`, `gestures`, `palettes` and the
+#'   other maps), a key that starts with `x_` is an ordinary id.
+#' * A `note` string, accepted in every fixed-field object, is a comment.
+#'
+#' @section Diagnostics:
 #' Checks stop at the first problem, giving a diagnostic code, the JSON path and a
-#' repair instruction, and the value where one is at fault. Input byte, depth and
-#' node limits and drawing budgets are enforced for all input forms. Unsupported and reserved capabilities are
-#' refused. Format version, capability set and admission policy version are
-#' distinct. The installed grammar and policy live in
-#' `system.file("format", package = "mascot")`.
+#' repair instruction, and the value where one is at fault. A value outside its
+#' range or choices is named with the range or the choices. A drawing budget gives
+#' the band, the count and the limit; a character too big for its frame names
+#' the part, face, effect or shadow that reaches furthest outside, the side and
+#' by how much. Input byte, depth and node limits and drawing budgets are enforced
+#' for all input forms. Format version, capability set and admission policy
+#' version are distinct. The installed grammar and policy live in
+#' `system.file("format", package = "mascot")`; the policy holds the input limits,
+#' the capability names and the drawing budget of each detail band.
 #'
 #' @section Compatibility:
 #' The format is experimental and its future direction is open; these points hold

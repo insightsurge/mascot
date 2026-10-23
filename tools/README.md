@@ -77,7 +77,7 @@ mode that checks the same thing locally, which is the evidence when CI can't run
 | Workflow | What it runs | Locally |
 |---|---|---|
 | `R-CMD-check.yaml` | `R CMD check --as-cran`, failing on any note, with `NOT_CRAN` unset (Chrome tests skip). On every pull request, push to `main`, every Monday and on demand: macOS and Windows (R release) and Ubuntu (R devel, release, previous release and 4.1) | the `check_full` step of `full` |
-| `test-coverage.yaml` | The tests with `NOT_CRAN: true` (Chrome tests run) and the coverage limit from `DESCRIPTION` | `tests` |
+| `test-coverage.yaml` | The tests with `NOT_CRAN: true` (Chrome tests run) and the coverage limit from `DESCRIPTION` (on a pull request, the higher of the base branch's limit and the PR's own, so a pull request cannot lower the limit by editing `DESCRIPTION`; changes to this workflow are reviewed like any other change) | `tests` |
 | `check-no-suggests.yaml` | R CMD check with the required packages only, as CRAN also checks | `nosuggests` |
 | `lint.yaml` | The gate in `lint` mode, with Air and Biome at pinned versions | `lint` |
 | `gate-self-test.yaml` | The gate's self-test, when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change (and on demand) | `Rscript tools/test-cran-gate.R` |

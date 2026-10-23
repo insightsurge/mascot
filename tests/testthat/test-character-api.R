@@ -46,6 +46,13 @@ describe("character authoring arguments and internal helpers", {
 })
 
 describe("mascot_read_character() and mascot_check_character()", {
+  it("reads the shipped starter character with its own wave and nod gestures, not fallbacks", {
+    path <- system.file("examples", "characters", "study_bot.json", package = "mascot", mustWork = TRUE)
+    playable <- attr(mascot_read_character(path), "mascot_manifest")$playable
+    expect_identical(playable$wave, "wave")
+    expect_identical(playable$nod, "nod")
+  })
+
   it("accepts local files, JSON, lists and objects visibly without modifying input or registering", {
     local_empty_registry()
     path <- system.file("examples", "characters", "study_bot.json", package = "mascot", mustWork = TRUE)
@@ -200,6 +207,14 @@ describe("mascot_read_character() and mascot_check_character()", {
     expect_match(
       paste(capture.output(print(both_bands)), collapse = "\n"),
       "Detail overrides: small, micro\nFrom: object",
+      fixed = TRUE
+    )
+    # A note or an extension key in lod is not a band
+    plain$lod <- list(micro = list(glow = FALSE), note = "Small sizes.", x_tool = 1)
+    noted <- mascot_check_character(plain)
+    expect_match(
+      paste(capture.output(print(noted)), collapse = "\n"),
+      "Detail overrides: micro\nFrom: object",
       fixed = TRUE
     )
     expect_identical(withVisible(print.mascot_character_data(bot))$visible, FALSE)

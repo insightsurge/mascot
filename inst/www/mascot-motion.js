@@ -143,7 +143,8 @@
       const keys = wrapped ? track.keys : track;
       if (wrapped)
         for (const key of Object.keys(track))
-          if (key !== 'mode' && key !== 'keys') problem('unknown_key', `${path}.${key}`, 'Use only mode and keys.');
+          if (!['mode', 'keys', 'note'].includes(key) && !key.startsWith('x_'))
+            problem('unknown_key', `${path}.${key}`, 'Use only mode and keys.');
       if (!Array.isArray(keys) || keys.length < 2) problem('invalid_channel', path, 'Supply at least two keys.');
       const checked = keys.map((key, index) => {
         const at = `${path}[${index}]`;
@@ -278,15 +279,18 @@
     /** Motion settings with defaults, in the format's own snake_case names; checked against its limits. */
     function settings(character) {
       const motion = character.motion ?? {};
+      // A note and x_ extension keys are accepted in these fixed objects and never read, as in R.
+      const field = (key) => key !== 'note' && !key.startsWith('x_');
+      const fields = (object) => Object.fromEntries(Object.entries(object ?? {}).filter(([key]) => field(key)));
       for (const [group, allowed] of Object.entries(motionDefaults))
-        for (const key of Object.keys(motion[group] ?? {}))
+        for (const key of Object.keys(fields(motion[group])))
           if (!Object.hasOwn(allowed, key))
             problem('unknown_key', `$.motion.${group}.${key}`, `Use one of ${Object.keys(allowed).join(', ')}.`);
-      for (const key of Object.keys(motion))
+      for (const key of Object.keys(fields(motion)))
         if (!Object.hasOwn(motionDefaults, key))
           problem('unknown_key', `$.motion.${key}`, `Use one of ${Object.keys(motionDefaults).join(', ')}.`);
-      const change = { ...motionDefaults.change, ...motion.change };
-      const idle = { ...motionDefaults.idle, ...motion.idle };
+      const change = { ...motionDefaults.change, ...fields(motion.change) };
+      const idle = { ...motionDefaults.idle, ...fields(motion.idle) };
       const frames = (value, path) => {
         if (!Number.isInteger(value) || value < 1 || value > 150) problem('budget', path, 'Use 1 to 150 whole frames.');
       };

@@ -17,9 +17,9 @@ Imports:
     cli,
     htmltools (>= 0.5.3),
     jsonlite,
-    shiny (>= 1.7.0)
+    shiny (>= 1.8.1)
 Suggests: 
-    bslib (>= 0.6.0),
+    bslib (>= 0.7.0),
     chromote,
     covr,
     golem,

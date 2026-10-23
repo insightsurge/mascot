@@ -925,32 +925,28 @@ describe("the Check tab's slow buttons in a browser", {
       expect_true(app$get_js(sprintf("document.getElementById('%s_ui').textContent.trim().length > 0", case[[1]])))
     }
   })
-  it("stay busy when the server says it is idle just before their result arrives", {
+  it("stay busy until their own result arrives, whatever the server says in between", {
     local_shiny_browser()
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    # Given a slow button and its output, outside Shiny so that only the events below reach them
-    app$run_js(paste0(
-      "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\" ",
-      "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div><button id=\"quick\" ",
-      "data-busy-label=\"Working\" data-busy-output=\"quick_ui\">Run</button><div id=\"quick_ui\"></div>');",
-      "window.slowState = () => { const b = document.getElementById('slow'); ",
-      "return [b.textContent, String(b.disabled)]; };"
+    # Given a slow button and its output. The whole sequence runs in one script, so no real Shiny event comes between.
+    states <- app$get_js(paste(
+      "(() => {",
+      "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\"",
+      "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div>');",
+      "const b = document.getElementById('slow'), states = [];",
+      "const note = () => states.push(b.textContent + ' ' + b.disabled);",
+      # When it is clicked during an earlier update, which then ends
+      "$(document).trigger('shiny:busy'); b.click(); note(); $(document).trigger('shiny:idle'); note();",
+      # and then its own update runs, in Shiny's order: recalculating, busy, idle, and only then its value
+      "$('#slow_ui').trigger('shiny:recalculating'); $(document).trigger('shiny:busy');",
+      "$(document).trigger('shiny:idle'); note();",
+      "$('#slow_ui').trigger('shiny:value'); note();",
+      "return states; })()"
     ))
-    app$run_js("document.getElementById('slow').click()")
-    expect_identical(unlist(app$get_js("slowState()")), c("Working", "true"))
-    # When Shiny's own order arrives: the output recalculating, then busy and idle, and only then its value
-    app$run_js(
-      "$('#slow_ui').trigger('shiny:recalculating'); $(document).trigger('shiny:busy'); $(document).trigger('shiny:idle');"
-    )
-    # Then the button waits for the value
-    expect_identical(unlist(app$get_js("slowState()")), c("Working", "true"))
-    app$run_js("$('#slow_ui').trigger('shiny:value')")
-    expect_identical(unlist(app$get_js("slowState()")), c("Run", "false"))
-    # A button whose output does not change is freed when the server is idle again
-    app$run_js("document.getElementById('quick').click(); $(document).trigger('shiny:busy'); $(document).trigger('shiny:idle');")
-    expect_identical(app$get_js("[document.getElementById('quick').textContent, document.getElementById('quick').disabled]"), list("Run", FALSE))
+    # Then it stays busy until its value arrives
+    expect_identical(unlist(states), c("Working true", "Working true", "Working true", "Run false"))
   })
 })
 

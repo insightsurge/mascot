@@ -1,6 +1,8 @@
 # Throwaway workflow for the repro branch: runs only the failing browser-test files on the runners where they failed.
 on:
   pull_request:
+  push:
+    branches: ['test/ci-repro-round*']
   workflow_dispatch:
 
 name: repro-browser-tests
@@ -20,10 +22,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: 'ubuntu-26.04', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-helper-chrome.R test-studio-app.R test-studio-theme.R'}
-          - {os: 'ubuntu-26.04', r: 'devel', http-user-agent: 'release', repeats: '15', files: 'test-aaa-ci-probe.R test-examples.R test-update-mascot.R'}
-          - {os: 'macos-latest', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-engine-runtime-app.R test-host-js.R test-studio-theme.R test-studio-app.R'}
-          - {os: 'windows-latest', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-engine-runtime-app.R test-studio-theme.R'}
+          - {os: 'ubuntu-26.04', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-studio-app.R test-studio-theme.R test-helper-chrome.R'}
+          - {os: 'macos-latest', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-studio-app.R'}
+          - {os: 'windows-latest', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-studio-theme.R test-studio-app.R'}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       NOT_CRAN: true

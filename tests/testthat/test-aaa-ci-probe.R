@@ -15,21 +15,6 @@ probe_env_js <- "(() => {
 probe_repeats <- as.integer(Sys.getenv("PROBE_REPEATS", "0"))
 
 describe("CI probe", {
-  it("prints the device the tests' Chrome reports", {
-    local_shiny_browser()
-    fn <- function() NULL
-    body(fn) <- quote({
-      library(mascot)
-      shiny::shinyApp(shiny::fluidPage(mascot("helper")), function(input, output, session) NULL)
-    })
-    app <- app_driver(fn)
-    probe_print("app env", app$get_js(probe_env_js))
-    browser <- app$get_chromote_session()
-    browser$Emulation$setEmulatedMedia(features = list(list(name = "prefers-reduced-motion", value = "reduce")))
-    probe_print("app env, reduce emulated", app$get_js(probe_env_js))
-    succeed()
-  })
-
   it("starts the popup-menu module app many times", {
     skip_if(probe_repeats == 0L)
     local_shiny_browser()
@@ -112,6 +97,80 @@ describe("CI probe", {
       app$stop()
     }
     probe_print("knurl failed", c(failures, probe_repeats))
+    succeed()
+  })
+})
+
+describe("CI probe, round 3", {
+  probe_studio <- function() {
+    fn <- function() {
+      library(mascot)
+      shiny::shinyAppDir(system.file("examples", "studio", package = "mascot"))
+    }
+    app <- app_driver(fn, width = 1280, height = 720, env = parent.frame())
+    wait_studio_js(app, "live.dataset.shownMood === 'idle'", timeout = 90000)
+    app
+  }
+  frame <- "document.getElementById('live_frame').contentWindow"
+  live <- paste0(frame, ".document.getElementById('helper')")
+  geometry <- sprintf(
+    "(() => { const w = %s, el = %s, c = el.querySelector('canvas'); const box = (n) => { const r = n.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }; return {client: [w.document.documentElement.clientWidth, w.document.documentElement.clientHeight], el: box(el), canvas: box(c), kids: [...el.children].map((k) => [k.className, box(k), getComputedStyle(k).position]), placement: w.mascot.host.state(el).placement, last: document.getElementById('position_last').textContent, dropped: w.mascot.host.state(el).dropped ?? null, motion: w.matchMedia('(prefers-reduced-motion: reduce)').matches, hover: w.matchMedia('(hover: hover)').matches}; })()",
+    frame, live
+  )
+
+  it("repeats the snap drop of test-studio-app.R:572 and prints the geometry", {
+    local_shiny_browser()
+    skip_without_studio_packages("studio")
+    app <- probe_studio()
+    state <- paste0(frame, ".mascot.host.state(", live, ")")
+    if (isTRUE(app$get_js("document.getElementById('function_flyout').hidden"))) app$click(selector = "#all_functions")
+    app$click(selector = '.pg-index-link[data-value="mascot_size"]')
+    app$wait_for_js("!document.getElementById('inspector_sidebar').hidden")
+    app$set_inputs(size_unit = "pct", size_pct = 30)
+    app$wait_for_js(sprintf("%s.size.size === '30%%'", state))
+    app$set_inputs(size_unit = "px", size_px = 120)
+    app$wait_for_js(sprintf("%s.size.size === 120", state))
+    if (isTRUE(app$get_js("document.getElementById('function_flyout').hidden"))) app$click(selector = "#all_functions")
+    app$click(selector = '.pg-index-link[data-value="mascot_placement"]')
+    app$wait_for_js("document.getElementById('drag').disabled && document.getElementById('minimise').disabled")
+    app$set_inputs(position = "bottom-right")
+    app$wait_for_js(sprintf("%s.placement.floating && %s.placement.minimise", state, state))
+    app$set_inputs(minimise = FALSE)
+    app$wait_for_js(sprintf("!%s.placement.minimise", state))
+    app$set_inputs(minimise = TRUE, drag = "snap")
+    app$wait_for_js(sprintf("%s.placement.drag === 'snap'", state))
+    probe_print("drag before", app$get_js(geometry))
+    app$run_js(sprintf(
+      "(() => { const w = %s, el = %s, c = el.querySelector('canvas'), r = c.getBoundingClientRect(); window.probeMid = null;
+        const press = (type, x, y) => c.dispatchEvent(new w.PointerEvent(type, {bubbles:true, cancelable:true, pointerId:1, button:0, isPrimary:true, clientX:x, clientY:y}));
+        press('pointerdown', r.left+r.width/2, r.top+r.height/2); press('pointermove', 1, 1);
+        const b = el.getBoundingClientRect(); window.probeMid = [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height), el.dataset.dragging || ''];
+        press('pointerup', 1, 1); })()",
+      frame, live
+    ))
+    Sys.sleep(2)
+    probe_print("drag mid", app$get_js("probeMid"))
+    probe_print("drag after", app$get_js(geometry))
+    succeed()
+  })
+
+  it("repeats the selectize portal of test-studio-app.R:1369 and prints each condition", {
+    local_shiny_browser()
+    skip_without_studio_packages("studio")
+    app <- probe_studio()
+    click_now(app, "[data-call-arg=click]")
+    app$run_js(
+      "{const body=document.getElementById('chip_editor_body');body.style.maxHeight='60px';body.style.overflow='auto';}"
+    )
+    app$wait_for_js("document.getElementById('chip_editor_body').clientHeight <= 60")
+    app$run_js(
+      "{const pop=document.getElementById('chip_editor');pop.style.top=(innerHeight-130)+'px';const s=document.getElementById('click_type').selectize;s.focus();s.open();s.positionDropdown();}"
+    )
+    conditions <- "(() => {const s=document.getElementById('click_type').selectize; const d=s.$dropdown[0];const r=d.getBoundingClientRect(); const e=document.getElementById('chip_editor'); return {open: s.isOpen, body: d.parentElement===document.body, parent: d.parentElement?.id || d.parentElement?.className, direction: d.dataset.direction ?? null, top: r.top, bottom: r.bottom, inner: innerHeight, z: getComputedStyle(d).zIndex, editorZ: getComputedStyle(e).zIndex, editor: [e.hidden, Math.round(e.getBoundingClientRect().top), e.style.top], active: document.activeElement?.id || document.activeElement?.className};})()"
+    for (i in 1:6) {
+      probe_print(paste("selectize", i), app$get_js(conditions))
+      Sys.sleep(0.5)
+    }
     succeed()
   })
 })

@@ -558,12 +558,13 @@ describe("studio behaviour for each function", {
     expect_match(app$get_value(output = "code_ui"), "minimise = FALSE", fixed = TRUE)
     app$set_inputs(minimise = TRUE, drag = "snap")
     app$wait_for_js(sprintf("%s.placement.drag === 'snap'", state))
-    # Dispatch to the iframe canvas in its own viewport coordinates, as the engine receives them.
+    # Dispatch to the iframe canvas in its own viewport coordinates, as the engine receives them. The pointer goes to
+    # the frame's top-left corner, wherever the canvas starts, so the mascot ends up clamped in that corner.
     drop <- function() {
       app$run_js(sprintf(
         "(() => { const w = %s, c = %s.querySelector('canvas'), r = c.getBoundingClientRect();
           const press = (type, x, y) => c.dispatchEvent(new w.PointerEvent(type, {bubbles:true, cancelable:true, pointerId:1, button:0, isPrimary:true, clientX:x, clientY:y}));
-          press('pointerdown', r.left+r.width/2, r.top+r.height/2); press('pointermove', 80, 80); press('pointerup', 80, 80); })()",
+          press('pointerdown', r.left+r.width/2, r.top+r.height/2); press('pointermove', 1, 1); press('pointerup', 1, 1); })()",
         studio_frame,
         studio_live
       ))

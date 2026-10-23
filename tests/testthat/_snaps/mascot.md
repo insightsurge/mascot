@@ -111,7 +111,7 @@
     Output
       [1] "Assertion on 'value' failed: Must be of type 'string', not 'double'."
 
-# review fixes for construction diagnostics and documentation / counts unnamed arguments and keeps named arguments listed
+# construction diagnostics for mood ids and unnamed arguments / counts unnamed arguments and keeps named arguments listed
 
     Code
       mascot("helper", 1, 2, typo = 3)

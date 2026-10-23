@@ -159,20 +159,20 @@ describe("mascot() bubbles", {
 })
 
 describe("bubble keyboard markup", {
-  it("G3 leaves static bubble text out of the tab order", {
+  it("leaves static bubble text out of the tab order", {
     tag <- bubble_tag(mascot_bubble("Ready"))
     text <- tag$children[[1]]$children[[1]]
     expect_identical(text$attribs$class, "mascot-bubble-text")
     expect_null(text$attribs$tabindex)
   })
-  it("G4 makes the mascot a programmatic focus target only", {
+  it("makes the mascot a programmatic focus target only", {
     expect_identical(mascot(id = "a")$attribs$tabindex, "-1")
   })
 })
 
 
 describe("mascot() tag bubbles", {
-  it("R2 renders a deferred tag once at build time and errors on rendering failures", {
+  it("renders a deferred tag once at build time and errors on rendering failures", {
     calls <- new.env(parent = emptyenv())
     calls$count <- 0L
     deferred <- htmltools::tagList(htmltools::tagFunction(function() {
@@ -185,7 +185,7 @@ describe("mascot() tag bubbles", {
     broken <- htmltools::tagList(htmltools::tagFunction(function() stop("Cannot render message")))
     expect_error(mascot(id = "a", bubble = broken), "Cannot render message")
   })
-  it("G6 renders tag shortcuts and rejects dependency-bearing tags", {
+  it("renders tag shortcuts and rejects dependency-bearing tags", {
     expect_match(
       as.character(mascot(id = "a", bubble = shiny::tags$strong("Saved"))),
       "<strong>Saved</strong>",
@@ -200,7 +200,7 @@ describe("mascot() tag bubbles", {
 })
 
 describe("message guidance", {
-  it("R3 explains state, event messages and actionable message duration in each help page", {
+  it("explains state, event messages and actionable message duration in each help page", {
     for (topic in c("mascot", "update_mascot", "mascot_bubble")) {
       path <- system.file("man", paste0(topic, ".Rd"), package = "mascot")
       rd <- if (nzchar(path)) tools::parse_Rd(path) else tools::Rd_db("mascot")[[paste0(topic, ".Rd")]]
@@ -338,7 +338,7 @@ describe("mascot() click", {
   })
 })
 
-describe("mascot() clicks in a Shiny browser (#257)", {
+describe("mascot() clicks in a Shiny browser", {
   it("counts action activations in a module and sends no clicks for menus or pictures", {
     local_shiny_browser()
     app <- app_driver(function() {
@@ -515,7 +515,7 @@ describe("mascot resources in modules", {
   })
 })
 
-describe("internal R4a character argument forms", {
+describe("internal character argument forms", {
   it("accepts checked character palettes through the theme shortcut", {
     checked <- character_format_check(protocol_character()$json, from = "text")
     expect_no_error(mascot("helper", character = checked))
@@ -531,7 +531,7 @@ describe("internal R4a character argument forms", {
   })
 })
 
-describe("B2 construction diagnostics", {
+describe("construction diagnostics", {
   it("keeps the choice class and fields for a malformed mood", {
     error <- tryCatch(mascot("h", mood = "Happy"), error = identity)
     expect_s3_class(error, "mascot_error_choice")
@@ -556,7 +556,7 @@ describe("B2 construction diagnostics", {
 })
 
 
-describe("review fixes for construction diagnostics and documentation", {
+describe("construction diagnostics for mood ids and unnamed arguments", {
   it("lists the chosen character's moods for malformed ids", {
     for (character in list(catalogue_alpha_two(), "tessa")) {
       mood_error <- tryCatch(mascot("helper", character = character, mood = "ha!py"), error = identity)
@@ -583,7 +583,9 @@ describe("review fixes for construction diagnostics and documentation", {
     expect_snapshot(error = TRUE, mascot("helper", 1, 2, typo = 3))
     expect_snapshot(error = TRUE, mascot("helper", 1))
   })
+})
 
+describe("mascot() documentation", {
   it("describes the current preview sizes and inline layout", {
     path <- test_path("..", "..", "vignettes", "mascot.Rmd")
     skip_if_not(file.exists(path), "Source-only vignette check")
@@ -608,7 +610,7 @@ describe("review fixes for construction diagnostics and documentation", {
   })
 })
 
-describe("quiet exported examples (#350)", {
+describe("quiet exported examples", {
   it("assigns standalone mascot tags in roxygen examples", {
     skip_if_not(file.exists(test_path("..", "..", "R", "mascot.R")), "Source-only roxygen check")
     paths <- list.files(test_path("..", "..", "R"), pattern = "\\.R$", full.names = TRUE)

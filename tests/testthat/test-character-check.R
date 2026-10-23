@@ -118,7 +118,7 @@ describe("character_format_check()", {
     cases <- jsonlite::fromJSON(test_path("fixtures", "format", "diagnostic-expected.json"), simplifyVector = FALSE)
     ref_names <- c("anchor_probe.json", "alpha_visor.json", "study_bot.json", "study_bot-resolved.json", "tessa.json")
     ref_leaves <- lapply(ref_names, function(nm) {
-      extract_leaves(jsonlite::fromJSON(test_path("fixtures", "format", nm), simplifyVector = FALSE))
+      extract_leaves(format_recipe(sub("\\.json$", "", nm)))
     })
     names(ref_leaves) <- ref_names
 
@@ -170,8 +170,8 @@ describe("character_format_check()", {
         is_under <- is_under | is_removal_exception
       }
 
-      # The anchor probe now has the required non-root wave track; invalid
-      # recipes based on it inherit that shared valid-track change.
+      # The anchor probe has a non-root wave track (panel.rotate) that the invalid recipes based on it do not carry;
+      # that difference is not drift.
       is_under <- is_under | startsWith(diff_keys, "$.gestures.wave.tracks.panel.rotate")
 
       expect_true(

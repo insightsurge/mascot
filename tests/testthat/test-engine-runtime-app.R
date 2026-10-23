@@ -1,5 +1,5 @@
-# I1 app scenarios: a checked format-v1 character through real Shiny, in real Chrome. The characters are internal helper
-# objects handed to the app process in a file (see helper-runtime.R); nothing here uses a public custom-character API.
+# App scenarios: a checked format-v1 character through real Shiny, in real Chrome. The characters are built by
+# `runtime_character()` and handed to the app process in a file (see helper-runtime.R).
 
 # Built when a test first uses them, so a run without Chrome (which skips every test here) pays nothing.
 delayedAssign("alpha", runtime_character())
@@ -7,12 +7,12 @@ delayedAssign("other", runtime_character(runtime_other()))
 delayedAssign("table", list(alpha_two = runtime_statuses(alpha), alpha_three = runtime_statuses(other)))
 
 describe("a format-v1 character through the Shiny state protocol", {
-  it("I1 restores the newest status and label after 100 rapid updates and a remount, keeps a dismissed bubble dismissed, and plays a gesture queued while unmounted once", {
+  it("restores the newest status and label after 100 rapid updates and a remount, keeps a dismissed bubble dismissed, and plays a gesture queued while unmounted once", {
     local_shiny_browser()
     local_app_characters(list(alpha = alpha))
     app <- app_driver(function() {
       library(mascot)
-      characters <- readRDS(Sys.getenv("MASCOT_I1_CHARACTERS"))
+      characters <- readRDS(Sys.getenv("MASCOT_TEST_CHARACTERS"))
       ui <- shiny::fluidPage(
         shiny::uiOutput("slot"),
         shiny::actionButton("hundred", "One hundred"),
@@ -107,12 +107,12 @@ describe("a format-v1 character through the Shiny state protocol", {
     expect_identical(app$get_js("read().mood"), "happy")
   })
 
-  it("I1 shows a status and label that follow the shown frame through a swap, and the newest state after a remount in the middle of one", {
+  it("shows a status and label that follow the shown frame through a swap, and the newest state after a remount in the middle of one", {
     local_shiny_browser()
     local_app_characters(list(alpha = alpha, other = other))
     app <- app_driver(function() {
       library(mascot)
-      characters <- readRDS(Sys.getenv("MASCOT_I1_CHARACTERS"))
+      characters <- readRDS(Sys.getenv("MASCOT_TEST_CHARACTERS"))
       ui <- shiny::fluidPage(
         shiny::uiOutput("slot"),
         shiny::actionButton("processing", "Processing"),
@@ -211,12 +211,12 @@ describe("a format-v1 character through the Shiny state protocol", {
     expect_identical(app$get_js("read().mood"), "thinking")
   })
 
-  it("I1 delivers to a nested module once, and keeps a timed bubble's remaining time through a remount", {
+  it("delivers to a nested module once, and keeps a timed bubble's remaining time through a remount", {
     local_shiny_browser()
     local_app_characters(list(alpha = alpha))
     app <- app_driver(function() {
       library(mascot)
-      characters <- readRDS(Sys.getenv("MASCOT_I1_CHARACTERS"))
+      characters <- readRDS(Sys.getenv("MASCOT_TEST_CHARACTERS"))
       inner_ui <- function(id) {
         ns <- shiny::NS(id)
         shiny::tagList(
@@ -276,12 +276,12 @@ describe("a format-v1 character through the Shiny state protocol", {
     expect_lte(after, before)
   })
 
-  it("I1 still sends the four public inputs for a format-v1 character", {
+  it("sends the four public inputs for a format-v1 character", {
     local_shiny_browser()
     local_app_characters(list(alpha = alpha))
     app <- app_driver(function() {
       library(mascot)
-      characters <- readRDS(Sys.getenv("MASCOT_I1_CHARACTERS"))
+      characters <- readRDS(Sys.getenv("MASCOT_TEST_CHARACTERS"))
       ui <- shiny::fluidPage(
         mascot("act", character = characters$alpha, placement = "inline", click = "Open help"),
         shiny::textOutput("clicks"),

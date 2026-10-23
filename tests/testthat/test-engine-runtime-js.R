@@ -1,5 +1,5 @@
-# I1 "the join": a checked format-v1 character mounts and runs in the real host. Characters are internal helper objects
-# (see helper-runtime.R); every page loads the packaged scripts in the dependency's order, with no adapter switch.
+# A checked format-v1 character mounts and runs in the real host. Characters are built by `runtime_character()` (see
+# helper-runtime.R); every page loads the packaged scripts in the dependency's order.
 
 # The fixtures are built when a test first uses them, so a run without Chrome (which skips every test here) pays nothing.
 delayedAssign(
@@ -71,8 +71,8 @@ page_with <- function(
   js
 }
 
-describe("I1 format-v1 dispatch", {
-  it("draws and moves a format-v1 character through the format-v1 modules, with no adapter switch", {
+describe("format-v1 dispatch", {
+  it("draws and moves a format-v1 character through the format-v1 modules", {
     js <- page_with()
     js("T.frames(3)")
     result <- js(
@@ -122,7 +122,7 @@ describe("I1 format-v1 dispatch", {
   })
 })
 
-describe("I1 status, label and theme follow the shown character", {
+describe("status, label and theme follow the shown character", {
   it("shows the status of the shown mood, never the title-cased id, and names the character in every label", {
     js <- page_with(reduced = TRUE)
     r <- js(
@@ -264,7 +264,7 @@ describe("I1 status, label and theme follow the shown character", {
   })
 })
 
-describe("I1 the host follows the character's mood chain across a swap", {
+describe("the host follows the character's mood chain across a swap", {
   it("records the mood the incoming character really shows, not its first mood", {
     js <- page_with(reduced = TRUE)
     r <- js(
@@ -286,7 +286,7 @@ describe("I1 the host follows the character's mood chain across a swap", {
   })
 })
 
-describe("I1 mood change, gestures, idle motion and reduced motion move the character", {
+describe("mood change, gestures, idle motion and reduced motion move the character", {
   it("shows the previous mood until swap_at of the change, then the target, and rests on the target", {
     js <- page_with()
     r <- js(
@@ -539,7 +539,7 @@ describe("I1 mood change, gestures, idle motion and reduced motion move the char
   })
 })
 
-describe("I1 character swaps", {
+describe("character swaps", {
   it("fades the outgoing character out, then the incoming one in, over sixty frames, one character at a time", {
     js <- page_with()
     r <- js(
@@ -563,7 +563,7 @@ describe("I1 character swaps", {
     )
     expect_identical(swapping, c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE))
     # Opacity is (1 - f / 30) while fading out and (f - 30) / 30 while fading in.
-    expect_equal(peak, round(255 * c(1, 0.5, 1 / 30, 0, 0.5, 29 / 30, 1, 1)), tolerance = 0.02)
+    expect_near(peak, round(255 * c(1, 0.5, 1 / 30, 0, 0.5, 29 / 30, 1, 1)), 2)
     expect_equal(r$rows[[4]]$ink, 0)
     expect_identical(
       lapply(r$events, unlist),
@@ -676,8 +676,8 @@ describe("I1 character swaps", {
     # Opacity was 2/3 at frame 10; the entrance lasts 30 * (1 - 2/3) = 10 frames and rises evenly to full.
     expect_true(r$seen[["19"]]$swapping)
     expect_false(r$seen[["20"]]$swapping)
-    expect_equal(r$alpha[["10"]], round(255 * 2 / 3), tolerance = 0.02)
-    expect_equal(r$alpha[["15"]], round(255 * (2 / 3 + 1 / 3 * 0.5)), tolerance = 0.02)
+    expect_near(r$alpha[["10"]], round(255 * 2 / 3), 2)
+    expect_near(r$alpha[["15"]], round(255 * (2 / 3 + 1 / 3 * 0.5)), 2)
     expect_equal(r$alpha[["20"]], 255)
   })
 
@@ -768,11 +768,11 @@ describe("I1 character swaps", {
     expect_equal(r$line, 7)
     expect_true(r$same)
     # The caller's alpha multiplies the fade: 0.9 * 0.5 of 255.
-    expect_equal(r$peak, round(255 * 0.9 * 0.5), tolerance = 0.02)
+    expect_near(r$peak, round(255 * 0.9 * 0.5), 2)
   })
 })
 
-describe("I1 held gaze", {
+describe("held gaze", {
   gaze_js <- r"(
     window.poses = [];
     (() => {
@@ -903,7 +903,7 @@ describe("I1 held gaze", {
   })
 })
 
-describe("I1 detail bands follow the CSS width for a format-v1 character", {
+describe("detail bands follow the CSS width for a format-v1 character", {
   it("mounts at the band the canvas measures, at 128 and 48 CSS pixels exactly", {
     sizes <- c(160, 128, 100, 48, 47, 24)
     js <- page_with(
@@ -1097,7 +1097,7 @@ describe("I1 detail bands follow the CSS width for a format-v1 character", {
   })
 })
 
-describe("I1 the player's contract", {
+describe("the player's contract", {
   it("compiles a character once and never per frame", {
     js <- page_with()
     r <- js(
@@ -1567,7 +1567,7 @@ track_sparkle_js <- paste(
   "opacity: [[0, 0], [0.2, 1], [1, 0]], scale_x: [[0, 1], [1, 1]], scale_y: [[0, 1], [1, 1]] } }; return ch; };"
 )
 
-describe("I1 recovery eases numbers and switches choices", {
+describe("recovery eases numbers and switches choices", {
   it("switches root.flip at halfway and eases a numeric channel in recover()", {
     js <- page_with()
     r <- js(
@@ -1614,7 +1614,7 @@ describe("I1 recovery eases numbers and switches choices", {
   })
 })
 
-describe("I1 a band change during a swap checks both characters", {
+describe("a band change during a swap checks both characters", {
   it("refuses a band that either the incoming or the outgoing character is over, and keeps the band", {
     js <- page_with()
     r <- js(
@@ -1652,7 +1652,7 @@ describe("I1 a band change during a swap checks both characters", {
   })
 })
 
-describe("I1 a frame that cannot be drawn stops the loop and keeps the pixels", {
+describe("a frame that cannot be drawn stops the loop and keeps the pixels", {
   it("stops the animation, keeps the last pixels and logs once, without an error leaving the frame callback", {
     js <- page_with(
       before_mount = "window.logged = []; console.error = (...a) => logged.push(String(a[0]));
@@ -1686,7 +1686,7 @@ describe("I1 a frame that cannot be drawn stops the loop and keeps the pixels", 
   })
 })
 
-describe("I1 gesture effects", {
+describe("gesture effects", {
   it("keeps the animation running while a triggered effect is still showing after the gesture's movement has ended", {
     js <- page_with()
     js(track_sparkle_js)
@@ -1753,7 +1753,7 @@ describe("I1 gesture effects", {
   })
 })
 
-describe("I1 seeking before the action", {
+describe("seeking before the action", {
   it("draws a frame before the action's frame without throwing, with a continuous effect at elapsed 0", {
     js <- page_with()
     r <- js(
@@ -1778,7 +1778,7 @@ describe("I1 seeking before the action", {
   })
 })
 
-describe("drawing-work bound parity and newly counted components (#304)", {
+describe("drawing-work bound parity with R, component by component", {
   it("reproduces R's drawing-work bounds for every canonical fixture and Tessa recipe in all bands", {
     skip_without_chrome()
     js <- page_with()
@@ -2125,7 +2125,7 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     expect_match(r_micro_glow$message, "glow emitters")
   })
 
-  it("computes transformed bounds for ref items, style transforms, and shapes in workBox (finding 1)", {
+  it("computes transformed bounds for ref items, style transforms, and shapes in workBox", {
     skip_without_chrome()
     js <- page_with()
 
@@ -2158,7 +2158,7 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     expect_equal(unlist(box_hex), c(-12, -12, 12, 12))
   })
 
-  it("resolves shapes style in workGlow for ref items with fill and stroke (finding 2)", {
+  it("resolves shapes style in workGlow for ref items with fill and stroke", {
     skip_without_chrome()
     js <- page_with()
     alpha_json <- paste(
@@ -2242,7 +2242,7 @@ describe("drawing-work bound parity and newly counted components (#304)", {
     expect_gt(r_work[["glow_emitters"]], 0)
   })
 
-  it("throws missing_reference at $.clip when target item is omitted in a reachable variant (finding 4)", {
+  it("throws missing_reference at $.clip when target item is omitted in a reachable variant", {
     skip_without_chrome()
     js <- page_with()
     alpha_json <- paste(

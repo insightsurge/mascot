@@ -1,5 +1,5 @@
 describe("latest state over real Shiny transport", {
-  it("U1.8/10 restores through renderUI, preserves dismissal and delivers repeated lifecycle events", {
+  it("restores through renderUI, preserves dismissal and delivers repeated lifecycle events", {
     local_shiny_browser()
     app <- app_driver(function() {
       library(mascot)

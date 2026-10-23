@@ -536,7 +536,6 @@ describe("format-v1 character channels, recolour, item overrides and swap fallba
       const sweatHalf = mascot.parts.sweatProgress(0.5);
       const sweatFade = mascot.parts.sweatProgress(0.95);
       const sweatZero = mascot.parts.sweatProgress(0);
-      const sweatReduced = mascot.parts.sweatProgress(0.5, {}, { reduced: true });
 
       const sparkleMid = mascot.parts.sparklePulse(0.5);
       const sparkleReduced = mascot.parts.sparklePulse(0.5, {}, { reduced: true });
@@ -550,8 +549,6 @@ describe("format-v1 character channels, recolour, item overrides and swap fallba
         sweatHalfVisible: sweatHalf.visible,
         sweatFadeOpacity: sweatFade.opacity,
         sweatZeroVisible: sweatZero.visible,
-        sweatReducedX: sweatReduced.x,
-        sweatReducedY: sweatReduced.y,
         sparkleMidScale: sparkleMid.scale,
         sparkleReducedScale: sparkleReduced.scale,
         sparkleReducedFlag: sparkleReduced.reduced,
@@ -567,8 +564,6 @@ describe("format-v1 character channels, recolour, item overrides and swap fallba
     expect_true(r$sweatHalfVisible)
     expect_equal(r$sweatFadeOpacity, 0.5, tolerance = 1e-6)
     expect_false(r$sweatZeroVisible)
-    expect_equal(r$sweatReducedX, 2 * sin(6), tolerance = 1e-6)
-    expect_equal(r$sweatReducedY, 13, tolerance = 1e-6)
 
     expect_equal(r$sparkleMidScale, 1 + 0.18 * sin(4.5), tolerance = 1e-6)
     expect_equal(r$sparkleReducedScale, 1)

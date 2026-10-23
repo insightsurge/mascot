@@ -1,5 +1,6 @@
-# Format-v1 characters mounted through the real host. Custom checked data stays internal: mascot() and update_mascot()
-# take a `mascot_character` list that carries its own `json` (the route U1's tests use), never the checked data itself.
+# Format-v1 characters mounted through the real host. `runtime_character()` builds by hand the `mascot_character` object
+# that mascot() and update_mascot() take: the id, the name and the checked character's JSON. The public route to such
+# an object is `mascot_character(mascot_read_character(path))`, which also keeps the checked data.
 
 # The character helper object for checked data.
 runtime_character <- function(data = catalogue_alpha_two()) {
@@ -160,12 +161,12 @@ install_runtime_helpers <- function(js) {
 }
 
 # Hands characters to an app that shinytest2 starts in another R process: it reads them from the file named by
-# MASCOT_I1_CHARACTERS (a list of `mascot_character` objects), because test helpers do not exist there.
+# MASCOT_TEST_CHARACTERS (a list of `mascot_character` objects), because test helpers do not exist there.
 local_app_characters <- function(characters, env = parent.frame()) {
   checkmate::assert_list(characters, names = "unique")
   file <- withr::local_tempfile(fileext = ".rds", .local_envir = env)
   saveRDS(characters, file)
-  withr::local_envvar(c(MASCOT_I1_CHARACTERS = file), .local_envir = env)
+  withr::local_envvar(c(MASCOT_TEST_CHARACTERS = file), .local_envir = env)
   invisible(file)
 }
 

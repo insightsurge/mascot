@@ -370,7 +370,7 @@ describe("cold-start palette validation", {
   })
 })
 
-describe("B2 theme diagnostics", {
+describe("theme diagnostics", {
   it("lists valid roles and classifies invalid mode choices", {
     problem <- theme_map_problem(list(typo = "red"), "theme", c("body", "rim"))
     expect_match(problem, "body", fixed = TRUE)
@@ -457,11 +457,14 @@ describe("theme role naming before a character is chosen", {
 })
 
 
-describe("built-in theme typo compatibility", {
-  it("keeps the existing mascot error text byte for byte", {
-    snapshot <- readLines(test_path("_snaps", "mascot.md"), warn = FALSE)
-    expected <- sub("^      ! ", "", grep('! `theme` has unknown or reserved colour roles:', snapshot, value = TRUE))
-    expect_length(expected, 1L)
-    expect_identical(theme_map_problem(list(bdoy = "blue"), "theme", colour_role_registry("tessa")), expected)
+describe("theme_map_problem() message", {
+  it("names the unknown role, suggests the closest one and lists the character's roles in order", {
+    roles <- colour_role_registry("tessa")
+    expected <- paste0(
+      '`theme` has unknown or reserved colour roles: "bdoy". Did you mean "body"? Valid roles: ',
+      paste0('"', roles, '"', collapse = ", "),
+      ". See `mascot_colour_roles()` for each character's roles."
+    )
+    expect_identical(theme_map_problem(list(bdoy = "blue"), "theme", roles), expected)
   })
 })

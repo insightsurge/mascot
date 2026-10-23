@@ -33,6 +33,17 @@ one. An unknown capability is named in the error, and errors about kit effect se
   checks report `$.face.kit_definition.effects.<id>.<setting>`, the paths the R checker uses. `fade_at` must be below
   1, as in R, rather than at most `1 - Number.EPSILON`.
 
+## 2026-10-22 — One copy of the sweat and sparkle maths (#465)
+
+**In brief:** Nothing drawn changes. The sweat drop and the sparkle star are drawn with
+`mascot.parts.sweatProgress()` and `mascot.parts.sparklePulse()`, so the tests of those two functions test the maths the
+drawing uses.
+
+**Technical:** `mascot.faces.effects()` takes the offset and opacity of a `progress` effect from
+`mascot.parts.sweatProgress()`, and the scale and reduced-motion form of a `pulse` effect from
+`mascot.parts.sparklePulse()`, instead of repeating their formulas. It checks the effect value itself first, so an
+invalid value fails with code `input_type` at the path `$.effects.<id>`.
+
 ## 2026-10-22 — A readable engine version, and comments that say what the code does (#464)
 
 **In brief:** `window.mascot.version` gives the version of mascot that a page runs, in Shiny apps, `mascot_preview()`

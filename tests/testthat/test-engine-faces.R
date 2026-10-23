@@ -1,4 +1,4 @@
-describe("E3 generic face kits", {
+describe("generic face kits", {
   it("draws every shipped eye, brow and mouth operation and accepts data-named styles", {
     skip_without_chrome()
     js <- local_face_engine()
@@ -321,7 +321,7 @@ describe("E3 generic face kits", {
   })
 })
 
-describe("I1 face clips and effect anchors", {
+describe("face clips and effect anchors", {
   it("compiles a face clip's geometry once per clip item: the second draw of the same face compiles nothing", {
     skip_without_chrome()
     js <- local_face_engine()

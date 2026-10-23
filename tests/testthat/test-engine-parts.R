@@ -283,7 +283,7 @@ describe("declarative threshold switches and variant anchors", {
   })
 })
 
-describe("E5b detail bands and compile-time band policy", {
+describe("detail bands and compile-time band policy", {
   it("classifies the unrounded CSS width: micro below 48, small from 48 to 127.999, full from 128", {
     skip_without_chrome()
     js <- local_character_engine()

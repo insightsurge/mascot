@@ -87,7 +87,7 @@ describe("the click argument", {
       list(type = "menu", items = list(a = "A"), direction = "left", label = "Menu", tooltip = FALSE, disabled = FALSE)
     )
   })
-  it("rejects a named vector, the old menu shortcut, with a hint to wrap it", {
+  it("rejects a named vector of menu choices with a hint to wrap it in mascot_popup_menu()", {
     expect_error(as_click_arg(c(help = "Help"), environment()), "named vector.*mascot_popup_menu\\(\\)")
     expect_snapshot(error = TRUE, mascot(id = "helper", click = c(help = "Help", about = "About")))
   })
@@ -145,7 +145,7 @@ describe("public argument error classes", {
 })
 
 
-describe("mascot_action() removal safeguards (#349)", {
+describe("mascot_action() without a label", {
   it("requires a label whenever tooltip or disabled is explicitly supplied", {
     for (options in list(list(tooltip = TRUE), list(tooltip = FALSE), list(disabled = FALSE), list(disabled = TRUE))) {
       expect_error(do.call(mascot_action, options), "label.*NULL", class = "mascot_error")

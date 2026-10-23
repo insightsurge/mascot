@@ -1,9 +1,10 @@
 #' Add a mascot to a page
 #'
 #' Draw a character with a mood, a status line and an optional message bubble.
-#' The status shows the character's line for the mood until the app sets its own
-#' text (the `status` column of `mascot_moods(character)`).
-#' It follows the mood again when [mascot_status()] is supplied without text.
+#' Until the app sets its own status text, the status line shows the
+#' character's line for the mood (the `status` column of
+#' `mascot_moods(character)`). [mascot_status()] with no text hands the status
+#' back to the mood.
 #'
 #' @param id A required non-empty string without whitespace, unique on the
 #'   page. In a Shiny module use `ns("helper")` in the UI and `"helper"` in
@@ -14,10 +15,12 @@
 #' @param mood A mood name or [mascot_mood()] object. Defaults to `"idle"`.
 #'   See [mascot_moods()] for available choices. `NULL` is not accepted.
 #' @param status A non-empty string or [mascot_status()] object. `NULL` (the
-#'   default) follows the mood. Text is escaped, including [htmltools::HTML()].
+#'   default) follows the mood. Text is always escaped, even inside
+#'   [htmltools::HTML()].
 #' @param bubble A non-empty string, an `htmltools` tag or tag list, or a
-#'   [mascot_bubble()] object. `NULL` (the default) shows no bubble. A string
-#'   uses the helper's five-second duration and close button. Plain text is
+#'   [mascot_bubble()] object. `NULL` (the default) shows no bubble. A plain
+#'   string gets the defaults of [mascot_bubble()]: five seconds and a close
+#'   button. Plain text is
 #'   escaped; [htmltools::HTML()] or tags supply HTML. Tags with dependencies or
 #'   head content are not supported.
 #' @param size A finite number of CSS pixels (at least `24`), a positive
@@ -32,38 +35,39 @@
 #'   such as `"top-left"`, a named list such as `list(position = "top-left",
 #'   minimise = TRUE, drag = "snap")`, or a [mascot_placement()] object.
 #'   Floating mascots show a minimise control by default; dragging is off.
-#'   Inline mascots sit in the page flow and ignore `minimise` and `drag`, with an
-#'   informational message for explicitly supplied values and silence for
-#'   defaults. With `drag`, visitors can also drag the minimised restore button;
+#'   Inline mascots sit in the page flow and ignore `minimise` and `drag`. If you
+#'   set either one yourself, a message says so; the defaults give no message.
+#'   With `drag`, visitors can also drag the minimised restore button;
 #'   each drop sets `input$<id>_position` to the corner (`"snap"`) or a list with
 #'   `x` and `y` (`"free"`); saving it between visits is the app's job. See
 #'   [mascot_placement()]. `NULL` is not accepted.
 #' @param theme A palette id string from [mascot_palettes()], a named list of colour roles, a [bslib::bs_theme()] or a
 #'   [mascot_theme()] object. `NULL` (the default) keeps the character's own
-#'   colours. A palette supplies the base colours in both modes; `"original"`
-#'   selects the character's own colours. Unset roles follow the character's rules.
+#'   colours. A palette sets the base colours for light and dark mode;
+#'   `"original"` selects the character's own colours. Roles you leave unset
+#'   follow the character's rules.
 #' @param motion A logical flag or [mascot_motion_settings()] object. `TRUE` (the default)
-#'   allows movement while honouring the visitor's reduced-motion preference.
+#'   allows movement, unless the visitor prefers reduced motion.
 #'   `FALSE` stops all movement, including panels, drag snapping, minimising and
 #'   restoring. `NULL` is not accepted.
 #' @param click What a click on the mascot does in a Shiny app. `NULL` (the
-#'   default) does nothing: the mascot is a picture, not a keyboard stop. One
-#'   label containing a non-whitespace character, such as `"Open help"`, or a
+#'   default) does nothing: the mascot is a picture, and keyboard focus skips
+#'   it. A label that is not blank, such as `"Open help"`, or a
 #'   [mascot_action()] object makes it a button for one action of your app.
 #'   A [mascot_popup_menu()] object makes it open a menu, whose choice sets
-#'   `input$<id>_menu`. With a click, every
-#'   action activation sets `input$<id>_click` (see Details).
+#'   `input$<id>_menu`. With a click, each time the visitor activates the
+#'   action, `input$<id>_click` is set (see Details).
 #' @returns An `htmltools` tag with the mascot's web dependency attached.
 #' @family mascots in Shiny
 #' @seealso [update_mascot()]
 #' @details
-#' `NULL` means none or the default in [mascot()] and helpers where accepted,
-#' and unchanged in [update_mascot()]. An empty helper (`mascot_bubble()`,
-#' `mascot_status()`, `mascot_theme()`, `mascot_action()` or
+#' In [mascot()] and its helpers, `NULL` (where accepted) means none or the
+#' default; in [update_mascot()] it means unchanged. An empty helper
+#' (`mascot_bubble()`, `mascot_status()`, `mascot_theme()`, `mascot_action()` or
 #' `mascot_popup_menu()`) resets that setting.
 #'
-#' Building UI with [mascot()] or helpers errors on invalid values;
-#' [update_mascot()] warns and leaves the mascot unchanged. See
+#' [mascot()] and the helpers raise an error on an invalid value;
+#' [update_mascot()] warns instead and leaves the mascot unchanged. See
 #' [mascot-package] for condition classes.
 #'
 #' Use the always visible status line for a short description of the current state.
@@ -74,12 +78,12 @@
 #' When minimised, the status remains available to screen readers. See
 #' [mascot_placement()] for restore controls and message timing.
 #'
-#' In Shiny the mascot uses an input binding. Its input value (`input$<id>`) is an
-#' internal value that tells the server the mascot appeared; do not rely on its contents.
+#' In Shiny the mascot is also an input. `input$<id>` only tells the server that
+#' the mascot has appeared; its contents are internal, so do not rely on them.
 #'
 #' **In modules, `golem` and rhino apps.** Use the module's `ns()` in the UI and
 #' its local id in the server. `session$ns("helper")` also works in the server;
-#' the namespace is added once. In nested modules, namespace the child module's
+#' the namespace is not added twice. In nested modules, namespace the child module's
 #' id in the parent UI and call its server with the local child id. Inputs such
 #' as `input$helper_menu`, `input$helper_click`, `input$helper_position` and
 #' `input$helper_minimised` belong to that child module.
@@ -140,10 +144,11 @@
 #' review** again does not rebuild it, so it keeps its mood and position.
 #'
 #' **Clicks.** With `click`, the mascot is a button: an action named by its
-#' label, or a menu. Every action activation (a click or tap, Enter or Space while
-#' it has keyboard focus, or a screen reader's activate command) sets
-#' `input$<id>_click` to the number of activations since the mascot appeared, so
-#' `shiny::observeEvent(input$helper_click, ...)` runs each time for an action.
+#' label, or a menu. Each time the visitor activates the action (a click or tap,
+#' Enter or Space while it has keyboard focus, or a screen reader's activate
+#' command), `input$<id>_click` is set to the number of activations since the
+#' mascot appeared, so `shiny::observeEvent(input$helper_click, ...)` runs each
+#' time for an action.
 #' Opening and closing a menu never sets this input. Dragging a floating mascot
 #' never counts as a click. See [mascot_action()] and [mascot_popup_menu()].
 #' @export

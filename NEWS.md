@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The help pages read more plainly: stiff or vague wording in 19 help topics and the studio's guide summaries is rewritten, with every argument, default and link kept. The `update_mascot()` help now points to `theme`, not `character`, for the `mascot_palette_dropped` warning (#486).
+
 * `mascot()` builds its tag in under 15 ms instead of about 80 ms for a built-in character, and about 800 ms for your own checked character, on every call after the first. It works out a character's identity once per R process, or once per checked object, instead of on every call; the tags and mount tokens stay the same (#494).
 
 * `mascot_check_character()` and `mascot_read_character()` settle what character format version 1 accepts, so files written now keep loading (#493):

@@ -16,11 +16,11 @@ names and types.
 Start with the studio: every exported function and argument, live, with
 explanations and the code to copy. \code{"theme"} is a page of the same app that
 themes one character and gives the code to copy. The other examples show one
-scenario each. All work offline. The studio, the theme page and the
-single-file examples need optional \code{bslib}, and the studio also needs
-optional \code{knitr}; the \code{long-task} example needs optional \code{promises} and
-\code{later}, and the \code{golem} example needs optional \code{golem}. The rhino-shaped
-example uses plain Shiny without rhino or box.
+scenario each. All work offline. Some need optional packages: the studio,
+the theme page and the single-file examples need \code{bslib}, and the studio also
+needs \code{knitr}; the \code{long-task} example needs \code{promises} and \code{later}, and the
+\code{golem} example needs \code{golem}. The rhino-shaped example uses plain Shiny
+without rhino or box.
 }
 \examples{
 mascot_examples()

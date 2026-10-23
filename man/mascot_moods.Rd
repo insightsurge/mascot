@@ -21,9 +21,9 @@ names and types.
 }
 \description{
 Every character has the five shared moods, in this order, and may add more
-of its own. With no \code{character}, the list is the shared vocabulary; with one,
-it is what that character declares: the shared moods first, then its own in
-the order its author wrote them.
+of its own. With no \code{character}, it lists the shared moods. With a
+character, it lists that character's moods: the shared ones first, then its
+own in the order its author wrote them.
 }
 \examples{
 mascot_moods()

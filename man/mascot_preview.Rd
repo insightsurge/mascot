@@ -25,11 +25,13 @@ helper (Knurl and Neer are experimental). Defaults to \code{"tessa"}. \code{NULL
 to show every mood from \code{\link[=mascot_moods]{mascot_moods()}}.}
 
 \item{status}{A non-empty string or \code{\link[=mascot_status]{mascot_status()}} object. \code{NULL} (the
-default) follows the mood. Text is escaped, including \code{\link[htmltools:HTML]{htmltools::HTML()}}.}
+default) follows the mood. Text is always escaped, even inside
+\code{\link[htmltools:HTML]{htmltools::HTML()}}.}
 
 \item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
-\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) shows no bubble. A string
-uses the helper's five-second duration and close button. Plain text is
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) shows no bubble. A plain
+string gets the defaults of \code{\link[=mascot_bubble]{mascot_bubble()}}: five seconds and a close
+button. Plain text is
 escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply HTML. Tags with dependencies or
 head content are not supported.}
 
@@ -39,19 +41,20 @@ percentage string such as \code{"20\%"}, or a \code{\link[=mascot_size]{mascot_s
 
 \item{theme}{A palette id string from \code{\link[=mascot_palettes]{mascot_palettes()}}, a named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
-colours. A palette supplies the base colours in both modes; \code{"original"}
-selects the character's own colours. Unset roles follow the character's rules.}
+colours. A palette sets the base colours for light and dark mode;
+\code{"original"} selects the character's own colours. Roles you leave unset
+follow the character's rules.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object. Defaults to \code{FALSE}
-for steady faces; \code{TRUE} allows movement subject to the visitor's preference.
+for steady faces; \code{TRUE} allows movement unless the visitor prefers reduced motion.
 \code{NULL} is not accepted.}
 }
 \value{
 A browsable \code{htmltools} tag list. Its \code{contrast} attribute is a data
 frame with \code{role}, \code{colour}, \code{background}, \code{ratio} and \code{mode} columns, one row
 per supplied colour below 3:1. With no findings it is a zero-row data frame
-with the same columns. Colours are kept unchanged; one combined warning is
-issued in R unless \code{mascot.contrast_warnings} is \code{FALSE}.
+with the same columns. Colours are not changed. R gives one combined
+warning unless \code{mascot.contrast_warnings} is \code{FALSE}.
 }
 \description{
 Compare moods and sizes on a single offline page. Creating the page starts no
@@ -61,21 +64,21 @@ or Quarto document.
 }
 \details{
 \strong{Comparison grid.} Rows are moods; columns are the requested \code{size}, then
-160, 96 and 24 CSS pixels. The first column preserves percentage and
-\code{small_screen} settings; fixed comparison columns do not change on narrow
+160, 96 and 24 CSS pixels. The first column keeps your percentage and
+\code{small_screen} settings; the fixed columns do not change on narrow
 screens. Every size draws the full character. Each cell keeps its status text,
 since small faces lose fine detail.
 
 \strong{Theme and contrast.} A palette id string works as in \code{\link[=mascot]{mascot()}}.
-Built-in palette colours do not add contrast warnings. Both supplied theme
-maps are shown, even if the theme
-selected one mode. Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's
+Built-in palette colours do not add contrast warnings. When the theme gives
+both a light and a dark map, both are shown, even if it sets one mode.
+Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's
 \code{bg} and \code{body-bg-dark}; text uses \code{fg} and \code{body-color-dark}. Only supplied
 colour roles are checked, using the same contrast calculation as \code{\link[=mascot]{mascot()}}.
 Experimental CSS variables are worked out in the browser: their warnings appear
 in its console, outside the R \code{contrast} attribute.
 
-\strong{Bubbles.} Empty bubble space is omitted here; a supplied bubble keeps its
+\strong{Bubbles.} Cells without a bubble leave out its space; a supplied bubble keeps its
 normal space and timing. Each cell is wide enough to hold it, so bubbles
 never cover neighbouring cells.
 }

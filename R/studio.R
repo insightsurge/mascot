@@ -2,8 +2,8 @@
 #'
 #' Explore the package's functions, try their controls with live feedback, and
 #' copy the working R code into your own app. The studio is
-#' experimental and may change in a later release. Choices belong to the returned
-#' app; no global options are changed.
+#' experimental and may change in a later release. What you choose in it stays
+#' in the returned app; it changes no global options.
 #' @param view Which view to open: `"studio"` (the default) for the studio, one
 #'   page per function, `"examples"` for the gallery of bundled examples, or `"theme"`
 #'   to theme one character.

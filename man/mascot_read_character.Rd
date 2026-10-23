@@ -13,9 +13,10 @@ mascot_read_character(path)
 A checked \code{mascot_character_data} object, visibly.
 }
 \description{
-Reads exactly one caller-named local JSON file, bounded by the format's input
-policy. URLs and wildcards are not expanded. The checked result embeds its
-family and face kits; keep the source too if you want to edit it later.
+Reads one local JSON file, the one you name, within the format's input
+limits. URLs and wildcards are not expanded. The checked result includes its
+family and face kits; keep the source file too if you want to edit the
+character later.
 }
 \details{
 File problems inherit \code{mascot_error_file} and \code{mascot_error}, with

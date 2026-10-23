@@ -19,8 +19,8 @@ where the mascot is placed in the UI. \code{NULL} is not accepted.}
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
 \item{minimise}{A logical flag, defaulting to \code{TRUE}, to show a minimise
-control on a floating mascot. Has no effect inline: an explicitly supplied
-value gives an informational message; the default stays silent.
+control on a floating mascot. Has no effect inline; if you set it yourself
+there, a message says so, and the default gives none.
 \code{NULL} is not accepted.}
 
 \item{drag}{\code{"none"} (the default) for no dragging, \code{"snap"} to let visitors
@@ -30,8 +30,8 @@ to keep it where it is dropped, including while minimised.
 \out{<span class='badge text-bg-warning'>Experimental</span>}}}{%
 \strong{[Experimental]}}
 \code{"free"} is experimental: the position it reports and how to restore it
-may change. Has no effect inline: an
-explicitly supplied value gives an informational message. \code{TRUE}, \code{FALSE} and
+may change. Has no effect inline; if you set it yourself there, a message
+says so. \code{TRUE}, \code{FALSE} and
 \code{NULL} are not accepted. See the Dragging section.}
 }
 \value{
@@ -41,7 +41,7 @@ A \code{mascot_placement} object. Its fields are internal; pass it on rather tha
 Floating mascots sit in a window corner (by default, \code{"bottom-right"}), 1rem
 from the window edges, above fixed navigation bars and below modals.
 Bottom-right mascots move above Shiny notifications while they are visible.
-Floating mascots hide with their original tab or container. Inline mascots sit
+A floating mascot hides when the tab or container it was placed in hides. Inline mascots sit
 where \code{mascot()} is placed in the page flow. Switching back to inline returns
 the mascot to its original place in the UI.
 }
@@ -50,10 +50,10 @@ Floating mascots show a minimise control by default; set \code{minimise = FALSE}
 to hide it. The neutral control appears on hover or keyboard focus. Touch
 screens keep it visible; an open mascot menu hides it. Its border has a quiet
 glow. A minimised mascot is a round restore button in the character's colours.
-Its status remains available to screen readers. Updates still apply; bubble
-countdowns pause until restored. Click, Enter or Space restores the mascot.
-Hover and keyboard focus add a glow and a small growth transition to the
-restore button; reduced motion keeps only the glow.
+Its status remains available to screen readers. Updates still apply, and
+bubble countdowns pause until it is restored. Click, Enter or Space restores
+the mascot. On hover or keyboard focus the restore button glows and grows
+slightly; with reduced motion it only glows.
 }
 \section{Dragging}{
 
@@ -72,10 +72,11 @@ or \code{motion = FALSE}, makes the move instant.
 window, and stays inside when the window is resized.
 }
 
-In Shiny each drop sets \verb{input$<id>_position}, read in the module that owns
-the mascot, like \verb{input$<id>_menu}: the corner name, such as \code{"top-left"},
-after a snap, or a list with \code{x} and \code{y}, the mascot's top-left corner in
-CSS pixels from the window's top-left, after a free drop. A later
+In Shiny each drop sets \verb{input$<id>_position}, which you read in the module
+that owns the mascot, as with \verb{input$<id>_menu}. After a snap it is the
+corner name, such as \code{"top-left"}; after a free drop it is a list with \code{x}
+and \code{y}, the mascot's top-left corner in CSS pixels from the window's
+top-left. A later
 \code{\link[=update_mascot]{update_mascot()}} with \code{placement} replaces the dragged position. Dragging
 has no keyboard alternative; the minimise control stays reachable by keyboard.
 Remembering a position between visits is the app's job: for example, save

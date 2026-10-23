@@ -5,8 +5,8 @@
 #' The visitor's
 #' [reduced-motion setting](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)
 #' always wins over any `TRUE`.
-#' Unnamed switches, including switches added in later versions, follow `others`;
-#' named switches always win.
+#' Switches you do not set, including any added in later versions, follow
+#' `others`; switches you set always win.
 #' @param ... Must be empty; all settings must be named.
 #' @param idle Logical flag or `NULL` (default): breathing and blinking.
 #'   `NULL` follows `others`.
@@ -24,10 +24,10 @@
 #' @param messages `TRUE` for all panels, `FALSE` for none, or a character vector
 #'   of names from `c("bubble", "tooltip", "menu")` for only those panels.
 #'   `NULL` (default) follows `others`. Panels still appear and work.
-#' @param others Logical flag, default `TRUE`, for every unnamed switch.
-#'   With `others = FALSE` and no movement enabled by a named switch, this is
-#'   equivalent to `motion = FALSE`: reduced-motion poses and instant drag
-#'   transitions apply too.
+#' @param others Logical flag, default `TRUE`, for every switch you do not set.
+#'   With `others = FALSE` and no switch you set allowing movement, this is the
+#'   same as `motion = FALSE`, including the reduced-motion poses and instant
+#'   drag moves.
 #' @returns A `mascot_motion_settings` object. Its fields are internal; pass the
 #'   object on rather than reading its fields.
 #' @family mascot helpers

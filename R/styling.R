@@ -12,11 +12,12 @@
 #'
 #' @section Public custom properties:
 #' Set these on `.mascot`, an individual mascot's id, or an ancestor such as
-#' `:root`. A supplied colour wins over the copied page colours and Bootstrap
-#' variables, including in a `bslib` app. No public colour property is set by
-#' the package. Without a supplied value, panels follow the page and restore
-#' buttons follow the character. Inherited values from the original container
-#' are copied when a mascot floats; values set on the mascot itself win.
+#' `:root`. A colour you set wins over the page colours mascot copies and over
+#' Bootstrap variables, also in a `bslib` app. The package sets none of these
+#' colour properties itself. When you set none, panels follow the page and the
+#' restore button follows the character. When a mascot floats, it copies the
+#' values it inherited from its original container; values set on the mascot
+#' itself win.
 #'
 #' * `--mascot-panel-bg`: bubble, menu and tooltip backgrounds and tails.
 #'   Default: page background; otherwise `#fff` in light mode, `#212529` in dark.

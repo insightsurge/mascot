@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* The website is now at <https://insightsurge.github.io/mascot/>, and the studio's "Package website" link and its guide links point there (#115).
+
 * A page carries each built-in character's data once, and only for the characters its mascots use. Before, every `mascot()` tag carried its character's whole data: a page with five Tessa mascots saved by `htmltools::save_html()` drops from 263 KB to 59 KB, and a `renderUI()` that redraws eight cards with Tessa sends 72 KB instead of 475 KB on each update. The data travels as an HTML dependency named after the character, so it works in Shiny apps (also with `renderUI()`, `insertUI()` and modals), saved and self-contained pages, and Quarto or R Markdown documents. Your own characters keep their data inside their tag, as before (#497).
 
 * The help pages read more plainly: stiff or vague wording in 19 help topics and the studio's guide summaries is rewritten, with every argument, default and link kept. The `update_mascot()` help now points to `theme`, not `character`, for the `mascot_palette_dropped` warning (#486).

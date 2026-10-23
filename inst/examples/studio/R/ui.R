@@ -618,7 +618,7 @@ studio_right_rail <- function() {
         tags$a(id = "more_examples", href = "?view=examples", "More examples"),
         tags$a(id = "more_theme", href = "?view=theme", target = "_blank", rel = "noopener", "Theme a mascot"),
         tags$a(href = "https://github.com/insightsurge/mascot", target = "_blank", rel = "noopener", "GitHub"),
-        tags$a(href = "https://mascot-pkg.web.app/", target = "_blank", rel = "noopener", "Package website"),
+        tags$a(href = "https://insightsurge.github.io/mascot/", target = "_blank", rel = "noopener", "Package website"),
         tags$label(
           class = "pg-key-switch",
           tags$input(id = "studio_keys", type = "checkbox", checked = NA),

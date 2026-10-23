@@ -10,7 +10,7 @@ character_format_policy <- function() {
 #' Character format structure and input bounds
 #'
 #' Internal foundation; this returns structural data, never checked character
-#' data. Family resolution and semantic validation belong to the next stage.
+#' data. Family resolution and semantic checks happen in `character_format_check()`.
 #' @noRd
 character_format_schema <- function() {
   schema <- jsonlite::fromJSON(

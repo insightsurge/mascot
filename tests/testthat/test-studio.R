@@ -298,3 +298,85 @@ describe("mascot_studio() checked object guidance", {
     expect_error(mascot_studio(character = bot, run = FALSE), class = "mascot_error_character")
   })
 })
+
+describe("mascot_studio() inspector keys and colour swatches in Chrome", {
+  studio_on_theme <- function(env = parent.frame()) {
+    app_driver(
+      function() {
+        library(mascot)
+        mascot_studio(fn = "mascot_theme", run = FALSE)
+      },
+      width = 1440,
+      height = 900,
+      env = env
+    )
+  }
+  it("moves between the inspector tabs with the arrow, Home and End keys, whatever the number of tabs", {
+    local_shiny_browser()
+    skip_without_studio_packages("studio")
+    app <- studio_on_theme()
+    selected <- "document.querySelector('[data-inspector-tab][aria-selected=true]')"
+    app$wait_for_js(paste0(selected, "?.dataset.inspectorTab === 'guide'"))
+    # Each key goes to the selected tab, as a key press on the focused tab does; the last tab wraps to the first.
+    steps <- list(
+      c("ArrowRight", "controls"),
+      c("ArrowLeft", "guide"),
+      c("ArrowLeft", "help"),
+      c("Home", "controls"),
+      c("End", "guide")
+    )
+    press <- function(steps) {
+      for (step in steps) {
+        app$run_js(sprintf(
+          "{ const tab = %s; tab.focus(); tab.dispatchEvent(new KeyboardEvent('keydown', { key: '%s', bubbles: true })); }",
+          selected,
+          step[[1]]
+        ))
+        app$wait_for_js(sprintf(
+          "%s?.dataset.inspectorTab === '%s' && document.activeElement === %s",
+          selected,
+          step[[2]],
+          selected
+        ))
+        expect_identical(app$get_js(paste0(selected, ".dataset.inspectorTab")), step[[2]])
+      }
+    }
+    press(steps)
+    # With two tabs left, a fixed count of three would point past the last tab.
+    app$run_js("document.querySelector('[data-inspector-tab=help]').remove();")
+    press(list(
+      c("ArrowRight", "controls"),
+      c("ArrowRight", "guide"),
+      c("ArrowLeft", "controls"),
+      c("ArrowLeft", "guide"),
+      c("Home", "controls"),
+      c("End", "guide")
+    ))
+  })
+  it("repaints the colour swatches for the mode in use when the page switches between light and dark", {
+    local_shiny_browser()
+    skip_without_studio_packages("studio")
+    app <- studio_on_theme()
+    swatches <- function(active, idle) {
+      sprintf(
+        paste0(
+          "(() => { const s = (mode) => [...document.querySelectorAll(`.pg-resolved[data-mode=${mode}]`)]; ",
+          "return s('%s').length > 0 && s('%s').length > 0 && ",
+          "s('%s').every((el) => !el.classList.contains('is-idle')) && ",
+          "s('%s').every((el) => el.classList.contains('is-idle')); })()"
+        ),
+        active,
+        idle,
+        active,
+        idle
+      )
+    }
+    wait_studio_js(app, "frame.mascot.host.state(live)?.mode === 'light'")
+    app$wait_for_js(swatches("light", "dark"))
+    expect_true(app$get_js(swatches("light", "dark")))
+    app$run_js("document.documentElement.setAttribute('data-bs-theme', 'dark')")
+    wait_studio_js(app, "frame.mascot.host.state(live)?.mode === 'dark'")
+    app$wait_for_js(swatches("dark", "light"))
+    expect_true(app$get_js(swatches("dark", "light")))
+  })
+})

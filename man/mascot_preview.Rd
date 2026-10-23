@@ -16,8 +16,8 @@ mascot_preview(
 )
 }
 \arguments{
-\item{character}{A character name or \code{\link[=mascot_character]{mascot_character()}} object (Knurl and
-Neer are experimental). Defaults to \code{"tessa"}. \code{NULL} is not accepted.}
+\item{character}{A character id such as \code{"tessa"}, or a \code{\link[=mascot_character]{mascot_character()}}
+helper (Knurl and Neer are experimental). Defaults to \code{"tessa"}. \code{NULL} is not accepted.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 

@@ -27,7 +27,7 @@ gesture_table <- function() {
 #'   is the length of the movement that actually plays: a `"wave"` that falls
 #'   back to a rock reports the length of the rock. Frames run at 30 per second.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
-#'   names and types. The first column is the value you pass to the matching function.
+#'   names and types.
 #' @family mascot helpers
 #' @seealso [mascot_gesture()]
 #' @export
@@ -84,8 +84,7 @@ mascot_gestures <- function(character = NULL) {
 #'   `"wave"` greets (characters without arms rock instead). See
 #'   [mascot_gestures()] for descriptions. There is no default; `NULL` is not
 #'   accepted.
-#' @returns A `mascot_gesture` object with a `name` element.
-#' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @returns A `mascot_gesture` object. Its fields are internal; pass it on rather than reading them.
 #' @details
 #' This helper checks only the form of the id. [update_mascot()] checks whether
 #' the chosen character declares that gesture. If it does not, the warning lists

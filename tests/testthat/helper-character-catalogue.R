@@ -9,7 +9,15 @@ catalogue_alpha_two <- function() {
 
 # Run code with an empty process registry, restoring it afterwards.
 local_empty_registry <- function(env = parent.frame()) {
-  before <- character_data_snapshot()
-  withr::defer(character_data_reset(before), envir = env)
-  character_data_reset()
+  store <- character_data_store
+  before <- list(items = store$items, order = store$order)
+  withr::defer(
+    {
+      store$items <- before$items
+      store$order <- before$order
+    },
+    envir = env
+  )
+  store$items <- list()
+  store$order <- character()
 }

@@ -26,7 +26,7 @@ with \code{code}, \code{path}, \code{value} and \code{fix}. Argument problems in
 \code{mascot_error_argument} and \code{mascot_error}, with \code{argument}, \code{code} and \code{value}.
 Every character must define changing \code{wave} and \code{nod} tracks. \code{wave} must
 change a non-root part channel; \code{nod} may change any channel, including \code{root}.
-Direct objects never enter the process registry. Format version, supported
+A checked object is not stored anywhere: pass it each time. Format version, supported
 capabilities and admission policy version are separate contracts. Built-in
 character ids are reserved and refused here;
 give your character its own id before checking it.

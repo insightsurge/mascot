@@ -12,8 +12,7 @@ letters, digits or underscores. Defaults to \code{"idle"}; \code{NULL} is not ac
 See \code{\link[=mascot_moods]{mascot_moods()}} for the available moods.}
 }
 \value{
-A \code{mascot_mood} object with a \code{name} element.
-The returned object's fields are internal; pass the object on rather than reading its fields.
+A \code{mascot_mood} object. Its fields are internal; pass it on rather than reading them.
 }
 \description{
 Set how the mascot feels and looks. You can use this helper or a plain mood

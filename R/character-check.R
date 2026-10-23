@@ -143,7 +143,7 @@ character_format_check <- function(
           "budget",
           paste0("$.frame_fit.", band),
           proof$bounds,
-          "Provide a provable authored fit or a separately reviewed bounded fixture check."
+          "Keep every part, movement and effect inside the 300 by 300 frame at this size."
         )
       }
       proof

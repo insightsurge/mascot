@@ -115,7 +115,7 @@ describe("session and static mascot specifications", {
     })
     expect_identical(mascot_unbound_template_limit, 128L)
     store$items <- list()
-    store$serial <- store$tick <- 0
+    store$tick <- 0
     base <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
     first <- mascot_mount_token("helper", base, NULL)
     expect_identical(mascot_mount_token("helper", base, NULL), first)

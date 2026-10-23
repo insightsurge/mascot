@@ -33,9 +33,7 @@
 #'   the pointer rests on the mascot or the keyboard focuses it, provided a
 #'   `label` is set. `FALSE` hides the tooltip; screen readers still announce
 #'   the label.
-#' @returns A `mascot_popup_menu` object with `items`, `disabled`, `direction`, `label` and
-#'   `tooltip` elements.
-#' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @returns A `mascot_popup_menu` object. Its fields are internal; pass it on rather than reading them.
 #' @family mascot helpers
 #' @seealso [mascot()], [update_mascot()], [mascot_action()], [mascot_bubble()]
 #' @details

@@ -4,7 +4,7 @@
 # Shiny sources this file with the others in R/, so it holds functions only.
 
 # The page of `fn` for `character` as a list of pieces for selected_guide(), or NULL when the function has
-# no page (yet). knitr is required by the app (app.R), so there is no fallback for a missing package.
+# no page. knitr is required by the app (app.R), so there is no fallback for a missing package.
 studio_guide_page <- function(fn, character, dir = studio_guide_dir()) {
   checkmate::assert_string(fn, min.chars = 1)
   checkmate::assert_string(character, min.chars = 1)

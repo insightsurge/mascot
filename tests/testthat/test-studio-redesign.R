@@ -1928,7 +1928,7 @@ describe("the next studio review round", {
     page <- parts$page
     expect_match(
       page,
-      sprintf('title="Function index (all %d functions)"', length(get("playground_guide", parts$env))),
+      sprintf('title="Function index (all %d functions)"', length(get("studio_guide", parts$env))),
       fixed = TRUE
     )
     expect_match(page, 'id="function_index_tooltip"', fixed = TRUE)
@@ -2255,7 +2255,7 @@ describe("studio palette follow-up (#353)", {
     log <- app$get_js("document.querySelector('#wiring_log .is-warning').textContent")
     expect_match(log, "left mascot", fixed = TRUE)
     expect_match(log, "unchanged", fixed = TRUE)
-    expect_match(log, "palettes cannot be borrowed between characters yet", fixed = TRUE)
+    expect_match(log, "each palette belongs to its own character", fixed = TRUE)
     expect_false(grepl("mascot_palette_dropped", log, fixed = TRUE))
     expect_identical(app$get_value(output = "code_ui"), before)
     expect_identical(

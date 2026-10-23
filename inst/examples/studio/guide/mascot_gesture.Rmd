@@ -1,6 +1,6 @@
 ```{r setup-mascot_gesture, include = FALSE, echo = FALSE}
 studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
-# Temporary #375 workaround, matching the studio's resting-animation choices.
+# Animations that play only at rest but appear in the gesture listing (#375), as the studio lists them.
 resting_names <- if (exists("studio_resting_gestures")) studio_resting_gestures else stats::setNames("shimmer", formals(mascot::mascot)$character)
 ```
 

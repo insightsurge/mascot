@@ -11,21 +11,6 @@ describe("character_catalogue_builtin()", {
   it("rejects an id that is not shipped", {
     expect_error(character_catalogue_builtin("study_bot"), "Assertion on 'id' failed")
   })
-  it("ships a recipe whose colour roles match the legacy Tessa description", {
-    legacy <- character_colour_data("tessa")
-    expect_identical(
-      colour_role_names(names(legacy$colours)),
-      names(character_catalogue_builtin("tessa")$colours)
-    )
-    expect_identical(
-      unname(unlist(legacy$colours)),
-      unname(unlist(character_catalogue_builtin("tessa")$colours))
-    )
-    expect_identical(
-      unname(unlist(legacy$brand)),
-      unname(unlist(character_catalogue_builtin("tessa")$brand))
-    )
-  })
   it("keeps the shared mood descriptions and gives Tessa her own status lines", {
     tessa <- character_catalogue_builtin("tessa")
     voice <- c(

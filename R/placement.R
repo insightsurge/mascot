@@ -60,9 +60,7 @@
 #'   may change. Has no effect inline: an
 #'   explicitly supplied value gives an informational message. `TRUE`, `FALSE` and
 #'   `NULL` are not accepted. See the Dragging section.
-#' @returns A `mascot_placement` object with `position`, `minimise` and `drag`
-#'   elements.
-#' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @returns A `mascot_placement` object. Its fields are internal; pass it on rather than reading them.
 #' @family mascot helpers
 #' @seealso [mascot()], [update_mascot()]
 #' @evalRd paste0(
@@ -94,7 +92,7 @@ mascot_placement <- function(position = "bottom-right", ..., minimise = TRUE, dr
   with_mascot_asserts({
     checkmate::assert_string(position)
     checkmate::assert_flag(minimise)
-    # Check logical values here so abort_drag() can give the migration hint.
+    # Accept a logical here so abort_drag() can say that TRUE is not a drag mode.
     checkmate::assert(checkmate::check_flag(drag), checkmate::check_string(drag), .var.name = "drag")
   })
   if (...length() > 0L) {
@@ -214,7 +212,7 @@ placement_problem <- function(x) {
   NULL
 }
 
-#' Accept an inline/floating shortcut, a corner, a list or a helper
+#' Accept "inline", a corner, a list or a helper
 #' @noRd
 as_placement_arg <- function(x, call) {
   checkmate::assert_environment(call)

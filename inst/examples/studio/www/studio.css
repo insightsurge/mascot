@@ -1,10 +1,6 @@
 /* The studio's own layout and diagrams. Colours come from Bootstrap's variables, so the page
    follows its light/dark switch. */
 
-.pg-lead {
-  font-size: 1.05rem;
-}
-
 .pg-section-title {
   font-size: 1rem;
   font-weight: 600;
@@ -16,13 +12,6 @@
   flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0.5rem 0;
-}
-
-.pg-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
 }
 
 /* Inspector: function headings and argument fields */
@@ -77,16 +66,6 @@
 .pg-default {
   font-size: 0.75rem;
   color: var(--bs-secondary-color);
-}
-
-.pg-chip {
-  display: inline-block;
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.3rem;
-  padding: 0 0.35rem;
-  margin: 0 0.25rem 0.25rem 0;
-  font-family: var(--bs-font-monospace);
-  font-size: 0.78rem;
 }
 
 .pg-code-small {
@@ -263,38 +242,8 @@
   font-size: 0.9rem;
 }
 
-.pg-arg-head {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-}
-
 .pg-arg-name {
   font-weight: 600;
-}
-
-.pg-try {
-  margin-left: auto;
-  padding: 0;
-  font-size: 0.8rem;
-}
-
-.pg-accepts,
-.pg-null,
-.pg-returns {
-  font-size: 0.85rem;
-  margin-top: 0.2rem;
-}
-
-.pg-accepts > .pg-muted,
-.pg-null > .pg-muted,
-.pg-returns > .pg-muted {
-  display: inline-block;
-  min-width: 4.5rem;
-}
-
-.pg-returns {
-  margin-top: 0.75rem;
 }
 
 /* Guide: visuals */
@@ -356,23 +305,6 @@
 
 .pg-flow-gap {
   flex-basis: 100%;
-}
-
-.pg-grid2 {
-  display: grid;
-  grid-template-columns: auto 1fr 1fr;
-  gap: 0.4rem;
-  font-size: 0.85rem;
-}
-
-.pg-grid-head {
-  align-self: center;
-}
-
-.pg-grid-cell {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.4rem;
-  padding: 0.4rem 0.5rem;
 }
 
 .pg-timeline {
@@ -682,28 +614,8 @@ body:has(.pg-studio),
   padding: 0;
   margin-bottom: 6px;
 }
-.pg-rail-spacer {
-  flex: 1;
-}
 .pg-phone-label {
   display: none;
-}
-.pg-rail-links {
-  font-size: 11px;
-}
-.pg-rail-links[open] {
-  position: absolute;
-  bottom: 42px;
-  left: 8px;
-  background: var(--studio-panel);
-  border: 1px solid var(--studio-line);
-  padding: 12px;
-  border-radius: 10px;
-  width: 180px;
-}
-.pg-rail-links a {
-  display: block;
-  padding: 4px;
 }
 .pg-key-switch {
   font-size: 10px;
@@ -1226,7 +1138,8 @@ button.pg-call-name:focus-visible {
 .pg-chip-footer {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 #chip_style {
   display: flex;
@@ -1290,10 +1203,6 @@ button.pg-call-name:focus-visible {
   background: transparent;
   font-family: ui-monospace, monospace;
   font-weight: 700;
-}
-.pg-chip-footer {
-  flex-wrap: wrap;
-  gap: 4px;
 }
 .pg-chip-footer .btn {
   font-size: 12px;
@@ -1604,10 +1513,6 @@ button.pg-call-name:focus-visible {
     padding: 6px;
     flex-shrink: 0;
     min-width: 0;
-  }
-  .pg-rail-spacer,
-  .pg-rail-links {
-    display: none;
   }
   .pg-studio button,
   .pg-studio .btn,

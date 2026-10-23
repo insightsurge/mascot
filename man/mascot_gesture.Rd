@@ -14,8 +14,7 @@ lowercase letters, digits or underscores. \code{"nod"} acknowledges an action;
 accepted.}
 }
 \value{
-A \code{mascot_gesture} object with a \code{name} element.
-The returned object's fields are internal; pass the object on rather than reading its fields.
+A \code{mascot_gesture} object. Its fields are internal; pass it on rather than reading them.
 }
 \description{
 Play a single movement without changing the current mood. Use this helper or

@@ -1,7 +1,10 @@
-#' Internal authoring constructors for the character format (B1)
+#' Internal authoring constructors for the character format
 #'
-#' These build typed source components and a source specification. They are not
-#' exported (the format is not frozen), touch no registry and write no files.
+#' Internal and not exported. Only the tests call the `character_author_*()` constructors; saving and registering
+#' characters from R will build on them.
+#'
+#' These build typed source components and a source specification. They touch no
+#' registry and write no files.
 #' Each component is checked structurally with the same schema the reader uses,
 #' so a cross-reference (an anchor's part, a gesture's needs) is checked only
 #' when the assembled character goes through `character_check()`.

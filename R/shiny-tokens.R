@@ -1,7 +1,7 @@
 # Private protocol resources are separate from the character catalogue. Nothing
 # here stores visitor state outside its session; static templates are read-only.
 mascot_templates <- new.env(parent = emptyenv())
-# Section 3.16: bound templates are pinned; only unbound templates count here.
+# Bound templates are pinned; only unbound templates count towards this limit.
 mascot_unbound_template_limit <- 128L
 # Small immutable content caches; neither grows with session/update history.
 mascot_character_cache_limit <- 16L
@@ -21,7 +21,6 @@ mascot_counter <- function(value) {
 mascot_template_store <- function() {
   if (is.null(mascot_templates$items)) {
     mascot_templates$items <- list()
-    mascot_templates$serial <- 0
     mascot_templates$tick <- 0
     mascot_templates$limits <- character_format_policy()$input
     mascot_templates$characters <- list()
@@ -56,11 +55,8 @@ mascot_session <- function(session) {
     owner$problem_scheduled <- list()
     owner$problem_sent <- list()
     owner$templates <- character()
-    owner$serial <- 0
     owner$closed <- FALSE
     session$userData$mascot_protocol <- owner
-    # Keep the old inspection name, but no issued-patch journal.
-    session$userData$mascot_updates <- owner$states
     session$onSessionEnded(function() {
       owner$closed <- TRUE
       store <- mascot_template_store()
@@ -74,7 +70,6 @@ mascot_session <- function(session) {
       owner$problem_sent <- list()
       rm(list = ls(owner$states, all.names = TRUE), envir = owner$states)
       session$userData$mascot_protocol <- NULL
-      session$userData$mascot_updates <- NULL
       mascot_template_trim()
     })
   }
@@ -100,7 +95,6 @@ mascot_mount_token <- function(id, state, session = shiny::getDefaultReactiveDom
         return(token)
       }
     }
-    store$serial <- mascot_counter(store$serial)
     store$tick <- mascot_counter(store$tick)
     # Content-derived identifiers are deterministic, not credentials. Compare
     # full canonical identities above; disambiguate any checksum collision.
@@ -344,9 +338,8 @@ mascot_baseline_check <- function(state) {
           checkmate::assert_true(identical(map[[role]], theme_colour(map[[role]], role)))
         }
       }
-      names(map) <- colour_role_names(names(map))
     }
-    problem <- theme_map_problem(map, field, colour_role_names(context$roles), field == "css")
+    problem <- theme_map_problem(map, field, context$roles, field == "css")
     if (!is.null(problem)) cli::cli_abort("{problem}", class = "mascot_error")
   }
   if (!is.null(theme$brand)) {

@@ -4,8 +4,8 @@ character_catalogue_cache <- new.env(parent = emptyenv())
 #'
 #' Reads the shipped version 1 recipe and checks it with `builtin = TRUE`, the
 #' only caller allowed to do so. The result is cached: the full check takes
-#' most of a second, and a listing should not pay for it twice. Until the engine
-#' draws from this data, the shipped recipe is read for listings only.
+#' most of a second, and listings, [mascot()] and update checks should not pay
+#' for it twice.
 #' @noRd
 character_catalogue_builtin <- function(id) {
   checkmate::assert_choice(id, builtin_characters()$id)
@@ -26,7 +26,7 @@ character_catalogue_builtin <- function(id) {
 #' follow in registration order.
 #' @noRd
 character_catalogue_ids <- function() {
-  # Tessa leads the shipped characters (r-api-decisions section 11), whatever order they are stored in.
+  # Tessa leads the shipped characters, whatever order they are stored in.
   builtin <- builtin_characters()$id
   c(intersect("tessa", builtin), setdiff(builtin, "tessa"), character_data_ids())
 }
@@ -153,9 +153,9 @@ character_palette_is_native <- function(data, palette) {
 
 #' Ids of the other characters that have a palette of this name
 #'
-#' Used for the hint in an unknown-palette message: palettes cannot be
-#' borrowed between characters yet, so a palette can exist on another
-#' character only. A character's own-colours name counts as a palette name.
+#' Used for the hint in an unknown-palette message: each palette belongs to its
+#' own character, so a palette of this name can exist on another character only.
+#' A character's own-colours name counts as a palette name.
 #' @noRd
 character_palette_owners <- function(palette, own_id) {
   checkmate::assert_string(palette, min.chars = 1)

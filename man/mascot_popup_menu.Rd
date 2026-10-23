@@ -43,9 +43,7 @@ the pointer rests on the mascot or the keyboard focuses it, provided a
 the label.}
 }
 \value{
-A \code{mascot_popup_menu} object with \code{items}, \code{disabled}, \code{direction}, \code{label} and
-\code{tooltip} elements.
-The returned object's fields are internal; pass the object on rather than reading its fields.
+A \code{mascot_popup_menu} object. Its fields are internal; pass it on rather than reading them.
 }
 \description{
 Make a click on the mascot open a menu in a Shiny app. Pass it as \code{click} to

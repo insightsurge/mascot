@@ -265,16 +265,6 @@ character_format_behaviour <- function(x, graph) {
       }
     }
   }
-  for (id in c("nod", "wave")) {
-    if (!id %in% names(x$gestures)) {
-      character_format_abort(
-        "missing_reference",
-        paste0("$.gestures.", id),
-        NULL,
-        "Declare the shared callable gesture or a checked fallback."
-      )
-    }
-  }
   playable <- list()
   for (id in names(x$gestures)) {
     cursor <- id

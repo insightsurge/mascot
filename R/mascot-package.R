@@ -15,10 +15,9 @@
 #'
 #' `mascot_palette_dropped` warns when a character swap drops a palette the
 #' incoming character lacks. Development diagnostics use
-#' `mascot_gesture_dropped` when a pending gesture
-#' cannot play, `mascot_click_dropped` when a click needs an unavailable mood or
-#' gesture, and `mascot_template_evicted` when unused UI templates leave the
-#' cache. Each inherits `mascot_warning`.
+#' `mascot_gesture_dropped` when a pending gesture cannot play and
+#' `mascot_template_evicted` when unused UI templates leave the cache. Each
+#' inherits `mascot_warning`.
 #' @section Options:
 #' `options(mascot.contrast_warnings = TRUE)` forces R contrast warnings on;
 #' `FALSE` forces them off everywhere. By default they appear only when

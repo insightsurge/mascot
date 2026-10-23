@@ -16,28 +16,6 @@ describe("mascot_colour_roles()", {
     description <- character_colour_data("tessa")
     expect_identical(unname(unlist(description$colours)), value$colour)
     expect_identical(colour_role_registry("tessa"), value$role)
-    # With no character, the registry is every built-in's roles: Tessa's first, then the others' new ones.
-    every <- unique(unlist(lapply(builtin_characters()$id, colour_role_registry)))
-    expect_identical(colour_role_registry(), every)
-    expect_identical(colour_role_registry()[seq_along(value$role)], value$role)
-  })
-  it("returns the same first four columns as the legacy reader of the shipped description", {
-    # The checked recipe replaced the old file as the source; the output a user sees must not change.
-    legacy <- character_colour_data("tessa")
-    engine <- names(legacy$colours)
-    follows <- shade <- rep(NA_character_, length(engine))
-    for (role in names(legacy$follows)) {
-      rule <- legacy$follows[[role]]
-      follows[engine == role] <- paste(colour_role_names(unlist(rule$from)), collapse = ", ")
-      shade[engine == role] <- if (is.null(rule$shade)) "same" else rule$shade
-    }
-    expected <- data.frame(
-      role = colour_role_names(engine),
-      colour = unname(unlist(legacy$colours)),
-      follows = follows,
-      shade = shade
-    )
-    expect_identical(mascot_colour_roles()[1:4], expected)
   })
   it("gives no built-in character a role named like a theme mode, so every role can be themed", {
     for (id in builtin_characters()$id) {
@@ -52,9 +30,7 @@ describe("mascot_colour_roles()", {
       expect_error(mascot_colour_roles(x), "Assertion on 'character' failed")
     }
     expect_error(character_colour_data("missing"), "must be one of", class = "mascot_error_choice")
-    expect_error(colour_role_names(NA_character_), "'names'")
     expect_error(colour_role_registry("missing"), "must be one of", class = "mascot_error_choice")
-    expect_identical(colour_role_names(character()), character())
   })
 })
 

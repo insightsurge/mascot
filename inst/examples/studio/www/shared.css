@@ -155,6 +155,7 @@
   height: 10px;
   border-radius: 50%;
   background: var(--studio-line);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
 }
 .pg-host-footer {
   display: flex;
@@ -237,7 +238,8 @@
 }
 .pg-sentence .pg-quick-gestures {
   align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 0;
 }
 .pg-toolbar #reset_all,
 .pg-toolbar bslib-input-dark-mode {
@@ -255,16 +257,9 @@
 .pg-window-dots .pg-light-green {
   background: var(--studio-traffic-green);
 }
-.pg-window-dots i {
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
-}
 .pg-toolbar > .pg-sentence {
   flex: 0 0 auto;
   max-width: 100%;
-}
-.pg-sentence .pg-quick-gestures {
-  flex-wrap: wrap;
-  gap: 0;
 }
 .pg-sentence-stop {
   /* Join the full stop to the text, across the native select's trailing padding. */

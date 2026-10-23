@@ -86,16 +86,14 @@ sys.source(file.path(studio_guide_dir(), "guide-mistakes.R"), envir = environmen
 sys.source(file.path(studio_guide_dir(), "guide-shared.R"), envir = environment())
 mistakes <- guide_mistake_base
 character_mistakes <- guide_character_mistakes
-studio_mistake_palettes <- guide_mistake_palettes
 
-# Where each argument can be tried: the HTML that must be on the page (an input id, or the
-# data-event of a button), or the reason it has no control. tests/testthat/test-examples.R checks
-# that every exported argument has an entry and that its control is on the page.
+# Where each argument can be tried: the HTML that must be on the page (an input id), or the reason it
+# has no control. tests/testthat/test-examples.R checks that every exported argument has an entry and
+# that its control is on the page.
 input_id <- function(...) paste0("id=\"", c(...), "\"")
-input_event <- function(...) paste0("data-event=\"", c(...), "\"")
 fixed_arg <- function(reason) list(fixed = reason)
 
-playground_controls <- list(
+studio_controls <- list(
   mascot_read_character = list(path = fixed_arg("Bundled offline example; copy the call to read your own file.")),
   mascot_check_character = list(x = fixed_arg("Bundled offline example; copy the call to check your source list.")),
   mascot_character = list(id = input_id("character")),
@@ -217,30 +215,10 @@ studio_families <- function() {
   c(`All characters` = "", stats::setNames(listing$id, listing$name))
 }
 
-# Count shipped characters rather than the selector's current discovery adapter.
-studio_character_hint <- function(directory = NULL) {
-  checkmate::assert(
-    checkmate::check_null(directory),
-    checkmate::check_directory_exists(directory),
-    .var.name = "directory"
-  )
-  # The built-in characters come from the package's own listing; a folder of character files can stand in for it.
-  ids <- if (is.null(directory)) {
-    listing <- mascot::mascot_characters()
-    listing$id[listing$built_in]
-  } else {
-    sub("[.]json$", "", list.files(directory, pattern = "[.]json$"))
-  }
-  if (length(ids) != 1L) {
-    return(NULL)
-  }
-  paste(mascot::mascot_character(ids)$name, "is the only built-in character so far.")
-}
-
 # The brand slots of a character: slot name to role (the same function the guide pages use).
 studio_brand <- guide_brand_roles
 
-# Future authoring controls stay separate from the public function map.
+# The controls of the "Your character" panel (R/panels.R), kept apart from the function map above.
 studio_character_controls <- list(
   mascot_read_character = list(path = input_id("your_character_file", "your_character_example")),
   mascot_check_character = list(x = input_id("your_character_check")),
@@ -253,7 +231,7 @@ studio_character_controls <- list(
   )
 )
 
-# Temporary until #375 removes resting-only animations from the gesture listing.
+# Animations that play only at rest but appear in the gesture listing (#375): listed last and labelled.
 studio_resting_gestures <- c(tessa = "shimmer")
 
 studio_gesture_choices <- function(character) {

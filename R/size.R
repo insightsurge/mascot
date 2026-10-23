@@ -15,8 +15,7 @@
 #'   to at most 96 pixels while leaving inline mascots unchanged. `NULL` keeps
 #'   the same size on every screen. A number of pixels or a percentage string
 #'   sets the phone size explicitly for both floating and inline mascots.
-#' @returns A `mascot_size` object with `size` and `small_screen` elements.
-#' The returned object's fields are internal; pass the object on rather than reading its fields.
+#' @returns A `mascot_size` object. Its fields are internal; pass it on rather than reading them.
 #' @family mascot helpers
 #' @seealso [mascot()], [update_mascot()]
 #' @export
@@ -116,7 +115,7 @@ size_problem <- function(x) {
 #' @noRd
 as_size_arg <- function(x, call) {
   checkmate::assert_environment(call)
-  # Union input uses the same validation boundary as the existing helpers.
+  # Union input uses the same validation boundary as the other argument converters.
   check_arg(x, "size", call)
   if (inherits(x, "mascot_size")) x else mascot_size(x)
 }

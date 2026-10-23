@@ -300,6 +300,29 @@
         },
       }),
     );
+    scheduleSwatches();
+  }
+  // The swatches show the colours the live mascot uses. They change only after a mascot:update message, a
+  // light/dark switch or a new live frame (both reach syncHost()), or when Shiny draws the pickers again. The
+  // host applies a page switch on its next animation frame, so paint on the frame after that. A change that
+  // arrives while a paint is pending asks for one more paint after it.
+  let swatchFrame = null;
+  let swatchAgain = false;
+  function scheduleSwatches() {
+    if (swatchFrame !== null) {
+      swatchAgain = true;
+      return;
+    }
+    swatchFrame = requestAnimationFrame(() => {
+      swatchFrame = requestAnimationFrame(() => {
+        swatchFrame = null;
+        paintSwatches();
+        if (swatchAgain) {
+          swatchAgain = false;
+          scheduleSwatches();
+        }
+      });
+    });
   }
   // The normal complete-state messages and real engine events cross the same-origin frame boundary.
   // A drawn demo in the guide loads the engine into this page, and the engine registers its own
@@ -313,7 +336,10 @@
   };
   registerHandler('mascot:update', (message) => {
     if (engineUpdate && typeof message?.id === 'string' && byId(message.id)) engineUpdate(message);
-    else liveWindow()?.mascot?.host.receive(message);
+    else {
+      liveWindow()?.mascot?.host.receive(message);
+      scheduleSwatches();
+    }
   });
   window.Shiny.addCustomMessageHandler('studio:anchors', (listing) => {
     anchorListing = listing;
@@ -1011,8 +1037,8 @@
         event.preventDefault();
         const tabs = [...document.querySelectorAll('[data-inspector-tab]')];
         const i = tabs.indexOf(event.target);
-        const index =
-          event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (i + (event.key === 'ArrowRight' ? 1 : 2)) % 3;
+        const step = event.key === 'ArrowRight' ? 1 : tabs.length - 1;
+        const index = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (i + step) % tabs.length;
         tab(tabs[index].dataset.inspectorTab);
         tabs[index].focus();
         return;
@@ -1465,7 +1491,10 @@
     });
     sizeSentenceWords();
     new MutationObserver(sizeSentenceWords).observe(byId('studio_character_bar'), { childList: true, subtree: true });
-    new MutationObserver(rememberControls).observe(byId('studio_shell'), { childList: true, subtree: true });
+    new MutationObserver(() => {
+      rememberControls();
+      scheduleSwatches();
+    }).observe(byId('studio_shell'), { childList: true, subtree: true });
     positionSurfaces();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialise);
@@ -1475,12 +1504,7 @@
     const frame = liveWindow();
     const el = frame?.document.getElementById('helper');
     const state = el && frame.mascot?.host.state(el);
-    const colours = Object.fromEntries(
-      Object.entries(state?.colours || {}).map(([key, value]) => [
-        key.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(),
-        value,
-      ]),
-    );
+    const colours = state?.colours || {};
     for (const swatch of document.querySelectorAll('.pg-resolved')) {
       const active = state && swatch.dataset.mode === state.mode;
       swatch.style.background = active ? colours[swatch.dataset.role] || swatch.dataset.default : 'transparent';
@@ -1488,5 +1512,4 @@
       swatch.title = active ? 'In use now' : `Used when the mascot is in ${swatch.dataset.mode} mode`;
     }
   }
-  setInterval(paintSwatches, 700);
 })();

@@ -25,9 +25,7 @@ is closed, replaced or cleared.}
 is not accepted.}
 }
 \value{
-A \code{mascot_bubble} object with \code{text}, \code{html}, \code{duration}, and
-\code{closable} elements. \code{text} is a plain string or \code{NULL}; \code{html} is a flag.
-The returned object's fields are internal; pass the object on rather than reading its fields.
+A \code{mascot_bubble} object. Its fields are internal; pass it on rather than reading them.
 }
 \description{
 A speech bubble stays visible across mood changes and character swaps.

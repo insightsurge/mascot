@@ -5,8 +5,8 @@
 # help_page() in R/shared-help.R.
 the_guide <- function(fn) {
   checkmate::assert_string(fn)
-  checkmate::assert_choice(fn, names(playground_guide))
-  playground_guide[[fn]]
+  checkmate::assert_choice(fn, names(studio_guide))
+  studio_guide[[fn]]
 }
 
 # Read the expression, without evaluating defaults such as Shiny's reactive domain.
@@ -26,7 +26,7 @@ argument_default <- function(fn, arg) {
 }
 
 category_functions <- function(category) {
-  names(Filter(function(entry) identical(entry$category, category), playground_guide))
+  names(Filter(function(entry) identical(entry$category, category), studio_guide))
 }
 
 try_button <- function(event, value, label, class = "btn-outline-primary") {
@@ -87,7 +87,7 @@ arg_chip <- function(fn, arg) {
 arg_field <- function(fn, arg, input, note = NULL) {
   checkmate::assert_string(fn)
   checkmate::assert_string(arg)
-  controls <- playground_controls[[fn]][[arg]]
+  controls <- studio_controls[[fn]][[arg]]
   ids <- if (is.character(controls)) sub('^id="([^"]+)"$', "\\1", controls[startsWith(controls, 'id="')])
   div(
     class = "pg-field",
@@ -124,8 +124,7 @@ inspector_function <- function(fn, ...) {
   )
 }
 
-inspector_category <- function(title, value, ...) {
-  # title and value retain the category builders' call shape; the index owns their headings.
+inspector_category <- function(...) {
   pieces <- list(...)
   groups <- list()
   fn <- NULL
@@ -152,9 +151,9 @@ function_index <- function() {
   tags$nav(
     class = "pg-index",
     `aria-label` = "Functions by category",
-    lapply(names(playground_categories), function(category) {
+    lapply(names(studio_categories), function(category) {
       tagList(
-        tags$h2(`data-category` = category, playground_categories[[category]]$title),
+        tags$h2(`data-category` = category, studio_categories[[category]]$title),
         lapply(category_functions(category), function(fn) {
           bslib::tooltip(
             tags$button(
@@ -269,9 +268,8 @@ studio_expand_icon <- function(id) {
   )
 }
 
-function_card <- function(fn, example = FALSE, expand = FALSE) {
+function_card <- function(fn, expand = FALSE) {
   checkmate::assert_string(fn)
-  checkmate::assert_flag(example)
   checkmate::assert_flag(expand)
   help <- help_page(fn)
   arguments <- names(formals(get(fn, envir = asNamespace("mascot"))))
@@ -294,13 +292,7 @@ function_card <- function(fn, example = FALSE, expand = FALSE) {
       tags$p(class = "pg-muted", "No arguments.")
     },
     tags$h3(class = "pg-section-title", "Returns"),
-    div(class = "pg-help", help$value),
-    if (example) {
-      tagList(
-        tags$h3(class = "pg-section-title", "Example"),
-        div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
-      )
-    }
+    div(class = "pg-help", help$value)
   )
 }
 
@@ -354,15 +346,6 @@ selected_guide <- function(fn, character = formals(mascot::mascot)$character) {
       ),
       class = "pg-guide-columns"
     )
-  )
-}
-
-guide_content <- function(category) {
-  info <- playground_categories[[category]]
-  tagList(
-    tags$p(class = "pg-lead", info$summary),
-    tags$h3(class = "pg-section-title", "Functions"),
-    lapply(category_functions(category), function_card)
   )
 }
 
@@ -530,7 +513,7 @@ guide_mistakes <- function(fn, character) {
 }
 
 studio_rail <- function() {
-  groups <- setdiff(names(playground_categories), "preview")
+  groups <- setdiff(names(studio_categories), "preview")
   icons <- c(
     look = "M6 9a6 6 0 0 1 12 0v6H6Z M9 18h6",
     messages = "M4 4h16v12H9l-5 4Z",
@@ -540,7 +523,7 @@ studio_rail <- function() {
     wiring = "m8 6-6 6 6 6 m8-12 6 6-6 6 m-3-15-2 18",
     examples = "M4 3h12l4 4v14H4Z M8 11h8 M8 15h8"
   )
-  index_label <- sprintf("Function index (all %d functions)", length(playground_guide))
+  index_label <- sprintf("Function index (all %d functions)", length(studio_guide))
   tags$nav(
     class = "pg-rail pg-float",
     `aria-label` = "Function groups",
@@ -566,8 +549,8 @@ studio_rail <- function() {
       tags$button(
         type = "button",
         `data-group` = group,
-        title = playground_categories[[group]]$title,
-        `aria-label` = playground_categories[[group]]$title,
+        title = studio_categories[[group]]$title,
+        `aria-label` = studio_categories[[group]]$title,
         `aria-expanded` = "false",
         `aria-controls` = "function_flyout",
         tags$svg(viewBox = "0 0 24 24", `aria-hidden` = "true", tags$path(d = icons[[group]]))
@@ -672,7 +655,7 @@ studio_route <- function(arg) {
   checkmate::assert_string(arg)
   checkmate::assert_choice(arg, setdiff(names(formals(mascot::mascot)), "..."))
   fn <- switch(arg, id = "mascot", motion = "mascot_motion_settings", click = "mascot_action", paste0("mascot_", arg))
-  fields <- playground_controls[[fn]]
+  fields <- studio_controls[[fn]]
   targets <- unlist(Filter(is.character, fields), use.names = FALSE)
   ids <- sub('^id="([^"]+)"$', "\\1", targets[startsWith(targets, 'id="')])
   list(fn = fn, input = if (arg != "id" && length(ids)) ids[[1]] else "")
@@ -709,7 +692,7 @@ studio_search <- function() {
         id = "search_results",
         role = "listbox",
         `aria-label` = "Search results",
-        lapply(names(playground_guide), function(fn) {
+        lapply(names(studio_guide), function(fn) {
           args <- names(formals(getExportedValue("mascot", fn)))
           tags$li(
             id = paste0("search_", fn, "_function"),
@@ -717,7 +700,7 @@ studio_search <- function() {
             `aria-selected` = "false",
             `data-search-function` = fn,
             `data-search-title` = help_page(fn)$title,
-            `data-search-group` = playground_categories[[playground_guide[[fn]]$category]]$title,
+            `data-search-group` = studio_categories[[studio_guide[[fn]]$category]]$title,
             tags$code(paste0(fn, "()")),
             tags$small(help_page(fn)$title),
             div(
@@ -725,7 +708,7 @@ studio_search <- function() {
               hidden = NA,
               tags$span("matches:"),
               lapply(args, function(arg) {
-                fragments <- playground_controls[[fn]][[arg]]
+                fragments <- studio_controls[[fn]][[arg]]
                 ids <- if (is.character(fragments)) {
                   sub('^id="([^"]+)"$', "\\1", fragments[startsWith(fragments, 'id="')])
                 }
@@ -863,7 +846,7 @@ gesture_chip <- function(name = NULL) {
 }
 
 function_help <- function(fn) {
-  checkmate::assert_choice(fn, names(playground_guide))
+  checkmate::assert_choice(fn, names(studio_guide))
   page <- help_page(fn)
   # Keep Usage outside the card so it stays pinned through Details and Examples too.
   card <- htmltools::tagQuery(function_card(fn, expand = TRUE))$find(".pg-help-usage")$remove()$allTags()
@@ -884,7 +867,7 @@ function_help <- function(fn) {
 shared_input_button <- function(fn, arg) {
   checkmate::assert_string(fn)
   checkmate::assert_string(arg)
-  controls <- playground_controls[[fn]][[arg]]
+  controls <- studio_controls[[fn]][[arg]]
   shared <- c("character", "mood", "example_name", "example_run")
   if (!is.character(controls)) {
     return(NULL)
@@ -939,9 +922,9 @@ palette_swap_section <- function(character) {
   )
 }
 
-# The founder's decision (#335): built-in characters keep one outline colour in both modes; an app that
-# wants a different dark-mode outline sets it. Both mascots below are forced into dark mode, so the
-# comparison reads on any page.
+# Built-in characters keep one outline colour in both modes (#335); an app that wants a different
+# dark-mode outline sets it. Both mascots below are forced into dark mode, so the comparison reads on
+# any page.
 studio_dark_outline_colour <- "#FFC93C"
 
 dark_outline_demo <- function(character) {

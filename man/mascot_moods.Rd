@@ -17,7 +17,7 @@ for that mood), a logical column \code{shared} (\code{TRUE} for the five shared
 moods), and a character column \code{fallback} (the mood used instead when this
 one is not available, or \code{NA}). Shared moods have no \code{fallback}.
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
-names and types. The first column is the value you pass to the matching function.
+names and types.
 }
 \description{
 Every character has the five shared moods, in this order, and may add more

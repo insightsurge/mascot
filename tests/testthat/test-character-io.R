@@ -97,9 +97,7 @@ describe("character_save() and character_read()", {
   })
 
   it("reads a registered character by id and never guesses between a file and an id", {
-    before <- character_data_snapshot()
-    withr::defer(character_data_reset(before))
-    character_data_reset()
+    local_empty_registry()
     checked <- character_check(author_study_bot())
     character_data_register(checked)
     expect_identical(character_read("study_bot", from = "id")$id, "study_bot")

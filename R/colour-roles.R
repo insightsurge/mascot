@@ -17,7 +17,7 @@
 #'   Roles without a follow rule have `NA` in `follows` and `shade`; roles that
 #'   fill no brand slot have `NA` in `brand`.
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
-#'   names and types. The first column is the value you pass to the matching function.
+#'   names and types.
 #' @family mascot helpers
 #' @seealso [mascot_theme()], [mascot()]
 #' @export
@@ -59,7 +59,7 @@ mascot_colour_roles <- function(character = "tessa", ..., palette = NULL) {
   follows <- shade <- brand <- rep(NA_character_, length(roles))
   for (role in names(data$follows)) {
     rule <- data$follows[[role]]
-    follows[roles == role] <- paste(colour_role_names(unlist(rule$from)), collapse = ", ")
+    follows[roles == role] <- paste(unlist(rule$from), collapse = ", ")
     shade[roles == role] <- if (is.null(rule$shade)) "same" else rule$shade
   }
   for (slot in intersect(c("primary", "secondary"), names(data$brand))) {
@@ -76,7 +76,7 @@ mascot_colour_roles <- function(character = "tessa", ..., palette = NULL) {
     USE.NAMES = FALSE
   )
   data.frame(
-    role = colour_role_names(roles),
+    role = roles,
     colour = unname(unlist(colours)),
     follows = follows,
     shade = shade,
@@ -100,21 +100,9 @@ character_colour_data <- function(id) {
   character_catalogue_resolve(id, environment())
 }
 
-#' Convert description names to the public R spelling
+#' Role names of a character
 #' @noRd
-colour_role_names <- function(names) {
-  checkmate::assert_character(names, any.missing = FALSE)
-  tolower(gsub("([a-z0-9])([A-Z])", "\\1_\\2", names))
-}
-
-#' Role names for a selected character, or every built-in character when unknown
-#' @noRd
-colour_role_registry <- function(character = NULL) {
-  character_catalogue_assert(character, nullable = TRUE)
-  if (!is.null(character)) {
-    return(colour_role_names(names(character_colour_data(character)$colours)))
-  }
-  unique(unlist(lapply(builtin_characters()$id, function(id) {
-    colour_role_names(names(character_colour_data(id)$colours))
-  })))
+colour_role_registry <- function(character) {
+  character_catalogue_assert(character)
+  names(character_colour_data(character)$colours)
 }

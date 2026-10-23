@@ -15,13 +15,13 @@ library(mascot) # nolint: undesirable_function_linter.
 
 ## In a minute
 
-`mascot` puts a small character drawn in code into your Shiny app or Quarto page. It shows a mood with a status line beside it, and wiggles into the new face when the mood changes. You control it from R with plain arguments, with no AI service involved. It is built for good-practice (`GxP`) work, sitting beside your ordinary field errors and results rather than replacing them.
+`mascot` puts a small character, drawn in code, into your Shiny app or Quarto page. The character shows a mood with a status line beside it and wiggles into its new face when the mood changes. You control it from R with plain arguments; no AI service is involved. The package is built for good-practice (`GxP`) work: a mascot sits beside your ordinary field errors and results, and does not replace them.
 
 What you get:
 
 - **A character with moods:** four built-in characters with five shared moods (`"idle"`, `"thinking"`, `"happy"`, `"worried"` and `"celebrating"`).
 - **Status text beside it:** a visible text line next to the drawing so the face never speaks alone.
-- **Smooth motion:** a short wiggle on mood changes, plus nods and waves that respect reduced-motion settings.
+- **Motion:** a short wiggle on mood changes, plus nods and waves that respect reduced-motion settings.
 - **Light and dark mode:** follows your `bslib` colour toggle or Quarto's theme mode.
 - **Your colours:** built-in palettes, custom light and dark colours, or brand colours from `bslib::bs_theme()`.
 - **Offline by design:** ships every script and style in the package, and shows a worried face if Shiny disconnects.
@@ -92,7 +92,7 @@ You can try the bundled Shiny apps before writing your own code.
 
 - [`mascot_examples()`](`r paste0(site_url, "articles/guide-mascot_examples.html")`) lists the seven bundled example apps in teaching order.
 - [`mascot_example()`](`r paste0(site_url, "articles/guide-mascot_example.html")`) runs an example by name, or returns the path to its `app.R` with `run = FALSE`.
-- [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`) (experimental) opens an interactive playground where you can click through every function and copy the code.
+- [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`) (experimental) opens an app where you can click through every function and copy the code.
 
 ```{r open-example-list}
 mascot_examples()
@@ -187,7 +187,7 @@ A mascot can float in a window corner as an app-wide helper or sit inline inside
 - On phone screens, `small_screen = "auto"` shrinks floating mascots to at most `96` pixels while leaving inline mascots unchanged.
 - Set `placement` to `"inline"`, a corner name like `"top-left"`, or [`mascot_placement()`](`r paste0(site_url, "articles/guide-mascot_placement.html")`).
 - Minimising a floating mascot turns it into a round restore button and sets `input$<id>_minimised` in Shiny.
-- Set `drag = "snap"` for corner snapping or `drag = "free"` (experimental) for free dragging, which updates `input$<id>_position` in Shiny.
+- Set `drag = "snap"` for corner snapping or `drag = "free"` (experimental) for free dragging. In Shiny, each drop updates `input$<id>_position`, in either mode.
 
 ```{r size-placement-helpers, results="hide"}
 mascot_size(180, small_screen = 72)
@@ -210,7 +210,7 @@ When your app has its own brand palette or a dark mode switch, you can match the
 - Pass `light` and `dark` lists in [`mascot_theme()`](`r paste0(site_url, "articles/guide-mascot_theme.html")`) for separate light and dark colours, or `css` for browser CSS variables (experimental).
 - Pass a `bslib::bs_theme()` to fill the character's primary and secondary brand roles (experimental role mapping).
 - By default, `mode = "auto"` follows `bslib::input_dark_mode()` or Quarto's dark mode, and stays light when the page gives no signal.
-- Not sure which colours to pick? Try them first in **Theme a mascot**: `mascot_studio(view = "theme")`.
+- To try colours before you choose, open **Theme a mascot** with `mascot_studio(view = "theme")`.
 
 ```{r palettes-and-roles}
 mascot_palettes("tessa")

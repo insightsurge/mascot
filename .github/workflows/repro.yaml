@@ -22,9 +22,8 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: 'ubuntu-26.04', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-studio-app.R test-studio-theme.R test-helper-chrome.R'}
-          - {os: 'macos-latest', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-studio-app.R'}
-          - {os: 'windows-latest', r: 'release', repeats: '0', files: 'test-aaa-ci-probe.R test-studio-theme.R test-studio-app.R'}
+          - {os: 'ubuntu-26.04', r: 'release', repeats: '0', files: 'test-host-js.R test-studio-app.R'}
+          - {os: 'macos-latest', r: 'release', repeats: '0', files: 'test-studio-app.R'}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       NOT_CRAN: true

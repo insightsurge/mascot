@@ -3082,6 +3082,32 @@ describe("mount replies racing live updates", {
 })
 
 describe("mascot.host dragging", {
+  it("snaps to the corner it was dropped at when the mascot is too tall to reach it", {
+    skip_without_chrome()
+    # Given a mascot taller than the window less its margins: kept inside the window, it stays in the lower half
+    js <- local_host_page(
+      placement = mascot_placement("bottom-right", drag = "snap"),
+      size = 200,
+      viewport = c(800, 220)
+    )
+    js(drag_js)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a'),c=el.querySelector('canvas'),r=c.getBoundingClientRect();
+      const tall=el.getBoundingClientRect().height>innerHeight-32;
+      const x=r.left+r.width/2,y=r.top+r.height/2;
+      press(c,'pointerdown',x,y);press(c,'pointermove',4,4);press(c,'pointerup',4,4);
+      const top=mascot.host.state(el).placement.position;
+      const t=c.getBoundingClientRect(),tx=t.left+t.width/2,ty=t.top+t.height/2;
+      press(c,'pointerdown',tx,ty);press(c,'pointermove',tx,innerHeight-4);press(c,'pointerup',tx,innerHeight-4);
+      return {tall,top,bottom:mascot.host.state(el).placement.position};"
+    )
+    expect_true(result$tall)
+    # When it is dropped at the top-left, then at the bottom
+    # Then it snaps to the corner it was dropped at, and says so
+    expect_identical(result$top, "top-left")
+    expect_identical(result$bottom, "bottom-left")
+  })
   it("snaps to the nearest corner, reports it, opens bubbles inwards and keeps a click for the menu", {
     skip_without_chrome()
     js <- local_host_page(

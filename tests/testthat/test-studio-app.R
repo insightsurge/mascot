@@ -1363,6 +1363,9 @@ describe("studio code arguments, chips, anchors and menus", {
       "{const body=document.getElementById('chip_editor_body');body.style.maxHeight='60px';body.style.overflow='auto';}"
     )
     app$wait_for_js("document.getElementById('chip_editor_body').clientHeight <= 60")
+    # The editor follows its chip again when its size changes (a ResizeObserver, on the next frame): let that happen
+    # first, or it moves the editor back up after it is placed low below, and the next scroll opens the menu downwards.
+    app$get_js("new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))")
     app$run_js(
       "{const pop=document.getElementById('chip_editor');pop.style.top=(innerHeight-130)+'px';const s=document.getElementById('click_type').selectize;s.focus();s.open();s.positionDropdown();}"
     )

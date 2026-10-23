@@ -27,7 +27,7 @@ Tessa and Sela are stable: their ids, names, five shared moods,
 gesture names, colour-role names and palette names stay the same in every
 release. Their drawings, motion and exact palette colours may be polished.
 Knurl and Neer are experimental: any part may change, and neither will be
-removed without a warning in the release before its removal. The character
+removed without a warning one release earlier. The character
 file format and character authoring functions are experimental too.
 }
 \examples{

@@ -13,22 +13,22 @@
 #' app sends to the visitor, use [mascot_bubble()] and `update_mascot(id, bubble = ...)`.
 #' @param items A named character vector of plain-text labels. Names are unique,
 #'   non-empty item IDs without whitespace (for example `c(about = "About", help = "Help")`).
-#'   Defaults to `NULL`, an empty helper: in [update_mascot()], it removes the
-#'   click, so the mascot is a picture again. An empty vector is not accepted.
-#'   Labels are always escaped. With `items = NULL`, explicitly supplying
-#'   `disabled`, `direction`, `label` or `tooltip` is an error; use `mascot_popup_menu()`
-#'   without options to remove the click.
+#'   Defaults to `NULL`, which gives an empty helper; in [update_mascot()] it
+#'   removes the click, so the mascot is a picture again. An empty vector is not
+#'   accepted. Labels are always escaped. With `items = NULL`, setting
+#'   `disabled`, `direction`, `label` or `tooltip` yourself is an error; use
+#'   `mascot_popup_menu()` without options to remove the click.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param disabled A flag. `TRUE` keeps the menu button reachable by keyboard,
 #'   but opens nothing and sends no input. Screen readers announce it as
 #'   unavailable. `FALSE` (the default) allows the menu to open.
-#' @param direction Direction to open the menu from the mascot: `"auto"` (the default),
+#' @param direction Which side of the mascot the menu opens on: `"auto"` (the default),
 #'   `"top"`, `"bottom"`, `"left"` or `"right"`. `"auto"` picks the side with room
 #'   (preferring above, then below, then the side towards the page centre). A
 #'   chosen side is a preference: see "Where the menu opens" below.
 #' @param label The name screen readers announce for the mascot's menu button,
-#'   such as `"Help and settings"`: one string containing a non-whitespace
-#'   character. `NULL` (the default) uses the character's name, such as "Tessa, menu".
+#'   such as `"Help and settings"`: one string that is not blank. `NULL` (the
+#'   default) uses the character's name, such as "Tessa, menu".
 #' @param tooltip A flag. `TRUE` (the default) shows the label in a tooltip when
 #'   the pointer rests on the mascot or the keyboard focuses it, provided a
 #'   `label` is set. `FALSE` hides the tooltip; screen readers still announce
@@ -80,8 +80,8 @@
 #' )
 #' ```
 #'
-#' The menu opens from the mascot's on-screen position in the requested direction.
-#' It fits the available screen space and can change direction or scroll.
+#' The menu opens next to the mascot, on the side you asked for. It is sized to
+#' fit the space on screen, and can change side or scroll when room is short.
 #' Action controls hide while the menu is open. Opening the menu closes any speech
 #' bubble that is showing.
 #' The restore button only restores a minimised mascot; it does not open the menu.

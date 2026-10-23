@@ -23,10 +23,10 @@ names and types.
 }
 \description{
 Gestures play a quick movement once, without changing the mascot's mood.
-They are available only in \code{\link[=update_mascot]{update_mascot()}}. With no \code{character}, the list
-is the shared vocabulary with its nominal lengths; with one, it is what that
-character declares: \code{"nod"} and \code{"wave"} first, then its own gestures in the
-order its author wrote them.
+They are available only in \code{\link[=update_mascot]{update_mascot()}}. With no \code{character}, it lists
+the gestures every character shares, with their nominal lengths. With a
+character, it lists that character's gestures: \code{"nod"} and \code{"wave"} first,
+then its own in the order its author wrote them.
 }
 \examples{
 mascot_gestures()

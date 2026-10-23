@@ -13,7 +13,7 @@ mascot_colour_roles(character = "tessa", ..., palette = NULL)
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
 \item{palette}{A palette id from \code{\link[=mascot_palettes]{mascot_palettes()}}, or \code{NULL} (the default)
-for the character's own colours. Followers are derived from palette leaders.}
+for the character's own colours. Roles that follow others take their colours from the palette's leaders.}
 }
 \value{
 A data frame with character columns \code{role}, \code{colour}, \code{follows}
@@ -26,11 +26,12 @@ A base data frame. Columns may be added at the end in later versions; existing c
 names and types.
 }
 \description{
-Lists a character's colour roles (its colour parts) with their own colours,
-with an optional named palette applied. Roles are written in snake case in R. Follow
-rules list leaders in priority order. A colour you supply for a role always
-wins; otherwise the role follows the first supplied or filled leader. With no
-available leader, the role keeps its original colour.
+Lists a character's colour roles (the parts you can colour) with their own
+colours, or with a named palette applied. Roles are written in snake case in
+R. A role can follow other roles, its leaders, listed in priority order. A
+colour you supply for a role always wins; otherwise the role follows the
+first leader that has been given a colour. If no leader has one, the role
+keeps its original colour.
 }
 \examples{
 mascot_colour_roles()

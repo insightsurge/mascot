@@ -1,6 +1,6 @@
 #' @section Conditions:
-#' Building UI with [mascot()] or helpers errors on invalid values;
-#' [update_mascot()] warns and leaves the mascot unchanged. All errors raised by
+#' [mascot()] and the helpers raise an error on an invalid value;
+#' [update_mascot()] warns instead and leaves the mascot unchanged. All errors raised by
 #' mascot, including checkmate assertions, carry class `mascot_error`. Warnings
 #' have class `mascot_warning` and messages have class `mascot_message`. Invalid
 #' update values also carry `mascot_update_ignored`; low contrast carries
@@ -13,9 +13,9 @@
 #' authoring argument errors, `mascot_error_character` for character content
 #' errors, and `mascot_error_file` for character file errors.
 #'
-#' `mascot_palette_dropped` warns when a character swap drops a palette the
-#' incoming character lacks. Development diagnostics use
-#' `mascot_gesture_dropped` when a pending gesture cannot play and
+#' `mascot_palette_dropped` is the warning when a character swap drops a palette
+#' that the new character does not have. Two warnings are for development:
+#' `mascot_gesture_dropped` when a pending gesture cannot play, and
 #' `mascot_template_evicted` when unused UI templates leave the cache. Each
 #' inherits `mascot_warning`.
 #' @section Options:

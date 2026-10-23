@@ -16,20 +16,22 @@ A checked, resolved, self-contained \code{mascot_character_data} object,
 visibly. Its fields are internal implementation details.
 }
 \description{
-Checks format version 1 using the package's input, drawing and capability
-policy. Never repairs or recolours data. Edit the JSON or plain source list,
-then check it again: checked objects are opaque and edits are refused.
+Checks a character description against format version 1 and the package's
+limits on input, drawing and capabilities. It never repairs or recolours
+anything. To change a character, edit the JSON or the plain list and check it
+again; a checked object cannot be opened or edited.
 }
 \details{
 Content problems inherit \code{mascot_error_character} and \code{mascot_error},
 with \code{code}, \code{path}, \code{value} and \code{fix}. Argument problems inherit
 \code{mascot_error_argument} and \code{mascot_error}, with \code{argument}, \code{code} and \code{value}.
-Every character must define changing \code{wave} and \code{nod} tracks. \code{wave} must
-change a non-root part channel; \code{nod} may change any channel, including \code{root}.
-A checked object is not stored anywhere: pass it each time. Format version, supported
-capabilities and admission policy version are separate contracts. Built-in
-character ids are reserved and refused here;
-give your character its own id before checking it.
+Every character needs \code{wave} and \code{nod} tracks that change something. \code{wave}
+must change a channel of a part other than \code{root}; \code{nod} may change any
+channel, including \code{root}. A checked object is not stored anywhere, so pass
+it each time you use it. The format version, the set of supported
+capabilities and the admission policy version can each change on their own.
+Built-in character ids are reserved and refused here, so give your
+character its own id before checking it.
 }
 \examples{
 path <- system.file("examples", "characters", "study_bot.json", package = "mascot")

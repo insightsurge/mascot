@@ -42,10 +42,10 @@ restore button. \code{NULL} follows \code{others}.}
 of names from \code{c("bubble", "tooltip", "menu")} for only those panels.
 \code{NULL} (default) follows \code{others}. Panels still appear and work.}
 
-\item{others}{Logical flag, default \code{TRUE}, for every unnamed switch.
-With \code{others = FALSE} and no movement enabled by a named switch, this is
-equivalent to \code{motion = FALSE}: reduced-motion poses and instant drag
-transitions apply too.}
+\item{others}{Logical flag, default \code{TRUE}, for every switch you do not set.
+With \code{others = FALSE} and no switch you set allowing movement, this is the
+same as \code{motion = FALSE}, including the reduced-motion poses and instant
+drag moves.}
 }
 \value{
 A \code{mascot_motion_settings} object. Its fields are internal; pass the
@@ -57,8 +57,8 @@ Idle breathing and blinking stop within five seconds of an action.
 The visitor's
 \href{https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion}{reduced-motion setting}
 always wins over any \code{TRUE}.
-Unnamed switches, including switches added in later versions, follow \code{others};
-named switches always win.
+Switches you do not set, including any added in later versions, follow
+\code{others}; switches you set always win.
 }
 \examples{
 mascot_motion_settings()

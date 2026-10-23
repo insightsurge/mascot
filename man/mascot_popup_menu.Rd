@@ -16,11 +16,11 @@ mascot_popup_menu(
 \arguments{
 \item{items}{A named character vector of plain-text labels. Names are unique,
 non-empty item IDs without whitespace (for example \code{c(about = "About", help = "Help")}).
-Defaults to \code{NULL}, an empty helper: in \code{\link[=update_mascot]{update_mascot()}}, it removes the
-click, so the mascot is a picture again. An empty vector is not accepted.
-Labels are always escaped. With \code{items = NULL}, explicitly supplying
-\code{disabled}, \code{direction}, \code{label} or \code{tooltip} is an error; use \code{mascot_popup_menu()}
-without options to remove the click.}
+Defaults to \code{NULL}, which gives an empty helper; in \code{\link[=update_mascot]{update_mascot()}} it
+removes the click, so the mascot is a picture again. An empty vector is not
+accepted. Labels are always escaped. With \code{items = NULL}, setting
+\code{disabled}, \code{direction}, \code{label} or \code{tooltip} yourself is an error; use
+\code{mascot_popup_menu()} without options to remove the click.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
@@ -28,14 +28,14 @@ without options to remove the click.}
 but opens nothing and sends no input. Screen readers announce it as
 unavailable. \code{FALSE} (the default) allows the menu to open.}
 
-\item{direction}{Direction to open the menu from the mascot: \code{"auto"} (the default),
+\item{direction}{Which side of the mascot the menu opens on: \code{"auto"} (the default),
 \code{"top"}, \code{"bottom"}, \code{"left"} or \code{"right"}. \code{"auto"} picks the side with room
 (preferring above, then below, then the side towards the page centre). A
 chosen side is a preference: see "Where the menu opens" below.}
 
 \item{label}{The name screen readers announce for the mascot's menu button,
-such as \code{"Help and settings"}: one string containing a non-whitespace
-character. \code{NULL} (the default) uses the character's name, such as "Tessa, menu".}
+such as \code{"Help and settings"}: one string that is not blank. \code{NULL} (the
+default) uses the character's name, such as "Tessa, menu".}
 
 \item{tooltip}{A flag. \code{TRUE} (the default) shows the label in a tooltip when
 the pointer rests on the mascot or the keyboard focuses it, provided a
@@ -102,8 +102,8 @@ shiny::shinyApp(
 )
 }\if{html}{\out{</div>}}
 
-The menu opens from the mascot's on-screen position in the requested direction.
-It fits the available screen space and can change direction or scroll.
+The menu opens next to the mascot, on the side you asked for. It is sized to
+fit the space on screen, and can change side or scroll when room is short.
 Action controls hide while the menu is open. Opening the menu closes any speech
 bubble that is showing.
 The restore button only restores a minimised mascot; it does not open the menu.

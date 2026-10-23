@@ -1,9 +1,10 @@
 #' Set a mascot's colours and light or dark mode
 #'
-#' Customise the character's colours and light or dark mode. Roles you do not set
-#' follow the first supplied or filled leader that the character declares (for
-#' example `body`), in the character's priority order. With no supplied leader,
-#' they keep their original colours. Call [mascot_colour_roles()] to find the
+#' Customise the character's colours and light or dark mode. Each character
+#' names some roles as leaders (for example `body`), in order of priority. A
+#' role you do not set follows the first of those leaders that has been given a
+#' colour; if none has, the role keeps its original colour. Call
+#' [mascot_colour_roles()] to find the
 #' roles for a character. A plain named list passed to [mascot()] or
 #' [update_mascot()] uses one set of colours in every mode. A [bslib::bs_theme()]
 #' fills the character's declared brand leaders with its primary and secondary
@@ -11,30 +12,30 @@
 #' `bs_theme()` always uses `mode = "auto"`. Which parts of a character a
 #' `bs_theme()` colours is experimental and may change in a later release.
 #'
-#' After a character swap, follow rules are applied again and roles absent from
-#' the incoming character are ignored. A palette is kept if the new character
-#' has the same id; otherwise R warns and restores its own colours, keeping
-#' explicit role colours where they exist. An empty `mascot_theme()`
-#' restores the character's own colours. A chosen colour below 3:1 contrast
-#' gives a warning and is kept (see "Contrast warnings" below). Supplied colours
-#' are kept exactly.
-#' Derived shades keep the hue, with calibrated lightness and saturation shifts.
-#' Brand colours are the same in both modes.
+#' After a character swap, the follow rules are applied again, and roles the
+#' new character does not have are ignored. A palette is kept if the new
+#' character has a palette with the same id. If not, R warns, the new character
+#' gets its own colours, and role colours you set explicitly stay. An empty
+#' `mascot_theme()` restores the character's own colours. A colour you choose
+#' with less than 3:1 contrast gives a warning and is kept (see "Contrast
+#' warnings" below). Colours you supply are used exactly as given. Shades worked
+#' out from them keep the hue and shift lightness and saturation by tuned
+#' amounts. Brand colours are the same in both modes.
 #'
 #' @section Contrast warnings:
 #' A warning appears when a colour chosen by the developer (light, dark, or a
 #' [bslib::bs_theme()] brand colour) has contrast below 3:1 against the page
 #' background (white in light mode, `#212529` in dark mode, or the `bslib`
-#' theme's backgrounds). Contrast is checked when [mascot()] builds the UI,
-#' when [update_mascot()] applies colours with `theme = `, and collected into the
-#' contrast table by [mascot_preview()]; native and built-in palette colours never warn;
-#' the colour is always kept.
+#' theme's backgrounds). Contrast is checked when [mascot()] builds the UI and
+#' when [update_mascot()] applies colours with `theme = `; [mascot_preview()]
+#' collects the results in its contrast table. A character's own colours and
+#' the built-in palette colours never warn, and the colour is always kept.
 #'
 #' R warnings appear only when [shiny::in_devmode()] is `TRUE`, and always in
 #' [mascot_preview()] and the studio. Set `options(mascot.contrast_warnings = TRUE)`
 #' or `FALSE` to force them on or off everywhere. A non-flag value warns once
 #' per R session and uses the default. Visitors never see R warnings.
-#' CSS-variable colours (`css =`) are checked and warn in the browser console.
+#' Colours from CSS variables (`css =`) are checked in the browser and warn in its console.
 #'
 #' These warnings have the class `mascot_contrast`. To silence only these
 #' warnings:
@@ -44,7 +45,7 @@
 #'   mascot_contrast = function(w) invokeRestart("muffleWarning")
 #' )
 #' ```
-#' Note that `suppressWarnings()` also works but hides every warning.
+#' `suppressWarnings()` also works, but it hides every warning.
 #'
 #' @section A `bs_theme()` or explicit colours:
 #' A [bslib::bs_theme()] cannot be combined with `palette`, `light`, `dark` or
@@ -74,10 +75,10 @@
 #'   for the character's own colours. Checked against the chosen character when
 #'   used. An unknown palette id is an error in [mascot()] (the UI is being
 #'   built) but only a warning in [update_mascot()] (a live session, so the
-#'   mascot keeps running unchanged). `"original"` also
-#'   chooses its own colours. A palette is applied first, then `light` and `dark`
-#'   roles, then `css`. Without a dark map, a palette uses its light colours in
-#'   both modes. A `bs_theme()` is a separate alternative.
+#'   mascot keeps running unchanged). `"original"` also chooses the character's
+#'   own colours. A palette is applied first, then `light` and `dark` roles, then
+#'   `css`. Without a dark map, a palette uses its light colours in both modes.
+#'   A `bs_theme()` cannot be combined with a palette.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param light,dark Named lists of colour roles, or `NULL` (the default) to keep
 #'   the palette's colours (or the character's own colours) in that mode.
@@ -87,22 +88,23 @@
 #'   indices are not accepted. Roles use snake case; `light`, `dark` and
 #'   `default` are reserved. Names follow the character format: a lowercase letter,
 #'   then lowercase letters or digits separated by single underscores, with an
-#'   optional final underscore. Construction checks this form; [mascot()],
-#'   [update_mascot()] and [mascot_preview()] check roles against the chosen
-#'   character. Built-in characters keep one outline colour in
+#'   optional final underscore. `mascot_theme()` checks the form of the names;
+#'   [mascot()], [update_mascot()] and [mascot_preview()] check that the chosen
+#'   character has those roles. Built-in characters keep one outline colour in
 #'   both modes; their light outer band keeps them readable on any dark page.
 #'   To use your own dark-mode outline, set `dark = list(outline = "#FFC93C")`.
-#' @param mode Mode selection: `"auto"` (the default), `"light"` or `"dark"`.
-#'   `"auto"` follows the nearest valid `data-bs-theme` in the original source
-#'   context, then Quarto's body classes. With no page signal it uses light mode.
+#' @param mode Light or dark mode: `"auto"` (the default), `"light"` or `"dark"`.
+#'   `"auto"` follows the nearest valid `data-bs-theme` attribute around the
+#'   place where the mascot was written in the page, then Quarto's body classes.
+#'   With no page signal it uses light mode.
 #'   An explicit light or dark mode always wins. `NULL` is not accepted.
 #' @param css A named list mapping colour roles to CSS variable names such as
 #'   `list(body = "--team-blue")`, or `NULL` (the default) for no CSS source.
 #'   This source is experimental. CSS entries override light and dark entries
 #'   for the same role. Missing or invalid variables use the character's own
 #'   colour and warn in the browser console; low contrast also warns there and
-#'   keeps the colour. Variables are read from the original source context,
-#'   including when the mascot floats.
+#'   keeps the colour. Variables are read where the mascot was written in the
+#'   page, also when the mascot floats.
 #' @returns A `mascot_theme` object describing colours, CSS sources and mode.
 #' The returned object's fields are internal; pass the object on rather than reading its fields.
 #' @family mascot helpers

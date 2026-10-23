@@ -9,8 +9,8 @@ Adds a character drawn in code to 'Shiny' apps and 'Quarto' sites. The character
 }
 \section{Conditions}{
 
-Building UI with \code{\link[=mascot]{mascot()}} or helpers errors on invalid values;
-\code{\link[=update_mascot]{update_mascot()}} warns and leaves the mascot unchanged. All errors raised by
+\code{\link[=mascot]{mascot()}} and the helpers raise an error on an invalid value;
+\code{\link[=update_mascot]{update_mascot()}} warns instead and leaves the mascot unchanged. All errors raised by
 mascot, including checkmate assertions, carry class \code{mascot_error}. Warnings
 have class \code{mascot_warning} and messages have class \code{mascot_message}. Invalid
 update values also carry \code{mascot_update_ignored}; low contrast carries
@@ -23,9 +23,9 @@ Specific error classes are \code{mascot_error_choice} for invalid choices,
 authoring argument errors, \code{mascot_error_character} for character content
 errors, and \code{mascot_error_file} for character file errors.
 
-\code{mascot_palette_dropped} warns when a character swap drops a palette the
-incoming character lacks. Development diagnostics use
-\code{mascot_gesture_dropped} when a pending gesture cannot play and
+\code{mascot_palette_dropped} is the warning when a character swap drops a palette
+that the new character does not have. Two warnings are for development:
+\code{mascot_gesture_dropped} when a pending gesture cannot play, and
 \code{mascot_template_evicted} when unused UI templates leave the cache. Each
 inherits \code{mascot_warning}.
 }

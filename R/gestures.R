@@ -13,10 +13,10 @@ gesture_table <- function() {
 #' List the mascot gestures
 #'
 #' Gestures play a quick movement once, without changing the mascot's mood.
-#' They are available only in [update_mascot()]. With no `character`, the list
-#' is the shared vocabulary with its nominal lengths; with one, it is what that
-#' character declares: `"nod"` and `"wave"` first, then its own gestures in the
-#' order its author wrote them.
+#' They are available only in [update_mascot()]. With no `character`, it lists
+#' the gestures every character shares, with their nominal lengths. With a
+#' character, it lists that character's gestures: `"nod"` and `"wave"` first,
+#' then its own in the order its author wrote them.
 #' @param character `NULL` (the default) for the shared gestures, or a
 #'   character: an id string such as `"tessa"` or a [mascot_character()] helper.
 #' @returns A data frame with character columns `name` (the value you pass to

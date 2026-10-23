@@ -53,19 +53,20 @@ character.
 \item A new placement replaces any position the visitor dragged the mascot to.
 \item Floating placement shows a minimise control by default, and dragging is
 off.
-\item Inline placement ignores \code{minimise} and \code{drag}. Values you supply
-explicitly give an informational message; defaults stay silent. The
-update is still sent.
+\item Inline placement ignores \code{minimise} and \code{drag}. If you set either one
+yourself, a message says so; the defaults give no message. The update is
+still sent.
 \item With dragging enabled, the minimised restore button can also be dragged.
 A click restores it; a drag leaves it minimised in its new position.
 }}
 
 \item{theme}{A theme in the forms accepted by \code{\link[=mascot]{mascot()}}. \code{NULL} (the
 default) leaves the theme unchanged; \code{"original"} or \code{mascot_theme()} restores the
-character's own colours. After a character swap, the theme is applied
-again to the new character's parts. A palette id string chooses a named
-palette. A swap keeps it when available, otherwise warns with class
-\code{mascot_palette_dropped} and keeps explicit colours for shared roles.}
+character's own colours. A palette id string chooses a named palette. After
+a character swap, the theme is applied again to the new character's parts.
+The palette carries over if the new character has one of that name.
+If it has not, you get a warning with class \code{mascot_palette_dropped}, and
+colours you set explicitly stay for the roles both characters share.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object, as in \code{\link[=mascot]{mascot()}}.
 \code{NULL} (the default) leaves motion unchanged. Changes apply to the live mascot
@@ -101,9 +102,9 @@ its status; the next valid update clears it. Updates sent before a mascot
 appears are kept until it appears.
 }
 \details{
-\code{NULL} means none or the default in \code{\link[=mascot]{mascot()}} and helpers where accepted.
-In \code{update_mascot()}, \code{NULL} leaves a setting unchanged. Use an empty helper
-to reset a setting:\tabular{ll}{
+In \code{\link[=mascot]{mascot()}} and its helpers, \code{NULL} (where accepted) means none or the
+default. In \code{update_mascot()}, \code{NULL} leaves a setting unchanged. To reset a
+setting, send an empty helper:\tabular{ll}{
    Setting \tab Reset sent to \code{update_mascot()} \cr
    Character \tab \code{character = mascot_character()} (back to \code{"tessa"}) \cr
    Mood \tab \code{mood = mascot_mood()} (back to \code{"idle"}) \cr
@@ -113,7 +114,7 @@ to reset a setting:\tabular{ll}{
    Theme \tab \code{theme = mascot_theme()} restores character colours \cr
    Click \tab \code{click = mascot_action()} (or \code{mascot_popup_menu()}) removes it \cr
    Placement \tab \code{placement = mascot_placement()} (bottom-right); \code{mascot_placement("inline")} for inline \cr
-   Motion \tab \code{motion = mascot_motion_settings()} allows movement subject to visitor preference \cr
+   Motion \tab \code{motion = mascot_motion_settings()} allows movement unless the visitor prefers reduced motion \cr
 }
 
 
@@ -121,21 +122,21 @@ Each non-\code{NULL} argument replaces that whole setting, not part of it. For
 example, \code{update_mascot("h", size = 200)} also resets a custom \code{small_screen}
 to \code{"auto"}.
 
-Building UI with \code{\link[=mascot]{mascot()}} or helpers errors on invalid values;
-\code{\link[=update_mascot]{update_mascot()}} warns with class \code{mascot_update_ignored} and leaves the
-mascot unchanged. An invalid \code{id}, unknown arguments in \code{...} or a missing
-session still raise errors. See \link{mascot-package} for all condition classes.
-This includes a helper that raises a \code{mascot_error} while an argument is
-evaluated inside the call, such as \code{size = mascot_size(input$px)}; the whole
-update is ignored.
+\code{\link[=mascot]{mascot()}} and the helpers raise an error on an invalid value.
+\code{\link[=update_mascot]{update_mascot()}} warns instead, with class \code{mascot_update_ignored}, and
+leaves the mascot unchanged. That also covers a helper that raises a
+\code{mascot_error} while an argument is evaluated inside the call, such as
+\code{size = mascot_size(input$px)}; the whole update is then ignored. An invalid
+\code{id}, unknown arguments in \code{...} or a missing session still raise errors. See
+\link{mascot-package} for all condition classes.
 
 An unknown palette id is an error in \code{\link[=mascot]{mascot()}} but only a warning in
 \code{update_mascot()}. \code{\link[=mascot]{mascot()}} runs while the UI is built, where an error shows
 at once. \code{update_mascot()} runs in a live session, where an error would stop
 the app for the visitor, so it warns and the mascot keeps running unchanged.
 The message names any other characters that have a palette of that name. (A
-palette kept from before a character swap is dropped instead, with class
-\code{mascot_palette_dropped}; see the \code{character} argument.)
+palette carried over from before a character swap is dropped instead, with a
+warning of class \code{mascot_palette_dropped}; see the \code{theme} argument.)
 
 \strong{Status text and bubbles.} Use the always visible status line for a short
 description of the current state.
@@ -148,7 +149,7 @@ for timing and closing behaviour.
 
 \strong{Shiny modules.} In a module, use \code{mascot(ns("helper"))} in the UI and
 \code{update_mascot("helper")} in its server. A \code{session$ns("helper")} id is also
-accepted, including in nested modules. The session namespace is added once.
+accepted, including in nested modules; the namespace is not added twice.
 An invalid \code{id} type, missing session or extra argument is an error. Calling
 with all update arguments \code{NULL} does nothing.
 
@@ -188,15 +189,16 @@ validation package such as \code{shinyvalidate}) and set the mood from it:
 \})
 }\if{html}{\out{</div>}}
 
-\strong{Queued updates.} Updates sent before a mascot appears are kept per session,
-including when the first mascot is created by \code{\link[shiny:renderUI]{shiny::renderUI()}} or
-\code{\link[shiny:insertUI]{shiny::insertUI()}}. Once the character is known, R validates each whole call
-before accepting its latest values. Before that, a bounded buffer keeps whole
-calls for validation against the first known character. An invalid call never
-contributes its bubble, status or other fields. A replacement with the same id
-receives the latest accepted state; only the latest pending gesture can play,
-once. Dismissed bubbles stay dismissed through replacement; an explicit bubble
-update starts a new bubble, including when its text is unchanged.
+\strong{Queued updates.} Updates sent before a mascot appears are kept for the
+session, also when the first mascot is created by \code{\link[shiny:renderUI]{shiny::renderUI()}} or
+\code{\link[shiny:insertUI]{shiny::insertUI()}}. Each call is checked as a whole before its latest values
+are accepted. Until the character is known, a buffer of limited size holds
+whole calls, and they are checked against the first character that appears.
+A call that fails the check adds nothing, not even its bubble or status. A
+mascot that replaces one with the same id gets the latest accepted state, and
+only the latest pending gesture plays, once. A bubble the visitor dismissed
+stays dismissed in the replacement; sending a bubble again starts a new one,
+even with the same text.
 
 \strong{Several calls in one flush.} A flush is one round of Shiny reacting to
 inputs. Shiny sends the mascot one message when it ends, built from every

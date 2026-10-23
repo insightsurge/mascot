@@ -1,15 +1,16 @@
 #' List a character's colour roles
 #'
-#' Lists a character's colour roles (its colour parts) with their own colours,
-#' with an optional named palette applied. Roles are written in snake case in R. Follow
-#' rules list leaders in priority order. A colour you supply for a role always
-#' wins; otherwise the role follows the first supplied or filled leader. With no
-#' available leader, the role keeps its original colour.
+#' Lists a character's colour roles (the parts you can colour) with their own
+#' colours, or with a named palette applied. Roles are written in snake case in
+#' R. A role can follow other roles, its leaders, listed in priority order. A
+#' colour you supply for a role always wins; otherwise the role follows the
+#' first leader that has been given a colour. If no leader has one, the role
+#' keeps its original colour.
 #' @param character A character, defaulting to `"tessa"`: an id string or a
 #'   [mascot_character()] helper. `NULL` is not accepted.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param palette A palette id from [mascot_palettes()], or `NULL` (the default)
-#'   for the character's own colours. Followers are derived from palette leaders.
+#'   for the character's own colours. Roles that follow others take their colours from the palette's leaders.
 #' @returns A data frame with character columns `role`, `colour`, `follows`
 #'   (comma-separated leaders), `shade` (`same`, `lighter` or `darker`),
 #'   `description` (what the role colours) and `brand` (the brand slots the role

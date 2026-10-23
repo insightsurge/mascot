@@ -16,9 +16,9 @@ mood_table <- function() {
 #' List mascot moods
 #'
 #' Every character has the five shared moods, in this order, and may add more
-#' of its own. With no `character`, the list is the shared vocabulary; with one,
-#' it is what that character declares: the shared moods first, then its own in
-#' the order its author wrote them.
+#' of its own. With no `character`, it lists the shared moods. With a
+#' character, it lists that character's moods: the shared ones first, then its
+#' own in the order its author wrote them.
 #' @param character `NULL` (the default) for the shared moods, or a character:
 #'   an id string such as `"tessa"` or a [mascot_character()] helper.
 #' @returns A data frame with character columns `name` (the value you pass to

@@ -23,7 +23,8 @@ jobs:
   browser:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
     name: browser (${{ matrix.r }})
-    timeout-minutes: 90  # the browser test files with Chrome: 38-43 min, plus room for a slow package mirror
+    timeout-minutes: 100  # the tests take 34-38 min; R 4.1 with a cold cache and a slow package mirror took 72 min in
+    # all (installing R 20 min, the packages 18 min)
 
     strategy:
       fail-fast: false

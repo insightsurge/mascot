@@ -22,8 +22,8 @@ concurrency:
 jobs:
   check:
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 60  # R CMD check without the browser tests: 13-23 min (Windows the slowest), plus room for a slow
-    # package mirror (setup alone once took 19 min)
+    timeout-minutes: 75  # R CMD check without the browser tests: 12-17 min, then R-devel builds its packages from
+    # source (52 min with a cold cache and a slow package mirror, when installing R alone took 12-19 min)
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 

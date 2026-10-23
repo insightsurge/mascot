@@ -2,7 +2,7 @@
 files <- strsplit(Sys.getenv("REPRO_FILES"), " ", fixed = TRUE)[[1]]
 library(testthat)
 library(mascot)
-pattern <- paste0("^(", paste(sub("^test-|\\.R$", "", files), collapse = "|"), ")$")
+pattern <- paste0("^(", paste(gsub("^test-|\\.R$", "", files), collapse = "|"), ")$")
 message("Files: ", pattern)
 results <- testthat::test_dir(
   "tests/testthat",

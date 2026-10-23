@@ -13,12 +13,10 @@ character_json_write <- function(x) {
 
 #' Check a source specification, raw list, checked data or supplied JSON
 #'
-#' Never fixes or recolours anything. A `mascot_character_spec` has its
-#' `requires` computed here, after resolution: every capability is declared for
-#' a first pass, the capabilities the resolved recipe uses are read from that
-#' pass, and the second pass checks the final list (used capabilities plus any
-#' extras the spec declared). A string is never guessed to be a path or an id:
-#' say `from = "file"` or `"text"`.
+#' Never fixes or recolours anything. The version-1 capabilities are implicit,
+#' so a `mascot_character_spec` keeps only the capabilities it declares itself
+#' in `requires`. A string is never guessed to be a path or an id: say
+#' `from = "file"` or `"text"`.
 #' @noRd
 character_check <- function(x, ..., from = "list", families = character_object(), kits = character_format_kits()) {
   checkmate::assert(checkmate::check_list(x), checkmate::check_string(x))
@@ -32,17 +30,7 @@ character_check <- function(x, ..., from = "list", families = character_object()
   if (!inherits(x, "mascot_character_spec")) {
     return(character_format_check(x, from = from, families = families, kits = kits))
   }
-  source <- unclass(x)
-  capabilities <- unlist(character_format_policy()$capabilities, use.names = FALSE)
-  extras <- unlist(source$requires)
-  draft <- source
-  draft$requires <- as.list(capabilities)
-  first <- character_format_check(draft, families = families, kits = kits)
-  manifest <- attr(first, "mascot_manifest")
-  used <- character_format_capabilities(first, character_format_references(first), manifest$work)
-  declared <- unique(c(used, extras))
-  source$requires <- as.list(c(intersect(capabilities, declared), setdiff(declared, capabilities)))
-  character_format_check(source, families = families, kits = kits)
+  character_format_check(unclass(x), families = families, kits = kits)
 }
 
 #' Save checked character data as complete resolved JSON

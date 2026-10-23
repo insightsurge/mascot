@@ -54,13 +54,11 @@ against the format rules:
 * `id`: A unique lowercase identifier (`"study_bot"`). Built-in character ids
   (`"tessa"`, `"sela"`, `"knurl"`, `"neer"`) are reserved and refused.
 * `name`: The human-readable name shown in titles and summaries (`"Study Bot"`).
+* `description`: One sentence about the character.
 * `family`: The character family (`"visorfolk"`). Every character names one, and
   a custom character also gives the family's definition in `family_definition`:
   its `id`, `name`, `description` and optional `defaults`, such as gestures and
   palettes the character takes unless it defines its own.
-* `requires`: Declared engine capabilities. `study_bot` requires `"parts"`,
-  `"outline"`, `"clip"`, `"face_kit"`, `"glow"`, `"tracks"`, and `"lod"`.
-  Unsupported and reserved capabilities are refused.
 * `colours`: Named colour roles and their default hex values (`body`, `outline`,
   `screen`, `feature`, and `accent`).
 * `ground`: Where the character stands: its centre height (`centre_height: 60`).
@@ -82,6 +80,44 @@ against the format rules:
   background colour roles.
 * `lod`: Level-of-detail rules for smaller sizes, such as hiding fine details
   like `badge_disc` in the micro detail band.
+
+`study_bot` has no `requires` field, and your character needs none either: every
+version-1 mascot draws the eight version-1 capabilities (`parts`, `paints`,
+`clip`, `outline`, `glow`, `face_kit`, `tracks` and `lod`). `requires` is for
+capabilities added after version 1; a name this version of mascot does not
+know stops the check with an error that names it. Older files that list the
+eight names keep loading.
+
+Drawing coordinates are design units in a 300 by 300 frame. The point where the
+character stands is `(0, 0)`, 150 units from the left edge and 270 from the top,
+and `y` grows downwards: a part above the ground has a negative `y`.
+
+## Keys for other tools
+
+Editors and other tools can add their own information to a character file,
+and mascot keeps it without reading it:
+
+* A top-level `"$schema"` string, so an editor can link the file to a schema.
+* Any key that starts with `x_` in an object whose fields the format fixes:
+  the character itself, a part, an item, a mood, a gesture, the face and so on.
+  Its value can be any JSON value, and it stays in the file, as written, when
+  the character is checked and saved. It counts towards the file's size limits. In an object whose keys are ids or names, such as
+  `colours`, `moods` or `palettes`, a key that starts with `x_` is an ordinary id.
+* A `"note"` string in any of those objects, as a comment.
+
+The start of such a file, shortened:
+
+```json
+{
+  "$schema": "https://example.org/my-editor/mascot-character-v1.json",
+  "format_version": 1,
+  "id": "sparky_bot",
+  "x_my_editor": {"last_opened": "2026-10-23", "grid": 10},
+  "parts": [
+    {"id": "head", "x_my_editor": {"locked": true}, "items": []}
+  ]
+}
+```
 
 ## What you can draw
 
@@ -149,7 +185,10 @@ carries structured diagnostic metadata:
 * `code`: A stable problem identifier (such as `"version"` or `"input_type"`).
 * `path`: The JSON path where the error occurred (for example `$.format_version`).
 * `value`: The invalid value that was rejected.
-* `fix`: Plain-words guidance explaining how to resolve the problem.
+* `fix`: Plain-words guidance explaining how to resolve the problem. For a value
+  out of range it gives the range or the choices, for a drawing budget the count
+  and the limit, and for a character too big for its frame the part that reaches
+  furthest outside it.
 
 Change `format_version` to an unsupported number to see the diagnostic:
 
@@ -218,7 +257,9 @@ The format is experimental and its future direction is open. These points hold e
   categories keep the format at version 1, so existing files keep working.
 * **Clear errors on older versions**: a file that uses an addition lists it in
   `requires`; an older version of mascot then stops with an error naming it,
-  instead of drawing it wrongly.
+  instead of drawing it wrongly. The version-1 capabilities never need listing.
+* **Room for other tools**: `$schema` and `x_` keys are kept and never read, so
+  an editor can store its own information in a character file.
 * **Breaking changes mean version 2**: only a change that would break existing
   files introduces format version 2. Retiring an older format version is
   announced in NEWS at least one release ahead.

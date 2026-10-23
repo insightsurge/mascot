@@ -110,6 +110,92 @@ describe("character store reserved ids and retrieved values", {
   })
 })
 
+describe("#494 verified objects are not checked again", {
+  it("returns an unchanged object's result without parsing it again, and checks an edited one", {
+    saved <- as.list(character_data_verified)
+    withr::defer(list2env(saved, envir = character_data_verified))
+    character_data_verified$seen <- character_data_verified$texts <- list()
+    checked <- character_format_check(format_recipe("anchor_probe"))
+    first <- character_data_verify(checked)
+    original <- character_format_parse
+    calls <- new.env(parent = emptyenv())
+    calls$n <- 0L
+    local_mocked_bindings(character_format_parse = function(...) {
+      calls$n <- calls$n + 1L
+      original(...)
+    })
+    for (i in 1:5) {
+      expect_identical(character_data_verify(checked), first)
+    }
+    expect_identical(calls$n, 0L)
+    edited <- checked
+    edited$anchors$badge$part <- "missing_owner"
+    format_problem("missing_reference", "$.anchors.badge.part", character_data_verify(edited))
+    expect_gt(calls$n, 0L)
+    renamed <- checked
+    renamed$name <- "Renamed"
+    format_problem("identity", "$", character_data_verify(renamed))
+    expect_lte(length(character_data_verified$seen), 16L)
+    expect_error(character_data_seen(list(), first), "Assertion")
+    expect_error(character_data_seen(checked, list()), "Assertion")
+  })
+
+  it("keeps 16 objects and 16 texts, and checks the oldest object again once it has left", {
+    saved <- as.list(character_data_verified)
+    withr::defer(list2env(saved, envir = character_data_verified))
+    character_data_verified$seen <- character_data_verified$texts <- list()
+    checked <- character_format_check(format_recipe("anchor_probe"))
+    character_data_verify(checked)
+    original_write <- character_json_write
+    original_parse <- character_format_parse
+    calls <- new.env(parent = emptyenv())
+    calls$write <- calls$parse <- 0L
+    local_mocked_bindings(
+      character_json_write = function(x) {
+        calls$write <- calls$write + 1L
+        if (identical(x, checked)) original_write(x) else "{}"
+      },
+      character_format_parse = function(...) {
+        calls$parse <- calls$parse + 1L
+        original_parse(...)
+      }
+    )
+    character_data_json(checked)
+    for (i in 1:16) {
+      other <- structure(list(id = paste0("other_", i)), class = "mascot_character_data")
+      character_data_seen(other, other)
+      character_data_json(other)
+    }
+    expect_length(character_data_verified$seen, 16L)
+    expect_length(character_data_verified$texts, 16L)
+    expect_identical(calls$write, 17L)
+    character_data_verify(checked)
+    expect_gt(calls$parse, 0L)
+    character_data_json(checked)
+    expect_identical(calls$write, 18L)
+  })
+
+  it("writes a verified object's JSON text once and gives the same text as writing it", {
+    saved <- as.list(character_data_verified)
+    withr::defer(list2env(saved, envir = character_data_verified))
+    character_data_verified$texts <- list()
+    checked <- character_format_check(format_recipe("anchor_probe"))
+    expected <- character_json_write(checked)
+    original <- character_json_write
+    calls <- new.env(parent = emptyenv())
+    calls$n <- 0L
+    local_mocked_bindings(character_json_write = function(...) {
+      calls$n <- calls$n + 1L
+      original(...)
+    })
+    for (i in 1:3) {
+      expect_identical(character_data_json(checked), expected)
+    }
+    expect_identical(calls$n, 1L)
+    expect_error(character_data_json(list()), "Assertion")
+  })
+})
+
 describe("character store validation and isolation", {
   it("prevents unchecked lists, forged classes, and mutated anchors from poisoning the store", {
     local_empty_registry()

@@ -36,9 +36,7 @@ character_path <- function(d, path = "$.d") {
       if (any(!is.finite(values))) {
         character_format_abort("non_finite", path, NULL, "Use finite path coordinates.")
       }
-      if (any(abs(values) > 4096)) {
-        character_format_abort("input_type", path, NULL, "Keep path coordinates within +/-4096.")
-      }
+      character_format_within(values, 4096, path, "path coordinates")
       result[[length(result) + 1L]] <- list(op = if (op == "M" && !first) "L" else op, values = values)
       first <- FALSE
       index <- end + 1L
@@ -111,7 +109,18 @@ character_geometry <- function(item, shapes = character_object(), path = "$.item
       character_format_abort("input_type", paste0(path, ".", key), NULL, "Supply one finite number.")
     }
     if (value < lower || value > upper) {
-      character_format_abort("input_type", paste0(path, ".", key), value, "Use a value in the documented range.")
+      # A strictly positive size has the smallest double as its lower bound: say "above 0".
+      rule <- if (lower == .Machine$double.xmin) {
+        list(exclusive_min = 0, max = upper)
+      } else {
+        list(min = lower, max = upper)
+      }
+      character_format_abort(
+        "input_type",
+        paste0(path, ".", key),
+        value,
+        paste0("Use ", character_format_range(rule), ", not ", character_format_shown(value), ".")
+      )
     }
     value
   }
@@ -157,14 +166,19 @@ character_geometry <- function(item, shapes = character_object(), path = "$.item
     h <- number("h", lower = .Machine$double.xmin)
     box <- c(x, y, x + w, y + h)
     numbers <- if (shape == "rect") 4L else 8L
-    if (shape == "round_rect" && any(unlist(item$r) < 0 | unlist(item$r) > 4096)) {
-      character_format_abort("input_type", paste0(path, ".r"), NULL, "Use bounded nonnegative corner radii.")
+    radii <- unlist(item$r)
+    if (shape == "round_rect" && any(radii < 0 | radii > 4096)) {
+      bad <- radii[radii < 0 | radii > 4096][[1L]]
+      character_format_abort(
+        "input_type",
+        paste0(path, ".r"),
+        bad,
+        paste0("Use corner radii from 0 to 4096, not ", character_format_shown(bad), ".")
+      )
     }
   } else if (shape == "polyline") {
     points <- do.call(rbind, lapply(item$points, unlist, use.names = FALSE))
-    if (any(abs(points) > 4096)) {
-      character_format_abort("input_type", paste0(path, ".points"), NULL, "Keep geometry within +/-4096.")
-    }
+    character_format_within(as.numeric(points), 4096, paste0(path, ".points"), "geometry")
     box <- c(min(points[, 1L]), min(points[, 2L]), max(points[, 1L]), max(points[, 2L]))
     numbers <- length(points)
   } else {
@@ -177,18 +191,15 @@ character_geometry <- function(item, shapes = character_object(), path = "$.item
   }
   if (!is.null(item$transform)) {
     transform <- unlist(item$transform, use.names = FALSE)
-    if (any(abs(transform[1:2]) > 4096)) {
-      character_format_abort("input_type", paste0(path, ".transform"), NULL, "Keep translations within +/-4096.")
-    }
+    character_format_within(transform[1:2], 4096, paste0(path, ".transform"), "translations")
     box <- character_geometry_transform(box, transform[1:2], transform[[3L]], c(1, 1))
   }
   ref <- attr(item, "ref_transform")
   if (!is.null(ref)) {
     at <- c(if (is.null(ref$x)) 0 else ref$x, if (is.null(ref$y)) 0 else ref$y)
     scale <- if (is.null(ref$scale)) c(1, 1) else rep(unlist(ref$scale), length.out = 2L)
-    if (any(abs(at) > 4096) || any(abs(scale) > 16)) {
-      character_format_abort("input_type", path, NULL, "Use bounded ref translations and scales.")
-    }
+    character_format_within(at, 4096, path, "ref translations")
+    character_format_within(scale, 16, path, "ref scales")
     box <- character_geometry_transform(box, at, if (is.null(ref$rotate)) 0 else ref$rotate, scale)
   }
   list(item = item, numbers = numbers, box = box)

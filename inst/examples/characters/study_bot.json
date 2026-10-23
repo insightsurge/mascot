@@ -96,15 +96,6 @@
       }
     }
   },
-  "requires": [
-    "parts",
-    "outline",
-    "clip",
-    "face_kit",
-    "glow",
-    "tracks",
-    "lod"
-  ],
   "colours": {
     "body": "#3f82ff",
     "outline": "#1b1230",

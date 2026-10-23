@@ -146,6 +146,84 @@ describe("character_format_resolve()", {
       character_format_identity(list(a = list(2, 1)))
     ))
   })
+
+  it("#494 writes text that claims to be JSON, or an identity piece, as text in a content identity", {
+    part <- list(b = 2, a = list(1, "x"))
+    expect_identical(character_format_identity(list(a = 1, s = part)), '{"a":1,"s":{"a":[1,"x"],"b":2}}')
+    # Only mascot_spec_identity() writes a piece as it is, so a piece elsewhere is not the content it names.
+    piece <- character_identity_piece(part)
+    expect_identical(character_format_identity(list(a = 1, s = piece)), '{"a":1,"s":"{\\"a\\":[1,\\"x\\"],\\"b\\":2}"}')
+    claimed <- structure('{"x":1}', class = "json")
+    expect_identical(character_format_identity(list(a = claimed)), '{"a":"{\\"x\\":1}"}')
+    expect_identical(character_format_canonical(list(b = claimed, a = 1)), list(a = 1, b = '{"x":1}'))
+    expect_error(character_format_canonical(mean), "Assertion")
+    expect_error(character_identity_piece("text"), "Assertion")
+  })
+})
+
+describe("extension keys through resolution", {
+  it("keeps the family's extension keys in the resolved snapshot, and allows them in its empty defaults", {
+    source <- format_recipe("study_bot")
+    source$family_definition$x_origin <- list(tool = "family editor")
+    resolved <- character_format_resolve(source)
+    expect_identical(resolved$family_definition$x_origin, list(tool = "family editor"))
+    expect_length(resolved$family_definition$defaults, 0L)
+    resolved$family_definition$defaults <- list(x_note = "kept", note = "A comment.")
+    expect_identical(
+      character_format_resolve(resolved)$family_definition$defaults,
+      list(x_note = "kept", note = "A comment.")
+    )
+    resolved$family_definition$defaults <- list(gestures = list(), x_note = "kept")
+    format_problem("family", "$.family_definition.defaults", character_format_resolve(resolved))
+  })
+
+  it("merges a map entry called x_calm from the family defaults like any other id", {
+    # Given family defaults with two equal moods, calm and x_calm, and a character that words both statuses
+    source <- format_recipe("study_bot")
+    mood <- source$moods$idle
+    source$family_definition$defaults$moods <- list(calm = mood, x_calm = mood)
+    source$moods$calm <- list(status = "Calm")
+    source$moods$x_calm <- list(status = "Calm")
+    # When it is resolved, x_calm (an id in the moods map, not an extension key) is merged field by field like calm
+    resolved <- character_format_resolve(source)
+    expect_identical(resolved$moods$x_calm, resolved$moods$calm)
+    expect_identical(resolved$moods$x_calm$status, "Calm")
+    expect_identical(resolved$moods$x_calm$description, mood$description)
+  })
+
+  it("lists only a fixed object's note and extension keys as its own keys", {
+    expect_identical(character_format_own_keys(list(a = 1, note = "n", x_b = 2)), c("note", "x_b"))
+    expect_identical(character_format_own_keys(NULL), character())
+    expect_error(character_format_own_keys("x_a"))
+    expect_error(character_format_own_keys(1))
+  })
+
+  it("never merges a family default's x_ value into the character's own, and keeps the defaults' own keys", {
+    # Given a character and its family defaults that both carry x_editor, and defaults with their own x_ key and note
+    source <- format_recipe("study_bot")
+    source$x_editor <- list(grid = 10)
+    source$outline$x_editor <- list(grid = 10)
+    defaults <- source$family_definition$defaults
+    defaults$x_editor <- list(locked = TRUE)
+    defaults$x_only <- "family data"
+    defaults$note <- "The family's shared defaults."
+    defaults$outline <- list(width = 2, x_editor = list(locked = TRUE), x_family = "inherited")
+    source$family_definition$defaults <- defaults
+    # When it is resolved
+    resolved <- character_format_resolve(source)
+    # Then the character's own x_ values are as written, not merged with the family's
+    expect_identical(resolved$x_editor, list(grid = 10))
+    expect_identical(resolved$outline$x_editor, list(grid = 10))
+    # And an x_ key the character does not have is inherited, like any other default field
+    expect_identical(resolved$outline$x_family, "inherited")
+    # And the defaults object's own x_ keys and note stay with the family, not on the character
+    expect_null(resolved$x_only)
+    expect_identical(resolved$note, source$note)
+    expect_identical(
+      resolved$family_definition$defaults,
+      list(x_editor = list(locked = TRUE), x_only = "family data", note = "The family's shared defaults.")
+    )
+  })
 })
 
 describe("reserved palette ids", {

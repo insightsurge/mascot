@@ -600,10 +600,10 @@ character_author_ground <- function(centre_height, ..., shadow = NULL) {
 #' Assemble a source specification from checked components
 #'
 #' The result is a plain format-shaped list with class `mascot_character_spec`.
-#' Cross-references may still be unresolved, and `requires` holds only extra
-#' capabilities the caller declares: the used ones are computed by
-#' `character_check()` after resolution. Only that function produces checked
-#' data. `family` is a known family id or a `character_author_family()` component.
+#' Cross-references may still be unresolved. The version-1 capabilities are
+#' implicit, so `requires` is written only when the caller names capabilities
+#' beyond version 1. Only `character_check()` produces checked data. `family`
+#' is a known family id or a `character_author_family()` component.
 #' `omit_family_palettes` writes a source-only null for each inherited palette id.
 #' @noRd
 character_author_build <- function(
@@ -726,8 +726,8 @@ character_author_build <- function(
     if (!is.character(family)) {
       list(family_definition = character_build_unwrap(list(family), "family", "family", "$.family_definition")[[1L]])
     },
+    if (length(requires)) list(requires = as.list(requires)),
     list(
-      requires = as.list(requires),
       colours = character_build_map(colours),
       ground = ground_value,
       parts = part_values

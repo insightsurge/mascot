@@ -197,6 +197,10 @@ character_format_behaviour <- function(x, graph) {
       selected <- apply_channels(base, selection$channels, paste0(path, ".channels"))
       for (prefix in c("face", "effects")) {
         controls <- selection[[prefix]]
+        if (prefix == "face") {
+          # The face controls are a fixed-field object; its note is a comment, not a control.
+          controls <- controls[setdiff(names(controls), "note")]
+        }
         if (length(controls)) {
           selected <- apply_channels(selected, stats::setNames(controls, paste0(prefix, ".", names(controls))), path)
         }

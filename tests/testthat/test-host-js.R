@@ -3701,11 +3701,23 @@ describe("mascot.host speed budgets", {
   it("pauses drawing when an animating mascot scrolls off-screen and resumes at the paused frame", {
     skip_without_chrome()
     js <- local_host_page(reduced = FALSE, placement = "inline", viewport = c(800, 600))
+    # Real frames and a real IntersectionObserver, but a steady clock: the engine counts frames from the time stamps
+    # it is given, and a busy machine can leave 100 ms between two real frames, which skips a frame number. Here each
+    # real frame is exactly 1/60 s later than the one before, so the frame numbers are exact on any machine.
     r <- js(
       "(async () => {
         const el = document.getElementById('a');
+        const nativeFrame = window.requestAnimationFrame;
+        let lastStamp = null, steady = 0;
+        window.requestAnimationFrame = (fn) => nativeFrame((stamp) => {
+          if (stamp !== lastStamp) {
+            lastStamp = stamp;
+            steady += 1000 / 60;
+          }
+          fn(steady);
+        });
         const frames = async (n = 2) => {
-          for (let i = 0; i < n; i++) await new Promise(requestAnimationFrame);
+          for (let i = 0; i < n; i++) await new Promise(nativeFrame);
         };
         const NativeIntersection = window.IntersectionObserver;
         const observers = new Set();
@@ -3749,6 +3761,7 @@ describe("mascot.host speed budgets", {
         const activeAfterUnmount = observers.size;
         if (origGeo) mascot.geometry = { ...mascot.geometry, draw: origGeo };
         window.IntersectionObserver = NativeIntersection;
+        window.requestAnimationFrame = nativeFrame;
         return {
           onscreenDraws,
           offscreenState,

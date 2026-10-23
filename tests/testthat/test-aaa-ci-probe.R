@@ -6,145 +6,112 @@ probe_print <- function(label, value) {
 
 probe_env_js <- "(() => {
   const mq = (q) => matchMedia(q).matches;
-  const d = document.createElement('div');
-  d.style.cssText = 'position:absolute;top:-999px;width:100px;height:100px;overflow:scroll';
-  document.body.append(d);
-  const scrollbar = d.offsetWidth - d.clientWidth;
-  d.remove();
   return {
-    ua: navigator.userAgent, dpr: devicePixelRatio, inner: [innerWidth, innerHeight],
-    client: [document.documentElement.clientWidth, document.documentElement.clientHeight],
-    screen: [screen.width, screen.height], maxTouchPoints: navigator.maxTouchPoints,
-    hover_hover: mq('(hover: hover)'), hover_none: mq('(hover: none)'),
-    pointer_fine: mq('(pointer: fine)'), pointer_coarse: mq('(pointer: coarse)'), pointer_none: mq('(pointer: none)'),
-    any_hover: mq('(any-hover: hover)'), any_pointer_fine: mq('(any-pointer: fine)'),
-    reduced_motion: mq('(prefers-reduced-motion: reduce)'), dark: mq('(prefers-color-scheme: dark)'),
-    scrollbar, body_font: getComputedStyle(document.body).fontFamily
+    hover_hover: mq('(hover: hover)'), pointer_fine: mq('(pointer: fine)'), any_hover: mq('(any-hover: hover)'),
+    reduced_motion: mq('(prefers-reduced-motion: reduce)')
   };
 })()"
 
-probe_raf_js <- "new Promise((resolve) => { const t = []; const f = (ts) => { t.push(ts); if (t.length < 61) requestAnimationFrame(f); else { const d = t.slice(1).map((x, i) => Math.round((x - t[i]) * 10) / 10); resolve({ deltas: d, max: Math.max(...d), over66: d.filter((x) => x > 66.7).length }); } }; requestAnimationFrame(f); })"
+probe_repeats <- as.integer(Sys.getenv("PROBE_REPEATS", "0"))
 
 describe("CI probe", {
-  it("prints the runner's Chrome environment in the studio at 1280 x 720", {
+  it("prints the device the tests' Chrome reports", {
     local_shiny_browser()
-    skip_without_studio_packages("studio")
-    app_path <- normalizePath(system.file("examples", "studio", package = "mascot", mustWork = TRUE))
     fn <- function() NULL
-    body(fn) <- substitute({ library(mascot); shiny::shinyAppDir(PATH) }, list(PATH = app_path))
-    app <- app_driver(fn, width = 1280, height = 720)
-    wait_studio_js(app, "live.dataset.shownMood === 'idle'", timeout = 90000)
-    probe_print("chrome", app$get_chromote_session()$Browser$getVersion()$product)
-    probe_print("studio env", app$get_js(probe_env_js))
-    probe_print("studio raf", app$get_js(probe_raf_js))
-    probe_print("frame env", app$get_js(paste0(
-      "(() => { const w = document.getElementById('live_frame').contentWindow; return {inner: [w.innerWidth, w.innerHeight], client: [w.document.documentElement.clientWidth, w.document.documentElement.clientHeight], hover_hover: w.matchMedia('(hover: hover)').matches, pointer_fine: w.matchMedia('(pointer: fine)').matches}; })()"
-    )))
-    # The function-title tooltip: its pointer-events with focus.
-    app$run_js("document.getElementById('character').focus()")
-    probe_print("tooltip on focus", app$get_js(
-      "(() => { const s = getComputedStyle(document.getElementById('character_tooltip')); return [s.visibility, s.pointerEvents]; })()"
-    ))
-    app$run_js("document.activeElement.blur()")
-    rect <- app$get_js(
-      "(() => {const r=document.getElementById('character').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()"
-    )
+    body(fn) <- quote({
+      library(mascot)
+      shiny::shinyApp(shiny::fluidPage(mascot("helper")), function(input, output, session) NULL)
+    })
+    app <- app_driver(fn)
+    probe_print("app env", app$get_js(probe_env_js))
     browser <- app$get_chromote_session()
-    browser$Input$dispatchMouseEvent(type = "mouseMoved", x = rect$x, y = rect$y)
-    Sys.sleep(1)
-    probe_print("tooltip on hover", app$get_js(
-      "(() => { const s = getComputedStyle(document.getElementById('character_tooltip')); return [s.visibility, s.pointerEvents, document.querySelector('.pg-sentence-word:hover') !== null]; })()"
-    ))
-    # The same hover with a mouse-like device emulated.
-    browser$Emulation$setEmulatedMedia(features = list(list(name = "hover", value = "hover"), list(name = "pointer", value = "fine")))
-    browser$Input$dispatchMouseEvent(type = "mouseMoved", x = 0, y = 0)
-    browser$Input$dispatchMouseEvent(type = "mouseMoved", x = rect$x, y = rect$y)
-    Sys.sleep(1)
-    probe_print("tooltip on hover, hover emulated", app$get_js(
-      "(() => { const s = getComputedStyle(document.getElementById('character_tooltip')); return [s.visibility, s.pointerEvents, matchMedia('(hover: hover)').matches]; })()"
-    ))
+    browser$Emulation$setEmulatedMedia(features = list(list(name = "prefers-reduced-motion", value = "reduce")))
+    probe_print("app env, reduce emulated", app$get_js(probe_env_js))
     succeed()
   })
 
-  it("prints the snap drop in the studio", {
+  it("starts the popup-menu module app many times", {
+    skip_if(probe_repeats == 0L)
     local_shiny_browser()
-    skip_without_studio_packages("studio")
-    app_path <- normalizePath(system.file("examples", "studio", package = "mascot", mustWork = TRUE))
-    fn <- function() NULL
-    body(fn) <- substitute({ library(mascot); shiny::shinyAppDir(PATH) }, list(PATH = app_path))
-    app <- app_driver(fn, width = 1280, height = 720)
-    wait_studio_js(app, "live.dataset.shownMood === 'idle'", timeout = 90000)
-    frame <- "document.getElementById('live_frame').contentWindow"
-    live <- paste0(frame, ".document.getElementById('helper')")
-    app$click(selector = "#all_functions")
-    app$click(selector = '.pg-index-link[data-value="mascot_placement"]')
-    app$wait_for_js("document.getElementById('drag')")
-    app$set_inputs(position = "bottom-right")
-    app$wait_for_js(sprintf("%s.mascot.host.state(%s).placement.floating", frame, live))
-    app$set_inputs(drag = "snap")
-    app$wait_for_js(sprintf("%s.mascot.host.state(%s).placement.drag === 'snap'", frame, live))
-    probe_print("before drop", app$get_js(sprintf(
-      "(() => { const w = %s, el = %s, c = el.querySelector('canvas'), r = c.getBoundingClientRect(), a = el.querySelector('.mascot-actions'); return {inner: [w.innerWidth, w.innerHeight], client: [w.document.documentElement.clientWidth, w.document.documentElement.clientHeight], canvas: [r.left, r.top, r.width, r.height], el: el.getBoundingClientRect(), actions: a ? [getComputedStyle(a).opacity, getComputedStyle(a).pointerEvents, a.getBoundingClientRect()] : null, hit: (() => { const h = w.document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return h ? h.className || h.tagName : null; })(), placement: w.mascot.host.state(el).placement}; })()",
-      frame, live
-    )))
-    app$run_js(sprintf(
-      "(() => { const w = %s, el = %s, c = el.querySelector('canvas'), r = c.getBoundingClientRect(); window.probeEvents = [];
-        for (const t of ['pointerdown','pointermove','pointerup','lostpointercapture','pointercancel','click']) el.addEventListener(t, (e) => probeEvents.push([t, e.isTrusted, e.defaultPrevented, el.dataset.dragging || '']), true);
-        const press = (type, x, y) => c.dispatchEvent(new w.PointerEvent(type, {bubbles:true, cancelable:true, pointerId:1, button:0, isPrimary:true, clientX:x, clientY:y}));
-        press('pointerdown', r.left+r.width/2, r.top+r.height/2); window.probeMid = {dragging: el.dataset.dragging || '', state: !!w.mascot.host.state(el)}; press('pointermove', 80, 80); window.probeMid2 = {dragging: el.dataset.dragging || '', placed: el.dataset.placed || '', el: el.getBoundingClientRect()}; press('pointerup', 80, 80); })()",
-      frame, live
-    ))
-    Sys.sleep(3)
-    probe_print("after drop", app$get_js(sprintf(
-      "(() => { const w = %s, el = %s; return {events: probeEvents, mid: probeMid, mid2: probeMid2, el: el.getBoundingClientRect(), placement: w.mascot.host.state(el).placement, last: document.getElementById('position_last').textContent, input: Shiny.shinyapp.$inputValues.helper_position ?? null}; })()",
-      frame, live
-    )))
-    probe_print("logs", tail(as.character(format(app$get_logs())), 40))
+    fn <- function() {
+      library(mascot)
+      ui <- function(id) {
+        ns <- shiny::NS(id)
+        shiny::tagList(
+          mascot(id = ns("helper"), click = mascot_popup_menu(c(about = "About this app"))),
+          shiny::textOutput(ns("count"))
+        )
+      }
+      shiny::shinyApp(shiny::fluidPage(ui("module")), function(input, output, session) {
+        shiny::moduleServer("module", function(input, output, session) {
+          output$count <- shiny::renderText(0L)
+        })
+      })
+    }
+    failures <- 0L
+    for (i in seq_len(probe_repeats)) {
+      app <- tryCatch(
+        shinytest2::AppDriver$new(fn, load_timeout = browser_timeout, timeout = browser_timeout),
+        error = function(e) e
+      )
+      if (inherits(app, "error")) {
+        failures <- failures + 1L
+        probe_print(paste("start failed", i), conditionMessage(app))
+        failed <- app$app
+        if (!is.null(failed)) {
+          probe_print("page after failure", tryCatch(
+            failed$get_js(
+              "({href: location.href, tracer: typeof window.shinytest2, ready: window.shinytest2?.ready ?? null, jq: typeof window.jQuery, dollar: typeof window.$, shiny: typeof window.Shiny, nav: performance.getEntriesByType('navigation').map((e) => e.type), connected: !!window.Shiny?.shinyapp?.config?.sessionId})"
+            ),
+            error = function(e) conditionMessage(e)
+          ))
+          probe_print("logs after failure", tail(as.character(format(failed$get_logs())), 30))
+          try(failed$stop(), silent = TRUE)
+        }
+      } else {
+        app$stop()
+      }
+    }
+    probe_print("popup app starts failed", c(failures, probe_repeats))
     succeed()
   })
 
-  it("prints the theme view's tabs on a phone", {
+  it("chooses Knurl at 375 pixels many times", {
+    skip_if(probe_repeats == 0L)
     local_shiny_browser()
     skip_if_not_installed("bslib")
-    fn <- function() NULL
-    body(fn) <- quote({ library(mascot); mascot::mascot_studio("theme", run = FALSE) })
-    app <- app_driver(fn, width = 375, height = 812)
-    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    probe_print("theme env", app$get_js(probe_env_js))
-    probe_print("theme tabs", app$get_js(
-      "(() => { const n = document.querySelector('#theme_tabs'), p = document.querySelector('.theme-page'); return {tabs: [n.scrollWidth, n.clientWidth, n.offsetWidth], page: [p.scrollWidth, p.clientWidth, p.offsetWidth, getComputedStyle(p).overflowY, p.scrollHeight > p.clientHeight], body: [document.body.scrollWidth, document.body.clientWidth], links: [...n.querySelectorAll('.nav-link')].map((a) => [a.textContent.trim(), a.getBoundingClientRect().width, getComputedStyle(a).fontFamily, getComputedStyle(a).fontSize, getComputedStyle(a).paddingLeft]), gap: getComputedStyle(n).gap, fonts: [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family)}; })()"
-    ))
-    browser <- app$get_chromote_session()
-    browser$Emulation$setDeviceMetricsOverride(width = 375, height = 812, deviceScaleFactor = 0, mobile = TRUE)
-    Sys.sleep(1)
-    probe_print("theme tabs, mobile emulated", app$get_js(
-      "(() => { const n = document.querySelector('#theme_tabs'), p = document.querySelector('.theme-page'); return {tabs: [n.scrollWidth, n.clientWidth], page: [p.scrollWidth, p.clientWidth, p.offsetWidth], inner: innerWidth}; })()"
-    ))
-    succeed()
-  })
-
-  it("prints the Check tab's busy sequence", {
-    local_shiny_browser()
-    skip_if_not_installed("bslib")
-    fn <- function() NULL
-    body(fn) <- quote({ library(mascot); mascot::mascot_studio("theme", run = FALSE) })
-    app <- app_driver(fn, width = 1280, height = 800)
-    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    app$run_js("window.probeLog = []; const t0 = performance.now(); window.probeT0 = t0; $(document).on('shiny:busy shiny:idle shiny:value shiny:error shiny:message', (e) => probeLog.push([Math.round(performance.now() - t0), e.type, e.target.id || '', e.type === 'shiny:message' ? Object.keys(e.message || {}).join(',') : '']));")
-    app$run_js("document.querySelector('#theme_tabs a[data-value=check]').click(); probeLog.push([Math.round(performance.now() - probeT0), 'tab clicked', '', '']);")
-    app$run_js("document.getElementById('check_contrast').click(); probeLog.push([Math.round(performance.now() - probeT0), 'check clicked', '', '']);")
-    app$wait_for_js("!document.getElementById('check_contrast').disabled")
-    probe_print("busy log", app$get_js("[probeLog, document.getElementById('check_contrast_ui').textContent.trim().length]"))
-    Sys.sleep(3)
-    probe_print("busy log later", app$get_js("[probeLog, document.getElementById('check_contrast_ui').textContent.trim().length]"))
-    succeed()
-  })
-
-  it("prints animation frame timing on an engine page", {
-    skip_without_chrome()
-    js <- local_host_page(reduced = FALSE, placement = "inline", viewport = c(800, 600))
-    probe_print("host page env", js(probe_env_js))
-    probe_print("host page raf", js(probe_raf_js))
+    fn <- function() {
+      library(mascot)
+      shiny::shinyAppDir(system.file("examples", "studio", package = "mascot"))
+    }
+    failures <- 0L
+    for (i in seq_len(probe_repeats)) {
+      app <- app_driver(fn, width = 375, height = 900)
+      app$run_js(
+        "window.charLog = []; const t0 = performance.now(); const at = () => Math.round(performance.now() - t0);
+        $(document).on('change', '#character', (e) => charLog.push([at(), 'change', e.target.value]));
+        $(document).on('shiny:inputchanged', (e) => { if (e.name === 'character' || e.name === 'initial_character') charLog.push([at(), 'input ' + e.name, e.value]); });
+        $(document).on('shiny:message', (e) => { const m = e.message?.inputMessages; if (m) for (const x of m) if (x.id === 'character') charLog.push([at(), 'server update', JSON.stringify(x.message)]); });"
+      )
+      app$wait_for_js(
+        "document.querySelector('#studio_centre #studio_character_bar #character') && document.querySelector('#studio_centre #studio_character_bar #mood')"
+      )
+      app$run_js("charLog.push([-1, 'set_inputs', 'knurl'])")
+      app$set_inputs(character = "knurl")
+      ok <- tryCatch(
+        {
+          app$wait_for_js("document.getElementById('character').value === 'knurl'", timeout = 10000)
+          TRUE
+        },
+        error = function(e) FALSE
+      )
+      if (!ok) {
+        failures <- failures + 1L
+        probe_print(paste("knurl failed", i), app$get_js("[document.getElementById('character').value, charLog]"))
+      }
+      app$stop()
+    }
+    probe_print("knurl failed", c(failures, probe_repeats))
     succeed()
   })
 })

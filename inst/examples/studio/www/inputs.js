@@ -102,13 +102,16 @@
 
   // A button with data-busy-label says so while the server works on its click: the label, aria-busy and disabled,
   // until the output data-busy-output names shows a result or an error (or, failing that, the server is idle again).
-  const busyButtons = new Set();
+  // Shiny sends "idle" just before the values of the same update, so an output it has marked as recalculating keeps
+  // its button busy until that output's value or error arrives; "idle" frees only buttons whose output is not coming.
+  // busyButtons maps each busy button to whether its output is recalculating.
+  const busyButtons = new Map();
   const busy = (button) => {
     button.dataset.idleLabel = button.textContent;
     button.textContent = button.dataset.busyLabel;
     button.setAttribute('aria-busy', 'true');
     button.disabled = true;
-    busyButtons.add(button);
+    busyButtons.set(button, false);
   };
   const done = (button) => {
     if (!busyButtons.delete(button)) return;
@@ -116,8 +119,12 @@
     button.removeAttribute('aria-busy');
     button.disabled = false;
   };
+  $(document).on('shiny:outputinvalidated shiny:recalculating', (event) => {
+    for (const button of busyButtons.keys())
+      if (button.dataset.busyOutput === event.target.id) busyButtons.set(button, true);
+  });
   $(document).on('shiny:value shiny:error', (event) => {
-    for (const button of busyButtons) if (button.dataset.busyOutput === event.target.id) done(button);
+    for (const button of [...busyButtons.keys()]) if (button.dataset.busyOutput === event.target.id) done(button);
   });
   let serverBusy = false;
   $(document).on('shiny:busy', () => {
@@ -126,7 +133,7 @@
   $(document).on('shiny:idle', () => {
     if (!serverBusy) return;
     serverBusy = false;
-    for (const button of busyButtons) done(button);
+    for (const [button, recalculating] of [...busyButtons]) if (!recalculating) done(button);
   });
   // The visible part of the page: the visual viewport when the phone keyboard or zoom changes it.
   const viewportBounds = () => {

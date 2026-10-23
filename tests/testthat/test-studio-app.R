@@ -240,7 +240,7 @@ describe("studio overlays and live controls", {
     expect_identical(app$get_js("document.activeElement.id"), "inspector_view_guide")
     # The pinned function list did not swallow Escape from the inspector.
     app$run_js("window.studioStatus = document.getElementById('status_text')")
-    app$click(selector = '[data-call-arg=status]')
+    click_now(app, '[data-call-arg=status]')
     expect_true(app$get_js("document.getElementById('chip_editor_body').contains(window.studioStatus)"))
     app$set_inputs(status_text = "Checking a draft")
     wait_studio_js(
@@ -380,7 +380,7 @@ describe("studio overlays and live controls", {
         if (size[1] <= 860) "true" else NULL
       )
       app$click(selector = "#close_inspector")
-      app$click(selector = '[data-call-arg=size]')
+      click_now(app, '[data-call-arg=size]')
       expect_true(app$get_js(
         "(() => {const r=document.getElementById('chip_editor').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight;})()"
       ))
@@ -1035,6 +1035,22 @@ describe("studio function descriptions in the flyout", {
 })
 
 describe("small current-configuration editors", {
+  it("keeps keyboard focus on a chip when the server renders the call again", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    # Given keyboard focus on the status chip
+    app$run_js("window.oldChip = document.querySelector('[data-call-arg=status]'); oldChip.focus();")
+    # When a change elsewhere makes the server render the call again
+    app$set_inputs(status_text = "Saved")
+    app$wait_for_js(
+      "document.querySelector('[data-call-arg=status] .pg-chip-value').textContent.includes('Saved')"
+    )
+    # Then the new status chip has the focus
+    expect_true(app$get_js(
+      "!document.body.contains(oldChip) && document.activeElement.dataset.callArg === 'status'"
+    ))
+  })
   it("edits one value with an argument-local code style and restores the same mounted inputs", {
     local_shiny_browser()
     app <- studio_driver()
@@ -1042,7 +1058,7 @@ describe("small current-configuration editors", {
     app$run_js(
       "window.originalSize = document.getElementById('size_px'); window.originalStatus = document.getElementById('status_text')"
     )
-    app$click(selector = '[data-call-arg=size]')
+    click_now(app, '[data-call-arg=size]')
     app$wait_for_js(
       "!document.getElementById('chip_editor').hidden && $('#size_px').data('ionRangeSlider').result.from === 160"
     )
@@ -1068,7 +1084,7 @@ describe("small current-configuration editors", {
       "document.getElementById('chip_editor').hidden && document.activeElement.dataset.callArg === 'size'"
     ))
     for (arg in c("id", "character", "mood", "status", "bubble", "motion", "placement", "theme", "click")) {
-      app$click(selector = sprintf('[data-call-arg=%s]', arg))
+      click_now(app, sprintf('[data-call-arg=%s]', arg))
       app$wait_for_js(sprintf(
         "!document.getElementById('chip_editor').hidden && document.getElementById('chip_title').textContent.startsWith('%s')",
         arg
@@ -1083,7 +1099,7 @@ describe("small current-configuration editors", {
       ))
       app$click(selector = "#close_chip")
     }
-    app$click(selector = '[data-call-arg=status]')
+    click_now(app, '[data-call-arg=status]')
     expect_identical(
       app$get_js(
         "document.querySelectorAll('#chip_editor_body input:not([type=hidden]), #chip_editor_body textarea, #chip_editor_body select').length"
@@ -1102,24 +1118,24 @@ describe("small current-configuration editors", {
     local_shiny_browser()
     app <- studio_driver()
     wait_studio_mood(app, "idle")
-    app$click(selector = '[data-call-arg=click]')
+    click_now(app, '[data-call-arg=click]')
     expect_identical(app$get_js("document.getElementById('chip_inspector').textContent"), "Advanced controls")
     expect_identical(app$get_value(input = "click_type"), "menu")
     app$click(selector = "#chip_inspector")
     app$wait_for_js(
       "document.activeElement.id === 'inspector_sidebar' && !document.querySelector('[data-function=mascot_popup_menu]').hidden && document.getElementById('menu_items').getClientRects().length > 0"
     )
-    app$click(selector = '[data-call-arg=click]')
+    click_now(app, '[data-call-arg=click]')
     app$set_inputs(click_type = "action")
     app$wait_for_js("document.querySelector('[data-call-arg=click]').dataset.callFunction === 'mascot_action'")
     app$click(selector = "#chip_inspector")
     app$wait_for_js("!document.querySelector('[data-function=mascot_action]').hidden")
-    app$click(selector = '[data-call-arg=theme]')
+    click_now(app, '[data-call-arg=theme]')
     app$click(selector = "#chip_inspector")
     app$wait_for_js(
       "document.querySelector('#theme_mode input:checked') && document.getElementById('theme_mode').getClientRects().length > 0"
     )
-    app$click(selector = '[data-call-arg=status]')
+    click_now(app, '[data-call-arg=status]')
     app$click(selector = "#chip_help")
     app$wait_for_js(
       "document.getElementById('inspector_tab_help').getAttribute('aria-selected') === 'true' && !!document.querySelector('#function_help [data-guide-function=mascot_status]') && document.activeElement.id === 'inspector_sidebar'"
@@ -1128,13 +1144,13 @@ describe("small current-configuration editors", {
     expect_true(app$get_js(
       "document.querySelector('#function_help [data-guide-function=mascot_status]').textContent.trim().length > 0"
     ))
-    app$click(selector = '[data-call-arg=bubble]')
+    click_now(app, '[data-call-arg=bubble]')
     app$click(selector = "#chip_help")
     app$wait_for_js(
       "document.activeElement.id === 'inspector_sidebar' && !!document.querySelector('#function_help [data-guide-function=mascot_bubble]') && !document.getElementById('inspector_help').hidden"
     )
     app$click(selector = "#close_inspector")
-    app$click(selector = '[data-call-arg=size]')
+    click_now(app, '[data-call-arg=size]')
     app$click(selector = "#chip_inspector")
     app$click(selector = '[data-function=mascot_size] [data-argument=small_screen] .pg-arg-chip')
     app$wait_for_js("!!document.querySelector('.popover.show [data-argument-help=small_screen]')")
@@ -1216,7 +1232,7 @@ describe("studio code arguments, chips, anchors and menus", {
       "document.querySelector('[data-call-arg=gesture]').nextElementSibling.textContent === ')' && document.querySelectorAll('#live_call .pg-call-comma').length === document.querySelectorAll('#live_call [data-call-arg]:not(.pg-gesture-chip)').length + 1"
     ))
     for (arg in c("character", "mood", "gesture")) {
-      app$click(selector = sprintf('[data-call-arg=%s]', arg))
+      click_now(app, sprintf('[data-call-arg=%s]', arg))
       expect_true(app$get_js(
         "window.topMood === document.getElementById('mood') && window.topCharacter === document.getElementById('character') && document.getElementById('studio_character_bar').contains(window.topMood) && document.getElementById('studio_character_bar').contains(window.topCharacter)"
       ))
@@ -1239,7 +1255,7 @@ describe("studio code arguments, chips, anchors and menus", {
       expect_true(app$get_js(
         "!!document.activeElement.closest('#studio_character_bar') && !!document.querySelector('#studio_character_bar .pg-topbar-highlight')"
       ))
-      app$click(selector = sprintf('[data-call-arg=%s]', arg))
+      click_now(app, sprintf('[data-call-arg=%s]', arg))
       app$click(selector = '#chip_inspector')
       expect_identical(app$get_js("document.activeElement.id"), "inspector_sidebar")
       expect_true(app$get_js("[...document.querySelectorAll('select')].every(s=>!s.selectize?.isOpen)"))
@@ -1249,12 +1265,12 @@ describe("studio code arguments, chips, anchors and menus", {
       ))
       app$click(selector = '#close_inspector')
     }
-    app$click(selector = '[data-call-arg=gesture]')
+    click_now(app, '[data-call-arg=gesture]')
     app$click(selector = '#chip_help')
     app$wait_for_js(
       "document.getElementById('function_help').dataset.activeArgument === 'name' && !!document.querySelector('#function_help [data-guide-function=mascot_gesture]')"
     )
-    app$click(selector = '[data-call-arg=placement]')
+    click_now(app, '[data-call-arg=placement]')
     app$click(selector = '#chip_guide')
     expect_identical(app$get_js("document.getElementById('inspector_view_guide').getAttribute('aria-pressed')"), "true")
     app$wait_for_js(
@@ -1340,7 +1356,7 @@ describe("studio code arguments, chips, anchors and menus", {
     local_shiny_browser()
     app <- studio_driver()
     wait_studio_mood(app, "idle")
-    app$click(selector = '[data-call-arg=click]')
+    click_now(app, '[data-call-arg=click]')
     expect_true(app$get_js("!document.getElementById('click_type').selectize.isOpen"))
     app$run_js(
       "{const body=document.getElementById('chip_editor_body');body.style.maxHeight='60px';body.style.overflow='auto';}"
@@ -1362,7 +1378,7 @@ describe("studio code arguments, chips, anchors and menus", {
     expect_true(app$get_js(
       "!document.querySelector('.pg-chip-dropdown') && !document.getElementById('click_type').selectize.isOpen && document.getElementById('studio_inspector').contains(document.getElementById('click_type').selectize.$dropdown[0])"
     ))
-    app$click(selector = '[data-call-arg=click]')
+    click_now(app, '[data-call-arg=click]')
     app$click(selector = '#chip_inspector')
     expect_identical(app$get_js("document.activeElement.id"), "inspector_sidebar")
     expect_true(app$get_js("[...document.querySelectorAll('select')].every(s=>!s.selectize?.isOpen)"))
@@ -1485,7 +1501,7 @@ describe("studio sentence controls and overview", {
     local_shiny_browser()
     app <- studio_driver()
     wait_studio_mood(app, "idle")
-    app$click(selector = '[data-call-arg=placement]')
+    click_now(app, '[data-call-arg=placement]')
     expect_identical(app$get_js("document.getElementById('chip_title').textContent"), "placement =")
     app$click(selector = '[data-chip-overview=placement] button')
     app$wait_for_js("!!document.querySelector('.popover.show .pg-help')")
@@ -1752,7 +1768,7 @@ describe("studio phone layout", {
       "(() => {const r=document.querySelector('.pg-menu-body').getBoundingClientRect();return r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight;})()"
     )
     app$run_js("document.getElementById('studio_menu').open=false")
-    app$click(selector = '[data-call-arg=size]')
+    click_now(app, '[data-call-arg=size]')
     app$wait_for_js("!document.getElementById('chip_editor').hidden")
     expect_true(app$get_js(
       "(() => {const r=document.getElementById('chip_editor').getBoundingClientRect();return r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight;})()"
@@ -2077,7 +2093,7 @@ describe("studio host choices, reading tabs, dock and examples browser", {
     ))
     app$set_inputs(mood = "happy")
     app$wait_for_js("chipPulses.includes('mood')")
-    app$click(selector = "[data-call-arg=status]")
+    click_now(app, "[data-call-arg=status]")
     app$set_inputs(status_text = "Edited in popover")
     app$wait_for_js("chipPulses.includes('status')")
     app$click(selector = "#chip_inspector")
@@ -2118,7 +2134,7 @@ describe("studio host choices, reading tabs, dock and examples browser", {
     wait_studio_mood(app, "happy")
     app$run_js(paste0("window.savedHost=", studio_live, "; window.savedMood=document.getElementById('mood');"))
     expect_identical(app$get_js("Object.keys(document.getElementById('host_mode').selectize.options).length"), 2L)
-    app$click(selector = "[data-call-arg=status]")
+    click_now(app, "[data-call-arg=status]")
     app$run_js("document.getElementById('more_examples').click()")
     expect_true(app$get_js(paste0(
       "document.getElementById('studio_character_bar').hidden && document.getElementById('studio_dock').hidden && ",
@@ -2155,7 +2171,7 @@ describe("studio palette help and warnings", {
     local_shiny_browser()
     app <- studio_driver(width = 1440, height = 900)
     wait_studio_mood(app, "idle")
-    app$click(selector = "[data-call-arg=status]")
+    click_now(app, "[data-call-arg=status]")
     app$wait_for_js("!document.getElementById('chip_editor').hidden")
     app$click(selector = "#chip_help")
     app$wait_for_js("!!document.querySelector('#function_help [data-guide-function=mascot_status]')")
@@ -2164,7 +2180,7 @@ describe("studio palette help and warnings", {
       app$get_js("document.getElementById('inspector_tab_help').getAttribute('aria-selected')"),
       "true"
     )
-    app$click(selector = "button.pg-call-name")
+    click_now(app, "button.pg-call-name")
     app$wait_for_js("!!document.querySelector('#function_help [data-guide-function=mascot]')")
     expect_true(app$get_js(
       "!document.querySelector('#studio_inspector [data-function=mascot]').hidden && !document.getElementById('inspector_sidebar').hidden"

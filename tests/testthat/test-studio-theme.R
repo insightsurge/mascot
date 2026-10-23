@@ -747,6 +747,9 @@ describe("the theme view in a browser", {
     local_shiny_browser()
     skip_if_not_installed("bslib")
     app <- theme_driver(width = 375, height = 812)
+    # A phone's scroll bars float over the page. A desktop window this narrow can keep a 15 px scroll bar (Linux,
+    # Windows, a Mac with a mouse), and the tabs then scroll sideways, as designed for screens too narrow for them.
+    app$get_chromote_session()$set_viewport_size(375, 812, mobile = TRUE)
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
     top <- function(selector) app$get_js(sprintf("document.querySelector('%s').getBoundingClientRect().top", selector))
     expect_lt(top(".theme-preview"), top(".theme-stack"))
@@ -921,6 +924,33 @@ describe("the Check tab's slow buttons in a browser", {
       expect_null(app$get_js(sprintf("document.getElementById('%s').getAttribute('aria-busy')", case[[1]])))
       expect_true(app$get_js(sprintf("document.getElementById('%s_ui').textContent.trim().length > 0", case[[1]])))
     }
+  })
+  it("stay busy when the server says it is idle just before their result arrives", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    # Given a slow button and its output, outside Shiny so that only the events below reach them
+    app$run_js(paste0(
+      "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\" ",
+      "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div><button id=\"quick\" ",
+      "data-busy-label=\"Working\" data-busy-output=\"quick_ui\">Run</button><div id=\"quick_ui\"></div>');",
+      "window.slowState = () => { const b = document.getElementById('slow'); ",
+      "return [b.textContent, String(b.disabled)]; };"
+    ))
+    app$run_js("document.getElementById('slow').click()")
+    expect_identical(unlist(app$get_js("slowState()")), c("Working", "true"))
+    # When Shiny's own order arrives: the output recalculating, then busy and idle, and only then its value
+    app$run_js(
+      "$('#slow_ui').trigger('shiny:recalculating'); $(document).trigger('shiny:busy'); $(document).trigger('shiny:idle');"
+    )
+    # Then the button waits for the value
+    expect_identical(unlist(app$get_js("slowState()")), c("Working", "true"))
+    app$run_js("$('#slow_ui').trigger('shiny:value')")
+    expect_identical(unlist(app$get_js("slowState()")), c("Run", "false"))
+    # A button whose output does not change is freed when the server is idle again
+    app$run_js("document.getElementById('quick').click(); $(document).trigger('shiny:busy'); $(document).trigger('shiny:idle');")
+    expect_identical(app$get_js("[document.getElementById('quick').textContent, document.getElementById('quick').disabled]"), list("Run", FALSE))
   })
 })
 

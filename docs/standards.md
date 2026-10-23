@@ -327,8 +327,8 @@ run it:
 | CI | On every PR and push to `main` (the full platform matrix on `main`, weekly and on demand); it cannot be skipped | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
-framework for now (section 8). The repository is private on a plan without branch protection, so the rule is: CI
-green, then ask before merging.
+framework for now (section 8). `main` is protected by a ruleset (a pull request and the required checks), so the rule
+is: CI green, then ask before merging.
 
 ### 7.2 The gate
 
@@ -404,7 +404,7 @@ SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep
 | Left out | Why |
 |---|---|
 | Pre-commit framework | One maintainer and no shared clone yet; it needs a Python tool. The gate and CI cover the same checks. Revisit when others commit |
-| Codecov | The repository is private. The 70 percent gate runs inside the coverage workflow. Optional once public |
+| Codecov | Not used: the 70 percent limit runs inside the coverage workflow. A coverage upload can be added later |
 | Screenshot tests in the test suite and CI | They differ between operating systems and Chrome versions. Values, DOM state and draw-call hashes are stable. |
 | jest or vitest | JS logic is kept small and tested through shinytest2. `node --test` is the fallback if pure functions grow |
 | TypeScript and a build step | Only needed for TypeScript or npm libraries. Plain JS is its own source and needs no Node in CI |

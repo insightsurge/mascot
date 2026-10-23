@@ -1,5 +1,5 @@
-# Derived from https://github.com/r-lib/actions/tree/v2/examples (test-coverage.yaml), without Codecov
-# (the repo is private). Fails when line coverage is under the limit in DESCRIPTION (Config/cran-gate/coverage,
+# Derived from https://github.com/r-lib/actions/tree/v2/examples (test-coverage.yaml), without Codecov.
+# Fails when line coverage is under the limit in DESCRIPTION (Config/cran-gate/coverage,
 # 70% when the field is missing), the same limit the gate uses. A pull request is held to the higher of its base
 # branch's limit and its own, so a pull request cannot lower the limit by editing DESCRIPTION; changes to this
 # workflow are reviewed like any other change. A push to main reads the checked-out DESCRIPTION.

@@ -1,6 +1,8 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (check-standard.yaml).
-# The repo rule is 0 errors, 0 warnings, 0 notes, so any note fails the check.
-# Every pull request, push to main and weekly run checks the full matrix.
+# The repo rule is 0 errors, 0 warnings, 0 notes, so any note fails the check. As on CRAN, the browser tests skip
+# here: browser-tests.yaml runs them. Every pull request, push to main, weekly run and manual run checks the full
+# matrix. A pull request that changes only documentation starts the jobs and skips their steps
+# (.github/scripts/r-changes.sh).
 on:
   push:
     branches: [main]
@@ -20,7 +22,7 @@ concurrency:
 jobs:
   check:
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 60  # R CMD check on one platform (longest recent job: 21 min)
+    timeout-minutes: 30  # R CMD check on one platform without the browser tests
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -42,25 +44,39 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # a pull request's merge commit and its base, for r-changes.sh
+
+      - name: Find out whether the R steps are needed
+        id: changes
+        run: bash .github/scripts/r-changes.sh
 
       - uses: r-lib/actions/setup-pandoc@v2
+        if: steps.changes.outputs.r == 'true'
 
       - uses: r-lib/actions/setup-r@v2
+        if: steps.changes.outputs.r == 'true'
         with:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
       - uses: r-lib/actions/setup-r-dependencies@v2
+        if: steps.changes.outputs.r == 'true'
         with:
           extra-packages: any::rcmdcheck
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
+        if: steps.changes.outputs.r == 'true'
         env:
           # Skip only the remote CRAN-incoming checks: they always give a "New submission" note for an
           # unreleased package (explained in cran-comments.md when we submit).
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
+          # As CRAN: setup-r sets NOT_CRAN to true, which would run the browser tests here too.
+          NOT_CRAN: false
+          # The whole test output when a test fails, not only its last 13 lines.
+          _R_CHECK_TESTS_NLINES_: 0
         with:
           args: 'c("--no-manual", "--as-cran")'
           error-on: '"note"'

@@ -76,8 +76,9 @@ mode that checks the same thing locally, which is the evidence when CI can't run
 
 | Workflow | What it runs | Locally |
 |---|---|---|
-| `R-CMD-check.yaml` | `R CMD check --as-cran`, failing on any note, with `NOT_CRAN` unset (Chrome tests skip). On every pull request, push to `main`, every Monday and on demand: macOS and Windows (R release) and Ubuntu (R devel, release, previous release and 4.1) | the `check_full` step of `full` |
-| `test-coverage.yaml` | The tests with `NOT_CRAN: true` (Chrome tests run) and the coverage limit from `DESCRIPTION` (on a pull request, the higher of the base branch's limit and the PR's own, so a pull request cannot lower the limit by editing `DESCRIPTION`; changes to this workflow are reviewed like any other change) | `tests` |
+| `R-CMD-check.yaml` | `R CMD check --as-cran`, failing on any note, with `NOT_CRAN` false (browser tests skip, as on CRAN) and the whole test output when a test fails. On every pull request, push to `main`, every Monday and on demand: macOS and Windows (R release) and Ubuntu (R devel, release, previous release and 4.1) | the `check_full` step of `full` |
+| `test-coverage.yaml` | The tests without Chrome (`NOT_CRAN` false) under covr, and the coverage limit from `DESCRIPTION` (on a pull request, the higher of the base branch's limit and the PR's own, so a pull request cannot lower the limit by editing `DESCRIPTION`; changes to this workflow are reviewed like any other change) | `tests` (which runs the browser tests too, so its coverage is higher) |
+| `browser-tests.yaml` | The whole test suite with Chrome (`NOT_CRAN: true`) on Ubuntu, one line per test file as it finishes; fails when a test fails or a browser test skips for Chrome | `tests` |
 | `check-no-suggests.yaml` | R CMD check with the required packages only, as CRAN also checks | `nosuggests` |
 | `lint.yaml` | The gate in `lint` mode, with Air and Biome at pinned versions | `lint` |
 | `gate-self-test.yaml` | The gate's self-test, when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change (and on demand) | `Rscript tools/test-cran-gate.R` |
@@ -85,7 +86,9 @@ mode that checks the same thing locally, which is the evidence when CI can't run
 | `gitleaks.yml` | A scan for committed secrets | |
 | `release.yml` | The tag and GitHub release when a release version reaches `main` | |
 
-Dependabot keeps the actions current. The gate's `new_lines` step has
+A pull request that changes only documentation (the README, `docs/`, the website's articles and settings, the issue
+forms and the repository's notes) starts the R jobs and skips their steps (`.github/scripts/r-changes.sh`), so the
+checks a branch ruleset requires still report. Dependabot keeps the actions current. The gate's `new_lines` step has
 no CI job: it needs the branch's base, which CI's shallow checkout lacks, so it runs locally.
 
 ### Changing the gate

@@ -1,6 +1,7 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (check-no-suggests.yaml).
 # R CMD check with only the hard dependencies (Depends, Imports) installed, plus testthat, knitr and rmarkdown.
-# CRAN also checks packages without their Suggests: every use of a suggested package must be guarded.
+# CRAN also checks packages without their Suggests: every use of a suggested package must be guarded. A pull request
+# that changes only documentation starts the job and skips its steps (.github/scripts/r-changes.sh).
 on:
   push:
     branches: [main]
@@ -26,14 +27,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2  # a pull request's merge commit and its base, for r-changes.sh
+
+      - name: Find out whether the R steps are needed
+        id: changes
+        run: bash .github/scripts/r-changes.sh
 
       - uses: r-lib/actions/setup-pandoc@v2
+        if: steps.changes.outputs.r == 'true'
 
       - uses: r-lib/actions/setup-r@v2
+        if: steps.changes.outputs.r == 'true'
         with:
           use-public-rspm: true
 
       - uses: r-lib/actions/setup-r-dependencies@v2
+        if: steps.changes.outputs.r == 'true'
         with:
           dependencies: '"hard"'
           cache: false
@@ -45,6 +55,7 @@ jobs:
           needs: check
 
       - name: List the Suggests that are installed (only testthat, knitr, rmarkdown expected)
+        if: steps.changes.outputs.r == 'true'
         shell: Rscript {0}
         run: |
           sugg <- trimws(strsplit(read.dcf("DESCRIPTION", fields = "Suggests")[[1]], ",")[[1]])
@@ -53,10 +64,13 @@ jobs:
           message("Suggests installed: ", if (length(installed)) toString(installed) else "none")
 
       - uses: r-lib/actions/check-r-package@v2
+        if: steps.changes.outputs.r == 'true'
         env:
           # As in R-CMD-check.yaml: skip only the remote CRAN-incoming checks (the "New submission" note).
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_FORCE_SUGGESTS_: false
+          # The whole test output when a test fails, not only its last 13 lines.
+          _R_CHECK_TESTS_NLINES_: 0
         with:
           args: 'c("--no-manual", "--as-cran")'
           error-on: '"note"'

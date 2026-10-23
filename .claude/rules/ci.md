@@ -14,9 +14,10 @@ Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate 
   Change a check in the script, not in a workflow. The script is generic and self-contained (other packages copy it
   as it is): nothing mascot-specific goes into it; mascot's choices live in `DESCRIPTION` (`Config/cran-gate/*`),
   `air.toml`, `.lintr` and `biome.json`.
-- R-CMD-check fails on any note (`error-on: '"note"'`) and mimics CRAN (`NOT_CRAN` unset, so Chrome tests skip);
-  only the remote CRAN-incoming checks are off. The coverage job runs the tests with `NOT_CRAN: true` and reads the
-  coverage limit from `DESCRIPTION` (on a pull request, the higher of the base branch's and the PR's own, so a pull request cannot lower the limit by editing `DESCRIPTION`; changes to this workflow are reviewed like any other change). Keep
+- R-CMD-check fails on any note (`error-on: '"note"'`) and mimics CRAN (`NOT_CRAN: false`, so the browser tests
+  skip; `setup-r` would set it to true); only the remote CRAN-incoming checks are off. The browser tests run in
+  `browser-tests.yaml`, one Linux job (its name, `browser-tests`, is a required check). The coverage job runs the
+  tests without Chrome (`NOT_CRAN: false`) and reads the coverage limit from `DESCRIPTION` (on a pull request, the higher of the base branch's and the PR's own, so a pull request cannot lower the limit by editing `DESCRIPTION`; changes to this workflow are reviewed like any other change). Keep
   `lint.yaml`'s and `gate-self-test.yaml`'s Air and Biome versions equal to the local installs and `biome.json`'s
   schema.
 - The site is built **from `main` only, never on pull requests** (a rule, #127: a site build may need packages that

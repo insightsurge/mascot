@@ -116,6 +116,7 @@ jobs:
           if-no-files-found: ignore
 
   # One check name for the branch ruleset to require: it fails unless the job above succeeded on every R version.
+  # Despite the name, it covers the snapshot tests too: they are the other tests CRAN skips.
   browser-tests:
     needs: browser
     if: always()

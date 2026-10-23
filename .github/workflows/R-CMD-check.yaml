@@ -81,7 +81,6 @@ jobs:
         with:
           args: 'c("--no-manual", "--as-cran")'
           error-on: '"note"'
-          upload-snapshots: true
           build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'
 
   # One check name for the branch ruleset to require: it fails unless every matrix job above succeeded.

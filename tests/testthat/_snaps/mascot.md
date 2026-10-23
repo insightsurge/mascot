@@ -4,7 +4,6 @@
       cat(html)
     Output
       <div class="mascot" id="helper" tabindex="-1" data-mount-token="[UI specification token]" data-character="tessa" data-mood="idle" data-status="mood" data-size="160" data-small-screen="auto" data-floating="true" data-position="bottom-right" data-minimise="true" data-drag="false" data-reduced="auto" data-idle="true" data-mood-change="true" data-gestures="true" data-swap="true" data-minimising="true" data-restoring="true" data-messages="bubble,tooltip,menu" data-others="true" data-mascot-version="[package version]">
-        <script type="application/json" data-mascot-character="tessa">[character JSON]</script>
         <script type="application/json" data-mascot-baseline="">[UI baseline]</script>
         <canvas class="mascot-canvas" role="img" aria-label="Tessa, Resting, ready for the next piece."></canvas>
         <div class="mascot-status" role="status">Resting, ready for the next piece.</div>

@@ -33,11 +33,22 @@
   ns.fps = 30;
 
   /**
-   * readCharacter(id, doc): the character description that the page carries in
-   * <script type="application/json" data-mascot-character="id">, parsed. doc defaults to document.
+   * characterScript(id, scope): the <script type="application/json" data-mascot-character="id"> element that holds a
+   * character description, or null. A custom character's block sits inside its mascot element; a built-in character's
+   * block sits once in the page head, outside every mascot. With a mascot element as scope, its own block wins, then
+   * the page's copy; a block inside another mascot is never used. scope defaults to document, which searches the whole
+   * page.
    */
-  ns.readCharacter = (id, doc) => {
-    const el = (doc || document).querySelector(`script[type="application/json"][data-mascot-character="${id}"]`);
+  ns.characterScript = (id, scope) => {
+    const selector = `script[type="application/json"][data-mascot-character="${id}"]`;
+    const own = (scope || document).querySelector(selector);
+    if (own || !scope || scope === document) return own;
+    return Array.from(document.querySelectorAll(selector)).find((el) => !el.closest('.mascot')) || null;
+  };
+
+  /** readCharacter(id, scope): the character description characterScript(id, scope) finds, parsed. */
+  ns.readCharacter = (id, scope) => {
+    const el = ns.characterScript(id, scope);
     if (!el) throw new Error(`mascot: no description of the character '${id}' on this page`);
     return JSON.parse(el.textContent);
   };

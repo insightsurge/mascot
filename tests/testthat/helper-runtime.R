@@ -69,6 +69,7 @@ local_runtime_page <- function(
     c(
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>runtime</title>',
       sprintf('<link rel="stylesheet" href="file://%s">', normalizePath(file.path(www, "mascot.css"))),
+      page_character_blocks(tags),
       "</head><body>",
       vapply(tags, as.character, character(1)),
       sprintf("<script>window.CHARACTERS=%s;</script>", jsonlite::toJSON(wires, auto_unbox = TRUE)),

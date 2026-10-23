@@ -47,12 +47,18 @@ describe("mascot()", {
         `data-mascot-version` = as.character(utils::packageVersion("mascot"))
       )
     )
-    html <- sub('(?s)(<script[^>]*>).*?(</script>)', '\\1[character JSON]\\2', as.character(tag), perl = TRUE)
-    html <- sub('(?s)(<script[^>]*data-mascot-baseline[^>]*>).*?(</script>)', '\\1[UI baseline]\\2', html, perl = TRUE)
+    html <- sub(
+      '(?s)(<script[^>]*data-mascot-baseline[^>]*>).*?(</script>)',
+      '\\1[UI baseline]\\2',
+      as.character(tag),
+      perl = TRUE
+    )
     html <- sub('data-mount-token="[^"]+"', 'data-mount-token="[UI specification token]"', html)
     html <- sub('data-mascot-version="[^"]+"', 'data-mascot-version="[package version]"', html)
     expect_snapshot(cat(html))
-    dep <- htmltools::findDependencies(tag)[[1]]
+    dependencies <- htmltools::findDependencies(tag)
+    expect_identical(vapply(dependencies, function(d) d$name, character(1)), c("mascot", "mascot-character-tessa"))
+    dep <- dependencies[[1]]
     expect_identical(dep$name, "mascot")
     expect_identical(dep$version, as.character(utils::packageVersion("mascot")))
     expect_identical(script_files(dep), engine_scripts)
@@ -280,8 +286,9 @@ describe("mascot() themes", {
       },
       tag$children
     )
-    expect_length(scripts, 2)
-    wire <- jsonlite::fromJSON(as.character(scripts[[2]]$children[[1]]), simplifyVector = FALSE)
+    # Tessa's data travels in the page head, so the theme is the tag's only other script.
+    expect_length(scripts, 1)
+    wire <- jsonlite::fromJSON(as.character(scripts[[1]]$children[[1]]), simplifyVector = FALSE)
     expect_identical(wire$light, list(body = "#1F6FEB"))
     expect_identical(wire$dark, list(body = "#9EC5FE"))
     expect_identical(wire$mode, "auto")
@@ -511,6 +518,89 @@ describe("mascot resources in modules", {
     expect_identical(engine[[1]]$stylesheet, "mascot.css")
     expect_identical(engine[[1]]$src$file, system.file("www", package = "mascot"))
     expect_false(grepl("https?://", engine[[1]]$src$file))
+  })
+})
+
+# How many times `html` holds a data block for the character `id`.
+character_blocks <- function(html, id) {
+  lengths(regmatches(html, gregexpr(sprintf('data-mascot-character="%s"', id), html, fixed = TRUE)))
+}
+
+# A page saved by htmltools::save_html(), as one string.
+saved_page <- function(ui) {
+  dir <- withr::local_tempdir()
+  htmltools::save_html(ui, file.path(dir, "page.html"), libdir = "lib")
+  paste(readLines(file.path(dir, "page.html"), warn = FALSE), collapse = "\n")
+}
+
+describe("mascot() character data", {
+  study_bot <- function() {
+    mascot_character(mascot_read_character(
+      system.file("examples", "characters", "study_bot.json", package = "mascot")
+    ))
+  }
+
+  it("leaves a built-in character's data out of the tag and attaches it as a dependency", {
+    tag <- mascot("helper", character = "sela")
+    expect_identical(character_blocks(as.character(tag), "sela"), 0L)
+    expect_identical(tag$attribs$`data-character`, "sela")
+    names <- vapply(htmltools::findDependencies(tag), function(dep) dep$name, character(1))
+    expect_identical(names, c("mascot", "mascot-character-sela"))
+  })
+
+  it("keeps a custom character's data inside its tag, with no character dependency", {
+    tag <- mascot("bot", character = study_bot())
+    expect_identical(character_blocks(as.character(tag), "study_bot"), 1L)
+    names <- vapply(htmltools::findDependencies(tag), function(dep) dep$name, character(1))
+    expect_identical(names, "mascot")
+  })
+
+  it("puts each built-in character in a saved page once, and only the characters in use", {
+    five <- htmltools::tagList(lapply(1:5, function(i) mascot(paste0("m", i), placement = "inline")))
+    html <- saved_page(five)
+    expect_identical(character_blocks(html, "tessa"), 1L)
+    for (id in c("sela", "knurl", "neer")) {
+      expect_identical(character_blocks(html, id), 0L)
+    }
+    # The one copy sits in the head, before any mascot.
+    expect_lt(regexpr('data-mascot-character="tessa"', html, fixed = TRUE), regexpr("</head>", html, fixed = TRUE))
+    mixed <- htmltools::tagList(
+      mascot("a", placement = "inline"),
+      mascot("b", placement = "inline"),
+      mascot("c", character = "sela", placement = "inline"),
+      mascot("d", character = "sela", placement = "inline"),
+      mascot("e", character = "knurl", placement = "inline")
+    )
+    html <- saved_page(mixed)
+    expect_identical(
+      vapply(c("tessa", "sela", "knurl", "neer"), function(id) character_blocks(html, id), integer(1)),
+      c(tessa = 1L, sela = 1L, knurl = 1L, neer = 0L)
+    )
+  })
+
+  it("mixes a built-in character in the head with a custom one in its tag", {
+    page <- htmltools::tagList(mascot("a", placement = "inline"), mascot("bot", character = study_bot()))
+    html <- saved_page(page)
+    expect_identical(character_blocks(html, "tessa"), 1L)
+    expect_identical(character_blocks(html, "study_bot"), 1L)
+    head_end <- regexpr("</head>", html, fixed = TRUE)
+    expect_lt(regexpr('data-mascot-character="tessa"', html, fixed = TRUE), head_end)
+    expect_gt(regexpr('data-mascot-character="study_bot"', html, fixed = TRUE), head_end)
+  })
+
+  it("sends one copy in a renderUI() message however many mascots use the character", {
+    server <- function(input, output, session) {
+      output$cards <- shiny::renderUI(
+        htmltools::tagList(lapply(1:8, function(i) mascot(paste0("card", i), placement = "inline")))
+      )
+    }
+    shiny::testServer(server, {
+      # The value renderUI() sends: the HTML and its dependencies.
+      message <- output$cards
+      expect_identical(character_blocks(message$html, "tessa"), 0L)
+      heads <- unlist(lapply(message$deps, function(dep) dep$head))
+      expect_identical(character_blocks(paste(heads, collapse = ""), "tessa"), 1L)
+    })
   })
 })
 

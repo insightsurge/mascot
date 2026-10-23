@@ -130,6 +130,8 @@ The same pattern works in the function-built \code{app_ui()} of a \code{golem} a
 rhino's \verb{app/view/} modules using \code{\link[shiny:moduleServer]{shiny::moduleServer()}}. The engine's
 scripts and styles are attached through \code{\link[htmltools:htmlDependency]{htmltools::htmlDependency()}},
 including with \code{\link[shiny:renderUI]{shiny::renderUI()}}, and shared by mascots on the page.
+A built-in character's data travels the same way, once per page for each
+character in use; a custom character's data stays inside its own tag.
 No app-side copying of engine files is needed. Try
 \code{mascot_example("golem")} (requires \code{golem}) or \code{mascot_example("rhino")}
 (a plain Shiny structure without rhino or box).

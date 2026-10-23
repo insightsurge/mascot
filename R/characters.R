@@ -78,6 +78,32 @@ character_json <- function(id) {
   gsub("</", "<\\/", text, fixed = TRUE)
 }
 
+#' A built-in character's data as an HTML dependency
+#'
+#' The dependency is named after the character and puts the same inert `<script type="application/json">` block that a
+#' custom character carries in its tag into the page head. htmltools and Shiny add a dependency once per page by name,
+#' so five Tessas carry Tessa's data once, and a page carries only the characters it uses. Shiny adds a dependency's
+#' head before it inserts the HTML of `renderUI()`, `insertUI()` or a modal, so the data is on the page when the engine
+#' mounts. The dependency lists no files, so nothing is copied next to a saved page. Its source is the folder of the
+#' character files because Quarto refuses a dependency that is not on disk.
+#' @noRd
+character_dependency <- function(id) {
+  checkmate::assert_choice(id, builtin_characters()$id)
+  block <- htmltools::tags$script(
+    type = "application/json",
+    `data-mascot-character` = id,
+    htmltools::HTML(character_json(id))
+  )
+  htmltools::htmlDependency(
+    name = paste0("mascot-character-", id),
+    version = getNamespaceVersion("mascot")[[1]],
+    src = "format/characters",
+    package = "mascot",
+    head = as.character(block),
+    all_files = FALSE
+  )
+}
+
 #' Report a choice at the public caller
 #' @noRd
 abort_choice <- function(value, valid, arg, what, call) {

@@ -47,6 +47,32 @@ describe("character_json()", {
   })
 })
 
+describe("character_dependency()", {
+  it("carries the character's escaped data in a head block named after the character", {
+    version <- as.character(utils::packageVersion("mascot"))
+    for (id in builtin_characters()$id) {
+      dep <- character_dependency(id)
+      expect_s3_class(dep, "html_dependency")
+      expect_identical(dep$name, paste0("mascot-character-", id))
+      expect_identical(dep$version, version)
+      expect_identical(
+        dep$head,
+        paste0('<script type="application/json" data-mascot-character="', id, '">', character_json(id), "</script>")
+      )
+      # On disk (Quarto needs that) but with no files, so a saved page gets no extra folder.
+      expect_identical(dep$src, list(file = "format/characters"))
+      expect_identical(dep$package, "mascot")
+      expect_false(dep$all_files)
+      expect_null(dep$script)
+      expect_null(dep$stylesheet)
+    }
+  })
+  it("accepts only built-in character ids", {
+    expect_error(character_dependency("study_bot"), "Assertion on 'id' failed")
+    expect_error(character_dependency(c("tessa", "sela")), "Assertion on 'id' failed")
+  })
+})
+
 describe("abort_choice()", {
   it("checks its internal contract", {
     expect_error(abort_choice(1, "idle", "mood", "mood", environment()), "'value'")

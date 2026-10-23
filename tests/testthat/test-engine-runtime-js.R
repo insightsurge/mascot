@@ -118,6 +118,36 @@ describe("format-v1 dispatch", {
     )
     expect_match(message, "no description of the character 'nobody'", fixed = TRUE)
   })
+
+  it("finds a mascot's own block, then the page's copy, and never another mascot's block", {
+    js <- local_runtime_page(
+      tags = list(
+        mascot("own", character = runtime_character(), placement = "inline", motion = FALSE),
+        mascot("builtin", placement = "inline", motion = FALSE)
+      )
+    )
+    found <- js(
+      "(() => {
+        const own = document.getElementById('own'), builtin = document.getElementById('builtin');
+        const where = (el) => el === null ? 'none' : el.closest('.mascot')?.id ?? el.parentElement.tagName;
+        return {
+          ownCustom: where(mascot.characterScript('alpha_two', own)),
+          builtinTessa: where(mascot.characterScript('tessa', builtin)),
+          ownTessa: where(mascot.characterScript('tessa', own)),
+          otherCustom: where(mascot.characterScript('alpha_two', builtin)),
+          pageCustom: where(mascot.characterScript('alpha_two')),
+          mounted: [own, builtin].map((el) => mascot.host.state(el)?.character ?? null)
+        };
+      })()"
+    )
+    expect_identical(found$ownCustom, "own")
+    expect_identical(found$builtinTessa, "HEAD")
+    expect_identical(found$ownTessa, "HEAD")
+    # Another mascot's custom block is never borrowed; without a scope the whole page is searched.
+    expect_identical(found$otherCustom, "none")
+    expect_identical(found$pageCustom, "own")
+    expect_identical(unlist(found$mounted), c("alpha_two", "tessa"))
+  })
 })
 
 describe("status, label and theme follow the shown character", {

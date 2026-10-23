@@ -26,6 +26,15 @@ page_exception_message <- function(details) {
   paste(parts, collapse = ": ")
 }
 
+# The page-head blocks of the built-in characters that `tags` use, once each: what htmltools writes into a saved page's
+# head. Test pages that write mascot() HTML by hand put them in their head, as a real page has them.
+page_character_blocks <- function(tags) {
+  checkmate::assert_list(tags)
+  dependencies <- htmltools::resolveDependencies(htmltools::findDependencies(tags))
+  characters <- Filter(function(dependency) startsWith(dependency$name, "mascot-character-"), dependencies)
+  vapply(characters, function(dependency) dependency$head, character(1))
+}
+
 # Chrome draws a new canvas on the GPU and moves it to the CPU after a few getImageData() reads; the two draw edges
 # slightly differently, so one frame could give two pictures (#503). Canvases the tests read use the CPU from the start.
 # Run before the engine scripts: its own getContext('2d') then gets this context back.
@@ -112,20 +121,22 @@ local_host_page <- function(
     fixed = TRUE
   )
   blob_v1 <- gsub('"rim"', '"body"', blob_v1, fixed = TRUE)
+  tag <- mascot(
+    id = "a",
+    bubble = bubble,
+    size = size,
+    placement = placement,
+    theme = theme,
+    motion = motion,
+    click = click
+  )
   writeLines(
     c(
       '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>host</title>',
       sprintf('<link rel="stylesheet" href="file://%s">', normalizePath(file.path(www, "mascot.css"))),
+      page_character_blocks(list(tag)),
       '</head><body>',
-      as.character(mascot(
-        id = "a",
-        bubble = bubble,
-        size = size,
-        placement = placement,
-        theme = theme,
-        motion = motion,
-        click = click
-      )),
+      as.character(tag),
       cpu_canvases_html,
       '<script type="application/json" data-mascot-character="blob">',
       blob_v1,

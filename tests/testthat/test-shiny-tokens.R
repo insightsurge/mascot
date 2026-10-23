@@ -52,7 +52,8 @@ describe("session and static mascot specifications", {
       ui$children
     )[[1]]
     baseline <- jsonlite::fromJSON(as.character(script$children[[1]]), simplifyVector = FALSE)
-    baseline$character$json <- as.character(ui$children[[1]]$children[[1]])
+    # A built-in character's text comes from the page's one copy, as the browser reads it there.
+    baseline$character$json <- character_json(ui$attribs[["data-character"]])
     data <- protocol_snapshot(token)
     data$baseline <- baseline
     mascot_snapshot(data, b$session, b$id)
@@ -93,7 +94,8 @@ describe("session and static mascot specifications", {
       ui$children
     )[[1]]
     baseline <- jsonlite::fromJSON(as.character(script$children[[1]]), simplifyVector = FALSE)
-    baseline$character$json <- as.character(ui$children[[1]]$children[[1]])
+    # A built-in character's text comes from the page's one copy, as the browser reads it there.
+    baseline$character$json <- character_json(ui$attribs[["data-character"]])
     data <- protocol_snapshot(token)
     data$baseline <- baseline
     mascot_snapshot(data, b$session, b$id)
@@ -223,7 +225,7 @@ describe("static template recovery", {
         ui$children
       )[[1]]
       state <- jsonlite::fromJSON(as.character(script$children[[1]]), simplifyVector = FALSE)
-      state$character$json <- as.character(ui$children[[1]]$children[[1]])
+      state$character$json <- character_json(ui$attribs[["data-character"]])
       token <- ui$attribs[["data-mount-token"]]
       f <- protocol_fixture()
       withr::defer(f$session$close())

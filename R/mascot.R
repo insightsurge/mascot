@@ -104,6 +104,8 @@
 #' rhino's `app/view/` modules using [shiny::moduleServer()]. The engine's
 #' scripts and styles are attached through [htmltools::htmlDependency()],
 #' including with [shiny::renderUI()], and shared by mascots on the page.
+#' A built-in character's data travels the same way, once per page for each
+#' character in use; a custom character's data stays inside its own tag.
 #' No app-side copying of engine files is needed. Try
 #' `mascot_example("golem")` (requires `golem`) or `mascot_example("rhino")`
 #' (a plain Shiny structure without rhino or box).
@@ -287,11 +289,14 @@ mascot <- function(
     `data-messages` = paste(unlist(motion$messages), collapse = ","),
     `data-others` = tolower(as.character(motion$others)),
     `data-mascot-version` = getNamespaceVersion("mascot")[[1]],
-    htmltools::tags$script(
-      type = "application/json",
-      `data-mascot-character` = character$id,
-      htmltools::HTML(gsub("</", "<\\/", wire_character$json, fixed = TRUE))
-    ),
+    # A custom character's data stays in its tag; a built-in one's arrives once per page with character_dependency().
+    if (!is.null(character$json)) {
+      htmltools::tags$script(
+        type = "application/json",
+        `data-mascot-character` = character$id,
+        htmltools::HTML(gsub("</", "<\\/", character$json, fixed = TRUE))
+      )
+    },
     mascot_baseline_tag(prepared$desired, token),
     theme_tag(theme),
     click_tag(click),
@@ -308,7 +313,10 @@ mascot <- function(
     ),
     bubble_tag(bubble)
   )
-  htmltools::attachDependencies(tag, mascot_dependency())
+  htmltools::attachDependencies(
+    tag,
+    c(list(mascot_dependency()), if (is.null(character$json)) list(character_dependency(character$id)))
+  )
 }
 
 #' Add mascot's error class to checkmate assertion failures

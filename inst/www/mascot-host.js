@@ -2706,8 +2706,7 @@
         try {
           const script = record.el.querySelector('script[data-mascot-baseline]');
           const baseline = JSON.parse(script.textContent);
-          const character = record.el.querySelector(`script[data-mascot-character="${baseline.character.id}"]`);
-          baseline.character.json = character.textContent;
+          baseline.character.json = ns.characterScript(baseline.character.id, record.el).textContent;
           window.Shiny?.setInputValue?.(
             `${record.el.id}:mascot.state`,
             { ...snapshot(record, ledger.resumed ? 'resume' : 'ready'), baseline },

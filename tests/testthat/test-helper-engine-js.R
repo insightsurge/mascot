@@ -15,3 +15,18 @@ describe("page_exception_message()", {
     expect_match(page_exception_message(list(text = "", exception = list(description = ""))), "not an error")
   })
 })
+
+describe("page_character_blocks()", {
+  it("returns each built-in character's head block once and nothing for a custom character", {
+    bot <- mascot_character(mascot_read_character(
+      system.file("examples", "characters", "study_bot.json", package = "mascot")
+    ))
+    tags <- list(mascot("a"), mascot("b"), mascot("c", character = "sela"), mascot("d", character = bot))
+    expect_identical(
+      page_character_blocks(tags),
+      c(character_dependency("tessa")$head, character_dependency("sela")$head)
+    )
+    expect_length(page_character_blocks(list(mascot("d", character = bot))), 0)
+    expect_error(page_character_blocks("a"), "Assertion on 'tags' failed")
+  })
+})

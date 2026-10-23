@@ -5,7 +5,7 @@ describe("complete-state browser delivery", {
     js <- local_host_page(env = env, reduced = FALSE, motion = motion)
     js(
       "window.el=document.getElementById('a');window.read=()=>mascot.host.state(el);
-      window.base={character:{id:'tessa',name:'Tessa',json:el.querySelector('[data-mascot-character]').textContent},
+      window.base={character:{id:'tessa',name:'Tessa',json:mascot.characterScript('tessa',el).textContent},
         mood:'idle',status:{mode:'mood'},bubble:{clear:true},size:read().size,placement:read().placement,
         theme:read().theme,motion:read().motion,click:read().click};
       window.envelope=(revision=1,changes={},extra={})=>({version:1,id:'a',generation:read().snapshot.generation,

@@ -242,7 +242,8 @@ mascot_baseline_tag <- function(state, token) {
   if (!startsWith(token, "t")) {
     return(NULL)
   }
-  # Character JSON already has its own inert script; send it only on recovery.
+  # Character JSON already has its own inert script (in the tag, or once in the page head for a built-in character);
+  # the browser adds it only on recovery.
   state$character$json <- NULL
   text <- jsonlite::toJSON(state, auto_unbox = TRUE, null = "null", digits = NA)
   htmltools::tags$script(

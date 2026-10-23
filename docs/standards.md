@@ -263,7 +263,7 @@ widget's rendered output (section 6). Every change in `inst/www/` adds an entry 
 - Keep `Imports` small: checkmate, cli, htmltools, jsonlite and shiny. Each additional import needs a
   reason (**house**).
 - Call functions as `pkg::fn()`. No `library()` or `require()` in package code (**CRAN**).
-- Optional and development packages use `Suggests`: bslib (>= 0.6.0), chromote, covr, golem, knitr, later, lifecycle,
+- Optional and development packages use `Suggests`: bslib (>= 0.7.0), chromote, covr, golem, knitr, later, lifecycle,
   promises, rmarkdown, shinytest2 (>= 0.5.0), testthat (>= 3.0.0) and withr. Optional features check availability
   with `requireNamespace()` before use. Tests use `skip_if_not_installed()` (**CRAN**).
 - Avoid `:::` into shiny or bslib: it is fragile, and reviewers flag it (**CRAN** for base packages, house for the
@@ -366,7 +366,8 @@ the platform is the point.
 The site is built from `main` only, never on pull requests (#127): a site build may need packages that outside
 contributors' pull requests can't install. Ubuntu runners are pinned (`ubuntu-26.04`; macOS and Windows use
 `-latest`) so an image change is a deliberate edit. Workflows take the least permissions they need and cancel
-superseded runs (except a release, and secret scans on `main`). Actions from `actions/` and `r-lib/` are pinned by
+superseded runs (except a release, and secret scans on `main`). Every job has a `timeout-minutes`, a few times its
+longest recent run, so a hung step can't hold a runner for hours. Actions from `actions/` and `r-lib/` are pinned by
 major tag; other third-party actions by full commit SHA with a `# vX.Y.Z` comment, because a tag can be moved and a
 SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep the Air and Biome versions in
 `lint.yaml` and `gate-self-test.yaml` in step with the local installs and with `biome.json`.

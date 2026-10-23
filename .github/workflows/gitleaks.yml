@@ -18,6 +18,7 @@ jobs:
   gitleaks:
     name: gitleaks
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
+    timeout-minutes: 10  # a secrets scan (recent runs: under a minute)
     steps:
       - uses: actions/checkout@v7
         with:

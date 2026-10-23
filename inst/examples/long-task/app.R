@@ -1,6 +1,6 @@
 library(shiny)
-if (!requireNamespace("bslib", quietly = TRUE)) {
-  stop("This example needs bslib. Install it before running the app.")
+if (!requireNamespace("bslib", quietly = TRUE) || utils::packageVersion("bslib") < "0.7.0") {
+  stop("This example needs bslib 0.7.0 or later. Install or update it before running the app.")
 }
 if (!requireNamespace("promises", quietly = TRUE) || !requireNamespace("later", quietly = TRUE)) {
   stop("This example needs promises and later. Install them before running the app.")

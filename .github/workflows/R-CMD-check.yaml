@@ -20,6 +20,7 @@ concurrency:
 jobs:
   check:
     runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 60  # R CMD check on one platform (longest recent job: 21 min)
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -72,6 +73,7 @@ jobs:
     if: always()
     runs-on: ubuntu-26.04
     name: R-CMD-check
+    timeout-minutes: 5  # only reads the matrix result
     steps:
       - name: Require every matrix job to succeed
         env:

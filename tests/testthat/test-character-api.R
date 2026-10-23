@@ -46,6 +46,13 @@ describe("character authoring arguments and internal helpers", {
 })
 
 describe("mascot_read_character() and mascot_check_character()", {
+  it("reads the shipped starter character with its own wave and nod gestures, not fallbacks", {
+    path <- system.file("examples", "characters", "study_bot.json", package = "mascot", mustWork = TRUE)
+    playable <- attr(mascot_read_character(path), "mascot_manifest")$playable
+    expect_identical(playable$wave, "wave")
+    expect_identical(playable$nod, "nod")
+  })
+
   it("accepts local files, JSON, lists and objects visibly without modifying input or registering", {
     local_empty_registry()
     path <- system.file("examples", "characters", "study_bot.json", package = "mascot", mustWork = TRUE)

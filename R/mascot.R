@@ -344,7 +344,7 @@ as_character_arg <- function(x, call) {
     return(structure(list(id = data$id, name = data$name), class = "mascot_character"))
   }
   structure(
-    list(id = data$id, name = data$name, data = data, json = character_json_write(data)),
+    list(id = data$id, name = data$name, data = data, json = character_data_json(data)),
     class = "mascot_character"
   )
 }

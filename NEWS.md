@@ -6,6 +6,8 @@
 
 * mascot needs `shiny` 1.8.1 or later, and `bslib` 0.7.0 or later where it uses `bslib` (a `bs_theme()` as `theme`, the studio and the examples): the long-task example and the `update_mascot()` help use `shiny::ExtendedTask` and `bslib::input_task_button()`, which those versions introduced. Both versions install on R 4.1 (#483).
 
+* `mascot()` builds its tag in under 15 ms instead of about 80 ms for a built-in character, and about 800 ms for your own checked character, on every call after the first. It works out a character's identity once per R process, or once per checked object, instead of on every call; the tags and mount tokens stay the same (#494).
+
 * `mascot()`, `update_mascot()`, `mascot_preview()` and `mascot_colour_roles()`: the message for an unknown palette that another character has says each palette belongs to its own character (#462).
 
 * `mascot_check_character()` and `mascot_read_character()` say how to fix a character that is too big for its frame: keep every part, movement and effect inside the 300 by 300 frame at that size (#462).

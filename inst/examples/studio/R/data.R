@@ -218,19 +218,6 @@ studio_families <- function() {
 # The brand slots of a character: slot name to role (the same function the guide pages use).
 studio_brand <- guide_brand_roles
 
-# The controls of the "Your character" panel (R/panels.R), kept apart from the function map above.
-studio_character_controls <- list(
-  mascot_read_character = list(path = input_id("your_character_file", "your_character_example")),
-  mascot_check_character = list(x = input_id("your_character_check")),
-  mascot_register_character = list(x = fixed_arg("App start-up only; generated code shows registration.")),
-  mascot_save_character = list(
-    x = input_id("your_character_save"),
-    path = input_id("your_character_save"),
-    ... = fixed_arg("Must be empty."),
-    overwrite = fixed_arg("Download replaces only Shiny's supplied temporary destination.")
-  )
-)
-
 # Animations that play only at rest but appear in the gesture listing (#375): listed last and labelled.
 studio_resting_gestures <- c(tessa = "shimmer")
 

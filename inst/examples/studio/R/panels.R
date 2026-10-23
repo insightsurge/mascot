@@ -704,38 +704,3 @@ panel_preview <- function(moods = mascot_moods()) {
     actionButton("preview_build", "Rebuild now", class = "btn-outline-primary btn-sm")
   )
 }
-
-# Internal: the "Your character" panel for checking a character file, shown only when the tests set the option
-# mascot.internal.character_panel to TRUE at launch.
-panel_your_character <- function() {
-  if (!isTRUE(getOption("mascot.internal.character_panel", FALSE))) {
-    return(NULL)
-  }
-  tags$details(
-    tags$summary("Your character"),
-    div(
-      class = "pg-note",
-      "The browser uploads the file to this studio's R session. Locally it stays on this computer; ",
-      "when hosted it reaches that server. It is never sent to another service."
-    ),
-    fileInput("your_character_file", "Character JSON", accept = ".json"),
-    actionButton("your_character_example", "Load Study Bot example"),
-    textOutput("your_character_check"),
-    tags$button(
-      type = "button",
-      class = "btn btn-outline-primary btn-sm",
-      `data-event` = "select_function",
-      `data-value` = "mascot_preview",
-      "Open in the preview controls"
-    ),
-    selectInput("your_character_mood", "Mood", c("Every mood" = "")),
-    selectInput("your_character_gesture", "Gesture", character()),
-    actionButton("your_character_play", "Play gesture"),
-    sliderInput("your_character_size", "Size in pixels", min = 24, max = 240, value = 160),
-    selectInput("your_character_mode", "Mode", c("Both modes" = "both", Light = "light", Dark = "dark")),
-    downloadButton("your_character_save", "Save resolved JSON"),
-    verbatimTextOutput("your_character_code"),
-    uiOutput("your_character_live"),
-    uiOutput("your_character_grid")
-  )
-}

@@ -2851,34 +2851,6 @@ describe("studio listings (character data)", {
   })
 })
 
-describe("the internal Your character studio panel", {
-  it("is off by default and maps all four authoring functions and arguments when enabled", {
-    withr::local_envvar(c(NOT_CRAN = "false"))
-    env <- new.env(parent = globalenv())
-    path <- system.file("examples", "studio", package = "mascot", mustWork = TRUE)
-    sys.source(file.path(path, "R", "data.R"), envir = env)
-    sys.source(file.path(path, "R", "panels.R"), envir = env)
-    withr::local_options(mascot.internal.character_panel = FALSE)
-    expect_null(env$panel_your_character())
-    options(mascot.internal.character_panel = TRUE)
-    html <- as.character(env$panel_your_character())
-    for (fn in names(env$studio_character_controls)) {
-      expect_setequal(
-        names(env$studio_character_controls[[fn]]),
-        names(formals(get(fn, envir = asNamespace("mascot"))))
-      )
-      for (control in env$studio_character_controls[[fn]]) {
-        if (is.character(control)) {
-          for (id in control) {
-            expect_match(html, id, fixed = TRUE)
-          }
-        }
-      }
-    }
-    expect_match(html, "never sent to another service", fixed = TRUE)
-  })
-})
-
 describe("studio isolated host", {
   it("ships local engine scripts in the frame and accepts its real mount token", {
     parts <- studio_parts()

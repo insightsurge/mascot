@@ -69,6 +69,8 @@ jobs:
           # As in R-CMD-check.yaml: skip only the remote CRAN-incoming checks (the "New submission" note).
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_FORCE_SUGGESTS_: false
+          # As CRAN: setup-r sets NOT_CRAN to true, which would run the browser tests here when their packages exist.
+          NOT_CRAN: false
           # The whole test output when a test fails, not only its last 13 lines.
           _R_CHECK_TESTS_NLINES_: 0
         with:

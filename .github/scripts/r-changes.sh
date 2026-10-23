@@ -10,7 +10,7 @@ if [ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]; then
   exit 0
 fi
 
-changed=$(git diff --name-only HEAD^1 HEAD)
+changed=$(git diff --name-only --no-renames HEAD^1 HEAD)
 r=false
 if [ -z "$changed" ]; then
   r=true

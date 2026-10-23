@@ -1,7 +1,7 @@
-# Runs the whole test suite with Chrome, so the browser tests (shinytest2 and chromote) run; R CMD check and the
-# coverage job skip them, as CRAN does. One line per test file as it finishes shows the progress while the job runs,
-# and a failing test prints in full. A pull request that changes only documentation starts the job and skips its
-# steps (.github/scripts/r-changes.sh).
+# Runs the test files that hold browser tests (shinytest2 and chromote) with Chrome, on R release and R 4.1; R CMD
+# check and the coverage job skip the browser tests, as CRAN does. One line per test file as it finishes shows the
+# progress while the job runs, and a failing test prints in full. A pull request that changes only documentation
+# starts the jobs and skips their steps (.github/scripts/r-changes.sh).
 on:
   push:
     branches: [main]
@@ -19,10 +19,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  browser-tests:
+  browser:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
-    name: browser-tests
+    name: browser (${{ matrix.r }})
     timeout-minutes: 60  # the whole suite with Chrome
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # R 4.1 too: the studio's server code runs only inside the browser tests' apps, so this is where it meets the
+        # oldest R the package supports.
+        r: ['release', '4.1']
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -44,6 +51,7 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         if: steps.changes.outputs.r == 'true'
         with:
+          r-version: ${{ matrix.r }}
           use-public-rspm: true
 
       - uses: r-lib/actions/setup-r-dependencies@v2
@@ -61,21 +69,52 @@ jobs:
           message("Chrome: ", system2(chrome, "--version", stdout = TRUE))
           library(testthat)
           library(mascot)
+          # The test files that open Chrome: the ones that call a helper starting a browser or a page. R CMD check runs
+          # every file without Chrome, so the other tests in these files run twice; keeping browser tests in files of
+          # their own is the next step.
+          opens_chrome <- paste0(
+            "local_shiny_browser\\(|skip_without_chrome\\(|app_driver\\(|local_chrome_session\\(|find_chrome\\(|",
+            "test_browser\\(|local_(host|engine|runtime)_page\\(|local_(character|face)_engine\\("
+          )
+          files <- list.files("tests/testthat", "^test-.*[.]R$")
+          files <- files[vapply(
+            file.path("tests/testthat", files),
+            function(file) any(grepl(opens_chrome, readLines(file, warn = FALSE))),
+            logical(1)
+          )]
+          message(length(files), " files with browser tests: ", paste(files, collapse = ", "))
           # A line per file when it finishes (update_interval = Inf: no progress spinner in a log); failures in full.
           results <- testthat::test_dir(
             "tests/testthat",
+            filter = paste0("^(", paste(sub("^test-(.*)[.]R$", "\\1", files), collapse = "|"), ")$"),
             package = "mascot",
             load_package = "installed",
             reporter = testthat::ProgressReporter$new(show_praise = FALSE, update_interval = Inf),
             stop_on_failure = FALSE
           )
-          # A Chrome that keeps stopping skips the remaining browser tests; this job is for them, so that fails too.
+          # This job is for the browser tests, so a browser test that skips fails it: a Chrome that keeps stopping, a
+          # missing package (shinytest2, chromote, bslib, knitr) or NOT_CRAN not reaching the tests ("On CRAN").
           skips <- unlist(lapply(results, function(test) {
             vapply(Filter(function(e) inherits(e, "expectation_skip"), test$results), conditionMessage, character(1))
           }))
-          chrome_skips <- unique(grep("Chrome", skips, value = TRUE))
-          if (length(chrome_skips) > 0L) message("Skipped for Chrome: ", paste(chrome_skips, collapse = "; "))
+          browser_skips <- unique(grep("Chrome|On CRAN|not installed", skips, value = TRUE))
+          if (length(browser_skips) > 0L) message("Browser tests skipped: ", paste(browser_skips, collapse = "; "))
           failed <- as.data.frame(results)
-          if (any(failed$failed > 0L | failed$error) || length(chrome_skips) > 0L) {
+          if (any(failed$failed > 0L | failed$error) || length(browser_skips) > 0L) {
             stop("Browser tests failed or were skipped; see above.", call. = FALSE)
           }
+
+  # One check name for the branch ruleset to require: it fails unless the job above succeeded on every R version.
+  browser-tests:
+    needs: browser
+    if: always()
+    runs-on: ubuntu-26.04
+    name: browser-tests
+    timeout-minutes: 5  # only reads the matrix result
+    steps:
+      - name: Require every matrix job to succeed
+        env:
+          RESULT: ${{ needs.browser.result }}
+        run: |
+          echo "Matrix result: ${RESULT}"
+          test "${RESULT}" = "success"

@@ -275,6 +275,7 @@ character_format_fit <- function(x, graph, behaviour, band = "full") {
         }
         if (!is.null(box)) {
           attr(box, "blur") <- blur
+          attr(box, "source") <- paste0("part \"", id, "\"")
           boxes[[length(boxes) + 1L]] <- box
         }
       }
@@ -366,6 +367,7 @@ character_format_fit <- function(x, graph, behaviour, band = "full") {
       }
       if (!is.null(box)) {
         attr(box, "blur") <- blur
+        attr(box, "source") <- "the face"
         boxes[[length(boxes) + 1L]] <- box
       }
     }
@@ -419,7 +421,9 @@ character_format_fit <- function(x, graph, behaviour, band = "full") {
     }
     matrix <- character_interval_matrix(matrix, local)
     for (item in c(effect$items, effect$reduced_items)) {
-      boxes[[length(boxes) + 1L]] <- character_interval_box(character_work_box(item, shapes, outline), matrix)
+      box <- character_interval_box(character_work_box(item, shapes, outline), matrix)
+      attr(box, "source") <- paste0("effect \"", trigger$effect, "\"")
+      boxes[[length(boxes) + 1L]] <- box
     }
   }
   # Apply the root last so its centre-height translation remains correlated with
@@ -431,8 +435,10 @@ character_format_fit <- function(x, graph, behaviour, band = "full") {
   root_lift <- ranges[["root.lift"]]
   root <- character_interval_local(c(0, 0), c(0, 0), root_rotate, c(1, 1), c(1, 1))
   final <- list()
+  sources <- character()
   for (box in boxes) {
     blur <- if (is.null(attr(box, "blur"))) 0 else attr(box, "blur")
+    sources <- c(sources, attr(box, "source"))
     if (!world_coordinates) {
       box <- box + c(0, height, 0, height)
       box <- character_interval_box(box, root)
@@ -451,6 +457,7 @@ character_format_fit <- function(x, graph, behaviour, band = "full") {
     rx <- x$ground$shadow$rx * factor * max(1, 0.6 + 0.4 * max(abs(root_sx)))
     ry <- x$ground$shadow$ry * factor
     final[[length(final) + 1L]] <- c(150 - rx, 269 - ry, 150 + rx, 270 + ry)
+    sources <- c(sources, "the ground shadow")
   }
   if (!length(final)) {
     return(list(verified = TRUE, bounds = NULL, band = band))
@@ -458,12 +465,25 @@ character_format_fit <- function(x, graph, behaviour, band = "full") {
   bounds <- union_box(final)
   pad <- max(1, abs(bounds)) * .Machine$double.eps * 128
   bounds <- bounds + c(-pad, -pad, pad, pad)
+  verified <- all(bounds[1:2] >= 0) && all(bounds[3:4] <= 300)
   list(
-    verified = all(bounds[1:2] >= 0) && all(bounds[3:4] <= 300),
+    verified = verified,
     bounds = bounds,
     band = band,
-    reason = "conservative_authored_interval_bound"
+    reason = "conservative_authored_interval_bound",
+    widest = if (!verified) character_fit_widest(final, sources)
   )
+}
+
+#' What reaches furthest outside the frame: its name, side and distance
+#' @noRd
+character_fit_widest <- function(boxes, sources) {
+  checkmate::assert_list(boxes, types = "numeric", min.len = 1L)
+  checkmate::assert_character(sources, len = length(boxes), any.missing = FALSE)
+  sides <- c("left", "top", "right", "bottom")
+  overflow <- vapply(boxes, function(box) c(-box[[1L]], -box[[2L]], box[[3L]] - 300, box[[4L]] - 300), numeric(4))
+  at <- which(overflow == max(overflow), arr.ind = TRUE)[1L, ]
+  list(source = sources[[at[["col"]]]], side = sides[[at[["row"]]]], overflow = max(overflow))
 }
 
 #' Bound inherited orientation filtering without dividing by an uncertain determinant

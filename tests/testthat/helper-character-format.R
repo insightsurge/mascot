@@ -29,3 +29,43 @@ format_data_named_recipe <- function() {
   data$face <- list(part = "panel", at = list(0, 0), kit = "classic", kit_definition = kit, tune = list(fit = 1))
   data
 }
+
+# The value every extension key gets in the tests: names a reader would act on (a reserved capability, an id with the
+# reserved separator, an undeclared colour, a clip and an outline), so a checker that read it would fail.
+format_extension_value <- function() {
+  list(follow = 1, id = "not__an_id", fill = "undeclared", clip = "nowhere.nothing", outline = TRUE)
+}
+
+# The same character with an `x_probe` extension key added to every fixed-field object, found with the schema itself.
+format_with_extensions <- function(x) {
+  checkmate::assert_list(x, names = "unique")
+  schema <- character_format_schema()
+  value <- format_extension_value()
+  character_format_node(
+    x,
+    schema$definitions$character,
+    "$",
+    schema$definitions,
+    on_object = function(object) c(object, list(x_probe = value))
+  )
+}
+
+# Every extension key in a plain list: its JSON path and value.
+format_extension_paths <- function(x, path = "$") {
+  checkmate::assert_string(path)
+  if (!is.list(x)) {
+    return(list())
+  }
+  keys <- names(x)
+  found <- list()
+  for (index in seq_along(x)) {
+    key <- if (is.null(keys)) "" else keys[[index]]
+    child <- if (is.null(keys)) paste0(path, "[", index - 1L, "]") else paste0(path, ".", key)
+    if (startsWith(key, "x_")) {
+      found[[child]] <- x[[index]]
+    } else {
+      found <- c(found, format_extension_paths(x[[index]], child))
+    }
+  }
+  found
+}

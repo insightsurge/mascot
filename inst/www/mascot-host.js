@@ -586,7 +586,10 @@
     }
     const selected = theme.brand ? {} : { ...theme.palette_colours?.[mode], ...theme[mode] };
     if (theme.brand) {
-      for (const [slot, role] of Object.entries(description.brand || {})) {
+      // The brand object's fields are the two slots; a note or an x_ extension key there is not a slot.
+      for (const slot of ['primary', 'secondary']) {
+        if (!has(description.brand || {}, slot)) continue;
+        const role = description.brand[slot];
         if (!has(theme.brand, slot) || !has(description.colours, role))
           throw new Error(`invalid brand leader "${slot}"`);
         selected[role] = theme.brand[slot];

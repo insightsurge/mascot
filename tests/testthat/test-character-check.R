@@ -192,14 +192,43 @@ describe("character_format_check()", {
     format_problem("missing_reference", "$.moods.happy", character_format_check(forged))
   })
 
-  it("rejects omitted used capabilities and unproved authored fit", {
+  it("treats the version-1 capabilities as implicit: requires may be left out or list some of them", {
     data <- format_recipe("tessa")
-    data$requires <- setdiff(unlist(data$requires), "clip")
-    format_problem("capability", "$.requires", character_format_check(data, builtin = TRUE))
+    data$requires <- NULL
+    expect_null(character_format_check(data, builtin = TRUE)$requires)
+    data$requires <- list("parts")
+    expect_identical(character_format_check(data, builtin = TRUE)$requires, list("parts"))
+  })
+
+  it("rejects unproved authored fit and names what reaches furthest outside the frame", {
+    # The anchor_probe panel is a 70-wide rect around its pivot; at x = 180 its right edge sits at
+    # 150 + 180 + 35 = 365 in the 300-wide frame (more with its outline and the change wiggle), past the right edge.
     data <- format_recipe()
     data$parts[[1]]$at <- list(180, -60)
     error <- format_problem("budget", "$.frame_fit.full", character_format_check(data))
-    expect_identical(error$fix, "Keep every part, movement and effect inside the 300 by 300 frame at this size.")
+    expect_match(
+      error$fix,
+      paste0(
+        "^Keep every part, movement and effect inside the 300 by 300 frame at this size\\. ",
+        "The full band is too big: part \"panel\" can reach [0-9.]+ units past the right edge\\.$"
+      )
+    )
+    overflow <- as.numeric(sub(".* can reach ([0-9.]+) units.*", "\\1", error$fix))
+    expect_gte(overflow, 65)
+    # A part that only touches an edge fails the padded proof; the message says it reaches the edge, not "0 units".
+    touching <- list(band = "small", widest = list(source = "part \"panel\"", side = "left", overflow = 0))
+    expect_identical(
+      character_fit_fix(touching),
+      paste(
+        "Keep every part, movement and effect inside the 300 by 300 frame at this size.",
+        "The small band is too big: part \"panel\" reaches the left edge."
+      )
+    )
+    # A proof that failed before measuring anything (a ground shadow lifted out of reach) gives the rule alone.
+    expect_identical(
+      character_fit_fix(list(verified = FALSE, reason = "shadow_lift_singularity", band = "full")),
+      "Keep every part, movement and effect inside the 300 by 300 frame at this size."
+    )
   })
 
   it("checks every argument before work", {
@@ -207,9 +236,10 @@ describe("character_format_check()", {
     expect_error(character_format_check(list(), from = "url"))
     expect_error(character_format_check(list(), families = 1))
     expect_error(character_format_check(list(), kits = 1))
-    expect_error(character_format_capabilities(1, list(), list()))
-    expect_error(character_format_capabilities(list(), 1, list()))
-    expect_error(character_format_capabilities(list(), list(), 1))
+    expect_error(character_format_plain(1))
+    expect_error(character_fit_fix(1))
+    expect_error(character_fit_widest(list(), character()))
+    expect_error(character_fit_widest(list(c(0, 0, 1, 1)), c("a", "b")))
   })
 })
 
@@ -311,5 +341,38 @@ describe("released character files", {
         expect_no_error(character_format_check(file, from = "file", builtin = built_in))
       }
     }
+  })
+})
+
+describe("extension keys in checked characters", {
+  it("keeps every x_ key through the check and never lets a check read one", {
+    # Given Tessa under a new id, and the same character with an x_ key in every fixed-field object whose value
+    # names a reserved capability, a bad id, an undeclared colour, a clip and an outline
+    source <- format_recipe("tessa")
+    source$id <- "tessa_ext"
+    probed <- format_with_extensions(source)
+    # When both are checked
+    plain <- character_format_check(source)
+    extended <- character_format_check(probed)
+    # Then the checked data keeps every extension key and its value
+    expect_identical(format_extension_paths(unclass(extended)), format_extension_paths(probed))
+    # And everything the checks derive is the same as without them: they never read an extension key
+    manifest <- attr(plain, "mascot_manifest")
+    expect_identical(
+      attr(extended, "mascot_manifest")[c("playable", "work", "fit", "contrast")],
+      manifest[
+        c("playable", "work", "fit", "contrast")
+      ]
+    )
+    expect_identical(character_format_plain(unclass(extended)), character_format_plain(unclass(plain)))
+  })
+
+  it("drops only the extension keys of fixed-field objects from the copy the checks read", {
+    data <- character_format_parse(format_recipe())
+    data$x_tool <- 1
+    data$colours$x_red <- "#ff0000"
+    plain <- character_format_plain(data)
+    expect_null(plain$x_tool)
+    expect_identical(plain$colours$x_red, "#ff0000")
   })
 })

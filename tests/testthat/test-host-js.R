@@ -3082,6 +3082,32 @@ describe("mount replies racing live updates", {
 })
 
 describe("mascot.host dragging", {
+  it("snaps to the corner it was dropped at when the mascot is too tall to reach it", {
+    skip_without_chrome()
+    # Given a mascot taller than the window less its margins: kept inside the window, it stays in the lower half
+    js <- local_host_page(
+      placement = mascot_placement("bottom-right", drag = "snap"),
+      size = 200,
+      viewport = c(800, 220)
+    )
+    js(drag_js)
+    result <- host_layout(
+      js,
+      "const el=document.getElementById('a'),c=el.querySelector('canvas'),r=c.getBoundingClientRect();
+      const tall=el.getBoundingClientRect().height>innerHeight-32;
+      const x=r.left+r.width/2,y=r.top+r.height/2;
+      press(c,'pointerdown',x,y);press(c,'pointermove',4,4);press(c,'pointerup',4,4);
+      const top=mascot.host.state(el).placement.position;
+      const t=c.getBoundingClientRect(),tx=t.left+t.width/2,ty=t.top+t.height/2;
+      press(c,'pointerdown',tx,ty);press(c,'pointermove',tx,innerHeight-4);press(c,'pointerup',tx,innerHeight-4);
+      return {tall,top,bottom:mascot.host.state(el).placement.position};"
+    )
+    expect_true(result$tall)
+    # When it is dropped at the top-left, then at the bottom
+    # Then it snaps to the corner it was dropped at, and says so
+    expect_identical(result$top, "top-left")
+    expect_identical(result$bottom, "bottom-left")
+  })
   it("snaps to the nearest corner, reports it, opens bubbles inwards and keeps a click for the menu", {
     skip_without_chrome()
     js <- local_host_page(
@@ -3701,11 +3727,23 @@ describe("mascot.host speed budgets", {
   it("pauses drawing when an animating mascot scrolls off-screen and resumes at the paused frame", {
     skip_without_chrome()
     js <- local_host_page(reduced = FALSE, placement = "inline", viewport = c(800, 600))
+    # Real frames and a real IntersectionObserver, but a steady clock: the engine counts frames from the time stamps
+    # it is given, and a busy machine can leave 100 ms between two real frames, which skips a frame number. Here each
+    # real frame is exactly 1/60 s later than the one before, so the frame numbers are exact on any machine.
     r <- js(
       "(async () => {
         const el = document.getElementById('a');
+        const nativeFrame = window.requestAnimationFrame;
+        let lastStamp = null, steady = 0;
+        window.requestAnimationFrame = (fn) => nativeFrame((stamp) => {
+          if (stamp !== lastStamp) {
+            lastStamp = stamp;
+            steady += 1000 / 60;
+          }
+          fn(steady);
+        });
         const frames = async (n = 2) => {
-          for (let i = 0; i < n; i++) await new Promise(requestAnimationFrame);
+          for (let i = 0; i < n; i++) await new Promise(nativeFrame);
         };
         const NativeIntersection = window.IntersectionObserver;
         const observers = new Set();
@@ -3749,6 +3787,7 @@ describe("mascot.host speed budgets", {
         const activeAfterUnmount = observers.size;
         if (origGeo) mascot.geometry = { ...mascot.geometry, draw: origGeo };
         window.IntersectionObserver = NativeIntersection;
+        window.requestAnimationFrame = nativeFrame;
         return {
           onscreenDraws,
           offscreenState,

@@ -36,6 +36,23 @@ app_driver <- function(..., env = parent.frame()) {
   app
 }
 
+# Click the element `selector` names, found and clicked in one step in the page, as a person's click is. Use it for
+# anything a Shiny output renders: the server can replace that element at any moment, and `app$click()` takes two steps
+# (find the node, then click it), so a replacement between them fails with "No node with given id". A selector that
+# matches nothing fails the test.
+click_now <- function(app, selector) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(selector, min.chars = 1)
+  found <- app$get_js(sprintf(
+    "(() => { const node = document.querySelector(%s); if (node) node.click(); return node !== null; })()",
+    jsonlite::toJSON(selector, auto_unbox = TRUE)
+  ))
+  if (!isTRUE(found)) {
+    cli::cli_abort("No element matches {.val {selector}}.")
+  }
+  invisible(app)
+}
+
 # Waits that reach into the studio's live frame. The frame is rendered again from time to time, and `getElementById()`
 # then returns null for a moment: a wait script that throws on that fails `app$wait_for_js()` at once, while a script
 # that returns false is polled again (#449). `wait_studio_js()` runs the condition with the frame's window as `frame`
@@ -158,6 +175,15 @@ chrome_count_restart <- function(which, problem) {
   invisible()
 }
 
+# The machine every browser test assumes: a desktop with a mouse that can hover, and no wish for reduced motion. A
+# headless Chrome otherwise takes these from the operating system, and CI machines differ: GitHub's Linux runners have
+# no pointing device (so `(hover: none)`), and its macOS and Windows runners ask for reduced motion. Tests of touch or
+# reduced motion emulate those themselves, per page.
+chrome_device_args <- c(
+  "--force-prefers-no-reduced-motion",
+  "--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4"
+)
+
 # Start a Chrome and close it when the run ends. The close names this Chrome, not the cache, so a Chrome that was
 # replaced meanwhile is still closed; it is also safe when the process has gone, and an error in it is dropped so that
 # it cannot replace the error that ended the run.
@@ -166,7 +192,10 @@ chrome_start <- function() {
   dir.create(tmp, showWarnings = FALSE)
   browser <- withr::with_options(
     list(chromote.timeout = 60),
-    withr::with_envvar(c(TMPDIR = tmp), chromote::Chromote$new())
+    withr::with_envvar(
+      c(TMPDIR = tmp),
+      chromote::Chromote$new(browser = chromote::Chrome$new(args = c(chromote::get_chrome_args(), chrome_device_args)))
+    )
   )
   # Sessions opened from this browser inherit the limit, in seconds, for navigation and page commands.
   browser$default_timeout <- browser_timeout / 1000

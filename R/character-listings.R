@@ -5,21 +5,21 @@
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param family `NULL` (the default) for every character, or a family `id`
 #'   from [mascot_families()] to list only its members.
-#' @returns A data frame with character columns `id` (the value you pass to
+#' @returns A data frame with the character columns `id` (the value you pass to
 #'   `character`), `name` (the display name), `description` and `family` (the
-#'   family `id`), and logical columns `is_default` (`TRUE` only for the
+#'   family `id`); the logical columns `is_default` (`TRUE` only for the
 #'   character [mascot()] uses when you name none) and `built_in` (`TRUE` for
-#'   characters shipped with the package), and `lifecycle` (`"stable"` or
-#'   `"experimental"` for every character that ships with mascot), and `palettes` (comma-separated palette ids; informal
-#'   text for reading, so its exact shape is not promised: use [mascot_palettes()]
-#'   for ids you rely on).
+#'   characters shipped with the package); `lifecycle` (`"stable"` or
+#'   `"experimental"` for every character that ships with mascot); and
+#'   `palettes` (comma-separated palette ids, for reading only; its exact shape
+#'   is not promised, so use [mascot_palettes()] for ids you rely on).
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
 #'   names and types.
 #' @details Stable built-ins keep their id, name, five shared moods, gesture
 #'   names, colour-role names and palette names in every release; their drawing,
 #'   motion and exact palette colours may be polished. Experimental built-ins
-#'   may change in any way and are not removed without a warning in the release
-#'   before removal. The character file format and authoring functions are
+#'   may change in any way, and none is removed without a warning one release
+#'   earlier. The character file format and authoring functions are
 #'   experimental too.
 #' @family mascot helpers
 #' @seealso [mascot_character()], [mascot_families()]

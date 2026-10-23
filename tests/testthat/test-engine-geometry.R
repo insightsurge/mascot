@@ -104,9 +104,10 @@ describe("character-format geometry and painting", {
     skip_without_chrome()
     js <- local_character_engine()
     # A disc of radius 40 at (150, 170): outline 10 wide (radius 35-45), second outline 20 wide (radius 30-50) and a
-    # detail stroke 2 wide (radius 39-41).
+    # detail stroke 4 wide (radius 38-42). The detail pixel (radius 40-41) is a pixel away from both edges of the stroke,
+    # so GPU and CPU drawing give the same colour there (#509).
     pixels <- js(
-      "(() => {const canvas=document.createElement('canvas');canvas.width=300;canvas.height=300;const ctx=canvas.getContext('2d');const ch={format_version:1,ground:{centre_height:0},outline:{width:10,colour:'ink',second:{width:20,colour:'paper'}},shapes:{disc:{shape:'circle',r:40,fill:'leaf',outline:true}},parts:[{id:'disc',at:[0,-100],items:[{shape:'ref',use:'disc'},{shape:'circle',r:40,x:0,y:0,stroke:'red',width:2}]}]};const p=mascot.parts.compile(ch);mascot.geometry.draw(ctx,p,mascot.parts.frame(p),{leaf:'#00ff00',ink:'#000000',paper:'#ffffff',red:'#ff0000'});const at=(x)=>[...ctx.getImageData(x,170,1,1).data].slice(0,3);return {inside:at(186),edge:at(190),outline:at(193),second:at(198),outer:at(203)};})()"
+      "(() => {const canvas=document.createElement('canvas');canvas.width=300;canvas.height=300;const ctx=canvas.getContext('2d');const ch={format_version:1,ground:{centre_height:0},outline:{width:10,colour:'ink',second:{width:20,colour:'paper'}},shapes:{disc:{shape:'circle',r:40,fill:'leaf',outline:true}},parts:[{id:'disc',at:[0,-100],items:[{shape:'ref',use:'disc'},{shape:'circle',r:40,x:0,y:0,stroke:'red',width:4}]}]};const p=mascot.parts.compile(ch);mascot.geometry.draw(ctx,p,mascot.parts.frame(p),{leaf:'#00ff00',ink:'#000000',paper:'#ffffff',red:'#ff0000'});const at=(x)=>[...ctx.getImageData(x,170,1,1).data].slice(0,3);return {inside:at(186),edge:at(190),outline:at(193),second:at(198),outer:at(203)};})()"
     )
     expect_identical(unlist(pixels$inside), c(0L, 255L, 0L))
     expect_identical(unlist(pixels$edge), c(255L, 0L, 0L))

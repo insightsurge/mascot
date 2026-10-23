@@ -18,30 +18,30 @@
 #'   percentage string such as `"20%"`, or a [mascot_size()] object. Defaults to
 #'   `160`. Percentages follow the comparison cell width. `NULL` is not accepted.
 #' @param motion A logical flag or [mascot_motion_settings()] object. Defaults to `FALSE`
-#'   for steady faces; `TRUE` allows movement subject to the visitor's preference.
+#'   for steady faces; `TRUE` allows movement unless the visitor prefers reduced motion.
 #'   `NULL` is not accepted.
 #' @returns A browsable `htmltools` tag list. Its `contrast` attribute is a data
 #'   frame with `role`, `colour`, `background`, `ratio` and `mode` columns, one row
 #'   per supplied colour below 3:1. With no findings it is a zero-row data frame
-#'   with the same columns. Colours are kept unchanged; one combined warning is
-#'   issued in R unless `mascot.contrast_warnings` is `FALSE`.
+#'   with the same columns. Colours are not changed. R gives one combined
+#'   warning unless `mascot.contrast_warnings` is `FALSE`.
 #' @details
 #' **Comparison grid.** Rows are moods; columns are the requested `size`, then
-#' 160, 96 and 24 CSS pixels. The first column preserves percentage and
-#' `small_screen` settings; fixed comparison columns do not change on narrow
+#' 160, 96 and 24 CSS pixels. The first column keeps your percentage and
+#' `small_screen` settings; the fixed columns do not change on narrow
 #' screens. Every size draws the full character. Each cell keeps its status text,
 #' since small faces lose fine detail.
 #'
 #' **Theme and contrast.** A palette id string works as in [mascot()].
-#' Built-in palette colours do not add contrast warnings. Both supplied theme
-#' maps are shown, even if the theme
-#' selected one mode. Backgrounds are white and `#212529`, or the `bslib` theme's
+#' Built-in palette colours do not add contrast warnings. When the theme gives
+#' both a light and a dark map, both are shown, even if it sets one mode.
+#' Backgrounds are white and `#212529`, or the `bslib` theme's
 #' `bg` and `body-bg-dark`; text uses `fg` and `body-color-dark`. Only supplied
 #' colour roles are checked, using the same contrast calculation as [mascot()].
 #' Experimental CSS variables are worked out in the browser: their warnings appear
 #' in its console, outside the R `contrast` attribute.
 #'
-#' **Bubbles.** Empty bubble space is omitted here; a supplied bubble keeps its
+#' **Bubbles.** Cells without a bubble leave out its space; a supplied bubble keeps its
 #' normal space and timing. Each cell is wide enough to hold it, so bubbles
 #' never cover neighbouring cells.
 #' @family mascot helpers

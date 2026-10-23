@@ -32,11 +32,13 @@ helper (Knurl and Neer are experimental). Defaults to \code{"tessa"}. \code{NULL
 See \code{\link[=mascot_moods]{mascot_moods()}} for available choices. \code{NULL} is not accepted.}
 
 \item{status}{A non-empty string or \code{\link[=mascot_status]{mascot_status()}} object. \code{NULL} (the
-default) follows the mood. Text is escaped, including \code{\link[htmltools:HTML]{htmltools::HTML()}}.}
+default) follows the mood. Text is always escaped, even inside
+\code{\link[htmltools:HTML]{htmltools::HTML()}}.}
 
 \item{bubble}{A non-empty string, an \code{htmltools} tag or tag list, or a
-\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) shows no bubble. A string
-uses the helper's five-second duration and close button. Plain text is
+\code{\link[=mascot_bubble]{mascot_bubble()}} object. \code{NULL} (the default) shows no bubble. A plain
+string gets the defaults of \code{\link[=mascot_bubble]{mascot_bubble()}}: five seconds and a close
+button. Plain text is
 escaped; \code{\link[htmltools:HTML]{htmltools::HTML()}} or tags supply HTML. Tags with dependencies or
 head content are not supported.}
 
@@ -52,48 +54,50 @@ accepted.}
 \item{placement}{\code{"bottom-right"} (the default), \code{"inline"}, a corner
 such as \code{"top-left"}, a named list such as \code{list(position = "top-left", minimise = TRUE, drag = "snap")}, or a \code{\link[=mascot_placement]{mascot_placement()}} object.
 Floating mascots show a minimise control by default; dragging is off.
-Inline mascots sit in the page flow and ignore \code{minimise} and \code{drag}, with an
-informational message for explicitly supplied values and silence for
-defaults. With \code{drag}, visitors can also drag the minimised restore button;
+Inline mascots sit in the page flow and ignore \code{minimise} and \code{drag}. If you
+set either one yourself, a message says so; the defaults give no message.
+With \code{drag}, visitors can also drag the minimised restore button;
 each drop sets \verb{input$<id>_position} to the corner (\code{"snap"}) or a list with
 \code{x} and \code{y} (\code{"free"}); saving it between visits is the app's job. See
 \code{\link[=mascot_placement]{mascot_placement()}}. \code{NULL} is not accepted.}
 
 \item{theme}{A palette id string from \code{\link[=mascot_palettes]{mascot_palettes()}}, a named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a
 \code{\link[=mascot_theme]{mascot_theme()}} object. \code{NULL} (the default) keeps the character's own
-colours. A palette supplies the base colours in both modes; \code{"original"}
-selects the character's own colours. Unset roles follow the character's rules.}
+colours. A palette sets the base colours for light and dark mode;
+\code{"original"} selects the character's own colours. Roles you leave unset
+follow the character's rules.}
 
 \item{motion}{A logical flag or \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} object. \code{TRUE} (the default)
-allows movement while honouring the visitor's reduced-motion preference.
+allows movement, unless the visitor prefers reduced motion.
 \code{FALSE} stops all movement, including panels, drag snapping, minimising and
 restoring. \code{NULL} is not accepted.}
 
 \item{click}{What a click on the mascot does in a Shiny app. \code{NULL} (the
-default) does nothing: the mascot is a picture, not a keyboard stop. One
-label containing a non-whitespace character, such as \code{"Open help"}, or a
+default) does nothing: the mascot is a picture, and keyboard focus skips
+it. A label that is not blank, such as \code{"Open help"}, or a
 \code{\link[=mascot_action]{mascot_action()}} object makes it a button for one action of your app.
 A \code{\link[=mascot_popup_menu]{mascot_popup_menu()}} object makes it open a menu, whose choice sets
-\verb{input$<id>_menu}. With a click, every
-action activation sets \verb{input$<id>_click} (see Details).}
+\verb{input$<id>_menu}. With a click, each time the visitor activates the
+action, \verb{input$<id>_click} is set (see Details).}
 }
 \value{
 An \code{htmltools} tag with the mascot's web dependency attached.
 }
 \description{
 Draw a character with a mood, a status line and an optional message bubble.
-The status shows the character's line for the mood until the app sets its own
-text (the \code{status} column of \code{mascot_moods(character)}).
-It follows the mood again when \code{\link[=mascot_status]{mascot_status()}} is supplied without text.
+Until the app sets its own status text, the status line shows the
+character's line for the mood (the \code{status} column of
+\code{mascot_moods(character)}). \code{\link[=mascot_status]{mascot_status()}} with no text hands the status
+back to the mood.
 }
 \details{
-\code{NULL} means none or the default in \code{\link[=mascot]{mascot()}} and helpers where accepted,
-and unchanged in \code{\link[=update_mascot]{update_mascot()}}. An empty helper (\code{mascot_bubble()},
-\code{mascot_status()}, \code{mascot_theme()}, \code{mascot_action()} or
+In \code{\link[=mascot]{mascot()}} and its helpers, \code{NULL} (where accepted) means none or the
+default; in \code{\link[=update_mascot]{update_mascot()}} it means unchanged. An empty helper
+(\code{mascot_bubble()}, \code{mascot_status()}, \code{mascot_theme()}, \code{mascot_action()} or
 \code{mascot_popup_menu()}) resets that setting.
 
-Building UI with \code{\link[=mascot]{mascot()}} or helpers errors on invalid values;
-\code{\link[=update_mascot]{update_mascot()}} warns and leaves the mascot unchanged. See
+\code{\link[=mascot]{mascot()}} and the helpers raise an error on an invalid value;
+\code{\link[=update_mascot]{update_mascot()}} warns instead and leaves the mascot unchanged. See
 \link{mascot-package} for condition classes.
 
 Use the always visible status line for a short description of the current state.
@@ -104,12 +108,12 @@ such as an invalid form, because a timed message can vanish before it is read.
 When minimised, the status remains available to screen readers. See
 \code{\link[=mascot_placement]{mascot_placement()}} for restore controls and message timing.
 
-In Shiny the mascot uses an input binding. Its input value (\verb{input$<id>}) is an
-internal value that tells the server the mascot appeared; do not rely on its contents.
+In Shiny the mascot is also an input. \verb{input$<id>} only tells the server that
+the mascot has appeared; its contents are internal, so do not rely on them.
 
 \strong{In modules, \code{golem} and rhino apps.} Use the module's \code{ns()} in the UI and
 its local id in the server. \code{session$ns("helper")} also works in the server;
-the namespace is added once. In nested modules, namespace the child module's
+the namespace is not added twice. In nested modules, namespace the child module's
 id in the parent UI and call its server with the local child id. Inputs such
 as \code{input$helper_menu}, \code{input$helper_click}, \code{input$helper_position} and
 \code{input$helper_minimised} belong to that child module.
@@ -173,10 +177,11 @@ The \code{reactiveVal()} makes the mascot appear once: clicking \strong{Start th
 review} again does not rebuild it, so it keeps its mood and position.
 
 \strong{Clicks.} With \code{click}, the mascot is a button: an action named by its
-label, or a menu. Every action activation (a click or tap, Enter or Space while
-it has keyboard focus, or a screen reader's activate command) sets
-\verb{input$<id>_click} to the number of activations since the mascot appeared, so
-\code{shiny::observeEvent(input$helper_click, ...)} runs each time for an action.
+label, or a menu. Each time the visitor activates the action (a click or tap,
+Enter or Space while it has keyboard focus, or a screen reader's activate
+command), \verb{input$<id>_click} is set to the number of activations since the
+mascot appeared, so \code{shiny::observeEvent(input$helper_click, ...)} runs each
+time for an action.
 Opening and closing a menu never sets this input. Dragging a floating mascot
 never counts as a click. See \code{\link[=mascot_action]{mascot_action()}} and \code{\link[=mascot_popup_menu]{mascot_popup_menu()}}.
 }

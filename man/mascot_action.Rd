@@ -7,13 +7,13 @@
 mascot_action(label = NULL, ..., tooltip = TRUE, disabled = FALSE)
 }
 \arguments{
-\item{label}{The action's name: one string containing a non-whitespace
-character that says what a click does, such as \code{"Open help"}. Screen readers
-announce the mascot as a button with this name, and the tooltip shows it.
-\code{NULL} (the default) makes an empty helper: in \code{\link[=update_mascot]{update_mascot()}}, it removes
-the click, so the mascot is a picture again. With \code{label = NULL}, explicitly
-supplying \code{tooltip} or \code{disabled} is an error; use \code{mascot_action()} without
-options to remove the click.}
+\item{label}{The action's name: one string, not blank, that says what a
+click does, such as \code{"Open help"}. Screen readers announce the mascot as a
+button with this name, and the tooltip shows it. \code{NULL} (the default) makes
+an empty helper: in \code{\link[=update_mascot]{update_mascot()}}, it removes the click, so the mascot
+is a picture again. With \code{label = NULL}, setting \code{tooltip} or \code{disabled}
+yourself is an error; use \code{mascot_action()} without options to remove the
+click.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
@@ -48,7 +48,7 @@ the server never count. In a module, use \code{ns("helper")} in the UI and read
 \code{input$helper_click} in that module's server.
 
 \strong{Without a click.} The default, \code{click = NULL} in \code{\link[=mascot]{mascot()}}, keeps the
-mascot a picture: it is not a keyboard stop and sends no clicks. Use a click
+mascot a picture: keyboard focus skips it and it sends no clicks. Use a click
 only when it does something, so keyboard users never land on a control that
 does nothing.
 

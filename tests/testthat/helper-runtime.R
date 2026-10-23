@@ -72,6 +72,7 @@ local_runtime_page <- function(
       page_character_blocks(tags),
       "</head><body>",
       vapply(tags, as.character, character(1)),
+      cpu_canvases_html,
       sprintf("<script>window.CHARACTERS=%s;</script>", jsonlite::toJSON(wires, auto_unbox = TRUE)),
       if (shiny_stub) "<script>window.menuEvents=[];window.Shiny={setInputValue:(...a)=>menuEvents.push(a)};</script>",
       sprintf('<script src="file://%s"></script>', normalizePath(scripts)),
@@ -118,7 +119,8 @@ install_runtime_helpers <- function(js) {
       canvas(size = 300) {
         const c = document.createElement('canvas');
         c.width = c.height = size;
-        c.getContext('2d').setTransform(size / 300, 0, 0, size / 300, 0, 0);
+        // CPU-backed from the start, like the page's canvases (see cpu_canvases_html).
+        c.getContext('2d', { willReadFrequently: true }).setTransform(size / 300, 0, 0, size / 300, 0, 0);
         document.body.append(c);
         return c;
       },

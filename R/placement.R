@@ -3,7 +3,7 @@
 #' Floating mascots sit in a window corner (by default, `"bottom-right"`), 1rem
 #' from the window edges, above fixed navigation bars and below modals.
 #' Bottom-right mascots move above Shiny notifications while they are visible.
-#' Floating mascots hide with their original tab or container. Inline mascots sit
+#' A floating mascot hides when the tab or container it was placed in hides. Inline mascots sit
 #' where `mascot()` is placed in the page flow. Switching back to inline returns
 #' the mascot to its original place in the UI.
 #'
@@ -11,10 +11,10 @@
 #' to hide it. The neutral control appears on hover or keyboard focus. Touch
 #' screens keep it visible; an open mascot menu hides it. Its border has a quiet
 #' glow. A minimised mascot is a round restore button in the character's colours.
-#' Its status remains available to screen readers. Updates still apply; bubble
-#' countdowns pause until restored. Click, Enter or Space restores the mascot.
-#' Hover and keyboard focus add a glow and a small growth transition to the
-#' restore button; reduced motion keeps only the glow.
+#' Its status remains available to screen readers. Updates still apply, and
+#' bubble countdowns pause until it is restored. Click, Enter or Space restores
+#' the mascot. On hover or keyboard focus the restore button glows and grows
+#' slightly; with reduced motion it only glows.
 #'
 #' @section Dragging:
 #' With `drag = "snap"` or `drag = "free"`, visitors can drag a floating mascot
@@ -31,10 +31,11 @@
 #' * `"free"`: the mascot stays where it is dropped, at least 1rem inside the
 #'   window, and stays inside when the window is resized.
 #'
-#' In Shiny each drop sets `input$<id>_position`, read in the module that owns
-#' the mascot, like `input$<id>_menu`: the corner name, such as `"top-left"`,
-#' after a snap, or a list with `x` and `y`, the mascot's top-left corner in
-#' CSS pixels from the window's top-left, after a free drop. A later
+#' In Shiny each drop sets `input$<id>_position`, which you read in the module
+#' that owns the mascot, as with `input$<id>_menu`. After a snap it is the
+#' corner name, such as `"top-left"`; after a free drop it is a list with `x`
+#' and `y`, the mascot's top-left corner in CSS pixels from the window's
+#' top-left. A later
 #' [update_mascot()] with `placement` replaces the dragged position. Dragging
 #' has no keyboard alternative; the minimise control stays reachable by keyboard.
 #' Remembering a position between visits is the app's job: for example, save
@@ -47,8 +48,8 @@
 #'   where the mascot is placed in the UI. `NULL` is not accepted.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param minimise A logical flag, defaulting to `TRUE`, to show a minimise
-#'   control on a floating mascot. Has no effect inline: an explicitly supplied
-#'   value gives an informational message; the default stays silent.
+#'   control on a floating mascot. Has no effect inline; if you set it yourself
+#'   there, a message says so, and the default gives none.
 #'   `NULL` is not accepted.
 #' @param drag `"none"` (the default) for no dragging, `"snap"` to let visitors
 #'   drag the mascot and move it to the nearest corner on release, or `"free"`
@@ -57,8 +58,8 @@
 #'   \out{<span class='badge text-bg-warning'>Experimental</span>}}}{%
 #'   \strong{[Experimental]}}
 #'   `"free"` is experimental: the position it reports and how to restore it
-#'   may change. Has no effect inline: an
-#'   explicitly supplied value gives an informational message. `TRUE`, `FALSE` and
+#'   may change. Has no effect inline; if you set it yourself there, a message
+#'   says so. `TRUE`, `FALSE` and
 #'   `NULL` are not accepted. See the Dragging section.
 #' @returns A `mascot_placement` object. Its fields are internal; pass it on rather than reading them.
 #' @family mascot helpers

@@ -30,17 +30,18 @@
 #'   - A new placement replaces any position the visitor dragged the mascot to.
 #'   - Floating placement shows a minimise control by default, and dragging is
 #'     off.
-#'   - Inline placement ignores `minimise` and `drag`. Values you supply
-#'     explicitly give an informational message; defaults stay silent. The
-#'     update is still sent.
+#'   - Inline placement ignores `minimise` and `drag`. If you set either one
+#'     yourself, a message says so; the defaults give no message. The update is
+#'     still sent.
 #'   - With dragging enabled, the minimised restore button can also be dragged.
 #'     A click restores it; a drag leaves it minimised in its new position.
 #' @param theme A theme in the forms accepted by [mascot()]. `NULL` (the
 #'   default) leaves the theme unchanged; `"original"` or `mascot_theme()` restores the
-#'   character's own colours. After a character swap, the theme is applied
-#'   again to the new character's parts. A palette id string chooses a named
-#'   palette. A swap keeps it when available, otherwise warns with class
-#'   `mascot_palette_dropped` and keeps explicit colours for shared roles.
+#'   character's own colours. A palette id string chooses a named palette. After
+#'   a character swap, the theme is applied again to the new character's parts.
+#'   The palette carries over if the new character has one of that name.
+#'   If it has not, you get a warning with class `mascot_palette_dropped`, and
+#'   colours you set explicitly stay for the roles both characters share.
 #' @param motion A logical flag or [mascot_motion_settings()] object, as in [mascot()].
 #'   `NULL` (the default) leaves motion unchanged. Changes apply to the live mascot
 #'   without restarting it; the visitor's reduced-motion preference still applies.
@@ -61,9 +62,9 @@
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.
 #' @details
-#' `NULL` means none or the default in [mascot()] and helpers where accepted.
-#' In `update_mascot()`, `NULL` leaves a setting unchanged. Use an empty helper
-#' to reset a setting:
+#' In [mascot()] and its helpers, `NULL` (where accepted) means none or the
+#' default. In `update_mascot()`, `NULL` leaves a setting unchanged. To reset a
+#' setting, send an empty helper:
 #'
 #' | Setting | Reset sent to `update_mascot()` |
 #' |---|---|
@@ -75,27 +76,27 @@
 #' | Theme | `theme = mascot_theme()` restores character colours |
 #' | Click | `click = mascot_action()` (or `mascot_popup_menu()`) removes it |
 #' | Placement | `placement = mascot_placement()` (bottom-right); `mascot_placement("inline")` for inline |
-#' | Motion | `motion = mascot_motion_settings()` allows movement subject to visitor preference |
+#' | Motion | `motion = mascot_motion_settings()` allows movement unless the visitor prefers reduced motion |
 #'
 #' Each non-`NULL` argument replaces that whole setting, not part of it. For
 #' example, `update_mascot("h", size = 200)` also resets a custom `small_screen`
 #' to `"auto"`.
 #'
-#' Building UI with [mascot()] or helpers errors on invalid values;
-#' [update_mascot()] warns with class `mascot_update_ignored` and leaves the
-#' mascot unchanged. An invalid `id`, unknown arguments in `...` or a missing
-#' session still raise errors. See [mascot-package] for all condition classes.
-#' This includes a helper that raises a `mascot_error` while an argument is
-#' evaluated inside the call, such as `size = mascot_size(input$px)`; the whole
-#' update is ignored.
+#' [mascot()] and the helpers raise an error on an invalid value.
+#' [update_mascot()] warns instead, with class `mascot_update_ignored`, and
+#' leaves the mascot unchanged. That also covers a helper that raises a
+#' `mascot_error` while an argument is evaluated inside the call, such as
+#' `size = mascot_size(input$px)`; the whole update is then ignored. An invalid
+#' `id`, unknown arguments in `...` or a missing session still raise errors. See
+#' [mascot-package] for all condition classes.
 #'
 #' An unknown palette id is an error in [mascot()] but only a warning in
 #' `update_mascot()`. [mascot()] runs while the UI is built, where an error shows
 #' at once. `update_mascot()` runs in a live session, where an error would stop
 #' the app for the visitor, so it warns and the mascot keeps running unchanged.
 #' The message names any other characters that have a palette of that name. (A
-#' palette kept from before a character swap is dropped instead, with class
-#' `mascot_palette_dropped`; see the `character` argument.)
+#' palette carried over from before a character swap is dropped instead, with a
+#' warning of class `mascot_palette_dropped`; see the `theme` argument.)
 #'
 #' **Status text and bubbles.** Use the always visible status line for a short
 #' description of the current state.
@@ -108,7 +109,7 @@
 #'
 #' **Shiny modules.** In a module, use `mascot(ns("helper"))` in the UI and
 #' `update_mascot("helper")` in its server. A `session$ns("helper")` id is also
-#' accepted, including in nested modules. The session namespace is added once.
+#' accepted, including in nested modules; the namespace is not added twice.
 #' An invalid `id` type, missing session or extra argument is an error. Calling
 #' with all update arguments `NULL` does nothing.
 #'
@@ -150,15 +151,16 @@
 #' })
 #' ```
 #'
-#' **Queued updates.** Updates sent before a mascot appears are kept per session,
-#' including when the first mascot is created by [shiny::renderUI()] or
-#' [shiny::insertUI()]. Once the character is known, R validates each whole call
-#' before accepting its latest values. Before that, a bounded buffer keeps whole
-#' calls for validation against the first known character. An invalid call never
-#' contributes its bubble, status or other fields. A replacement with the same id
-#' receives the latest accepted state; only the latest pending gesture can play,
-#' once. Dismissed bubbles stay dismissed through replacement; an explicit bubble
-#' update starts a new bubble, including when its text is unchanged.
+#' **Queued updates.** Updates sent before a mascot appears are kept for the
+#' session, also when the first mascot is created by [shiny::renderUI()] or
+#' [shiny::insertUI()]. Each call is checked as a whole before its latest values
+#' are accepted. Until the character is known, a buffer of limited size holds
+#' whole calls, and they are checked against the first character that appears.
+#' A call that fails the check adds nothing, not even its bubble or status. A
+#' mascot that replaces one with the same id gets the latest accepted state, and
+#' only the latest pending gesture plays, once. A bubble the visitor dismissed
+#' stays dismissed in the replacement; sending a bubble again starts a new one,
+#' even with the same text.
 #'
 #' **Several calls in one flush.** A flush is one round of Shiny reacting to
 #' inputs. Shiny sends the mascot one message when it ends, built from every

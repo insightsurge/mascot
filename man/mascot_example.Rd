@@ -21,8 +21,8 @@ With \code{run = FALSE}, an absolute path to the existing \code{app.R} file.
 With \code{run = TRUE}, the value returned by \code{\link[shiny:runApp]{shiny::runApp()}} after the app stops.
 }
 \description{
-Opens only the requested example, like \code{\link[shiny:runExample]{shiny::runExample()}}. No files are
-copied or written by this function. Use \code{run = FALSE} to read the app's code
+Opens only the example you ask for, like \code{\link[shiny:runExample]{shiny::runExample()}}, and copies or
+writes no files. Use \code{run = FALSE} to read the app's code
 or pass its directory to \code{\link[shiny:runApp]{shiny::runApp()}}. The single-file scenarios can be
 copied into a project with Shiny, \code{bslib} and mascot installed. Copy the whole
 folder for the studio, \code{golem} and rhino-shaped examples; \code{golem} also needs the

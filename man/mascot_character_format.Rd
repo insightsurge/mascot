@@ -16,7 +16,7 @@ the character marks for small sizes. Text is displayed as text, never HTML.
 }
 \details{
 Start from \code{system.file("examples", "characters", "study_bot.json", package = "mascot")}.
-Edit a plain list or JSON source and check it again. A checked object is opaque.
+To change a character, edit the plain list or JSON source and check it again; a checked object cannot be edited.
 A source file names its \code{family} and gives that family's definition in
 \code{family_definition} (\code{id}, \code{name}, \code{description} and optional \code{defaults}, such as
 shared gestures and palettes); a custom character cannot take a definition from
@@ -31,12 +31,13 @@ every detail size.
 }
 \section{Capabilities and \code{requires}}{
 
-Every version-1 mascot draws the eight version-1 capabilities: \code{parts},
-\code{paints}, \code{clip}, \code{outline}, \code{glow}, \code{face_kit}, \code{tracks} and \code{lod}. They are
-implicit: a file needs no \code{requires} field. \code{requires} lists only
-capabilities added after version 1. A file that lists the version-1 names
-keeps loading. A name this version of mascot does not know, or a reserved
-one, stops the check with an error that names it and says to update mascot.
+Every version-1 mascot can draw the eight version-1 capabilities: \code{parts},
+\code{paints}, \code{clip}, \code{outline}, \code{glow}, \code{face_kit}, \code{tracks} and \code{lod}. A file
+does not need to ask for them, so it needs no \code{requires} field. \code{requires}
+lists only capabilities added after version 1. A file that lists the
+version-1 names still loads. A name this version of mascot does not know, or
+a reserved one, stops the check with an error that names it and says to
+update mascot.
 Unsupported and reserved capabilities used as keys (such as \code{connector} or
 \code{morph}) are refused too.
 }
@@ -67,9 +68,10 @@ repair instruction, and the value where one is at fault. A value outside its
 range or choices is named with the range or the choices. A drawing budget gives
 the band, the count and the limit; a character too big for its frame names
 the part, face, effect or shadow that reaches furthest outside, the side and
-by how much. Input byte, depth and node limits and drawing budgets are enforced
-for all input forms. Format version, capability set and admission policy
-version are distinct. The installed grammar and policy live in
+by how much. The limits on input bytes, depth and node count, and the drawing
+budgets, apply to every input form. The format version, the capability set
+and the admission policy version can each change on their own. The installed
+grammar and policy live in
 \code{system.file("format", package = "mascot")}; the policy holds the input limits,
 the capability names and the drawing budget of each detail band.
 }

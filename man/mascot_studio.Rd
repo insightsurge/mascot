@@ -33,8 +33,8 @@ the value returned by \code{\link[shiny:runApp]{shiny::runApp()}} after the app 
 \description{
 Explore the package's functions, try their controls with live feedback, and
 copy the working R code into your own app. The studio is
-experimental and may change in a later release. Choices belong to the returned
-app; no global options are changed.
+experimental and may change in a later release. What you choose in it stays
+in the returned app; it changes no global options.
 }
 \examples{
 \dontshow{if (requireNamespace("bslib", quietly = TRUE) && utils::packageVersion("bslib") >= "0.7.0") withAutoprint(\{ # examplesIf}

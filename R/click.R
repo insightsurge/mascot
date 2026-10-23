@@ -6,13 +6,13 @@
 #' `shiny::observeEvent(input$<id>_click, ...)`. For a choice of several actions,
 #' use [mascot_popup_menu()] instead.
 #'
-#' @param label The action's name: one string containing a non-whitespace
-#'   character that says what a click does, such as `"Open help"`. Screen readers
-#'   announce the mascot as a button with this name, and the tooltip shows it.
-#'   `NULL` (the default) makes an empty helper: in [update_mascot()], it removes
-#'   the click, so the mascot is a picture again. With `label = NULL`, explicitly
-#'   supplying `tooltip` or `disabled` is an error; use `mascot_action()` without
-#'   options to remove the click.
+#' @param label The action's name: one string, not blank, that says what a
+#'   click does, such as `"Open help"`. Screen readers announce the mascot as a
+#'   button with this name, and the tooltip shows it. `NULL` (the default) makes
+#'   an empty helper: in [update_mascot()], it removes the click, so the mascot
+#'   is a picture again. With `label = NULL`, setting `tooltip` or `disabled`
+#'   yourself is an error; use `mascot_action()` without options to remove the
+#'   click.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param tooltip A flag. `TRUE` (the default) shows the label in a tooltip when
 #'   the pointer rests on the mascot or the keyboard focuses it. `FALSE` hides the
@@ -36,7 +36,7 @@
 #' `input$helper_click` in that module's server.
 #'
 #' **Without a click.** The default, `click = NULL` in [mascot()], keeps the
-#' mascot a picture: it is not a keyboard stop and sends no clicks. Use a click
+#' mascot a picture: keyboard focus skips it and it sends no clicks. Use a click
 #' only when it does something, so keyboard users never land on a control that
 #' does nothing.
 #'

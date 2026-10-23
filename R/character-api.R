@@ -1,8 +1,9 @@
 #' Check a character description
 #'
-#' Checks format version 1 using the package's input, drawing and capability
-#' policy. Never repairs or recolours data. Edit the JSON or plain source list,
-#' then check it again: checked objects are opaque and edits are refused.
+#' Checks a character description against format version 1 and the package's
+#' limits on input, drawing and capabilities. It never repairs or recolours
+#' anything. To change a character, edit the JSON or the plain list and check it
+#' again; a checked object cannot be opened or edited.
 #' @param x A JSON string, a parsed plain list, or checked
 #'   `mascot_character_data`. A string always means JSON, never a path or id.
 #'   `NULL` is not accepted.
@@ -11,12 +12,13 @@
 #' @details Content problems inherit `mascot_error_character` and `mascot_error`,
 #'   with `code`, `path`, `value` and `fix`. Argument problems inherit
 #'   `mascot_error_argument` and `mascot_error`, with `argument`, `code` and `value`.
-#'   Every character must define changing `wave` and `nod` tracks. `wave` must
-#'   change a non-root part channel; `nod` may change any channel, including `root`.
-#'   A checked object is not stored anywhere: pass it each time. Format version, supported
-#'   capabilities and admission policy version are separate contracts. Built-in
-#'   character ids are reserved and refused here;
-#'   give your character its own id before checking it.
+#'   Every character needs `wave` and `nod` tracks that change something. `wave`
+#'   must change a channel of a part other than `root`; `nod` may change any
+#'   channel, including `root`. A checked object is not stored anywhere, so pass
+#'   it each time you use it. The format version, the set of supported
+#'   capabilities and the admission policy version can each change on their own.
+#'   Built-in character ids are reserved and refused here, so give your
+#'   character its own id before checking it.
 #' @seealso [mascot_character_format]
 #' @family mascot helpers
 #' @evalRd paste0(
@@ -64,9 +66,10 @@ mascot_check_character <- function(x) {
 
 #' Read a local character file
 #'
-#' Reads exactly one caller-named local JSON file, bounded by the format's input
-#' policy. URLs and wildcards are not expanded. The checked result embeds its
-#' family and face kits; keep the source too if you want to edit it later.
+#' Reads one local JSON file, the one you name, within the format's input
+#' limits. URLs and wildcards are not expanded. The checked result includes its
+#' family and face kits; keep the source file too if you want to edit the
+#' character later.
 #' @param path A non-empty string naming one local JSON file. `NULL` is not accepted.
 #' @returns A checked `mascot_character_data` object, visibly.
 #' @details File problems inherit `mascot_error_file` and `mascot_error`, with
@@ -94,8 +97,7 @@ mascot_read_character <- function(path) {
 
 #' Register a checked character for this R process
 #'
-#' Internal: not exported. The tests call it, and the studio's hidden "Your character" panel shows it in the
-#' code it writes.
+#' Internal: not exported. The tests call it.
 #'
 #' Register during app start-up or development. Inside a Shiny reactive domain,
 #' pass the checked object directly instead; visitor objects must stay private.
@@ -119,7 +121,7 @@ mascot_register_character <- function(x) {
 
 #' Save a checked character as resolved JSON
 #'
-#' Internal: not exported; the tests and the studio's hidden "Your character" panel call it.
+#' Internal: not exported; the tests call it.
 #'
 #' Saves the portable, self-contained recipe, including family metadata, palette
 #' sources and face kits. Validates serialised content before writing a temporary
@@ -234,7 +236,7 @@ format.mascot_character_data <- function(x, ...) {
 #' the character marks for small sizes. Text is displayed as text, never HTML.
 #'
 #' Start from `system.file("examples", "characters", "study_bot.json", package = "mascot")`.
-#' Edit a plain list or JSON source and check it again. A checked object is opaque.
+#' To change a character, edit the plain list or JSON source and check it again; a checked object cannot be edited.
 #' A source file names its `family` and gives that family's definition in
 #' `family_definition` (`id`, `name`, `description` and optional `defaults`, such as
 #' shared gestures and palettes); a custom character cannot take a definition from
@@ -248,12 +250,13 @@ format.mascot_character_data <- function(x, ...) {
 #' every detail size.
 #'
 #' @section Capabilities and `requires`:
-#' Every version-1 mascot draws the eight version-1 capabilities: `parts`,
-#' `paints`, `clip`, `outline`, `glow`, `face_kit`, `tracks` and `lod`. They are
-#' implicit: a file needs no `requires` field. `requires` lists only
-#' capabilities added after version 1. A file that lists the version-1 names
-#' keeps loading. A name this version of mascot does not know, or a reserved
-#' one, stops the check with an error that names it and says to update mascot.
+#' Every version-1 mascot can draw the eight version-1 capabilities: `parts`,
+#' `paints`, `clip`, `outline`, `glow`, `face_kit`, `tracks` and `lod`. A file
+#' does not need to ask for them, so it needs no `requires` field. `requires`
+#' lists only capabilities added after version 1. A file that lists the
+#' version-1 names still loads. A name this version of mascot does not know, or
+#' a reserved one, stops the check with an error that names it and says to
+#' update mascot.
 #' Unsupported and reserved capabilities used as keys (such as `connector` or
 #' `morph`) are refused too.
 #'
@@ -278,9 +281,10 @@ format.mascot_character_data <- function(x, ...) {
 #' range or choices is named with the range or the choices. A drawing budget gives
 #' the band, the count and the limit; a character too big for its frame names
 #' the part, face, effect or shadow that reaches furthest outside, the side and
-#' by how much. Input byte, depth and node limits and drawing budgets are enforced
-#' for all input forms. Format version, capability set and admission policy
-#' version are distinct. The installed grammar and policy live in
+#' by how much. The limits on input bytes, depth and node count, and the drawing
+#' budgets, apply to every input form. The format version, the capability set
+#' and the admission policy version can each change on their own. The installed
+#' grammar and policy live in
 #' `system.file("format", package = "mascot")`; the policy holds the input limits,
 #' the capability names and the drawing budget of each detail band.
 #'

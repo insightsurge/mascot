@@ -13,14 +13,14 @@ mascot_characters(..., family = NULL)
 from \code{\link[=mascot_families]{mascot_families()}} to list only its members.}
 }
 \value{
-A data frame with character columns \code{id} (the value you pass to
+A data frame with the character columns \code{id} (the value you pass to
 \code{character}), \code{name} (the display name), \code{description} and \code{family} (the
-family \code{id}), and logical columns \code{is_default} (\code{TRUE} only for the
+family \code{id}); the logical columns \code{is_default} (\code{TRUE} only for the
 character \code{\link[=mascot]{mascot()}} uses when you name none) and \code{built_in} (\code{TRUE} for
-characters shipped with the package), and \code{lifecycle} (\code{"stable"} or
-\code{"experimental"} for every character that ships with mascot), and \code{palettes} (comma-separated palette ids; informal
-text for reading, so its exact shape is not promised: use \code{\link[=mascot_palettes]{mascot_palettes()}}
-for ids you rely on).
+characters shipped with the package); \code{lifecycle} (\code{"stable"} or
+\code{"experimental"} for every character that ships with mascot); and
+\code{palettes} (comma-separated palette ids, for reading only; its exact shape
+is not promised, so use \code{\link[=mascot_palettes]{mascot_palettes()}} for ids you rely on).
 A base data frame. Columns may be added at the end in later versions; existing columns keep their
 names and types.
 }
@@ -32,8 +32,8 @@ other listings, such as \code{\link[=mascot_moods]{mascot_moods()}}.
 Stable built-ins keep their id, name, five shared moods, gesture
 names, colour-role names and palette names in every release; their drawing,
 motion and exact palette colours may be polished. Experimental built-ins
-may change in any way and are not removed without a warning in the release
-before removal. The character file format and authoring functions are
+may change in any way, and none is removed without a warning one release
+earlier. The character file format and authoring functions are
 experimental too.
 }
 \examples{

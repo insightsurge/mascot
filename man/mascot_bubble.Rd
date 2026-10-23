@@ -10,8 +10,8 @@ mascot_bubble(text = NULL, ..., duration = 5, closable = TRUE)
 \item{text}{A non-empty string, optionally marked with \code{\link[htmltools:HTML]{htmltools::HTML()}},
 or an \code{htmltools} tag or tag list. HTML-marked strings and tags are shown as
 HTML. Tags with dependencies or head content are not supported and give an
-error. \code{NULL} (the default) clears the bubble. With \code{text = NULL}, explicitly
-supplying \code{duration} or \code{closable} is an error; use \code{mascot_bubble()} without
+error. \code{NULL} (the default) clears the bubble. With \code{text = NULL}, setting
+\code{duration} or \code{closable} yourself is an error; use \code{mascot_bubble()} without
 options to clear the bubble.}
 
 \item{...}{Must be empty. Forces the arguments after it to be named.}

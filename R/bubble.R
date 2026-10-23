@@ -21,8 +21,8 @@
 #' @param text A non-empty string, optionally marked with [htmltools::HTML()],
 #'   or an `htmltools` tag or tag list. HTML-marked strings and tags are shown as
 #'   HTML. Tags with dependencies or head content are not supported and give an
-#'   error. `NULL` (the default) clears the bubble. With `text = NULL`, explicitly
-#'   supplying `duration` or `closable` is an error; use `mascot_bubble()` without
+#'   error. `NULL` (the default) clears the bubble. With `text = NULL`, setting
+#'   `duration` or `closable` yourself is an error; use `mascot_bubble()` without
 #'   options to clear the bubble.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param duration How long the bubble stays visible: a number greater than zero,

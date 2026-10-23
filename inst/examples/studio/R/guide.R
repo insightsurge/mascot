@@ -12,7 +12,7 @@ studio_categories <- list(
   ),
   messages = list(
     title = "Messages and clicks",
-    summary = "Words and actions on the mascot: a status line that is always there, a speech bubble for news, and what a click does: one action or a menu."
+    summary = "Words and actions on the mascot: a status line that is always there, a speech bubble for news, and what a click does (one action or a menu)."
   ),
   motion = list(
     title = "Motion and gestures",

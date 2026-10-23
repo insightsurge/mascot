@@ -35,6 +35,14 @@ page_character_blocks <- function(tags) {
   vapply(characters, function(dependency) dependency$head, character(1))
 }
 
+# Chrome draws a new canvas on the GPU and moves it to the CPU after a few getImageData() reads; the two draw edges
+# slightly differently, so one frame could give two pictures (#503). Canvases the tests read use the CPU from the start.
+# Run before the engine scripts: its own getContext('2d') then gets this context back.
+cpu_canvases_html <- paste0(
+  "<script>document.querySelectorAll('canvas')",
+  ".forEach((c) => c.getContext('2d', { willReadFrequently: true }));</script>"
+)
+
 # Opens a blank page with the engine's drawing and motion files loaded (no host) and returns a function that evaluates
 # JavaScript there. A JavaScript exception stops the test with its message.
 local_engine_page <- function(env = parent.frame()) {
@@ -129,6 +137,7 @@ local_host_page <- function(
       page_character_blocks(list(tag)),
       '</head><body>',
       as.character(tag),
+      cpu_canvases_html,
       '<script type="application/json" data-mascot-character="blob">',
       blob_v1,
       '</script>',

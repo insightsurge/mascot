@@ -3,11 +3,11 @@
 #' Start with the studio: every exported function and argument, live, with
 #' explanations and the code to copy. `"theme"` is a page of the same app that
 #' themes one character and gives the code to copy. The other examples show one
-#' scenario each. All work offline. The studio, the theme page and the
-#' single-file examples need optional `bslib`, and the studio also needs
-#' optional `knitr`; the `long-task` example needs optional `promises` and
-#' `later`, and the `golem` example needs optional `golem`. The rhino-shaped
-#' example uses plain Shiny without rhino or box.
+#' scenario each. All work offline. Some need optional packages: the studio,
+#' the theme page and the single-file examples need `bslib`, and the studio also
+#' needs `knitr`; the `long-task` example needs `promises` and `later`, and the
+#' `golem` example needs `golem`. The rhino-shaped example uses plain Shiny
+#' without rhino or box.
 #' @returns A data frame with character columns `name`, `title` and `description`,
 #'   in teaching order. `name` is accepted by [mascot_example()].
 #'   A base data frame. Columns may be added at the end in later versions; existing columns keep their
@@ -44,8 +44,8 @@ mascot_examples <- function() {
 
 #' Run or locate a bundled example app
 #'
-#' Opens only the requested example, like [shiny::runExample()]. No files are
-#' copied or written by this function. Use `run = FALSE` to read the app's code
+#' Opens only the example you ask for, like [shiny::runExample()], and copies or
+#' writes no files. Use `run = FALSE` to read the app's code
 #' or pass its directory to [shiny::runApp()]. The single-file scenarios can be
 #' copied into a project with Shiny, `bslib` and mascot installed. Copy the whole
 #' folder for the studio, `golem` and rhino-shaped examples; `golem` also needs the

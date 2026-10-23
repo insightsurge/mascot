@@ -47,7 +47,7 @@ plain list, then read or check it again.
 
 ## Inside the character format
 
-Opening `study_bot.json` reveals a single JSON object. Every field is verified
+`study_bot.json` holds a single JSON object, and the checker tests every field
 against the format rules:
 
 * `format_version`: The integer `1`. This identifies the file grammar.
@@ -55,16 +55,17 @@ against the format rules:
   (`"tessa"`, `"sela"`, `"knurl"`, `"neer"`) are reserved and refused.
 * `name`: The human-readable name shown in titles and summaries (`"Study Bot"`).
 * `description`: One sentence about the character.
-* `family`: The character family (`"visorfolk"`), with its definition in
-  `family_definition`: an `id`, a `name`, a `description` and optional
-  `defaults`, such as shared gestures and palettes.
+* `family`: The character family (`"visorfolk"`). Every character names one, and
+  a custom character also gives the family's definition in `family_definition`:
+  its `id`, `name`, `description` and optional `defaults`, such as gestures and
+  palettes the character takes unless it defines its own.
 * `colours`: Named colour roles and their default hex values (`body`, `outline`,
   `screen`, `feature`, and `accent`).
 * `ground`: Where the character stands: its centre height (`centre_height: 60`).
 * `outline`: The width of the outline and the colour role it uses.
-* `parts`: The pieces the character is built from (in this file `head` and
-  `badge_disc`). A part can sit inside another part, and each part holds
-  drawn items, such as the `shell` and `visor` shapes inside `head`.
+* `parts`: The pieces the character is built from (in this file `head`,
+  `antenna` and `badge_disc`). A part can sit inside another part, and each part
+  holds drawn items, such as the `shell` and `visor` shapes inside `head`.
 * `anchors`: Named points on parts for attaching accessories or badges.
 * `face`: Which part carries the face (`part`), the face `kit` (`"screen"`),
   where it sits (`at`), a `clip`, and the `eyes` and `mouth` settings.
@@ -72,7 +73,8 @@ against the format rules:
   support: `idle`, `thinking`, `happy`, `worried`, and `celebrating`.
 * `gestures`: Named motion tracks. Every character must define moving `wave` and
   `nod` gestures: `wave` must move at least one non-root part (such as a hand or
-  antenna), while `nod` may move any channel, including `root`.
+  antenna), while `nod` may move any channel, including `root`. In this file
+  `wave` swings the `antenna` and `nod` tilts the `head`.
 * `palettes`: Alternative colour collections (such as `"sea_glass"`).
 * `contrast`: Accessibility rules that verify contrast between foreground and
   background colour roles.
@@ -133,8 +135,8 @@ there are nine kinds of item. Together they can draw any silhouette:
 So the nine kinds are building blocks, not a limit on the variety of characters:
 a leafy creature, a fox or a robot are all drawn by combining items, with `path`
 doing the shaping. Items take a fill or a stroke from your colour roles, can be
-clipped, and can be hidden at small sizes (see `lod`). A small example of three
-items, as they would appear in a part:
+clipped, and can be hidden at small sizes (see `lod`). Here are three items as
+they would appear in a part:
 
 ```json
 {"shape": "path", "d": "M-30 0Q0 -40 30 0Z", "fill": "body", "outline": true}
@@ -142,11 +144,11 @@ items, as they would appear in a part:
 {"shape": "arc", "x": 0, "y": 0, "r": 20, "start": 0.5, "end": 5.78, "stroke": "outline", "width": 3}
 ```
 
-The format reserves some capabilities, and the checker refuses
-them, for example morphing between shapes, particles, blending, outfits and
-accessories that any character can wear, and connecting items to each other. A
-character in format version 1 is drawn from the items above and animated with
-gestures (movement tracks on its parts).
+The format reserves some capabilities, and the checker refuses them. Examples
+are morphing between shapes, particles, blending, outfits and accessories that
+any character can wear, and connecting items to each other. A character in
+format version 1 is drawn from the items above and animated with gestures
+(movement tracks on its parts).
 
 ## Make a small edit
 
@@ -176,7 +178,7 @@ character object.
 
 ## Break it on purpose
 
-The checker stops at the first problem and raises a classed condition of class
+The checker stops at the first problem and raises an error of class
 `mascot_error_character` (which also inherits from `mascot_error`). The error
 carries structured diagnostic metadata:
 
@@ -207,7 +209,7 @@ err$fix
 conditionMessage(err)
 ```
 
-The error message clearly states the supported format version:
+The message names the format version this mascot supports:
 `"This file is format version 2; this mascot version supports 1. Update the package, or use a version-1 file."`
 
 ## Preview and use in an app
@@ -245,7 +247,7 @@ ui <- fluidPage(
 ```
 
 `mascot_theme()` checks colour role names against the selected character when
-the mascot renders, so custom role names such as `screen` are fully supported.
+the mascot renders, so custom role names such as `screen` work as well.
 
 ## What you can rely on
 

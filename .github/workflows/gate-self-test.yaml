@@ -23,6 +23,7 @@ concurrency:
 jobs:
   gate-self-test:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
+    timeout-minutes: 60  # every probe, including a check, tests and coverage (longest recent run: 32 min)
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 

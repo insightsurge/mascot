@@ -9,8 +9,7 @@ Set the mood from R when a form needs attention or a task finishes. Mascots foll
 brand colours, work offline and respect reduced-motion settings. The package is built for `GxP` work: use it alongside
 your app's field errors and results.
 
-**Status:** early development, before 0.1.0; not on CRAN yet. Some features are
-[experimental](#development-status).
+**Status:** early development, before 0.1.0. Some features are [experimental](#development-status).
 
 [Get started](https://insightsurge.github.io/mascot/articles/mascot.html) ·
 [Meet your mascots](https://insightsurge.github.io/mascot/articles/meet-your-mascots.html) ·
@@ -18,8 +17,7 @@ your app's field errors and results.
 
 ## Installation
 
-mascot needs R 4.1.0 or later. CRAN installation will be available after 0.1.0 is accepted. For now, install the
-development version from GitHub.
+mascot needs R 4.1.0 or later. Install the development version from GitHub.
 
 ```r
 # install.packages("pak")
@@ -29,19 +27,19 @@ pak::pak("insightsurge/mascot")
 ## Try the studio
 
 Explore the characters and functions in a local app, change the controls and copy the R code that matches what you
-see. The studio is experimental and needs the optional packages `bslib` (0.6.0 or later) and `knitr` installed.
+see. The studio is experimental and needs the optional packages `bslib` (0.7.0 or later) and `knitr` installed.
 
 ```r
 mascot::mascot_studio()
 ```
 
-Run this in an interactive R session. The studio works offline and currently offers built-in characters only. See
+Run this in an interactive R session. The studio works offline and offers only the built-in characters. See
 the [studio guide](https://insightsurge.github.io/mascot/articles/studio-guide.html) for each function.
 
 ## In a Shiny app
 
 Put this in `app.R` and run it. Click **Say hello** to change Tessa's mood from idle to happy and update the status
-text. A short wiggle accompanies the change unless the visitor has requested reduced motion.
+text. Tessa gives a short wiggle as her mood changes, unless the visitor has asked for reduced motion.
 
 ```r
 library(shiny)
@@ -79,7 +77,7 @@ Put this in an R chunk in a Quarto HTML page:
 mascot::mascot("helper", mood = "happy", status = "Rendered with Quarto", placement = "inline")
 ```
 
-This is static: the mood and status are set when the page is rendered. It does not receive live Shiny updates. See
+Here the mascot is static. Its mood and status are set when the page is rendered, and it gets no live Shiny updates. See
 [Get started](https://insightsurge.github.io/mascot/articles/mascot.html) for details and caveats. A Quarto `shortcode`
 is planned for 0.2.0.
 
@@ -91,7 +89,7 @@ colours to character parts, and the character file format.
 
 You can read a local JSON character file with `mascot_read_character()` or check JSON text or a parsed list with
 `mascot_check_character()`. Both functions are experimental; their arguments, results and diagnostics may change
-in a later release. You can preview a checked character and use it in Shiny, but the studio does not accept it yet. Public
+in a later release. You can preview a checked character and use it in Shiny; the studio does not take custom characters yet. Public
 functions for saving and registering characters and palettes are planned for a later release. See
 [Make your own character](https://insightsurge.github.io/mascot/articles/write-your-own-character.html).
 
@@ -101,8 +99,8 @@ The [scope and planned releases](https://github.com/insightsurge/mascot/blob/mai
 ## Getting help and contributing
 
 Start with the [documentation](https://insightsurge.github.io/mascot/). To report a bug or suggest a feature,
-[open an issue](https://github.com/insightsurge/mascot/issues) using the appropriate form. Include a small example
-that shows the problem and your package version; use synthetic data.
+[open an issue](https://github.com/insightsurge/mascot/issues) using the matching form. Include a small example
+that shows the problem, built on synthetic data, and say which package version you have.
 
 For contributions, read the [contributor guide](https://github.com/insightsurge/mascot/blob/main/.github/CONTRIBUTING.md),
 including its [conduct and data guidance](https://github.com/insightsurge/mascot/blob/main/.github/CONTRIBUTING.md#conduct-and-data).

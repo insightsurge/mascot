@@ -22,7 +22,7 @@ jobs:
   browser:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
     name: browser (${{ matrix.r }})
-    timeout-minutes: 60  # the whole suite with Chrome
+    timeout-minutes: 90  # the browser test files with Chrome: 38-43 min, plus room for a slow package mirror
 
     strategy:
       fail-fast: false
@@ -103,6 +103,15 @@ jobs:
           if (any(failed$failed > 0L | failed$error) || length(browser_skips) > 0L) {
             stop("Browser tests failed or were skipped; see above.", call. = FALSE)
           }
+
+      # What the failing tests saved (tests/testthat/_problems/), to download from the run's page.
+      - name: Keep what the failing tests saved
+        if: failure() && steps.changes.outputs.r == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-problems-${{ matrix.r }}
+          path: tests/testthat/_problems
+          if-no-files-found: ignore
 
   # One check name for the branch ruleset to require: it fails unless the job above succeeded on every R version.
   browser-tests:

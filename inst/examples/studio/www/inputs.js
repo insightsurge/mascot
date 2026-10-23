@@ -101,7 +101,9 @@
   });
 
   // A button with data-busy-label says so while the server works on its click: the label, aria-busy and disabled,
-  // until the output data-busy-output names shows a result or an error (or, failing that, the server is idle again).
+  // until the output data-busy-output names shows a result or an error. Shiny's "idle" is no sign of that: it comes
+  // just before the values of the same update, and an update that started before the click can end after it. An
+  // output in a hidden tab sends its result when it is shown again.
   const busyButtons = new Set();
   const busy = (button) => {
     button.dataset.idleLabel = button.textContent;
@@ -117,16 +119,7 @@
     button.disabled = false;
   };
   $(document).on('shiny:value shiny:error', (event) => {
-    for (const button of busyButtons) if (button.dataset.busyOutput === event.target.id) done(button);
-  });
-  let serverBusy = false;
-  $(document).on('shiny:busy', () => {
-    serverBusy = true;
-  });
-  $(document).on('shiny:idle', () => {
-    if (!serverBusy) return;
-    serverBusy = false;
-    for (const button of busyButtons) done(button);
+    for (const button of [...busyButtons]) if (button.dataset.busyOutput === event.target.id) done(button);
   });
   // The visible part of the page: the visual viewport when the phone keyboard or zoom changes it.
   const viewportBounds = () => {

@@ -2,12 +2,6 @@
 
 * A page carries each built-in character's data once, and only for the characters its mascots use. Before, every `mascot()` tag carried its character's whole data: a page with five Tessa mascots saved by `htmltools::save_html()` drops from 263 KB to 59 KB, and a `renderUI()` that redraws eight cards with Tessa sends 72 KB instead of 475 KB on each update. The data travels as an HTML dependency named after the character, so it works in Shiny apps (also with `renderUI()`, `insertUI()` and modals), saved and self-contained pages, and Quarto or R Markdown documents. Your own characters keep their data inside their tag, as before (#497).
 
-* In `mascot_studio()`, a capital E can be typed in every text field of the inspector, such as the status text, bubble content, action label or menu name. Shift+E widens or narrows the Help and Guide panel only when the focus is not in a field (#482).
-
-* The example character `study_bot.json` has an antenna: its `wave` gesture swings the antenna and its `nod` gesture tilts the head about its centre (the head is the top-level part, so the whole body turns with it), instead of both falling back to a whole-character tilt (#483).
-
-* mascot needs `shiny` 1.8.1 or later, and `bslib` 0.7.0 or later where it uses `bslib` (a `bs_theme()` as `theme`, the studio and the examples): the long-task example and the `update_mascot()` help use `shiny::ExtendedTask` and `bslib::input_task_button()`, which those versions introduced. Both versions install on R 4.1 (#483).
-
 * `mascot()` builds its tag in under 15 ms instead of about 80 ms for a built-in character, and about 800 ms for your own checked character, on every call after the first. It works out a character's identity once per R process, or once per checked object, instead of on every call; the tags and mount tokens stay the same (#494).
 
 * `mascot_check_character()` and `mascot_read_character()` settle what character format version 1 accepts, so files written now keep loading (#493):
@@ -29,6 +23,11 @@
 
 * The development condition `mascot_click_dropped` is gone: no public helper could raise it, so no app loses a warning it could see (#462).
 
+* The example character `study_bot.json` has an antenna: its `wave` gesture swings the antenna and its `nod` gesture tilts the head about its centre (the head is the top-level part, so the whole body turns with it), instead of both falling back to a whole-character tilt (#483).
+
+* mascot needs `shiny` 1.8.1 or later, and `bslib` 0.7.0 or later where it uses `bslib` (a `bs_theme()` as `theme`, the studio and the examples): the long-task example and the `update_mascot()` help use `shiny::ExtendedTask` and `bslib::input_task_button()`, which those versions introduced. Both versions install on R 4.1 (#483).
+
+* In `mascot_studio()`, a capital E can be typed in every text field of the inspector, such as the status text, bubble content, action label or menu name. Shift+E widens or narrows the Help and Guide panel only when the focus is not in a field (#482).
 * Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).
 
 * The engine draws only characters with `format_version` 1, the format of every built-in character and every character the R functions accept. A description in the 0.0.2 data shape (`inst/characters/tessa.json` in 0.0.2) is no longer drawn: the browser refuses it with an error. Every page loads about 87 KB less JavaScript (#463).

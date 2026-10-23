@@ -924,7 +924,12 @@
         !event.metaKey &&
         !event.altKey &&
         event.key.toLowerCase() === 'e' &&
-        byId('inspector_sidebar').contains(event.target)
+        byId('inspector_sidebar').contains(event.target) &&
+        // Shift+E types a capital E in a field; the shortcut is for the panel itself (#482). Today every field sits in
+        // the Controls tab, so this guard keeps a field added to a reading tab typeable too.
+        !event.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])') &&
+        // The Controls tab never expands, so the key is left alone there.
+        inspectorView !== 'controls'
       ) {
         event.preventDefault();
         toggleExpansion();

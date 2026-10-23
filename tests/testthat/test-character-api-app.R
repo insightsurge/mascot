@@ -20,7 +20,6 @@ describe("characters in a real Shiny app", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     for (id in c("tessa", "sela", "knurl", "neer")) {
       app$wait_for_js(sprintf("mascot.host.state(document.getElementById('%s')) !== null", id))
       expect_identical(app$get_js(sprintf("document.getElementById('%s').dataset.shownCharacter", id)), id)
@@ -72,7 +71,6 @@ describe("characters in a real Shiny app", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     ready <- "document.getElementById('object-helper') && window.mascot?.host?.state(document.getElementById('object-helper'))?.snapshot.applied_revision > 0"
     app$wait_for_js(ready)
     expect_identical(app$get_js("document.getElementById('registered-helper').dataset.shownCharacter"), "study_bot")

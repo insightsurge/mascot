@@ -65,7 +65,6 @@ describe("latest state over real Shiny transport", {
       }
       shiny::shinyApp(ui, server)
     })
-    withr::defer(app$stop())
     app$wait_for_js("mascot.host.state(document.getElementById('helper'))?.snapshot.applied_revision > 0")
     app$run_js(
       "window.lifecycle=[];const originalInput=Shiny.setInputValue;
@@ -188,7 +187,6 @@ describe("prerendered Shiny template recovery", {
         shiny::observeEvent(input$update, update_mascot("orphan", mood = "happy", status = "Recovered"))
       })
     })
-    withr::defer(app$stop())
     app$wait_for_js("mascot.host.state(document.getElementById('orphan'))?.bubble?.text === 'From UI'")
     expect_false(app$get_js("document.querySelector('#orphan .mascot-bubble').hidden"))
     expect_gt(app$get_js("mascot.host.state(document.getElementById('orphan')).snapshot.applied_revision"), 0)

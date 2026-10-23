@@ -202,7 +202,6 @@ describe("dragging in a Shiny browser", {
       width = 800,
       height = 600
     )
-    withr::defer(app$stop())
     app$wait_for_js("mascot.host.state(document.getElementById('mod-helper')) !== null")
     app$run_js(
       "window.dragBy=(id,dx,dy)=>{const c=document.querySelector('#'+id+' canvas'),r=c.getBoundingClientRect();

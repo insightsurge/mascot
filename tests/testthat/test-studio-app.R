@@ -33,7 +33,6 @@ describe("the studio's live host", {
   it("starts an isolated live host and updates mood through the existing control", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     expect_true(nzchar(app$get_js(paste0(studio_live, ".querySelector('.mascot-status').textContent.trim()"))))
     app$set_inputs(mood = "happy")
@@ -112,7 +111,6 @@ describe("studio overlays and live controls", {
   it("counts functions, ranks names before titles and arguments, and limits badges", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = "#open_search")
     expect_identical(
@@ -184,7 +182,6 @@ describe("studio overlays and live controls", {
   it("keeps search modal, routes argument results, and moves one mounted chip editor", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = "#all_functions")
     expect_true(app$get_js("!document.getElementById('function_flyout').hidden"))
@@ -267,7 +264,6 @@ describe("studio overlays and live controls", {
   it("preserves bubbles, motion, placement, actions, menus, gestures, code and host modes", {
     local_shiny_browser()
     app <- studio_driver(width = 1366, height = 768)
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     state <- paste0(studio_frame, ".mascot.host.state(", studio_live, ")")
     select <- function(fn) {
@@ -351,7 +347,6 @@ describe("studio overlays and live controls", {
   it("keeps laptop overlays floating and the phone inspector modal with viewport-clamped chips", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     browser <- app$get_chromote_session()
     for (size in list(
@@ -434,7 +429,6 @@ describe("studio behaviour for each function", {
   it("selects every function and preserves mounted controls, help, guides and code views", {
     local_shiny_browser()
     app <- studio_driver(width = 1440, height = 900)
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     expect_identical(app$get_js(paste0(studio_frame, ".document.querySelectorAll('.mascot').length")), 1L)
     for (output in c("code_ui", "code_server", "code_app")) {
@@ -512,7 +506,6 @@ describe("studio behaviour for each function", {
   it("shows HTML examples and raw-string code, clears bubbles and honours duration and close controls", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     studio_select_function(app, "mascot_bubble")
     app$set_inputs(bubble_forever = TRUE)
@@ -548,7 +541,6 @@ describe("studio behaviour for each function", {
   it("reports snap and free drops, minimise and restore, and keeps percentage and phone sizes", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     state <- paste0(studio_frame, ".mascot.host.state(", studio_live, ")")
     studio_select_function(app, "mascot_size")
@@ -610,7 +602,6 @@ describe("studio behaviour for each function", {
   it("changes light and dark roles, CSS variables, contrast results, resets and the family listing", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     state <- paste0(studio_frame, ".mascot.host.state(", studio_live, ")")
     studio_select_function(app, "mascot_theme")
@@ -666,7 +657,6 @@ describe("studio behaviour for each function", {
   it("runs combined updates, invalid calls and delayed success and failure beside an activity log", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     studio_select_function(app, "update_mascot")
     expect_true(app$get_js(
@@ -889,7 +879,6 @@ describe("studio actions, menus and generated preview", {
   it("honours labels, tooltips, disabled actions, menu direction and real click and choice events", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     state <- paste0(studio_frame, ".mascot.host.state(", studio_live, ")")
     studio_select_function(app, "mascot_action")
@@ -968,7 +957,6 @@ describe("studio actions, menus and generated preview", {
   it("rebuilds preview code from controls, returns to the mounted host and opens standalone examples", {
     local_shiny_browser()
     app <- studio_driver(width = 1440, height = 900)
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$run_js(sprintf("window.originalHost = %s", studio_live))
     studio_select_function(app, "mascot_preview")
@@ -1019,7 +1007,6 @@ describe("studio function descriptions in the flyout", {
   it("only shows truncated descriptions on hover and closes the previous tooltip", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = "#all_functions")
     app$run_js(
@@ -1051,7 +1038,6 @@ describe("small current-configuration editors", {
   it("edits one value with an argument-local code style and restores the same mounted inputs", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$run_js(
       "window.originalSize = document.getElementById('size_px'); window.originalStatus = document.getElementById('status_text')"
@@ -1115,7 +1101,6 @@ describe("small current-configuration editors", {
   it("routes menu and action chips, reveals conditional controls, and links Rd argument help", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = '[data-call-arg=click]')
     expect_identical(app$get_js("document.getElementById('chip_inspector').textContent"), "Advanced controls")
@@ -1217,7 +1202,6 @@ describe("studio code arguments, chips, anchors and menus", {
   it("keeps top-bar controls mounted and gives every chip three inspector routes", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$run_js(
       "window.topMood=document.getElementById('mood'); window.topCharacter=document.getElementById('character')"
@@ -1282,7 +1266,6 @@ describe("studio code arguments, chips, anchors and menus", {
   it("draws real anchor positions and retains them at phone width and after a character change", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     overlay <- paste0(studio_frame, ".document.querySelector('.pg-anchor-overlay')")
     expect_identical(app$get_js("document.getElementById('show_anchors').getAttribute('aria-pressed')"), "false")
@@ -1356,7 +1339,6 @@ describe("studio code arguments, chips, anchors and menus", {
   it("portals selectize menus above clipped editors and restores them when closed", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = '[data-call-arg=click]')
     expect_true(app$get_js("!document.getElementById('click_type').selectize.isOpen"))
@@ -1432,7 +1414,6 @@ describe("studio sentence controls and overview", {
   it("groups four labelled selects, plays and replays a gesture, and opens search only when asked", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     expect_identical(
       app$get_js("[...document.querySelectorAll('.pg-sentence[role=group] select')].map(s=>s.id).join('|')"),
@@ -1503,7 +1484,6 @@ describe("studio sentence controls and overview", {
   it("opens the Rd overview from the single title row and reserves Help for the inspector", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = '[data-call-arg=placement]')
     expect_identical(app$get_js("document.getElementById('chip_title').textContent"), "placement =")
@@ -1526,7 +1506,6 @@ describe("studio inline help and movable anchors", {
   it("shows function titles on keyboard focus and hover without intercepting clicks", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     browser <- app$get_chromote_session()
     for (id in c("character", "mood", "gesture")) {
@@ -1566,7 +1545,6 @@ describe("studio inline help and movable anchors", {
   it("drags labels with mouse and touch, moves by keyboard, resets and remembers each character", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$set_inputs(motion_on = FALSE)
     app$click(selector = "#show_anchors")
@@ -1695,7 +1673,6 @@ describe("studio phone layout", {
   it("keeps the sentence and tools separate and wraps the call inside the viewport", {
     local_shiny_browser()
     app <- studio_driver(width = 390, height = 844)
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$wait_for_js("document.querySelectorAll('#live_call [data-call-arg]').length > 1")
     browser <- app$get_chromote_session()
@@ -1812,7 +1789,6 @@ describe("studio inspector rail", {
   it("toggles modes, synchronises panel tabs and returns Escape focus to the active mode", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     expect_identical(app$get_js("document.querySelectorAll('[data-inspector-view]').length"), 3L)
     for (name in c("controls", "help", "guide")) {
@@ -1854,7 +1830,6 @@ describe("studio inspector rail", {
   it("shares rail dimensions and reserves room beside the inspector on desktop and tablet", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     browser <- app$get_chromote_session()
     for (size in list(c(1280L, 720L), c(1366L, 768L), c(1440L, 900L), c(861L, 768L), c(999L, 768L), c(1100L, 768L))) {
@@ -1896,7 +1871,6 @@ describe("studio inspector rail", {
   it("keeps one mobile Inspector entry and preserves the mounted menu across breakpoints", {
     local_shiny_browser()
     app <- studio_driver(width = 390, height = 844)
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$run_js("window.studioMenuInput = document.getElementById('studio_keys'); studioMenuInput.checked = false")
     app$click(selector = "#open_inspector")
@@ -2004,7 +1978,6 @@ describe("studio host choices, reading tabs, dock and examples browser", {
   it("expands only reading tabs, remembers the choice and collapses before closing", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = "#inspector_view_controls")
     expect_true(app$get_js(
@@ -2055,7 +2028,6 @@ describe("studio host choices, reading tabs, dock and examples browser", {
   it("matches dock type to the sentence and supplies focus and reduced-motion feedback", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$get_chromote_session()$Input$dispatchMouseEvent(type = "mouseMoved", x = 40, y = 40)
     expect_identical(
@@ -2141,7 +2113,6 @@ describe("studio host choices, reading tabs, dock and examples browser", {
   it("browses examples in place and restores mounted state, with index and search exits", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$set_inputs(mood = "happy")
     wait_studio_mood(app, "happy")
@@ -2183,7 +2154,6 @@ describe("studio palette help and warnings", {
   it("opens the helper's own help from a chip and the mascot() inspector from the call name", {
     local_shiny_browser()
     app <- studio_driver(width = 1440, height = 900)
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$click(selector = "[data-call-arg=status]")
     app$wait_for_js("!document.getElementById('chip_editor').hidden")
@@ -2203,7 +2173,6 @@ describe("studio palette help and warnings", {
   it("names original colours, preserves exact palette ids and contains tables at 390 pixels", {
     local_shiny_browser()
     app <- studio_driver(width = 390, height = 844)
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     # Read selected words only: a native select's textContent also contains all unselected options.
     sentence <- "(() => {const root=document.querySelector('.pg-sentence'); return [...root.childNodes].map(n=>n.nodeType===3?n.textContent.trim():n.querySelector('select')?.selectedOptions[0].textContent || n.textContent.trim()).filter(Boolean).slice(0,5).join(' ').replace(/\\s+,/g,',');})()"
@@ -2238,7 +2207,6 @@ describe("studio palette help and warnings", {
   it("logs an unknown-palette warning without changing or dropping the live palette", {
     local_shiny_browser()
     app <- studio_driver()
-    withr::defer(app$stop())
     wait_studio_mood(app, "idle")
     app$set_inputs(palette = "sea_green", mood = "happy")
     wait_studio_mood(app, "happy")

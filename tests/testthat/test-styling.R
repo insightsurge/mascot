@@ -120,7 +120,6 @@ describe("public CSS styling hooks", {
       },
       name = "styling"
     )
-    withr::defer(app$stop())
     app$wait_for_js("!!window.mascot?.host?.state(document.getElementById('styled'))")
     expect_true(app$get_js("getComputedStyle(document.body).getPropertyValue('--bs-body-bg').trim().length > 0"))
     app$run_js(
@@ -156,7 +155,6 @@ describe("public CSS styling hooks", {
       width = 1400,
       height = 900
     )
-    withr::defer(app$stop())
     wait_studio_js(app, sprintf("!!%s?.mascot?.host?.state(%s)", studio_frame_wait, studio_live_wait))
     app$click(selector = "#all_functions")
     app$click(selector = '.pg-index-link[data-value="mascot_theme"]')

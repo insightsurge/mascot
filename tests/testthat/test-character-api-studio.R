@@ -6,7 +6,6 @@ describe("the internal Your character studio panel in Chrome", {
       options(mascot.internal.character_panel = TRUE)
       mascot_studio(run = FALSE)
     })
-    withr::defer(app$stop())
     app$click(selector = "#inspector_view_controls")
     app$run_js("document.querySelector('details:has(#your_character_example)').open = true")
     app$click("your_character_example")

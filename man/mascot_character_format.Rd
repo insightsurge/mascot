@@ -6,7 +6,7 @@
 \description{
 A guide to the character file format read by \code{\link[=mascot_read_character]{mascot_read_character()}} and
 \code{\link[=mascot_check_character]{mascot_check_character()}}. Descriptions are
-JSON objects with \code{format_version = 1}, \code{requires}, \code{id}, \code{name}, \code{description},
+JSON objects with \code{format_version = 1}, \code{id}, \code{name}, \code{description},
 a \code{family}, colours, ground, parts and five shared moods (\code{idle}, \code{thinking},
 \code{happy}, \code{worried}, \code{celebrating}). Optional anchors, palettes, face kits and
 gestures describe their own supported names. Palette ids cannot be \code{original}
@@ -23,13 +23,57 @@ shared gestures and palettes); a custom character cannot take a definition from
 the installed package. A resolved file has its family defaults merged in and
 embeds its face kits, so it does not depend on the installed package.
 
-Checks stop at the first problem, giving a diagnostic code, the JSON path and a
-repair instruction, and the value where one is at fault. Input byte, depth and
-node limits and drawing budgets are enforced for all input forms. Unsupported and reserved capabilities are
-refused. Format version, capability set and admission policy version are
-distinct. The installed grammar and policy live in
-\code{system.file("format", package = "mascot")}.
+Drawing coordinates are design units in a 300 by 300 frame. The point where
+the character stands on the ground is \verb{(0, 0)}: 150 units from the left edge
+and 270 from the top. \code{y} grows downwards, so a part above the ground has a
+negative \code{y}. Every part, movement and effect must stay inside the frame at
+every detail size.
 }
+\section{Capabilities and \code{requires}}{
+
+Every version-1 mascot draws the eight version-1 capabilities: \code{parts},
+\code{paints}, \code{clip}, \code{outline}, \code{glow}, \code{face_kit}, \code{tracks} and \code{lod}. They are
+implicit: a file needs no \code{requires} field. \code{requires} lists only
+capabilities added after version 1. A file that lists the version-1 names
+keeps loading. A name this version of mascot does not know, or a reserved
+one, stops the check with an error that names it and says to update mascot.
+Unsupported and reserved capabilities used as keys (such as \code{connector} or
+\code{morph}) are refused too.
+}
+
+\section{Keys for other tools}{
+
+\itemize{
+\item A top-level \verb{$schema} string is accepted and kept, so an editor can link the
+file to a schema. mascot never reads it.
+\item A key that starts with \code{x_}, in any object whose fields the format fixes
+(the character itself, a part, an item, a mood, a gesture, a face and so
+on), is an extension key. Its value can be any JSON value (from R, a list
+or an unnamed vector; a data frame or a named vector is refused). It is
+kept as written when the character is checked, resolved and saved, and it
+is never read; it counts towards the file's size, depth and node limits.
+Resolution keeps the character's own extension keys; those of a family's
+\code{defaults} object stay in the resolved family snapshot. In an object whose
+keys are ids or names (\code{colours}, \code{moods}, \code{gestures}, \code{palettes} and the
+other maps), a key that starts with \code{x_} is an ordinary id.
+\item A \code{note} string, accepted in every fixed-field object, is a comment.
+}
+}
+
+\section{Diagnostics}{
+
+Checks stop at the first problem, giving a diagnostic code, the JSON path and a
+repair instruction, and the value where one is at fault. A value outside its
+range or choices is named with the range or the choices. A drawing budget gives
+the band, the count and the limit; a character too big for its frame names
+the part, face, effect or shadow that reaches furthest outside, the side and
+by how much. Input byte, depth and node limits and drawing budgets are enforced
+for all input forms. Format version, capability set and admission policy
+version are distinct. The installed grammar and policy live in
+\code{system.file("format", package = "mascot")}; the policy holds the input limits,
+the capability names and the drawing budget of each detail band.
+}
+
 \section{Compatibility}{
 
 The format is experimental and its future direction is open; these points hold

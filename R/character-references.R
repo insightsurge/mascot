@@ -232,7 +232,8 @@ character_format_references <- function(x) {
   for (id in names(x$modes$dark$colours)) {
     role(id, paste0("$.modes.dark.colours.", id))
   }
-  for (id in names(x$brand)) {
+  # The brand object's fields are the two slots; its note is a comment.
+  for (id in intersect(c("primary", "secondary"), names(x$brand))) {
     role(x$brand[[id]], paste0("$.brand.", id))
   }
   for (id in names(x$follows)) {
@@ -272,13 +273,8 @@ character_format_references <- function(x) {
   for (id in names(parts)) {
     part <- parts[[id]]
     path <- graph$paths[[id]]
-    at <- as.numeric(unlist(part$at))
-    if (any(abs(at) > 4096)) {
-      character_format_abort("input_type", paste0(path, ".at"), NULL, "Keep pivot coordinates within +/-4096.")
-    }
-    if (any(abs(as.numeric(unlist(part$scale))) > 16)) {
-      character_format_abort("input_type", paste0(path, ".scale"), NULL, "Keep scales within [-16,16].")
-    }
+    character_format_within(as.numeric(unlist(part$at)), 4096, paste0(path, ".at"), "pivot coordinates")
+    character_format_within(as.numeric(unlist(part$scale)), 16, paste0(path, ".scale"), "scales")
     candidates <- c(list(default = if (is.null(part$items)) list() else part$items), part$variants)
     if ("default" %in% names(part$variants)) {
       character_format_abort(
@@ -345,9 +341,7 @@ character_format_references <- function(x) {
       }
     }
     for (local in c(list(anchor), unname(anchor$variants))) {
-      if (any(abs(as.numeric(unlist(local$at))) > 4096)) {
-        character_format_abort("input_type", paste0(path, ".at"), NULL, "Keep anchor coordinates within +/-4096.")
-      }
+      character_format_within(as.numeric(unlist(local$at)), 4096, paste0(path, ".at"), "anchor coordinates")
       if (!is.null(local$scale) && local$scale > 16) {
         character_format_abort("input_type", paste0(path, ".scale"), local$scale, "Keep anchor scale at most 16.")
       }
@@ -411,20 +405,28 @@ character_format_references <- function(x) {
   if (!is.null(x$ground$shadow)) {
     role(if (is.null(x$ground$shadow$colour)) "shadow" else x$ground$shadow$colour, "$.ground.shadow.colour")
   }
-  for (outline in c(list(x$outline), lapply(x$lod, `[[`, "outline"))) {
+  # The engine paints each band's outline from `outline`, `outline.lod.<band>`
+  # and `lod.<band>.outline`, so every colour in them must be a declared role.
+  outlines <- list("$.outline" = x$outline)
+  for (band in names(x$outline$lod)) {
+    outlines[[paste0("$.outline.lod.", band)]] <- x$outline$lod[[band]]
+  }
+  for (band in c("small", "micro")) {
+    outlines[[paste0("$.lod.", band, ".outline")]] <- x$lod[[band]]$outline
+  }
+  for (where in names(outlines)) {
+    outline <- outlines[[where]]
     if (is.null(outline)) {
       next
     }
     if (!is.null(outline$colour)) {
-      role(outline$colour, "$.outline.colour")
+      role(outline$colour, paste0(where, ".colour"))
     }
-    if (!is.null(outline$second)) role(outline$second$colour, "$.outline.second.colour")
+    if (!is.null(outline$second)) role(outline$second$colour, paste0(where, ".second.colour"))
   }
   kit <- NULL
   if (!is.null(x$face)) {
-    if (any(abs(as.numeric(unlist(x$face$at))) > 4096)) {
-      character_format_abort("input_type", "$.face.at", NULL, "Keep face coordinates within +/-4096.")
-    }
+    character_format_within(as.numeric(unlist(x$face$at)), 4096, "$.face.at", "face coordinates")
     if (!is.null(x$face$scale) && x$face$scale > 16) {
       character_format_abort("input_type", "$.face.scale", x$face$scale, "Keep face scale at most 16.")
     }
@@ -579,19 +581,21 @@ character_format_references <- function(x) {
     effect <- kit$effects[[id]]
     path <- paste0("$.face.kit_definition.effects.", id)
     character_effect_ranges(effect, path)
-    for (index in seq_along(effect$items)) {
-      character_geometry(
-        effect$items[[index]],
-        if (is.null(x$shapes)) character_object() else x$shapes,
-        paste0(path, ".items[", index - 1L, "]")
-      )
-    }
-    for (index in seq_along(effect$reduced_items)) {
-      character_geometry(
-        effect$reduced_items[[index]],
-        if (is.null(x$shapes)) character_object() else x$shapes,
-        paste0(path, ".reduced_items[", index - 1L, "]")
-      )
+    for (list_name in c("items", "reduced_items")) {
+      for (index in seq_along(effect[[list_name]])) {
+        item <- effect[[list_name]][[index]]
+        item_path <- paste0(path, ".", list_name, "[", index - 1L, "]")
+        # The engine draws a kit effect on its own, away from the parts, so an item clip has no target there.
+        if (!is.null(item$clip)) {
+          character_format_abort(
+            "capability",
+            paste0(item_path, ".clip"),
+            item$clip,
+            "Kit effects cannot bind item clips: remove the clip from this effect item."
+          )
+        }
+        character_geometry(item, if (is.null(x$shapes)) character_object() else x$shapes, item_path)
+      }
     }
   }
   used_effects <- names(x$effects)

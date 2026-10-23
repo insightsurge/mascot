@@ -12,61 +12,6 @@
     "keys_per_track": 64,
     "tracks_per_gesture": 256
   },
-  "geometry": {
-    "frame": [
-      300,
-      300
-    ],
-    "ground_origin": [
-      150,
-      270
-    ],
-    "local_bounds": {
-      "x": [
-        -150,
-        150
-      ],
-      "y": [
-        -270,
-        30
-      ]
-    },
-    "coordinate_range": [
-      -4096,
-      4096
-    ],
-    "scale_range": [
-      -16,
-      16
-    ],
-    "singular_determinant_below": 1e-12
-  },
-  "motion": {
-    "frames_per_second": 30,
-    "action_frames": [
-      1,
-      150
-    ],
-    "key_time_range": [
-      0,
-      1
-    ],
-    "minimum_keys": 2,
-    "easings": [
-      "linear",
-      "ease_in",
-      "ease_out",
-      "ease_in_out",
-      "step"
-    ]
-  },
-  "core_moods": [
-    "idle",
-    "thinking",
-    "happy",
-    "worried",
-    "celebrating"
-  ],
   "capabilities": [
     "parts",
     "paints",
@@ -92,9 +37,6 @@
   ],
   "bands": {
     "full": {
-      "css_width_min_inclusive": 128,
-      "css_width_max_exclusive": null,
-      "reference_css_width": 160,
       "active_parts": 64,
       "painted_items": 160,
       "paint_passes": 320,
@@ -106,9 +48,6 @@
       "inflated_glow_area_ratio": 1.0
     },
     "small": {
-      "css_width_min_inclusive": 48,
-      "css_width_max_exclusive": 128,
-      "reference_css_width": 96,
       "active_parts": 40,
       "painted_items": 90,
       "paint_passes": 180,
@@ -120,9 +59,6 @@
       "inflated_glow_area_ratio": 0.5
     },
     "micro": {
-      "css_width_min_inclusive": 0,
-      "css_width_max_exclusive": 48,
-      "reference_css_width": 24,
       "active_parts": 16,
       "painted_items": 30,
       "paint_passes": 60,
@@ -133,9 +69,5 @@
       "blur_design_units": 0,
       "inflated_glow_area_ratio": 0
     }
-  },
-  "contrast": {
-    "minimum_meaningful_graphic": 3,
-    "aim_new_art": 4.5
   }
 }

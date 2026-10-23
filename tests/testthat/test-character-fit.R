@@ -19,6 +19,19 @@ describe("conservative authored frame fit", {
     expect_false(character_format_fit(data, graph, behaviour)$verified)
   })
 
+  it("names what reaches furthest outside the frame, on which side and by how much", {
+    # Box 1 pokes 5 past the left edge, box 2 pokes 20 past the bottom: box 2 is the widest
+    boxes <- list(c(-5, 10, 100, 100), c(50, 50, 120, 320), c(10, 10, 20, 20))
+    widest <- character_fit_widest(boxes, c("part \"arm\"", "the ground shadow", "the face"))
+    expect_identical(widest, list(source = "the ground shadow", side = "bottom", overflow = 20))
+    data <- character_format_resolve(format_recipe())
+    data$parts[[1]]$at <- list(-180, -60)
+    graph <- character_format_references(data)
+    proof <- character_format_fit(data, graph, character_format_behaviour(data, graph))
+    expect_identical(proof$widest$source, "part \"panel\"")
+    expect_identical(proof$widest$side, "left")
+  })
+
   it("bounds trigonometric extrema and matrix products independently", {
     expect_equal(character_interval_trig(c(0, pi)), c(0, 1), tolerance = 1e-12)
     expect_equal(character_interval_trig(c(0, 2 * pi), TRUE), c(-1, 1))

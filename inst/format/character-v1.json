@@ -2771,7 +2771,7 @@
         "fade_at": {
           "type": "number",
           "min": 0,
-          "max": 1
+          "exclusive_max": 1
         },
         "amplitude": {
           "type": "number",
@@ -3541,6 +3541,9 @@
     "character": {
       "type": "object",
       "fields": {
+        "$schema": {
+          "type": "string"
+        },
         "format_version": {
           "type": "integer"
         },
@@ -3766,7 +3769,6 @@
         "name",
         "family",
         "description",
-        "requires",
         "colours",
         "ground",
         "parts",

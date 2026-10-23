@@ -17,8 +17,8 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
-    timeout-minutes: 30  # Air, Biome and lintr (about 2-4 min), plus room for a slow package mirror (installing R alone
-    # once took 15 min)
+    timeout-minutes: 45  # Air, Biome and lintr (about 2-4 min), plus room for a slow package mirror (installing R
+    # alone once took 15 min)
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 

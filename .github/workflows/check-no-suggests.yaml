@@ -19,8 +19,8 @@ concurrency:
 jobs:
   check-no-suggests:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
-    timeout-minutes: 45  # one R CMD check without the Suggests: about 11 min, plus room for a slow package mirror
-    # (installing R alone once took 19 min)
+    timeout-minutes: 90  # about twice the slowest run: 40 min on a slow day (it installs its packages without a
+    # cache); usually 11 min
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}

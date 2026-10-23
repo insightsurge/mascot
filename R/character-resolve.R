@@ -30,20 +30,36 @@ character_format_merge <- function(base, override, path = "$") {
 #' @noRd
 character_format_identity <- function(x) {
   checkmate::assert_list(x)
-  canonical <- function(value) {
-    checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
-    if (!is.list(value)) {
-      return(value)
-    }
-    if (!is.null(names(value))) {
-      value <- value[order(names(value), method = "radix")]
-    }
-    for (index in seq_along(value)) {
-      value[index] <- list(canonical(value[[index]]))
-    }
-    value
+  as.character(jsonlite::toJSON(character_format_canonical(x), auto_unbox = TRUE, null = "null", digits = NA))
+}
+
+#' Canonical form of a value: names sorted at every level, values otherwise kept
+#'
+#' A `json` class is dropped from every value, so text that claims to be JSON
+#' is always written as text.
+#' @noRd
+character_format_canonical <- function(value) {
+  checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
+  if (!is.list(value)) {
+    return(if (inherits(value, "json")) unclass(value) else value)
   }
-  as.character(jsonlite::toJSON(canonical(x), auto_unbox = TRUE, null = "null", digits = NA))
+  if (!is.null(names(value))) {
+    value <- value[order(names(value), method = "radix")]
+  }
+  for (index in seq_along(value)) {
+    value[index] <- list(character_format_canonical(value[[index]]))
+  }
+  value
+}
+
+#' A character source's identity, made once and put into a mount specification's identity
+#'
+#' Only `mascot_spec_identity()` writes this piece as it is, and only at the
+#' character source; anywhere else it is text like any other.
+#' @noRd
+character_identity_piece <- function(x) {
+  checkmate::assert_list(x)
+  structure(character_format_identity(x), class = c("mascot_identity_piece", "json"))
 }
 
 #' Load authoring kit defaults from the installed package

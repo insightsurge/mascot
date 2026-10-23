@@ -211,26 +211,26 @@ every mood.*
 
 ## Tessa
 
-Meet Tessa, the quiet maker of the group. If you place a mascot without naming
-one, Tessa is the friend who steps forward. She belongs to the Hexonians, a
-family of characters built on a hexagonal frame who share a couple of friendly
-moves like waving and nodding. Her name comes from tessellation, hexagons tiling
-a plane without gaps, the way packages fit together cleanly.
+Tessa is the quiet maker of the group, and the friend who steps forward if you
+place a mascot without naming one. She belongs to the Hexonians, a family of
+characters built on a hexagonal frame who share a couple of friendly moves like
+waving and nodding. Her name comes from tessellation. Hexagons tile a plane
+without gaps, the way packages fit together cleanly.
 
-Tessa is innocent and always eager to learn. She is calm, hard-working, curious,
-and patient, the maker who thoughtfully picks the right tool and takes the next
-step. Where Neer notices what shifted, Tessa builds. You can recognise her by
-her slim teal hexagon body and the silver ring that shimmers now and then.
-She wears hair with a side fringe, a small bow, small studs, hanging arms, and a
-chest badge whose icon shows her mood.
+Tessa is innocent and always eager to learn. Calm, hard-working, curious and
+patient, she picks the right tool with care, then takes the next step. Where
+Neer notices what shifted, Tessa builds. You can recognise her by her slim teal
+hexagon body and the silver ring that shimmers now and then. Look also for hair
+with a side fringe, a small bow, small studs, hanging arms, and a chest badge
+whose icon shows her mood.
 
 Her status lines sound like someone humming along at a sturdy workbench. At
 rest, she is "Resting, ready for the next piece." Start a run, and she is
 "Working out how the parts fit." If a detail needs fixing, she notes that "One
-part needs a closer look." When things go well, she smiles on "That came
+part needs a closer look." When things go well, she smiles and says "That came
 together nicely" or "Finished, and built to last." That steady, step-by-step
-nature suits tutorials, exploratory tools, teaching
-guides, and package documentation.
+nature suits tutorials, exploratory tools, teaching guides, and package
+documentation.
 
 Here is Tessa across her five moods:
 
@@ -247,25 +247,23 @@ appearance_gallery("tessa", "Night teal")
 
 ## Sela
 
-If your day involves untangling overlapping appointments, bookings, or shifting
-rosters, Sela is the partner you want beside you. She is also one of the
-Hexonians, sharing that familiar hexagonal silhouette, yet she brings a very
-different rhythm. Sela is the unflappable organiser of the crew, staying calm
-under complexity and keeping plans in order.
+Sela is the organiser of the crew. When appointments overlap, bookings pile up
+or rosters shift, she stays calm and keeps plans in order. Like Tessa, she is
+one of the Hexonians, with the same hexagonal silhouette, but she moves to a
+different rhythm.
 
-She is a lilac hexagon with deep violet hair,
-flanked by time blocks that sit apart when things are calm, overlap during a
-clash, and slide apart again once sorted. We like to tell a little story about
-her name: it is a soft echo of "cell", one hexagon in a grid, and of "selah", the
-pause at the end of a line. She hears a clash coming and takes a breath before
-fixing it.
+She is a lilac hexagon with deep violet hair, flanked by time blocks that sit
+apart when things are calm, overlap during a clash, and slide apart again once
+sorted. Her name is a soft echo of "cell", one hexagon in a grid, and of
+"selah", the pause at the end of a line. She hears a clash coming and takes a
+breath before fixing it.
 
-Her status updates reflect that composed oversight. When everything lines up,
+Her status lines stay just as composed. When everything lines up,
 she announces that "Schedule is balanced and clear." If two bookings collide,
 she notes that "Direct schedule clash detected." She takes time "Reviewing
 resource conflict," and once cleared, confirms that "Conflict resolved
-cleanly" or "All bookings confirmed and locked." Sela suits
-appointment managers, booking calendars, and resource schedules.
+cleanly" or "All bookings confirmed and locked." Sela suits appointment
+managers, booking calendars, and resource schedules.
 
 Here is Sela across her five moods:
 
@@ -282,22 +280,20 @@ appearance_gallery("sela", "Lilac violet")
 
 ## Knurl
 
-Some tasks do not call for conversation; they need a diagnostic scan, a clamp,
-and a steadfast hand. That is where Knurl comes in. Knurl is a repair robot
-belonging to the Visorfolk, a character family whose faces are functional
-screens. Deliberate, steadfast, and mechanically minded, it keeps to two or
-three words at a time.
+Some tasks need a diagnostic scan, a clamp and a steadfast hand, not
+conversation. Knurl is for those. It is a repair robot from the Visorfolk, a
+character family whose faces are functional screens. Deliberate, steadfast and
+mechanically minded, it keeps to two or three words at a time.
 
-Visually, Knurl is built for honest workshop duties: a single-wheeled bot with
-a clamp arm and a screen visor. Its name is a nod to a knurl, the
-ridged grip pattern cut into metal handles and knobs, a fitting touch for a
-repair bot designed to grip tricky problems.
+Knurl is a single-wheeled workshop bot with a clamp arm and a screen visor. Its
+name is a nod to a knurl, the ridged grip pattern cut into metal handles and
+knobs, which suits a repair bot that grips tricky problems.
 
 Where the others speak in complete sentences, Knurl keeps to clipped readouts.
 When waiting, it shows "Queue idle." Snags bring up "Diagnosing task." A broken
 run triggers "Queue error," while a fix brings a brisk "Task repaired." Once
-clear, it reports "All jobs finished." Knurl is the right companion for
-background queues, batch jobs, pipeline monitors, and diagnostic views.
+clear, it reports "All jobs finished." Knurl suits background queues, batch
+jobs, pipeline monitors, and diagnostic views.
 
 Here is Knurl running through its five moods:
 
@@ -314,23 +310,21 @@ appearance_gallery("knurl", "Original")
 
 ## Neer
 
-Neer brings a tranquil, liquid presence to the group. She belongs to the
-Elementals family, characters drawn as living elements. Her name means "water"
-in Sanskrit and Hindi, as well as in Tamil and other South Indian languages.
-Like water, she takes on the colours
-of whatever holds her.
+Neer is the water in the group. She belongs to the Elementals family,
+characters drawn as living elements. Her name means "water" in Sanskrit and
+Hindi, as well as in Tamil and other South Indian languages. Like water, she
+takes on the colours of whatever holds her.
 
-Drawn in blue water tones with a shell, Neer is calm, observant, clear, and
-welcoming. When something changes on screen, she notices what shifted and says
-it in a few words. If something looks amiss, she never panics; worry shows as
-attention, not panic.
+She is drawn in blue water tones with a shell, and she is calm, observant, clear
+and welcoming. When something changes on screen, she notices what shifted and
+says so in a few words. If something looks amiss, her worry shows as attention,
+never panic.
 
-Her status lines reflect that quiet clarity. When nothing has moved, she shows
+Her status lines are quiet and clear. When nothing has moved, she shows
 "Nothing has changed." As you type, she is "Checking the inputs." Valid entries
 give "The form is valid." When values need checking, she flags that "Some fields
 need attention," and once everything passes, confirms that "All checks passed."
-Neer suits form checks, data entry reviews, and quality
-control screens.
+Neer suits form checks, data entry reviews, and quality control screens.
 
 Here is Neer displaying her five moods:
 
@@ -347,5 +341,5 @@ appearance_gallery("neer", "Original")
 
 ## Pick a companion
 
-Choose the companion that feels right for your page, and let them keep your
-readers company.
+Pick the one whose voice suits your page: Tessa for tutorials and documentation,
+Sela for schedules, Knurl for queues and batch jobs, Neer for form checks.

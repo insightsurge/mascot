@@ -1,6 +1,8 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (test-coverage.yaml), without Codecov
 # (the repo is private). Fails when line coverage is under the limit in DESCRIPTION (Config/cran-gate/coverage,
-# 70%), the same limit the gate uses.
+# 70% when the field is missing), the same limit the gate uses. A pull request is held to the higher of its base
+# branch's limit and its own, so a pull request cannot lower the limit by editing DESCRIPTION; changes to this
+# workflow are reviewed like any other change. A push to main reads the checked-out DESCRIPTION.
 on:
   push:
     branches: [main]
@@ -18,6 +20,7 @@ concurrency:
 jobs:
   test-coverage:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
+    timeout-minutes: 90  # the whole suite with Chrome under covr: about 40 min on a laptop
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       # Run the tests CRAN skips (shinytest2 needs Chrome, which the runner has), so they count towards coverage.
@@ -35,7 +38,19 @@ jobs:
           extra-packages: any::covr
           needs: coverage
 
+      # The base branch name comes in through env, never written into the script, so it can't inject commands.
+      - name: Read the coverage limit from the base branch (pull requests)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --depth=1 origin "refs/heads/${BASE_REF}"
+          git show FETCH_HEAD:DESCRIPTION > "${RUNNER_TEMP}/base-DESCRIPTION"
+        shell: bash
+
       - name: Test coverage (at least the limit in DESCRIPTION)
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,
@@ -45,8 +60,18 @@ jobs:
           print(cov)
           pct <- covr::percent_coverage(cov)
           message(sprintf("Line coverage: %.1f%%", pct))
-          limit <- as.numeric(read.dcf("DESCRIPTION", fields = "Config/cran-gate/coverage")[[1]])
-          if (is.na(limit)) limit <- 70
+          if (Sys.getenv("EVENT_NAME") == "pull_request" &&
+            !file.exists(file.path(Sys.getenv("RUNNER_TEMP"), "base-DESCRIPTION"))) {
+            stop("The base branch's DESCRIPTION was not read.", call. = FALSE)
+          }
+          read_limit <- function(file) {
+            value <- as.numeric(read.dcf(file, fields = "Config/cran-gate/coverage")[[1]])
+            if (is.na(value)) 70 else value
+          }
+          limit <- read_limit("DESCRIPTION")
+          if (Sys.getenv("EVENT_NAME") == "pull_request") {
+            limit <- max(read_limit(file.path(Sys.getenv("RUNNER_TEMP"), "base-DESCRIPTION")), limit)
+          }
           if (pct < limit) stop(sprintf("Coverage %.1f%% is under %g%%.", pct, limit), call. = FALSE)
         shell: Rscript {0}
 

@@ -37,6 +37,7 @@ describe("character_format_check()", {
       expect_identical(manifest$format_version, 1L)
       expect_named(manifest$work, c("full", "small", "micro"))
       expect_true(all(vapply(manifest$fit, function(proof) proof$verified, logical(1))))
+      # fixtures/format/study_bot.json keeps the older gestures on purpose, to test the fallback route.
       if (id == "study_bot") expect_identical(manifest$playable$wave, "rock")
     }
   })

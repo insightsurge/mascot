@@ -5,45 +5,83 @@ character_object <- function() {
 }
 
 #' Recursively merge objects, replacing arrays and named definitions atomically
+#'
+#' With `rule` (the schema rule at `path`) and `definitions`, an `x_` key of a
+#' fixed-field object is an extension key: the override's value replaces the
+#' base's whole, never merged into it. In a map an `x_` key is an ordinary id
+#' and merges like any other. Without a rule no key is treated as an extension.
 #' @noRd
 # Per-node helper: callers assert inputs (house exception, r-code.md).
-character_format_merge <- function(base, override, path = "$") {
+character_format_merge <- function(base, override, path = "$", rule = NULL, definitions = NULL) {
   if (!is.list(base) || !is.list(override) || is.null(names(base)) || is.null(names(override))) {
     return(override)
   }
   atomic <- grepl("[.](gestures|palettes|shapes|eye_styles|brow_styles|mouth_styles)$", path) ||
     grepl("[.]styles[.](eyes|brows|mouth)$", path)
+  if (!is.null(rule$ref)) {
+    rule <- definitions[[rule$ref]]
+  }
+  fixed <- identical(rule$type, "object")
   result <- base
   for (key in names(override)) {
+    child <- if (fixed) {
+      rule$fields[[key]]
+    } else if (identical(rule$type, "map")) {
+      rule$values
+    }
     result[key] <- list(
-      if (atomic || key == "kit_definition" || !key %in% names(base)) {
+      if (atomic || key == "kit_definition" || (fixed && startsWith(key, "x_")) || !key %in% names(base)) {
         override[[key]]
       } else {
-        character_format_merge(base[[key]], override[[key]], paste0(path, ".", key))
+        character_format_merge(base[[key]], override[[key]], paste0(path, ".", key), child, definitions)
       }
     )
   }
   result
 }
 
+#' Keys of a fixed-field object that are about the object itself: its note and extension keys
+#' @noRd
+character_format_own_keys <- function(x) {
+  checkmate::assert_list(x, null.ok = TRUE)
+  keys <- as.character(names(x))
+  keys[keys == "note" | startsWith(keys, "x_")]
+}
+
 #' Canonical content identity without a hash or a registry side effect
 #' @noRd
 character_format_identity <- function(x) {
   checkmate::assert_list(x)
-  canonical <- function(value) {
-    checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
-    if (!is.list(value)) {
-      return(value)
-    }
-    if (!is.null(names(value))) {
-      value <- value[order(names(value), method = "radix")]
-    }
-    for (index in seq_along(value)) {
-      value[index] <- list(canonical(value[[index]]))
-    }
-    value
+  as.character(jsonlite::toJSON(character_format_canonical(x), auto_unbox = TRUE, null = "null", digits = NA))
+}
+
+#' Canonical form of a value: names sorted at every level, values otherwise kept
+#'
+#' A `json` class is dropped from every value, so text that claims to be JSON
+#' is always written as text.
+#' @noRd
+character_format_canonical <- function(value) {
+  checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
+  if (!is.list(value)) {
+    return(if (inherits(value, "json")) unclass(value) else value)
   }
-  as.character(jsonlite::toJSON(canonical(x), auto_unbox = TRUE, null = "null", digits = NA))
+  if (!is.null(names(value))) {
+    value <- value[order(names(value), method = "radix")]
+  }
+  for (index in seq_along(value)) {
+    value[index] <- list(character_format_canonical(value[[index]]))
+  }
+  value
+}
+
+#' A character source's identity, made once and put into a mount specification's identity
+#'
+#' Only `mascot_spec_identity()` writes this piece as it is, and only at the
+#' character source; anywhere else it is text like any other.
+#' @noRd
+character_identity_piece <- function(x) {
+  checkmate::assert_list(x)
+  structure(character_format_identity(x), class = c("mascot_identity_piece", "json"))
 }
 
 #' Load authoring kit defaults from the installed package
@@ -120,7 +158,7 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
       character_format_abort("family", "$.family_definition", NULL, "Embed the family metadata snapshot.")
     }
     definition <- validate_family(definition)
-    if (length(definition$defaults)) {
+    if (length(setdiff(names(definition$defaults), character_format_own_keys(definition$defaults)))) {
       character_format_abort("family", "$.family_definition.defaults", NULL, "A resolved snapshot has empty defaults.")
     }
     if (!"palette_sources" %in% names(parsed)) {
@@ -162,7 +200,10 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
       )
     }
     defaults <- if (is.null(definition$defaults)) character_object() else definition$defaults
-    result <- character_format_merge(defaults, parsed)
+    # The defaults' own note and x_ keys describe the defaults: they stay in the family snapshot and are not
+    # merged into the character.
+    own <- names(defaults) %in% character_format_own_keys(defaults)
+    result <- character_format_merge(defaults[!own], parsed, "$", schema$definitions$character, schema$definitions)
     palettes <- if (is.null(defaults$palettes)) character_object() else defaults$palettes
     sources <- stats::setNames(as.list(rep("family", length(palettes))), names(palettes))
     for (id in names(parsed$palettes)) {
@@ -184,11 +225,16 @@ character_format_resolve <- function(x, families = character_object(), kits = ch
     }
     result$palettes <- palettes
     result$palette_sources <- sources
-    result$family_definition <- list(
-      id = definition$id,
-      name = definition$name,
-      description = definition$description,
-      defaults = character_object()
+    # The snapshot keeps the family's metadata and its extension keys, and of its defaults only their own note
+    # and extension keys: the defaults themselves are merged into the character.
+    result$family_definition <- c(
+      list(
+        id = definition$id,
+        name = definition$name,
+        description = definition$description,
+        defaults = if (any(own)) defaults[own] else character_object()
+      ),
+      definition[startsWith(names(definition), "x_")]
     )
     result$resolved <- TRUE
   }

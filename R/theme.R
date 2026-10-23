@@ -45,6 +45,31 @@
 #' )
 #' ```
 #' Note that `suppressWarnings()` also works but hides every warning.
+#'
+#' @section A `bs_theme()` or explicit colours:
+#' A [bslib::bs_theme()] cannot be combined with `palette`, `light`, `dark` or
+#' `css`: `theme` takes either the theme or a `mascot_theme()`, and a
+#' `bs_theme()` passed to `mascot_theme()` is an error. It fills only the
+#' character's brand roles (the `brand` column of [mascot_colour_roles()]: `body`
+#' for `primary` and `rim` for `secondary` on `"tessa"`), and the roles that
+#' follow them change with them. A character with no brand roles, such as
+#' `"neer"`, keeps its own colours. The colour is the same in light and dark
+#' mode. A brand colour that is dark enough on a white page can fail 3:1 on the
+#' dark background. In development mode (or with
+#' `options(mascot.contrast_warnings = TRUE)`; see "Contrast warnings") a
+#' warning of class `mascot_contrast` then names the slot and the mode, and the
+#' colour is kept. To change it, give those roles for each mode yourself:
+#'
+#' ```r
+#' mascot("helper", theme = mascot_theme(
+#'   light = list(body = "#1b3a6b", rim = "#5c6770"),
+#'   dark = list(body = "#9ec5fe", rim = "#adb5bd")
+#' ))
+#' ```
+#'
+#' The example uses the brand roles of `"tessa"`; other characters name theirs in
+#' [mascot_colour_roles()]. Roles you leave out follow the ones you set, as
+#' described above.
 #' @param palette A palette id from [mascot_palettes()], or `NULL` (the default)
 #'   for the character's own colours. Checked against the chosen character when
 #'   used. An unknown palette id is an error in [mascot()] (the UI is being
@@ -248,7 +273,7 @@ theme_problem <- function(x, roles = NULL) {
   }
   if (inherits(x, "bs_theme")) {
     if (!theme_has_bslib()) {
-      return("`theme` needs bslib 0.6.0 or later for a bs_theme() object.")
+      return("`theme` needs bslib 0.7.0 or later for a bs_theme() object.")
     }
     return(NULL)
   }
@@ -474,11 +499,11 @@ theme_tag <- function(theme) {
   )
 }
 
-#' Optional bslib availability, separate from reading a theme: installed and 0.6.0 or later
-#' (the first version with the `body-bg-dark` variable and `popover()`)
+#' Optional bslib availability, separate from reading a theme: installed and 0.7.0 or later, the version
+#' DESCRIPTION asks for (`body-bg-dark` and `popover()` came in 0.6.0, `input_task_button()` in 0.7.0)
 #' @noRd
 theme_has_bslib <- function() {
-  requireNamespace("bslib", quietly = TRUE) && bslib_version() >= "0.6.0"
+  requireNamespace("bslib", quietly = TRUE) && bslib_version() >= "0.7.0"
 }
 
 #' The installed bslib version; called only after requireNamespace() has found bslib

@@ -22,6 +22,7 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-26.04  # pinned, like gitleaks
+    timeout-minutes: 10  # tags and creates a GitHub release (recent runs: under a minute)
     steps:
       - uses: actions/checkout@v7
         with:

@@ -1,5 +1,14 @@
 # mascot (development version)
 
+* `mascot()` builds its tag in under 15 ms instead of about 80 ms for a built-in character, and about 800 ms for your own checked character, on every call after the first. It works out a character's identity once per R process, or once per checked object, instead of on every call; the tags and mount tokens stay the same (#494).
+
+* `mascot_check_character()` and `mascot_read_character()` settle what character format version 1 accepts, so files written now keep loading (#493):
+  * `requires` is optional and lists only capabilities added after version 1; the eight version-1 capabilities are always available. Files that list them keep loading. An unknown capability stops the check with an error that names it.
+  * A top-level `$schema` string and keys that start with `x_` in any fixed-field object are accepted, kept when a character is checked and saved, and never read, so editors and other tools can store their own information. A `note` in a mood's face controls or in `brand` is a comment, as everywhere else, and the browser accepts a `note` wherever the checker does.
+  * Error messages give the value with its range or choices (coordinates included), the count or size with the limit for input and drawing budgets, and the part that reaches furthest outside the frame.
+  * The checker refuses what the browser would refuse: a clip on a kit effect item, a kit effect `fade_at` of 1, and an undeclared colour in `outline.lod.<band>.second`.
+  * `inst/format/policy-v1.json` holds only the limits the package reads: the input limits, the capability names and each detail band's drawing budget. The `study_bot.json` example has no `requires` field.
+
 * `mascot()`, `update_mascot()`, `mascot_preview()` and `mascot_colour_roles()`: the message for an unknown palette that another character has says each palette belongs to its own character (#462).
 
 * `mascot_check_character()` and `mascot_read_character()` say how to fix a character that is too big for its frame: keep every part, movement and effect inside the 300 by 300 frame at that size (#462).
@@ -12,6 +21,11 @@
 
 * The development condition `mascot_click_dropped` is gone: no public helper could raise it, so no app loses a warning it could see (#462).
 
+* The example character `study_bot.json` has an antenna: its `wave` gesture swings the antenna and its `nod` gesture tilts the head about its centre (the head is the top-level part, so the whole body turns with it), instead of both falling back to a whole-character tilt (#483).
+
+* mascot needs `shiny` 1.8.1 or later, and `bslib` 0.7.0 or later where it uses `bslib` (a `bs_theme()` as `theme`, the studio and the examples): the long-task example and the `update_mascot()` help use `shiny::ExtendedTask` and `bslib::input_task_button()`, which those versions introduced. Both versions install on R 4.1 (#483).
+
+* In `mascot_studio()`, a capital E can be typed in every text field of the inspector, such as the status text, bubble content, action label or menu name. Shift+E widens or narrows the Help and Guide panel only when the focus is not in a field (#482).
 * Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).
 
 * The engine draws only characters with `format_version` 1, the format of every built-in character and every character the R functions accept. A description in the 0.0.2 data shape (`inst/characters/tessa.json` in 0.0.2) is no longer drawn: the browser refuses it with an error. Every page loads about 87 KB less JavaScript (#463).

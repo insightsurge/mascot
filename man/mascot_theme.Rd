@@ -107,6 +107,32 @@ warnings:
 Note that \code{suppressWarnings()} also works but hides every warning.
 }
 
+\section{A \code{bs_theme()} or explicit colours}{
+
+A \code{\link[bslib:bs_theme]{bslib::bs_theme()}} cannot be combined with \code{palette}, \code{light}, \code{dark} or
+\code{css}: \code{theme} takes either the theme or a \code{mascot_theme()}, and a
+\code{bs_theme()} passed to \code{mascot_theme()} is an error. It fills only the
+character's brand roles (the \code{brand} column of \code{\link[=mascot_colour_roles]{mascot_colour_roles()}}: \code{body}
+for \code{primary} and \code{rim} for \code{secondary} on \code{"tessa"}), and the roles that
+follow them change with them. A character with no brand roles, such as
+\code{"neer"}, keeps its own colours. The colour is the same in light and dark
+mode. A brand colour that is dark enough on a white page can fail 3:1 on the
+dark background. In development mode (or with
+\code{options(mascot.contrast_warnings = TRUE)}; see "Contrast warnings") a
+warning of class \code{mascot_contrast} then names the slot and the mode, and the
+colour is kept. To change it, give those roles for each mode yourself:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{mascot("helper", theme = mascot_theme(
+  light = list(body = "#1b3a6b", rim = "#5c6770"),
+  dark = list(body = "#9ec5fe", rim = "#adb5bd")
+))
+}\if{html}{\out{</div>}}
+
+The example uses the brand roles of \code{"tessa"}; other characters name theirs in
+\code{\link[=mascot_colour_roles]{mascot_colour_roles()}}. Roles you leave out follow the ones you set, as
+described above.
+}
+
 \examples{
 mascot_theme()
 mascot_theme(palette = "coral_navy", light = list(rim = "#b93664"))

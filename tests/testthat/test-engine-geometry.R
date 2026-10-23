@@ -396,7 +396,10 @@ describe("per-band work bound and policy caps", {
     js <- local_character_engine()
     caps <- js("mascot.geometry.bandCaps")
     policy <- character_format_policy()$bands
+    expect_setequal(names(caps), names(policy))
     for (band in c("full", "small", "micro")) {
+      # The policy holds no band setting that the engine does not count.
+      expect_setequal(names(caps[[band]]), names(policy[[band]]))
       for (metric in names(caps[[band]])) {
         expect_equal(unname(unlist(caps[[band]][[metric]])), policy[[band]][[metric]], info = paste(band, metric))
       }

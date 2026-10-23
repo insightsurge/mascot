@@ -6,9 +6,11 @@ describe("character_save() and character_read()", {
     # When it is saved, read and checked again
     expect_identical(character_save(checked, path), path)
     restored <- character_read(path)
-    # Then values, identity, family metadata and palette provenance are unchanged
-    expect_equal(unclass(restored), unclass(checked))
+    # Then values, identity, family metadata and palette provenance are unchanged. The identity is the canonical
+    # JSON of every value; key order may differ, because the checked-data cache can hand back an equal character
+    # checked earlier in the session (the study_bot example, which has the same content).
     expect_identical(attr(restored, "mascot_manifest")$identity, attr(checked, "mascot_manifest")$identity)
+    expect_identical(character_format_identity(unclass(restored)), character_format_identity(unclass(checked)))
     expect_identical(restored$family_definition, checked$family_definition)
     expect_identical(restored$palette_sources, checked$palette_sources)
     expect_identical(restored$palette_sources$night_screen, "family")
@@ -18,6 +20,26 @@ describe("character_save() and character_read()", {
     again <- file.path(dirname(path), "again.json")
     character_save(restored, again)
     expect_identical(readLines(again), readLines(path))
+  })
+
+  it("keeps $schema and every x_ extension key through save and read", {
+    # Given a source with $schema and an x_ key in every fixed-field object
+    source <- format_with_extensions(format_recipe("study_bot"))
+    source$`$schema` <- "https://example.org/mascot/character-v1.json"
+    checked <- character_format_check(source)
+    path <- file.path(withr::local_tempdir(), "study_bot.json")
+    # When it is saved and read back
+    character_save(checked, path)
+    restored <- character_read(path)
+    # Then the saved file still has them, unchanged
+    expect_identical(restored$`$schema`, source$`$schema`)
+    # (JSON has one number type: a double written as 1 reads back as an integer, so compare with expect_equal)
+    expect_equal(format_extension_paths(unclass(restored)), format_extension_paths(unclass(checked)))
+    expect_true(all(
+      c("$.x_probe", "$.family_definition.x_probe", "$.parts[0].items[0].x_probe", "$.gestures.wave.x_probe") %in%
+        names(format_extension_paths(unclass(restored)))
+    ))
+    expect_identical(attr(restored, "mascot_manifest")$identity, attr(checked, "mascot_manifest")$identity)
   })
 
   it("keeps singleton arrays, empty objects and null endpoints in the saved text", {

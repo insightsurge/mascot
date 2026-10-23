@@ -106,6 +106,57 @@ describe("mascot_studio()", {
   })
 })
 
+describe("mascot_studio() Shift+E in the inspector", {
+  it("types a capital E in a field and widens a reading tab outside one", {
+    local_shiny_browser()
+    skip_without_studio_packages("studio")
+    app <- app_driver(
+      function() {
+        library(mascot)
+        mascot_studio(fn = "mascot_status", run = FALSE)
+      },
+      width = 1440,
+      height = 900
+    )
+    chrome <- app$get_chromote_session()
+    # A trusted key press, as a person types it: the browser inserts the text unless the page prevents it.
+    shift_e <- function() {
+      chrome$Input$dispatchKeyEvent(
+        type = "keyDown",
+        key = "E",
+        code = "KeyE",
+        text = "E",
+        modifiers = 8L,
+        windowsVirtualKeyCode = 69L
+      )
+      chrome$Input$dispatchKeyEvent(
+        type = "keyUp",
+        key = "E",
+        code = "KeyE",
+        modifiers = 8L,
+        windowsVirtualKeyCode = 69L
+      )
+    }
+    expanded <- "document.getElementById('inspector_sidebar').classList.contains('is-expanded')"
+    app$wait_for_js(
+      "!document.getElementById('inspector_sidebar').hidden && document.getElementById('inspector_tab_guide').getAttribute('aria-selected') === 'true'"
+    )
+    app$click(selector = "#inspector_tab_controls")
+    app$wait_for_js("!!document.getElementById('status_text')?.getClientRects().length")
+    app$run_js("{ const field = document.getElementById('status_text'); field.value = ''; field.focus(); }")
+    shift_e()
+    expect_identical(app$get_js("document.getElementById('status_text').value"), "E")
+    # In a reading tab, Shift+E on the panel itself still widens and narrows it.
+    app$click(selector = "#inspector_tab_guide")
+    app$run_js("document.getElementById('inspector_sidebar').focus()")
+    expect_false(app$get_js(expanded))
+    shift_e()
+    expect_true(app$get_js(expanded))
+    shift_e()
+    expect_false(app$get_js(expanded))
+  })
+})
+
 describe("the studio on older R", {
   it("defines its own %||%, which base R has only from R 4.4", {
     path <- dirname(mascot_example("studio", run = FALSE))

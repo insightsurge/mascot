@@ -107,7 +107,9 @@
   // result that answers an earlier click or a settings change doesn't count. Shiny's events are no sign of it:
   // shiny:value comes before the value is drawn (asynchronously), and "idle" comes before the values of the same
   // update. An output in a hidden tab sends its result when it is shown again. An error is drawn straight after
-  // shiny:error.
+  // shiny:error. Shiny also reports a silent validation error (an empty output, no message) for an output in a tab
+  // that has just been shown, a moment after it; that one is no answer to a click that came in between, so it is
+  // ignored.
   const busyButtons = new Map();
   let clicks = 0;
   const busy = (button) => {
@@ -135,7 +137,12 @@
     button.removeAttribute('aria-busy');
     button.disabled = false;
   };
+  const silentError = (error) => {
+    const types = [].concat(error?.type ?? []);
+    return types.includes('shiny.silent.error') || !error?.message;
+  };
   $(document).on('shiny:error', (event) => {
+    if (silentError(event.error)) return;
     const buttons = [...busyButtons.keys()].filter((button) => button.dataset.busyOutput === event.name);
     queueMicrotask(() => buttons.forEach(done));
   });

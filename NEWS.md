@@ -2,7 +2,7 @@
 
 * A floating mascot with `mascot_placement(drag = "snap")` that is taller or wider than the window (less its margins) now snaps to the corner it is dragged to. Before, a drag to the top of a short window, such as a phone held sideways, snapped it back to the bottom (#513).
 
-* In `mascot_studio()`, keyboard focus stays on a chip of the current call when the studio redraws the call, for example just after Reset; before, it could fall back to the page. The theme view's Check contrast and Show every mood buttons now say they are busy until the result of that click, or an error, shows, instead of coming back a moment early or when an earlier result is redrawn (#513, #530).
+* In `mascot_studio()`, keyboard focus stays on a chip of the current call when the studio redraws the call, for example just after Reset; before, it could fall back to the page. The theme view's Check contrast and Show every mood buttons now say they are busy until the result of that click, or an error, shows, instead of coming back a moment early or when an earlier result is redrawn (#513, #530, #545).
 
 * The website is now at <https://insightsurge.github.io/mascot/>, and the studio's "Package website" link and its guide links point there (#115).
 

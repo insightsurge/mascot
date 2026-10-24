@@ -103,10 +103,15 @@ articles go in `vignettes/articles/` (website only, not shipped); compress PNGs 
   reader with no context; then `Closes #<n>` and the template's sections (delete those that do not apply). Its checks
   list only checks anyone can re-run from the repo. Stacked PRs are fine (base on the branch below).
 - **Docs follow behaviour:** a change to how something works updates, in the same PR, every text that describes it:
-  help pages (through roxygen), articles and vignettes, README, NEWS, the studio, `docs/consumers.md`, workflow
-  comments, `tools/README.md`, rules files and CONTRIBUTING. It works both ways: when you edit an article or guide,
-  check that the help page still agrees. Search the repository for the old wording and list the search terms in
-  the PR.
+  - help pages (through roxygen), articles and vignettes, README and NEWS;
+  - the apps, themes and examples users reach through exported functions: the studio (`mascot_studio()`), the
+    example apps (`mascot_examples()`, `mascot_example()`), themes and palettes (`mascot_theme()`,
+    `mascot_palettes()`);
+  - `docs/consumers.md`, workflow comments, `tools/README.md`, the rules files and CONTRIBUTING;
+  - any other page, app, function or file that describes the behaviour, including ones added after this list.
+
+  It works both ways: when you edit an article, guide or example, check that the help page still agrees. Search the
+  repository for the old wording and list the search terms in the PR.
 - Labels: one type (`enhancement`, `bug`, `documentation`, `chore`) and one or more `area: *`. Suggest them in the PR
   if you can't set them; the package creator applies them (release notes are built from PR labels).
 - CI green, then **the package creator merges**. Changes reach `main` only through pull requests; a ruleset blocks

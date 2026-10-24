@@ -496,17 +496,23 @@
   }
   // The server draws Help and Guide for the selected function a moment after it changes, and Guide only once its tab
   // shows, so for a while a panel can show an earlier function's page. Each card names its function in
-  // data-guide-function; until that is the selected function, the panel says it is busy and dims the old page.
+  // data-guide-function; until that is the selected function, the panel says it is busy and dims the old page. The
+  // Guide is also drawn for a character (data-guide-character), so it waits for the one chosen in the top bar too.
   const stampedPanels = { inspector_help: 'function_help', inspector_guide: 'guide' };
   function syncPanelStamps() {
     for (const [panel, output] of Object.entries(stampedPanels)) {
-      const stamp = byId(output)?.querySelector('[data-guide-function]')?.dataset.guideFunction;
-      if (stamp === selectedFunction) byId(panel)?.removeAttribute('aria-busy');
+      const card = byId(output)?.querySelector('[data-guide-function]');
+      const current =
+        card?.dataset.guideFunction === selectedFunction &&
+        (output !== 'guide' || card.dataset.guideCharacter === byId('character')?.value);
+      if (current) byId(panel)?.removeAttribute('aria-busy');
       else byId(panel)?.setAttribute('aria-busy', 'true');
     }
   }
   function showControls() {
     syncPanelStamps();
+    // The argument whose help the Help panel last opened at belongs to the function it was opened for.
+    if (byId('function_help')) delete byId('function_help').dataset.activeArgument;
     restoreEditor();
     close('chip_editor', false);
     for (const group of document.querySelectorAll('#studio_inspector [data-function]')) {
@@ -856,6 +862,20 @@
       option.setAttribute('aria-pressed', String(option.dataset.chipStyle === button.dataset.callStyle));
     }
   }
+  // The Click control chooses which helper the click chip stands for. The server redraws the chip a moment after the
+  // control changes (and not at all while the new kind has a problem to fix), so the chip editor reads the control
+  // itself: its function, input and argument come from the table R sends (studio_click_routes()).
+  let clickRoutes = null;
+  function followClick() {
+    if (chipArgument !== 'click') return;
+    clickRoutes ??= JSON.parse(byId('studio_centre').dataset.clickRoutes);
+    const kind = byId('click_type')?.value;
+    if (!Object.hasOwn(clickRoutes, kind)) return;
+    ({ fn: chipFunction, input: chipInput, field: chipField } = clickRoutes[kind]);
+  }
+  $(document).on('change', '#click_type', () => {
+    if (!byId('chip_editor').hidden) followClick();
+  });
   function chipOpen(button) {
     close('chip_editor', false);
     close('inspector_sidebar', false);
@@ -877,8 +897,8 @@
         placement: 'position',
         theme: 'mode',
         motion: 'others',
-        click: chipFunction === 'mascot_popup_menu' ? 'items' : 'label',
       }[chipArgument] || chipArgument;
+    followClick();
     byId('chip_editor_body').replaceChildren();
     byId('chip_title').textContent = `${chipArgument} =`;
     for (const overview of document.querySelectorAll('[data-chip-overview]')) {
@@ -1221,6 +1241,8 @@
     moveQuick(byId('size_unit').querySelector('input:checked').value === 'pct' ? 'size_pct' : 'size_px');
     positionChip();
   });
+  // The Guide is drawn for the chosen character, so a change of it makes the Guide out of date until the server answers.
+  $(document).on('change', '#character', syncPanelStamps);
   $(document).on('change', '#host_mode', () => {
     const value = byId('host_mode').value;
     if (value !== hostMode) mode(value);
@@ -1377,10 +1399,8 @@
       if (!byId('chip_editor').hidden && chip.dataset.callArg === chipArgument) {
         chip.setAttribute('aria-expanded', 'true');
         chipContext(chip);
-        // The click can switch between action and menu while this editor stays open.
-        chipFunction = chip.dataset.callFunction;
-        if (chipArgument === 'click') chipInput = chip.dataset.callInput;
-        if (chipArgument === 'click') chipField = chipFunction === 'mascot_popup_menu' ? 'items' : 'label';
+        // The click chip follows the Click control (followClick()), not the chip the server drew last.
+        if (chipArgument !== 'click') chipFunction = chip.dataset.callFunction;
       }
     }
   }

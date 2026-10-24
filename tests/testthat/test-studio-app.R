@@ -34,6 +34,35 @@ describe("studio signature routes", {
     expect_error(chip_builder(initial, "short", 1), "Assertion on 'gesture' failed")
     expect_error(chip_builder(initial, "unknown"), "Assertion on 'style' failed")
   })
+  it("gives the click chip one route per kind of click, in the page and in the chip it draws", {
+    parts <- studio_app_parts()
+    routes <- get("studio_click_routes", parts$env)()
+    controls <- get("studio_controls", parts$env)
+    expect_named(routes, c("none", "action", "menu"))
+    for (kind in names(routes)) {
+      route <- routes[[kind]]
+      expect_true(route$fn %in% getNamespaceExports("mascot"), info = kind)
+      # The control and the argument it sets exist in the studio's control map
+      expect_true(sprintf('id="%s"', route$input) %in% controls[[route$fn]][[route$field]], info = kind)
+    }
+    # The page carries the same table for studio.js
+    attribute <- regmatches(parts$page, regexpr('data-click-routes="[^"]*"', parts$page))
+    json <- gsub("&quot;", '"', sub('^data-click-routes="(.*)"$', "\\1", attribute), fixed = TRUE)
+    expect_identical(jsonlite::fromJSON(json, simplifyVector = FALSE), routes)
+    # The chip the server draws for a menu and for an action opens the route of its kind
+    code_pair <- get("code_pair", parts$env)
+    initial <- get("start", parts$env)
+    for (case in list(
+      list("menu", quote(mascot_popup_menu(items = c(about = "About")))),
+      list("action", quote(mascot_action("Open help")))
+    )) {
+      initial$click <- code_pair(case[[2]])
+      html <- as.character(get("call_chips", parts$env)(initial, "short"))
+      chip <- regmatches(html, regexpr('<button[^>]*data-call-arg="click"[^>]*>', html))
+      expect_match(chip, sprintf('data-call-function="%s"', routes[[case[[1]]]]$fn), fixed = TRUE)
+      expect_match(chip, sprintf('data-call-input="%s"', routes[[case[[1]]]]$input), fixed = TRUE)
+    }
+  })
   it("searches every export and formal and keeps each input id unique", {
     page <- studio_app_parts()$page
     for (fn in getNamespaceExports("mascot")) {
@@ -216,8 +245,11 @@ describe("studio demonstration server routes", {
       session$setInputs(helper_minimised = TRUE)
       expect_identical(output$minimised_last, "TRUE: minimised")
       expect_match(output$wiring_log$html, "input$helper_minimised", fixed = TRUE)
+      expect_match(output$wiring_log$html, "The mascot was minimised.", fixed = TRUE)
       session$setInputs(helper_minimised = FALSE)
-      expect_identical(output$minimised_last, "FALSE: restored")
+      expect_identical(output$minimised_last, "FALSE: not minimised")
+      expect_match(output$wiring_log$html, "The mascot is no longer minimised.", fixed = TRUE)
+      expect_false(grepl("The visitor restored", output$wiring_log$html, fixed = TRUE))
       session$setInputs(log_clear = 1)
       expect_match(output$wiring_log$html, "Nothing yet.", fixed = TRUE)
     })

@@ -541,7 +541,17 @@ panel_colours <- function() {
       ),
       conditionalPanel(
         "input.theme_source != 'own'",
-        actionButton("contrast_check", "Check contrast", class = "btn-outline-primary btn-sm"),
+        # inputs.js shows "Checking..." on the button until the result is drawn. Its click sends a number of its own as
+        # input$contrast_check, which the result carries back (busy_done_mark()), hence data-event, not actionButton().
+        tags$button(
+          id = "contrast_check",
+          type = "button",
+          class = "btn btn-outline-primary btn-sm",
+          `data-event` = "contrast_check",
+          `data-busy-label` = "Checking\u2026",
+          `data-busy-output` = "contrast",
+          "Check contrast"
+        ),
         uiOutput("contrast")
       )
     ),

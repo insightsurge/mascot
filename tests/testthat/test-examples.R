@@ -451,6 +451,14 @@ describe("the studio's controls", {
       expect_no_warning(html <- as.character(ui$selected_guide(fn)), message = "could not be built")
       expect_false(grepl("could not be built", html, fixed = TRUE), info = fn)
       expect_match(html, paste0('data-guide-function="', fn, '"'), fixed = TRUE)
+      # The card names the character it was drawn for, which the page compares with the chosen one
+      expect_match(html, 'data-guide-character="tessa"', fixed = TRUE)
+      expect_match(
+        as.character(ui$selected_guide(fn, "sela")),
+        'data-guide-character="sela"',
+        fixed = TRUE,
+        info = fn
+      )
       # Function code has one pinned output outside the Guide; no duplicate id.
       expect_false(grepl('id="code_function"', html, fixed = TRUE))
       expect_match(html, "pg-guide-piece", fixed = TRUE)
@@ -778,8 +786,14 @@ describe("studio state and built previews", {
       session$setInputs(contrast_check = 1)
       # No colour of the studio's own is chosen yet, so nothing is checked in R.
       expect_match(output$contrast$html, "No colour of your own was chosen in R")
+      # The result carries the number of the click it answers, which the busy button waits for
+      expect_match(output$contrast$html, 'data-busy-done="1"', fixed = TRUE)
       session$setInputs(theme_source = "mascot", theme_mode = "dark")
       expect_match(output$contrast$html, "The settings changed since the last check")
+      # The note after a settings change still answers the earlier click
+      expect_match(output$contrast$html, 'data-busy-done="1"', fixed = TRUE)
+      session$setInputs(contrast_check = 2)
+      expect_match(output$contrast$html, 'data-busy-done="2"', fixed = TRUE)
       session$setInputs(theme_source = "own", theme_mode = "auto")
       session$elapse(400)
       bubble <- state$bubble
@@ -947,9 +961,9 @@ describe("studio state and built previews", {
         preview_motion = FALSE,
         preview_width = "full"
       )
-      # Nothing is built until mascot_preview() is selected.
+      # Nothing is built until the preview page is shown: the browser sets the host mode when it selects the function.
       expect_match(output$code_preview, "Select mascot_preview()", fixed = TRUE)
-      session$setInputs(select_function = "mascot_preview")
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
       session$elapse(500)
       built <- output$code_preview
       expect_match(built, "mascot_preview(", fixed = TRUE)
@@ -979,10 +993,10 @@ describe("studio state and built previews", {
       expect_identical(last_preview_attempt()$args, last_built_call())
       session$setInputs(preview_size = 10)
       session$elapse(500)
-      session$setInputs(select_function = "mascot_mood", preview_size = 120)
+      session$setInputs(select_function = "mascot_mood", host_mode = "mascot", preview_size = 120)
       session$elapse(500)
       expect_identical(last_preview_attempt()$outcome, "error")
-      session$setInputs(select_function = "mascot_preview")
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
       session$elapse(500)
       expect_match(output$preview_frame$html, "iframe")
       expect_identical(last_preview_attempt()$outcome, "ok")
@@ -996,6 +1010,34 @@ describe("studio state and built previews", {
           c(preview_count() - 1, preview_count())
         )
       ))))
+    })
+  })
+})
+
+describe("the preview page and the host mode", {
+  it("stops rebuilding the page once the host mode leaves it, although mascot_preview() stays selected", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      # Given the preview page is shown, as the browser's host mode says when it selects mascot_preview()
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
+      session$elapse(500)
+      expect_identical(preview_request(), 1)
+      # And the host mode is back on the live mascot, while the function is still mascot_preview()
+      session$setInputs(host_mode = "mascot")
+      expect_false(preview_selected())
+      # When the character changes, nothing builds the hidden page
+      session$setInputs(character = "sela")
+      session$elapse(500)
+      expect_identical(preview_request(), 1)
+      expect_false(is_building())
+      # And it is built for the character chosen meanwhile when the page is shown again
+      session$setInputs(host_mode = "preview")
+      session$elapse(500)
+      expect_identical(preview_request(), 2)
+      expect_match(output$code_preview, 'character = "sela"', fixed = TRUE)
     })
   })
 })

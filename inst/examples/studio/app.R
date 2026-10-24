@@ -71,6 +71,7 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
         "mascot"
       },
       `data-initial-character` = character,
+      `data-click-routes` = jsonlite::toJSON(studio_click_routes(), auto_unbox = TRUE),
       `data-initial-open` = if (open_guide) "guide",
       panel_character_bar(character = character),
       div(
@@ -739,11 +740,13 @@ studio_server <- function(input, output, session) {
   output$position_last <- renderText(position_last())
   minimised_last <- reactiveVal("Not minimised.")
   observeEvent(input$helper_minimised, {
-    minimised_last(if (isTRUE(input$helper_minimised)) "TRUE: minimised" else "FALSE: restored")
+    # The mascot sends this when it is minimised or restored, by the visitor or by an update_mascot() call that
+    # changes the placement, so the wording does not say who did it.
+    minimised_last(if (isTRUE(input$helper_minimised)) "TRUE: minimised" else "FALSE: not minimised")
     add_log(
       paste0("input$helper_minimised  # ", input$helper_minimised),
       "event",
-      if (isTRUE(input$helper_minimised)) "The visitor minimised the mascot." else "The visitor restored the mascot."
+      if (isTRUE(input$helper_minimised)) "The mascot was minimised." else "The mascot is no longer minimised."
     )
   })
   output$minimised_last <- renderText(minimised_last())
@@ -845,19 +848,28 @@ studio_server <- function(input, output, session) {
     accepted_theme = state$theme,
     css = colours$css_values()
   ))
-  checked_contrast <- eventReactive(input$contrast_check, contrast_settings())
+  # The result carries the number of the click it answers (busy_done_mark()), which the busy button waits for.
+  checked_contrast <- eventReactive(
+    input$contrast_check,
+    list(settings = contrast_settings(), click = input$contrast_check)
+  )
   output$contrast <- renderUI({
     req(input$contrast_check)
     checked <- checked_contrast()
-    if (!identical(checked, contrast_settings())) {
-      return(contrast_stale_ui())
-    }
-    # The check and its result are shared with the theme view (R/shared-check.R).
-    contrast_result_ui(
-      contrast_check(checked$character, eval(checked$theme$short)),
-      if (input$theme_source == "mascot") names(colours$css()) else character(),
-      chosen = input$theme_source == "bslib" ||
-        (input$theme_source == "mascot" && length(c(colours$light(), colours$dark())) > 0L)
+    settings <- checked$settings
+    tagList(
+      if (!identical(settings, contrast_settings())) {
+        contrast_stale_ui()
+      } else {
+        # The check and its result are shared with the theme view (R/shared-check.R).
+        contrast_result_ui(
+          contrast_check(settings$character, eval(settings$theme$short)),
+          if (input$theme_source == "mascot") names(colours$css()) else character(),
+          chosen = input$theme_source == "bslib" ||
+            (input$theme_source == "mascot" && length(c(colours$light(), colours$dark())) > 0L)
+        )
+      },
+      busy_done_mark(checked$click)
     )
   })
 
@@ -1102,12 +1114,12 @@ studio_server <- function(input, output, session) {
   })
 
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
-  # selection). While the function is selected the canvas shows the page the call returns, in place
+  # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
-  # rebuilds the page after a short pause, with a "Building..." badge until it is shown.
-  preview_selected <- reactive(
-    identical(selected_function(), "mascot_preview") || identical(input$host_mode, "preview")
-  )
+  # rebuilds the page after a short pause, with a "Building..." badge until it is shown. The browser sets the
+  # host mode whenever it selects the function (studio.js, mode()), so the host mode alone says whether the
+  # page is shown; leaving it for the live mascot stops the rebuilds although the function stays selected.
+  preview_selected <- reactive(identical(input$host_mode, "preview"))
   preview_roles <- reactive(mascot_colour_roles(current_character(), palette = selected_palette()))
   output$preview_pickers <- renderUI({
     tagList(lapply(preview_roles()$role, function(role) {

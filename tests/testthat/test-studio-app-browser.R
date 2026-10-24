@@ -44,19 +44,55 @@ studio_select_function <- function(app, fn) {
 }
 
 # Waits until the Help or Guide panel shows the page of `fn`: the studio marks a panel busy until its card names `fn`.
-wait_studio_panel <- function(app, panel, fn) {
+# With `character`, the Guide's card must also be drawn for that character.
+wait_studio_panel <- function(app, panel, fn, character = NULL) {
   checkmate::assert_r6(app, "AppDriver")
   checkmate::assert_choice(panel, c("help", "guide"))
   checkmate::assert_string(fn)
+  checkmate::assert_string(character, null.ok = TRUE)
   app$wait_for_js(sprintf(
     paste(
       "(() => { const p = document.getElementById('inspector_%s');",
-      "return !p.hidden && !p.hasAttribute('aria-busy') &&",
-      "p.querySelector('[data-guide-function]')?.dataset.guideFunction === '%s'; })()"
+      "const card = p.querySelector('[data-guide-function]');",
+      "return !p.hidden && !p.hasAttribute('aria-busy') && card?.dataset.guideFunction === '%s' &&",
+      "(%s === null || card.dataset.guideCharacter === %s); })()"
     ),
     panel,
-    fn
+    fn,
+    if (is.null(character)) "null" else sprintf("'%s'", character),
+    if (is.null(character)) "null" else sprintf("'%s'", character)
   ))
+}
+
+# Holds back what the browser sends for the inputs `names`, to stand in for a server that has not answered yet: the
+# page changes at once, and the server's reply (a redrawn panel, a new chip) is missing until `release_studio_inputs()`.
+# Setting an input with `app$set_inputs()` waits for the server, so change a held input in the page itself.
+hold_studio_inputs <- function(app, names) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_character(names, min.len = 1, any.missing = FALSE, min.chars = 1)
+  app$run_js(sprintf(
+    paste(
+      "(() => { const socket = Shiny.shinyapp.$socket, names = %s;",
+      "if (!window.studioHold) {",
+      "  const send = socket.send.bind(socket);",
+      "  window.studioHold = { names: [], held: [], send,",
+      "    release() { this.names = []; for (const message of this.held.splice(0)) send(message); } };",
+      "  socket.send = (message) => {",
+      "    const hold = window.studioHold;",
+      "    if (typeof message === 'string' && hold.names.some((name) => message.includes('\"' + name + '\"'))) hold.held.push(message);",
+      "    else send(message);",
+      "  };",
+      "}",
+      "window.studioHold.names = names; })()"
+    ),
+    jsonlite::toJSON(names)
+  ))
+}
+
+# Sends what `hold_studio_inputs()` kept, and returns how many messages that was.
+release_studio_inputs <- function(app) {
+  checkmate::assert_r6(app, "AppDriver")
+  app$get_js("(() => { const n = window.studioHold.held.length; window.studioHold.release(); return n; })()")
 }
 
 studio_colour <- function(app, id, value) {
@@ -658,6 +694,81 @@ describe("studio behaviour for each function", {
     wait_studio_panel(app, "guide", "mascot_placement")
     expect_false(app$get_js("Shiny.shinyapp.$inputValues['.clientdata_output_guide_hidden']"))
   })
+  it("marks the Guide busy while it shows another character's page", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_moods")
+    app$click(selector = "#inspector_tab_guide")
+    wait_studio_panel(app, "guide", "mascot_moods")
+    # Given the server has not answered the change of character yet
+    hold_studio_inputs(app, "character")
+    # When another character is chosen, the page still holds the Guide of the first, and says so at once
+    state <- app$get_js(paste(
+      "(() => { const select = document.getElementById('character'); select.value = 'sela'; $(select).trigger('change');",
+      "return [document.getElementById('inspector_guide').getAttribute('aria-busy'),",
+      "getComputedStyle(document.querySelector('#guide > .card')).opacity]; })()"
+    ))
+    expect_identical(unlist(state), c("true", "0.5"))
+    # Then it comes back once the server has drawn the Guide for the new character
+    expect_gte(release_studio_inputs(app), 1L)
+    wait_studio_panel(app, "guide", "mascot_moods", character = "sela")
+    expect_match(app$get_js("document.getElementById('guide').textContent"), "Sela's", fixed = TRUE)
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('#guide > .card')).opacity"), "1")
+  })
+  it("clears the argument marker of the Help panel when another function or whole-function help opens", {
+    local_shiny_browser()
+    app <- studio_driver(width = 1440, height = 900)
+    wait_studio_mood(app, "idle")
+    marker <- "document.getElementById('function_help').dataset.activeArgument || ''"
+    open_argument_help <- function() {
+      click_now(app, "[data-call-arg=size]")
+      app$click(selector = "#chip_inspector")
+      app$click(selector = "[data-function=mascot_size] [data-argument=small_screen] .pg-arg-chip")
+      app$wait_for_js("!!document.querySelector('.popover.show [data-argument-help=small_screen]')")
+      app$click(selector = ".popover.show [data-argument-help=small_screen]")
+      app$wait_for_js(paste0(
+        marker,
+        " === 'small_screen' && !!document.querySelector('#function_help [data-guide-function=mascot_size]')"
+      ))
+    }
+    # Given the Help panel was opened at an argument of mascot_size()
+    open_argument_help()
+    # When another function is picked, the marker goes with it
+    studio_select_function(app, "mascot_placement")
+    expect_identical(app$get_js(marker), "")
+    app$click(selector = "#inspector_tab_help")
+    wait_studio_panel(app, "help", "mascot_placement")
+    # And when the help of the whole function opens
+    studio_select_function(app, "mascot_size")
+    open_argument_help()
+    click_now(app, "[data-call-arg=size]")
+    app$click(selector = "#chip_help")
+    wait_studio_panel(app, "help", "mascot_size")
+    expect_identical(app$get_js(marker), "")
+  })
+  it("opens argument help once the Help page of its function is drawn", {
+    local_shiny_browser()
+    app <- studio_driver(width = 1440, height = 900)
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_placement")
+    app$click(selector = "#inspector_tab_help")
+    wait_studio_panel(app, "help", "mascot_placement")
+    # Given the server has not answered the change of function yet
+    hold_studio_inputs(app, "select_function")
+    # When the help of an argument of mascot_size() is asked for, as a link in an argument's popover does
+    app$run_js(paste(
+      "(() => { const link = document.createElement('button'); link.dataset.helpFunction = 'mascot_size';",
+      "link.dataset.argumentHelp = 'small_screen'; document.body.append(link); link.click(); link.remove(); })()"
+    ))
+    # Then no argument is marked while the page of mascot_placement() is still the one shown
+    expect_identical(app$get_js("document.getElementById('inspector_help').getAttribute('aria-busy')"), "true")
+    expect_identical(app$get_js("document.getElementById('function_help').dataset.activeArgument || ''"), "")
+    # And the argument is marked once the page of mascot_size() is drawn
+    expect_gte(release_studio_inputs(app), 1L)
+    wait_studio_panel(app, "help", "mascot_size")
+    app$wait_for_js("document.getElementById('function_help').dataset.activeArgument === 'small_screen'")
+  })
   it("runs combined updates, invalid calls and delayed success and failure beside an activity log", {
     local_shiny_browser()
     app <- studio_driver()
@@ -969,7 +1080,6 @@ describe("small current-configuration editors", {
     )
     click_now(app, '[data-call-arg=click]')
     app$set_inputs(click_type = "action")
-    app$wait_for_js("document.querySelector('[data-call-arg=click]').dataset.callFunction === 'mascot_action'")
     app$click(selector = "#chip_inspector")
     app$wait_for_js("!document.querySelector('[data-function=mascot_action]').hidden")
     click_now(app, '[data-call-arg=theme]')
@@ -1000,6 +1110,81 @@ describe("small current-configuration editors", {
     app$wait_for_js(
       "document.activeElement.id === 'inspector_sidebar' && document.getElementById('function_help').dataset.activeArgument === 'small_screen' && !document.getElementById('inspector_help').hidden"
     )
+  })
+})
+
+describe("the click chip editor and the Click control", {
+  it("opens the helper the Click control names, before the server has drawn the chip again", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    title <- "document.getElementById('inspector_title').textContent"
+    pick_click <- function(kind) {
+      app$run_js(sprintf(
+        "(() => { const s = document.getElementById('click_type'); if (s.selectize) s.selectize.setValue('%s'); else { s.value = '%s'; $(s).trigger('change'); } })()",
+        kind,
+        kind
+      ))
+    }
+    # Given the click chip editor is open on the menu, and the server has not answered a change of the Click control
+    click_now(app, "[data-call-arg=click]")
+    app$wait_for_js("!document.getElementById('chip_editor').hidden")
+    hold_studio_inputs(app, "click_type")
+    # When the control is set to an action, the chip editor opens that helper's controls and help
+    pick_click("action")
+    click_now(app, "#chip_inspector")
+    expect_identical(app$get_js(title), "mascot_action()")
+    click_now(app, "[data-call-arg=click]")
+    pick_click("menu")
+    click_now(app, "#chip_help")
+    expect_identical(app$get_js(title), "mascot_popup_menu()")
+    wait_studio_panel(app, "help", "mascot_popup_menu")
+    # And with no click, the empty action helper, as the chip shows
+    click_now(app, "[data-call-arg=click]")
+    pick_click("none")
+    click_now(app, "#chip_inspector")
+    expect_identical(app$get_js(title), "mascot_action()")
+    # And the control opens at its own argument
+    click_now(app, "[data-call-arg=click]")
+    pick_click("menu")
+    app$click(selector = "#chip_inspector")
+    app$wait_for_js(
+      "document.activeElement.id === 'inspector_sidebar' && document.getElementById('menu_items').getClientRects().length > 0"
+    )
+    expect_gte(release_studio_inputs(app), 1L)
+  })
+})
+
+describe("the Check contrast button of the studio's colour controls", {
+  it("says it is busy until the result of its own click is drawn", {
+    local_shiny_browser()
+    app <- studio_driver(width = 1440, height = 900)
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_theme")
+    app$set_inputs(theme_source = "mascot")
+    app$wait_for_js("document.getElementById('contrast_check').getClientRects().length > 0")
+    button <- "document.getElementById('contrast_check')"
+    # When the button is clicked, it says so at once
+    state <- app$get_js(sprintf(
+      "(() => { const b = %s; b.click(); return [b.textContent, b.getAttribute('aria-busy'), String(b.disabled)]; })()",
+      button
+    ))
+    expect_identical(unlist(state), c("Checking\u2026", "true", "true"))
+    # Then it is back once the result shows, and the result is the one for that click
+    app$wait_for_js(sprintf("!%s.disabled", button))
+    expect_identical(app$get_js(sprintf("%s.textContent", button)), "Check contrast")
+    expect_true(app$get_js("document.getElementById('contrast').textContent.trim().length > 0"))
+    expect_identical(app$get_js("document.querySelector('#contrast [data-busy-done]').dataset.busyDone"), "1")
+    # And when the server has not answered a second click, the first result is not taken for its answer
+    hold_studio_inputs(app, "contrast_check")
+    app$run_js(sprintf("%s.click()", button))
+    expect_identical(app$get_js(sprintf("%s.getAttribute('aria-busy')", button)), "true")
+    expect_identical(app$get_js("document.querySelector('#contrast [data-busy-done]').dataset.busyDone"), "1")
+    expect_gte(release_studio_inputs(app), 1L)
+    app$wait_for_js(sprintf(
+      "!%s.disabled && document.querySelector('#contrast [data-busy-done]').dataset.busyDone === '2'",
+      button
+    ))
   })
 })
 

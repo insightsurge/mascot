@@ -353,6 +353,35 @@ static_probes <- function(uses) {
       expect_fail = "lintr",
       skip = if (!uses$lintr) "the package doesn't use lintr (no .lintr)"
     ),
+    # The lint in a Config/cran-gate/extra-dirs folder is joined with the package's lints; the joined lints must still
+    # print through lintr, which writes the ::warning lines GitHub shows on the changed files (GITHUB_ACTIONS=true), and
+    # CI=true makes the gate replay the step's log, so those lines reach the console.
+    probe(
+      "lintr: a lint in an extra folder prints as a GitHub annotation",
+      "static",
+      "lint",
+      function(dir) {
+        desc <- readLines(file.path(dir, "DESCRIPTION"), warn = FALSE)
+        extra <- grep("^Config/cran-gate/extra-dirs:", desc, value = TRUE)
+        folders <- if (length(extra) > 0) sub("^Config/cran-gate/extra-dirs: *", "", extra[[1]]) else character()
+        desc <- c(
+          desc[!grepl("^Config/cran-gate/extra-dirs:", desc)],
+          paste0("Config/cran-gate/extra-dirs: ", paste(c(folders, "gate-probe-lints"), collapse = ", "))
+        )
+        plant(dir, "DESCRIPTION", desc)
+        plant(dir, "gate-probe-lints/gate-probe-lint.R", c("gate_probe <- function(x) {", "  T", "}"))
+      },
+      expect_fail = "lintr",
+      env = c(GITHUB_ACTIONS = "true", CI = "true"),
+      check_output = function(output) {
+        if (grepl("(^|\n)::warning file=gate-probe-lints/gate-probe-lint\\.R,", output)) {
+          character()
+        } else {
+          "no ::warning file=gate-probe-lints/gate-probe-lint.R line for the lint in the extra folder"
+        }
+      },
+      skip = if (!uses$lintr) "the package doesn't use lintr (no .lintr)"
+    ),
     probe(
       "value: an exported function without @returns",
       "static",

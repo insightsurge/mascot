@@ -278,7 +278,15 @@ step_lintr <- function(uses, settings, log) {
   # lint_package() covers R/, tests/ and inst/; Config/cran-gate/extra-dirs adds more folders.
   lints <- lintr::lint_package()
   for (dir in settings$extra_dirs) {
-    lints <- c(lints, lintr::lint_dir(dir))
+    # lint_dir() names files relative to the folder; name them from the package root, as lint_package() does, so a
+    # GitHub annotation lands on the right file.
+    extra <- lintr::lint_dir(dir)
+    for (i in seq_along(extra)) {
+      extra[[i]]$filename <- file.path(dir, extra[[i]]$filename)
+    }
+    # c() drops the "lints" class (lintr has no c() method), and then print() would skip lintr's print method, which
+    # writes the ::warning annotation lines GitHub shows on the changed files.
+    lints <- structure(c(lints, extra), class = class(lints))
   }
   if (length(lints) > 0) {
     run_logged(function() print(lints), log) # nolint: undesirable_function_linter. Full lint report for the log.

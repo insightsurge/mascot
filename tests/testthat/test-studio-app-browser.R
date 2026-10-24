@@ -43,6 +43,22 @@ studio_select_function <- function(app, fn) {
   ))
 }
 
+# Waits until the Help or Guide panel shows the page of `fn`: the studio marks a panel busy until its card names `fn`.
+wait_studio_panel <- function(app, panel, fn) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_choice(panel, c("help", "guide"))
+  checkmate::assert_string(fn)
+  app$wait_for_js(sprintf(
+    paste(
+      "(() => { const p = document.getElementById('inspector_%s');",
+      "return !p.hidden && !p.hasAttribute('aria-busy') &&",
+      "p.querySelector('[data-guide-function]')?.dataset.guideFunction === '%s'; })()"
+    ),
+    panel,
+    fn
+  ))
+}
+
 studio_colour <- function(app, id, value) {
   checkmate::assert_r6(app, "AppDriver")
   checkmate::assert_string(id)
@@ -374,9 +390,9 @@ describe("studio behaviour for each function", {
     for (fn in getNamespaceExports("mascot")) {
       studio_select_function(app, fn)
       app$click(selector = "#inspector_tab_help")
-      app$wait_for_js(sprintf("document.getElementById('function_help').textContent.includes('%s(')", fn))
+      wait_studio_panel(app, "help", fn)
       app$click(selector = "#inspector_tab_guide")
-      app$wait_for_js(sprintf("document.querySelector('#guide [data-guide-function=%s]') !== null", fn))
+      wait_studio_panel(app, "guide", fn)
       expect_identical(
         app$get_js(
           "document.querySelectorAll('#guide input, #guide select, #guide textarea, #guide [data-event]:not([data-event=palette_swap]):not([data-event=menu_long_status]):not([data-event=select_function])').length"
@@ -591,6 +607,30 @@ describe("studio behaviour for each function", {
     app$wait_for_js("document.getElementById('guide').textContent.includes(\"Tessa's\")")
   })
 
+  it("marks Help and Guide busy while they show an earlier function's page", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_size")
+    app$click(selector = "#inspector_tab_guide")
+    wait_studio_panel(app, "guide", "mascot_size")
+    if (isTRUE(app$get_js("document.getElementById('function_flyout').hidden"))) {
+      app$click(selector = "#all_functions")
+    }
+    # When another function is picked, both panels still hold the pages of mascot_size, and say so at once
+    state <- app$get_js(paste(
+      "(() => { document.querySelector('.pg-index-link[data-value=\"mascot_placement\"]').click();",
+      "return ['inspector_help', 'inspector_guide'].map((id) => document.getElementById(id).getAttribute('aria-busy'))",
+      ".concat(getComputedStyle(document.querySelector('#guide > .card')).opacity); })()"
+    ))
+    expect_identical(unlist(state), c("true", "true", "0.5"))
+    # Then each comes back once the server has drawn the page of the new function
+    app$click(selector = "#inspector_tab_help")
+    wait_studio_panel(app, "help", "mascot_placement")
+    app$click(selector = "#inspector_tab_guide")
+    wait_studio_panel(app, "guide", "mascot_placement")
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('#guide > .card')).opacity"), "1")
+  })
   it("runs combined updates, invalid calls and delayed success and failure beside an activity log", {
     local_shiny_browser()
     app <- studio_driver()
@@ -1734,7 +1774,7 @@ describe("studio host choices, reading tabs, dock and examples browser", {
       "[...document.querySelectorAll('.pg-rail [data-group]')].every(x=>x.getAttribute('aria-disabled')==='true')"
     )))
     app$click(selector = "#inspector_view_help")
-    app$wait_for_js("document.getElementById('function_help').textContent.includes('mascot_example(')")
+    wait_studio_panel(app, "help", "mascot_example")
     app$click(selector = "#close_inspector")
     app$click(selector = "#back_to_studio")
     expect_true(app$get_js(paste0(

@@ -491,7 +491,19 @@
     }
     syncInspector();
   }
+  // The server draws Help and Guide for the selected function a moment after it changes, and Guide only once its tab
+  // shows, so for a while a panel can show an earlier function's page. Each card names its function in
+  // data-guide-function; until that is the selected function, the panel says it is busy and dims the old page.
+  const stampedPanels = { inspector_help: 'function_help', inspector_guide: 'guide' };
+  function syncPanelStamps() {
+    for (const [panel, output] of Object.entries(stampedPanels)) {
+      const stamp = byId(output)?.querySelector('[data-guide-function]')?.dataset.guideFunction;
+      if (stamp === selectedFunction) byId(panel)?.removeAttribute('aria-busy');
+      else byId(panel)?.setAttribute('aria-busy', 'true');
+    }
+  }
   function showControls() {
+    syncPanelStamps();
     restoreEditor();
     close('chip_editor', false);
     for (const group of document.querySelectorAll('#studio_inspector [data-function]')) {
@@ -1492,6 +1504,9 @@
     }
     help.addEventListener('scroll', markStickyUsage);
     new MutationObserver(markStickyUsage).observe(help, { childList: true, subtree: true });
+    for (const output of Object.values(stampedPanels)) {
+      new MutationObserver(syncPanelStamps).observe(byId(output), { childList: true, subtree: true });
+    }
     syncExpansion();
     new MutationObserver(syncExpansion).observe(byId('inspector_sidebar'), { childList: true, subtree: true });
     rememberControls();

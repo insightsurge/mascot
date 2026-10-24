@@ -22,7 +22,7 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
-    name: browser (${{ matrix.r }})
+    name: browser (${{ matrix.r }}, parallel ${{ matrix.parallel }})
     timeout-minutes: 150  # about twice the slowest run: 72 min on R 4.1 with a cold cache and a slow package mirror;
     # the tests themselves take 27-38 min
 
@@ -32,6 +32,8 @@ jobs:
         # R 4.1 too: the studio's server code runs only inside the browser tests' apps, so this is where it meets the
         # oldest R the package supports.
         r: ['release', '4.1']
+        # TRIAL (#502), removed before merge: serial and in parallel, side by side on the same commit.
+        parallel: ['true', 'false']
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -71,6 +73,15 @@ jobs:
           message("Chrome: ", system2(chrome, "--version", stdout = TRUE))
           library(testthat)
           library(mascot)
+          Sys.setenv(TESTTHAT_PARALLEL = "${{ matrix.parallel }}")
+          # TRIAL (#502): memory in use (MB) and Chrome processes every 5 seconds while the tests run.
+          mem_log <- tempfile(fileext = ".log")
+          sampler <- processx::process$new(
+            "sh",
+            c("-c", "while :; do echo \"$(free -m | awk '/^Mem:/{print $3}') $(pgrep -c chrome)\"; sleep 5; done"),
+            stdout = mem_log
+          )
+          started <- Sys.time()
           # The test files with tests that CRAN skips, which R CMD check skips too: browser tests (a helper that starts
           # a browser or a page) and snapshot tests (expect_snapshot() skips itself on CRAN). The other tests in these
           # files run twice, here and in R CMD check; keeping browser tests in files of their own is the next step.
@@ -101,6 +112,13 @@ jobs:
           }))
           browser_skips <- unique(grep("Chrome|On CRAN|not installed", skips, value = TRUE))
           if (length(browser_skips) > 0L) message("Skipped: ", paste(browser_skips, collapse = "; "))
+          message(sprintf("Tests took %.1f min", as.numeric(difftime(Sys.time(), started, units = "mins"))))
+          sampler$kill()
+          mem <- utils::read.table(mem_log)
+          message(sprintf(
+            "Memory in use: peak %d MB, median %d MB; Chrome processes: peak %d",
+            max(mem$V1), as.integer(stats::median(mem$V1)), max(mem$V2)
+          ))
           failed <- as.data.frame(results)
           if (any(failed$failed > 0L | failed$error) || length(browser_skips) > 0L) {
             stop("Tests failed or were skipped; see above.", call. = FALSE)

@@ -25,11 +25,13 @@ jobs:
     timeout-minutes: 120  # about twice the slowest run: R-devel took 56 min on a slow day (installing R 12-20 min
     # from a slow package mirror, then building packages from source); usually 12-21 min
 
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }}, parallel ${{ matrix.parallel }})
 
     strategy:
       fail-fast: false
       matrix:
+        # TRIAL (#502), removed before merge: each job serial and in parallel, side by side on the same commit.
+        parallel: ['true', 'false']
         # Ubuntu is pinned like the repo's other workflows.
         config:
           - {os: 'macos-latest', r: 'release'}
@@ -76,6 +78,7 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           # As CRAN: setup-r sets NOT_CRAN to true, which would run the browser tests here too.
           NOT_CRAN: false
+          TESTTHAT_PARALLEL: ${{ matrix.parallel }}
           # The whole test output when a test fails, not only its last 13 lines.
           _R_CHECK_TESTS_NLINES_: 0
         with:

@@ -433,7 +433,7 @@ or the release headings in `NEWS.md`.
 - Patch releases contain compatible fixes, including fixes to experimental features.
 - Minor releases add features and deprecations. Before 1.0.0, announced breaking changes also use a minor release.
 - Deprecations are kept for at least one release before removal.
-- A CRAN release is tagged after CRAN accepts it.
+- A CRAN release is tagged and published only after CRAN accepts it: the package creator starts the `release` workflow by hand on `main`, never on merge. A tag is never moved; a fix after publication gets a new version.
 
 ### Character format compatibility
 

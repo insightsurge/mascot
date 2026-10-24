@@ -1,46 +1,45 @@
 name: release
 
-# Tags vX.Y.Z and creates a GitHub release when DESCRIPTION on main carries a release version (X.Y.Z, not a
-# development version like X.Y.Z.9000). Notes: the NEWS.md section for that version, then notes generated from
-# PR labels (.github/release.yml).
+# Tags vX.Y.Z and creates a GitHub release. Started by hand (Actions > release > Run workflow, on main), only after
+# CRAN has accepted the version: a release is never made on merge, because CRAN may ask for changes first and a
+# published tag can never move. The commit input is the commit to release (default: the tip of main); it must be on
+# main. Development versions (X.Y.Z.9000) and milestone releases (0.0.x) use the same path; a development version is
+# published as a pre-release. The checks, the tag and the release are in .github/scripts/release-check.sh (tried
+# locally with test-release-check.sh in the same folder). Notes: the NEWS.md section for the version, then notes
+# generated from PR labels (.github/release.yml).
 
 on:
-  push:
-    branches: [main]
-    paths: [DESCRIPTION]
   workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit to release, as a SHA on main (empty: the tip of main)"
+        required: false
+        default: ""
+        type: string
 
-permissions:
-  contents: write
+permissions: {}
 
-# One group per commit: a later push never replaces a queued release.
+# One release at a time, and a started release is never cancelled half done.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.sha }}
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
   release:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-26.04  # pinned, like gitleaks
-    timeout-minutes: 10  # tags and creates a GitHub release (recent runs: under a minute)
+    timeout-minutes: 10  # checks, then tags and creates a GitHub release (a run takes under a minute)
+    permissions:
+      contents: write  # creates the tag and the release
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
-      - name: Tag and release a new version
+          fetch-depth: 0  # the history, to see that the commit is on main, and every tag
+          persist-credentials: false
+      - name: Check, tag and release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ ! -f DESCRIPTION ]; then echo "No DESCRIPTION yet: nothing to release"; exit 0; fi
-          ver=$(sed -n 's/^Version:[[:space:]]*//p' DESCRIPTION | tr -d '[:space:]')
-          if ! printf '%s' "$ver" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "Version $ver is a development version: no release"; exit 0
-          fi
-          tag="v$ver"
-          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then echo "$tag already exists"; exit 0; fi
-          notes=""
-          if [ -f NEWS.md ]; then
-            notes=$(awk -v v="$ver" '/^# /{ if (p) exit; if ($3 == v) { p = 1; next } } p' NEWS.md)
-          fi
-          gh release create "$tag" --target "$GITHUB_SHA" --title "mascot $ver" \
-            --notes "${notes:-mascot $ver}" --generate-notes
+          GH_REPO: ${{ github.repository }}
+          COMMIT: ${{ inputs.commit || github.sha }}
+        # Runs the script from the tip of main (the checkout); it reads the released commit's files with git show.
+        run: bash .github/scripts/release-check.sh --publish "$COMMIT"

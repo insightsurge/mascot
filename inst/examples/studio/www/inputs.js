@@ -86,40 +86,58 @@
   document.addEventListener('click', (event) => {
     const target = event.target.closest('button, a');
     if (!target || target.getAttribute('aria-disabled') === 'true') return;
+    if (target.dataset.busyLabel && target.getAttribute('aria-busy') !== 'true') busy(target);
     if (target.dataset.event) {
       if (target.tagName === 'A') event.preventDefault();
       const handler = handlers.get(target.dataset.event);
+      const value = target.dataset.busyClick || target.dataset.value || 'click';
       if (handler) handler(target.dataset.value);
-      else window.Shiny.setInputValue(target.dataset.event, target.dataset.value || 'click', { priority: 'event' });
+      else window.Shiny.setInputValue(target.dataset.event, value, { priority: 'event' });
     } else if (target.dataset.copy) copy(target);
     else if (target.dataset.toggleClass) {
       // A button with data-toggle-class switches that class on the element data-toggle-target names.
       const on = document.getElementById(target.dataset.toggleTarget)?.classList.toggle(target.dataset.toggleClass);
       target.setAttribute('aria-pressed', String(Boolean(on)));
     }
-    if (target.dataset.busyLabel && target.getAttribute('aria-busy') !== 'true') busy(target);
   });
 
   // A button with data-busy-label says so while the server works on its click: the label, aria-busy and disabled,
-  // until the output data-busy-output names shows a result or an error. Shiny's "idle" is no sign of that: it comes
-  // just before the values of the same update, and an update that started before the click can end after it. An
-  // output in a hidden tab sends its result when it is shown again.
-  const busyButtons = new Set();
+  // until the output data-busy-output names shows the result of that click, or an error. Each click sends a number of
+  // its own, and the server draws it into the result as data-busy-done (busy_done_mark() in R/shared-check.R), so a
+  // result that answers an earlier click or a settings change doesn't count. Shiny's events are no sign of it:
+  // shiny:value comes before the value is drawn (asynchronously), and "idle" comes before the values of the same
+  // update. An output in a hidden tab sends its result when it is shown again. An error is drawn straight after
+  // shiny:error.
+  const busyButtons = new Map();
+  let clicks = 0;
   const busy = (button) => {
+    const output = document.getElementById(button.dataset.busyOutput);
+    if (!output) return;
+    const click = String(++clicks);
+    const answered = new MutationObserver(() => {
+      if (output.querySelector(`[data-busy-done="${click}"]`)) done(button);
+    });
+    answered.observe(output, { childList: true, subtree: true });
+    busyButtons.set(button, answered);
+    button.dataset.busyClick = click;
     button.dataset.idleLabel = button.textContent;
     button.textContent = button.dataset.busyLabel;
     button.setAttribute('aria-busy', 'true');
     button.disabled = true;
-    busyButtons.add(button);
   };
   const done = (button) => {
-    if (!busyButtons.delete(button)) return;
+    const answered = busyButtons.get(button);
+    if (!answered) return;
+    answered.disconnect();
+    busyButtons.delete(button);
+    delete button.dataset.busyClick;
     button.textContent = button.dataset.idleLabel;
     button.removeAttribute('aria-busy');
     button.disabled = false;
   };
-  $(document).on('shiny:value shiny:error', (event) => {
-    for (const button of [...busyButtons]) if (button.dataset.busyOutput === event.target.id) done(button);
+  $(document).on('shiny:error', (event) => {
+    const buttons = [...busyButtons.keys()].filter((button) => button.dataset.busyOutput === event.name);
+    queueMicrotask(() => buttons.forEach(done));
   });
   // The visible part of the page: the visual viewport when the phone keyboard or zoom changes it.
   const viewportBounds = () => {

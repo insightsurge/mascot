@@ -233,28 +233,59 @@ describe("the Check tab's slow buttons in a browser", {
       expect_true(app$get_js(sprintf("document.getElementById('%s_ui').textContent.trim().length > 0", case[[1]])))
     }
   })
-  it("stay busy until their own result arrives, whatever the server says in between", {
+  it("stay busy until the result of their own click is drawn, whatever the server says in between", {
     local_shiny_browser()
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    # Given a slow button and its output. The whole sequence runs in one script, so no real Shiny event comes between.
+    # Given a slow button and its output. The script plays the server's side; each step waits for a later task, as
+    # Shiny's asynchronous drawing would.
     states <- app$get_js(paste(
-      "(() => {",
+      "(async () => {",
       "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\"",
       "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div>');",
       "const b = document.getElementById('slow'), states = [];",
       "const note = () => states.push(b.textContent + ' ' + b.disabled);",
+      "const later = () => new Promise((resolve) => setTimeout(resolve, 0));",
+      "const draw = (text, click) =>",
+      "  $('#slow_ui').html(`<p>${text}</p><span hidden data-busy-done=\"${click}\"></span>`);",
       # When it is clicked during an earlier update, which then ends
-      "$(document).trigger('shiny:busy'); b.click(); note(); $(document).trigger('shiny:idle'); note();",
-      # and then its own update runs, in Shiny's order: recalculating, busy, idle, and only then its value
-      "$('#slow_ui').trigger('shiny:recalculating'); $(document).trigger('shiny:busy');",
-      "$(document).trigger('shiny:idle'); note();",
-      "$('#slow_ui').trigger('shiny:value'); note();",
+      "$(document).trigger('shiny:busy'); b.click(); note(); $(document).trigger('shiny:idle'); await later(); note();",
+      "const click = Number(b.dataset.busyClick);",
+      # and the answer to an earlier click (or to a settings change) is drawn
+      "draw('Old', click - 1); await later(); note();",
+      # and the value for this click arrives, which Shiny draws only afterwards
+      "$('#slow_ui').trigger($.Event('shiny:value', { name: 'slow_ui', value: {} })); await later(); note();",
+      # and then it is drawn
+      "draw('Done', click); await later(); note();",
       "return states; })()"
     ))
-    # Then it stays busy until its value arrives
-    expect_identical(unlist(states), c("Working true", "Working true", "Working true", "Run false"))
+    # Then it stays busy until the result of its own click shows
+    expect_identical(unlist(states), c(rep("Working true", 4), "Run false"))
+  })
+  it("come back once their output shows an error, and number each click anew", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    result <- app$get_js(paste(
+      "(async () => {",
+      "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\"",
+      "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div>');",
+      "const b = document.getElementById('slow'), states = [], clicks = [];",
+      "const note = () => states.push(b.textContent + ' ' + b.disabled);",
+      "const later = () => new Promise((resolve) => setTimeout(resolve, 0));",
+      "const fail = () => $('#slow_ui').trigger($.Event('shiny:error', { name: 'slow_ui', error: { message: 'x' } }));",
+      # When it is clicked and its output shows an error, twice
+      "for (let i = 0; i < 2; i++) {",
+      "  b.click(); clicks.push(b.dataset.busyClick); note(); fail(); await later(); note();",
+      "}",
+      "return { states, clicks, left: b.dataset.busyClick === undefined }; })()"
+    ))
+    # Then it comes back each time, and the second click has a number of its own
+    expect_identical(unlist(result$states), rep(c("Working true", "Run false"), 2))
+    expect_length(unique(unlist(result$clicks)), 2L)
+    expect_true(result$left)
   })
 })
 

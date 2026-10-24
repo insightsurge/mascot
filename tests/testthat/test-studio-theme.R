@@ -522,10 +522,15 @@ describe("the Check tab", {
       session$setInputs(check_contrast = 1)
       expect_match(output$check_contrast_ui$html, "hard to see", fixed = TRUE)
       expect_match(output$check_contrast_ui$html, "<code>#F5E6C8</code>", fixed = TRUE)
+      # Each result carries the number of the click it answers, which the busy button waits for
+      expect_match(output$check_contrast_ui$html, 'data-busy-done="1"', fixed = TRUE)
       session$setInputs(`colours-light_rim` = "#123456")
       expect_match(output$check_contrast_ui$html, "The settings changed since the last check.", fixed = TRUE)
+      # The note after a settings change still answers the earlier click, so a busy button doesn't take it as its own
+      expect_match(output$check_contrast_ui$html, 'data-busy-done="1"', fixed = TRUE)
       session$setInputs(check_contrast = 2)
       expect_match(output$check_contrast_ui$html, "Every colour you chose in R", fixed = TRUE)
+      expect_match(output$check_contrast_ui$html, 'data-busy-done="2"', fixed = TRUE)
     })
   })
   it("builds the every-mood page into the session's own folder when asked", {
@@ -539,8 +544,10 @@ describe("the Check tab", {
       expect_match(html, 'mascot_preview(character = "sela", theme = "coral_navy")', fixed = TRUE)
       expect_match(html, sprintf('src="theme-preview-%s/preview-1.html"', session$token), fixed = TRUE)
       expect_true(file.exists(file.path(folder, "preview-1.html")))
+      expect_match(html, 'data-busy-done="1"', fixed = TRUE)
       session$setInputs(palette_grid = "forest")
       expect_match(output$check_preview_ui$html, "The settings changed since this page was built.", fixed = TRUE)
+      expect_match(output$check_preview_ui$html, 'data-busy-done="1"', fixed = TRUE)
     })
   })
   it("sets the CSS variable values on the every-mood page and marks it out of date when one changes", {
@@ -575,6 +582,8 @@ describe("the Check tab", {
       session$setInputs(check_preview = -5)
       expect_setequal(list.files(folder, pattern = "^preview-"), c("preview-2.html", "preview-3.html"))
       expect_match(output$check_preview_ui$html, "preview-3.html", fixed = TRUE)
+      # and a value that isn't a click number draws no mark
+      expect_false(grepl("data-busy-done", output$check_preview_ui$html, fixed = TRUE))
     })
   })
   it("checks the arguments of its result card", {

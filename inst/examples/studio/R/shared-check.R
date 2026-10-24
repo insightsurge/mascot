@@ -95,6 +95,17 @@ contrast_result_ui <- function(result, css = character(), chosen = TRUE) {
   )
 }
 
+# The mark a slow button waits for (www/inputs.js): the result of a click carries the number that click sent, so a
+# result drawn for an earlier click or a settings change doesn't count. The value comes from the browser, so anything
+# but a whole number of up to nine digits gives no mark.
+busy_done_mark <- function(click) {
+  checkmate::assert(checkmate::check_null(click), checkmate::check_atomic(click))
+  if (length(click) != 1L || !grepl("^[0-9]{1,9}$", as.character(click))) {
+    return(NULL)
+  }
+  shiny::span(hidden = NA, `data-busy-done` = as.character(click))
+}
+
 # The note shown when the settings changed after the last contrast check.
 contrast_stale_ui <- function() {
   shiny::div(class = "pg-note", "The settings changed since the last check. Check contrast again.")

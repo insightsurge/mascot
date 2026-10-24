@@ -91,6 +91,24 @@ forms and the repository's notes) starts the R jobs and skips their steps (`.git
 check still reports. Dependabot keeps the actions current. The gate's `new_lines` step has
 no CI job: it needs the branch's base, which CI's shallow checkout lacks, so it runs locally.
 
+**The CI report comment.** On a pull request, one comment, rewritten as each workflow finishes, sums up what CI found,
+in a Tests and a Code style section:
+
+- `test-coverage.yaml`: the line coverage without the browser tests, the limit from `DESCRIPTION` and the
+  difference from the latest successful run on `main`; the added `R/` lines that the job's tests don't run (a report,
+  not a check: a browser test may run them, and the gate's `new_lines` step is the check); or why nothing was measured.
+- `browser-tests.yaml`, per R version: the counts, the failing and skipped tests, the slowest test files and the files
+  much slower than on `main` (at least 25% and 10 seconds).
+- `lint.yaml`: passed or failed. lintr's findings show inline in the pull request's "Files changed".
+
+Each job writes its part to its job summary (on the run's page) and keeps it as an artifact; a small `report` job at the
+end of each of those workflows gathers the parts of the pull request's commit into the comment
+(`.github/actions/pr-report-comment`, set up in `.github/pr-report.json`). Pull requests from forks and from
+Dependabot get the job summaries only: their token can't write to the pull request. The figures from `main` are
+artifacts that its runs keep for 90 days; when there is none, the comment says so. A re-run job replaces its part;
+when a re-run job stops before it writes one (a failed checkout, say), the earlier attempt's part stays, and the
+footer's run state (failure, cancelled) is the sign.
+
 ### Changing the gate
 
 After changing the gate, `.lintr`, `air.toml` or `biome.json`, run the self-test:

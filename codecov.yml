@@ -1,0 +1,10 @@
+# Codecov only shows the R code coverage figure (the README badge); the test-coverage workflow enforces the limit.
+comment: false
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true

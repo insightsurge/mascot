@@ -23,5 +23,6 @@
 ^mascot_.*\.tar\.gz$
 ^tools$
 ^biome\.json$
+^codecov\.yml$
 ^site$
 ^vignettes/articles$

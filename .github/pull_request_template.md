@@ -64,7 +64,7 @@ For labels you cannot apply, list the suggested labels in Notes so the package c
 - [ ] New `inst/` files have the required licence and `inst/COPYRIGHTS` entries; their presence in the built tarball has been checked using the gate's `full` mode.
 - [ ] Docs, exports or examples changed: `Rscript tools/build-site.R` and `pkgdown::check_pkgdown()` have been run locally, and the site has been viewed in light and dark. Site CI runs from `main` only.
 - [ ] Gate or formatter configuration changed: `Rscript tools/test-cran-gate.R` ends with `All probes behaved as expected`; new checks have a probe.
-- [ ] Public instruction changes agree across `AGENTS.md`, `CLAUDE.md`, `.claude/` and `.github/CONTRIBUTING.md`, and contain only contributor-facing guidance.
+- [ ] Every text that describes the changed behaviour is updated: help pages, articles, NEWS; apps like the studio, themes and other examples reached through `mascot_examples()` or other exported functions; workflow comments, `tools/README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/CONTRIBUTING.md`; and any other page, app, function or file that describes it, including ones added later. Public instructions hold only contributor-facing guidance. Search terms used for the old wording: 
 
 Notes: <!-- One-off observations, browser/OS versions, screenshots, studio and affected-user results,
 suggested labels, or spelling words needing the package creator's agreement. Do not add WORDLIST entries yourself. -->

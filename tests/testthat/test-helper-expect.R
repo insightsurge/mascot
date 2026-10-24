@@ -12,3 +12,26 @@ describe("expect_near()", {
     expect_error(expect_near(8, 8, -1), "within")
   })
 })
+describe("expect_unique_ids()", {
+  it("passes when two bslib tab sets draw the same number, and fails on any other repeated id", {
+    skip_if_not_installed("bslib")
+    # Given two tab sets made to share one random number, as bslib does about once in 9,000 pages
+    tabs <- function() as.character(bslib::navset_tab(bslib::nav_panel("A", "a"), bslib::nav_panel("B", "b")))
+    first <- tabs()
+    second <- tabs()
+    number <- function(html) regmatches(html, regexpr("(?<=data-tabsetid=\")[0-9]+", html, perl = TRUE))
+    second <- gsub(number(second), number(first), second, fixed = TRUE)
+    page <- paste(first, second, '<div id="code_tray_body"></div>')
+    expect_match(page, paste0('id="tab-', number(first), '-1".*id="tab-', number(first), '-1"'))
+    # Then the generated ids do not fail the check, while a repeated id of the page's own still does
+    expect_success(expect_unique_ids(page))
+    expect_failure(
+      expect_unique_ids(paste(page, '<p id="code_tray_body"></p>')),
+      "These ids appear more than once: code_tray_body."
+    )
+    expect_failure(expect_unique_ids('<a id="tab-panel"></a><b id="tab-panel"></b>'), "tab-panel")
+  })
+  it("checks its argument", {
+    expect_error(expect_unique_ids(c("a", "b")), "html")
+  })
+})

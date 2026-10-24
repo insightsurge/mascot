@@ -18,3 +18,19 @@ expect_near <- function(object, expected, within) {
   )
   invisible(object)
 }
+
+# Passes when no id appears twice in the page `html`, naming each one that does. bslib numbers every tab set with a
+# random number from 1000 to 9999 and builds its tab and pane ids from it (`tab-4821-1`); the number comes from shiny's
+# own random stream, so set.seed() does not fix it. Two tab sets on one page then share those ids about once in 9,000
+# builds although the page is fine, so ids of that form are left out; every other id on the page is checked.
+expect_unique_ids <- function(html) {
+  checkmate::assert_string(html)
+  ids <- sub('^ id="(.*)"$', "\\1", regmatches(html, gregexpr(' id="[^"]+"', html))[[1]])
+  ids <- ids[!grepl("^tab-[0-9]{4}-[0-9]+$", ids)]
+  duplicates <- unique(ids[duplicated(ids)])
+  testthat::expect(
+    length(duplicates) == 0L,
+    sprintf("These ids appear more than once: %s.", paste(duplicates, collapse = ", "))
+  )
+  invisible(html)
+}

@@ -1844,6 +1844,12 @@ button.pg-call-name:focus-visible {
 #inspector_help .card {
   overflow: visible;
 }
+/* An earlier function's page, until the server has drawn the selected one (syncPanelStamps() in studio.js). The
+   output itself is display: contents and draws no box, so its children are dimmed. */
+#inspector_help[aria-busy="true"] > .shiny-html-output > *,
+#inspector_guide[aria-busy="true"] > .shiny-html-output > * {
+  opacity: 0.5;
+}
 #inspector_help .pg-help-usage {
   position: sticky;
   top: 0;

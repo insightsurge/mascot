@@ -219,7 +219,11 @@ describe("studio palette sync", {
     app$wait_for_js("document.getElementById('palette_swap_demo').dataset.shownCharacter === 'knurl'")
     expect_null(app$get_js("mascot.host.state(document.getElementById('palette_swap_demo')).theme.palette"))
     select_function("mascot_popup_menu")
-    app$wait_for_js("!!document.querySelector('[data-event=menu_long_status]')")
+    # Picking a function shows its Controls; the try buttons are on its Guide, which the server draws once it shows
+    app$run_js("document.querySelector('[data-inspector-tab=guide]').click()")
+    app$wait_for_js(
+      "!document.getElementById('inspector_guide').hasAttribute('aria-busy') && !!document.querySelector('#guide [data-guide-function=mascot_popup_menu] [data-event=menu_long_status]')"
+    )
     for (corner in c("top-right", "bottom-right")) {
       app$run_js(sprintf("document.querySelector('[data-event=menu_long_status][data-value=\"%s\"]').click()", corner))
       app$wait_for_js(sprintf("document.querySelector('input[name=position]:checked')?.value === '%s'", corner))

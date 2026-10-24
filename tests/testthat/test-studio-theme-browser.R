@@ -289,6 +289,33 @@ describe("the Check tab's slow buttons in a browser", {
   })
 })
 
+describe("the Check tab's slow buttons and the silent errors Shiny sends when the tab is shown", {
+  it("stay busy when a silent validation error for their output arrives after the click", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    result <- app$get_js(paste(
+      "(async () => {",
+      "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\"",
+      "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div>');",
+      "const b = document.getElementById('slow'), states = [];",
+      "const note = () => states.push(b.textContent + ' ' + b.disabled);",
+      "const later = () => new Promise((resolve) => setTimeout(resolve, 0));",
+      "const fail = (error) => $('#slow_ui').trigger($.Event('shiny:error', { name: 'slow_ui', error }));",
+      # When it is clicked and the stale silent error for its output (as Shiny sends it, with no message) arrives
+      "b.click(); note();",
+      "fail({ message: '', type: ['shiny.silent.error', 'validation'] }); await later(); note();",
+      "fail({ message: 'x', type: ['shiny.silent.error'] }); await later(); note();",
+      # and then the result of its own click is drawn
+      "$('#slow_ui').html(`<p>Done</p><span hidden data-busy-done=\"${b.dataset.busyClick}\"></span>`); await later(); note();",
+      "return states; })()"
+    ))
+    # Then it stays busy until its result shows
+    expect_identical(unlist(result), c(rep("Working true", 3), "Run false"))
+  })
+})
+
 describe("a translucent colour typed half way, in a browser", {
   it("gets a note under its text box until it is valid", {
     local_shiny_browser()

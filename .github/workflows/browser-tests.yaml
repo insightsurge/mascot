@@ -3,6 +3,9 @@
 # job skip them, as CRAN does. One line per test file as it finishes shows the
 # progress while the job runs, and a failing test prints in full. A pull request that changes only documentation
 # starts the jobs and skips their steps (.github/scripts/r-changes.sh).
+# Each R version writes its part of the pull request's CI report (.github/pr-report.json): counts, failing and skipped
+# tests, the slowest files and the files slower than on main, in the job summary and, through the report job, in the
+# comment.
 on:
   push:
     branches: [main]
@@ -65,9 +68,25 @@ jobs:
           extra-packages: local::.
           needs: check
 
+      - name: Get main's test times (pull requests)
+        id: baseline
+        if: github.event_name == 'pull_request' && steps.changes.outputs.r == 'true'
+        uses: ./.github/actions/main-baseline
+        with:
+          workflow: browser-tests.yaml
+          artifact: browser-timings-${{ matrix.r }}
+          path: ${{ runner.temp }}/browser-baseline
+
       - name: Run the tests with Chrome
         if: steps.changes.outputs.r == 'true'
         shell: Rscript {0}
+        env:
+          R_LABEL: ${{ matrix.r }}
+          OUT: ${{ runner.temp }}/browser-part.md
+          TIMINGS: ${{ runner.temp }}/browser-timings.csv
+          BASELINE_DIR: ${{ runner.temp }}/browser-baseline
+          BASELINE_FOUND: ${{ steps.baseline.outputs.found }}
+          BASELINE_SHA: ${{ steps.baseline.outputs.sha }}
         run: |
           chrome <- chromote::find_chrome()
           if (is.null(chrome)) stop("No Chrome on this runner: the browser tests would all skip.", call. = FALSE)
@@ -79,13 +98,16 @@ jobs:
           # A test in tests/testthat/test-helper-layout.R fails when one of them is anywhere else.
           files <- list.files("tests/testthat", "^test-.*-(browser|snap)[.]R$")
           message(length(files), " files with browser or snapshot tests: ", paste(files, collapse = ", "))
-          # A line per file when it finishes (update_interval = Inf: no progress spinner in a log); failures in full.
+          # A line per file when it finishes, with its time (update_interval = Inf: no progress spinner in a log);
+          # failures in full. The reporter also keeps each file's time for the report.
+          source(".github/scripts/browser-report.R")
+          reporter <- file_time_reporter$new(show_praise = FALSE, update_interval = Inf)
           results <- testthat::test_dir(
             "tests/testthat",
             filter = "-(browser|snap)$",
             package = "mascot",
             load_package = "installed",
-            reporter = testthat::ProgressReporter$new(show_praise = FALSE, update_interval = Inf),
+            reporter = reporter,
             stop_on_failure = FALSE
           )
           # These files hold only the tests CRAN skips, so any skip fails the job: a Chrome that keeps stopping, a
@@ -94,6 +116,15 @@ jobs:
             vapply(Filter(function(e) inherits(e, "expectation_skip"), test$results), conditionMessage, character(1))
           })))
           if (length(skips) > 0L) message("Skipped: ", paste(skips, collapse = "; "))
+          # The report part for the CI report; a fault in the report must not decide the job, the tests do.
+          tryCatch(write_browser_report(results, reporter$seconds()), error = function(e) {
+            message("::warning::The browser test report failed: ", conditionMessage(e))
+            writeLines(
+              sprintf("**Browser and snapshot tests, R %s:** the report failed (%s); the job's log has the results.",
+                Sys.getenv("R_LABEL"), conditionMessage(e)),
+              Sys.getenv("OUT")
+            )
+          })
           failed <- as.data.frame(results)
           if (any(failed$failed > 0L | failed$error) || length(skips) > 0L) {
             stop("Tests failed or were skipped; see above.", call. = FALSE)
@@ -107,6 +138,38 @@ jobs:
           name: browser-test-problems-${{ matrix.r }}
           path: tests/testthat/_problems
           if-no-files-found: ignore
+
+      # When the tests didn't report: a documentation-only change, or a failure before the tests finished.
+      - name: Write the report (when the tests didn't)
+        if: always()
+        env:
+          R_STEPS: ${{ steps.changes.outputs.r }}
+          R_LABEL: ${{ matrix.r }}
+          OUT: ${{ runner.temp }}/browser-part.md
+        run: |
+          if [ -s "${OUT}" ]; then exit 0; fi
+          if [ "${R_STEPS}" = "false" ]; then
+            echo "**Browser and snapshot tests, R ${R_LABEL}:** not run: this pull request changes only documentation." > "${OUT}"
+          else
+            echo "**Browser and snapshot tests, R ${R_LABEL}:** the job failed before the tests finished (see the run's log)." > "${OUT}"
+          fi
+
+      - name: Keep the report
+        if: always()
+        uses: ./.github/actions/pr-report-part
+        with:
+          name: tests-2-browser-${{ matrix.r }}
+          file: ${{ runner.temp }}/browser-part.md
+
+      # The test times pull requests are compared with.
+      - name: Keep main's test times
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-timings-${{ matrix.r }}
+          path: ${{ runner.temp }}/browser-timings.csv
+          retention-days: 90
+          overwrite: true
 
   # One stable check name that sums up the jobs above (a branch ruleset could require it): it fails unless the job
   # above succeeded on every R version.
@@ -124,3 +187,30 @@ jobs:
         run: |
           echo "Matrix result: ${RESULT}"
           test "${RESULT}" = "success"
+
+  # Rewrites the pull request's CI report comment (.github/actions/pr-report-comment). Pull requests from forks and
+  # from Dependabot get the job summaries only: their token can't write to the pull request.
+  report:
+    needs: [browser, browser-tests]  # after the summary job too, so the run counts as finished
+    if: >-
+      always() && github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10  # a few API calls
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    # One report job at a time per pull request, across the workflows that write the comment.
+    concurrency:
+      group: pr-report-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - uses: ./.github/actions/pr-report-comment
+        with:
+          config: .github/pr-report.json

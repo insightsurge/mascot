@@ -5,6 +5,8 @@
 # workflow are reviewed like any other change. A push to main reads the checked-out DESCRIPTION. The browser tests
 # skip here, as on CRAN (browser-tests.yaml runs them): this is the coverage the tests give without Chrome. A pull
 # request that changes only documentation starts the job and skips its steps (.github/scripts/r-changes.sh).
+# The coverage part of the pull request's CI report (.github/pr-report.json): the figure, the difference from main and
+# the added R/ lines these tests don't run, in the job summary and, through the report job, in the comment.
 on:
   push:
     branches: [main]
@@ -83,6 +85,11 @@ jobs:
           if (Sys.getenv("EVENT_NAME") == "pull_request") {
             limit <- max(read_limit(file.path(Sys.getenv("RUNNER_TEMP"), "base-DESCRIPTION")), limit)
           }
+          # Kept before the limit check, for the report: "under the limit" is a measurement, a failed test is not.
+          report <- file.path(Sys.getenv("RUNNER_TEMP"), "coverage-report")
+          dir.create(report, showWarnings = FALSE)
+          saveRDS(cov, file.path(report, "coverage.rds"))
+          write.dcf(data.frame(Percent = round(pct, 2), Limit = limit), file.path(report, "coverage.dcf"))
           if (pct < limit) stop(sprintf("Coverage %.1f%% is under %g%%.", pct, limit), call. = FALSE)
         shell: Rscript {0}
 
@@ -93,9 +100,87 @@ jobs:
           find '${{ runner.temp }}/package' -name 'testthat.Rout*' -exec cat '{}' \; || true
         shell: bash
 
+      - name: Get main's coverage (pull requests)
+        id: baseline
+        if: always() && github.event_name == 'pull_request' && steps.changes.outputs.r == 'true'
+        uses: ./.github/actions/main-baseline
+        with:
+          workflow: test-coverage.yaml
+          artifact: coverage-baseline
+          path: ${{ runner.temp }}/coverage-baseline
+
+      - name: Write the coverage report
+        if: always() && steps.changes.outputs.r == 'true'
+        env:
+          COV_DIR: ${{ runner.temp }}/coverage-report
+          BASELINE_DIR: ${{ runner.temp }}/coverage-baseline
+          BASELINE_FOUND: ${{ steps.baseline.outputs.found }}
+          BASELINE_SHA: ${{ steps.baseline.outputs.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          OUT: ${{ runner.temp }}/coverage-part.md
+        run: Rscript .github/scripts/coverage-report.R
+
+      # When R didn't run: a documentation-only change, or a failure before the report step.
+      - name: Write the coverage report (when R didn't run)
+        if: always()
+        env:
+          R_STEPS: ${{ steps.changes.outputs.r }}
+          OUT: ${{ runner.temp }}/coverage-part.md
+        run: |
+          if [ -s "${OUT}" ]; then exit 0; fi
+          if [ "${R_STEPS}" = "false" ]; then
+            echo "**Coverage:** not measured: this pull request changes only documentation." > "${OUT}"
+          else
+            echo "**Coverage:** not measured: the job failed before the tests ran (see the run's log)." > "${OUT}"
+          fi
+
+      - name: Keep the coverage report
+        if: always()
+        uses: ./.github/actions/pr-report-part
+        with:
+          name: tests-1-coverage
+          file: ${{ runner.temp }}/coverage-part.md
+
+      # The figure pull requests are compared with.
+      - name: Keep main's coverage
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-baseline
+          path: ${{ runner.temp }}/coverage-report/coverage.dcf
+          retention-days: 90
+          overwrite: true
+
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: coverage-test-failures
           path: ${{ runner.temp }}/package
+
+  # Rewrites the pull request's CI report comment (.github/actions/pr-report-comment). Pull requests from forks and
+  # from Dependabot get the job summary only: their token can't write to the pull request.
+  report:
+    needs: test-coverage
+    if: >-
+      always() && github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10  # a few API calls
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    # One report job at a time per pull request, across the workflows that write the comment.
+    concurrency:
+      group: pr-report-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - uses: ./.github/actions/pr-report-comment
+        with:
+          config: .github/pr-report.json

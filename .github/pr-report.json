@@ -1,0 +1,10 @@
+{
+  "title": "CI report",
+  "header": "ci-report",
+  "report_job": "report",
+  "workflows": ["test-coverage.yaml", "browser-tests.yaml", "lint.yaml"],
+  "sections": [
+    {"key": "tests", "title": "Tests"},
+    {"key": "style", "title": "Code style"}
+  ]
+}

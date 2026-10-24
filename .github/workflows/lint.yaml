@@ -1,5 +1,7 @@
 # Runs the gate's lint mode (tools/cran-gate.R): Air formatting, Biome on JS/CSS in inst/, docs in
 # sync with roxygen, lintr, \value on exported functions, spelling. R CMD check doesn't cover these.
+# lintr's findings show inline in a pull request's "Files changed"; the result is the Code style part of the pull
+# request's CI report (.github/pr-report.json).
 on:
   push:
     branches: [main]
@@ -43,4 +45,51 @@ jobs:
           needs: lint
 
       - name: Gate (lint mode)
+        id: gate
         run: Rscript tools/cran-gate.R lint
+
+      - name: Write the lint report
+        if: always()
+        env:
+          OUTCOME: ${{ steps.gate.outcome }}
+          OUT: ${{ runner.temp }}/lint-part.md
+        run: |
+          case "${OUTCOME}" in
+            success) echo "**Lint:** passed (Air, Biome, lintr, docs in sync, spelling)." > "${OUT}" ;;
+            failure) echo "**Lint:** failed. lintr's findings are shown inline in Files changed; the gate's FAIL lines in the run's log name the other steps." > "${OUT}" ;;
+            *) echo "**Lint:** did not run: the job failed while setting up (see the run's log)." > "${OUT}" ;;
+          esac
+
+      - name: Keep the lint report
+        if: always()
+        uses: ./.github/actions/pr-report-part
+        with:
+          name: style-1-lint
+          file: ${{ runner.temp }}/lint-part.md
+
+  # Rewrites the pull request's CI report comment (.github/actions/pr-report-comment). Pull requests from forks and
+  # from Dependabot get the job summary only: their token can't write to the pull request.
+  report:
+    needs: lint
+    if: >-
+      always() && github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10  # a few API calls
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    # One report job at a time per pull request, across the workflows that write the comment.
+    concurrency:
+      group: pr-report-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - uses: ./.github/actions/pr-report-comment
+        with:
+          config: .github/pr-report.json

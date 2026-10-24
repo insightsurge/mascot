@@ -9,6 +9,19 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-23 — A dragged mascot snaps to the corner it was dropped at (#513)
+
+**In brief:** With `drag = "snap"`, a mascot taller (or wider) than the window less its margins now snaps to the
+corner it was dragged to. Before, it was kept inside the window first, which left it in the lower (or right) half, so
+a drag to the top snapped it back to the bottom.
+
+**Technical:**
+
+* `mascot-host.js`: `drop()` picks the corner with `nearestCorner()` from the drop point before `clampPoint()` (the
+  pointer's move added to where the mascot started), with the mascot's own size, instead of from the box it has once
+  kept inside the window. A mascot that fits is placed as before; the box after the drop still starts the snap
+  animation.
+
 ## 2026-10-23 — A built-in character's data once per page (#497)
 
 **In brief:** A built-in character's data block sits once in the page head, however many mascots use the character;

@@ -201,3 +201,37 @@ describe("wait_studio_js()", {
     expect_error(wait_studio_js(app, ""), "condition")
   })
 })
+
+describe("chrome_device_args", {
+  it("gives every app a desktop with a mouse and no wish for reduced motion, which a page can still change", {
+    skip_without_chrome()
+    skip_if_not_installed("shinytest2")
+    app <- app_driver(hello_app())
+    device <- "['(hover: hover)', '(pointer: fine)', '(prefers-reduced-motion: reduce)'].map((q) => matchMedia(q).matches)"
+    expect_identical(unlist(app$get_js(device)), c(TRUE, TRUE, FALSE))
+    app$get_chromote_session()$Emulation$setEmulatedMedia(
+      features = list(list(name = "prefers-reduced-motion", value = "reduce"))
+    )
+    expect_identical(unlist(app$get_js(device)), c(TRUE, TRUE, TRUE))
+  })
+})
+
+describe("click_now()", {
+  it("clicks the element the selector names, and fails when nothing matches", {
+    skip_without_chrome()
+    skip_if_not_installed("shinytest2")
+    app <- app_driver(shiny::shinyApp(
+      shiny::fluidPage(shiny::tags$button(id = "go", type = "button", onclick = "window.clicked = true", "Go")),
+      function(input, output, session) NULL
+    ))
+    click_now(app, "#go")
+    expect_true(app$get_js("window.clicked === true"))
+    expect_error(click_now(app, "#missing"), "No element matches")
+  })
+
+  it("checks its arguments", {
+    expect_error(click_now("x", "#go"), "app")
+    app <- structure(new.env(), class = c("AppDriver", "R6"))
+    expect_error(click_now(app, ""), "selector")
+  })
+})

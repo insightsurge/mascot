@@ -1,5 +1,9 @@
 # mascot (development version)
 
+* A floating mascot with `mascot_placement(drag = "snap")` that is taller or wider than the window (less its margins) now snaps to the corner it is dragged to. Before, a drag to the top of a short window, such as a phone held sideways, snapped it back to the bottom (#513).
+
+* In `mascot_studio()`, keyboard focus stays on a chip of the current call when the studio redraws the call, for example just after Reset; before, it could fall back to the page. The theme view's Check contrast and Show every mood buttons now say they are busy until their result or an error shows, instead of coming back a moment early (#513).
+
 * The website is now at <https://insightsurge.github.io/mascot/>, and the studio's "Package website" link and its guide links point there (#115).
 
 * A page carries each built-in character's data once, and only for the characters its mascots use. Before, every `mascot()` tag carried its character's whole data: a page with five Tessa mascots saved by `htmltools::save_html()` drops from 263 KB to 59 KB, and a `renderUI()` that redraws eight cards with Tessa sends 72 KB instead of 475 KB on each update. The data travels as an HTML dependency named after the character, so it works in Shiny apps (also with `renderUI()`, `insertUI()` and modals), saved and self-contained pages, and Quarto or R Markdown documents. Your own characters keep their data inside their tag, as before (#497).

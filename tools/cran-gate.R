@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# cran-gate version: 2026-10-22
+# cran-gate version: 2026-10-24
 # CRAN gate: one command that says whether an R package would pass CRAN's checks, before you submit it.
 #
 #   Rscript <path to this file> [fast|tests|full|lint|nosuggests] [options]   (--help lists the options)
@@ -46,7 +46,8 @@
 #   Config/cran-gate/extra-dirs: tools more folders to format-check and lint, comma separated (default: none)
 #
 # Needs the R packages checkmate, cli, devtools, jsonlite and spelling, plus roxygen2, lintr, covr, testthat, withr
-# and pkgbuild for the steps that use them; the tools step names whatever is missing.
+# and pkgbuild for the steps that use them; the tools step names whatever is missing. The nosuggests mode needs only
+# checkmate, cli, jsonlite, pkgbuild, processx and rcmdcheck, so it runs where only the hard dependencies are installed.
 #
 # Writes to the package: devtools::document() may rewrite man/, NAMESPACE and DESCRIPTION (the docs step then fails
 # and names the files); --update-wordlist rewrites inst/WORDLIST. Outside the package it writes only to tempdir()
@@ -93,6 +94,11 @@ package_uses <- function() {
 required_packages <- function(mode, uses) {
   checkmate::assert_choice(mode, modes)
   checkmate::assert_list(uses, types = "logical")
+  # The nosuggests mode needs only what its own step uses, so it runs in a library with just the hard dependencies
+  # (CI's check-no-suggests job), which has no devtools.
+  if (mode == "nosuggests") {
+    return(c("checkmate", "cli", "jsonlite", "pkgbuild", "processx", "rcmdcheck"))
+  }
   pkgs <- c("checkmate", "cli", "devtools", "jsonlite", "spelling")
   if (uses$roxygen) {
     pkgs <- c(pkgs, "roxygen2")
@@ -103,7 +109,7 @@ required_packages <- function(mode, uses) {
   if (mode %in% c("tests", "full") && uses$tests) {
     pkgs <- c(pkgs, "callr", "covr", "withr", if (uses$testthat) "testthat")
   }
-  if (mode %in% c("full", "nosuggests")) {
+  if (mode == "full") {
     pkgs <- c(pkgs, "pkgbuild", "processx", "rcmdcheck")
   }
   pkgs
@@ -177,10 +183,12 @@ step_tools <- function(mode, uses) {
   checkmate::assert_choice(mode, modes)
   checkmate::assert_list(uses, types = "logical")
   missing <- character()
-  if (uses$air && !nzchar(Sys.which("air"))) {
+  # Only the modes that run the air and biome steps need the tools (nosuggests runs in CI without them).
+  steps <- steps_for(mode)
+  if (uses$air && "air" %in% steps && !nzchar(Sys.which("air"))) {
     missing <- c(missing, "air (https://posit-dev.github.io/air/), needed because the package has an air.toml")
   }
-  if (uses$biome && length(js_css_files()) > 0 && !nzchar(Sys.which("biome"))) {
+  if (uses$biome && "biome" %in% steps && length(js_css_files()) > 0 && !nzchar(Sys.which("biome"))) {
     missing <- c(missing, "biome (https://biomejs.dev), needed because inst/ has JS or CSS")
   }
   pkgs <- required_packages(mode, uses)

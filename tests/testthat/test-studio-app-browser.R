@@ -611,7 +611,8 @@ describe("studio behaviour for each function", {
     app$wait_for_js("document.querySelector('#wiring_log .is-error')?.textContent.includes('Unexpected arguments')")
     wait_studio_mood(app, "celebrating")
     expect_match(app$get_value(output = "code_last"), "moood", fixed = TRUE)
-    app$set_inputs(task_fail = FALSE)
+    # The switch starts off, and shinytest2 waits 30 s for an output to change when an input is set to its own value
+    expect_false(app$get_value(input = "task_fail"))
     app$click(selector = "#task_run")
     app$wait_for_js("document.getElementById('task_run').disabled")
     wait_studio_mood(app, "thinking")

@@ -2293,6 +2293,9 @@ describe("the copy buttons", {
     local_shiny_browser()
     app <- studio_driver()
     wait_studio_mood(app, "idle")
+    # The inspector shows the code of the function, with its Copy button
+    studio_select_function(app, "mascot_mood")
+    wait_studio_code(app, "mascot_mood")
     # Given a browser that refuses the clipboard API, as in a frame without clipboard access
     app$run_js(paste(
       "window.copied = null;",
@@ -2303,7 +2306,11 @@ describe("the copy buttons", {
       "  return true; };"
     ))
     # When the focused Copy button is clicked
-    app$run_js("{ const b = document.querySelector('#code_pin [data-copy=code_function]'); b.focus(); b.click(); }")
+    focused <- app$get_js(paste(
+      "(() => { const b = document.querySelector('#code_pin [data-copy=code_function]'); b.focus();",
+      "const focused = document.activeElement === b; b.click(); return focused; })()"
+    ))
+    expect_true(focused)
     # Then the code is copied through a selection, the button says it was copied, and it keeps keyboard focus
     app$wait_for_js("document.querySelector('#code_pin [data-copy=code_function]').textContent === 'Copied'")
     expect_identical(app$get_js("window.copied"), app$get_js("document.getElementById('code_function').textContent"))

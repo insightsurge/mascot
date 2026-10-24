@@ -12,6 +12,7 @@ describe("expect_near()", {
     expect_error(expect_near(8, 8, -1), "within")
   })
 })
+
 describe("expect_unique_ids()", {
   it("passes when two bslib tab sets draw the same number, and fails on any other repeated id", {
     skip_if_not_installed("bslib")

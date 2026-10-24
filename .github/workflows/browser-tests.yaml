@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
     name: browser (${{ matrix.r }})
     timeout-minutes: 150  # about twice the slowest run: 72 min on R 4.1 with a cold cache and a slow package mirror;
-    # the tests themselves take 22-27 min in two processes (#502)
+    # the tests themselves take 16-27 min in two processes (#502)
 
     strategy:
       fail-fast: false

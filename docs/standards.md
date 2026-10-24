@@ -327,8 +327,8 @@ run it:
 | CI | On every PR and push to `main` (the full platform matrix on `main`, weekly and on demand); it cannot be skipped | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
-framework for now (section 8). `main` is protected by a ruleset (a pull request and the required checks), so the rule
-is: CI green, then ask before merging.
+framework for now (section 8). A ruleset on `main` blocks force-pushes and deleting the branch; it does not require
+passing checks, so the rule is: CI green, then ask before merging.
 
 ### 7.2 The gate
 

@@ -373,7 +373,9 @@ the platform is the point.
 The site is built from `main` only, never on pull requests (#127): a site build may need packages that outside
 contributors' pull requests can't install. Ubuntu runners are pinned (`ubuntu-26.04`; macOS and Windows use
 `-latest`) so an image change is a deliberate edit. Workflows take the least permissions they need and cancel
-superseded runs (except a release, and secret scans on `main`). Every job has a `timeout-minutes`, a few times its
+superseded runs (except a release, and secret scans on `main`). The tests run in two processes at once
+(`Config/testthat/parallel: true`), which halves R CMD check's test time on most jobs (#502); two is also CRAN's
+limit. Every job has a `timeout-minutes`, a few times its
 longest recent run, so a hung step can't hold a runner for hours. Actions from `actions/` and `r-lib/` are pinned by
 major tag; other third-party actions by full commit SHA with a `# vX.Y.Z` comment, because a tag can be moved and a
 SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep the Air and Biome versions in

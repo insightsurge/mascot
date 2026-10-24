@@ -35,6 +35,7 @@ VignetteBuilder: knitr
 Config/cran-gate/coverage: 70
 Config/cran-gate/extra-dirs: tools
 Config/testthat/edition: 3
+Config/testthat/parallel: true
 Encoding: UTF-8
 Language: en-GB
 Roxygen: list(markdown = TRUE)

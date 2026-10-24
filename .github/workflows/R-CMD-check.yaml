@@ -23,7 +23,7 @@ jobs:
   check:
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 120  # about twice the slowest run: R-devel took 56 min on a slow day (installing R 12-20 min
-    # from a slow package mirror, then building packages from source); usually 12-21 min
+    # from a slow package mirror, then building packages from source); usually 7-14 min
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -76,6 +76,9 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           # As CRAN: setup-r sets NOT_CRAN to true, which would run the browser tests here too.
           NOT_CRAN: false
+          # As CRAN: a note when the tests use more than 2.5 times as much CPU time as elapsed time. testthat runs the
+          # test files in two processes (Config/testthat/parallel in DESCRIPTION), which uses about twice as much.
+          _R_CHECK_TEST_TIMING_CPU_TO_ELAPSED_THRESHOLD_: 2.5
           # The whole test output when a test fails, not only its last 13 lines.
           _R_CHECK_TESTS_NLINES_: 0
         with:

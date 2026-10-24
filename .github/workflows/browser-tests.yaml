@@ -22,7 +22,7 @@ concurrency:
 jobs:
   browser:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
-    name: browser (${{ matrix.r }}, parallel ${{ matrix.parallel }})
+    name: browser (${{ matrix.r }})
     timeout-minutes: 150  # about twice the slowest run: 72 min on R 4.1 with a cold cache and a slow package mirror;
     # the tests themselves take 27-38 min
 
@@ -32,8 +32,6 @@ jobs:
         # R 4.1 too: the studio's server code runs only inside the browser tests' apps, so this is where it meets the
         # oldest R the package supports.
         r: ['release', '4.1']
-        # TRIAL (#502), removed before merge: serial and in parallel, side by side on the same commit.
-        parallel: ['true', 'false']
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -57,6 +55,9 @@ jobs:
         with:
           r-version: ${{ matrix.r }}
           use-public-rspm: true
+          # The R option Ncpus for every R session (setup-r's default is 1). testthat starts that many processes for
+          # the test files (Config/testthat/parallel in DESCRIPTION): two, as in R CMD check and on CRAN.
+          Ncpus: 2
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         if: steps.changes.outputs.r == 'true'
@@ -73,7 +74,6 @@ jobs:
           message("Chrome: ", system2(chrome, "--version", stdout = TRUE))
           library(testthat)
           library(mascot)
-          Sys.setenv(TESTTHAT_PARALLEL = "${{ matrix.parallel }}")
           # TRIAL (#502): memory in use (MB) and Chrome processes every 5 seconds while the tests run.
           mem_log <- tempfile(fileext = ".log")
           sampler <- processx::process$new(

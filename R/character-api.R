@@ -309,4 +309,14 @@ format.mascot_character_data <- function(x, ...) {
 #'   "\nWhat the format accepts may grow in a later release; version-1 files keep loading (see Compatibility).\n}"
 #' )
 #' @seealso [mascot_check_character()], [mascot_read_character()]
+#' @examples
+#' # Start from the bundled source, give the copy its own id, then check it again.
+#' path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+#' source <- jsonlite::read_json(path)
+#' source$id <- "my_bot"
+#' source$name <- "My Bot"
+#' source$colours$body <- "#2a9d8f"
+#' bot <- mascot_check_character(source)
+#' bot
+#' ui <- mascot("helper", character = bot)
 NULL

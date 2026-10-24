@@ -54,4 +54,18 @@
 #'
 #' @name mascot_styling
 #' @seealso [mascot_theme()], [mascot_size()], [mascot_placement()]
+#' @examples
+#' # In an app, the same CSS usually lives in a file under www/.
+#' css <- "
+#' .mascot {
+#'   --mascot-panel-bg: #153448;
+#'   --mascot-panel-color: #ffffff;
+#'   --mascot-panel-border: #8fc7e8;
+#'   --mascot-restore-bg: #153448;
+#'   --mascot-restore-fg: #ffffff;
+#' }"
+#' ui <- htmltools::tagList(
+#'   htmltools::tags$style(css),
+#'   mascot("helper", bubble = "Hello!")
+#' )
 NULL

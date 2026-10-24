@@ -1,4 +1,4 @@
-# Derived from https://github.com/r-lib/actions/tree/v2/examples (test-coverage.yaml), without Codecov.
+# Derived from https://github.com/r-lib/actions/tree/v2/examples (test-coverage.yaml).
 # Fails when line coverage is under the limit in DESCRIPTION (Config/cran-gate/coverage,
 # 70% when the field is missing), the same limit the gate uses. A pull request is held to the higher of its base
 # branch's limit and its own, so a pull request cannot lower the limit by editing DESCRIPTION; changes to this
@@ -7,6 +7,9 @@
 # request that changes only documentation starts the job and skips its steps (.github/scripts/r-changes.sh).
 # The coverage part of the pull request's CI report (.github/pr-report.json): the figure, the difference from main and
 # the added R/ lines these tests don't run, in the job summary and, through the report job, in the comment.
+# The figure also goes to Codecov for the README badge (pushes to main and this repository's pull requests; forks and
+# Dependabot have no CODECOV_TOKEN). Codecov only reports (codecov.yml: no comments, informational statuses); this
+# job enforces the limit. It counts the R code run in the test process, not the JavaScript engine.
 on:
   push:
     branches: [main]
@@ -45,7 +48,9 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         if: steps.changes.outputs.r == 'true'
         with:
-          extra-packages: any::covr
+          extra-packages: |
+            any::covr
+            any::xml2
           needs: coverage
 
       # The base branch name comes in through env, never written into the script, so it can't inject commands.
@@ -99,6 +104,36 @@ jobs:
           ## --------------------------------------------------------------------
           find '${{ runner.temp }}/package' -name 'testthat.Rout*' -exec cat '{}' \; || true
         shell: bash
+
+      - name: Write the Cobertura report for Codecov
+        id: cobertura
+        if: >-
+          always() && steps.changes.outputs.r == 'true' &&
+          (github.event_name == 'push' && github.ref == 'refs/heads/main' ||
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login != 'dependabot[bot]')
+        env:
+          COV_DIR: ${{ runner.temp }}/coverage-report
+        # No coverage.rds when the tests failed before covr finished: nothing to upload then.
+        run: |
+          rds <- file.path(Sys.getenv("COV_DIR"), "coverage.rds")
+          if (file.exists(rds)) {
+            covr::to_cobertura(readRDS(rds), filename = file.path(Sys.getenv("COV_DIR"), "cobertura.xml"))
+            cat("written=true\n", file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+          }
+        shell: Rscript {0}
+
+      # Codecov being down is not a test failure: fail_ci_if_error stays false, so a failed upload only warns.
+      - name: Upload coverage to Codecov
+        if: always() && steps.cobertura.outputs.written == 'true'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ runner.temp }}/coverage-report/cobertura.xml
+          disable_search: true
+          plugins: noop
+          fail_ci_if_error: false
 
       - name: Get main's coverage (pull requests)
         id: baseline

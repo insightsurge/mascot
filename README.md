@@ -1,6 +1,10 @@
 # mascot
 
+<!-- badges: start -->
 [![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml)
+[![Development stage: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![R code coverage](https://codecov.io/gh/insightsurge/mascot/graph/badge.svg)](https://app.codecov.io/gh/insightsurge/mascot)
+<!-- badges: end -->
 
 Live, mood-driven mascots for Shiny apps and Quarto sites. A character drawn in code shows a mood and gives a short
 wiggle when the mood changes, with status text beside it so the face never carries meaning alone.
@@ -92,6 +96,9 @@ You can read a local JSON character file with `mascot_read_character()` or check
 in a later release. You can preview a checked character and use it in Shiny; the studio does not take custom characters yet. Public
 functions for saving and registering characters and palettes are planned for a later release. See
 [Make your own character](https://insightsurge.github.io/mascot/articles/write-your-own-character.html).
+
+The coverage badge counts the R code the tests run. The JavaScript engine that draws and animates the mascots is
+tested in a browser and is not part of that figure.
 
 The [scope and planned releases](https://github.com/insightsurge/mascot/blob/main/docs/scope.md) and
 [known users](https://github.com/insightsurge/mascot/blob/main/docs/consumers.md) give the wider context.

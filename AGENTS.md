@@ -104,8 +104,8 @@ articles go in `vignettes/articles/` (website only, not shipped); compress PNGs 
   list only checks anyone can re-run from the repo. Stacked PRs are fine (base on the branch below).
 - Labels: one type (`enhancement`, `bug`, `documentation`, `chore`) and one or more `area: *`. Suggest them in the PR
   if you can't set them; the package creator applies them (release notes are built from PR labels).
-- CI green, then **the package creator merges**. `main` is protected by a ruleset (a pull request and the required
-  checks); pull requests are squash-merged, so the PR title becomes the commit message.
+- CI green, then **the package creator merges**. Changes reach `main` only through pull requests; a ruleset blocks
+  force-pushes to `main` and its deletion. Pull requests are squash-merged, so the PR title becomes the commit message.
 
 ## Issues and pull requests
 - One issue per piece of work. When a decision changes the plan (scope, a rename, a dropped item), edit the issue

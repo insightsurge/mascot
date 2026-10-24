@@ -682,6 +682,10 @@ tests_under_covr <- function(run_dir, txt, log, state) {
   unlink(rds)
   state$covr_error <- NULL
   code <- c(
+    # testthat's test_check(), which R CMD check and covr's own tests run use, sets this; test_dir() doesn't. Without
+    # it, shinytest2 finds the source package and makes each app process pkgload::load_all() it, which re-runs covr's
+    # load hook there: covr clears what it has counted, and its merge later fails or reads a far lower percentage.
+    "Sys.setenv(TESTTHAT_IS_CHECKING = 'true')",
     sprintf(
       paste0(
         "res <- testthat::test_dir(%s, package = %s, load_package = 'installed', ",

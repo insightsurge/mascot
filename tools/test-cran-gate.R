@@ -535,6 +535,12 @@ heavy_probes <- function() {
     "})"
   )
   uses_resource <- c("test_that(\"uses the shared resource\", {", "  expect_true(use_resource())", "})")
+  # The single covr run must look like R CMD check to the tests (testthat::is_checking()), as test_check() makes it.
+  sees_checking <- c(
+    "test_that(\"the gate's run under covr looks like R CMD check\", {",
+    "  if (nzchar(Sys.getenv(\"R_COVR\"))) expect_true(testthat::is_checking()) else expect_true(TRUE)",
+    "})"
+  )
   # Under covr only, a test leaves an unreadable trace file in covr's library, so covr's merge fails after every test
   # has passed. On the second run the gate used to make, the counter file exists and the test leaves nothing behind.
   breaks_covr <- c(
@@ -655,6 +661,14 @@ heavy_probes <- function() {
           "the six files were not re-run, or did not pass"
         }
       }
+    ),
+    probe(
+      "tests: the run under covr sets testthat::is_checking(), as test_check() does",
+      "heavy",
+      "tests",
+      function(dir) plant(dir, "tests/testthat/test-zz-gate-probe.R", sees_checking),
+      expect_pass = c("tests", "coverage"),
+      package = "fixture"
     ),
     probe(
       "coverage: covr failing after the tests passed fails at once, without a second run",

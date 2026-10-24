@@ -236,12 +236,15 @@ describe("the Check tab's slow buttons in a browser", {
       c("check_contrast", "Checking…", "Check contrast"),
       c("check_preview", "Building…", "Show every mood")
     )) {
-      # When the button is clicked, it says so at once
+      # When the focused button is clicked, it says so at once, and keeps keyboard focus
       state <- app$get_js(sprintf(
-        "(() => { const b = document.getElementById('%s'); b.click(); return [b.textContent, b.getAttribute('aria-busy'), b.getAttribute('aria-disabled')]; })()",
+        paste(
+          "(() => { const b = document.getElementById('%s'); b.focus(); b.click();",
+          "return [b.textContent, b.getAttribute('aria-busy'), b.getAttribute('aria-disabled'), document.activeElement.id]; })()"
+        ),
         case[[1]]
       ))
-      expect_identical(unlist(state), c(case[[2]], "true", "true"), info = case[[1]])
+      expect_identical(unlist(state), c(case[[2]], "true", "true", case[[1]]), info = case[[1]])
       # Then it is back once the result shows
       app$wait_for_js(sprintf("!document.getElementById('%s').hasAttribute('aria-busy')", case[[1]]))
       expect_identical(app$get_js(sprintf("document.getElementById('%s').textContent", case[[1]])), case[[3]])
@@ -267,11 +270,7 @@ describe("the Check tab's slow buttons in a browser", {
     ))
     # When it is clicked, once and again
     for (click in 1:2) {
-      app$run_js("document.getElementById('check_preview').click()")
-      app$wait_for_js(sprintf(
-        "!document.getElementById('check_preview').hasAttribute('aria-busy') && document.querySelector('#check_preview_ui [data-busy-done=\"%d\"]') !== null",
-        click
-      ))
+      click_studio_busy(app, "check_preview")
     }
     # Then no drawn frame showed a frame still loading its page with the button free
     early <- app$get_js("window.buttonSamples.filter((s) => !s.busy && s.frame && s.loaded === false).length")

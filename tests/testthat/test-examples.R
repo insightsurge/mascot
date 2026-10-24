@@ -1062,9 +1062,10 @@ describe("the preview page and the host mode", {
       expect_true(is_building())
       session$setInputs(host_mode = "mascot")
       session$elapse(500)
-      # Then nothing is being built, and a copy button's ticket is answered
+      # Then nothing is being built, the code is the call that will build the page, and a copy button's ticket is answered
       expect_false(is_building())
       expect_identical(preview_request(), 1)
+      expect_match(output$code_preview, 'status = "Second build"', fixed = TRUE)
       session$setInputs(copy_ticket = 1)
       expect_identical(answers, 1L)
       # And the change is built when the page is shown again

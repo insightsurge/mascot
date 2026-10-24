@@ -57,6 +57,8 @@
   let copyTickets = 0;
   window.Shiny.addCustomMessageHandler('studio:copy', ({ ticket }) => copyWaiting.get(ticket)?.());
   const copyViaSelection = (text) => {
+    // Selecting the hidden field moves keyboard focus to it; give focus back to where it was (the copy button).
+    const focused = document.activeElement;
     const field = document.createElement('textarea');
     field.value = text;
     field.setAttribute('readonly', '');
@@ -71,6 +73,7 @@
       ok = false;
     }
     field.remove();
+    if (focused?.isConnected) focused.focus({ preventScroll: true });
     return ok ? Promise.resolve() : Promise.reject(new Error('selection copy failed'));
   };
   // The clipboard API needs a secure page; a studio opened by a network address falls back to a selection copy, and so
@@ -109,6 +112,8 @@
       // on the button that is on the page now.
       const shown = target.isConnected ? target : document.querySelector(`[data-copy="${target.dataset.copy}"]`);
       if (!shown) return;
+      // A button drawn again has no remembered label yet: a click during the message must not take it as its label.
+      if (!shown.dataset.label) shown.dataset.label = label;
       shown.textContent = message;
       setTimeout(() => {
         shown.textContent = label;

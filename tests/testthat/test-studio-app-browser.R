@@ -2302,11 +2302,12 @@ describe("the copy buttons", {
       "  if (command === 'copy') window.copied = [...document.querySelectorAll('body > textarea[readonly]')].pop()?.value;",
       "  return true; };"
     ))
-    # When Copy is clicked
-    click_now(app, "#code_pin [data-copy=code_function]")
-    # Then the code is copied through a selection, and the button says it was copied
+    # When the focused Copy button is clicked
+    app$run_js("{ const b = document.querySelector('#code_pin [data-copy=code_function]'); b.focus(); b.click(); }")
+    # Then the code is copied through a selection, the button says it was copied, and it keeps keyboard focus
     app$wait_for_js("document.querySelector('#code_pin [data-copy=code_function]').textContent === 'Copied'")
     expect_identical(app$get_js("window.copied"), app$get_js("document.getElementById('code_function').textContent"))
+    expect_true(app$get_js("document.activeElement === document.querySelector('#code_pin [data-copy=code_function]')"))
   })
   it("says so when the server does not answer, and copies nothing", {
     local_shiny_browser()

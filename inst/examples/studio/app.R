@@ -1346,6 +1346,10 @@ studio_server <- function(input, output, session) {
     }
     result <- built_preview()
     if (!identical(preview_inputs(), last_preview_attempt()$args)) {
+      # A hidden page is not rebuilt until it is shown again, so its code is the call that will build it.
+      if (!preview_selected()) {
+        return(format_call("mascot_preview", preview_args()))
+      }
       return("# Building preview for the current settings.")
     }
     result$code

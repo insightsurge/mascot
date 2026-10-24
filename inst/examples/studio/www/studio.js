@@ -490,6 +490,9 @@
       byId(`inspector_${button.dataset.inspectorTab}`).hidden = !active;
     }
     syncInspector();
+    // Shiny pauses an output it thinks is hidden (Guide) and learns of a change only from its own observers, which can
+    // miss a quick switch of the hidden attribute. Binding the panel again makes it send every output's visibility now.
+    if (window.Shiny?.shinyapp?.isConnected()) window.Shiny.bindAll(byId(`inspector_${name}`));
   }
   // The server draws Help and Guide for the selected function a moment after it changes, and Guide only once its tab
   // shows, so for a while a panel can show an earlier function's page. Each card names its function in

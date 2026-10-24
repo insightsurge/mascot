@@ -24,7 +24,7 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   else can show it.
 - **CRAN:** every shinytest2 or chromote test starts with `testthat::skip_on_cran()`,
   `testthat::skip_if_not_installed("shinytest2")` and a skip when `chromote::find_chrome()` is `NULL`. CRAN has
-  asked that no package uses Chrome when tested on CRAN. CI runs them (`NOT_CRAN=true` in the coverage job).
+  asked that no package uses Chrome when tested on CRAN. CI runs them in the `browser-tests` job (`NOT_CRAN: true`).
 - **CRAN:** tests use only declared packages and guard Suggests (`skip_if_not_installed()`); no network; files go
   to `withr::local_tempdir()`; nothing is left behind; at most 2 cores.
 - **house:** keep JS logic small and push decisions into R, where they can be unit-tested.

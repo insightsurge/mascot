@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# cran-gate version: 2026-10-22
+# cran-gate version: 2026-10-24
 # Self-test for the CRAN gate (cran-gate.R, in the same folder): a check that can't fail protects nothing.
 #
 #   Rscript <path to this file> [all|unit|static|heavy] [step,step,...]
@@ -1047,6 +1047,25 @@ unit_checks <- function(gate) {
         c(0L, 1L, 3L, 1L, 2L, 2L)
       )
     ),
+    unit("tools: the nosuggests mode asks only for what its step uses (no devtools); fast and full ask for theirs", {
+      uses <- list(air = TRUE, lintr = TRUE, biome = TRUE, roxygen = TRUE, tests = TRUE, testthat = TRUE)
+      identical(
+        sort(g$required_packages("nosuggests", uses)),
+        c("checkmate", "cli", "jsonlite", "pkgbuild", "processx", "rcmdcheck")
+      ) &&
+        all(c("devtools", "spelling") %in% g$required_packages("fast", uses)) &&
+        all(c("pkgbuild", "processx", "rcmdcheck") %in% g$required_packages("full", uses))
+    }),
+    unit("tools: without Air on the PATH, nosuggests passes (it runs no style step) and lint names Air", {
+      uses <- list(air = TRUE, lintr = FALSE, biome = FALSE, roxygen = FALSE, tests = FALSE, testthat = FALSE)
+      checked <- withr::with_envvar(
+        c(PATH = ""),
+        list(nosuggests = g$step_tools("nosuggests", uses), lint = g$step_tools("lint", uses))
+      )
+      checked$nosuggests$status == "PASS" &&
+        checked$lint$status == "FAIL" &&
+        grepl("air (https://posit-dev.github.io/air/)", checked$lint$detail, fixed = TRUE)
+    }),
     unit(
       "arguments: modes, flags with a value in two forms, flags without, and the mistakes that exit 2",
       identical(g$parse_args(character())$mode, "fast") &&

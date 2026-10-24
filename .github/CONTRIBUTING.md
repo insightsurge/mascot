@@ -56,7 +56,7 @@ option and the exit codes are in [`tools/README.md`](https://github.com/insights
 - `fast` checks formatting (Air and Biome), that `man/` and `NAMESPACE` match the roxygen2 comments, lint, that every
   export has `@returns`, spelling, and `R CMD check --as-cran` without the tests.
 - `tests` runs the tests with `NOT_CRAN=true`, so the Chrome tests run, and then measures coverage. Coverage must be
-  at least 70%.
+  at least 70%. CI's coverage job runs without Chrome, so its figure is a little lower than the local one.
 - The gate prints one `PASS`, `FAIL` or `SKIP` line for each step, then a summary, and keeps a run folder with one
   log per step (its path is printed). Open a log only for a failing step.
 - **Spelling**: unknown words fail the gate. If a word is correct (a name or a technical term), list it in your pull

@@ -20,7 +20,8 @@ jobs:
     # A run started by hand on another branch does nothing: the site is built from main only.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
-    timeout-minutes: 30  # renders every article, then deploys (longest recent run: 4 min)
+    timeout-minutes: 45  # renders every article, then deploys (4-7 min), plus room for a slow package mirror
+    # (installing R alone once took 20 min)
     permissions:
       contents: read
       pages: write     # publish to GitHub Pages

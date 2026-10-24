@@ -970,7 +970,10 @@
       record.suppressClick = false;
     }, 0);
     const first = record.el.getBoundingClientRect();
-    const position = nearestCorner(first);
+    // The corner the pointer took the mascot towards, before it was kept inside the window: a mascot taller (or wider)
+    // than the window less its margins stays in the lower (or right) half when kept inside, and could never reach the
+    // other corners.
+    const position = nearestCorner({ ...first.toJSON(), left: gesture.point.x, top: gesture.point.y });
     const free = record.placement.drag === 'free';
     if (free) {
       const point = clampPoint(record, gesture.point);

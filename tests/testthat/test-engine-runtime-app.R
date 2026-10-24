@@ -161,7 +161,8 @@ describe("a format-v1 character through the Shiny state protocol", {
     # Given every animation frame watched, a swap to a character without the processing mood.
     app$run_js("window.stopWatching = false; watch();")
     app$click("swap")
-    app$wait_for_js("helper().dataset.swapping === 'true'")
+    # The swap lasts two seconds: wait for a watched frame that showed it, not for the moment itself.
+    app$wait_for_js("samples.some((s) => s.swapping === 'true')")
     app$wait_for_js("helper().dataset.shownCharacter === 'alpha_three' && helper().dataset.swapping === 'false'")
     app$run_js("window.stopWatching = true;")
     # Then no frame ever shows one character's status, or label, beside the other's picture.

@@ -1372,7 +1372,19 @@
   const chipValues = new Map();
   const pulseUntil = new Map();
   const pulseTimers = new Map();
+  // The server renders the call bar again after many changes, which replaces every chip. A keyboard user's focus
+  // would fall to the page: it moves to the new chip for the same argument instead.
+  let focusedChip = null;
+  $(document).on('shiny:value', (event) => {
+    if (event.target.id !== 'live_call') return;
+    focusedChip = byId('live_call').contains(document.activeElement)
+      ? document.activeElement.dataset.callArg || null
+      : null;
+  });
   function rememberChips() {
+    if (focusedChip && !byId('live_call').contains(document.activeElement))
+      document.querySelector(`[data-call-arg="${focusedChip}"]`)?.focus({ preventScroll: true });
+    focusedChip = null;
     for (const chip of document.querySelectorAll('[data-call-arg]')) {
       const name = chip.dataset.callArg;
       const value = chip.querySelector('code')?.textContent;

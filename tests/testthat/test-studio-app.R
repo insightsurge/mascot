@@ -53,8 +53,7 @@ describe("studio signature routes", {
         expect_match(search, paste0('aria-label="Open ', fn, ' at ', arg, '"'), fixed = TRUE)
       }
     }
-    ids <- regmatches(page, gregexpr(' id="[^"]+"', page))[[1]]
-    expect_identical(anyDuplicated(ids), 0L)
+    expect_unique_ids(page)
     for (text in c('role="combobox"', 'role="listbox"', 'aria-modal="true"', 'id="studio_keys"')) {
       expect_match(page, text, fixed = TRUE)
     }

@@ -10,7 +10,8 @@ paths:
 Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate mode that reproduces it locally:
 `tools/README.md` ("The gate and CI").
 
-- The gate (`tools/cran-gate.R`) is the single source of the lint steps: CI's lint job runs it in `lint` mode.
+- The gate (`tools/cran-gate.R`) is the single source of the lint steps: CI's lint job runs it in `lint` mode, and
+  the check-no-suggests job runs it in `nosuggests` mode.
   Change a check in the script, not in a workflow. The script is generic and self-contained (other packages copy it
   as it is): nothing mascot-specific goes into it; mascot's choices live in `DESCRIPTION` (`Config/cran-gate/*`),
   `air.toml`, `.lintr` and `biome.json`.

@@ -1,7 +1,9 @@
-# Derived from https://github.com/r-lib/actions/tree/v2/examples (check-no-suggests.yaml).
-# R CMD check with only the hard dependencies (Depends, Imports) installed, plus testthat, knitr and rmarkdown.
-# CRAN also checks packages without their Suggests: every use of a suggested package must be guarded. A pull request
-# that changes only documentation starts the job and skips its steps (.github/scripts/r-changes.sh).
+# R CMD check without the Suggests, as CRAN also checks: every use of a suggested package must be guarded. It runs the
+# gate's nosuggests mode (tools/cran-gate.R), which puts only what the check needs on the library path: the hard
+# dependencies with everything they need, testthat and the vignette builders. A Suggests package that is installed but
+# not needed stays hidden, so the check holds whatever the library contains. Derived from r-lib/actions'
+# check-no-suggests example. A pull request that changes only documentation starts the job and skips its steps
+# (.github/scripts/r-changes.sh).
 on:
   push:
     branches: [main]
@@ -47,6 +49,7 @@ jobs:
         if: steps.changes.outputs.r == 'true'
         with:
           dependencies: '"hard"'
+          # A fresh library each time (decided 2026-10-23); the gate hides what the check doesn't need anyway.
           cache: false
           extra-packages: |
             any::rcmdcheck
@@ -55,26 +58,17 @@ jobs:
             any::rmarkdown
           needs: check
 
-      - name: List the Suggests that are installed (only testthat, knitr, rmarkdown expected)
-        if: steps.changes.outputs.r == 'true'
-        shell: Rscript {0}
-        run: |
-          sugg <- trimws(strsplit(read.dcf("DESCRIPTION", fields = "Suggests")[[1]], ",")[[1]])
-          sugg <- sub("[ (].*$", "", sugg)
-          installed <- sugg[vapply(sugg, requireNamespace, logical(1), quietly = TRUE)]
-          message("Suggests installed: ", if (length(installed)) toString(installed) else "none")
-
-      - uses: r-lib/actions/check-r-package@v2
+      # The gate starts R CMD check itself, with NOT_CRAN unset, _R_CHECK_FORCE_SUGGESTS_ false and the CRAN-incoming
+      # checks off (R-CMD-check runs those); any note other than the one listing the hidden Suggests fails it. The step
+      # skips when it cannot hide the Suggests (one installed in R's own library), which here must fail the job too.
+      - name: R CMD check with only what the check needs (the gate's nosuggests mode)
         if: steps.changes.outputs.r == 'true'
         env:
-          # As in R-CMD-check.yaml: skip only the remote CRAN-incoming checks (the "New submission" note).
-          _R_CHECK_CRAN_INCOMING_REMOTE_: false
-          _R_CHECK_FORCE_SUGGESTS_: false
-          # As CRAN: setup-r sets NOT_CRAN to true, which would run the browser tests here when their packages exist.
-          NOT_CRAN: false
           # The whole test output when a test fails, not only its last 13 lines.
           _R_CHECK_TESTS_NLINES_: 0
-        with:
-          args: 'c("--no-manual", "--as-cran")'
-          error-on: '"note"'
-          build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'
+        run: |
+          Rscript tools/cran-gate.R nosuggests | tee "${RUNNER_TEMP}/gate.txt"
+          if grep -q "^SKIP nosuggests" "${RUNNER_TEMP}/gate.txt"; then
+            echo "The no-Suggests check was skipped, so nothing was checked."
+            exit 1
+          fi

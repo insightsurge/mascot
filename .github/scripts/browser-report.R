@@ -1,7 +1,7 @@
 # Writes the browser-tests part of the pull request's CI report, for one R version: the counts, the failing and
 # skipped tests, the slowest test files and the files that got slower than on main. Sourced by browser-tests.yaml's
-# test step, which runs the tests with file_time_reporter and calls write_browser_report(results, reporter$seconds())
-# before it decides whether the job fails.
+# test step, which runs the tests with file_time_reporter and calls
+# write_browser_report(results, reporter$seconds(), reporter$elapsed()) before it decides whether the job fails.
 # Environment: R_LABEL (the matrix's R version), OUT (the Markdown part), TIMINGS (a CSV of seconds per file, kept
 # from main runs), BASELINE_DIR, BASELINE_FOUND and BASELINE_SHA (main's timings, from main-baseline).
 
@@ -20,6 +20,18 @@ file_time_reporter <- R6::R6Class(
     starts = list(),
     ends = list(),
     current = NA_character_,
+    began = NULL,
+    finished = NULL,
+    start_reporter = function() {
+      self$began <- Sys.time()
+      super$start_reporter()
+    },
+    end_reporter = function() {
+      self$finished <- Sys.time()
+      super$end_reporter()
+    },
+    # How long the whole run took, start to end (shorter than the files' sum: two run at once).
+    elapsed = function() as.numeric(difftime(self$finished, self$began, units = "secs")),
     start_file = function(file) {
       self$current <- file
       if (is.null(self$starts[[file]])) {
@@ -38,6 +50,11 @@ file_time_reporter <- R6::R6Class(
     }
   )
 )
+
+# Seconds as minutes ("14.1 min"), or as seconds under a minute ("42 s").
+duration <- function(seconds) {
+  ifelse(seconds >= 60, sprintf("%.1f min", seconds / 60), sprintf("%.0f s", seconds))
+}
 
 # The first lines of a test's message, on one line for a table cell.
 short_message <- function(message) {
@@ -65,7 +82,7 @@ table_lines <- function(rows, max = 30) {
   test <- gsub("|", "\\|", shown$test, fixed = TRUE)
   c(
     "| File | Test | Message |",
-    "|---|---|---|",
+    "| :--- | :--- | :--- |",
     sprintf("| `%s` | %s | %s |", shown$file, test, shown$message),
     if (nrow(rows) > max) c("", sprintf("And %d more: see the job's log.", nrow(rows) - max))
   )
@@ -73,36 +90,43 @@ table_lines <- function(rows, max = 30) {
 
 plural <- function(n, word) sprintf("%d %s%s", n, word, if (n == 1) "" else "s")
 
-details <- function(summary, body) c("<details>", sprintf("<summary>%s</summary>", summary), "", body, "", "</details>")
+# A collapsed section; `open` shows it expanded (for failures, which need acting on).
+details <- function(summary, body, open = FALSE) {
+  c(if (open) "<details open>" else "<details>", sprintf("<summary>%s</summary>", summary), "", body, "", "</details>")
+}
 
-write_browser_report <- function(results, timings) {
+write_browser_report <- function(results, timings, elapsed = NA_real_) {
   label <- Sys.getenv("R_LABEL")
   frame <- as.data.frame(results)
   utils::write.csv(timings, Sys.getenv("TIMINGS"), row.names = FALSE)
 
   failed <- problem_rows(results, c("expectation_failure", "expectation_error"))
   skipped <- problem_rows(results, "expectation_skip")
+  passed <- nrow(frame) - nrow(failed) - nrow(skipped)
+  ok <- nrow(failed) == 0 && nrow(skipped) == 0
   first <- sprintf(
-    "**Browser and snapshot tests, R %s:** %d tests in %d files, %d failed, %d skipped (any skip fails this job).",
+    "%s **Browser and snapshot tests, R %s:** %d passed · %d failed · %d skipped%s%s",
+    if (ok) "\u2705" else "\u274c",
     label,
-    nrow(frame),
-    length(unique(frame$file)),
+    passed,
     nrow(failed),
-    nrow(skipped)
+    nrow(skipped),
+    if (is.na(elapsed)) "" else paste0(" · ", duration(elapsed)),
+    if (nrow(skipped) > 0) " (a skip fails this job: these tests must run)" else ""
   )
   out <- first
   if (nrow(failed) > 0) {
-    out <- c(out, "", details(plural(nrow(failed), "failing test"), table_lines(failed)))
+    out <- c(out, "", details(plural(nrow(failed), "failing test"), table_lines(failed), open = TRUE))
   }
   if (nrow(skipped) > 0) {
-    out <- c(out, "", details(plural(nrow(skipped), "skipped test"), table_lines(skipped)))
+    out <- c(out, "", details(plural(nrow(skipped), "skipped test"), table_lines(skipped), open = TRUE))
   }
 
   slowest <- utils::head(timings[order(-timings$seconds), ], 5)
-  timing_rows <- sprintf("| `%s` | %.1f s |", slowest$file, slowest$seconds)
-  timing_body <- c("| File | Time |", "|---|---|", timing_rows)
+  timing_rows <- sprintf("| `%s` | %s |", slowest$file, duration(slowest$seconds))
+  timing_body <- c("| File | Time |", "| :--- | ---: |", timing_rows)
   if (!identical(Sys.getenv("BASELINE_FOUND"), "true") && identical(Sys.getenv("GITHUB_EVENT_NAME"), "pull_request")) {
-    timing_body <- c(timing_body, "", "No test times from `main` to compare with.")
+    timing_body <- c(timing_body, "", "_No test times from `main` to compare with._")
   }
   if (identical(Sys.getenv("BASELINE_FOUND"), "true")) {
     base_file <- file.path(Sys.getenv("BASELINE_DIR"), basename(Sys.getenv("TIMINGS")))
@@ -124,8 +148,8 @@ write_browser_report <- function(results, timings) {
             sprintf("Slower than on `main` at %s:", sha),
             "",
             "| File | Here | `main` |",
-            "|---|---|---|",
-            sprintf("| `%s` | %.1f s | %.1f s |", slower$file, slower$seconds, slower$seconds_main)
+            "| :--- | ---: | ---: |",
+            sprintf("| `%s` | %s | %s |", slower$file, duration(slower$seconds), duration(slower$seconds_main))
           )
         }
       )
@@ -135,7 +159,12 @@ write_browser_report <- function(results, timings) {
     out,
     "",
     details(
-      sprintf("Test times, R %s (the files add up to %.0f s; two run at once)", label, sum(timings$seconds)),
+      sprintf(
+        "Slowest test files, R %s (%d files add up to %s; two run at once)",
+        label,
+        nrow(timings),
+        duration(sum(timings$seconds))
+      ),
       timing_body
     )
   )

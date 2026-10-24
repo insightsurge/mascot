@@ -26,6 +26,7 @@ if [ "${current}" != "${HEAD_SHA}" ]; then
 fi
 
 footer=()
+states=()
 waiting=()
 silent=()
 mkdir -p "${work}/parts"
@@ -36,22 +37,28 @@ while IFS= read -r workflow; do
       [.id, .status, (.conclusion // \"-\"), .html_url] | @tsv")
   if [ -z "${run}" ]; then
     waiting+=("${workflow%.*} (not started)")
+    states+=("running")
     continue
   fi
   # No empty fields: read would join two tabs into one ("-" stands for a run with no conclusion yet).
   IFS=$'\t' read -r id status conclusion url <<<"${run}"
   # A run is finished for the report when all its jobs but the report jobs are: its own report job (and this one)
   # may still be running.
-  pending=$(gh api --paginate "repos/${repo}/actions/runs/${id}/jobs" \
-    --jq ".jobs[] | select(.status != \"completed\") | select(.name != \"${report_job}\") | .name" | wc -l)
+  jobs=$(gh api --paginate "repos/${repo}/actions/runs/${id}/jobs" \
+    --jq ".jobs[] | select(.name != \"${report_job}\") | [.status, (.conclusion // \"-\")] | @tsv")
+  pending=$(printf '%s\n' "${jobs}" | awk -F '\t' '$1 != "" && $1 != "completed"' | wc -l)
+  failed=$(printf '%s\n' "${jobs}" | awk -F '\t' '$2 == "failure" || $2 == "timed_out"' | wc -l)
   if [ "${status}" = "completed" ]; then
     state=${conclusion}
   elif [ "${pending}" -gt 0 ]; then
     state="running"
+  elif [ "${failed}" -gt 0 ]; then
+    state="failure"
   else
-    state="finished"
+    state="success"
   fi
-  footer+=("[${workflow%.*}](${url}): ${state}")
+  states+=("${state}")
+  footer+=("[${workflow%.*}](${url}) (${state})")
   found=0
   while IFS=$'\t' read -r artifact name; do
     [ -z "${artifact}" ] && continue
@@ -75,10 +82,22 @@ while IFS= read -r workflow; do
   fi
 done < <(jq -r '.workflows[]' "${CONFIG}")
 
+# One headline status for all the runs: a failure first, then anything still running, then a cancelled run.
+all=" ${states[*]-} "
+if [[ "${all}" =~ \ (failure|timed_out|startup_failure)\  ]]; then
+  headline="❌ ${title}: failed"
+elif [[ "${all}" =~ \ running\  ]]; then
+  headline="⏳ ${title}: running"
+elif [[ "${all}" =~ \ cancelled\  ]]; then
+  headline="⏹️ ${title}: cancelled"
+else
+  headline="✅ ${title}: passed"
+fi
+
 {
-  echo "## ${title}"
+  echo "## ${headline} · \`${HEAD_SHA:0:7}\`"
   echo
-  echo "For commit ${HEAD_SHA:0:7}. Each workflow rewrites this comment when it finishes."
+  echo "_Each workflow rewrites this comment when it finishes._"
   while IFS=$'\t' read -r key section; do
     echo
     echo "### ${section}"
@@ -87,7 +106,7 @@ done < <(jq -r '.workflows[]' "${CONFIG}")
     parts=("${work}/parts/${key}-"*.md)
     shopt -u nullglob
     if [ "${#parts[@]}" = 0 ]; then
-      echo "Nothing reported yet."
+      echo "_Nothing reported yet._"
       continue
     fi
     for part in $(printf '%s\n' "${parts[@]}" | sort); do
@@ -98,7 +117,7 @@ done < <(jq -r '.workflows[]' "${CONFIG}")
   echo
   echo "---"
   if [ "${#waiting[@]}" -gt 0 ]; then
-    echo "Still running: $(printf '%s, ' "${waiting[@]}" | sed 's/, $//')."
+    echo "⏳ Still running: $(printf '%s, ' "${waiting[@]}" | sed 's/, $//')."
     echo
   fi
   if [ "${#silent[@]}" -gt 0 ]; then
@@ -106,7 +125,7 @@ done < <(jq -r '.workflows[]' "${CONFIG}")
     echo
   fi
   if [ "${#footer[@]}" -gt 0 ]; then
-    echo "Runs: $(printf '%s · ' "${footer[@]}" | sed 's/ · $//')"
+    echo "**Runs:** $(printf '%s · ' "${footer[@]}" | sed 's/ · $//')"
   fi
 } >"${work}/comment.md"
 

@@ -67,10 +67,10 @@ untested_lines <- function(cov) {
 untested_text <- function(cov) {
   untested <- untested_lines(cov)
   if (is.null(untested)) {
-    return("This pull request adds no lines in `R/`.")
+    return("_This pull request adds no lines in `R/`._")
   }
   if (nrow(untested) == 0) {
-    return("Every added `R/` line that covr counts is run by the tests in this job.")
+    return("_Every added `R/` line that covr counts is run by the tests in this job._")
   }
   by_file <- split(untested$line, untested$file)
   rows <- vapply(names(by_file), function(f) sprintf("| `%s` | %s |", f, line_ranges(by_file[[f]])), character(1))
@@ -87,7 +87,7 @@ untested_text <- function(cov) {
     ),
     "",
     "| File | Lines |",
-    "|---|---|",
+    "| :--- | :--- |",
     shown,
     if (length(rows) > length(shown)) sprintf("\nAnd %d more files.", length(rows) - length(shown)),
     "",
@@ -98,23 +98,24 @@ untested_text <- function(cov) {
 coverage_report <- function() {
   figures <- read_figures(env("COV_DIR"))
   if (is.null(figures)) {
-    "**Coverage:** not measured: the tests failed before covr finished (see the run's log)."
+    "\u274c **Coverage:** not measured: the tests failed before covr finished (see the run's log)."
   } else {
-    versus <- if (identical(env("EVENT_NAME"), "pull_request")) " · no figure from `main` to compare with" else ""
+    versus <- if (identical(env("EVENT_NAME"), "pull_request")) " · no figure from `main` yet" else ""
     if (identical(env("BASELINE_FOUND"), "true")) {
       base <- read_figures(env("BASELINE_DIR"))
       if (!is.null(base)) {
         versus <- sprintf(
-          " · %+.1f points from `main` at %s (%.1f%%)",
+          " · **%+.1f** points from `main` at %s (%.1f%%)",
           figures$percent - base$percent,
           substr(env("BASELINE_SHA"), 1, 7),
           base$percent
         )
       }
     }
-    verdict <- if (isTRUE(figures$passed)) "" else " **Under the limit: the job fails.**"
+    verdict <- if (isTRUE(figures$passed)) "" else " · **Under the limit: the job fails.**"
     first <- sprintf(
-      "**Coverage:** %.1f%% of R lines, without the browser tests (limit %g%%, from `DESCRIPTION`)%s.%s",
+      "%s **Coverage:** %.1f%% of R lines, without the browser tests · limit %g%% (from `DESCRIPTION`)%s%s",
+      if (isTRUE(figures$passed)) "\u2705" else "\u274c",
       figures$percent,
       figures$limit,
       versus,
@@ -132,6 +133,6 @@ coverage_report <- function() {
 # A fault in the report must not decide the job: the coverage step does.
 out <- tryCatch(coverage_report(), error = function(e) {
   message("::warning::The coverage report failed: ", conditionMessage(e))
-  sprintf("**Coverage:** the report failed (%s); the job's log has the figure.", conditionMessage(e))
+  sprintf("\u26a0\ufe0f **Coverage:** the report failed (%s); the job's log has the figure.", conditionMessage(e))
 })
 writeLines(out, env("OUT"))

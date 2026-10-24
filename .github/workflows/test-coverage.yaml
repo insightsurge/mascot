@@ -130,11 +130,11 @@ jobs:
         run: |
           if [ -s "${OUT}" ]; then exit 0; fi
           if [ "${JOB_STATUS}" = "cancelled" ]; then
-            echo "**Coverage:** not measured: the job was cancelled." > "${OUT}"
+            echo "⏹️ **Coverage:** not measured: the job was cancelled." > "${OUT}"
           elif [ "${R_STEPS}" = "false" ]; then
-            echo "**Coverage:** not measured: this pull request changes only documentation." > "${OUT}"
+            echo "⏭️ **Coverage:** not measured: this pull request changes only documentation." > "${OUT}"
           else
-            echo "**Coverage:** not measured: the job failed before the tests ran (see the run's log)." > "${OUT}"
+            echo "❌ **Coverage:** not measured: the job failed before the tests ran (see the run's log)." > "${OUT}"
           fi
 
       - name: Keep the coverage report

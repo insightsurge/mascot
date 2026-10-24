@@ -118,10 +118,10 @@ jobs:
           })))
           if (length(skips) > 0L) message("Skipped: ", paste(skips, collapse = "; "))
           # The report part for the CI report; a fault in the report must not decide the job, the tests do.
-          tryCatch(write_browser_report(results, reporter$seconds()), error = function(e) {
+          tryCatch(write_browser_report(results, reporter$seconds(), reporter$elapsed()), error = function(e) {
             message("::warning::The browser test report failed: ", conditionMessage(e))
             writeLines(
-              sprintf("**Browser and snapshot tests, R %s:** the report failed (%s); the job's log has the results.",
+              sprintf("\u26a0\ufe0f **Browser and snapshot tests, R %s:** the report failed (%s); the job's log has the results.",
                 Sys.getenv("R_LABEL"), conditionMessage(e)),
               Sys.getenv("OUT")
             )
@@ -151,11 +151,11 @@ jobs:
         run: |
           if [ -s "${OUT}" ]; then exit 0; fi
           if [ "${JOB_STATUS}" = "cancelled" ]; then
-            echo "**Browser and snapshot tests, R ${R_LABEL}:** the job was cancelled before the tests finished." > "${OUT}"
+            echo "⏹️ **Browser and snapshot tests, R ${R_LABEL}:** the job was cancelled before the tests finished." > "${OUT}"
           elif [ "${R_STEPS}" = "false" ]; then
-            echo "**Browser and snapshot tests, R ${R_LABEL}:** not run: this pull request changes only documentation." > "${OUT}"
+            echo "⏭️ **Browser and snapshot tests, R ${R_LABEL}:** not run: this pull request changes only documentation." > "${OUT}"
           else
-            echo "**Browser and snapshot tests, R ${R_LABEL}:** the job failed before the tests finished (see the run's log)." > "${OUT}"
+            echo "❌ **Browser and snapshot tests, R ${R_LABEL}:** the job failed before the tests finished (see the run's log)." > "${OUT}"
           fi
 
       - name: Keep the report

@@ -361,14 +361,15 @@ static_probes <- function(uses) {
       "static",
       "lint",
       function(dir) {
-        desc <- readLines(file.path(dir, "DESCRIPTION"), warn = FALSE)
-        extra <- grep("^Config/cran-gate/extra-dirs:", desc, value = TRUE)
-        folders <- if (length(extra) > 0) sub("^Config/cran-gate/extra-dirs: *", "", extra[[1]]) else character()
-        desc <- c(
-          desc[!grepl("^Config/cran-gate/extra-dirs:", desc)],
-          paste0("Config/cran-gate/extra-dirs: ", paste(c(folders, "gate-probe-lints"), collapse = ", "))
-        )
-        plant(dir, "DESCRIPTION", desc)
+        # The whole field, continuation lines included, as the gate reads it.
+        file <- file.path(dir, "DESCRIPTION")
+        desc <- read.dcf(file, keep.white = colnames(read.dcf(file)))
+        field <- "Config/cran-gate/extra-dirs"
+        folders <- if (field %in% colnames(desc)) trimws(strsplit(desc[1, field], ",", fixed = TRUE)[[1]]) else NULL
+        desc <- desc[, colnames(desc) != field, drop = FALSE]
+        desc <- cbind(desc, paste(c(folders[nzchar(folders)], "gate-probe-lints"), collapse = ", "))
+        colnames(desc)[ncol(desc)] <- field
+        write.dcf(desc, file, keep.white = colnames(desc))
         plant(dir, "gate-probe-lints/gate-probe-lint.R", c("gate_probe <- function(x) {", "  T", "}"))
       },
       expect_fail = "lintr",

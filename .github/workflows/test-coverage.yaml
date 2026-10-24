@@ -89,7 +89,7 @@ jobs:
           report <- file.path(Sys.getenv("RUNNER_TEMP"), "coverage-report")
           dir.create(report, showWarnings = FALSE)
           saveRDS(cov, file.path(report, "coverage.rds"))
-          write.dcf(data.frame(Percent = round(pct, 2), Limit = limit), file.path(report, "coverage.dcf"))
+          write.dcf(data.frame(Percent = pct, Limit = limit, Passed = pct >= limit), file.path(report, "coverage.dcf"))
           if (pct < limit) stop(sprintf("Coverage %.1f%% is under %g%%.", pct, limit), call. = FALSE)
         shell: Rscript {0}
 
@@ -125,10 +125,13 @@ jobs:
         if: always()
         env:
           R_STEPS: ${{ steps.changes.outputs.r }}
+          JOB_STATUS: ${{ job.status }}
           OUT: ${{ runner.temp }}/coverage-part.md
         run: |
           if [ -s "${OUT}" ]; then exit 0; fi
-          if [ "${R_STEPS}" = "false" ]; then
+          if [ "${JOB_STATUS}" = "cancelled" ]; then
+            echo "**Coverage:** not measured: the job was cancelled." > "${OUT}"
+          elif [ "${R_STEPS}" = "false" ]; then
             echo "**Coverage:** not measured: this pull request changes only documentation." > "${OUT}"
           else
             echo "**Coverage:** not measured: the job failed before the tests ran (see the run's log)." > "${OUT}"

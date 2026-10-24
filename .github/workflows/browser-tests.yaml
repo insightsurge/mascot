@@ -98,10 +98,11 @@ jobs:
           # A test in tests/testthat/test-helper-layout.R fails when one of them is anywhere else.
           files <- list.files("tests/testthat", "^test-.*-(browser|snap)[.]R$")
           message(length(files), " files with browser or snapshot tests: ", paste(files, collapse = ", "))
-          # A line per file when it finishes, with its time (update_interval = Inf: no progress spinner in a log);
-          # failures in full. The reporter also keeps each file's time for the report.
+          # A line per file when it finishes, with its time, and a status line when one starts (update_interval = Inf:
+          # no progress spinner in between); failures in full. The reporter also keeps each file's time for the report.
           source(".github/scripts/browser-report.R")
-          reporter <- file_time_reporter$new(show_praise = FALSE, update_interval = Inf)
+          reporter <- file_time_reporter$new(show_praise = FALSE)
+          reporter$update_interval <- Inf  # testthat's parallel reporter sets 0.05 in its constructor
           results <- testthat::test_dir(
             "tests/testthat",
             filter = "-(browser|snap)$",
@@ -145,10 +146,13 @@ jobs:
         env:
           R_STEPS: ${{ steps.changes.outputs.r }}
           R_LABEL: ${{ matrix.r }}
+          JOB_STATUS: ${{ job.status }}
           OUT: ${{ runner.temp }}/browser-part.md
         run: |
           if [ -s "${OUT}" ]; then exit 0; fi
-          if [ "${R_STEPS}" = "false" ]; then
+          if [ "${JOB_STATUS}" = "cancelled" ]; then
+            echo "**Browser and snapshot tests, R ${R_LABEL}:** the job was cancelled before the tests finished." > "${OUT}"
+          elif [ "${R_STEPS}" = "false" ]; then
             echo "**Browser and snapshot tests, R ${R_LABEL}:** not run: this pull request changes only documentation." > "${OUT}"
           else
             echo "**Browser and snapshot tests, R ${R_LABEL}:** the job failed before the tests finished (see the run's log)." > "${OUT}"

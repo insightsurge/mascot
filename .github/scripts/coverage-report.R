@@ -13,7 +13,11 @@ read_figures <- function(dir) {
     return(NULL)
   }
   figures <- read.dcf(file)
-  list(percent = as.numeric(figures[1, "Percent"]), limit = as.numeric(figures[1, "Limit"]))
+  list(
+    percent = as.numeric(figures[1, "Percent"]),
+    limit = as.numeric(figures[1, "Limit"]),
+    passed = as.logical(figures[1, "Passed"])
+  )
 }
 
 # The lines a unified diff with no context adds, per file (the same reading as the gate's added_lines_in_diff()).
@@ -108,7 +112,7 @@ coverage_report <- function() {
         )
       }
     }
-    verdict <- if (figures$percent >= figures$limit) "" else " **Under the limit: the job fails.**"
+    verdict <- if (isTRUE(figures$passed)) "" else " **Under the limit: the job fails.**"
     first <- sprintf(
       "**Coverage:** %.1f%% of R lines, without the browser tests (limit %g%%, from `DESCRIPTION`)%s.%s",
       figures$percent,

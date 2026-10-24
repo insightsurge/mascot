@@ -59,9 +59,16 @@ problem_rows <- function(results, classes) {
   do.call(rbind, c(list(data.frame(file = character(), test = character(), message = character())), rows))
 }
 
-table_lines <- function(rows) {
-  test <- gsub("|", "\\|", rows$test, fixed = TRUE)
-  c("| File | Test | Message |", "|---|---|---|", sprintf("| `%s` | %s | %s |", rows$file, test, rows$message))
+# At most `max` rows, then a line saying how many were left out (the job's log has them all).
+table_lines <- function(rows, max = 30) {
+  shown <- utils::head(rows, max)
+  test <- gsub("|", "\\|", shown$test, fixed = TRUE)
+  c(
+    "| File | Test | Message |",
+    "|---|---|---|",
+    sprintf("| `%s` | %s | %s |", shown$file, test, shown$message),
+    if (nrow(rows) > max) c("", sprintf("And %d more: see the job's log.", nrow(rows) - max))
+  )
 }
 
 plural <- function(n, word) sprintf("%d %s%s", n, word, if (n == 1) "" else "s")
@@ -85,15 +92,18 @@ write_browser_report <- function(results, timings) {
   )
   out <- first
   if (nrow(failed) > 0) {
-    out <- c(out, "", details(plural(nrow(failed), "failing test"), table_lines(utils::head(failed, 30))))
+    out <- c(out, "", details(plural(nrow(failed), "failing test"), table_lines(failed)))
   }
   if (nrow(skipped) > 0) {
-    out <- c(out, "", details(plural(nrow(skipped), "skipped test"), table_lines(utils::head(skipped, 30))))
+    out <- c(out, "", details(plural(nrow(skipped), "skipped test"), table_lines(skipped)))
   }
 
   slowest <- utils::head(timings[order(-timings$seconds), ], 5)
   timing_rows <- sprintf("| `%s` | %.1f s |", slowest$file, slowest$seconds)
   timing_body <- c("| File | Time |", "|---|---|", timing_rows)
+  if (!identical(Sys.getenv("BASELINE_FOUND"), "true") && identical(Sys.getenv("GITHUB_EVENT_NAME"), "pull_request")) {
+    timing_body <- c(timing_body, "", "No test times from `main` to compare with.")
+  }
   if (identical(Sys.getenv("BASELINE_FOUND"), "true")) {
     base_file <- file.path(Sys.getenv("BASELINE_DIR"), basename(Sys.getenv("TIMINGS")))
     if (file.exists(base_file)) {

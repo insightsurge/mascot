@@ -105,7 +105,9 @@ Each job writes its part to its job summary (on the run's page) and keeps it as 
 end of each of those workflows gathers the parts of the pull request's commit into the comment
 (`.github/actions/pr-report-comment`, set up in `.github/pr-report.json`). Pull requests from forks and from
 Dependabot get the job summaries only: their token can't write to the pull request. The figures from `main` are
-artifacts that its runs keep for 90 days; when there is none, the comment says so.
+artifacts that its runs keep for 90 days; when there is none, the comment says so. A re-run job replaces its part;
+when a re-run job stops before it writes one (a failed checkout, say), the earlier attempt's part stays, and the
+footer's run state (failure, cancelled) is the sign.
 
 ### Changing the gate
 

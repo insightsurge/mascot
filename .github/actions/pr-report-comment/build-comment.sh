@@ -30,8 +30,10 @@ waiting=()
 silent=()
 mkdir -p "${work}/parts"
 while IFS= read -r workflow; do
-  run=$(gh api "repos/${repo}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=1" \
-    --jq '.workflow_runs[0] // empty | [.id, .status, (.conclusion // "-"), .html_url] | @tsv')
+  # The newest run for this commit and this pull request: two pull requests can share a commit.
+  run=$(gh api "repos/${repo}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=20" \
+    --jq "[.workflow_runs[] | select(any(.pull_requests[]; .number == ${PR_NUMBER}))][0] // empty |
+      [.id, .status, (.conclusion // \"-\"), .html_url] | @tsv")
   if [ -z "${run}" ]; then
     waiting+=("${workflow%.*} (not started)")
     continue

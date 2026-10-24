@@ -56,6 +56,7 @@ jobs:
         run: |
           case "${OUTCOME}" in
             success) echo "**Lint:** passed (Air, Biome, lintr, docs in sync, spelling)." > "${OUT}" ;;
+            cancelled) echo "**Lint:** cancelled before the gate finished." > "${OUT}" ;;
             failure) echo "**Lint:** failed. lintr's findings are shown inline in Files changed; the gate's FAIL lines in the run's log name the other steps." > "${OUT}" ;;
             *) echo "**Lint:** did not run: the job failed while setting up (see the run's log)." > "${OUT}" ;;
           esac

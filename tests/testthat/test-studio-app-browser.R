@@ -1079,19 +1079,28 @@ describe("studio code arguments, chips, anchors and menus", {
     wait_studio_mood(app, "idle")
     click_now(app, '[data-call-arg=click]')
     expect_true(app$get_js("!document.getElementById('click_type').selectize.isOpen"))
+    # Let the server answer the chip's click first, so no reply lands while the menu is checked.
+    app$wait_for_idle()
     app$run_js(
       "{const body=document.getElementById('chip_editor_body');body.style.maxHeight='60px';body.style.overflow='auto';}"
     )
     app$wait_for_js("document.getElementById('chip_editor_body').clientHeight <= 60")
-    # The editor follows its chip again when its size changes (a ResizeObserver, on the next frame): let that happen
-    # first, or it moves the editor back up after it is placed low below, and the next scroll opens the menu downwards.
-    app$get_js("new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))")
-    app$run_js(
-      "{const pop=document.getElementById('chip_editor');pop.style.top=(innerHeight-130)+'px';const s=document.getElementById('click_type').selectize;s.focus();s.open();s.positionDropdown();}"
-    )
-    app$wait_for_js(
-      "(() => {const s=document.getElementById('click_type').selectize; const d=s.$dropdown[0];const r=d.getBoundingClientRect();return s.isOpen && d.parentElement===document.body && d.dataset.direction==='up' && r.top>=0 && r.bottom<=innerHeight && +getComputedStyle(d).zIndex>+getComputedStyle(document.getElementById('chip_editor')).zIndex;})()"
-    )
+    # The editor follows its chip whenever its size changes or the page scrolls (a ResizeObserver and scroll handlers,
+    # a frame or more later), so it would move back up from where the test places it. Placing it low near the bottom,
+    # opening the menu and reading where the menu went all happen in one script, before any of those can run; the
+    # menu's placement (positionDropdown) is synchronous.
+    menu <- app$get_js(paste(
+      "(() => {",
+      "const pop = document.getElementById('chip_editor'), s = document.getElementById('click_type').selectize;",
+      "pop.style.top = (innerHeight - 130) + 'px'; s.focus(); s.open(); s.positionDropdown();",
+      "const d = s.$dropdown[0], r = d.getBoundingClientRect();",
+      "return { open: s.isOpen, portal: d.parentElement === document.body, direction: d.dataset.direction,",
+      "  inView: r.top >= 0 && r.bottom <= innerHeight,",
+      "  above: +getComputedStyle(d).zIndex > +getComputedStyle(pop).zIndex };",
+      "})()"
+    ))
+    # Then the menu opens upwards, in view, above the clipped editor, from a portal in the page's body
+    expect_identical(menu, list(open = TRUE, portal = TRUE, direction = "up", inView = TRUE, above = TRUE))
     app$run_js(
       "{const s=document.getElementById('click_type').selectize;s.$control_input.trigger($.Event('keydown',{keyCode:38}));s.$control_input.trigger($.Event('keydown',{keyCode:13}));}"
     )

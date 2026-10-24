@@ -306,7 +306,7 @@ describe("reserved names in fixed and data positions", {
 
   it("reports the structural error first when a top-level reserved key is written after it (JS differs here)", {
     # Documented difference: R walks every key in document order. compile() checks the top-level object first, so
-    # the browser engine reports `$.extends` instead (test-engine-parts.R).
+    # the browser engine reports `$.extends` instead (test-engine-parts-browser.R).
     data <- format_recipe()
     bad <- list(id = "Bad Id", at = list(0, 0), layer = 1, items = list())
     data$parts <- c(list(bad), data$parts)

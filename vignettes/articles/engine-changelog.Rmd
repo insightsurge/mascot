@@ -350,7 +350,7 @@ and no shipped character uses one.
   gestures, unworn accessories and the rest) after its structural checks. So the two can differ when a reserved key
   comes before a structural error in the document: the engine reports a top-level reserved key first, where R reports
   the structural error if it comes first. Both results are pinned in the tests (`test-character-check.R` and
-  `test-engine-parts.R`).
+  `test-engine-parts-browser.R`).
 * `R/character-format.R`: a reserved name in `requires` now gives the version message; the R checker already rejected
   each reserved field with code `capability` at its path.
 * Fixtures: ten new invalid recipes in `tests/testthat/fixtures/format/invalid/`, one per reserved name still missing

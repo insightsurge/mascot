@@ -31,16 +31,7 @@ describe("mascot_colour_roles()", {
     expect_true("lamp" %in% mascot_colour_roles("knurl")$role)
     expect_no_error(mascot_theme(light = list(lamp = "#ff0000"), dark = list(lamp_happy = "#00ff00")))
   })
-  it("names unknown characters and checks internal contracts", {
-    expect_snapshot(error = TRUE, mascot_colour_roles("missing"))
-    for (x in list(NULL, 1, "", NA_character_, c("tessa", "tessa"))) {
-      expect_error(mascot_colour_roles(x), "Assertion on 'character' failed")
-    }
-    expect_error(character_colour_data("missing"), "must be one of", class = "mascot_error_choice")
-    expect_error(colour_role_registry("missing"), "must be one of", class = "mascot_error_choice")
-  })
 })
-
 
 describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {

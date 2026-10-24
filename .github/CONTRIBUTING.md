@@ -33,7 +33,7 @@ a character drawn in code shows a mood and animates when the mood changes. What 
 6. **The package creator merges** once CI is green. Pull requests are squash-merged, so the pull request title
    becomes the commit message on `main`: keep it a Conventional Commit.
 
-`main` is protected by a ruleset: changes reach it only through a pull request, and the required checks must pass.
+Changes reach `main` through pull requests, and a ruleset stops anyone from force-pushing to `main` or deleting it.
 CI on a pull request from a fork waits for a maintainer to approve the run; this is expected, so there is no need to
 ask. Please leave "Allow edits by maintainers" on, so a maintainer can fix a small thing
 (a typo, a failing format check) on your branch instead of asking you to.
@@ -91,9 +91,12 @@ The full list, with reasons, is in [`docs/standards.md`](https://github.com/insi
 
 - Use testthat 3rd edition in BDD style: `describe()` names the function or behaviour, and `it()` states the expected
   behaviour in plain words.
-- One test file per R file: `R/moods.R` is tested in `tests/testthat/test-moods.R`.
+- One test file per R file: `R/moods.R` is tested in `tests/testthat/test-moods.R`. Its browser tests go in
+  `test-moods-browser.R` and its snapshot tests in `test-moods-snap.R`, because CRAN skips both kinds; a test fails
+  when one is in the wrong file.
 - Cover the happy path, every argument check, edge cases and every bug fix.
-- Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN.
+- Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN, so they
+  go in the `-browser.R` file.
 - Use `shiny::testServer()` for server logic.
 - Coverage must be at least 70%, and a pull request must not lower it.
 

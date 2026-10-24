@@ -292,7 +292,8 @@ use plain words in help pages:
 
 - **A pyramid.** Most tests are fast unit tests. Above them sit `shiny::testServer()` tests for server logic, and
   above those a small number of shinytest2 tests for what a user sees.
-- **BDD style** (testthat 3rd edition). One test file per R file. `describe()` names the function or behaviour and
+- **BDD style** (testthat 3rd edition). One test file per R file, plus a `-browser.R` and a `-snap.R` file for the
+  tests CRAN skips (below). `describe()` names the function or behaviour and
   `it()` states the expected behaviour in plain words, so the test names read as requirements.
 - **Every argument check has a test** showing it fails with a clear message. Every bug fix gets a test.
 - **Snapshots** (`expect_snapshot()`) for printed output and generated HTML. Review every snapshot change in the PR
@@ -302,8 +303,14 @@ use plain words in help pages:
   the draw-call list), `data-*` attributes and the `role="status"` text. Because frames are deterministic, a hash of
   the draw calls is a stable target across operating systems. A pixel hash is only for one pinned Chrome. Apps live
   in `tests/testthat/apps/<name>/app.R`.
-- **Skips.** Every shinytest2 file starts with `skip_on_cran()`, `skip_if_not_installed("shinytest2")` and a skip
+- **Skips.** Every shinytest2 test starts with `skip_on_cran()`, `skip_if_not_installed("shinytest2")` and a skip
   when `chromote::find_chrome()` returns `NULL`, and stops the app with `withr::defer(app$stop())`.
+- **The tests CRAN skips have files of their own.** Browser tests go in `test-<name>-browser.R` and snapshot tests
+  (`expect_snapshot()` skips itself on CRAN) in `test-<name>-snap.R`, and no other test goes in those files. CI's
+  `browser-tests` job runs exactly those files with Chrome and `NOT_CRAN` true, and fails on any skip; R CMD check
+  runs the others, so no test runs twice. A test (`test-helper-layout.R`) reads the test files and fails when a test
+  is in the wrong kind of file. Helpers that a plain file and its `-browser.R` or `-snap.R` file share go in
+  `helper-<name>.R`.
 - **Files.** Tests that write files use `withr::local_tempdir()`.
 - **Coverage is at least 70 percent, measured with covr on R code only.** This is our rule: CRAN's policy and
   `R CMD check` say nothing about coverage. The limit is `Config/cran-gate/coverage` in `DESCRIPTION`. covr does not
@@ -324,11 +331,11 @@ run it:
 |---|---|---|
 | Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; merging a PR (`gh pr merge`) asks for confirmation each time; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
 | The gate (`Rscript tools/cran-gate.R`, section 7.2) | On demand, before a commit or PR | In place |
-| CI | On every PR and push to `main` (the full platform matrix on `main`, weekly and on demand); it cannot be skipped | In place |
+| CI | On every PR and push to `main` (the full platform matrix each time), weekly and on demand | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
-framework for now (section 8). `main` is protected by a ruleset (a pull request and the required checks), so the rule
-is: CI green, then ask before merging.
+framework for now (section 8). A ruleset on `main` blocks force-pushes and deleting the branch; it does not require
+passing checks, so the rule is: CI green, then ask before merging.
 
 ### 7.2 The gate
 

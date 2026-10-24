@@ -1,6 +1,6 @@
-# Runs the test files that hold the tests CRAN skips, with NOT_CRAN=true and Chrome, on R release and R 4.1: the
-# browser tests (shinytest2 and chromote) and the snapshot tests. R CMD check and the coverage job skip them, as CRAN
-# does. One line per test file as it finishes shows the
+# Runs the tests CRAN skips, with NOT_CRAN=true and Chrome, on R release and R 4.1: the browser tests (shinytest2 and
+# chromote, in tests/testthat/test-*-browser.R) and the snapshot tests (test-*-snap.R). R CMD check and the coverage
+# job skip them, as CRAN does. One line per test file as it finishes shows the
 # progress while the job runs, and a failing test prints in full. A pull request that changes only documentation
 # starts the jobs and skips their steps (.github/scripts/r-changes.sh).
 on:
@@ -74,38 +74,28 @@ jobs:
           message("Chrome: ", system2(chrome, "--version", stdout = TRUE))
           library(testthat)
           library(mascot)
-          # The test files with tests that CRAN skips, which R CMD check skips too: browser tests (a helper that starts
-          # a browser or a page) and snapshot tests (expect_snapshot() skips itself on CRAN). The other tests in these
-          # files run twice, here and in R CMD check; keeping browser tests in files of their own is the next step.
-          skipped_on_cran <- paste0(
-            "local_shiny_browser\\(|skip_without_chrome\\(|app_driver\\(|local_chrome_session\\(|find_chrome\\(|",
-            "test_browser\\(|local_(host|engine|runtime)_page\\(|local_(character|face)_engine\\(|expect_snapshot"
-          )
-          files <- list.files("tests/testthat", "^test-.*[.]R$")
-          files <- files[vapply(
-            file.path("tests/testthat", files),
-            function(file) any(grepl(skipped_on_cran, readLines(file, warn = FALSE))),
-            logical(1)
-          )]
+          # The tests CRAN skips, which R CMD check skips too, live in files of their own: browser tests in
+          # test-<name>-browser.R and snapshot tests (expect_snapshot() skips itself on CRAN) in test-<name>-snap.R.
+          # A test in tests/testthat/test-helper-layout.R fails when one of them is anywhere else.
+          files <- list.files("tests/testthat", "^test-.*-(browser|snap)[.]R$")
           message(length(files), " files with browser or snapshot tests: ", paste(files, collapse = ", "))
           # A line per file when it finishes (update_interval = Inf: no progress spinner in a log); failures in full.
           results <- testthat::test_dir(
             "tests/testthat",
-            filter = paste0("^(", paste(sub("^test-(.*)[.]R$", "\\1", files), collapse = "|"), ")$"),
+            filter = "-(browser|snap)$",
             package = "mascot",
             load_package = "installed",
             reporter = testthat::ProgressReporter$new(show_praise = FALSE, update_interval = Inf),
             stop_on_failure = FALSE
           )
-          # This job is for the tests CRAN skips, so one that skips fails it: a Chrome that keeps stopping, a missing
-          # package (shinytest2, chromote, bslib, knitr) or NOT_CRAN not reaching the tests ("On CRAN").
-          skips <- unlist(lapply(results, function(test) {
+          # These files hold only the tests CRAN skips, so any skip fails the job: a Chrome that keeps stopping, a
+          # missing package (shinytest2, chromote, bslib, knitr) or NOT_CRAN not reaching the tests ("On CRAN").
+          skips <- unique(unlist(lapply(results, function(test) {
             vapply(Filter(function(e) inherits(e, "expectation_skip"), test$results), conditionMessage, character(1))
-          }))
-          browser_skips <- unique(grep("Chrome|On CRAN|not installed", skips, value = TRUE))
-          if (length(browser_skips) > 0L) message("Skipped: ", paste(browser_skips, collapse = "; "))
+          })))
+          if (length(skips) > 0L) message("Skipped: ", paste(skips, collapse = "; "))
           failed <- as.data.frame(results)
-          if (any(failed$failed > 0L | failed$error) || length(browser_skips) > 0L) {
+          if (any(failed$failed > 0L | failed$error) || length(skips) > 0L) {
             stop("Tests failed or were skipped; see above.", call. = FALSE)
           }
 

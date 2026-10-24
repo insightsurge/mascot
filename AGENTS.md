@@ -34,7 +34,8 @@ starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Ex
   `NAMESPACE` by hand.
 - **house:** a helper per argument: each `mascot()` argument takes a plain shortcut or a `mascot_*()` helper; every
   helper starts with `mascot_`.
-- **house:** tests in BDD style (`describe()`/`it()`), one test file per R file, every checkmate assertion tested,
+- **house:** tests in BDD style (`describe()`/`it()`), one test file per R file (its browser tests in
+  `test-<name>-browser.R`, its snapshot tests in `test-<name>-snap.R`), every checkmate assertion tested,
   shinytest2 for what a user sees (skipped on CRAN), coverage at least 70%.
 - **house:** the engine is plain, unminified JS/CSS in `inst/www/`, deterministic (seeded, no clock), with status
   text beside every mascot (the mood never carries meaning alone) and `prefers-reduced-motion` honoured.
@@ -103,8 +104,8 @@ articles go in `vignettes/articles/` (website only, not shipped); compress PNGs 
   list only checks anyone can re-run from the repo. Stacked PRs are fine (base on the branch below).
 - Labels: one type (`enhancement`, `bug`, `documentation`, `chore`) and one or more `area: *`. Suggest them in the PR
   if you can't set them; the package creator applies them (release notes are built from PR labels).
-- CI green, then **the package creator merges**. `main` is protected by a ruleset (a pull request and the required
-  checks); pull requests are squash-merged, so the PR title becomes the commit message.
+- CI green, then **the package creator merges**. Changes reach `main` only through pull requests; a ruleset blocks
+  force-pushes to `main` and its deletion. Pull requests are squash-merged, so the PR title becomes the commit message.
 
 ## Issues and pull requests
 - One issue per piece of work. When a decision changes the plan (scope, a rename, a dropped item), edit the issue

@@ -105,18 +105,6 @@ describe("mascot_theme()", {
     expect_match(theme_problem(1), "named list")
     expect_null(theme_problem(list()))
   })
-  it("warns once per supplied role and mode without altering low-contrast colours", {
-    withr::local_options(mascot.contrast_warnings = TRUE)
-    expect_snapshot(
-      value <- as_theme_arg(mascot_theme(light = list(body = "white"), dark = list(rim = "#212529")), environment())
-    )
-    expect_identical(value$light$body, "#FFFFFF")
-    expect_identical(value$dark$rim, "#212529")
-    expect_equal(theme_contrast("black", "white"), 21)
-    expect_equal(theme_contrast("rgba(0,0,0,0)", "white"), 1)
-    expect_equal(theme_contrast("#212529", "#212529"), 1)
-    expect_no_warning(as_theme_arg(mascot_theme(), environment()))
-  })
   it("sends only brand colours and checks distinct light and dark backgrounds", {
     withr::local_options(mascot.contrast_warnings = TRUE)
     skip_if_not_installed("bslib")
@@ -215,7 +203,6 @@ describe("mascot_theme() named arguments", {
   })
 })
 
-
 describe("R contrast warning policy", {
   it("is silent outside development mode and warns in development mode", {
     withr::local_options(mascot.contrast_warnings = NULL)
@@ -234,7 +221,6 @@ describe("R contrast warning policy", {
     expect_error(contrast_warnings(always = NA), "always")
   })
 })
-
 
 describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {
@@ -350,7 +336,6 @@ describe("named palette themes", {
   })
 })
 
-
 describe("cold-start palette validation", {
   it("names malformed palette ids without wire assertion text or accepting other fields", {
     for (palette in c("Orbit", "peach-ink")) {
@@ -386,7 +371,6 @@ describe("theme diagnostics", {
     expect_no_warning(expect_true(contrast_warnings(always = TRUE)))
   })
 })
-
 
 describe("mascot_theme() custom roles", {
   it("checks role form first and membership against the selected character", {
@@ -427,7 +411,6 @@ describe("mascot_theme() custom roles", {
   })
 })
 
-
 describe("theme role naming before a character is chosen", {
   it("explains the naming rule without suggesting built-in roles", {
     for (role in c("Bdoy", "a__b", "light", "dark", "default")) {
@@ -455,7 +438,6 @@ describe("theme role naming before a character is chosen", {
     expect_identical(reads$n, 1L)
   })
 })
-
 
 describe("theme_map_problem() message", {
   it("names the unknown role, suggests the closest one and lists the character's roles in order", {

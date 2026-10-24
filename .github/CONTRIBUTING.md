@@ -91,9 +91,12 @@ The full list, with reasons, is in [`docs/standards.md`](https://github.com/insi
 
 - Use testthat 3rd edition in BDD style: `describe()` names the function or behaviour, and `it()` states the expected
   behaviour in plain words.
-- One test file per R file: `R/moods.R` is tested in `tests/testthat/test-moods.R`.
+- One test file per R file: `R/moods.R` is tested in `tests/testthat/test-moods.R`. Its browser tests go in
+  `test-moods-browser.R` and its snapshot tests in `test-moods-snap.R`, because CRAN skips both kinds; a test fails
+  when one is in the wrong file.
 - Cover the happy path, every argument check, edge cases and every bug fix.
-- Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN.
+- Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN, so they
+  go in the `-browser.R` file.
 - Use `shiny::testServer()` for server logic.
 - Coverage must be at least 70%, and a pull request must not lower it.
 

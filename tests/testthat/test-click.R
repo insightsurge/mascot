@@ -21,11 +21,6 @@ describe("mascot_action()", {
       expect_error(mascot_action("Open help", disabled = bad), "Assertion on 'disabled' failed")
     }
   })
-  it("rejects values caught by `...`, including a flag given by position", {
-    expect_error(mascot_action("Open help", FALSE), "Unexpected arguments.*unnamed")
-    expect_error(mascot_action("Open help", key = "h"), "Unexpected arguments.*key")
-    expect_snapshot(error = TRUE, mascot_action("Open help", FALSE, href = "#help"))
-  })
   it("rejects whitespace-only labels in the helper, shortcut and runtime validation", {
     for (label in c(" ", "   ", "\t", "\r\n", " \t\r\n ")) {
       expect_error(mascot_action(label), "Assertion on 'label' failed")
@@ -38,10 +33,6 @@ describe("mascot_action()", {
       expect_error(as_click_arg(value, environment()), "click.*label, tooltip and disabled")
     }
     expect_identical(mascot_action(" Open help ")$label, " Open help ")
-  })
-  it("prints a recreating call without defaults", {
-    expect_snapshot(print(mascot_action("Open help")))
-    expect_identical(format(mascot_action()), "mascot_action()")
   })
 })
 
@@ -87,16 +78,6 @@ describe("the click argument", {
       list(type = "menu", items = list(a = "A"), direction = "left", label = "Menu", tooltip = FALSE, disabled = FALSE)
     )
   })
-  it("rejects a named vector of menu choices with a hint to wrap it in mascot_popup_menu()", {
-    expect_error(as_click_arg(c(help = "Help"), environment()), "named vector.*mascot_popup_menu\\(\\)")
-    expect_snapshot(error = TRUE, mascot(id = "helper", click = c(help = "Help", about = "About")))
-  })
-  it("rejects anything but one non-empty label or a helper", {
-    for (bad in list(TRUE, FALSE, 1, "", NA_character_, c("Help", "About"), list("Help"), character())) {
-      expect_error(as_click_arg(bad, environment()), "click.*one non-empty label")
-    }
-    expect_snapshot(error = TRUE, mascot(id = "helper", click = TRUE))
-  })
   it("rejects a malformed action helper", {
     for (x in list(
       list(),
@@ -131,7 +112,6 @@ describe("the click argument", {
   })
 })
 
-
 describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {
     expect_error(mascot_action(label = 1), "label", class = "mascot_error")
@@ -143,7 +123,6 @@ describe("public argument error classes", {
     expect_error(print.mascot_action(1), "x", class = "mascot_error")
   })
 })
-
 
 describe("mascot_action() without a label", {
   it("requires a label whenever tooltip or disabled is explicitly supplied", {

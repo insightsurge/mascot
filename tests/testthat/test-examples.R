@@ -22,6 +22,66 @@ studio_guide_env <- function(frame = parent.frame()) {
   env
 }
 
+# Until the browser's mount snapshot makes the studio's helper live, calls are kept, not accepted or sent. This
+# snapshot is what the page sends on mount, so the studio's kept calls are accepted and the first state is sent.
+# Defined before its first use: describe() blocks run while this file is sourced.
+studio_go_live <- function(session) {
+  protocol_ready(list(session = session, id = session$ns("helper")))
+  session$flushReact()
+  invisible(NULL)
+}
+
+# The studio app's own environment (its server, data and code builders) and its page, built without a browser.
+studio_parts <- function() {
+  skip_without_studio_packages("studio")
+  app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
+  page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
+  list(env = environment(app$serverFuncSource()), page = as.character(page))
+}
+
+# The value each control starts with on the page, by input id, as the browser first reports it to the server.
+studio_start_values <- function(page) {
+  checkmate::assert_string(page)
+  attribute <- function(tag, name) {
+    checkmate::assert_string(tag)
+    checkmate::assert_string(name)
+    match <- regmatches(tag, regexec(sprintf(' %s="([^"]*)"', name), tag))[[1]]
+    if (length(match)) match[[2]] else NULL
+  }
+  unescape <- function(text) {
+    checkmate::assert_string(text)
+    for (entity in names(entities <- c("&lt;" = "<", "&gt;" = ">", "&quot;" = '"', "&#39;" = "'", "&amp;" = "&"))) {
+      text <- gsub(entity, entities[[entity]], text, fixed = TRUE)
+    }
+    text
+  }
+  tags <- function(pattern) regmatches(page, gregexpr(pattern, page, perl = TRUE))[[1]]
+  values <- list()
+  for (tag in tags('<input class="js-range-slider"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- as.numeric(attribute(tag, "data-from"))
+  }
+  for (tag in tags('<input id="[^"]+" class="form-check-input" type="checkbox"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- grepl(" checked", tag, fixed = TRUE)
+  }
+  for (tag in tags('<input id="[^"]+" type="text"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- attribute(tag, "value")
+  }
+  for (tag in tags('(?s)<textarea id="[^"]+"[^>]*>.*?</textarea>')) {
+    values[[attribute(tag, "id")]] <- unescape(sub("(?s)^<textarea[^>]*>(.*)</textarea>$", "\\1", tag, perl = TRUE))
+  }
+  for (tag in tags('(?s)<div id="[^"]+" class="[^"]*shiny-input-radiogroup.*?</div>\\s*</div>')) {
+    id <- attribute(tag, "id")
+    checked <- regmatches(tag, regexec(sprintf('name="%s" value="([^"]*)" checked', id), tag))[[1]]
+    values[[id]] <- checked[[2]]
+  }
+  for (tag in tags('(?s)<select\\b[^>]*\\bid="[^"]+"[^>]*>.*?</select>')) {
+    options <- regmatches(tag, gregexpr('<option value="[^"]*"( selected)?', tag))[[1]]
+    chosen <- grep("selected", options, fixed = TRUE, value = TRUE)
+    values[[attribute(tag, "id")]] <- unescape(attribute(c(chosen, options)[[1]], "value"))
+  }
+  values
+}
+
 describe("mascot_examples()", {
   it("lists the studio, its theme page and five scenario apps in order with readable metadata", {
     examples <- mascot_examples()
@@ -494,15 +554,6 @@ describe("mascot_example()", {
     expect_identical(basename(path), "app.R")
     expect_true(file.exists(path))
   })
-  it("checks every argument and names valid examples for unknown names", {
-    for (bad in list(NULL, NA_character_, "", 1, c("studio", "modules"))) {
-      expect_error(mascot_example(bad, run = FALSE), "Assertion on 'name' failed")
-    }
-    for (bad in list(NULL, NA, 1, "FALSE", c(TRUE, FALSE))) {
-      expect_error(mascot_example("studio", run = bad), "Assertion on 'run' failed")
-    }
-    expect_snapshot(error = TRUE, mascot_example("typo", run = FALSE))
-  })
   it("explains how to locate an app in a non-interactive session", {
     expect_false(interactive())
     expect_error(mascot_example("studio"), "needs an interactive R session")
@@ -539,86 +590,6 @@ describe("mascot_example()", {
     expect_s3_class(captured, "shiny.appobj")
     page <- captured$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
     expect_match(as.character(page), "<title>Theme a mascot</title>", fixed = TRUE)
-  })
-})
-
-# A literal scenario name is embedded so the child R process needs no test globals.
-example_driver <- function(name, width = 1100, env = parent.frame()) {
-  checkmate::assert_string(name)
-  checkmate::assert_number(width, lower = 1)
-  checkmate::assert_environment(env)
-  testthat::skip_if_not_installed("bslib")
-  app_function <- function() NULL
-  body(app_function) <- substitute(
-    {
-      library(mascot)
-      shiny::shinyAppDir(system.file("examples", NAME, package = "mascot"))
-    },
-    list(NAME = name)
-  )
-  # The app belongs to the calling test, not to this helper: stop it when that test ends (#445).
-  app_driver(app_function, width = width, height = 900, env = env)
-}
-
-wait_example_mood <- function(app, id, mood) {
-  checkmate::assert_r6(app, "AppDriver")
-  checkmate::assert_string(id)
-  checkmate::assert_string(mood)
-  app$wait_for_js(sprintf("document.getElementById('%s')?.dataset.shownMood === '%s'", id, mood))
-  expect_identical(app$get_js(sprintf("document.getElementById('%s').dataset.shownMood", id)), mood)
-}
-
-describe("bundled example apps", {
-  it("the form-check example names invalid fields and becomes happy when both pass", {
-    local_shiny_browser()
-    app <- example_driver("form-check")
-    wait_example_mood(app, "helper", "worried")
-    expect_match(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "2 fields")
-    app$set_inputs(sample = "Sample A", quantity = 12)
-    wait_example_mood(app, "helper", "happy")
-    expect_identical(app$get_js("document.getElementById('checks').textContent"), "Both fields pass.")
-    app$set_inputs(quantity = 0)
-    wait_example_mood(app, "helper", "worried")
-    expect_match(app$get_js("document.querySelector('#helper .mascot-status').textContent"), "1 field")
-  })
-  it("the long-task example shows thinking then success and retains an error message", {
-    local_shiny_browser()
-    app <- example_driver("long-task")
-    wait_example_mood(app, "helper", "idle")
-    # Record browser-observed transitions even if the server completes before a poll.
-    app$run_js(
-      "window.seenMoods=[];new MutationObserver(()=>seenMoods.push(document.getElementById('helper').dataset.shownMood)).observe(document.getElementById('helper'),{attributes:true,attributeFilter:['data-shown-mood']})"
-    )
-    app$click("start")
-    # The task runs as a promise, so the app answers while it works.
-    wait_example_mood(app, "helper", "thinking")
-    expect_match(app$get_js("document.getElementById('result').textContent"), "Reviewing the sample")
-    wait_example_mood(app, "helper", "happy")
-    expect_match(app$get_js("document.getElementById('result').textContent"), "all 120 rows")
-    expect_true(app$get_js("seenMoods.includes('thinking')"))
-    app$set_inputs(fail = TRUE)
-    app$click("start")
-    wait_example_mood(app, "helper", "worried")
-    expect_match(app$get_js("document.querySelector('#helper .mascot-bubble').textContent"), "Check the source data")
-    expect_true(app$get_js("mascot.host.state(document.getElementById('helper')).bubble.remaining === null"))
-    app$set_inputs(fail = FALSE)
-    app$click("start")
-    wait_example_mood(app, "helper", "happy")
-    expect_null(app$get_js("mascot.host.state(document.getElementById('helper')).bubble"))
-  })
-  it("the modules example updates each module's helper and returns completion to the parent", {
-    local_shiny_browser()
-    app <- example_driver("modules")
-    wait_example_mood(app, "first-helper", "worried")
-    wait_example_mood(app, "second-helper", "worried")
-    wait_example_mood(app, "parent", "worried")
-    app$set_inputs(`first-ready` = TRUE)
-    wait_example_mood(app, "first-helper", "happy")
-    wait_example_mood(app, "second-helper", "worried")
-    wait_example_mood(app, "parent", "worried")
-    app$set_inputs(`second-ready` = TRUE)
-    wait_example_mood(app, "parent", "happy")
-    expect_true(app$get_js("mascot.host.state(document.getElementById('parent')).placement.floating"))
   })
 })
 
@@ -701,15 +672,6 @@ describe("studio inspector labels, colour groups and menu ids", {
     expect_type(parse(text = env$menu_handler_code(items)), "expression")
   })
 })
-
-# Until the browser's mount snapshot makes the studio's helper live, calls are kept, not accepted or sent. This
-# snapshot is what the page sends on mount, so the studio's kept calls are accepted and the first state is sent.
-# Defined before its first use: describe() blocks run while this file is sourced.
-studio_go_live <- function(session) {
-  protocol_ready(list(session = session, id = session$ns("helper")))
-  session$flushReact()
-  invisible(NULL)
-}
 
 describe("studio state and built previews", {
   it("keeps programmatic changes and copied code in step without overlapping tasks", {
@@ -1039,7 +1001,6 @@ describe("studio state and built previews", {
   })
 })
 
-
 describe("studio help pages and copied apps", {
   it("keeps a missing help page local while strict lookup still fails", {
     skip_if_not_installed("bslib")
@@ -1141,14 +1102,6 @@ describe("studio help pages and copied apps", {
   })
 })
 
-# The studio app's own environment (its server, data and code builders) and its page, built without a browser.
-studio_parts <- function() {
-  skip_without_studio_packages("studio")
-  app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
-  page <- app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
-  list(env = environment(app$serverFuncSource()), page = as.character(page))
-}
-
 describe("studio guide pages", {
   guide_dir <- function() file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
   page_html <- function(page) paste(vapply(page, as.character, character(1)), collapse = "\n")
@@ -1202,6 +1155,84 @@ describe("studio guide pages", {
       "mascot_placement_ignored"
     )
   )
+  interactive_pages <- c("mascot_size", "mascot_placement", "mascot_colour_roles", "mascot_popup_menu", "mascot")
+  interactive_content <- list(
+    mascot_size = c("Size", "Small screens.", "576 pixels", "160"),
+    mascot_placement = c("Placement", "bottom-right corner", "inline"),
+    mascot_colour_roles = c("Sela's parts", "Leaders adopt", "Followers copy", "mascot.contrast_warnings"),
+    mascot_popup_menu = c(
+      "From a click to your server",
+      "Long status",
+      "Your server code for these items",
+      "Options need their main argument.",
+      "Keyboard.",
+      "Opening and closing the menu sends no Shiny input."
+    ),
+    mascot = c("Two calls, one id", "module UI", "module server", "pg-wire-box")
+  )
+  new_pages <- list(
+    mascot_motion_settings = c(
+      "What each switch controls",
+      "Which setting wins",
+      "Three motion recipes",
+      "A calm dashboard"
+    ),
+    mascot_character = c("Choose a character for the job", "Shipped characters", "What comes with the character"),
+    mascot_example = c("Copy an example into your project", "Run one"),
+    mascot_examples = c("Pick an example by its task", "List the names"),
+    mascot_studio = c(
+      "Open a useful starting point",
+      "Three views, one app",
+      "Inspect without launching",
+      "What to look at first"
+    )
+  )
+  data_pages <- c(
+    "mascot_mood",
+    "mascot_moods",
+    "mascot_characters",
+    "mascot_families",
+    "mascot_anchors",
+    "mascot_gesture",
+    "mascot_gestures",
+    "mascot_palettes"
+  )
+  data_content <- list(
+    mascot_mood = c("The 5 moods", "The mood never speaks alone.", "screen readers"),
+    mascot_moods = c("Sela's", "moods", "The five shared moods come first", "fallback"),
+    mascot_characters = "Characters this session knows",
+    mascot_families = "Character families",
+    mascot_anchors = "Sela's anchors",
+    mascot_gesture = c("Gestures", "pg-cards", "pg-card-mini", "gesture ="),
+    mascot_gestures = c("Sela's gestures", "30 frames per second", "plays its fallback"),
+    mascot_palettes = c("Sela's palettes", "first row", "Colour precedence", "below 3:1 contrast")
+  )
+  # The website knit of a page: no studio, so no widgets, but every character, the live box and the real messages.
+  knit_for_website <- function(fn) {
+    standalone <- new.env(parent = globalenv())
+    standalone$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), standalone)
+    options <- knitr::opts_chunk$get()
+    withr::defer(knitr::opts_chunk$restore(options))
+    knitr::opts_chunk$set(echo = FALSE, error = FALSE)
+    markdown <- knitr::knit(
+      file.path(guide_dir(), paste0(fn, ".Rmd")),
+      output = file.path(withr::local_tempdir(), "page.md"),
+      envir = standalone,
+      quiet = TRUE
+    )
+    paste(readLines(markdown, warn = FALSE), collapse = "\n")
+  }
+  all_pages <- sub("[.]Rmd$", "", list.files(guide_dir(), pattern = "^[^_].*[.]Rmd$"))
+  tabbed_pages <- c(
+    "mascot_moods",
+    "mascot_gestures",
+    "mascot_anchors",
+    "mascot_palettes",
+    "mascot_colour_roles",
+    "mascot_theme",
+    "mascot_gesture"
+  )
   for (fn in batch_pages) {
     it(paste("knits", fn, "with its existing guide content and no live widgets in either context"), {
       env <- studio_guide_env()
@@ -1253,21 +1284,6 @@ describe("studio guide pages", {
       expect_match(selected, "Warnings, errors and common mistakes", fixed = TRUE)
     })
   }
-  interactive_pages <- c("mascot_size", "mascot_placement", "mascot_colour_roles", "mascot_popup_menu", "mascot")
-  interactive_content <- list(
-    mascot_size = c("Size", "Small screens.", "576 pixels", "160"),
-    mascot_placement = c("Placement", "bottom-right corner", "inline"),
-    mascot_colour_roles = c("Sela's parts", "Leaders adopt", "Followers copy", "mascot.contrast_warnings"),
-    mascot_popup_menu = c(
-      "From a click to your server",
-      "Long status",
-      "Your server code for these items",
-      "Options need their main argument.",
-      "Keyboard.",
-      "Opening and closing the menu sends no Shiny input."
-    ),
-    mascot = c("Two calls, one id", "module UI", "module server", "pg-wire-box")
-  )
   for (fn in interactive_pages) {
     it(paste("knits", fn, "with its content and guards its live widgets"), {
       env <- studio_guide_env()
@@ -1329,23 +1345,6 @@ describe("studio guide pages", {
       expect_match(selected, paste0("Help page: ", fn, "()"), fixed = TRUE)
     })
   }
-  new_pages <- list(
-    mascot_motion_settings = c(
-      "What each switch controls",
-      "Which setting wins",
-      "Three motion recipes",
-      "A calm dashboard"
-    ),
-    mascot_character = c("Choose a character for the job", "Shipped characters", "What comes with the character"),
-    mascot_example = c("Copy an example into your project", "Run one"),
-    mascot_examples = c("Pick an example by its task", "List the names"),
-    mascot_studio = c(
-      "Open a useful starting point",
-      "Three views, one app",
-      "Inspect without launching",
-      "What to look at first"
-    )
-  )
   for (fn in names(new_pages)) {
     it(paste("knits", fn, "with its worked guide and guards its live content"), {
       env <- studio_guide_env()
@@ -1455,26 +1454,6 @@ describe("studio guide pages", {
     }
     expect_error(helpers$guide_roles_table(1), "string")
   })
-  data_pages <- c(
-    "mascot_mood",
-    "mascot_moods",
-    "mascot_characters",
-    "mascot_families",
-    "mascot_anchors",
-    "mascot_gesture",
-    "mascot_gestures",
-    "mascot_palettes"
-  )
-  data_content <- list(
-    mascot_mood = c("The 5 moods", "The mood never speaks alone.", "screen readers"),
-    mascot_moods = c("Sela's", "moods", "The five shared moods come first", "fallback"),
-    mascot_characters = "Characters this session knows",
-    mascot_families = "Character families",
-    mascot_anchors = "Sela's anchors",
-    mascot_gesture = c("Gestures", "pg-cards", "pg-card-mini", "gesture ="),
-    mascot_gestures = c("Sela's gestures", "30 frames per second", "plays its fallback"),
-    mascot_palettes = c("Sela's palettes", "first row", "Colour precedence", "below 3:1 contrast")
-  )
   for (fn in data_pages) {
     it(paste("knits", fn, "with its data, headings and guarded widgets"), {
       env <- studio_guide_env()
@@ -1729,32 +1708,6 @@ describe("studio guide pages", {
       )
     }
   })
-  # The website knit of a page: no studio, so no widgets, but every character, the live box and the real messages.
-  knit_for_website <- function(fn) {
-    standalone <- new.env(parent = globalenv())
-    standalone$guide_dir <- guide_dir()
-    sys.source(file.path(guide_dir(), "guide-helpers.R"), standalone)
-    options <- knitr::opts_chunk$get()
-    withr::defer(knitr::opts_chunk$restore(options))
-    knitr::opts_chunk$set(echo = FALSE, error = FALSE)
-    markdown <- knitr::knit(
-      file.path(guide_dir(), paste0(fn, ".Rmd")),
-      output = file.path(withr::local_tempdir(), "page.md"),
-      envir = standalone,
-      quiet = TRUE
-    )
-    paste(readLines(markdown, warn = FALSE), collapse = "\n")
-  }
-  all_pages <- sub("[.]Rmd$", "", list.files(guide_dir(), pattern = "^[^_].*[.]Rmd$"))
-  tabbed_pages <- c(
-    "mascot_moods",
-    "mascot_gestures",
-    "mascot_anchors",
-    "mascot_palettes",
-    "mascot_colour_roles",
-    "mascot_theme",
-    "mascot_gesture"
-  )
   it("shows the website reader a live box, every character and the real messages", {
     names <- mascot_characters()$name
     for (fn in all_pages) {
@@ -1982,108 +1935,6 @@ describe("studio guide pages", {
     }
   })
 })
-
-describe("studio character bar", {
-  it("holds all four drop-downs and Play it again in the main area at 375 pixels", {
-    local_shiny_browser()
-    app <- example_driver("studio", width = 375)
-    app$wait_for_js(
-      "document.querySelector('#studio_centre #studio_character_bar #character') &&
-      document.querySelector('#studio_centre #studio_character_bar #mood')"
-    )
-    expect_true(app$get_js(
-      "document.querySelector('#studio_centre #studio_character_bar').contains(document.getElementById('character')) &&
-      document.querySelector('#studio_centre #studio_character_bar').contains(document.getElementById('mood'))"
-    ))
-    for (id in c("character", "palette", "mood", "gesture")) {
-      expect_true(app$get_js(sprintf("document.querySelector('#studio_character_bar select#%s') !== null", id)))
-    }
-    expect_true(app$get_js("document.querySelector('#studio_character_bar #gesture_play') !== null"))
-    expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
-    app$set_inputs(character = "knurl")
-    app$wait_for_js("document.getElementById('character').value === 'knurl'")
-    app$wait_for_js("[...document.querySelector('#palette').options].some(o => o.value === 'orbit')")
-    app$set_inputs(palette = "orbit")
-    app$wait_for_js("document.getElementById('code_ui').textContent.includes('theme = \"orbit\"')")
-    app$set_inputs(character = "neer")
-    app$wait_for_js(
-      "document.querySelector('#palette').value === 'original' && [...document.querySelector('#palette').options].some(o => o.value === 'lagoon')"
-    )
-    expect_false(app$get_js("[...document.querySelector('#palette').options].some(o => o.value === 'orbit')"))
-    expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
-  })
-})
-
-describe("studio narrow layout", {
-  it("shows the canvas and the mascot at phone and tablet widths without horizontal scrolling", {
-    local_shiny_browser()
-    check_width <- function(width) {
-      checkmate::assert_number(width, lower = 1)
-      app <- example_driver("studio", width = width)
-      on.exit(app$stop())
-      wait_studio_js(app, "live.dataset.shownMood === 'idle'")
-      # The bug collapsed the canvas to zero height while its width stayed normal.
-      sizes <- app$get_js(
-        "(() => {
-          const centre = document.getElementById('studio_canvas').getBoundingClientRect();
-          const host = document.getElementById('live_frame').getBoundingClientRect();
-          const mascot = document.getElementById('live_frame').contentDocument.querySelector('#helper .mascot-canvas').getBoundingClientRect();
-          return {centre: centre.height, host: host.height, mascot: mascot.height};
-        })()"
-      )
-      expect_gt(sizes$centre, 200, label = paste("canvas height at", width, "px"))
-      expect_gt(sizes$host, 0, label = paste("host height at", width, "px"))
-      expect_gt(sizes$mascot, 0, label = paste("mascot height at", width, "px"))
-      expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"), info = paste("width", width))
-    }
-    for (width in c(375, 560, 768)) {
-      check_width(width)
-    }
-  })
-})
-
-# The value each control starts with on the page, by input id, as the browser first reports it to the server.
-studio_start_values <- function(page) {
-  checkmate::assert_string(page)
-  attribute <- function(tag, name) {
-    checkmate::assert_string(tag)
-    checkmate::assert_string(name)
-    match <- regmatches(tag, regexec(sprintf(' %s="([^"]*)"', name), tag))[[1]]
-    if (length(match)) match[[2]] else NULL
-  }
-  unescape <- function(text) {
-    checkmate::assert_string(text)
-    for (entity in names(entities <- c("&lt;" = "<", "&gt;" = ">", "&quot;" = '"', "&#39;" = "'", "&amp;" = "&"))) {
-      text <- gsub(entity, entities[[entity]], text, fixed = TRUE)
-    }
-    text
-  }
-  tags <- function(pattern) regmatches(page, gregexpr(pattern, page, perl = TRUE))[[1]]
-  values <- list()
-  for (tag in tags('<input class="js-range-slider"[^>]*>')) {
-    values[[attribute(tag, "id")]] <- as.numeric(attribute(tag, "data-from"))
-  }
-  for (tag in tags('<input id="[^"]+" class="form-check-input" type="checkbox"[^>]*>')) {
-    values[[attribute(tag, "id")]] <- grepl(" checked", tag, fixed = TRUE)
-  }
-  for (tag in tags('<input id="[^"]+" type="text"[^>]*>')) {
-    values[[attribute(tag, "id")]] <- attribute(tag, "value")
-  }
-  for (tag in tags('(?s)<textarea id="[^"]+"[^>]*>.*?</textarea>')) {
-    values[[attribute(tag, "id")]] <- unescape(sub("(?s)^<textarea[^>]*>(.*)</textarea>$", "\\1", tag, perl = TRUE))
-  }
-  for (tag in tags('(?s)<div id="[^"]+" class="[^"]*shiny-input-radiogroup.*?</div>\\s*</div>')) {
-    id <- attribute(tag, "id")
-    checked <- regmatches(tag, regexec(sprintf('name="%s" value="([^"]*)" checked', id), tag))[[1]]
-    values[[id]] <- checked[[2]]
-  }
-  for (tag in tags('(?s)<select\\b[^>]*\\bid="[^"]+"[^>]*>.*?</select>')) {
-    options <- regmatches(tag, gregexpr('<option value="[^"]*"( selected)?', tag))[[1]]
-    chosen <- grep("selected", options, fixed = TRUE, value = TRUE)
-    values[[attribute(tag, "id")]] <- unescape(attribute(c(chosen, options)[[1]], "value"))
-  }
-  values
-}
 
 describe("each studio control's update, generated code and default", {
   it("changes each control's argument in the update sent and in the generated code", {
@@ -2697,7 +2548,6 @@ describe("mascot_example() named arguments", {
   })
 })
 
-
 describe("studio UI call and contrast warnings", {
   it("generates an id-first UI call and shows the delayed UI example from the help", {
     skip_if_not_installed("bslib")
@@ -2735,7 +2585,6 @@ describe("studio UI call and contrast warnings", {
   })
 })
 
-
 describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {
     expect_error(mascot_example(name = 1, run = FALSE), "name", class = "mascot_error")
@@ -2766,7 +2615,6 @@ describe("studio motion settings builders", {
   })
 })
 
-
 describe("framework examples", {
   it("copies the golem folder and retains its runtime options", {
     skip_if_not_installed("golem")
@@ -2785,40 +2633,6 @@ describe("framework examples", {
     app <- source("app.R", local = new.env())$value
     expect_s3_class(app, "shiny.appobj")
     expect_identical(app$appOptions$golem_options, list(title = "Reviews in golem", complete = "Review complete"))
-  })
-  it("runs golem runtime helpers with two independent nested modules", {
-    skip_if_not_installed("golem")
-    local_shiny_browser()
-    app <- example_driver("golem")
-    app$wait_for_js("document.querySelector('h1').textContent === 'Reviews in golem'")
-    app$wait_for_js("!!mascot.host.state(document.getElementById('first-review-helper'))")
-    app$click("first-review-complete")
-    app$wait_for_js(
-      "mascot.host.state(document.getElementById('first-review-helper')).status.text === 'Review complete'"
-    )
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('first-review-helper')).mood"), "happy")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('second-review-helper')).mood"), "idle")
-    app$click(selector = "#first-review-helper .mascot-menu-toggle")
-    app$click(selector = "#first-review-helper [role=menuitem]")
-    app$wait_for_js("document.getElementById('first-review-choice').textContent === 'about'")
-    expect_identical(app$get_value(output = "first-review-choice"), "about")
-    expect_identical(app$get_js("document.getElementById('second-review-choice').textContent"), "")
-    app$click("second-review-complete")
-    app$wait_for_js("mascot.host.state(document.getElementById('second-review-helper')).mood === 'happy'")
-    expect_equal(app$get_js("document.querySelectorAll('script[src$=\"/mascot-host.js\"]').length"), 1)
-  })
-  it("runs plain Shiny view modules in the rhino-shaped folder", {
-    local_shiny_browser()
-    app <- example_driver("rhino")
-    app$wait_for_js("!!mascot.host.state(document.getElementById('second-review-helper'))")
-    app$click("second-review-complete")
-    app$wait_for_js("mascot.host.state(document.getElementById('second-review-helper')).mood === 'happy'")
-    expect_identical(app$get_js("mascot.host.state(document.getElementById('first-review-helper')).mood"), "idle")
-    app$click(selector = "#second-review-helper .mascot-menu-toggle")
-    app$click(selector = "#second-review-helper [role=menuitem]")
-    app$wait_for_js("document.getElementById('second-review-choice').textContent === 'about'")
-    expect_identical(app$get_value(output = "second-review-choice"), "about")
-    expect_identical(app$get_js("document.getElementById('first-review-choice').textContent"), "")
   })
 })
 
@@ -3149,95 +2963,7 @@ describe("studio palette sync", {
     )
     expect_match(html, paste(character$name, "has no anchors"), fixed = TRUE)
   })
-  it("shows native palette labels, roles such as hair and badge, resting gestures and guide demonstrations", {
-    local_shiny_browser()
-    app <- example_driver("studio")
-    app$wait_for_js(
-      "document.querySelector('#palette option[value=original]')?.textContent === \"Tessa's own colours (night_teal)\""
-    )
-    expect_identical(app$get_js("document.getElementById('palette').value"), "original")
-    expect_identical(app$get_js("document.querySelector('#gesture option:last-child').value"), "shimmer")
-    expect_identical(
-      app$get_js("document.querySelector('#gesture option:last-child').textContent"),
-      "shimmer (resting animation)"
-    )
-    select_function <- function(fn) {
-      if (isTRUE(app$get_js("document.getElementById('function_flyout').hidden"))) {
-        app$click(selector = "#all_functions")
-      }
-      app$click(selector = sprintf('.pg-index-link[data-value="%s"]', fn))
-      app$wait_for_js(sprintf("!document.querySelector('#studio_inspector [data-function=%s]').hidden", fn))
-    }
-    select_function("mascot_theme")
-    app$wait_for_js("document.getElementById('colours-light_hair') && document.getElementById('colours-dark_badge')")
-    for (role in c("hair", "badge", "iris", "body_shade", "hand")) {
-      expect_true(app$get_js(sprintf(
-        "!!document.getElementById('colours-light_%s') && !!document.getElementById('colours-dark_%s')",
-        role,
-        role
-      )))
-    }
-    app$run_js("document.querySelector('[data-inspector-tab=guide]').click()")
-    app$wait_for_js(
-      "document.querySelector('[data-event=palette_swap]') && document.getElementById('palette_swap_demo')?.dataset.shownCharacter"
-    )
-    app$run_js("document.querySelector('[data-event=palette_swap][data-value=kept]').click()")
-    app$wait_for_js("document.getElementById('palette_swap_result').textContent.includes('coral_navy kept for Sela')")
-    app$wait_for_js("document.getElementById('palette_swap_demo').dataset.shownCharacter === 'sela'")
-    expect_identical(
-      app$get_js("mascot.host.state(document.getElementById('palette_swap_demo')).theme.palette"),
-      "coral_navy"
-    )
-    app$run_js("document.querySelector('[data-event=palette_swap][data-value=dropped]').click()")
-    app$wait_for_js("document.getElementById('palette_swap_result').textContent.includes('mascot_palette_dropped:')")
-    app$wait_for_js("document.getElementById('palette_swap_demo').dataset.shownCharacter === 'knurl'")
-    expect_null(app$get_js("mascot.host.state(document.getElementById('palette_swap_demo')).theme.palette"))
-    select_function("mascot_popup_menu")
-    app$wait_for_js("!!document.querySelector('[data-event=menu_long_status]')")
-    for (corner in c("top-right", "bottom-right")) {
-      app$run_js(sprintf("document.querySelector('[data-event=menu_long_status][data-value=\"%s\"]').click()", corner))
-      app$wait_for_js(sprintf("document.querySelector('input[name=position]:checked')?.value === '%s'", corner))
-      app$wait_for_js("document.getElementById('status_text').value.startsWith('Review in progress')")
-      wait_studio_js(
-        app,
-        sprintf(
-          "live.dataset.position === '%s'",
-          corner
-        )
-      )
-      app$run_js(
-        "document.getElementById('live_frame').contentDocument.querySelector('#helper button[aria-haspopup=menu]').click()"
-      )
-      # Real rectangles: the open menu is visible and stays inside the frame, wherever the corner puts it.
-      wait_studio_js(
-        app,
-        paste0(
-          "(() => { const d = frame.document; ",
-          "const menu = d.getElementById('helper_popup_menu'); if (!menu || menu.hidden) return false; ",
-          "const r = menu.getBoundingClientRect(); const w = d.documentElement; ",
-          "return r.top >= 0 && r.left >= 0 && r.bottom <= w.clientHeight && r.right <= w.clientWidth; })()"
-        )
-      )
-      app$run_js(
-        "document.getElementById('live_frame').contentDocument.querySelector('#helper button[aria-haspopup=menu]').click()"
-      )
-    }
-    app$set_inputs(character = "neer")
-    app$run_js("document.getElementById('show_anchors').click()")
-    wait_studio_js(app, "frame.document.querySelectorAll('.pg-anchor-label').length === 14")
-    app$set_inputs(character = "tessa")
-    for (anchor in c("fringe", "lock", "stud_l", "stud_r")) {
-      wait_studio_js(
-        app,
-        sprintf(
-          "!!frame.document.querySelector('[data-anchor=\"%s\"]')",
-          anchor
-        )
-      )
-    }
-  })
 })
-
 
 describe("studio palette guide and examples", {
   it("derives borrowed and made-up ids and shows the messages from real calls", {
@@ -3591,7 +3317,6 @@ describe("experimental labels in the studio", {
     expect_match(page, "is experimental: the position it reports", fixed = TRUE)
   })
 })
-
 
 describe("the studio public character readers", {
   it("lists read and check without enabling the authoring panel", {

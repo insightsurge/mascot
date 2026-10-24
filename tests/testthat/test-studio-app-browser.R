@@ -1079,18 +1079,19 @@ describe("studio code arguments, chips, anchors and menus", {
     wait_studio_mood(app, "idle")
     click_now(app, '[data-call-arg=click]')
     expect_true(app$get_js("!document.getElementById('click_type').selectize.isOpen"))
+    # Opening the editor sends its argument to the server, whose reply can set the select's value, and selectize closes
+    # its menu when its value is set: let those replies arrive before the menu is opened.
+    app$wait_for_idle()
     app$run_js(
       "{const body=document.getElementById('chip_editor_body');body.style.maxHeight='60px';body.style.overflow='auto';}"
     )
     app$wait_for_js("document.getElementById('chip_editor_body').clientHeight <= 60")
-    # The editor follows its chip again when its size changes (a ResizeObserver, on the next frame): let that happen
-    # first, or it moves the editor back up after it is placed low below, and the next scroll opens the menu downwards.
-    app$get_js("new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(true))))")
-    app$run_js(
-      "{const pop=document.getElementById('chip_editor');pop.style.top=(innerHeight-130)+'px';const s=document.getElementById('click_type').selectize;s.focus();s.open();s.positionDropdown();}"
-    )
+    # The editor follows its chip again whenever its size changes or the page scrolls (a ResizeObserver and scroll
+    # handlers, a frame or more later), which moves it back up after it is placed low below, and the menu then opens
+    # downwards. A busy machine can run them late, so each poll checks the menu first and, when it is not yet right,
+    # places the editor low again and opens and positions the menu once more, for the next poll to check.
     app$wait_for_js(
-      "(() => {const s=document.getElementById('click_type').selectize; const d=s.$dropdown[0];const r=d.getBoundingClientRect();return s.isOpen && d.parentElement===document.body && d.dataset.direction==='up' && r.top>=0 && r.bottom<=innerHeight && +getComputedStyle(d).zIndex>+getComputedStyle(document.getElementById('chip_editor')).zIndex;})()"
+      "(() => {const pop=document.getElementById('chip_editor');const s=document.getElementById('click_type').selectize; const d=s.$dropdown[0];const r=d.getBoundingClientRect();const ok=s.isOpen && d.parentElement===document.body && d.dataset.direction==='up' && r.top>=0 && r.bottom<=innerHeight && +getComputedStyle(d).zIndex>+getComputedStyle(pop).zIndex;if (!ok) {pop.style.top=(innerHeight-130)+'px';s.focus();s.open();s.positionDropdown();}return ok;})()"
     )
     app$run_js(
       "{const s=document.getElementById('click_type').selectize;s.$control_input.trigger($.Event('keydown',{keyCode:38}));s.$control_input.trigger($.Event('keydown',{keyCode:13}));}"

@@ -9,8 +9,9 @@
 * In `mascot_studio()`, a panel or button no longer shows an earlier state as if it were current while the studio answers a change (#548):
   * The Guide says it is busy, and dims the page of the character before, until it is drawn for the character just chosen.
   * The click chip's editor opens the helper of the Click control as soon as you set it to an action or a menu; before, "Advanced controls", Help and Guide opened the previous one until the studio redrew the chip.
-  * Setting Host mode back to Live mascot while `mascot_preview()` is selected moves the Code tray off its Preview tab and stops building the hidden preview page.
+  * Setting Host mode back to Live mascot while `mascot_preview()` is selected moves the Code tray off its Preview tab and stops building the hidden preview page. A change you made just before is built when the page is shown again, and the "Building..." badge no longer stays on meanwhile.
   * The Check contrast button of the colour controls says it is busy until the result of that click shows.
+  * The Check contrast and Show every mood buttons keep keyboard focus while they say they are busy; before, focus left the button for the page.
   * The studio's log and its `input$helper_minimised` readout no longer say the visitor restored the mascot: the mascot sends `FALSE` also when an `update_mascot()` call changes its placement, so they say "The mascot is no longer minimised".
   * "R code for this function" says it is busy, and dims the code of the function before, until the code of the function just picked is drawn.
   * The Copy buttons copy the code that belongs to what you just changed. Copy now waits for the studio's answer to its click, and the button reads "Copying..." meanwhile; before, it copied the code of a moment before and said "Copied". It reads "Copy unavailable" when no answer comes within five seconds.

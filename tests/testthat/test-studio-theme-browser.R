@@ -238,14 +238,14 @@ describe("the Check tab's slow buttons in a browser", {
     )) {
       # When the button is clicked, it says so at once
       state <- app$get_js(sprintf(
-        "(() => { const b = document.getElementById('%s'); b.click(); return [b.textContent, b.getAttribute('aria-busy'), String(b.disabled)]; })()",
+        "(() => { const b = document.getElementById('%s'); b.click(); return [b.textContent, b.getAttribute('aria-busy'), b.getAttribute('aria-disabled')]; })()",
         case[[1]]
       ))
       expect_identical(unlist(state), c(case[[2]], "true", "true"), info = case[[1]])
       # Then it is back once the result shows
-      app$wait_for_js(sprintf("!document.getElementById('%s').disabled", case[[1]]))
+      app$wait_for_js(sprintf("!document.getElementById('%s').hasAttribute('aria-busy')", case[[1]]))
       expect_identical(app$get_js(sprintf("document.getElementById('%s').textContent", case[[1]])), case[[3]])
-      expect_null(app$get_js(sprintf("document.getElementById('%s').getAttribute('aria-busy')", case[[1]])))
+      expect_null(app$get_js(sprintf("document.getElementById('%s').getAttribute('aria-disabled')", case[[1]])))
       expect_true(app$get_js(sprintf("document.getElementById('%s_ui').textContent.trim().length > 0", case[[1]])))
     }
   })
@@ -269,7 +269,7 @@ describe("the Check tab's slow buttons in a browser", {
     for (click in 1:2) {
       app$run_js("document.getElementById('check_preview').click()")
       app$wait_for_js(sprintf(
-        "!document.getElementById('check_preview').disabled && document.querySelector('#check_preview_ui [data-busy-done=\"%d\"]') !== null",
+        "!document.getElementById('check_preview').hasAttribute('aria-busy') && document.querySelector('#check_preview_ui [data-busy-done=\"%d\"]') !== null",
         click
       ))
     }
@@ -290,7 +290,7 @@ describe("the Check tab's slow buttons in a browser", {
       "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\"",
       "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div>');",
       "const b = document.getElementById('slow'), states = [];",
-      "const note = () => states.push(b.textContent + ' ' + b.disabled);",
+      "const note = () => states.push(b.textContent + ' ' + b.hasAttribute('aria-disabled'));",
       "const later = () => new Promise((resolve) => setTimeout(resolve, 0));",
       "const draw = (text, click) =>",
       "  $('#slow_ui').html(`<p>${text}</p><span hidden data-busy-done=\"${click}\"></span>`);",
@@ -318,7 +318,7 @@ describe("the Check tab's slow buttons in a browser", {
       "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\"",
       "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div>');",
       "const b = document.getElementById('slow'), states = [], clicks = [];",
-      "const note = () => states.push(b.textContent + ' ' + b.disabled);",
+      "const note = () => states.push(b.textContent + ' ' + b.hasAttribute('aria-disabled'));",
       "const later = () => new Promise((resolve) => setTimeout(resolve, 0));",
       "const fail = () => $('#slow_ui').trigger($.Event('shiny:error', { name: 'slow_ui', error: { message: 'x' } }));",
       # When it is clicked and its output shows an error, twice
@@ -345,7 +345,7 @@ describe("the Check tab's slow buttons and the silent errors Shiny sends when th
       "document.body.insertAdjacentHTML('beforeend', '<button id=\"slow\" data-busy-label=\"Working\"",
       "data-busy-output=\"slow_ui\">Run</button><div id=\"slow_ui\"></div>');",
       "const b = document.getElementById('slow'), states = [];",
-      "const note = () => states.push(b.textContent + ' ' + b.disabled);",
+      "const note = () => states.push(b.textContent + ' ' + b.hasAttribute('aria-disabled'));",
       "const later = () => new Promise((resolve) => setTimeout(resolve, 0));",
       "const fail = (error) => $('#slow_ui').trigger($.Event('shiny:error', { name: 'slow_ui', error }));",
       # When it is clicked and the stale silent error for its output (as Shiny sends it, with no message) arrives

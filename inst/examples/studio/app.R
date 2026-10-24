@@ -1240,13 +1240,15 @@ studio_server <- function(input, output, session) {
     is_building(TRUE)
     preview_request(preview_request() + 1)
   }
-  # The page is built on the first visit, and again when the arguments changed since the last build.
+  # The page is built on the first visit, and again when the arguments changed since the last build. A change made
+  # while the page was shown, and left before its pause ended, is not built while the page is hidden (see below): it
+  # is built when the page is shown again. Meanwhile nothing is being built, so "Building" goes off; the copy buttons
+  # wait for it (copy_gate()).
   observeEvent(preview_selected(), {
-    if (preview_selected()) {
-      args <- preview_inputs()
-      if (preview_request() == 0 || !identical(args, last_preview_attempt()$args)) {
-        build_preview()
-      }
+    if (preview_selected() && (preview_request() == 0 || !identical(preview_inputs(), last_preview_attempt()$args))) {
+      build_preview()
+    } else {
+      is_building(FALSE)
     }
   })
   observeEvent(

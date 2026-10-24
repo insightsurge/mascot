@@ -1044,6 +1044,44 @@ describe("the preview page and the host mode", {
       expect_match(output$code_preview, 'character = "sela"', fixed = TRUE)
     })
   })
+  it("stops saying Building, and answers Copy, when the page is left before a change is built", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      answers <- integer()
+      session$sendCustomMessage <- function(type, message) {
+        if (identical(type, "studio:copy")) answers <<- c(answers, message$ticket)
+      }
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
+      session$elapse(500)
+      expect_identical(preview_request(), 1)
+      # Given a change to the page, and the page left before its pause ends
+      session$setInputs(preview_status = "Second build")
+      expect_true(is_building())
+      session$setInputs(host_mode = "mascot")
+      session$elapse(500)
+      # Then nothing is being built, and a copy button's ticket is answered
+      expect_false(is_building())
+      expect_identical(preview_request(), 1)
+      session$setInputs(copy_ticket = 1)
+      expect_identical(answers, 1L)
+      # And the change is built when the page is shown again
+      session$setInputs(host_mode = "preview")
+      session$elapse(500)
+      expect_identical(preview_request(), 2)
+      expect_match(output$code_preview, 'status = "Second build"', fixed = TRUE)
+      # And a change undone while the page was hidden needs no build, so "Building" is not left on either
+      session$setInputs(preview_status = "Third build")
+      session$setInputs(host_mode = "mascot")
+      session$setInputs(preview_status = "Second build")
+      session$setInputs(host_mode = "preview")
+      session$elapse(500)
+      expect_false(is_building())
+      expect_identical(preview_request(), 2)
+    })
+  })
   it("says Building until the browser reports that the page has loaded in its frame", {
     parts <- studio_parts()
     start <- studio_start_values(parts$page)

@@ -18,10 +18,9 @@ describe("mascot_studio()", {
       "document.querySelector('.pg-index-link[data-value=mascot_theme]').getAttribute('aria-current') === 'true'"
     )
     expect_false(app$get_js("document.querySelector('[data-function=mascot_theme]').hidden"))
-    # A named function opens on its Guide, as ?mascot_studio promises.
-    app$wait_for_js(
-      "!document.getElementById('inspector_sidebar').hidden && document.getElementById('inspector_tab_guide').getAttribute('aria-selected') === 'true'"
-    )
+    # A named function opens on its Guide, as ?mascot_studio promises: the Guide shows that function's page.
+    wait_studio_panel(app, "guide", "mascot_theme")
+    expect_identical(app$get_js("document.getElementById('inspector_tab_guide').getAttribute('aria-selected')"), "true")
     expect_identical(app$get_value(input = "character"), formals(mascot)$character)
     # Starting on mascot_preview() shows its page on the canvas in place of the live mascot.
     preview <- app_driver(

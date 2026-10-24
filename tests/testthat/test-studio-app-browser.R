@@ -292,14 +292,12 @@ describe("studio overlays and live controls", {
       "document.getElementById('studio_inspector').contains(window.studioStatus) && document.querySelectorAll('#status_text').length === 1"
     ))
     app$click(selector = "#close_inspector")
-    # A real copy is allowed to succeed or report browser denial; a denial must never say Copied.
-    app$run_js(
-      "window.studioCopy = document.querySelector('#studio_dock [data-copy=code_ui]'); window.studioCopy.click();"
-    )
-    app$wait_for_js("['Copied', 'Copy failed', 'Copy unavailable'].includes(window.studioCopy.textContent)")
-    if (identical(app$get_js("window.studioCopy.textContent"), "Copied")) {
-      expect_match(app$get_value(output = "code_ui"), 'status = "Checking a draft"', fixed = TRUE)
-    }
+    # The dock's Copy copies the settings code, with the status just set
+    stub_studio_clipboard(app)
+    click_now(app, "#studio_dock [data-copy=code_ui]")
+    app$wait_for_js("window.copied !== null")
+    expect_match(app$get_js("window.copied"), 'status = "Checking a draft"', fixed = TRUE)
+    app$wait_for_js("document.querySelector('#studio_dock [data-copy=code_ui]').textContent === 'Copied'")
   })
   it("preserves bubbles, motion, placement, actions, menus, gestures, code and host modes", {
     local_shiny_browser()
@@ -367,9 +365,8 @@ describe("studio overlays and live controls", {
     )
     app$click(selector = "#close_inspector")
     app$set_inputs(host_mode = "preview")
-    app$wait_for_js(
-      "document.querySelector('[data-canvas=preview]').hidden === false && document.querySelector('#preview_frame iframe') !== null"
-    )
+    wait_studio_preview(app)
+    expect_false(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     expect_match(app$get_value(output = "code_preview"), "mascot_preview(", fixed = TRUE)
     app$run_js("document.getElementById('more_examples').click()")
     app$wait_for_js(
@@ -650,12 +647,15 @@ describe("studio behaviour for each function", {
     app$set_inputs(`colours-css_roles` = character(), theme_mode = "light")
     studio_colour(app, "colours-light_body", "#f8f9fa")
     app$wait_for_js(sprintf("%s.colours.body?.toLowerCase() === '#f8f9fa'", state))
-    app$click(selector = "#contrast_check")
-    app$wait_for_js("document.getElementById('contrast').textContent.includes('hard to see')")
+    click_studio_busy(app, "contrast_check")
+    expect_match(app$get_js("document.getElementById('contrast').textContent"), "hard to see", fixed = TRUE)
     studio_colour(app, "colours-light_body", "#1f6feb")
     app$wait_for_js("document.getElementById('contrast').textContent.includes('settings changed since the last check')")
+    # The reset reaches the picker and the code in one answer; the picker is the positive sign of it
+    body <- tolower(mascot_colour_roles("tessa")$colour[mascot_colour_roles("tessa")$role == "body"])
     app$run_js("document.querySelector('[data-event=\"colours-reset_mode\"][data-value=light]').click()")
-    app$wait_for_js("!document.getElementById('code_ui').textContent.includes('#1f6feb')")
+    app$wait_for_js(sprintf("document.getElementById('colours-light_body').value === '%s'", body))
+    expect_false(grepl("#1f6feb", app$get_value(output = "code_ui"), fixed = TRUE))
     studio_select_function(app, "mascot_characters")
     family <- mascot_families()$id[1]
     app$set_inputs(list_family = family)
@@ -943,18 +943,19 @@ describe("studio actions, menus and generated preview", {
         studio_frame_wait
       )
     )
+    # Bootstrap ignores a dismissal while the modal is still fading in: wait for its "shown" event before closing it
+    app$run_js(
+      "window.modalShown = false; document.addEventListener('shown.bs.modal', () => { window.modalShown = true; }, { once: true });"
+    )
     app$run_js(sprintf(
       "%s.document.querySelector('.mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=about]').click()",
       studio_frame
     ))
-    app$wait_for_js("document.querySelector('.modal.show .modal-title')?.textContent === 'About this studio'")
-    # Bootstrap ignores a dismissal while the modal is still fading in, so retry until it has closed.
-    for (attempt in 1:20) {
-      app$run_js("document.querySelector('.modal.show [data-bs-dismiss=modal]')?.click()")
-      Sys.sleep(0.5)
-      if (isTRUE(app$get_js("!document.querySelector('.modal.show')"))) break
-    }
-    expect_true(app$get_js("!document.querySelector('.modal.show')"))
+    app$wait_for_js("window.modalShown")
+    expect_identical(app$get_js("document.querySelector('.modal.show .modal-title')?.textContent"), "About this studio")
+    click_now(app, ".modal.show [data-bs-dismiss=modal]")
+    # Bootstrap takes "modal-open" off the page once the modal has gone
+    app$wait_for_js("!document.querySelector('.modal.show') && !document.body.classList.contains('modal-open')")
   })
 
   it("rebuilds preview code from controls, returns to the mounted host and opens standalone examples", {
@@ -1204,7 +1205,7 @@ describe("the click chip editor and the Click control", {
 })
 
 describe("the Check contrast button of the studio's colour controls", {
-  it("says it is busy until the result of its own click is drawn", {
+  it("says it is busy until the result of its own click is drawn, and keeps keyboard focus", {
     local_shiny_browser()
     app <- studio_driver(width = 1440, height = 900)
     wait_studio_mood(app, "idle")
@@ -1212,25 +1213,32 @@ describe("the Check contrast button of the studio's colour controls", {
     app$set_inputs(theme_source = "mascot")
     app$wait_for_js("document.getElementById('contrast_check').getClientRects().length > 0")
     button <- "document.getElementById('contrast_check')"
-    # When the button is clicked, it says so at once
+    # When the focused button is clicked, it says so at once, and focus stays on it
     state <- app$get_js(sprintf(
-      "(() => { const b = %s; b.click(); return [b.textContent, b.getAttribute('aria-busy'), String(b.disabled)]; })()",
+      paste(
+        "(() => { const b = %s; b.focus(); b.click();",
+        "return [b.textContent, b.getAttribute('aria-busy'), b.getAttribute('aria-disabled'), document.activeElement.id]; })()"
+      ),
       button
     ))
-    expect_identical(unlist(state), c("Checking\u2026", "true", "true"))
+    expect_identical(unlist(state), c("Checking\u2026", "true", "true", "contrast_check"))
     # Then it is back once the result shows, and the result is the one for that click
-    app$wait_for_js(sprintf("!%s.disabled", button))
+    app$wait_for_js(sprintf("!%s.hasAttribute('aria-busy')", button))
     expect_identical(app$get_js(sprintf("%s.textContent", button)), "Check contrast")
+    expect_null(app$get_js(sprintf("%s.getAttribute('aria-disabled')", button)))
+    expect_identical(app$get_js("document.activeElement.id"), "contrast_check")
     expect_true(app$get_js("document.getElementById('contrast').textContent.trim().length > 0"))
     expect_identical(app$get_js("document.querySelector('#contrast [data-busy-done]').dataset.busyDone"), "1")
-    # And when the server has not answered a second click, the first result is not taken for its answer
+    # And when the server has not answered a second click, the first result is not taken for its answer, and a click
+    # while it is busy sends nothing
     hold_studio_inputs(app, "contrast_check")
-    app$run_js(sprintf("%s.click()", button))
+    app$run_js(sprintf("%s.click(); %s.click();", button, button))
     expect_identical(app$get_js(sprintf("%s.getAttribute('aria-busy')", button)), "true")
+    expect_identical(app$get_js("window.studioHold.held.length"), 1L)
     expect_identical(app$get_js("document.querySelector('#contrast [data-busy-done]').dataset.busyDone"), "1")
-    expect_gte(release_studio_inputs(app), 1L)
+    expect_identical(release_studio_inputs(app), 1L)
     app$wait_for_js(sprintf(
-      "!%s.disabled && document.querySelector('#contrast [data-busy-done]').dataset.busyDone === '2'",
+      "!%s.hasAttribute('aria-busy') && document.querySelector('#contrast [data-busy-done]').dataset.busyDone === '2'",
       button
     ))
   })
@@ -2099,7 +2107,9 @@ describe("studio palette help and warnings", {
     expect_match(app$get_js(sentence), "Showing Sela in Sela's own colours (lilac_violet)", fixed = TRUE)
     studio_select_function(app, "mascot_palettes")
     app$click(selector = "#inspector_tab_guide")
-    app$wait_for_js("document.querySelector('#guide .pg-palette-table td')?.getBoundingClientRect().width > 0")
+    # The Guide of mascot_theme() has palette tables too: wait for the page of mascot_palettes()
+    wait_studio_panel(app, "guide", "mascot_palettes", character = "sela")
+    expect_gt(app$get_js("document.querySelector('#guide .pg-palette-table td').getBoundingClientRect().width"), 0)
     expect_true(app$get_js(
       "[...document.querySelectorAll('#guide .pg-palette-table td:not(:nth-child(2))')].every(n=>getComputedStyle(n).whiteSpace==='nowrap')"
     ))
@@ -2269,13 +2279,34 @@ describe("the copy buttons", {
     app$run_js("document.getElementById('example_name').selectize.setValue('form-check')")
     click_now(app, "[data-copy=example_code]")
     expect_identical(app$get_js("String(window.copied)"), "null")
-    # Then the code of the example just picked is copied
+    # Then the code of the example just picked is copied: the server drew it before it answered the copy
     expect_gte(release_studio_inputs(app), 1L)
     app$wait_for_js("window.copied !== null")
-    app$wait_for_js("document.getElementById('example_call').textContent.includes('\"form-check\"')")
+    expect_match(app$get_js("document.getElementById('example_call').textContent"), '"form-check"', fixed = TRUE)
     copied <- app$get_js("window.copied")
     expect_false(identical(copied, before))
     expect_identical(copied, app$get_js("document.getElementById('example_code').textContent"))
+    # And the button the server drew with the new code says so, although the click was on the one before it
+    app$wait_for_js("document.querySelector('[data-copy=example_code]').textContent === 'Copied'")
+  })
+  it("copies through a selection when the browser refuses the clipboard API", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    # Given a browser that refuses the clipboard API, as in a frame without clipboard access
+    app$run_js(paste(
+      "window.copied = null;",
+      "const refuse = () => Promise.reject(new DOMException('Not allowed', 'NotAllowedError'));",
+      "navigator.clipboard.write = refuse; navigator.clipboard.writeText = refuse;",
+      "document.execCommand = (command) => {",
+      "  if (command === 'copy') window.copied = [...document.querySelectorAll('body > textarea[readonly]')].pop()?.value;",
+      "  return true; };"
+    ))
+    # When Copy is clicked
+    click_now(app, "#code_pin [data-copy=code_function]")
+    # Then the code is copied through a selection, and the button says it was copied
+    app$wait_for_js("document.querySelector('#code_pin [data-copy=code_function]').textContent === 'Copied'")
+    expect_identical(app$get_js("window.copied"), app$get_js("document.getElementById('code_function').textContent"))
   })
   it("says so when the server does not answer, and copies nothing", {
     local_shiny_browser()

@@ -204,9 +204,8 @@ describe("studio palette sync", {
       )))
     }
     app$run_js("document.querySelector('[data-inspector-tab=guide]').click()")
-    app$wait_for_js(
-      "document.querySelector('[data-event=palette_swap]') && document.getElementById('palette_swap_demo')?.dataset.shownCharacter"
-    )
+    wait_studio_panel(app, "guide", "mascot_theme")
+    app$wait_for_js("!!document.getElementById('palette_swap_demo')?.dataset.shownCharacter")
     app$run_js("document.querySelector('[data-event=palette_swap][data-value=kept]').click()")
     app$wait_for_js("document.getElementById('palette_swap_result').textContent.includes('coral_navy kept for Sela')")
     app$wait_for_js("document.getElementById('palette_swap_demo').dataset.shownCharacter === 'sela'")

@@ -50,3 +50,26 @@ wait_studio_preview <- function(app) {
     "!!document.querySelector('iframe.pg-preview[data-loaded]') && !document.querySelector('.pg-building')"
   )
 }
+
+# Clicks a slow button (one with data-busy-label) and waits until the result of that click is drawn: the button says it
+# is busy from the click until its output carries the number the click sent (inputs.js, busy_done_mark()). Returns that
+# number.
+click_studio_busy <- function(app, id) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(id, min.chars = 1)
+  click <- app$get_js(sprintf(
+    "(() => { const b = document.getElementById('%s'); b.click(); return b.dataset.busyClick ?? null; })()",
+    id
+  ))
+  checkmate::assert_string(click, pattern = "^[0-9]+$")
+  app$wait_for_js(sprintf(
+    paste(
+      "(() => { const b = document.getElementById('%s');",
+      "return !b.hasAttribute('aria-busy') &&",
+      "!!document.querySelector(`#${b.dataset.busyOutput} [data-busy-done=\"%s\"]`); })()"
+    ),
+    id,
+    click
+  ))
+  invisible(click)
+}

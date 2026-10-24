@@ -26,6 +26,13 @@
   border-left-color: var(--bs-success);
 }
 
+/* A slow button while the server works on its click (inputs.js). It keeps keyboard focus, so it is marked
+   aria-disabled rather than disabled, and looks like Bootstrap's disabled button. */
+.btn[aria-busy="true"][aria-disabled="true"] {
+  opacity: var(--bs-btn-disabled-opacity, 0.65);
+  cursor: progress;
+}
+
 /* Colour pickers */
 .pg-role,
 .pg-css {

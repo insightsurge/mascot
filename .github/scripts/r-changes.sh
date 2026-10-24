@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Writes r=true to the step's outputs unless this run is for a pull request that changes only documentation that
 # R CMD check, the tests and coverage never read (the website's articles and settings, the README, the docs folder and
-# the repository's own notes). The R jobs still start and report, so the checks a branch ruleset requires are there;
-# their R steps are skipped. Needs a checkout with fetch-depth 2: a pull request's merge commit and its base.
+# the repository's own notes). The R jobs still start and report, so every check still reports; their R steps are
+# skipped. Needs a checkout with fetch-depth 2: a pull request's merge commit and its base.
 set -euo pipefail
 
 if [ "${GITHUB_EVENT_NAME:-}" != "pull_request" ]; then

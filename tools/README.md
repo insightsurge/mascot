@@ -87,8 +87,8 @@ mode that checks the same thing locally, which is the evidence when CI can't run
 | `release.yml` | The tag and GitHub release when a release version reaches `main` | |
 
 A pull request that changes only documentation (the README, `docs/`, the website's articles and settings, the issue
-forms and the repository's notes) starts the R jobs and skips their steps (`.github/scripts/r-changes.sh`), so the
-checks a branch ruleset requires still report. Dependabot keeps the actions current. The gate's `new_lines` step has
+forms and the repository's notes) starts the R jobs and skips their steps (`.github/scripts/r-changes.sh`), so every
+check still reports. Dependabot keeps the actions current. The gate's `new_lines` step has
 no CI job: it needs the branch's base, which CI's shallow checkout lacks, so it runs locally.
 
 ### Changing the gate

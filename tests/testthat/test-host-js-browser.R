@@ -1,3 +1,39 @@
+# Synthetic pointer events on a drag target (the canvas or the restore button), as a mouse or finger would send them (pointer id 1, primary button).
+drag_js <- paste(
+  "window.press=(target,type,x,y)=>target.dispatchEvent(new PointerEvent(type,",
+  "{bubbles:true,cancelable:true,pointerId:1,button:0,isPrimary:true,clientX:x,clientY:y}));",
+  "window.dragBy=(target,dx,dy)=>{const r=target.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;",
+  "press(target,'pointerdown',x,y);press(target,'pointermove',x+dx/2,y+dy/2);press(target,'pointermove',x+dx,y+dy);",
+  "press(target,'pointerup',x+dx,y+dy);};"
+)
+
+# Wraps the mounted controller so each held pose the host sends is recorded in window.poses.
+spy_poses_js <- paste(
+  "window.el=document.getElementById('a');mascot.host.unmount(el);window.poses=[];const mount=mascot.mount;",
+  "mascot.mount=(...args)=>{const c=mount(...args),update=c.update;",
+  "c.update=patch=>{if(patch.pose)poses.push(patch.pose);return update(patch);};return c;};",
+  "mascot.host.mount(el);mascot.mount=mount;"
+)
+
+# A trusted key press in the page, as a keyboard sends it (synthetic events skip the browser's own button activation).
+press_key <- function(js, key, repeat_key = FALSE) {
+  session <- attr(js, "session")
+  code <- switch(key, Enter = "Enter", " " = "Space", Escape = "Escape", Tab = "Tab")
+  number <- switch(key, Enter = 13L, " " = 32L, Escape = 27L, Tab = 9L)
+  text <- switch(key, Enter = "\r", " " = " ", NULL)
+  session$Input$dispatchKeyEvent(
+    type = "keyDown",
+    key = key,
+    code = code,
+    windowsVirtualKeyCode = number,
+    text = text,
+    autoRepeat = repeat_key
+  )
+  if (!repeat_key) {
+    session$Input$dispatchKeyEvent(type = "keyUp", key = key, code = code, windowsVirtualKeyCode = number)
+  }
+  invisible(NULL)
+}
 # The host is JavaScript, so it has its own browser test file, like the engine.
 describe("mascot.host", {
   it("shows the worried mood and connection status immediately on disconnect", {
@@ -255,7 +291,6 @@ describe("mascot.host", {
   })
 })
 
-
 # Control only the bubble clock; the real engine and DOM still run in Chrome.
 
 describe("mascot.host bubbles", {
@@ -487,7 +522,6 @@ describe("mascot.host bubbles", {
     expect_true(result$same)
   })
 })
-
 
 describe("mascot.host bubble layout", {
   it("reserves the same mascot and status positions through message changes in either theme", {
@@ -791,7 +825,6 @@ describe("mascot.host bubble keys, colours and focus", {
   })
 })
 
-
 describe("mascot.host responsive size", {
   it("uses the parent's content width, follows resizing and floors percentages at 24 pixels", {
     skip_without_chrome()
@@ -897,7 +930,6 @@ describe("mascot.host responsive size", {
     }
   })
 })
-
 
 describe("mascot.host floating placement", {
   it("pins all four corners, sizes against the window and opens bubbles towards the centre in both themes", {
@@ -1111,7 +1143,6 @@ describe("mascot.host floating placement", {
   })
 })
 
-
 describe("mascot.host restore feedback", {
   it("glows and grows on keyboard focus, with glow only under reduced motion", {
     skip_without_chrome()
@@ -1135,7 +1166,6 @@ describe("mascot.host restore feedback", {
     }
   })
 })
-
 
 describe("mascot.host inline bubbles and floating placement", {
   it("keeps an inline bubble inside a container that clips overflow, such as a bslib card", {
@@ -1677,15 +1707,6 @@ describe("mascot.host motion", {
   })
 })
 
-# Synthetic pointer events on a drag target (the canvas or the restore button), as a mouse or finger would send them (pointer id 1, primary button).
-drag_js <- paste(
-  "window.press=(target,type,x,y)=>target.dispatchEvent(new PointerEvent(type,",
-  "{bubbles:true,cancelable:true,pointerId:1,button:0,isPrimary:true,clientX:x,clientY:y}));",
-  "window.dragBy=(target,dx,dy)=>{const r=target.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;",
-  "press(target,'pointerdown',x,y);press(target,'pointermove',x+dx/2,y+dy/2);press(target,'pointermove',x+dx,y+dy);",
-  "press(target,'pointerup',x+dx,y+dy);};"
-)
-
 describe("mascot.host popup menu", {
   it("toggles by pointer, sends repeated event choices, holds the pose and clears it without motion", {
     skip_without_chrome()
@@ -2187,15 +2208,6 @@ describe("mascot.host popup menu", {
   })
 })
 
-
-# Wraps the mounted controller so each held pose the host sends is recorded in window.poses.
-spy_poses_js <- paste(
-  "window.el=document.getElementById('a');mascot.host.unmount(el);window.poses=[];const mount=mascot.mount;",
-  "mascot.mount=(...args)=>{const c=mount(...args),update=c.update;",
-  "c.update=patch=>{if(patch.pose)poses.push(patch.pose);return update(patch);};return c;};",
-  "mascot.host.mount(el);mascot.mount=mount;"
-)
-
 describe("mascot.host gaze", {
   looks <- list(
     top = list(face.look_x = NULL, face.look_y = -1),
@@ -2341,7 +2353,7 @@ describe("mascot.host gaze", {
     js(spy_poses_js)
     js(drag_js)
     # A mirrored copy of Tessa: its idle mood turns the body round (root.flip -1). The host sends the look in page
-    # terms; the player turns it back from the frame it shows (test-engine-runtime-js.R).
+    # terms; the player turns it back from the frame it shows (test-engine-runtime-js-browser.R).
     js(
       "const ch=structuredClone(mascot.readCharacter('tessa'));ch.id='mirror';ch.moods.idle.channels['root.flip']=-1;
       mascot.host.receive({id:'a',patch:{character:{id:'mirror',name:'Mirror',json:JSON.stringify(ch)}}});"
@@ -2352,26 +2364,6 @@ describe("mascot.host gaze", {
     expect_identical(js("poses.at(-1)['face.look_x']"), -1L)
   })
 })
-
-# A trusted key press in the page, as a keyboard sends it (synthetic events skip the browser's own button activation).
-press_key <- function(js, key, repeat_key = FALSE) {
-  session <- attr(js, "session")
-  code <- switch(key, Enter = "Enter", " " = "Space", Escape = "Escape", Tab = "Tab")
-  number <- switch(key, Enter = 13L, " " = 32L, Escape = 27L, Tab = 9L)
-  text <- switch(key, Enter = "\r", " " = " ", NULL)
-  session$Input$dispatchKeyEvent(
-    type = "keyDown",
-    key = key,
-    code = code,
-    windowsVirtualKeyCode = number,
-    text = text,
-    autoRepeat = repeat_key
-  )
-  if (!repeat_key) {
-    session$Input$dispatchKeyEvent(type = "keyUp", key = key, code = code, windowsVirtualKeyCode = number)
-  }
-  invisible(NULL)
-}
 
 describe("mascot.host click", {
   clicks <- "menuEvents.filter(e => e[0] === 'a_click')"

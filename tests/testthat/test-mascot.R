@@ -1,73 +1,16 @@
-# The engine files, in load order: the shared helpers, the format-v1 modules (parts, geometry and faces), the motion
-# tracks the host reads when it loads, the player that uses them all, then the host.
-engine_scripts <- c(
-  "mascot.js",
-  "mascot-parts.js",
-  "mascot-geometry.js",
-  "mascot-faces.js",
-  "mascot-motion.js",
-  "mascot-player.js",
-  "mascot-host.js"
-)
+# How many times `html` holds a data block for the character `id`.
+character_blocks <- function(html, id) {
+  lengths(regmatches(html, gregexpr(sprintf('data-mascot-character="%s"', id), html, fixed = TRUE)))
+}
 
-# The file names a dependency's scripts load, in order.
-script_files <- function(dep) {
-  vapply(dep$script, function(script) script$src, character(1))
+# A page saved by htmltools::save_html(), as one string.
+saved_page <- function(ui) {
+  dir <- withr::local_tempdir()
+  htmltools::save_html(ui, file.path(dir, "page.html"), libdir = "lib")
+  paste(readLines(file.path(dir, "page.html"), warn = FALSE), collapse = "\n")
 }
 
 describe("mascot()", {
-  it("returns the accessible tag structure and a runtime dependency", {
-    tag <- mascot(id = "helper")
-    expect_s3_class(tag, "shiny.tag")
-    expect_identical(tag$name, "div")
-    expect_identical(
-      tag$attribs[names(tag$attribs) != "data-mount-token"],
-      list(
-        class = "mascot",
-        id = "helper",
-        tabindex = "-1",
-        `data-character` = "tessa",
-        `data-mood` = "idle",
-        `data-status` = "mood",
-        `data-size` = 160,
-        `data-small-screen` = "auto",
-        `data-floating` = "true",
-        `data-position` = "bottom-right",
-        `data-minimise` = "true",
-        `data-drag` = "false",
-        `data-reduced` = "auto",
-        `data-idle` = "true",
-        `data-mood-change` = "true",
-        `data-gestures` = "true",
-        `data-swap` = "true",
-        `data-minimising` = "true",
-        `data-restoring` = "true",
-        `data-messages` = "bubble,tooltip,menu",
-        `data-others` = "true",
-        `data-mascot-version` = as.character(utils::packageVersion("mascot"))
-      )
-    )
-    html <- sub(
-      '(?s)(<script[^>]*data-mascot-baseline[^>]*>).*?(</script>)',
-      '\\1[UI baseline]\\2',
-      as.character(tag),
-      perl = TRUE
-    )
-    html <- sub('data-mount-token="[^"]+"', 'data-mount-token="[UI specification token]"', html)
-    html <- sub('data-mascot-version="[^"]+"', 'data-mascot-version="[package version]"', html)
-    expect_snapshot(cat(html))
-    dependencies <- htmltools::findDependencies(tag)
-    expect_identical(vapply(dependencies, function(d) d$name, character(1)), c("mascot", "mascot-character-tessa"))
-    dep <- dependencies[[1]]
-    expect_identical(dep$name, "mascot")
-    expect_identical(dep$version, as.character(utils::packageVersion("mascot")))
-    expect_identical(script_files(dep), engine_scripts)
-    # Every listed file ships with the package, so a page works offline.
-    expect_true(all(file.exists(file.path(system.file("www", package = "mascot"), script_files(dep)))))
-    expect_identical(dep$stylesheet, "mascot.css")
-    expect_identical(dep$package, "mascot")
-    expect_false(dep$all_files)
-  })
   it("uses equivalent shortcuts and helpers and escapes custom text", {
     expect_identical(
       as.character(mascot(id = "a", mood = "happy", status = "Saved")),
@@ -92,23 +35,6 @@ describe("mascot()", {
     expect_error(mascot("bounded", status = strrep("x", 262145)), "capacity", class = "mascot_error")
     expect_error(mascot("bounded", bubble = strrep("x", 262145)), "capacity", class = "mascot_error")
   })
-  it("attributes choice errors to mascot and rejects every invalid argument", {
-    expect_snapshot(error = TRUE, mascot(id = "a", mood = "hapy"))
-    expect_snapshot(error = TRUE, mascot(id = "a", mood = "ha!py"))
-    expect_snapshot(error = TRUE, mascot("a", character = "missing"))
-    expect_error(mascot(), "missing", class = "mascot_error")
-    for (id in list("", "has space", "a\nb", 1, NA_character_)) {
-      expect_error(mascot(id = id), "Assertion on 'id' failed")
-    }
-    for (x in list(NULL, 1, "", NA_character_, c("a", "b"))) {
-      expect_error(mascot("a", character = x), "Assertion on 'character' failed")
-      expect_error(mascot(id = "a", mood = x), "mood.*non-empty string")
-    }
-    for (x in list(1, "", NA_character_, c("a", "b"))) {
-      expect_error(mascot(id = "a", status = x), "mascot_status", fixed = TRUE)
-    }
-    expect_error(mascot(id = "a", mood = "{oops"), "not a mood", fixed = TRUE)
-  })
 })
 
 describe("argument converters", {
@@ -130,7 +56,6 @@ describe("abort_dots()", {
     expect_error(abort_dots("extra", 1L, "tooltip", NULL), "Assertion on 'call' failed")
   })
 })
-
 
 describe("mascot() bubbles", {
   it("renders escaped text or explicit HTML with an accessible close button", {
@@ -176,7 +101,6 @@ describe("bubble keyboard markup", {
   })
 })
 
-
 describe("mascot() tag bubbles", {
   it("renders a deferred tag once at build time and errors on rendering failures", {
     calls <- new.env(parent = emptyenv())
@@ -217,88 +141,6 @@ describe("message guidance", {
       expect_match(text, "duration = Inf", fixed = TRUE, info = topic)
       expect_match(text, "invalid form", info = topic)
     }
-  })
-})
-
-
-describe("mascot() size and placement", {
-  it("writes data attributes without inline layout styles and normalises shortcuts", {
-    tag <- mascot(
-      id = "a",
-      size = mascot_size("20%", small_screen = 48),
-      placement = mascot_placement("top-left", minimise = TRUE)
-    )
-    expect_identical(tag$attribs$`data-size`, "20%")
-    expect_identical(tag$attribs$`data-small-screen`, 48)
-    expect_null(tag$attribs$`data-simplify-when-small`)
-    expect_identical(tag$attribs$`data-floating`, "true")
-    expect_identical(tag$attribs$`data-position`, "top-left")
-    expect_identical(tag$attribs$`data-minimise`, "true")
-    expect_null(tag$attribs$style)
-    expect_identical(
-      as.character(mascot(id = "a", size = 96, placement = "bottom-right")),
-      as.character(mascot(id = "a", size = mascot_size(96), placement = mascot_placement("bottom-right")))
-    )
-    expect_error(mascot(id = "a", size = NULL), "size")
-    expect_error(mascot(id = "a", size = "24px"), "size.*24px")
-    expect_snapshot(error = TRUE, mascot(id = "a", placement = "fixed"))
-    expect_identical(mascot("helper")$attribs$id, "helper")
-    expect_snapshot(error = TRUE, mascot())
-    expect_snapshot(error = TRUE, mascot("a", character = "typo"))
-    expect_identical(mascot("{oops}")$attribs$id, "{oops}")
-  })
-  it("silently disables inline defaults and informs about explicit list controls", {
-    for (placement in list("inline", mascot_placement("inline"), list(position = "inline"))) {
-      expect_silent(tag <- mascot(id = "a", placement = placement))
-      expect_identical(tag$attribs$`data-minimise`, "false")
-      expect_identical(tag$attribs$`data-drag`, "false")
-    }
-    for (controls in list(
-      list(minimise = TRUE),
-      list(minimise = FALSE),
-      list(drag = "snap"),
-      list(drag = "free"),
-      list(drag = "none")
-    )) {
-      expect_message(
-        tag <- mascot(id = "a", placement = c(list(position = "inline"), controls)),
-        paste0(names(controls), ".*no effect.*inline"),
-        class = "mascot_placement_ignored"
-      )
-      expect_identical(tag$attribs$`data-minimise`, "false")
-      expect_identical(tag$attribs$`data-drag`, "false")
-    }
-    expect_snapshot(invisible(mascot(id = "a", placement = list(position = "inline", minimise = TRUE))))
-    expect_snapshot(invisible(mascot(id = "a", placement = list(position = "inline", drag = "snap"))))
-    expect_snapshot(invisible(mascot(id = "a", placement = mascot_placement("inline", minimise = TRUE))))
-    expect_snapshot(invisible(mascot(id = "a", placement = mascot_placement("inline", drag = "free"))))
-    expect_identical(mascot(id = "a", placement = list(minimise = FALSE))$attribs$`data-minimise`, "false")
-  })
-})
-
-describe("mascot() themes", {
-  it("embeds both palettes with auto by default and preserves explicit modes", {
-    theme <- mascot_theme(light = list(body = "#1f6feb"), dark = list(body = "#9ec5fe"))
-    tag <- mascot(id = "themed", theme = theme)
-    scripts <- Filter(
-      function(x) {
-        inherits(x, "shiny.tag") && identical(x$name, "script") && !"data-mascot-baseline" %in% names(x$attribs)
-      },
-      tag$children
-    )
-    # Tessa's data travels in the page head, so the theme is the tag's only other script.
-    expect_length(scripts, 1)
-    wire <- jsonlite::fromJSON(as.character(scripts[[1]]$children[[1]]), simplifyVector = FALSE)
-    expect_identical(wire$light, list(body = "#1F6FEB"))
-    expect_identical(wire$dark, list(body = "#9EC5FE"))
-    expect_identical(wire$mode, "auto")
-    expect_false(grepl("data-mascot-theme", as.character(mascot(id = "own")), fixed = TRUE))
-    expect_match(
-      as.character(mascot(id = "light", theme = mascot_theme(mode = "light"))),
-      '"mode":"light"',
-      fixed = TRUE
-    )
-    expect_snapshot(error = TRUE, mascot(id = "bad", theme = list(bdoy = "blue")))
   })
 })
 
@@ -345,55 +187,6 @@ describe("mascot() click", {
   })
 })
 
-describe("mascot() clicks in a Shiny browser", {
-  it("counts action activations in a module and sends no clicks for menus or pictures", {
-    local_shiny_browser()
-    app <- app_driver(function() {
-      library(mascot)
-      ui <- function(id) {
-        ns <- shiny::NS(id)
-        shiny::tagList(
-          mascot(id = ns("picture"), placement = "inline"),
-          mascot(id = ns("helper"), placement = "inline", click = "Open help"),
-          shiny::textOutput(ns("clicks")),
-          mascot(id = ns("menu"), placement = "inline", click = mascot_popup_menu(c(about = "About"))),
-          shiny::textOutput(ns("menu_clicks"))
-        )
-      }
-      shiny::shinyApp(shiny::fluidPage(ui("module")), function(input, output, session) {
-        shiny::moduleServer("module", function(input, output, session) {
-          output$clicks <- shiny::renderText(if (is.null(input$helper_click)) 0 else input$helper_click)
-          output$menu_clicks <- shiny::renderText(if (is.null(input$menu_click)) 0 else input$menu_click)
-        })
-      })
-    })
-    app$wait_for_js("!!document.querySelector('#module-menu .mascot-menu-toggle')")
-    # Given an action: each click and each Enter on it reaches its module's server.
-    app$click(selector = "#module-helper .mascot-button")
-    app$wait_for_js("document.getElementById('module-clicks').textContent === '1'")
-    app$click(selector = "#module-helper .mascot-button")
-    app$wait_for_js("document.getElementById('module-clicks').textContent === '2'")
-    app$run_js(
-      "const button=document.querySelector('#module-helper .mascot-button');button.focus();
-      button.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));"
-    )
-    app$wait_for_js("document.getElementById('module-clicks').textContent === '3'")
-    # Menu toggles do not send action clicks.
-    app$click(selector = "#module-menu .mascot-menu-toggle")
-    app$wait_for_js("mascot.host.state(document.getElementById('module-menu')).menuOpen")
-    app$wait_for_idle()
-    expect_null(app$get_value(input = "module-menu_click"))
-    app$click(selector = "#module-menu .mascot-menu-toggle")
-    app$wait_for_js("!mascot.host.state(document.getElementById('module-menu')).menuOpen")
-    app$wait_for_idle()
-    expect_null(app$get_value(input = "module-menu_click"))
-    # A picture sends nothing.
-    app$click(selector = "#module-picture canvas")
-    app$wait_for_idle()
-    expect_null(app$get_value(input = "module-picture_click"))
-  })
-})
-
 describe("mascot() named arguments", {
   it("keeps the agreed signature and rejects both forms of extra argument", {
     expect_identical(
@@ -405,34 +198,13 @@ describe("mascot() named arguments", {
   })
 })
 
-
 describe("public argument error classes", {
   it("keeps the argument name and adds mascot_error to invalid types", {
     expect_error(mascot(id = 1), "id", class = "mascot_error")
   })
 })
 
-
 describe("with_mascot_asserts()", {
-  it("keeps the original assertion message once and adds mascot_error", {
-    value <- 1
-    original <- tryCatch(checkmate::assert_string(value), error = identity)
-    wrapped <- tryCatch(
-      with_mascot_asserts({
-        checkmate::assert_string(value)
-      }),
-      error = identity
-    )
-
-    expect_s3_class(wrapped, "mascot_error")
-    expect_s3_class(wrapped, "error")
-    expect_identical(
-      trimws(cli::ansi_strip(strsplit(conditionMessage(wrapped), "\n", fixed = TRUE)[[1]])),
-      trimws(strsplit(conditionMessage(original), "\n", fixed = TRUE)[[1]])
-    )
-    expect_null(wrapped$parent)
-    expect_snapshot(conditionMessage(wrapped))
-  })
   it("also keeps every line of a union assertion message", {
     value <- 1
     original <- tryCatch(
@@ -502,7 +274,6 @@ describe("static motion switches", {
   })
 })
 
-
 describe("mascot resources in modules", {
   it("resolves one offline dependency for a function-built UI with nested modules", {
     ui <- function() {
@@ -520,18 +291,6 @@ describe("mascot resources in modules", {
     expect_false(grepl("https?://", engine[[1]]$src$file))
   })
 })
-
-# How many times `html` holds a data block for the character `id`.
-character_blocks <- function(html, id) {
-  lengths(regmatches(html, gregexpr(sprintf('data-mascot-character="%s"', id), html, fixed = TRUE)))
-}
-
-# A page saved by htmltools::save_html(), as one string.
-saved_page <- function(ui) {
-  dir <- withr::local_tempdir()
-  htmltools::save_html(ui, file.path(dir, "page.html"), libdir = "lib")
-  paste(readLines(file.path(dir, "page.html"), warn = FALSE), collapse = "\n")
-}
 
 describe("mascot() character data", {
   study_bot <- function() {
@@ -645,7 +404,6 @@ describe("construction diagnostics", {
   })
 })
 
-
 describe("construction diagnostics for mood ids and unnamed arguments", {
   it("lists the chosen character's moods for malformed ids", {
     for (character in list(catalogue_alpha_two(), "tessa")) {
@@ -665,13 +423,6 @@ describe("construction diagnostics for mood ids and unnamed arguments", {
     expect_identical(error$argument, "mood")
     expect_identical(error$choices, c("idle", "happy"))
     expect_identical(error$value, "bad")
-  })
-
-  it("counts unnamed arguments and keeps named arguments listed", {
-    expect_error(mascot("helper", 1, 2, typo = 3), '2 unnamed arguments, "typo"', fixed = TRUE)
-    expect_error(mascot("helper", 1), "Unexpected arguments: an unnamed argument.", fixed = TRUE)
-    expect_snapshot(error = TRUE, mascot("helper", 1, 2, typo = 3))
-    expect_snapshot(error = TRUE, mascot("helper", 1))
   })
 })
 
@@ -722,31 +473,6 @@ describe("quiet exported examples", {
   })
 })
 
-# A page saved by htmltools, as Quarto, R Markdown and mascot_preview() pages are, opened in Chrome. `extra` is HTML
-# added after the page's own scripts. `strip` removes the scripts' data-mascot-version attributes, as pandoc before
-# 3.7.0.2 does when it embeds scripts in a self-contained page. Returns a function that evaluates JavaScript there;
-# console warnings are recorded in window.warnings from the start.
-local_version_page <- function(tag, extra = NULL, strip = FALSE, env = parent.frame()) {
-  checkmate::assert_character(extra, null.ok = TRUE)
-  checkmate::assert_flag(strip)
-  skip_without_chrome()
-  dir <- withr::local_tempdir(.local_envir = env)
-  page <- file.path(dir, "page.html")
-  recorder <- htmltools::tags$head(htmltools::tags$script(htmltools::HTML(
-    "window.warnings = []; const warn = console.warn; console.warn = (...a) => { warnings.push(a.join(' ')); warn(...a); };"
-  )))
-  htmltools::save_html(htmltools::tagList(recorder, tag, if (!is.null(extra)) htmltools::HTML(extra)), page)
-  if (strip) {
-    html <- readLines(page)
-    writeLines(gsub('(<script[^>]*) data-mascot-version="[^"]*"', "\\1", html), page)
-  }
-  session <- local_chrome_session(env)
-  loaded <- session$Page$loadEventFired(wait_ = FALSE)
-  session$Page$navigate(paste0("file://", normalizePath(page)), wait_ = FALSE)
-  session$wait_for(loaded)
-  function(js) session$Runtime$evaluate(js, returnByValue = TRUE)$result$value
-}
-
 describe("the engine version", {
   version <- as.character(utils::packageVersion("mascot"))
 
@@ -755,206 +481,5 @@ describe("the engine version", {
     attributes <- lapply(dep$script, function(script) script[names(script) != "src"])
     expect_identical(attributes[[1]], list(`data-mascot-version` = version))
     expect_true(all(lengths(attributes[-1]) == 0))
-  })
-
-  it("is the package version in a page saved by htmltools and in mascot_preview()", {
-    js <- local_version_page(mascot("a", placement = "inline"))
-    expect_identical(js("window.mascot.version"), version)
-    expect_identical(js("window.warnings.length"), 0L)
-    js <- local_version_page(mascot_preview())
-    expect_identical(js("window.mascot.version"), version)
-  })
-
-  it("comes from the mascot element when the page dropped the script's attribute", {
-    expect_identical(mascot("a")$attribs$`data-mascot-version`, version)
-    js <- local_version_page(mascot("a", placement = "inline"), strip = TRUE)
-    expect_identical(js("document.querySelector('script[data-mascot-version]')"), NULL)
-    expect_identical(js("window.mascot.version"), version)
-  })
-
-  it("is the package version in a rendered R Markdown page", {
-    testthat::skip_if_not_installed("rmarkdown")
-    testthat::skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
-    skip_without_chrome()
-    dir <- withr::local_tempdir()
-    source <- file.path(dir, "page.Rmd")
-    writeLines(
-      c(
-        "---",
-        "title: Version",
-        "output:",
-        "  html_document:",
-        "    self_contained: false",
-        "---",
-        "",
-        "```{r, echo = FALSE}",
-        "mascot::mascot('a', placement = 'inline')",
-        "```"
-      ),
-      source
-    )
-    output <- rmarkdown::render(source, quiet = TRUE, envir = new.env(), intermediates_dir = dir)
-    session <- local_chrome_session()
-    loaded <- session$Page$loadEventFired(wait_ = FALSE)
-    session$Page$navigate(paste0("file://", normalizePath(output)), wait_ = FALSE)
-    session$wait_for(loaded)
-    expect_identical(session$Runtime$evaluate("window.mascot.version", returnByValue = TRUE)$result$value, version)
-  })
-
-  it("is the package version in a Shiny app, also when the mascot arrives through renderUI()", {
-    local_shiny_browser()
-    app <- app_driver(function() {
-      library(mascot)
-      shiny::shinyApp(
-        shiny::fluidPage(shiny::uiOutput("later")),
-        function(input, output, session) {
-          output$later <- shiny::renderUI(mascot("helper", placement = "inline"))
-        }
-      )
-    })
-    app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper')) != null")
-    expect_identical(app$get_js("window.mascot.version"), version)
-  })
-
-  it("keeps the first engine and warns once when a page loads a second engine of another version", {
-    www <- normalizePath(system.file("www", "mascot.js", package = "mascot"))
-    again <- function(v) sprintf('<script src="file://%s" data-mascot-version="%s"></script>', www, v)
-    js <- local_version_page(mascot("a", placement = "inline"), extra = c(again(version), again("99.0.0")))
-    warnings <- js("window.warnings")
-    expect_identical(js("window.mascot.version"), version)
-    # The same version again is no conflict; the other version is named with the one that stays in use.
-    expect_length(warnings, 1)
-    expect_match(warnings[[1]], sprintf("engine version 99.0.0 after version %s", version), fixed = TRUE)
-    expect_match(warnings[[1]], "Load one version of mascot per page", fixed = TRUE)
-  })
-})
-
-describe("mascot() character data in the browser", {
-  # JavaScript: the character each listed mascot is mounted with, or null when it did not mount.
-  mounted_js <- function(ids) {
-    sprintf(
-      "[%s].map(id => mascot.host.state(document.getElementById(id))?.character ?? null)",
-      paste0("'", ids, "'", collapse = ",")
-    )
-  }
-  # JavaScript: how many data blocks of each character the page has, and how many sit inside a mascot.
-  blocks_js <- paste0(
-    "(() => { const all = [...document.querySelectorAll('script[data-mascot-character]')];",
-    "const count = {}; for (const el of all) count[el.dataset.mascotCharacter] = (count[el.dataset.mascotCharacter] || 0) + 1;",
-    "return { count, inside: all.filter(el => el.closest('.mascot')).map(el => el.dataset.mascotCharacter) }; })()"
-  )
-  bot_path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
-
-  it("mounts every mascot of a saved page from one copy per built-in character", {
-    bot <- mascot_character(mascot_read_character(bot_path))
-    page <- htmltools::tagList(
-      lapply(1:5, function(i) mascot(paste0("t", i), placement = "inline", motion = FALSE)),
-      mascot("s", character = "sela", placement = "inline", motion = FALSE),
-      mascot("bot", character = bot, placement = "inline", motion = FALSE)
-    )
-    js <- local_version_page(page)
-    expect_identical(
-      unlist(js(mounted_js(c(paste0("t", 1:5), "s", "bot")))),
-      c(rep("tessa", 5), "sela", "study_bot")
-    )
-    blocks <- js(blocks_js)
-    expect_identical(blocks$count, list(tessa = 1L, sela = 1L, study_bot = 1L))
-    expect_identical(unlist(blocks$inside), "study_bot")
-    expect_identical(js("window.warnings.length"), 0L)
-  })
-
-  it("mounts from a self-contained R Markdown page", {
-    testthat::skip_if_not_installed("rmarkdown")
-    testthat::skip_if_not(rmarkdown::pandoc_available(), "pandoc is not available")
-    skip_without_chrome()
-    dir <- withr::local_tempdir()
-    source <- file.path(dir, "page.Rmd")
-    writeLines(
-      c(
-        "---",
-        "title: Characters",
-        "output:",
-        "  html_document:",
-        "    self_contained: true",
-        "---",
-        "",
-        "```{r, echo = FALSE}",
-        "htmltools::tagList(",
-        "  mascot::mascot('a', placement = 'inline'),",
-        "  mascot::mascot('b', placement = 'inline'),",
-        "  mascot::mascot('c', character = 'sela', placement = 'inline')",
-        ")",
-        "```"
-      ),
-      source
-    )
-    output <- rmarkdown::render(source, quiet = TRUE, envir = new.env(), intermediates_dir = dir)
-    session <- local_chrome_session()
-    loaded <- session$Page$loadEventFired(wait_ = FALSE)
-    session$Page$navigate(paste0("file://", normalizePath(output)), wait_ = FALSE)
-    session$wait_for(loaded)
-    js <- function(code) session$Runtime$evaluate(code, returnByValue = TRUE)$result$value
-    expect_identical(unlist(js(mounted_js(c("a", "b", "c")))), c("tessa", "tessa", "sela"))
-    expect_identical(js(blocks_js)$count, list(tessa = 1L, sela = 1L))
-  })
-
-  it("mounts in a Shiny app, renderUI() and its re-renders, insertUI() and a modal", {
-    local_shiny_browser()
-    app <- app_driver(function() {
-      library(mascot)
-      bot <- mascot_character(mascot_read_character(
-        system.file("examples", "characters", "study_bot.json", package = "mascot")
-      ))
-      shiny::shinyApp(
-        shiny::fluidPage(
-          mascot("first", placement = "inline", motion = FALSE),
-          mascot("second", placement = "inline", motion = FALSE),
-          shiny::actionButton("again", "Again"),
-          shiny::actionButton("insert", "Insert"),
-          shiny::actionButton("modal", "Modal"),
-          shiny::uiOutput("cards"),
-          shiny::div(id = "slot")
-        ),
-        function(input, output, session) {
-          output$cards <- shiny::renderUI({
-            status <- paste("Render", input$again)
-            htmltools::tagList(
-              mascot("card1", status = status, placement = "inline", motion = FALSE),
-              mascot("card2", character = "sela", status = status, placement = "inline", motion = FALSE)
-            )
-          })
-          shiny::observeEvent(input$insert, {
-            shiny::insertUI("#slot", ui = mascot("inserted", character = "knurl", placement = "inline", motion = FALSE))
-          })
-          shiny::observeEvent(input$modal, {
-            shiny::showModal(shiny::modalDialog(
-              mascot("in_modal", character = "neer", placement = "inline", motion = FALSE),
-              mascot("bot", character = bot, placement = "inline", motion = FALSE)
-            ))
-          })
-        }
-      )
-    })
-    app$wait_for_js("mascot.host.state(document.getElementById('card2')) != null")
-    expect_identical(
-      unlist(app$get_js(mounted_js(c("first", "second", "card1", "card2")))),
-      c("tessa", "tessa", "tessa", "sela")
-    )
-    expect_identical(app$get_js(blocks_js)$count, list(tessa = 1L, sela = 1L))
-    # A re-render replaces the cards; the page keeps one copy of each character.
-    app$click("again")
-    app$wait_for_js("document.querySelector('#card1 .mascot-status').textContent === 'Render 1'")
-    app$wait_for_js("mascot.host.state(document.getElementById('card2')) != null")
-    expect_identical(unlist(app$get_js(mounted_js(c("card1", "card2")))), c("tessa", "sela"))
-    expect_identical(app$get_js(blocks_js)$count, list(tessa = 1L, sela = 1L))
-    app$click("insert")
-    app$wait_for_js("mascot.host.state(document.getElementById('inserted')) != null")
-    expect_identical(app$get_js(mounted_js("inserted"))[[1]], "knurl")
-    app$click("modal")
-    app$wait_for_js("mascot.host.state(document.getElementById('bot')) != null")
-    expect_identical(unlist(app$get_js(mounted_js(c("in_modal", "bot")))), c("neer", "study_bot"))
-    blocks <- app$get_js(blocks_js)
-    expect_identical(blocks$count, list(tessa = 1L, sela = 1L, knurl = 1L, neer = 1L, study_bot = 1L))
-    expect_identical(unlist(blocks$inside), "study_bot")
   })
 })

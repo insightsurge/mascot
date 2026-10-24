@@ -71,6 +71,51 @@ page_with <- function(
   js
 }
 
+# A harness for the player contract: animation frames run only when the test fires them (a timestamp in ms; the player
+# turns it into frames at 30 per second), the reduced-motion preference is a stub the test sets, and the harness counts
+# each clear of a canvas (one per drawn frame), the opacity of each composite and the last frame number the player
+# asked its tracks for. `a` is Alpha Two and `b` is Alpha Three. Players are destroyed and the stubs restored afterwards.
+contract_js <- function(code) {
+  checkmate::assert_string(code)
+  paste(
+    "(() => {",
+    "const raf = window.requestAnimationFrame, cancel = window.cancelAnimationFrame, match = window.matchMedia;",
+    "const motion = mascot.motion, queued = new Map(), listeners = new Set(), players = [], composites = [];",
+    "let id = 0, clears = 0, lastFrame = null;",
+    "const media = { matches: false, addEventListener: (type, fn) => listeners.add(fn),",
+    "  removeEventListener: (type, fn) => listeners.delete(fn) };",
+    "window.requestAnimationFrame = (fn) => { queued.set(++id, fn); return id; };",
+    "window.cancelAnimationFrame = (n) => queued.delete(n); window.matchMedia = () => media;",
+    "const frameAt = motion.tracks.frameAt;",
+    "mascot.motion = { ...motion, tracks: { ...motion.tracks,",
+    "  frameAt: (tracks, state, n, options) => { lastFrame = n; return frameAt(tracks, state, n, options); } } };",
+    "const a = T.load('alpha_two'), b = T.load('alpha_three');",
+    "const fire = (t) => { const batch = [...queued.values()]; queued.clear(); batch.forEach((fn) => fn(t)); };",
+    "const preference = (value) => { media.matches = value; listeners.forEach((fn) => fn({ matches: value })); };",
+    "const attempt = (fn) => { try { fn(); } catch (e) { return e.message; } return 'no error'; };",
+    "const mount = (options = {}, character = a) => {",
+    "  const c = T.canvas(), ctx = c.getContext('2d'), clear = ctx.clearRect.bind(ctx), image = ctx.drawImage.bind(ctx);",
+    "  ctx.clearRect = (...args) => { clears++; return clear(...args); };",
+    "  ctx.drawImage = (...args) => { composites.push(ctx.globalAlpha); return image(...args); };",
+    "  const p = mascot.mount(c, character, { x: 150, baseY: 270, ...options }); players.push(p); return { c, ctx, p };",
+    "};",
+    "try {",
+    code,
+    "} finally {",
+    "  players.forEach((p) => p.destroy()); mascot.motion = motion;",
+    "  window.requestAnimationFrame = raf; window.cancelAnimationFrame = cancel; window.matchMedia = match;",
+    "} })()",
+    sep = "\n"
+  )
+}
+
+# A gesture trigger runs a track-mode kit effect (only those have frames). This gives the kit's sparkle one: 30 frames.
+track_sparkle_js <- paste(
+  "window.trackSparkle = (ch) => { const k = ch.face.kit_definition.effects.sparkle;",
+  "ch.face.kit_definition.effects.sparkle = { ...k, mode: 'track', frames: 30, tracks: {",
+  "opacity: [[0, 0], [0.2, 1], [1, 0]], scale_x: [[0, 1], [1, 1]], scale_y: [[0, 1], [1, 1]] } }; return ch; };"
+)
+
 describe("format-v1 dispatch", {
   it("draws and moves a format-v1 character through the format-v1 modules", {
     js <- page_with()
@@ -1276,44 +1321,6 @@ describe("the player's contract", {
   })
 })
 
-# A harness for the player contract: animation frames run only when the test fires them (a timestamp in ms; the player
-# turns it into frames at 30 per second), the reduced-motion preference is a stub the test sets, and the harness counts
-# each clear of a canvas (one per drawn frame), the opacity of each composite and the last frame number the player
-# asked its tracks for. `a` is Alpha Two and `b` is Alpha Three. Players are destroyed and the stubs restored afterwards.
-contract_js <- function(code) {
-  checkmate::assert_string(code)
-  paste(
-    "(() => {",
-    "const raf = window.requestAnimationFrame, cancel = window.cancelAnimationFrame, match = window.matchMedia;",
-    "const motion = mascot.motion, queued = new Map(), listeners = new Set(), players = [], composites = [];",
-    "let id = 0, clears = 0, lastFrame = null;",
-    "const media = { matches: false, addEventListener: (type, fn) => listeners.add(fn),",
-    "  removeEventListener: (type, fn) => listeners.delete(fn) };",
-    "window.requestAnimationFrame = (fn) => { queued.set(++id, fn); return id; };",
-    "window.cancelAnimationFrame = (n) => queued.delete(n); window.matchMedia = () => media;",
-    "const frameAt = motion.tracks.frameAt;",
-    "mascot.motion = { ...motion, tracks: { ...motion.tracks,",
-    "  frameAt: (tracks, state, n, options) => { lastFrame = n; return frameAt(tracks, state, n, options); } } };",
-    "const a = T.load('alpha_two'), b = T.load('alpha_three');",
-    "const fire = (t) => { const batch = [...queued.values()]; queued.clear(); batch.forEach((fn) => fn(t)); };",
-    "const preference = (value) => { media.matches = value; listeners.forEach((fn) => fn({ matches: value })); };",
-    "const attempt = (fn) => { try { fn(); } catch (e) { return e.message; } return 'no error'; };",
-    "const mount = (options = {}, character = a) => {",
-    "  const c = T.canvas(), ctx = c.getContext('2d'), clear = ctx.clearRect.bind(ctx), image = ctx.drawImage.bind(ctx);",
-    "  ctx.clearRect = (...args) => { clears++; return clear(...args); };",
-    "  ctx.drawImage = (...args) => { composites.push(ctx.globalAlpha); return image(...args); };",
-    "  const p = mascot.mount(c, character, { x: 150, baseY: 270, ...options }); players.push(p); return { c, ctx, p };",
-    "};",
-    "try {",
-    code,
-    "} finally {",
-    "  players.forEach((p) => p.destroy()); mascot.motion = motion;",
-    "  window.requestAnimationFrame = raf; window.cancelAnimationFrame = cancel; window.matchMedia = match;",
-    "} })()",
-    sep = "\n"
-  )
-}
-
 describe("the player contract on a format-v1 character", {
   it("refuses an onChange that is not a function before drawing or adding a listener", {
     js <- page_with()
@@ -1527,6 +1534,15 @@ describe("the player contract on a format-v1 character", {
 })
 
 describe("the swapTiming mount option", {
+  # The character shown at each frame of a swap that starts at frame 0, and whether it is still swapping.
+  swap_rows_js <- function(timing, frames) {
+    sprintf(
+      "const { p } = mount({ swapTiming: %s }); p.pause(); p.update({ character: b });
+      return [%s].map((f) => { p.seek(f); const s = p.current(); return `${f}:${s.character === a.id ? 'a' : 'b'}:${s.swapping}`; });",
+      timing,
+      paste(frames, collapse = ", ")
+    )
+  }
   it("refuses a value that is not an object of positive finite frame counts, before drawing", {
     js <- page_with()
     r <- js(contract_js(
@@ -1547,16 +1563,6 @@ describe("the swapTiming mount option", {
     expect_equal(r$drawn, 0)
     expect_equal(r$listeners, 0)
   })
-
-  # The character shown at each frame of a swap that starts at frame 0, and whether it is still swapping.
-  swap_rows_js <- function(timing, frames) {
-    sprintf(
-      "const { p } = mount({ swapTiming: %s }); p.pause(); p.update({ character: b });
-      return [%s].map((f) => { p.seek(f); const s = p.current(); return `${f}:${s.character === a.id ? 'a' : 'b'}:${s.swapping}`; });",
-      timing,
-      paste(frames, collapse = ", ")
-    )
-  }
 
   it("rounds each duration to whole frames, at least one", {
     js <- page_with()
@@ -1587,13 +1593,6 @@ describe("the swapTiming mount option", {
     )
   })
 })
-
-# A gesture trigger runs a track-mode kit effect (only those have frames). This gives the kit's sparkle one: 30 frames.
-track_sparkle_js <- paste(
-  "window.trackSparkle = (ch) => { const k = ch.face.kit_definition.effects.sparkle;",
-  "ch.face.kit_definition.effects.sparkle = { ...k, mode: 'track', frames: 30, tracks: {",
-  "opacity: [[0, 0], [0.2, 1], [1, 0]], scale_x: [[0, 1], [1, 1]], scale_y: [[0, 1], [1, 1]] } }; return ch; };"
-)
 
 describe("recovery eases numbers and switches choices", {
   it("switches root.flip at halfway and eases a numeric channel in recover()", {
@@ -2345,7 +2344,6 @@ describe("palette wire validation", {
     expect_identical(result$colours$feature, "#2A1616")
   })
 })
-
 
 describe("standalone palette swaps", {
   it("drops unavailable palette colours and retains explicit theme settings across later refreshes", {

@@ -25,7 +25,7 @@ Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate 
 - The site is built **from `main` only, never on pull requests** (a rule, #127: a site build may need packages that
   outside contributors' pull requests can't install). It deploys from `main` to GitHub Pages
   (#115).
-- Every workflow: the least permissions it needs (`permissions: read-all`, or only the write scopes its jobs use), a
+- Every workflow: the least permissions it needs (`permissions: read-all` or `{}`, and only the write scopes its jobs use, set on those jobs), a
   `concurrency` group (with `cancel-in-progress`, except where a cancelled run on `main` would leave pushed commits
   unscanned or a release half done), a `timeout-minutes` on every job (a few times its longest recent run), Ubuntu pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions
   outside `actions/` and `r-lib/` by commit SHA with a version comment.
@@ -35,6 +35,10 @@ Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate 
   repository, #522). A new part: write it with `pr-report-part`, add its workflow to `.github/pr-report.json` and give
   that workflow a `report` job like the others. No `workflow_run` workflow: it runs only from `main`, so the pull
   request that changes it can't try it.
+- `release.yml` runs only when started by hand on `main` (never on merge or push: a published tag can't move, and CRAN
+  may ask for changes after a merge). Its checks and the tag are in `.github/scripts/release-check.sh`; after changing
+  either, run `bash .github/scripts/test-release-check.sh` (throwaway repositories, no network). Checkout there keeps
+  no credentials; only the release job has `contents: write`.
 - Keep new jobs on Ubuntu unless the platform is the point (macOS minutes count 10x, Windows 2x).
 - The tests run in two processes at once (`Config/testthat/parallel: true` in `DESCRIPTION`; two is testthat's
   default and CRAN's limit). R CMD check and the coverage job get two because their tests run without the site

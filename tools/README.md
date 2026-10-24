@@ -84,7 +84,16 @@ mode that checks the same thing locally, which is the evidence when CI can't run
 | `gate-self-test.yaml` | The gate's self-test, when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change (and on demand) | `Rscript tools/test-cran-gate.R` |
 | `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build, from `main` only | `Rscript tools/build-site.R` |
 | `gitleaks.yml` | A scan for committed secrets | |
-| `release.yml` | The tag and GitHub release when a release version reaches `main` | |
+| `release.yml` | Started by hand on `main`, after CRAN accepts the version: checks that `DESCRIPTION`, the `NEWS.md` heading and the engine changelog heading agree and the NEWS section has text, then tags `vX.Y.Z` and creates the GitHub release (never on merge) | `bash .github/scripts/test-release-check.sh` |
+
+**Releasing.** The release pull request (version, NEWS, `cran-comments.md`) stays open while CRAN reviews; CRAN's
+comments become commits on it. After CRAN accepts and the pull request is merged, start the workflow by hand: Actions,
+release, Run workflow, branch `main`, and leave the commit empty (the tip of `main`) or give the accepted commit's SHA.
+The workflow's logic is `.github/scripts/release-check.sh`: a commit that is not on `main`, versions or headings that
+disagree, an empty NEWS section or an existing tag on another commit fail before anything is published. A re-run after
+a failed release step creates the missing release from the existing tag; a re-run after success does nothing. Tags
+and releases are never moved or deleted: a fix after publication gets a new version. A development version
+(`X.Y.Z.9000`) is published as a pre-release, with the heading `# mascot (development version)`.
 
 A pull request that changes only documentation (the README, `docs/`, the website's articles and settings, the issue
 forms and the repository's notes) starts the R jobs and skips their steps (`.github/scripts/r-changes.sh`), so every

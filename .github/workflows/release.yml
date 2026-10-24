@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       commit:
-        description: Commit to release, as a SHA on main (empty: the tip of main)
+        description: "Commit to release, as a SHA on main (empty: the tip of main)"
         required: false
         default: ""
         type: string
@@ -34,7 +34,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.commit || github.sha }}
           fetch-depth: 0  # the history, to see that the commit is on main, and every tag
           persist-credentials: false
       - name: Check, tag and release
@@ -42,4 +41,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           COMMIT: ${{ inputs.commit || github.sha }}
+        # Runs the script from the tip of main (the checkout); it reads the released commit's files with git show.
         run: bash .github/scripts/release-check.sh --publish "$COMMIT"

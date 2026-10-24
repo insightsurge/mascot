@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* An inline mascot's reserved speech-bubble space lets clicks reach neighbouring page controls, both when no bubble shows and in the empty space around a shown bubble. The bubble's text and close button still take pointer events (#506).
+
 * A floating mascot with `mascot_placement(drag = "snap")` that is taller or wider than the window (less its margins) now snaps to the corner it is dragged to. Before, a drag to the top of a short window, such as a phone held sideways, snapped it back to the bottom (#513).
 
 * In `mascot_studio()`, keyboard focus stays on a chip of the current call when the studio redraws the call, for example just after Reset; before, it could fall back to the page. The theme view's Check contrast and Show every mood buttons now say they are busy until the result of that click, or an error, shows, instead of coming back a moment early or when an earlier result is redrawn (#513, #530).

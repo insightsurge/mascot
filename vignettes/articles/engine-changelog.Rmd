@@ -9,6 +9,17 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+## 2026-10-24 — Empty speech-bubble space lets clicks through (#506)
+
+**In brief:** The reserved space above an inline mascot lets clicks reach neighbouring page controls when no
+bubble shows and around a shown bubble. The bubble, its scrolling text and its close button remain interactive.
+
+**Technical:**
+
+* `mascot.css`: `.mascot-bubble-region` uses `pointer-events: none`, and `.mascot-bubble` restores
+  `pointer-events: auto` for itself and its contents. The reserved dimensions and floating placement rules stay
+  the same; status text and reduced-motion rules are unchanged.
+
 ## 2026-10-23 — A dragged mascot snaps to the corner it was dropped at (#513)
 
 **In brief:** With `drag = "snap"`, a mascot taller (or wider) than the window less its margins now snaps to the

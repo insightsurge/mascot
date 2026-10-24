@@ -49,8 +49,10 @@ body.quarto-dark {
   text-align: center;
 }
 
-/* Reserve the same space when empty; long messages scroll rather than moving the page. */
+/* Reserve the same space when empty; long messages scroll rather than moving the page.
+   Let clicks through the reserved space; only the bubble itself takes pointer events. */
 .mascot-bubble-region {
+  pointer-events: none;
   order: -1;
   display: flex;
   flex-direction: column;
@@ -90,6 +92,7 @@ body.quarto-dark {
 }
 
 .mascot-bubble {
+  pointer-events: auto;
   position: relative;
   max-width: 16em;
   padding: 0.75em;

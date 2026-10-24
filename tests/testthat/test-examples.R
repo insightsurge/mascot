@@ -477,8 +477,7 @@ describe("the studio's controls", {
       as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
     })
     for (page in pages) {
-      ids <- regmatches(page, gregexpr(' id="[^"]+"', page))[[1]]
-      expect_identical(anyDuplicated(ids), 0L)
+      expect_unique_ids(page)
     }
     html <- paste(unlist(pages), collapse = "\n")
     expect_match(pages[[1]], 'id="code_tray_body"', fixed = TRUE)

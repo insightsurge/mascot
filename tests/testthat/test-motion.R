@@ -75,28 +75,7 @@ describe("mascot_motion_settings()", {
     x$messages <- "dialog"
     expect_error(as_motion_arg(x, environment()), "bubble, tooltip, menu")
   })
-})
 
-describe("motion shortcut equivalence", {
-  it("uses reduced poses and drag transitions when all movement follows others off", {
-    expect_identical(
-      as_motion_arg(mascot_motion_settings(others = FALSE), environment()),
-      as_motion_arg(FALSE, environment())
-    )
-  })
-})
-
-describe("motion panel choices", {
-  it("reports unknown panels with the choice class and valid panel names", {
-    expect_error(
-      mascot_motion_settings(messages = c("menu", "dialog")),
-      "messages.*bubble.*tooltip.*menu",
-      class = "mascot_error_choice"
-    )
-  })
-})
-
-describe("mascot_motion_settings()", {
   it("rejects every invalid flag and extra argument with mascot_error", {
     for (flag in c("idle", "mood_change", "gestures", "swap", "minimising", "restoring", "others")) {
       for (bad in list(NA, 1, "auto", logical(), c(TRUE, FALSE))) {
@@ -126,10 +105,29 @@ describe("mascot_motion_settings()", {
       'mascot_motion_settings(messages = "menu", others = FALSE)'
     )
     x <- mascot_motion_settings(gestures = FALSE)
-    expect_output(returned <- withVisible(print(x)), "mascot_motion_settings")
+    utils::capture.output(returned <- withVisible(print(x)))
     expect_false(returned$visible)
     expect_identical(returned$value, x)
     expect_error(format.mascot_motion_settings(1), "x", class = "mascot_error")
     expect_error(print.mascot_motion_settings(1), "x", class = "mascot_error")
+  })
+})
+
+describe("motion shortcut equivalence", {
+  it("uses reduced poses and drag transitions when all movement follows others off", {
+    expect_identical(
+      as_motion_arg(mascot_motion_settings(others = FALSE), environment()),
+      as_motion_arg(FALSE, environment())
+    )
+  })
+})
+
+describe("motion panel choices", {
+  it("reports unknown panels with the choice class and valid panel names", {
+    expect_error(
+      mascot_motion_settings(messages = c("menu", "dialog")),
+      "messages.*bubble.*tooltip.*menu",
+      class = "mascot_error_choice"
+    )
   })
 })

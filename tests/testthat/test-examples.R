@@ -590,6 +590,15 @@ describe("mascot_example()", {
     page <- captured$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = ""))$content
     expect_match(as.character(page), "<title>Theme a mascot</title>", fixed = TRUE)
   })
+
+  it("checks every argument and names valid examples for unknown names", {
+    for (bad in list(NULL, NA_character_, "", 1, c("studio", "modules"))) {
+      expect_error(mascot_example(bad, run = FALSE), "Assertion on 'name' failed")
+    }
+    for (bad in list(NULL, NA, 1, "FALSE", c(TRUE, FALSE))) {
+      expect_error(mascot_example("studio", run = bad), "Assertion on 'run' failed")
+    }
+  })
 })
 
 describe("studio inspector labels, colour groups and menu ids", {
@@ -3360,16 +3369,5 @@ describe("the studio public character readers", {
     expect_match(check, "Error: ", fixed = TRUE)
     expect_match(check, "format_version", fixed = TRUE)
     expect_match(check, "built-in characters only", fixed = TRUE)
-  })
-})
-
-describe("mascot_example()", {
-  it("checks every argument and names valid examples for unknown names", {
-    for (bad in list(NULL, NA_character_, "", 1, c("studio", "modules"))) {
-      expect_error(mascot_example(bad, run = FALSE), "Assertion on 'name' failed")
-    }
-    for (bad in list(NULL, NA, 1, "FALSE", c(TRUE, FALSE))) {
-      expect_error(mascot_example("studio", run = bad), "Assertion on 'run' failed")
-    }
   })
 })

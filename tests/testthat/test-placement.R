@@ -68,62 +68,7 @@ describe("mascot_placement()", {
     expect_match(html, 'data-position="top-left"', fixed = TRUE)
     expect_match(as.character(mascot(id = "a")), 'data-drag="false"', fixed = TRUE)
   })
-})
 
-describe("mascot_placement() named arguments", {
-  it("keeps the agreed signature and rejects both forms of extra argument", {
-    expect_identical(names(formals(mascot_placement)), c("position", "...", "minimise", "drag"))
-    expect_error(mascot_placement("bottom-right", typo = 1), "Unexpected arguments", class = "mascot_error")
-    expect_error(mascot_placement("bottom-right", 1), "Name the optional arguments", class = "mascot_error")
-  })
-})
-
-describe("placement migration errors", {
-  it("rejects both logical drag modes with the none hint in helpers and shortcuts", {
-    for (drag in c(FALSE, TRUE)) {
-      expect_error(mascot_placement(drag = drag), 'drag = "none"', class = "mascot_error")
-      expect_error(mascot("helper", placement = list(drag = drag)), 'drag = "none"', class = "mascot_error")
-    }
-    expect_error(mascot("helper", placement = "floating"), "bottom-right", class = "mascot_error")
-  })
-  it("retains both placement and general message classes", {
-    expect_message(mascot_placement("inline", drag = "none"), class = "mascot_placement_ignored")
-    expect_message(mascot_placement("inline", minimise = TRUE), class = "mascot_message")
-  })
-})
-
-describe("public argument error classes", {
-  it("keeps the argument name and adds mascot_error to invalid types", {
-    expect_error(mascot_placement(position = 1), "position", class = "mascot_error")
-    expect_error(mascot_placement(minimise = 1), "minimise", class = "mascot_error")
-    expect_error(mascot_placement(drag = 1), "drag", class = "mascot_error")
-  })
-  it("adds mascot_error to the registered format and print methods", {
-    expect_error(format.mascot_placement(1), "x", class = "mascot_error")
-    expect_error(print.mascot_placement(1), "x", class = "mascot_error")
-  })
-})
-
-describe("drag choices", {
-  it("uses the choice class for unknown strings and logical migration errors", {
-    expect_error(mascot_placement(drag = "wrong"), class = "mascot_error_choice")
-    expect_error(mascot_placement(drag = TRUE), class = "mascot_error_choice")
-  })
-})
-
-describe("drag mode guidance", {
-  it("prints logical values without quotes and explains every mode", {
-    error <- tryCatch(mascot_placement(drag = TRUE), error = identity)
-    message <- conditionMessage(error)
-    expect_match(message, "TRUE is not a drag mode", fixed = TRUE)
-    expect_match(message, '"none" disables dragging', fixed = TRUE)
-    expect_match(message, '"snap" moves to the nearest corner', fixed = TRUE)
-    expect_match(message, '"free" stays where dropped', fixed = TRUE)
-    expect_identical(error$value, TRUE)
-  })
-})
-
-describe("mascot_placement()", {
   it("checks positions, flags and unknown fields", {
     for (x in list(NULL, NA, 1, c(TRUE, FALSE))) {
       expect_error(mascot_placement("bottom-right", minimise = x), "minimise")
@@ -207,5 +152,58 @@ describe("mascot_placement()", {
       list(floating = FALSE, position = "bottom-right", minimise = FALSE, drag = FALSE)
     )
     expect_identical(mascot_placement(minimise = FALSE)$minimise, FALSE)
+  })
+})
+
+describe("mascot_placement() named arguments", {
+  it("keeps the agreed signature and rejects both forms of extra argument", {
+    expect_identical(names(formals(mascot_placement)), c("position", "...", "minimise", "drag"))
+    expect_error(mascot_placement("bottom-right", typo = 1), "Unexpected arguments", class = "mascot_error")
+    expect_error(mascot_placement("bottom-right", 1), "Name the optional arguments", class = "mascot_error")
+  })
+})
+
+describe("placement migration errors", {
+  it("rejects both logical drag modes with the none hint in helpers and shortcuts", {
+    for (drag in c(FALSE, TRUE)) {
+      expect_error(mascot_placement(drag = drag), 'drag = "none"', class = "mascot_error")
+      expect_error(mascot("helper", placement = list(drag = drag)), 'drag = "none"', class = "mascot_error")
+    }
+    expect_error(mascot("helper", placement = "floating"), "bottom-right", class = "mascot_error")
+  })
+  it("retains both placement and general message classes", {
+    expect_message(mascot_placement("inline", drag = "none"), class = "mascot_placement_ignored")
+    expect_message(mascot_placement("inline", minimise = TRUE), class = "mascot_message")
+  })
+})
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_placement(position = 1), "position", class = "mascot_error")
+    expect_error(mascot_placement(minimise = 1), "minimise", class = "mascot_error")
+    expect_error(mascot_placement(drag = 1), "drag", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_placement(1), "x", class = "mascot_error")
+    expect_error(print.mascot_placement(1), "x", class = "mascot_error")
+  })
+})
+
+describe("drag choices", {
+  it("uses the choice class for unknown strings and logical migration errors", {
+    expect_error(mascot_placement(drag = "wrong"), class = "mascot_error_choice")
+    expect_error(mascot_placement(drag = TRUE), class = "mascot_error_choice")
+  })
+})
+
+describe("drag mode guidance", {
+  it("prints logical values without quotes and explains every mode", {
+    error <- tryCatch(mascot_placement(drag = TRUE), error = identity)
+    message <- conditionMessage(error)
+    expect_match(message, "TRUE is not a drag mode", fixed = TRUE)
+    expect_match(message, '"none" disables dragging', fixed = TRUE)
+    expect_match(message, '"snap" moves to the nearest corner', fixed = TRUE)
+    expect_match(message, '"free" stays where dropped', fixed = TRUE)
+    expect_identical(error$value, TRUE)
   })
 })

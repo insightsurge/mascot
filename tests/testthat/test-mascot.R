@@ -35,6 +35,64 @@ describe("mascot()", {
     expect_error(mascot("bounded", status = strrep("x", 262145)), "capacity", class = "mascot_error")
     expect_error(mascot("bounded", bubble = strrep("x", 262145)), "capacity", class = "mascot_error")
   })
+
+  it("returns the accessible tag structure and a runtime dependency", {
+    tag <- mascot(id = "helper")
+    expect_s3_class(tag, "shiny.tag")
+    expect_identical(tag$name, "div")
+    expect_identical(
+      tag$attribs[names(tag$attribs) != "data-mount-token"],
+      list(
+        class = "mascot",
+        id = "helper",
+        tabindex = "-1",
+        `data-character` = "tessa",
+        `data-mood` = "idle",
+        `data-status` = "mood",
+        `data-size` = 160,
+        `data-small-screen` = "auto",
+        `data-floating` = "true",
+        `data-position` = "bottom-right",
+        `data-minimise` = "true",
+        `data-drag` = "false",
+        `data-reduced` = "auto",
+        `data-idle` = "true",
+        `data-mood-change` = "true",
+        `data-gestures` = "true",
+        `data-swap` = "true",
+        `data-minimising` = "true",
+        `data-restoring` = "true",
+        `data-messages` = "bubble,tooltip,menu",
+        `data-others` = "true",
+        `data-mascot-version` = as.character(utils::packageVersion("mascot"))
+      )
+    )
+    dependencies <- htmltools::findDependencies(tag)
+    expect_identical(vapply(dependencies, function(d) d$name, character(1)), c("mascot", "mascot-character-tessa"))
+    dep <- dependencies[[1]]
+    expect_identical(dep$name, "mascot")
+    expect_identical(dep$version, as.character(utils::packageVersion("mascot")))
+    expect_identical(script_files(dep), engine_scripts)
+    # Every listed file ships with the package, so a page works offline.
+    expect_true(all(file.exists(file.path(system.file("www", package = "mascot"), script_files(dep)))))
+    expect_identical(dep$stylesheet, "mascot.css")
+    expect_identical(dep$package, "mascot")
+    expect_false(dep$all_files)
+  })
+  it("attributes choice errors to mascot and rejects every invalid argument", {
+    expect_error(mascot(), "missing", class = "mascot_error")
+    for (id in list("", "has space", "a\nb", 1, NA_character_)) {
+      expect_error(mascot(id = id), "Assertion on 'id' failed")
+    }
+    for (x in list(NULL, 1, "", NA_character_, c("a", "b"))) {
+      expect_error(mascot("a", character = x), "Assertion on 'character' failed")
+      expect_error(mascot(id = "a", mood = x), "mood.*non-empty string")
+    }
+    for (x in list(1, "", NA_character_, c("a", "b"))) {
+      expect_error(mascot(id = "a", status = x), "mascot_status", fixed = TRUE)
+    }
+    expect_error(mascot(id = "a", mood = "{oops"), "not a mood", fixed = TRUE)
+  })
 })
 
 describe("argument converters", {
@@ -254,6 +312,25 @@ describe("with_mascot_asserts()", {
     expect_identical(result, checkmate::assert_string("ready"))
     expect_error(with_mascot_asserts(NULL, call = NULL), "call")
   })
+
+  it("keeps the original assertion message once and adds mascot_error", {
+    value <- 1
+    original <- tryCatch(checkmate::assert_string(value), error = identity)
+    wrapped <- tryCatch(
+      with_mascot_asserts({
+        checkmate::assert_string(value)
+      }),
+      error = identity
+    )
+
+    expect_s3_class(wrapped, "mascot_error")
+    expect_s3_class(wrapped, "error")
+    expect_identical(
+      trimws(cli::ansi_strip(strsplit(conditionMessage(wrapped), "\n", fixed = TRUE)[[1]])),
+      trimws(strsplit(conditionMessage(original), "\n", fixed = TRUE)[[1]])
+    )
+    expect_null(wrapped$parent)
+  })
 })
 
 describe("static motion switches", {
@@ -424,6 +501,11 @@ describe("construction diagnostics for mood ids and unnamed arguments", {
     expect_identical(error$choices, c("idle", "happy"))
     expect_identical(error$value, "bad")
   })
+
+  it("counts unnamed arguments and keeps named arguments listed", {
+    expect_error(mascot("helper", 1, 2, typo = 3), '2 unnamed arguments, "typo"', fixed = TRUE)
+    expect_error(mascot("helper", 1), "Unexpected arguments: an unnamed argument.", fixed = TRUE)
+  })
 })
 
 describe("mascot() documentation", {
@@ -481,66 +563,6 @@ describe("the engine version", {
     attributes <- lapply(dep$script, function(script) script[names(script) != "src"])
     expect_identical(attributes[[1]], list(`data-mascot-version` = version))
     expect_true(all(lengths(attributes[-1]) == 0))
-  })
-})
-
-describe("mascot()", {
-  it("returns the accessible tag structure and a runtime dependency", {
-    tag <- mascot(id = "helper")
-    expect_s3_class(tag, "shiny.tag")
-    expect_identical(tag$name, "div")
-    expect_identical(
-      tag$attribs[names(tag$attribs) != "data-mount-token"],
-      list(
-        class = "mascot",
-        id = "helper",
-        tabindex = "-1",
-        `data-character` = "tessa",
-        `data-mood` = "idle",
-        `data-status` = "mood",
-        `data-size` = 160,
-        `data-small-screen` = "auto",
-        `data-floating` = "true",
-        `data-position` = "bottom-right",
-        `data-minimise` = "true",
-        `data-drag` = "false",
-        `data-reduced` = "auto",
-        `data-idle` = "true",
-        `data-mood-change` = "true",
-        `data-gestures` = "true",
-        `data-swap` = "true",
-        `data-minimising` = "true",
-        `data-restoring` = "true",
-        `data-messages` = "bubble,tooltip,menu",
-        `data-others` = "true",
-        `data-mascot-version` = as.character(utils::packageVersion("mascot"))
-      )
-    )
-    dependencies <- htmltools::findDependencies(tag)
-    expect_identical(vapply(dependencies, function(d) d$name, character(1)), c("mascot", "mascot-character-tessa"))
-    dep <- dependencies[[1]]
-    expect_identical(dep$name, "mascot")
-    expect_identical(dep$version, as.character(utils::packageVersion("mascot")))
-    expect_identical(script_files(dep), engine_scripts)
-    # Every listed file ships with the package, so a page works offline.
-    expect_true(all(file.exists(file.path(system.file("www", package = "mascot"), script_files(dep)))))
-    expect_identical(dep$stylesheet, "mascot.css")
-    expect_identical(dep$package, "mascot")
-    expect_false(dep$all_files)
-  })
-  it("attributes choice errors to mascot and rejects every invalid argument", {
-    expect_error(mascot(), "missing", class = "mascot_error")
-    for (id in list("", "has space", "a\nb", 1, NA_character_)) {
-      expect_error(mascot(id = id), "Assertion on 'id' failed")
-    }
-    for (x in list(NULL, 1, "", NA_character_, c("a", "b"))) {
-      expect_error(mascot("a", character = x), "Assertion on 'character' failed")
-      expect_error(mascot(id = "a", mood = x), "mood.*non-empty string")
-    }
-    for (x in list(1, "", NA_character_, c("a", "b"))) {
-      expect_error(mascot(id = "a", status = x), "mascot_status", fixed = TRUE)
-    }
-    expect_error(mascot(id = "a", mood = "{oops"), "not a mood", fixed = TRUE)
   })
 })
 
@@ -614,33 +636,5 @@ describe("mascot() themes", {
       '"mode":"light"',
       fixed = TRUE
     )
-  })
-})
-
-describe("with_mascot_asserts()", {
-  it("keeps the original assertion message once and adds mascot_error", {
-    value <- 1
-    original <- tryCatch(checkmate::assert_string(value), error = identity)
-    wrapped <- tryCatch(
-      with_mascot_asserts({
-        checkmate::assert_string(value)
-      }),
-      error = identity
-    )
-
-    expect_s3_class(wrapped, "mascot_error")
-    expect_s3_class(wrapped, "error")
-    expect_identical(
-      trimws(cli::ansi_strip(strsplit(conditionMessage(wrapped), "\n", fixed = TRUE)[[1]])),
-      trimws(strsplit(conditionMessage(original), "\n", fixed = TRUE)[[1]])
-    )
-    expect_null(wrapped$parent)
-  })
-})
-
-describe("construction diagnostics for mood ids and unnamed arguments", {
-  it("counts unnamed arguments and keeps named arguments listed", {
-    expect_error(mascot("helper", 1, 2, typo = 3), '2 unnamed arguments, "typo"', fixed = TRUE)
-    expect_error(mascot("helper", 1), "Unexpected arguments: an unnamed argument.", fixed = TRUE)
   })
 })

@@ -58,66 +58,7 @@ describe("mascot_popup_menu()", {
     expect_null(parsed$label)
     expect_true(parsed$tooltip)
   })
-})
 
-describe("public argument error classes", {
-  it("keeps the argument name and adds mascot_error to invalid types", {
-    expect_error(mascot_popup_menu(items = 1), "items", class = "mascot_error")
-    expect_error(mascot_popup_menu(direction = 1), "direction", class = "mascot_error")
-    expect_error(mascot_popup_menu(label = 1), "label", class = "mascot_error")
-    expect_error(mascot_popup_menu(tooltip = 1), "tooltip", class = "mascot_error")
-  })
-  it("adds mascot_error to the registered format and print methods", {
-    expect_error(format.mascot_popup_menu(1), "x", class = "mascot_error")
-    expect_error(print.mascot_popup_menu(1), "x", class = "mascot_error")
-  })
-})
-
-describe("mascot_popup_menu() argument safeguards", {
-  it("requires items whenever direction, label or tooltip is explicitly supplied", {
-    for (options in list(
-      list(direction = "auto"),
-      list(direction = "top"),
-      list(label = NULL),
-      list(label = "Help"),
-      list(tooltip = TRUE),
-      list(tooltip = FALSE)
-    )) {
-      expect_error(do.call(mascot_popup_menu, options), "items.*NULL", class = "mascot_error")
-      expect_error(do.call(mascot_popup_menu, c(list(items = NULL), options)), "items.*NULL", class = "mascot_error")
-    }
-    expect_identical(as_click_arg(mascot_popup_menu(NULL), environment()), list(type = "none"))
-  })
-  it("includes tooltip among the valid names in an unexpected argument error", {
-    expect_error(
-      mascot_popup_menu(c(help = "Help"), tooltp = FALSE),
-      "Name the optional arguments.*tooltip",
-      class = "mascot_error"
-    )
-  })
-})
-
-describe("disabled popup menus", {
-  it("validates and sends the disabled flag, including the empty-helper safeguard", {
-    expect_false(mascot_popup_menu(c(help = "Help"))$disabled)
-    expect_true(as_click_arg(mascot_popup_menu(c(help = "Help"), disabled = TRUE), environment())$disabled)
-    for (bad in list(NA, NULL, 1, "yes", c(TRUE, FALSE))) {
-      expect_error(mascot_popup_menu(c(help = "Help"), disabled = bad), "disabled", class = "mascot_error")
-    }
-    for (flag in c(TRUE, FALSE)) {
-      expect_error(mascot_popup_menu(disabled = flag), "items.*NULL", class = "mascot_error")
-    }
-    expect_error(mascot_popup_menu(c(help = "Help"), disbled = TRUE), "optional arguments.*disabled")
-    state <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
-    state$click <- as_click_arg(mascot_popup_menu(c(help = "Help"), disabled = TRUE), environment())
-    expect_no_error(mascot_baseline_check(state))
-    value <- mascot_popup_menu(c(help = "Help"))
-    value$disabled <- "yes"
-    expect_match(popup_menu_problem(value), "disabled")
-  })
-})
-
-describe("mascot_popup_menu()", {
   it("rejects every invalid item, id, label and tooltip value with the argument named", {
     for (x in list(character(), 1, NA_character_, "", c(a = NA_character_))) {
       expect_error(mascot_popup_menu(x), "Assertion on 'items' failed")
@@ -187,5 +128,62 @@ describe("mascot_popup_menu()", {
       ),
       "items.*non-empty named character"
     )
+  })
+})
+
+describe("public argument error classes", {
+  it("keeps the argument name and adds mascot_error to invalid types", {
+    expect_error(mascot_popup_menu(items = 1), "items", class = "mascot_error")
+    expect_error(mascot_popup_menu(direction = 1), "direction", class = "mascot_error")
+    expect_error(mascot_popup_menu(label = 1), "label", class = "mascot_error")
+    expect_error(mascot_popup_menu(tooltip = 1), "tooltip", class = "mascot_error")
+  })
+  it("adds mascot_error to the registered format and print methods", {
+    expect_error(format.mascot_popup_menu(1), "x", class = "mascot_error")
+    expect_error(print.mascot_popup_menu(1), "x", class = "mascot_error")
+  })
+})
+
+describe("mascot_popup_menu() argument safeguards", {
+  it("requires items whenever direction, label or tooltip is explicitly supplied", {
+    for (options in list(
+      list(direction = "auto"),
+      list(direction = "top"),
+      list(label = NULL),
+      list(label = "Help"),
+      list(tooltip = TRUE),
+      list(tooltip = FALSE)
+    )) {
+      expect_error(do.call(mascot_popup_menu, options), "items.*NULL", class = "mascot_error")
+      expect_error(do.call(mascot_popup_menu, c(list(items = NULL), options)), "items.*NULL", class = "mascot_error")
+    }
+    expect_identical(as_click_arg(mascot_popup_menu(NULL), environment()), list(type = "none"))
+  })
+  it("includes tooltip among the valid names in an unexpected argument error", {
+    expect_error(
+      mascot_popup_menu(c(help = "Help"), tooltp = FALSE),
+      "Name the optional arguments.*tooltip",
+      class = "mascot_error"
+    )
+  })
+})
+
+describe("disabled popup menus", {
+  it("validates and sends the disabled flag, including the empty-helper safeguard", {
+    expect_false(mascot_popup_menu(c(help = "Help"))$disabled)
+    expect_true(as_click_arg(mascot_popup_menu(c(help = "Help"), disabled = TRUE), environment())$disabled)
+    for (bad in list(NA, NULL, 1, "yes", c(TRUE, FALSE))) {
+      expect_error(mascot_popup_menu(c(help = "Help"), disabled = bad), "disabled", class = "mascot_error")
+    }
+    for (flag in c(TRUE, FALSE)) {
+      expect_error(mascot_popup_menu(disabled = flag), "items.*NULL", class = "mascot_error")
+    }
+    expect_error(mascot_popup_menu(c(help = "Help"), disbled = TRUE), "optional arguments.*disabled")
+    state <- mascot_state_defaults(list(id = "tessa", name = "Tessa", json = character_json("tessa")))
+    state$click <- as_click_arg(mascot_popup_menu(c(help = "Help"), disabled = TRUE), environment())
+    expect_no_error(mascot_baseline_check(state))
+    value <- mascot_popup_menu(c(help = "Help"))
+    value$disabled <- "yes"
+    expect_match(popup_menu_problem(value), "disabled")
   })
 })

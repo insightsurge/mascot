@@ -165,6 +165,27 @@ describe("mascot_theme()", {
     expect_error(theme_contrast("black", 1), "'background'")
     expect_error(theme_tag(1), "'theme'")
   })
+
+  it("warns once per supplied role and mode without altering low-contrast colours", {
+    withr::local_options(mascot.contrast_warnings = TRUE)
+    warned <- character()
+    value <- withCallingHandlers(
+      as_theme_arg(mascot_theme(light = list(body = "white"), dark = list(rim = "#212529")), environment()),
+      warning = function(w) {
+        warned <<- c(warned, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    )
+    expect_length(warned, 2)
+    expect_match(warned[[1]], 'role "body" in light mode')
+    expect_match(warned[[2]], 'role "rim" in dark mode')
+    expect_identical(value$light$body, "#FFFFFF")
+    expect_identical(value$dark$rim, "#212529")
+    expect_equal(theme_contrast("black", "white"), 21)
+    expect_equal(theme_contrast("rgba(0,0,0,0)", "white"), 1)
+    expect_equal(theme_contrast("#212529", "#212529"), 1)
+    expect_no_warning(as_theme_arg(mascot_theme(), environment()))
+  })
 })
 
 describe("theme_tag()", {
@@ -448,28 +469,5 @@ describe("theme_map_problem() message", {
       ". See `mascot_colour_roles()` for each character's roles."
     )
     expect_identical(theme_map_problem(list(bdoy = "blue"), "theme", roles), expected)
-  })
-})
-
-describe("mascot_theme()", {
-  it("warns once per supplied role and mode without altering low-contrast colours", {
-    withr::local_options(mascot.contrast_warnings = TRUE)
-    warned <- character()
-    value <- withCallingHandlers(
-      as_theme_arg(mascot_theme(light = list(body = "white"), dark = list(rim = "#212529")), environment()),
-      warning = function(w) {
-        warned <<- c(warned, conditionMessage(w))
-        invokeRestart("muffleWarning")
-      }
-    )
-    expect_length(warned, 2)
-    expect_match(warned[[1]], 'role "body" in light mode')
-    expect_match(warned[[2]], 'role "rim" in dark mode')
-    expect_identical(value$light$body, "#FFFFFF")
-    expect_identical(value$dark$rim, "#212529")
-    expect_equal(theme_contrast("black", "white"), 21)
-    expect_equal(theme_contrast("rgba(0,0,0,0)", "white"), 1)
-    expect_equal(theme_contrast("#212529", "#212529"), 1)
-    expect_no_warning(as_theme_arg(mascot_theme(), environment()))
   })
 })

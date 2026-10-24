@@ -64,6 +64,21 @@ Choose readable colours for your page's light and dark modes. CSS hooks do
 not change the character's drawn colours or check colour contrast.
 }
 
+\examples{
+# In an app, the same CSS usually lives in a file under www/.
+css <- "
+.mascot {
+  --mascot-panel-bg: #153448;
+  --mascot-panel-color: #ffffff;
+  --mascot-panel-border: #8fc7e8;
+  --mascot-restore-bg: #153448;
+  --mascot-restore-fg: #ffffff;
+}"
+ui <- htmltools::tagList(
+  htmltools::tags$style(css),
+  mascot("helper", bubble = "Hello!")
+)
+}
 \seealso{
 \code{\link[=mascot_theme]{mascot_theme()}}, \code{\link[=mascot_size]{mascot_size()}}, \code{\link[=mascot_placement]{mascot_placement()}}
 }

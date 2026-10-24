@@ -90,6 +90,17 @@ comes with a diagnostic and migration guidance. Files are never modified or
 upgraded silently. A resolved file is self-contained.
 }
 
+\examples{
+# Start from the bundled source, give the copy its own id, then check it again.
+path <- system.file("examples", "characters", "study_bot.json", package = "mascot")
+source <- jsonlite::read_json(path)
+source$id <- "my_bot"
+source$name <- "My Bot"
+source$colours$body <- "#2a9d8f"
+bot <- mascot_check_character(source)
+bot
+ui <- mascot("helper", character = bot)
+}
 \seealso{
 \code{\link[=mascot_check_character]{mascot_check_character()}}, \code{\link[=mascot_read_character]{mascot_read_character()}}
 }

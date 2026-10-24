@@ -42,6 +42,11 @@ Stacked pull requests are fine. Base the second one on the branch below it, and 
 
 ## Before you open a pull request
 
+Update every text that describes what you changed, in the same pull request: help pages (through roxygen), articles,
+the README, `NEWS.md`, the studio, workflow comments, `tools/README.md` and the rules files. It works both ways: if
+you edit an article or guide, check that the help page still agrees. Search the repository for the old wording and
+list the search terms in the pull request.
+
 Run the gate from the package root:
 
 ```sh

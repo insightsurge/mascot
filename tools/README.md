@@ -66,6 +66,12 @@ exits with 0.
 | 2 | The gate couldn't judge the package: a tool is missing or a setting is wrong |
 | 3 | Only tests failed, and every one passed when re-run: probably a flake. Never merge evidence without the package creator's word |
 
+In `tests` and `full` the suite runs once, under covr, and that one run gives both the test results and the coverage.
+The run sets `TESTTHAT_IS_CHECKING`, as testthat's `test_check()` does under R CMD check, so the tests behave as they
+do there (shinytest2, for one, then loads the installed package in its app processes instead of the source).
+If covr itself fails after the suite has run (while merging what it measured, say), the coverage line FAILs with
+covr's message and points to `tests.log`; the gate does not run the suite a second time to get a percentage.
+
 When tests fail, the gate re-runs the failing files once in a fresh R session. When one broken thing (a closed
 browser, say) fails many tests with the same message, the line names it once as a "cascade".
 

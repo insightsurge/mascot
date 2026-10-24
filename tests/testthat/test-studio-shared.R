@@ -453,6 +453,19 @@ describe("contrast_check() and contrast_result_ui()", {
   })
 })
 
+describe("busy_done_mark()", {
+  it("marks a result with the number of the click it answers, and nothing else", {
+    env <- studio_shared("shared-check.R")
+    expect_identical(as.character(env$busy_done_mark(3)), '<span hidden data-busy-done="3"></span>')
+    expect_identical(as.character(env$busy_done_mark("12")), '<span hidden data-busy-done="12"></span>')
+    # A value the browser sent that isn't a click number gives no mark
+    for (click in list(NULL, "click", -5, 1e12, 1.5, NA, c(1, 2), "1\" onclick=\"x")) {
+      expect_null(env$busy_done_mark(click), info = deparse(click))
+    }
+    expect_error(env$busy_done_mark(list(1)), "click")
+  })
+})
+
 describe("palette_swap_run()", {
   it("keeps a palette the next character has and drops one it lacks, with the package's warning", {
     env <- studio_shared("shared-run.R", "shared-check.R")

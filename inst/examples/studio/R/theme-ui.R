@@ -11,7 +11,7 @@
 # - R/shared-colours.R: colour_roles_ui(), colour_roles_server(), colour_input(), palette_cards()
 # - R/shared-run.R: run_real_call()
 # - R/shared-check.R: preview_folder(), contrast_check(), contrast_result_ui(), contrast_stale_ui(),
-#   palette_swap_run()
+#   palette_swap_run(), busy_done_mark()
 # - R/code.R: code_theme(), code_character(), code_mood(), format_call(), format_expr(), pick_style()
 
 # The id of the live mascot. The code shown uses "helper", the id the package's examples use.
@@ -457,13 +457,16 @@ theme_check_tab <- function() {
       " The page mascot_preview() builds for this theme: every mood in light and dark, at your size and smaller.",
       " It checks only colours you supplied; palette colours never warn."
     ),
-    # inputs.js shows "Building..." on the button until the page is shown.
-    shiny::actionButton(
-      "check_preview",
-      "Show every mood",
-      class = "btn-outline-primary btn-sm",
+    # inputs.js shows "Building..." on the button until the page is shown. Its click sends a number of its own as
+    # input$check_preview, which the result carries back (busy_done_mark()), hence data-event, not actionButton().
+    shiny::tags$button(
+      id = "check_preview",
+      type = "button",
+      class = "btn btn-outline-primary btn-sm",
+      `data-event` = "check_preview",
       `data-busy-label` = "Building\u2026",
-      `data-busy-output` = "check_preview_ui"
+      `data-busy-output` = "check_preview_ui",
+      "Show every mood"
     ),
     shiny::uiOutput("check_preview_ui"),
     shiny::tags$h3(class = "theme-section-title", "Contrast"),
@@ -472,12 +475,14 @@ theme_check_tab <- function() {
       "Each colour you chose is compared with the page background: white in light mode and #212529 in dark mode, or",
       "your bs_theme()'s backgrounds. A colour needs at least 3:1 contrast to be easy to see."
     ),
-    shiny::actionButton(
-      "check_contrast",
-      "Check contrast",
-      class = "btn-outline-primary btn-sm",
+    shiny::tags$button(
+      id = "check_contrast",
+      type = "button",
+      class = "btn btn-outline-primary btn-sm",
+      `data-event` = "check_contrast",
       `data-busy-label` = "Checking\u2026",
-      `data-busy-output` = "check_contrast_ui"
+      `data-busy-output` = "check_contrast_ui",
+      "Check contrast"
     ),
     shiny::uiOutput("check_contrast_ui"),
     shiny::tags$h3(class = "theme-section-title", "When you swap characters or pick a hard-to-see colour"),

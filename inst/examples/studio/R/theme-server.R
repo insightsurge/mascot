@@ -403,8 +403,8 @@ theme_view_server <- function(input, output, session) {
   # of this session's (made on the first build).
   folder <- NULL
   built <- shiny::reactiveVal(NULL)
-  # The pages are numbered by the server: the button's value is only a trigger. The last two pages are kept, so the
-  # page before stays until the new one has loaded.
+  # The pages are numbered by the server: the button's value is only a trigger, drawn back into the result as the
+  # click's mark (busy_done_mark()). The last two pages are kept, so the page before stays until the new one has loaded.
   pages <- new.env(parent = emptyenv())
   pages$count <- 0L
   pages$files <- base::character()
@@ -431,7 +431,7 @@ theme_view_server <- function(input, output, session) {
       error = function(e) e
     )
     if (inherits(page, "error")) {
-      built(list(code = code, error = cli::ansi_strip(conditionMessage(page))))
+      built(list(code = code, error = cli::ansi_strip(conditionMessage(page)), click = input$check_preview))
       return()
     }
     if (!is.null(root_style)) {
@@ -443,7 +443,12 @@ theme_view_server <- function(input, output, session) {
     pages$files <- c(pages$files, file)
     unlink(file.path(folder$dir, utils::head(pages$files, -2L)))
     pages$files <- utils::tail(pages$files, 2L)
-    built(list(code = code, src = paste0(folder$prefix, "/", file), settings = preview_settings()))
+    built(list(
+      code = code,
+      src = paste0(folder$prefix, "/", file),
+      settings = preview_settings(),
+      click = input$check_preview
+    ))
   })
   output$check_preview_ui <- shiny::renderUI({
     page <- built()
@@ -459,7 +464,8 @@ theme_view_server <- function(input, output, session) {
           },
           shiny::tags$iframe(class = "theme-preview-page", src = page$src, title = "Every mood, light and dark")
         )
-      }
+      },
+      busy_done_mark(page$click)
     )
   })
 
@@ -471,16 +477,23 @@ theme_view_server <- function(input, output, session) {
     roles = if (source() == "mascot") names(colours$css()) else base::character(),
     chosen = source() == "bslib" || length(c(colours$light(), colours$dark())) > 0L
   ))
-  checked <- shiny::eventReactive(input$check_contrast, contrast_settings())
+  checked <- shiny::eventReactive(
+    input$check_contrast,
+    list(settings = contrast_settings(), click = input$check_contrast)
+  )
   output$check_contrast_ui <- shiny::renderUI({
-    settings <- checked()
-    if (!identical(settings, contrast_settings())) {
-      return(contrast_stale_ui())
-    }
-    contrast_result_ui(
-      contrast_check(settings$character, theme_value(settings$theme)),
-      settings$roles,
-      settings$chosen
+    settings <- checked()$settings
+    shiny::tagList(
+      if (!identical(settings, contrast_settings())) {
+        contrast_stale_ui()
+      } else {
+        contrast_result_ui(
+          contrast_check(settings$character, theme_value(settings$theme)),
+          settings$roles,
+          settings$chosen
+        )
+      },
+      busy_done_mark(checked()$click)
     )
   })
 

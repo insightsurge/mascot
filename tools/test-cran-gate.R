@@ -535,6 +535,19 @@ heavy_probes <- function() {
     "})"
   )
   uses_resource <- c("test_that(\"uses the shared resource\", {", "  expect_true(use_resource())", "})")
+  # Under covr only, a test leaves an unreadable trace file in covr's library, so covr's merge fails after every test
+  # has passed. On the second run the gate used to make, the counter file exists and the test leaves nothing behind.
+  breaks_covr <- c(
+    "test_that(\"the gate probe breaks covr's merge\", {",
+    "  counter <- Sys.getenv(\"GATE_PROBE_COUNTER\")",
+    "  if (nzchar(Sys.getenv(\"R_COVR\")) && !file.exists(counter)) {",
+    "    file.create(counter)",
+    "    lib <- dirname(system.file(package = \"fixturepkg\"))",
+    "    writeLines(\"not a trace\", file.path(lib, \"covr_trace_gate_probe\"))",
+    "  }",
+    "  expect_true(TRUE)",
+    "})"
+  )
   list(
     probe("clean fixture passes in full", "heavy", "full", function(dir) NULL, package = "fixture"),
     probe(
@@ -640,6 +653,24 @@ heavy_probes <- function() {
           character()
         } else {
           "the six files were not re-run, or did not pass"
+        }
+      }
+    ),
+    probe(
+      "coverage: covr failing after the tests passed fails at once, without a second run",
+      "heavy",
+      "tests",
+      function(dir) plant(dir, "tests/testthat/test-zz-gate-probe.R", breaks_covr),
+      expect_fail = "coverage",
+      expect_pass = "tests",
+      detail = "the suite is not run again",
+      package = "fixture",
+      env = c(GATE_PROBE_COUNTER = file.path(tempdir(), "gate-covr-counter")),
+      check_output = function(output) {
+        if (grepl("(^|\n)FAIL +coverage[^\n]*covr failed after the tests ran under it", output)) {
+          character()
+        } else {
+          "the coverage line doesn't say covr failed after the tests"
         }
       }
     ),

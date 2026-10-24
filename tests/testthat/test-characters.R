@@ -141,3 +141,12 @@ describe("mascot_character() checked objects", {
     expect_error(mascot_character(bot), class = "mascot_error_character")
   })
 })
+
+describe("mascot_character()", {
+  it("names unknown choices and rejects invalid strings", {
+    for (x in list(1, NULL, NA_character_, character(), c("tessa", "tessa"), "")) {
+      expect_error(mascot_character(x), "Assertion on 'id' failed")
+    }
+    expect_error(mascot_character("{oops"), "not a character", fixed = TRUE)
+  })
+})

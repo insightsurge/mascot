@@ -28,3 +28,5 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 - **CRAN:** tests use only declared packages and guard Suggests (`skip_if_not_installed()`); no network; files go
   to `withr::local_tempdir()`; nothing is left behind; at most 2 cores.
 - **house:** keep JS logic small and push decisions into R, where they can be unit-tested.
+- **house:** each test file runs on its own: testthat runs the files in two processes at once
+  (`Config/testthat/parallel`), in any order, so a file never relies on what another file set up or left behind.

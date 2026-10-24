@@ -23,7 +23,7 @@ jobs:
   check:
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 120  # about twice the slowest run: R-devel took 56 min on a slow day (installing R 12-20 min
-    # from a slow package mirror, then building packages from source); usually 12-21 min
+    # from a slow package mirror, then building packages from source); usually 7-14 min
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 

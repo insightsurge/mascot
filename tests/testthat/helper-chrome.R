@@ -1,4 +1,6 @@
-# One headless Chrome for the whole test run, shared by the tests that draw with the engine.
+# One headless Chrome per test process, shared by the tests that draw with the engine. testthat runs the test files in
+# two R processes at once (`Config/testthat/parallel` in DESCRIPTION), and each process loads this file, so each has
+# its own Chromes, its own restart count and its own close at the end.
 #
 # Chrome keeps its temporary files in TMPDIR and leaves com.google.Chrome.* folders behind, which R CMD check reports
 # as a NOTE ("detritus in the temp directory"). Pointing TMPDIR inside R's session temporary directory keeps them out

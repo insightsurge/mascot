@@ -30,6 +30,11 @@ Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate 
   unscanned or a release half done), a `timeout-minutes` on every job (a few times its longest recent run), Ubuntu pinned (`ubuntu-26.04`), actions by major tag (dependabot keeps them current), third-party actions
   outside `actions/` and `r-lib/` by commit SHA with a version comment.
 - Keep new jobs on Ubuntu unless the platform is the point (macOS minutes count 10x, Windows 2x).
+- The tests run in two processes at once (`Config/testthat/parallel: true` in `DESCRIPTION`; two is testthat's
+  default and CRAN's limit). R CMD check and the coverage job get two because their tests run without the site
+  profile; `browser-tests.yaml` sets setup-r's `Ncpus: 2`, because setup-r's default of 1 means one process. Never more
+  than two. R CMD check notes CPU time over 2.5 times elapsed time, as CRAN does
+  (`_R_CHECK_TEST_TIMING_CPU_TO_ELAPSED_THRESHOLD_`).
 - Never `continue-on-error`, never weaken a check to get green: fix the cause, or ask the package creator.
 - A new check goes into the gate first, with a probe in `test-cran-gate.R` (same folder) that plants a defect and
   expects that step to FAIL, then runs in CI. After changing the gate, `.lintr`, `air.toml` or `biome.json`, run

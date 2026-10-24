@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
     name: browser (${{ matrix.r }})
     timeout-minutes: 150  # about twice the slowest run: 72 min on R 4.1 with a cold cache and a slow package mirror;
-    # the tests themselves take 27-38 min
+    # the tests themselves take 22-27 min in two processes (#502)
 
     strategy:
       fail-fast: false
@@ -74,14 +74,6 @@ jobs:
           message("Chrome: ", system2(chrome, "--version", stdout = TRUE))
           library(testthat)
           library(mascot)
-          # TRIAL (#502): memory in use (MB) and Chrome processes every 5 seconds while the tests run.
-          mem_log <- tempfile(fileext = ".log")
-          sampler <- processx::process$new(
-            "sh",
-            c("-c", "while :; do echo \"$(free -m | awk '/^Mem:/{print $3}') $(pgrep -c chrome)\"; sleep 5; done"),
-            stdout = mem_log
-          )
-          started <- Sys.time()
           # The test files with tests that CRAN skips, which R CMD check skips too: browser tests (a helper that starts
           # a browser or a page) and snapshot tests (expect_snapshot() skips itself on CRAN). The other tests in these
           # files run twice, here and in R CMD check; keeping browser tests in files of their own is the next step.
@@ -112,13 +104,6 @@ jobs:
           }))
           browser_skips <- unique(grep("Chrome|On CRAN|not installed", skips, value = TRUE))
           if (length(browser_skips) > 0L) message("Skipped: ", paste(browser_skips, collapse = "; "))
-          message(sprintf("Tests took %.1f min", as.numeric(difftime(Sys.time(), started, units = "mins"))))
-          sampler$kill()
-          mem <- utils::read.table(mem_log)
-          message(sprintf(
-            "Memory in use: peak %d MB, median %d MB; Chrome processes: peak %d",
-            max(mem$V1), as.integer(stats::median(mem$V1)), max(mem$V2)
-          ))
           failed <- as.data.frame(results)
           if (any(failed$failed > 0L | failed$error) || length(browser_skips) > 0L) {
             stop("Tests failed or were skipped; see above.", call. = FALSE)

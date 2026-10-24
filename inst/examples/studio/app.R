@@ -213,6 +213,7 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
         uiOutput("guide")
       ),
       div(
+        id = "code_pin",
         class = "pg-code-pin",
         div(class = "pg-eyebrow", "R code for this function"),
         div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
@@ -453,17 +454,63 @@ studio_server <- function(input, output, session) {
     result$ok
   }
 
+  # Sets a control to what the server applied, unless the control already told the server that value. The page changed
+  # the control first and the server answers a moment later: if the visitor has changed it again meanwhile, that change is
+  # still on its way, and an update that is only the echo of the earlier one would set the control back to it (and the
+  # page would then send that old value as a new change). A value the server sent to the control and the control has not
+  # answered yet is not what the control holds, so it does not count: `echoed` keeps it until the control sends a value.
+  echoed <- new.env(parent = emptyenv())
+  echo_to_control <- function(id, value, update) {
+    checkmate::assert_string(id, min.chars = 1)
+    checkmate::assert_function(update)
+    held_by_page <- isTRUE(all.equal(isolate(input[[id]]), value)) &&
+      (is.null(echoed[[id]]) || isTRUE(all.equal(echoed[[id]], value)))
+    if (!held_by_page) {
+      echoed[[id]] <- value
+      update(value)
+    }
+    invisible(NULL)
+  }
+  for (echoed_id in c(
+    "status_text",
+    "mood",
+    "bubble_text",
+    "bubble_html",
+    "bubble_forever",
+    "bubble_duration",
+    "bubble_closable"
+  )) {
+    local({
+      id <- echoed_id
+      observeEvent(
+        input[[id]],
+        if (exists(id, envir = echoed, inherits = FALSE)) rm(list = id, envir = echoed),
+        ignoreInit = TRUE
+      )
+    })
+  }
+
   sync_bubble_controls <- function(pair) {
     checkmate::assert_list(pair)
     bubble <- eval(pair$helper)
     # Show reads the draft (see bubble_draft below), so it follows the controls at once too.
     bubble_draft$text <- as.character(bubble$text %||% "")
     bubble_draft$html <- isTRUE(bubble$html)
-    updateTextAreaInput(session, "bubble_text", value = as.character(bubble$text %||% ""))
-    update_switch("bubble_html", value = isTRUE(bubble$html), session = session)
-    update_switch("bubble_forever", value = is.infinite(bubble$duration), session = session)
-    updateSliderInput(session, "bubble_duration", value = if (is.finite(bubble$duration)) bubble$duration else 5)
-    update_switch("bubble_closable", value = bubble$closable, session = session)
+    echo_to_control("bubble_text", as.character(bubble$text %||% ""), function(value) {
+      updateTextAreaInput(session, "bubble_text", value = value)
+    })
+    echo_to_control("bubble_html", isTRUE(bubble$html), function(value) {
+      update_switch("bubble_html", value = value, session = session)
+    })
+    echo_to_control("bubble_forever", is.infinite(bubble$duration), function(value) {
+      update_switch("bubble_forever", value = value, session = session)
+    })
+    echo_to_control("bubble_duration", if (is.finite(bubble$duration)) bubble$duration else 5, function(value) {
+      updateSliderInput(session, "bubble_duration", value = value)
+    })
+    echo_to_control("bubble_closable", bubble$closable, function(value) {
+      update_switch("bubble_closable", value = value, session = session)
+    })
   }
 
   # Sends the changed settings in one update_mascot() call; TRUE when it ran, FALSE on an error,
@@ -495,14 +542,17 @@ studio_server <- function(input, output, session) {
           live_demo[[field]] <- pairs[[field]]
         }
         if (field == "mood") {
-          updateSelectInput(session, "mood", selected = eval(pairs[[field]]$short))
+          echo_to_control("mood", eval(pairs[[field]]$short), function(value) {
+            updateSelectInput(session, "mood", selected = value)
+          })
         }
         if (field == "bubble") {
           sync_bubble_controls(pairs[[field]])
         }
         if (field == "status") {
-          value <- eval(pairs[[field]]$helper)$text
-          updateTextInput(session, "status_text", value = value %||% "")
+          echo_to_control("status_text", eval(pairs[[field]]$helper)$text %||% "", function(value) {
+            updateTextInput(session, "status_text", value = value)
+          })
         }
       }
     }
@@ -621,7 +671,8 @@ studio_server <- function(input, output, session) {
   observeEvent(input$mood, send(list(mood = code_mood(input$mood))), ignoreInit = TRUE)
 
   # Messages
-  status_text <- debounce(reactive(input$status_text), 600)
+  status_raw <- reactive(input$status_text)
+  status_text <- debounce(status_raw, 600)
   observeEvent(status_text(), send(list(status = code_status(status_text()))), ignoreInit = TRUE)
   observeEvent(input$status_clear, {
     updateTextInput(session, "status_text", value = "")
@@ -953,20 +1004,18 @@ studio_server <- function(input, output, session) {
   click_problem <- reactive({
     switch(click_kind(), action = action_problem(), menu = menu_parsed()$problem, NULL)
   })
-  click_text <- debounce(
-    reactive(list(
-      click_kind(),
-      input$action_label,
-      input$action_tooltip,
-      input$action_disabled,
-      input$menu_items,
-      input$menu_direction,
-      input$menu_label,
-      input$menu_tooltip,
-      input$menu_disabled
-    )),
-    600
-  )
+  click_raw <- reactive(list(
+    click_kind(),
+    input$action_label,
+    input$action_tooltip,
+    input$action_disabled,
+    input$menu_items,
+    input$menu_direction,
+    input$menu_label,
+    input$menu_tooltip,
+    input$menu_disabled
+  ))
+  click_text <- debounce(click_raw, 600)
   observeEvent(
     click_text(),
     {
@@ -1251,8 +1300,19 @@ studio_server <- function(input, output, session) {
     last_built_call(args)
     list(file = file, contrast = attr(page, "contrast"), code = format_call("mascot_preview", args))
   })
+  # The page is shown once its frame has loaded it, which the browser reports as input$preview_loaded (studio.js):
+  # a frame that is drawn is still empty. A build with no page (an error) has nothing to wait for.
+  preview_page_shown <- reactive({
+    if (preview_request() == 0) {
+      return(TRUE)
+    }
+    file <- built_preview()$file
+    is.null(file) || identical(input$preview_loaded, paste0(prefix, "/", file))
+  })
   output$preview_status_badge <- renderUI({
-    if (is_building()) tags$span(class = "badge text-bg-secondary pg-building", "Building\u2026")
+    if (is_building() || !preview_page_shown()) {
+      tags$span(class = "badge text-bg-secondary pg-building", "Building\u2026")
+    }
   })
   output$preview_frame <- renderUI({
     if (preview_request() == 0) {
@@ -1494,6 +1554,8 @@ studio_server <- function(input, output, session) {
   output$characters_table <- renderUI(data_table(family_listing()))
   output$code_function <- renderText({
     fn <- selected_function()
+    # The page says the code is busy until it is the code of the function it selected (studio.js).
+    stamp_output(session, "code_function", fn)
     if (fn %in% c("mascot", "update_mascot", "mascot_action", "mascot_popup_menu") && !is.null(settings_problem())) {
       return(problem_comment(settings_problem()))
     }
@@ -1560,6 +1622,19 @@ studio_server <- function(input, output, session) {
     )
   })
   outputOptions(output, "code_function", suspendWhenHidden = FALSE)
+
+  # The copy buttons wait for the server's answer to their click, and the answer waits for the changes the server
+  # holds back for a moment: the status text, the click's texts, the theme and a preview that is being built.
+  copy_gate(
+    input,
+    session,
+    pending = function() {
+      !identical(status_raw(), status_text()) ||
+        !identical(click_raw(), click_text()) ||
+        !identical(theme_now(), theme_code()) ||
+        isTRUE(is_building())
+    }
+  )
 }
 
 examples_server <- function(input, output, session) {

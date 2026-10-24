@@ -32,7 +32,7 @@ describe("mascot_studio()", {
       width = 1440,
       height = 900
     )
-    preview$wait_for_js("!!document.querySelector('iframe.pg-preview')")
+    wait_studio_preview(preview)
     expect_true(preview$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     expect_false(preview$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     expect_true(preview$get_js("document.querySelector('#preview_card .bslib-full-screen-enter') !== null"))

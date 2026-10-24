@@ -1850,6 +1850,10 @@ button.pg-call-name:focus-visible {
 #inspector_guide[aria-busy="true"] > .shiny-html-output > * {
   opacity: 0.5;
 }
+/* The code of the function that was selected before, until the server has drawn the selected one's. */
+#code_pin[aria-busy="true"] .pg-code {
+  opacity: 0.5;
+}
 #inspector_help .pg-help-usage {
   position: sticky;
   top: 0;

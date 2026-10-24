@@ -73,9 +73,7 @@ describe("the theme view in a browser", {
     expect_identical(app$get_value(output = "theme_code"), 'mascot("helper", theme = "coral_navy")')
     expect_identical(app$get_js("document.getElementById('start_from').value"), "coral_navy")
     # Copy puts the code shown on the clipboard.
-    app$run_js(
-      "window.copied = null; navigator.clipboard.writeText = (text) => { window.copied = text; return Promise.resolve(); };"
-    )
+    stub_studio_clipboard(app)
     app$click(selector = "[data-copy=theme_code]")
     app$wait_for_js("window.copied !== null")
     expect_identical(app$get_js("window.copied"), app$get_value(output = "theme_code"))
@@ -86,6 +84,24 @@ describe("the theme view in a browser", {
       "return a ? [a.getAttribute('href'), a.target, a.textContent] : null; })"
     ))
     expect_identical(unlist(link), c("?view=theme", "_blank", "Theme a mascot"))
+  })
+  it("copies the code of the palette just clicked, not the code the page showed a moment before", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    app$run_js("document.querySelector('#theme_tabs a[data-value=\"palette\"]').click()")
+    app$wait_for_js("!!document.querySelector('label.theme-palette-card:has(input[value=coral_navy])')")
+    stub_studio_clipboard(app)
+    # When a palette card and Copy are clicked one right after the other, the page still shows the code before the card
+    app$run_js(paste(
+      "(() => { document.querySelector('label.theme-palette-card:has(input[value=coral_navy])').click();",
+      "document.querySelector('[data-copy=theme_code]').click(); })()"
+    ))
+    # Then the code of the palette is what is copied
+    app$wait_for_js("window.copied !== null")
+    expect_identical(app$get_js("window.copied"), 'mascot("helper", theme = "coral_navy")')
+    app$wait_for_js("document.querySelector('[data-copy=theme_code]').textContent === 'Copied'")
   })
   it("stacks the preview, the tabs and the code on a phone, and keeps the preview in view", {
     local_shiny_browser()
@@ -232,6 +248,35 @@ describe("the Check tab's slow buttons in a browser", {
       expect_null(app$get_js(sprintf("document.getElementById('%s').getAttribute('aria-busy')", case[[1]])))
       expect_true(app$get_js(sprintf("document.getElementById('%s_ui').textContent.trim().length > 0", case[[1]])))
     }
+  })
+  it("keep Show every mood busy until the page inside its frame has loaded", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
+    app$run_js("document.querySelector('#theme_tabs a[data-value=check]').click()")
+    # Given a record of what the page shows at every frame it draws: is the button busy, is there a frame, is its page
+    # loaded (the page marks a frame data-loaded when that happens)
+    app$run_js(paste(
+      "window.buttonSamples = [];",
+      "const sample = () => { const frame = document.querySelector('iframe.theme-preview-page');",
+      "  window.buttonSamples.push({ busy: document.getElementById('check_preview').hasAttribute('aria-busy'),",
+      "    frame: !!frame, loaded: frame ? frame.dataset.loaded === 'true' : null });",
+      "  requestAnimationFrame(sample); };",
+      "sample();"
+    ))
+    # When it is clicked, once and again
+    for (click in 1:2) {
+      app$run_js("document.getElementById('check_preview').click()")
+      app$wait_for_js(sprintf(
+        "!document.getElementById('check_preview').disabled && document.querySelector('#check_preview_ui [data-busy-done=\"%d\"]') !== null",
+        click
+      ))
+    }
+    # Then no drawn frame showed a frame still loading its page with the button free
+    early <- app$get_js("window.buttonSamples.filter((s) => !s.busy && s.frame && s.loaded === false).length")
+    expect_identical(early, 0L)
+    expect_true(app$get_js("window.buttonSamples.some((s) => s.busy && s.frame && s.loaded === false)"))
   })
   it("stay busy until the result of their own click is drawn, whatever the server says in between", {
     local_shiny_browser()

@@ -760,12 +760,13 @@ describe("studio state and built previews", {
       session$setInputs(send_many = 1)
       expect_identical(messages$bubble_text$value, "All 120 rows passed.")
       expect_true(messages$bubble_forever$value)
-      # Browser input acknowledgements are separate from server update messages.
+      # Browser input acknowledgements are separate from server update messages. A control the server did not set
+      # (it already held the value) keeps the value it sent.
       session$setInputs(
         bubble_text = messages$bubble_text$value,
-        bubble_html = messages$bubble_html$value,
+        bubble_html = messages$bubble_html$value %||% input$bubble_html,
         bubble_forever = messages$bubble_forever$value,
-        bubble_closable = messages$bubble_closable$value,
+        bubble_closable = messages$bubble_closable$value %||% input$bubble_closable,
         select_function = "mascot_bubble"
       )
       expect_identical(eval(parse(text = output$code_function))$text, eval(state$bubble$helper)$text)
@@ -781,8 +782,10 @@ describe("studio state and built previews", {
       session$setInputs(menu_items = "finish = Finish review")
       session$elapse(700)
       # An HTML bubble keeps its HTML switch on after it is shown.
+      messages$bubble_html <- NULL
       session$setInputs(bubble_text = "<b>Saved</b>", bubble_html = TRUE, bubble_show = 1)
-      expect_true(messages$bubble_html$value)
+      expect_true(is.null(messages$bubble_html$value) || messages$bubble_html$value)
+      expect_true(input$bubble_html)
       session$setInputs(contrast_check = 1)
       # No colour of the studio's own is chosen yet, so nothing is checked in R.
       expect_match(output$contrast$html, "No colour of your own was chosen in R")
@@ -806,10 +809,11 @@ describe("studio state and built previews", {
       session$setInputs(menu_on = FALSE)
       session$elapse(700)
       expect_false(grepl("observeEvent(input$helper_menu", output$code_app, fixed = TRUE))
+      # The mood the page holds is "happy": the server does not send it back, as it already holds it.
       session$setInputs(mood = "happy")
+      expect_identical(input$mood, "happy")
       # Re-selecting the available character exercises the same atomic update as a future character swap.
       # Mood must be present even when it matches state: the engine resets mood on a changed character id.
-      session$setInputs(mood = messages$mood$value)
       custom_messages <- list()
       session$sendCustomMessage <- function(type, message) {
         custom_messages[[length(custom_messages) + 1L]] <<- list(type = type, message = message)
@@ -824,7 +828,7 @@ describe("studio state and built previews", {
       expect_identical(envelopes[[1]]$message$state$character$id, formals(mascot)$character)
       expect_identical(envelopes[[1]]$message$state$mood, "happy")
       expect_identical(state$mood$short, "happy")
-      expect_identical(messages$mood$value, "happy")
+      expect_identical(input$mood, "happy")
       expect_match(output$code_ui, 'mood = "happy"', fixed = TRUE)
       session$setInputs(select_function = "mascot_example")
       example_call <- output$code_function
@@ -1038,6 +1042,63 @@ describe("the preview page and the host mode", {
       session$elapse(500)
       expect_identical(preview_request(), 2)
       expect_match(output$code_preview, 'character = "sela"', fixed = TRUE)
+    })
+  })
+  it("says Building until the browser reports that the page has loaded in its frame", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
+      session$elapse(500)
+      # Given the page is built and its frame is drawn, the page inside has not loaded: the badge stays
+      expect_false(is_building())
+      expect_match(output$preview_frame$html, built_preview()$file, fixed = TRUE)
+      badge_shown <- function() any(grepl("Building", output$preview_status_badge$html, fixed = TRUE))
+      expect_true(badge_shown())
+      # When the frame reports the page it loaded, the badge goes
+      session$setInputs(preview_loaded = paste0(prefix, "/", built_preview()$file))
+      expect_false(badge_shown())
+      # And a rebuilt page is a new page: the report of the old one does not count, and the badge is back
+      session$setInputs(preview_mood = "happy")
+      session$elapse(500)
+      expect_false(is_building())
+      expect_true(badge_shown())
+      # Until the new page reports that it has loaded
+      session$setInputs(preview_loaded = paste0(prefix, "/", built_preview()$file))
+      expect_false(badge_shown())
+    })
+  })
+})
+
+describe("the studio's echo of a change it applied", {
+  it("sets a control only when the control did not send that value itself", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    status_code <- get("code_status", parts$env)
+    shiny::testServer(get("studio_server", parts$env), {
+      messages <- list()
+      session$sendInputMessage <- function(id, message) messages[[id]] <<- message
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      messages <- list()
+      # Given the status text came from the page, the server applies it and leaves the control alone
+      session$setInputs(status_text = "ab")
+      session$elapse(700)
+      expect_identical(state$status$helper, quote(mascot_status("ab")))
+      expect_null(messages$status_text)
+      # When a chip sets the status instead, the control follows
+      session$setInputs(chip_reset = "status")
+      expect_identical(messages$status_text$value, "")
+      # And the same value sent to the control twice, before it answers, is sent twice: the control may not hold the first
+      messages <- list()
+      send(list(status = status_code("one")), force = TRUE)
+      expect_identical(messages$status_text$value, "one")
+      send(list(status = status_code("")), force = TRUE)
+      expect_identical(messages$status_text$value, "")
+      expect_error(echo_to_control("", "x", identity), "Assertion on 'id' failed")
+      expect_error(echo_to_control("mood", "x", 1), "Assertion on 'update' failed")
     })
   })
 })

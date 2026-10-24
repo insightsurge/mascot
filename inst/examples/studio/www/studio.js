@@ -494,21 +494,42 @@
     // miss a quick switch of the hidden attribute. Binding the panel again makes it send every output's visibility now.
     if (window.Shiny?.shinyapp?.isConnected()) window.Shiny.bindAll(byId(`inspector_${name}`));
   }
-  // The server draws Help and Guide for the selected function a moment after it changes, and Guide only once its tab
-  // shows, so for a while a panel can show an earlier function's page. Each card names its function in
-  // data-guide-function; until that is the selected function, the panel says it is busy and dims the old page. The
-  // Guide is also drawn for a character (data-guide-character), so it waits for the one chosen in the top bar too.
-  const stampedPanels = { inspector_help: 'function_help', inspector_guide: 'guide' };
+  // The server draws Help, Guide and the code of the selected function a moment after it changes, and Guide only once
+  // its tab shows, so for a while a panel can show an earlier function's page. The server stamps what it drew: each
+  // card names its function in data-guide-function, and the code's text output gets a stamp with the function it
+  // shows (stamp_output() in R/shared-ui.R). Until the stamp is the selected function, the panel says it is busy and
+  // dims the old page. The Guide is also drawn for a character (data-guide-character), so it waits for the one chosen
+  // in the top bar too.
+  const cardStamp = (output, name) => byId(output)?.querySelector('[data-guide-function]')?.dataset[name];
+  const stampedPanels = {
+    inspector_help: () => cardStamp('function_help', 'guideFunction') === selectedFunction,
+    inspector_guide: () =>
+      cardStamp('guide', 'guideFunction') === selectedFunction &&
+      cardStamp('guide', 'guideCharacter') === byId('character')?.value,
+    code_pin: () => byId('code_function')?.dataset.stamp === selectedFunction,
+  };
   function syncPanelStamps() {
-    for (const [panel, output] of Object.entries(stampedPanels)) {
-      const card = byId(output)?.querySelector('[data-guide-function]');
-      const current =
-        card?.dataset.guideFunction === selectedFunction &&
-        (output !== 'guide' || card.dataset.guideCharacter === byId('character')?.value);
-      if (current) byId(panel)?.removeAttribute('aria-busy');
+    for (const [panel, current] of Object.entries(stampedPanels)) {
+      if (current()) byId(panel)?.removeAttribute('aria-busy');
       else byId(panel)?.setAttribute('aria-busy', 'true');
     }
   }
+  // The preview page is drawn as a frame and its page arrives a moment later. The server says "Building" until the page
+  // has loaded, so each frame reports which page it loaded (inputs.js marks the frame; a load event does not bubble).
+  document.addEventListener(
+    'load',
+    (event) => {
+      if (event.target.matches?.('iframe.pg-preview')) {
+        window.Shiny.setInputValue('preview_loaded', event.target.getAttribute('src'), { priority: 'event' });
+      }
+    },
+    true,
+  );
+  window.Shiny.addCustomMessageHandler('studio:stamp', ({ id, stamp }) => {
+    const output = byId(id);
+    if (output) output.dataset.stamp = stamp;
+    syncPanelStamps();
+  });
   function showControls() {
     syncPanelStamps();
     // The argument whose help the Help panel last opened at belongs to the function it was opened for.
@@ -1224,8 +1245,18 @@
       // One update when typing pauses, not one per keystroke (each restarts the bubble and is announced).
       clearTimeout(bubbleTimer);
       const text = event.target.value;
-      bubbleTimer = setTimeout(() => send('chip_bubble', text), 600);
+      bubbleTimer = setTimeout(() => {
+        bubbleTimer = null;
+        send('chip_bubble', text);
+      }, 600);
     }
+  });
+  // Copying does not wait for the pause: the bubble text typed so far is sent first, and the copy follows it.
+  window.mascotStudioInputs.beforeCopy(() => {
+    if (bubbleTimer === null) return;
+    clearTimeout(bubbleTimer);
+    bubbleTimer = null;
+    send('chip_bubble', byId('bubble_text').value);
   });
   $(document).on('change', '#size_unit', () => {
     if (byId('chip_editor').hidden || chipArgument !== 'size') return;
@@ -1527,7 +1558,7 @@
     }
     help.addEventListener('scroll', markStickyUsage);
     new MutationObserver(markStickyUsage).observe(help, { childList: true, subtree: true });
-    for (const output of Object.values(stampedPanels)) {
+    for (const output of ['function_help', 'guide']) {
       new MutationObserver(syncPanelStamps).observe(byId(output), { childList: true, subtree: true });
     }
     syncExpansion();

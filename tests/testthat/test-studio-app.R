@@ -455,3 +455,69 @@ describe("studio host choices, reading tabs, dock and examples browser", {
     expect_match(preview_guide, "160, 96 and 24 px", fixed = TRUE)
   })
 })
+
+describe("the studio's copy buttons and stamped outputs", {
+  it("answers a copy ticket only once the server holds nothing back", {
+    parts <- studio_app_parts()
+    copy_gate <- get("copy_gate", parts$env)
+    pending <- shiny::reactiveVal(TRUE)
+    answers <- list()
+    shiny::testServer(
+      function(input, output, session) {
+        session$sendCustomMessage <- function(type, message) {
+          answers[[length(answers) + 1L]] <<- list(type = type, ticket = message$ticket)
+        }
+        copy_gate(input, session, pending = pending)
+      },
+      {
+        # Given a change the server still holds back (a debounced input), two clicks wait for it
+        session$setInputs(copy_ticket = 1)
+        session$setInputs(copy_ticket = 2)
+        expect_length(answers, 0L)
+        # When the server has applied it, both are answered, in the order of the clicks
+        pending(FALSE)
+        session$flushReact()
+        expect_identical(
+          answers,
+          list(list(type = "studio:copy", ticket = 1L), list(type = "studio:copy", ticket = 2L))
+        )
+        # And a click with nothing held back is answered at once, and only once
+        session$setInputs(copy_ticket = 3)
+        expect_length(answers, 3L)
+        expect_identical(answers[[3]]$ticket, 3L)
+        session$flushReact()
+        expect_length(answers, 3L)
+      }
+    )
+    expect_error(copy_gate(list(), new.env(), pending = 1), "Assertion on 'pending' failed")
+    expect_error(copy_gate(list(), list()), "Assertion on 'session' failed")
+  })
+  it("stamps an output after the flush that sends it", {
+    parts <- studio_app_parts()
+    stamp_output <- get("stamp_output", parts$env)
+    stamps <- list()
+    shiny::testServer(
+      function(input, output, session) {
+        session$sendCustomMessage <- function(type, message) {
+          stamps[[length(stamps) + 1L]] <<- list(type = type, id = message$id, stamp = message$stamp)
+        }
+        output$shown <- shiny::renderText({
+          stamp_output(session, "shown", input$which)
+          paste("drawn for", input$which)
+        })
+      },
+      {
+        session$setInputs(which = "mascot_mood")
+        expect_identical(output$shown, "drawn for mascot_mood")
+        expect_identical(stamps, list(list(type = "studio:stamp", id = "shown", stamp = "mascot_mood")))
+        session$setInputs(which = "mascot_size")
+        expect_identical(output$shown, "drawn for mascot_size")
+        expect_length(stamps, 2L)
+        expect_identical(stamps[[2]]$stamp, "mascot_size")
+      }
+    )
+    expect_error(stamp_output(list(), "shown", "x"), "Assertion on 'session' failed")
+    expect_error(stamp_output(new.env(), "", "x"), "Assertion on 'id' failed")
+    expect_error(stamp_output(new.env(), "shown", 1), "Assertion on 'stamp' failed")
+  })
+})

@@ -4,7 +4,7 @@
 #
 # What the view's two files use from the rest of the app, and nothing else (test-studio-theme.R checks it):
 # - R/views.R: studio_view_titles, view_character()
-# - R/shared-ui.R: studio_button(), copy_button()
+# - R/shared-ui.R: studio_button(), copy_button(), copy_gate()
 # - R/shared-data.R: studio_characters(), studio_palette_choices(), studio_palette_labels(), studio_palette_swap
 # - R/shared-help.R: help_page(), help_arg(), html_text(), studio_help_tail(), studio_bslib_experimental()
 # - R/shared-layout.R: sentence_bar(), sentence_words(), window_bar(), window_footer()

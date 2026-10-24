@@ -96,7 +96,7 @@ describe("studio character bar", {
     expect_true(app$get_js("document.querySelector('#studio_character_bar #gesture_play') !== null"))
     expect_true(app$get_js("document.documentElement.scrollWidth <= window.innerWidth"))
     app$set_inputs(character = "knurl")
-    app$wait_for_js("document.getElementById('character').value === 'knurl'")
+    # The server's answer is the palette list of the new character; the select itself reads 'knurl' as soon as it is set
     app$wait_for_js("[...document.querySelector('#palette').options].some(o => o.value === 'orbit')")
     app$set_inputs(palette = "orbit")
     app$wait_for_js("document.getElementById('code_ui').textContent.includes('theme = \"orbit\"')")
@@ -221,8 +221,9 @@ describe("studio palette sync", {
     select_function("mascot_popup_menu")
     # Picking a function shows its Controls; the try buttons are on its Guide, which the server draws once it shows
     app$run_js("document.querySelector('[data-inspector-tab=guide]').click()")
+    wait_studio_panel(app, "guide", "mascot_popup_menu")
     app$wait_for_js(
-      "!document.getElementById('inspector_guide').hasAttribute('aria-busy') && !!document.querySelector('#guide [data-guide-function=mascot_popup_menu] [data-event=menu_long_status]')"
+      "!!document.querySelector('#guide [data-guide-function=mascot_popup_menu] [data-event=menu_long_status]')"
     )
     for (corner in c("top-right", "bottom-right")) {
       app$run_js(sprintf("document.querySelector('[data-event=menu_long_status][data-value=\"%s\"]').click()", corner))

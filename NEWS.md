@@ -12,6 +12,10 @@
   * Setting Host mode back to Live mascot while `mascot_preview()` is selected moves the Code tray off its Preview tab and stops building the hidden preview page.
   * The Check contrast button of the colour controls says it is busy until the result of that click shows.
   * The studio's log and its `input$helper_minimised` readout no longer say the visitor restored the mascot: the mascot sends `FALSE` also when an `update_mascot()` call changes its placement, so they say "The mascot is no longer minimised".
+  * "R code for this function" says it is busy, and dims the code of the function before, until the code of the function just picked is drawn.
+  * The Copy buttons copy the code that belongs to what you just changed. Copy now waits for the studio's answer to its click, and the button reads "Copying..." meanwhile; before, it copied the code of a moment before and said "Copied". It reads "Copy unavailable" when no answer comes within five seconds.
+  * The status text, the mood and the bubble text keep what you typed or picked when the studio's answer to an earlier change arrives late; before, a slow connection could set the control back to the earlier value.
+  * The preview's "Building..." badge and the theme view's "Show every mood" button stay until the page inside the frame has loaded, not only until the studio has built it.
 
 * The website is now at <https://insightsurge.github.io/mascot/>, and the studio's "Package website" link and its guide links point there (#115).
 

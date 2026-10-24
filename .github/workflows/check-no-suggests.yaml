@@ -59,8 +59,9 @@ jobs:
           needs: check
 
       # The gate starts R CMD check itself, with NOT_CRAN unset, _R_CHECK_FORCE_SUGGESTS_ false and the CRAN-incoming
-      # checks off (R-CMD-check runs those); any note other than the one listing the hidden Suggests fails it. The step
-      # skips when it cannot hide the Suggests (one installed in R's own library), which here must fail the job too.
+      # checks off (R-CMD-check runs the local ones); any note other than the one listing the hidden Suggests fails it.
+      # The step skips when it cannot hide the Suggests (one installed in R's own library), which here must fail the
+      # job too.
       - name: R CMD check with only what the check needs (the gate's nosuggests mode)
         if: steps.changes.outputs.r == 'true'
         env:

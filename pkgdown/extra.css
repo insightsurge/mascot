@@ -148,6 +148,18 @@ nav.navbar {
   vertical-align: -7px;
   background: url("favicon.svg") center / contain no-repeat;
 }
+/* Home page: the animated hex (logo-animated.svg, from pkgdown/assets) in the logo's own box. The still PNG is moved
+   out of view inside the box, which keeps pkgdown's size and layout; under reduced motion the still one shows. */
+.template-home .page-header img.logo {
+  object-position: -9999px 0;
+  background: url("logo-animated.svg") center / 120% auto no-repeat;
+}
+@media (prefers-reduced-motion: reduce) {
+  .template-home .page-header img.logo {
+    object-position: 50% 50%;
+    background: none;
+  }
+}
 .navbar .nav-link {
   color: var(--m-muted);
 }

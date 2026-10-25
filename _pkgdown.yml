@@ -33,11 +33,14 @@ template:
     link-underline-offset: "0.2em"
 
 # pkgdown links the code of conduct and the contributing guide in the home page sidebar by itself, and builds
-# SECURITY.html from .github/SECURITY.md, but has no sidebar entry for it.
+# SECURITY.html from .github/SECURITY.md, but has no sidebar entry for it. inst/COPYRIGHTS isn't part of the site,
+# so its entry links to the file on GitHub.
 home:
   links:
     - text: Security policy
       href: SECURITY.html
+    - text: Copyright of shipped files
+      href: https://github.com/insightsurge/mascot/blob/main/inst/COPYRIGHTS
 
 navbar:
   components:

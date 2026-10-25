@@ -54,6 +54,24 @@ wait_studio_code <- function(app, fn) {
   ))
 }
 
+# Opens the editor of the call argument `argument` and waits until the server has answered the click. The page opens the
+# editor at once and tells the server which argument it shows; the server then sets the editor's controls to the
+# call's values. Text typed before that answer would be set back to the call's earlier text, so a test that types waits
+# for it. Shiny reports the server busy while it works on the click and idle when it has answered.
+open_studio_chip <- function(app, argument) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(argument, min.chars = 1)
+  app$run_js(paste(
+    "window.studioChipAnswered = false;",
+    "$(document).one('shiny:busy', () => $(document).one('shiny:idle', () => { window.studioChipAnswered = true; }));"
+  ))
+  click_now(app, sprintf("[data-call-arg=%s]", argument))
+  app$wait_for_js(sprintf(
+    "window.studioChipAnswered && !document.getElementById('chip_editor').hidden && Shiny.shinyapp.$inputValues.chip_argument === '%s'",
+    argument
+  ))
+}
+
 # Holds back what the browser sends for the inputs `names`, to stand in for a server that has not answered yet: the
 # page changes at once, and the server's reply (a redrawn panel, a new chip) is missing until `release_studio_inputs()`.
 # Setting an input with `app$set_inputs()` waits for the server, so change a held input in the page itself.
@@ -2197,10 +2215,7 @@ describe("the controls and the server's echo of a change it applied", {
     local_shiny_browser()
     app <- studio_driver()
     wait_studio_mood(app, "idle")
-    click_now(app, "[data-call-arg=bubble]")
-    app$wait_for_js(
-      "!document.getElementById('chip_editor').hidden && Shiny.shinyapp.$inputValues.chip_argument === 'bubble' && !document.documentElement.classList.contains('shiny-busy')"
-    )
+    open_studio_chip(app, "bubble")
     hold_studio_replies(app)
     type_studio_text(app, "bubble_text", "ab")
     wait_studio_reply(app, "!!reply.custom?.['mascot:update']")

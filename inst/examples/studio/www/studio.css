@@ -475,7 +475,7 @@
   font-size: 0.9rem;
 }
 
-/* Spatial studio, adapted from the approved direction D. System fonts and local assets only. */
+/* Styles for the mascot studio. System fonts and local assets only. */
 body:has(.pg-studio),
 [data-studio-host] body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;

@@ -307,7 +307,7 @@ describe("with_mascot_asserts()", {
     expect_gt(length(lines), 2L)
     expect_identical(lines, trimws(strsplit(conditionMessage(original), "\n", fixed = TRUE)[[1]]))
   })
-  it("gives mascot_error to every kind of failure checkmate reports", {
+  it("gives mascot_error to each kind of checkmate failure that mascot's checks can produce", {
     value <- 1
     failures <- list(
       "an assert_* function" = quote(checkmate::assert_string(value)),
@@ -351,6 +351,10 @@ describe("with_mascot_asserts()", {
     expect_identical(error, original)
     # An unrelated error that borrows a checkmate prefix but is not one of its messages.
     original <- simpleError("Assertion failed. This is not a checkmate message")
+    error <- tryCatch(with_mascot_asserts(stop(original)), error = identity)
+    expect_identical(error, original)
+    # The same for the collection wording without checkmate's bullet list.
+    original <- simpleError("3 assertions failed: not a checkmate message")
     error <- tryCatch(with_mascot_asserts(stop(original)), error = identity)
     expect_identical(error, original)
   })

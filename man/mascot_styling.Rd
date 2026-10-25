@@ -11,9 +11,18 @@ for the character's drawn colours.
 
 These classes are styling hooks: \code{.mascot} (the whole mascot),
 \code{.mascot-status} (status text), \code{.mascot-bubble} (speech panel),
+\code{.mascot-bubble-region} (the space for the speech panel),
 \code{.mascot-menu} (menu panel) and \code{.mascot-tooltip} (tooltip panel).
 Other classes and all \verb{--_mascot-*} properties are private and may change.
 Use \code{\link[=mascot_size]{mascot_size()}} and \code{\link[=mascot_placement]{mascot_placement()}} for size and position.
+
+\code{.mascot-bubble-region} is the space kept for the speech bubble: above an
+inline mascot (so a bubble never moves the page) and next to a floating one.
+It is kept even while no bubble shows. On a page that never shows a bubble,
+hide it with \verb{.mascot-bubble-region \{ display: none; \}}, so an inline mascot
+keeps no empty space above it. Hidden, it also stops screen readers from
+announcing bubbles. Leave its position, size and pointer events to the
+package.
 }
 
 \section{Public custom properties}{

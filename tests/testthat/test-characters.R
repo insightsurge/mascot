@@ -17,6 +17,13 @@ describe("mascot_character()", {
       expect_invisible(print(helper))
     }
   })
+
+  it("names unknown choices and rejects invalid strings", {
+    for (x in list(1, NULL, NA_character_, character(), c("tessa", "tessa"), "")) {
+      expect_error(mascot_character(x), "Assertion on 'id' failed")
+    }
+    expect_error(mascot_character("{oops"), "not a character", fixed = TRUE)
+  })
 })
 
 describe("character_json()", {

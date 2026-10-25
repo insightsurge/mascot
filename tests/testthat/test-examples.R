@@ -31,6 +31,9 @@ studio_go_live <- function(session) {
   invisible(NULL)
 }
 
+# The first value unless it is NULL; base R has `%||%` only from 4.4 and the package supports R 4.1.
+value_or <- function(value, fallback) if (is.null(value)) fallback else value
+
 # The studio app's own environment (its server, data and code builders) and its page, built without a browser.
 studio_parts <- function() {
   skip_without_studio_packages("studio")
@@ -764,9 +767,9 @@ describe("studio state and built previews", {
       # (it already held the value) keeps the value it sent.
       session$setInputs(
         bubble_text = messages$bubble_text$value,
-        bubble_html = messages$bubble_html$value %||% input$bubble_html,
+        bubble_html = value_or(messages$bubble_html$value, input$bubble_html),
         bubble_forever = messages$bubble_forever$value,
-        bubble_closable = messages$bubble_closable$value %||% input$bubble_closable,
+        bubble_closable = value_or(messages$bubble_closable$value, input$bubble_closable),
         select_function = "mascot_bubble"
       )
       expect_identical(eval(parse(text = output$code_function))$text, eval(state$bubble$helper)$text)

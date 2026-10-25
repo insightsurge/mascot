@@ -260,3 +260,25 @@ describe("reserved palette ids", {
     format_problem("input_type", "$.native_palette", character_format_parse(source))
   })
 })
+
+describe("shipped face kits", {
+  it("match their newest frozen copy, so a change to a kit's drawing is always deliberate", {
+    # Given the golden folders in version order
+    root <- test_path("fixtures", "golden")
+    folders <- list.dirs(root, recursive = FALSE, full.names = FALSE)
+    folders <- folders[order(numeric_version(folders))]
+    kits <- character_format_kits()
+    for (id in names(kits)) {
+      # When the newest frozen copy of each shipped kit is read
+      copies <- file.path(root, folders, "kits", paste0(id, ".json"))
+      copies <- copies[file.exists(copies)]
+      expect_true(length(copies) > 0L, label = paste("a frozen copy of the", id, "kit"))
+      if (length(copies) == 0L) {
+        next
+      }
+      # Then the shipped kit says exactly the same; spacing in the file does not matter
+      frozen <- jsonlite::fromJSON(copies[[length(copies)]], simplifyVector = FALSE)
+      expect_identical(kits[[id]], frozen, label = paste("the shipped", id, "kit"))
+    }
+  })
+})

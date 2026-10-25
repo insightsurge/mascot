@@ -1,0 +1,203 @@
+{
+  "id": "screen",
+  "description": "Static screen glyphs with budgeted emission.",
+  "roles": [
+    "feature",
+    "sweat",
+    "sparkle",
+    "sparkle_outline"
+  ],
+  "defaults": {
+    "eyes": "dot",
+    "mouth": "smile",
+    "brows": "none"
+  },
+  "glow": {
+    "blur": 3,
+    "alpha": 0.4
+  },
+  "eye_styles": {
+    "dot": {
+      "op": "eye_dots",
+      "centres": [
+        [
+          0,
+          0
+        ]
+      ],
+      "r": 6
+    },
+    "scan": {
+      "op": "eye_dots",
+      "centres": [
+        [
+          -3,
+          0
+        ],
+        [
+          3,
+          0
+        ]
+      ],
+      "r": 3
+    },
+    "arc": {
+      "op": "eye_arc",
+      "r": 8,
+      "start": 3.3,
+      "end": 6.1,
+      "width": 3
+    },
+    "slant": {
+      "op": "eye_path",
+      "d": "M-7 1 L5 -3",
+      "stroke": "feature",
+      "width": 3
+    },
+    "star": {
+      "op": "eye_path",
+      "d": "M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z",
+      "fill": "feature"
+    },
+    "dots": {
+      "op": "eye_dots",
+      "centres": [
+        [
+          -5,
+          0
+        ],
+        [
+          5,
+          0
+        ]
+      ],
+      "r": 3
+    },
+    "closed": {
+      "op": "eye_path",
+      "d": "M-7 0 L7 0",
+      "stroke": "feature",
+      "width": 3
+    }
+  },
+  "brow_styles": {
+    "none": {
+      "op": "brow_path",
+      "d": "M0 0",
+      "width": 0,
+      "stroke": "feature"
+    }
+  },
+  "mouth_styles": {
+    "smile": {
+      "op": "mouth_path",
+      "box": [
+        10,
+        6
+      ],
+      "items": [
+        {
+          "shape": "path",
+          "d": "M-1 0 Q0 1 1 0",
+          "stroke": "feature",
+          "width": 2.5
+        }
+      ]
+    },
+    "flat": {
+      "op": "mouth_path",
+      "box": [
+        10,
+        6
+      ],
+      "items": [
+        {
+          "shape": "path",
+          "d": "M-1 0 L1 0",
+          "stroke": "feature",
+          "width": 2.5
+        }
+      ]
+    },
+    "wide": {
+      "op": "mouth_path",
+      "box": [
+        10,
+        6
+      ],
+      "items": [
+        {
+          "shape": "path",
+          "d": "M-1 -0.2 Q0 1.5 1 -0.2 Z",
+          "fill": "feature",
+          "stroke": "feature",
+          "width": 2.5
+        }
+      ]
+    },
+    "wavy": {
+      "op": "mouth_path",
+      "box": [
+        10,
+        6
+      ],
+      "items": [
+        {
+          "shape": "path",
+          "d": "M-1 0 Q-0.5 -0.8 0 0 Q0.5 0.8 1 0",
+          "stroke": "feature",
+          "width": 2.5
+        }
+      ]
+    }
+  },
+  "effects": {
+    "sweat": {
+      "op": "sweat_drop",
+      "at": [
+        0,
+        0
+      ],
+      "items": [
+        {
+          "shape": "path",
+          "d": "M0 -8 Q9 2 0 10 Q-9 2 0 -8 Z",
+          "fill": "sweat"
+        }
+      ],
+      "mode": "progress",
+      "travel": 26,
+      "sway": 2,
+      "sway_rate": 12,
+      "fade_at": 0.9
+    },
+    "sparkle": {
+      "op": "sparkle_star",
+      "at": [
+        0,
+        0
+      ],
+      "items": [
+        {
+          "shape": "path",
+          "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+          "fill": "sparkle",
+          "stroke": "sparkle_outline",
+          "width": 1
+        }
+      ],
+      "reduced_items": [
+        {
+          "shape": "path",
+          "d": "M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z",
+          "fill": "sparkle",
+          "stroke": "sparkle_outline",
+          "width": 1
+        }
+      ],
+      "mode": "pulse",
+      "amplitude": 0.18,
+      "rate": 9
+    }
+  }
+}

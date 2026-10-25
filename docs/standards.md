@@ -445,6 +445,11 @@ version is announced in NEWS at least one release ahead. The checker may only ge
 except for a documented security or resource-safety fix, which comes with a diagnostic and migration guidance. Files
 are never modified or upgraded silently. Resolved files are self-contained.
 
+A source file can name a shipped face kit instead of embedding one, and then draws with the kit as installed. A change
+to a shipped kit's drawing is therefore deliberate and listed in NEWS; a look users should opt into ships under a new
+kit name. The golden tests record a frozen copy of each shipped kit and fail when the kit no longer matches it
+(`tests/testthat/fixtures/golden/README.md`). It may be revisited as the engine grows.
+
 ## 10. Sources
 
 - **POL:** CRAN Repository Policy, <https://cran.r-project.org/web/packages/policies.html>

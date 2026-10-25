@@ -242,6 +242,9 @@ format.mascot_character_data <- function(x, ...) {
 #' shared gestures and palettes); a custom character cannot take a definition from
 #' the installed package. A resolved file has its family defaults merged in and
 #' embeds its face kits, so it does not depend on the installed package.
+#' A source file that names a shipped face kit (`classic` or `screen`) draws
+#' with that kit as installed; a change to a shipped kit's drawing is listed in
+#' NEWS.
 #'
 #' Drawing coordinates are design units in a 300 by 300 frame. The point where
 #' the character stands on the ground is `(0, 0)`: 150 units from the left edge

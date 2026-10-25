@@ -329,9 +329,20 @@ with_mascot_asserts <- function(code, call = parent.frame()) {
     error = function(error) {
       checkmate::assert_class(error, "error")
       # Checkmate uses simple errors, without a dedicated assertion class.
-      # Match its assertion prefix so unrelated errors in promises pass through.
+      # Match its assertion prefixes so unrelated errors in promises pass through. checkmate 2.3.4 opens with
+      # "Assertion on '<name>' failed" (assert_*(), qassert(), a union given .var.name), "Assertion failed. One of
+      # the following must apply:" (a union without .var.name) or "<n> assertions failed:" (reportAssertions()).
       message <- conditionMessage(error)
-      assertion <- any(startsWith(message, c("Assertion on '", "One of the following assertions failed:")))
+      assertion <-
+        any(startsWith(
+          message,
+          c(
+            "Assertion on '",
+            "Assertion failed. One of the following must apply:",
+            "One of the following assertions failed:"
+          )
+        )) ||
+        grepl("^[0-9]+ assertions failed:", message)
       if (!inherits(error, "simpleError") || !assertion) {
         return(invisible(NULL))
       }

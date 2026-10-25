@@ -115,6 +115,8 @@ mascot_studio()
 
 When a form has missing entries or a report takes 20 seconds to build, update the mood and status line together so people using your app can see what is happening.
 
+<img src="long-task-demo.svg" style="width: 100%; max-width: 720px; height: auto;" alt="A short animation: Knurl is idle, then thinking while a report runs through three steps (reading the data, fitting the model, writing the report), and celebrating when the report is ready. His status text and the matching update_mascot() call change with each step." />
+
 - Every character has five shared moods (`"idle"`, `"thinking"`, `"happy"`, `"worried"` and `"celebrating"`), listed by [`mascot_moods()`](`r paste0(site_url, "articles/guide-mascot_moods.html")`).
 - Set a mood by name or with [`mascot_mood()`](`r paste0(site_url, "articles/guide-mascot_mood.html")`) in [`mascot()`](`r paste0(site_url, "articles/guide-mascot.html")`) and [`update_mascot()`](`r paste0(site_url, "articles/guide-update_mascot.html")`).
 - Leave `status = NULL` in `mascot()` to use the mood's default status line, or pass your own text with [`mascot_status()`](`r paste0(site_url, "articles/guide-mascot_status.html")`).

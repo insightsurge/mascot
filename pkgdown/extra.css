@@ -137,6 +137,17 @@ nav.navbar {
   --bs-navbar-brand-color: var(--m-ink);
   --bs-navbar-brand-hover-color: var(--m-ink);
 }
+/* The small logo mark (the favicon) before the package name: the full hex is too busy at navbar size. The url is
+   relative to this file, which pkgdown puts at the site root beside favicon.svg. */
+.navbar-brand::before {
+  content: "";
+  display: inline-block;
+  width: 22px;
+  height: 26px;
+  margin-right: 0.45rem;
+  vertical-align: -7px;
+  background: url("favicon.svg") center / contain no-repeat;
+}
 .navbar .nav-link {
   color: var(--m-muted);
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# cran-gate version: 2026-10-24
+# cran-gate version: 2026-10-25
 # CRAN gate: one command that says whether an R package would pass CRAN's checks, before you submit it.
 #
 #   Rscript <path to this file> [fast|tests|full|lint|nosuggests] [options]   (--help lists the options)
@@ -245,7 +245,8 @@ step_biome <- function(uses, log) {
 # roxygen2 version on another machine doesn't count as out-of-date docs.
 docs_snapshot <- function() {
   files <- c("NAMESPACE", list.files("man", full.names = TRUE))
-  files <- files[file.exists(files)]
+  # Files only: a folder such as man/figures (a package logo) has no checksum, and NA != NA would count as a change.
+  files <- files[file.exists(files) & !dir.exists(files)]
   hashes <- unname(tools::md5sum(files))
   desc <- readLines("DESCRIPTION", warn = FALSE)
   desc <- desc[!grepl("^(RoxygenNote|Config/roxygen2/version):", desc)]

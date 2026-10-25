@@ -76,3 +76,15 @@ tests/testthat/fixtures/format/invalid/*.json
 inst/examples/characters/study_bot.json
     Source: complete small Study Bot format-v1 example written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
+
+man/figures/logo.png
+inst/examples/studio/www/mascot-mark.svg
+    Source: the package logo (a hex sticker) and its small mark, drawn for this package; their sources are
+    pkgdown/logo/logo.svg and pkgdown/logo/mark.svg in the package's repository.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+man/figures/readme-demo.svg
+vignettes/long-task-demo.svg
+    Source: short animated demonstrations for the README and the "Get started" vignette, made for this package. The
+    character pictures inside them are drawn by this package's own engine (Tessa and Knurl).
+    Copyright (c) Harsh Verma. Licence: MIT.

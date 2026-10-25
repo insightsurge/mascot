@@ -7,6 +7,7 @@ Scripts for working on mascot. None of them ship with the package (`tools/` is i
 | `cran-gate.R` | The quality gate: one command that says whether the package would pass CRAN's checks and the house rules |
 | `test-cran-gate.R` | The gate's self-test: plants one defect per check and makes sure the gate catches it |
 | `build-site.R` | Builds the pkgdown site into `site/` |
+| `logo-assets.R` | Remakes the logo's PNG, the favicons and the studio's mark from `pkgdown/logo/logo.svg` and `pkgdown/logo/mark.svg` (needs Chrome); prints the command that copies the PNG to `man/figures/` |
 | `character-coverage.R` | Line coverage of the character files only, without the full tests run |
 | `stress/` | Shiny apps that try to break the mascot, run by hand in Chrome (see `stress/README.md`) |
 

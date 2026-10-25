@@ -607,12 +607,18 @@ body:has(.pg-studio),
 .pg-rail .pg-logo {
   width: 34px;
   height: 34px;
-  background: var(--studio-primary);
+  background: transparent;
   color: var(--studio-panel);
   font-weight: 750;
   font-size: 18px;
   padding: 0;
   margin-bottom: 6px;
+}
+.pg-logo-mark {
+  display: block;
+  width: 30px;
+  height: auto;
+  margin: 0 auto;
 }
 .pg-phone-label {
   display: none;
@@ -1500,6 +1506,9 @@ button.pg-call-name:focus-visible {
     font-size: 15px;
     margin: 0;
     flex-shrink: 0;
+  }
+  .pg-logo-mark {
+    width: 22px;
   }
   .pg-phone-label {
     display: block;

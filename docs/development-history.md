@@ -1,10 +1,11 @@
 # Development of 0.1.0 (archive)
 
 These are the changes recorded while mascot 0.1.0 was being developed, before its CRAN release. The versions 0.0.1 and
-0.0.2 were GitHub development milestones that exported no R functions. Some entries below were superseded before the
-release, so the R package changelog ([`NEWS.md`](https://github.com/insightsurge/mascot/blob/main/NEWS.md)) and the help
-pages say what 0.1.0 does. The history of the browser engine is in the
-[engine changelog](https://github.com/insightsurge/mascot/blob/main/vignettes/articles/engine-changelog.Rmd).
+0.0.2 were GitHub development milestones that exported no R functions; the development version after them is the one
+that exported R functions. Some entries below were superseded before the release, so the R package changelog
+([`NEWS.md`](https://github.com/insightsurge/mascot/blob/main/NEWS.md)) and the help pages say what 0.1.0 does. The
+history of the browser engine is on the
+[mascot-engine](https://insightsurge.github.io/mascot/articles/engine-changelog.html) page of the website.
 
 <details>
 <summary>Changes at the top of the section</summary>

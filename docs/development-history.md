@@ -1,11 +1,10 @@
----
-title: "Development of 0.1.0 (archive)"
----
+# Development of 0.1.0 (archive)
 
 These are the changes recorded while mascot 0.1.0 was being developed, before its CRAN release. The versions 0.0.1 and
 0.0.2 were GitHub development milestones that exported no R functions. Some entries below were superseded before the
-release, so the [R package changelog](../news/index.html) and the help pages say what 0.1.0 does. The history of the
-browser engine is on the [Engine changelog](engine-changelog.html) page.
+release, so the R package changelog ([`NEWS.md`](https://github.com/insightsurge/mascot/blob/main/NEWS.md)) and the help
+pages say what 0.1.0 does. The history of the browser engine is in the
+[engine changelog](https://github.com/insightsurge/mascot/blob/main/vignettes/articles/engine-changelog.Rmd).
 
 <details>
 <summary>Changes at the top of the section</summary>
@@ -109,7 +108,7 @@ browser engine is on the [Engine changelog](engine-changelog.html) page.
 </details>
 
 <details>
-<summary>Breaking changes</summary>
+<summary>API changes during development</summary>
 
 * The `branding` example is removed; `mascot_examples()` lists `"theme"` in its place. Use `mascot_example("theme")` (#378).
 

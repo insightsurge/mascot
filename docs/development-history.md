@@ -1,0 +1,339 @@
+# Development of 0.1.0 (archive)
+
+These are the changes recorded while mascot 0.1.0 was being developed, before its CRAN release. The versions 0.0.1 and
+0.0.2 were GitHub development milestones that exported no R functions; the development version after them is the one
+that exported R functions. Some entries below were superseded before the release, so the R package changelog
+([`NEWS.md`](https://github.com/insightsurge/mascot/blob/main/NEWS.md)) and the help pages say what 0.1.0 does. The
+history of the browser engine is on the
+[mascot-engine](https://insightsurge.github.io/mascot/articles/engine-changelog.html) page of the website.
+
+<details>
+<summary>Changes at the top of the section</summary>
+
+* An inline mascot's reserved speech-bubble space lets clicks reach neighbouring page controls, both when no bubble shows and in the empty space around a shown bubble. The bubble's text and close button still take pointer events (#506).
+
+* A floating mascot with `mascot_placement(drag = "snap")` that is taller or wider than the window (less its margins) now snaps to the corner it is dragged to. Before, a drag to the top of a short window, such as a phone held sideways, snapped it back to the bottom (#513).
+
+* In `mascot_studio()`, keyboard focus stays on a chip of the current call when the studio redraws the call, for example just after Reset; before, it could fall back to the page. The theme view's Check contrast and Show every mood buttons now say they are busy until the result of that click, or an error, shows, instead of coming back a moment early or when an earlier result is redrawn (#513, #530, #545). The inspector's Help and Guide panels say they are busy, and dim the page of the function before, until the page of the function just picked is drawn (#545).
+
+* In `mascot_studio()`, a panel or button no longer shows an earlier state as if it were current while the studio answers a change (#548):
+  * The Guide says it is busy, and dims the page of the character before, until it is drawn for the character just chosen.
+  * The click chip's editor opens the helper of the Click control as soon as you set it to an action or a menu; before, "Advanced controls", Help and Guide opened the previous one until the studio redrew the chip.
+  * Setting Host mode back to Live mascot while `mascot_preview()` is selected moves the Code tray off its Preview tab and stops building the hidden preview page. A change you made just before is built when the page is shown again, and the "Building..." badge no longer stays on meanwhile.
+  * The Check contrast button of the colour controls says it is busy until the result of that click shows.
+  * The Check contrast and Show every mood buttons keep keyboard focus while they say they are busy; before, focus left the button for the page.
+  * The studio's log and its `input$helper_minimised` readout no longer say the visitor restored the mascot: the mascot sends `FALSE` also when an `update_mascot()` call changes its placement, so they say "The mascot is no longer minimised".
+  * "R code for this function" says it is busy, and dims the code of the function before, until the code of the function just picked is drawn.
+  * The Copy buttons copy the code that belongs to what you just changed. Copy now waits for the studio's answer to its click, and the button reads "Copying..." meanwhile; before, it copied the code of a moment before and said "Copied". It reads "Copy unavailable" when no answer comes within five seconds.
+  * The status text, the mood and the bubble text keep what you typed or picked when the studio's answer to an earlier change arrives late; before, a slow connection could set the control back to the earlier value.
+  * The preview's "Building..." badge and the theme view's "Show every mood" button stay until the page inside the frame has loaded, not only until the studio has built it.
+
+* The website is now at <https://insightsurge.github.io/mascot/>, and the studio's "Package website" link and its guide links point there (#115).
+
+* A page carries each built-in character's data once, and only for the characters its mascots use. Before, every `mascot()` tag carried its character's whole data: a page with five Tessa mascots saved by `htmltools::save_html()` drops from 263 KB to 59 KB, and a `renderUI()` that redraws eight cards with Tessa sends 72 KB instead of 475 KB on each update. The data travels as an HTML dependency named after the character, so it works in Shiny apps (also with `renderUI()`, `insertUI()` and modals), saved and self-contained pages, and Quarto or R Markdown documents. Your own characters keep their data inside their tag, as before (#497).
+
+* The help pages read more plainly: stiff or vague wording in 19 help topics and the studio's guide summaries is rewritten, with every argument, default and link kept. The `update_mascot()` help now points to `theme`, not `character`, for the `mascot_palette_dropped` warning (#486).
+
+* `mascot()` builds its tag in under 15 ms instead of about 80 ms for a built-in character, and about 800 ms for your own checked character, on every call after the first. It works out a character's identity once per R process, or once per checked object, instead of on every call; the tags and mount tokens stay the same (#494).
+
+* `mascot_check_character()` and `mascot_read_character()` settle what character format version 1 accepts, so files written now keep loading (#493):
+  * `requires` is optional and lists only capabilities added after version 1; the eight version-1 capabilities are always available. Files that list them keep loading. An unknown capability stops the check with an error that names it.
+  * A top-level `$schema` string and keys that start with `x_` in any fixed-field object are accepted, kept when a character is checked and saved, and never read, so editors and other tools can store their own information. A `note` in a mood's face controls or in `brand` is a comment, as everywhere else, and the browser accepts a `note` wherever the checker does.
+  * Error messages give the value with its range or choices (coordinates included), the count or size with the limit for input and drawing budgets, and the part that reaches furthest outside the frame.
+  * The checker refuses what the browser would refuse: a clip on a kit effect item, a kit effect `fade_at` of 1, and an undeclared colour in `outline.lod.<band>.second`.
+  * `inst/format/policy-v1.json` holds only the limits the package reads: the input limits, the capability names and each detail band's drawing budget. The `study_bot.json` example has no `requires` field.
+
+* `mascot()`, `update_mascot()`, `mascot_preview()` and `mascot_colour_roles()`: the message for an unknown palette that another character has says each palette belongs to its own character (#462).
+
+* `mascot_check_character()` and `mascot_read_character()` say how to fix a character that is too big for its frame: keep every part, movement and effect inside the 300 by 300 frame at that size (#462).
+
+* `mascot_check_character()` and `mascot_read_character()` accept `alpha_visor` as the id of your own character (#462).
+
+* `mascot_examples()` says the `long-task` example needs promises and later (#462).
+
+* In `mascot_studio()`, the colour swatches update as soon as the colours change (#462).
+
+* The development condition `mascot_click_dropped` is gone: no public helper could raise it, so no app loses a warning it could see (#462).
+
+* The example character `study_bot.json` has an antenna: its `wave` gesture swings the antenna and its `nod` gesture tilts the head about its centre (the head is the top-level part, so the whole body turns with it), instead of both falling back to a whole-character tilt (#483).
+
+* mascot needs `shiny` 1.8.1 or later, and `bslib` 0.7.0 or later where it uses `bslib` (a `bs_theme()` as `theme`, the studio and the examples): the long-task example and the `update_mascot()` help use `shiny::ExtendedTask` and `bslib::input_task_button()`, which those versions introduced. Both versions install on R 4.1 (#483).
+
+* In `mascot_studio()`, a capital E can be typed in every text field of the inspector, such as the status text, bubble content, action label or menu name. Shift+E widens or narrows the Help and Guide panel only when the focus is not in a field (#482).
+* Pages that show a mascot have `window.mascot.version`, the version of mascot they run, in Shiny apps, `mascot_preview()` and Quarto or R Markdown pages. A page that loads a second copy of the engine in another version keeps the first and says so in the browser console (#464).
+
+* The engine draws only characters with `format_version` 1, the format of every built-in character and every character the R functions accept. A description in the 0.0.2 data shape (`inst/characters/tessa.json` in 0.0.2) is no longer drawn: the browser refuses it with an error. Every page loads about 87 KB less JavaScript (#463).
+
+* The website's top menu underlines the page you are on (#474).
+
+* The website's search results open on the site being read. Before, each result opened the future GitHub Pages address, which does not exist yet (#457).
+
+* The website's long Studio guide menu becomes a short Guides menu: a Studio guide page that lists every function's guide under the studio's groups, Make your own character, and All articles (#452).
+
+* The website has a simpler look in light and dark mode: a narrower font that is easier to read, teal colours, one still glow instead of the moving background, and text capped at a comfortable line length. Code is no longer split with hyphens on phones (#451).
+
+* `mascot()` inside a `renderUI()` cached with `shiny::bindCache()` now works for every session, not only the first: the second visitor's mascot shows its status and takes `update_mascot()` calls instead of turning worried with "Mascot UI baseline could not be verified" (#424).
+
+* `update_mascot()` called from a `later::later()` callback, or any other code outside a reactive event, now reaches the mascot straight away instead of waiting for the next input on the page (#427).
+
+* The website's menu has one "Changelog" entry with two pages, "R package" and "Engine", instead of two separate entries (#422).
+
+* The "Meet your mascots" article introduces Tessa, Sela, Knurl and Neer, with their five moods drawn live, their status lines, their colour palettes and where each character fits, and a 50-second film, with a transcript, in which the four meet at a bridge (#62).
+
+* The Get started article is rewritten from scratch: a one-minute overview and a first app, then short sections on moods, bubbles, gestures, size, colours, motion, clicks, modules, Quarto pages and updating, with every function linked to its Studio guide page (#39).
+
+* The Get started article has a "Quarto pages" section, and the README and the placement guide mention it: a plain `mascot()` draws in a rendered Quarto page (static, with inline placement recommended); the Quarto `shortcode` comes in 0.2.0 (#412).
+
+* `mascot_studio(view = "theme")` and `mascot_example("theme")` open Theme a mascot, a page of the studio's app that themes one character: a palette, your own colours for light and dark mode, CSS variables or your app's brand colours, with the live code to copy. Its Check tab shows every mood in light and dark, checks contrast and runs the common warnings in the package's own words. The studio's More menu opens it in a new tab (#378).
+
+* The studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).
+
+* The studio's Guide is written once, as R Markdown pages in `inst/examples/studio/guide/` (one per function, 26 in all), and the website shows the same pages under its Guides menu, on the Studio guide page. The studio now needs the optional package `knitr` (#353).
+
+* The studio updates its Guide and code builders for recent API changes: `mascot_popup_menu()` explains that clicks never fire, option-only helper calls are prevented, `update_mascot()` documents its reset table and ignored-helper warnings, `mascot_preview()` aligns with its remaining arguments and 160, 96 and 24 pixel comparison columns, and `mascot_theme()` documents `bs_theme()` constraints (#353).
+
+* The studio search shows one result per function with matching argument badges, and Help and Guide cards offer a corner icon to widen the docked inspector (#353).
+
+* `mascot_studio()` puts function controls and searchable help over a live canvas, with single-value call-chip editors, sentence-style controls, a last-gesture chip, draggable anchor labels and leader lines, help tooltips on inline sentence words, per-argument code styles and resets, phone-width previews, a family-filtered character listing and an activity log beside the update demonstrations (#353).
+
+* The studio wraps its configuration and top controls on phones, keeps floating editors inside the viewport, and limits anchor focus rings to keyboard-focused labels (#353).
+
+* The studio keeps Palette in its phone sentence, shows every `mascot()` parameter and its unset default, and reserves room for anchor labels. Touch help and scrollable editors follow the visible viewport when the keyboard opens (#353).
+
+* The studio gives phone search its own row, shares the utility buttons evenly, keeps the live status inside a taller host, aligns code-style radios and leaves room for underscores in call chips (#353).
+
+* The studio separates its Inspector views and More menu into a right-hand rail, with matching rail buttons and a compact Inspector entry on phones (#353).
+
+* The studio expands Help and Guide beside the rail, highlights edited call arguments, offers a compact call bar, and opens More examples in place with a return to the mounted studio (#353).
+
+</details>
+
+<details>
+<summary>API changes during development</summary>
+
+* The `branding` example is removed; `mascot_examples()` lists `"theme"` in its place. Use `mascot_example("theme")` (#378).
+
+* `mascot_preview()` removes the inert `placement` and `click` arguments. Remove them from preview calls; comparison columns now use 160, 96 and 24 pixels after the requested size (#350).
+
+* `mascot_popup_menu()` no longer sets `input$<id>_click` when its menu opens or closes. Handle choices through `input$<id>_menu`; use `mascot_action()` for a single action that sets the click count (#349).
+
+* `mascot_gesture(name)` accepts only `name`; its unused `...` is removed (#349).
+
+* `mascot_action()`, `mascot_popup_menu()` and `mascot_bubble()` reject explicitly supplied options when their main argument (`label`, `items` or `text`) is `NULL`. Supply the main argument with those options, or call the helper without options to remove the click or bubble (#349).
+
+* `mascot_character(id = "tessa")` names its argument `id`, as every other function that addresses a character does; `name =` is no longer accepted and has no alias. Pass the id positionally or as `id =` (#296).
+
+* `mascot_motion_settings()` replaces `mascot_motion()` without an alias; all settings must be named and `animate` is removed. Use `motion = FALSE` to stop everything (#239).
+
+* The pre-CRAN API puts `id` first in `mascot()`, names the server function `update_mascot()` without an alias, and requires arguments after `...` to be named. Dragging uses `"none"`, `"snap"` or `"free"`; untimed bubbles use `duration = Inf`, and floating placement uses a corner such as `"bottom-right"`. These choices settle the small API now: adding later is cheap, removing is costly (#259).
+
+</details>
+
+<details>
+<summary>New features</summary>
+
+* `mascot_read_character()` and `mascot_check_character()` are now public and *Experimental*: read a local JSON file or check JSON text or a plain list to get an opaque checked character object. Their arguments, results and diagnostics may change in 0.1.x (#339).
+* `mascot_character()` accepts a checked character object, uses it as passed and does not store it anywhere; pass it each time you choose that character. The studio currently directs custom objects to `mascot_preview()` or `mascot()` (#339).
+* `mascot_theme()` checks the form of colour role names when called. A role name that is not valid for the chosen character is now reported when the theme is used with `mascot()`, `update_mascot()` or `mascot_preview()`, rather than when `mascot_theme()` is called, so custom characters can use their own roles (#339).
+* The "Write your own character" article walks through reading and checking a character file (*Experimental*, #339).
+
+* Tessa has a new look: a slimmer teal hexagon with a silver ring that shimmers now and then, hair with a side fringe, a small bow, small studs, arms that hang down and a chest badge whose icon shows her mood. She keeps her five moods, her wave and nod, her status lines and every anchor name, and gains anchors for her fringe, lock and studs. Her colours gain roles for the hair (`hair`, `hair_shade`, `hair_light`), the badge (`badge`, `badge_icon`), the iris, the body shade and the ring's light and dark ends, and the bow now has its own `accessory` colour instead of following the rim. Her old palettes `nordic`, `coral` and `azure` are replaced (#359).
+* Tessa's own colours are named `night_teal`, with `"original"` still selecting them; `mascot_palettes("tessa")` lists `night_teal` first, and her other palettes are `sea_green`, `forest`, `spring`, `peach`, `coral_navy`, `desert_coral`, `rose_soft`, `lilac_soft` and `mist_navy`. A character file may name its own colours with `native_palette`, and a palette may carry a `group` for sorting in documentation (#358, #359).
+* Sela now has lilac with deep violet hair as her own colours, named `lilac_violet`, with `"original"` still selecting them. Her 12 palettes are `orchid` (her pink look with a plum rim and deeper hair), `coral_navy`, `azure`, `peach_ink`, `lilac_soft`, `mist_navy`, `desert_clay`, `forest`, `apricot_navy`, `blush_plum`, `lilac_dusk` and `sea_green`; `coral` and `peach` become `coral_navy` and `peach_ink`, and `azure` has updated colours (#379).
+* An unknown palette in `mascot()` (an error) or `update_mascot()` (a warning) now names the other characters that have a palette of that name (#358).
+* `mascot_popup_menu()` gains `disabled = FALSE`. With `TRUE`, the button stays reachable by keyboard and screen readers announce it as unavailable; it opens nothing and sends no input (#350).
+* `mascot()`, `update_mascot()` and `mascot_preview()` accept palette id strings
+  through `theme`; `mascot_theme()` gains `palette`, with role and CSS overrides
+  applied on top. Character swaps keep shared palette ids or warn and restore
+  original colours while retaining explicit colours for shared roles (#336).
+* Built-in characters gain named palettes; the Knurl palettes `sea_glass` and `night_screen`
+  are replaced by `orbit`, `carbon`, `cobalt_droid` and `crimson` (#336).
+* `mascot_colour_roles()` gains `palette`; `mascot_palettes()` now defaults to
+  all characters, with a final `character` column. `mascot_characters()` adds a
+  final `palettes` column, and printed themes show their palette (#336).
+* The studio top bar gains Palette, Mood and Gesture drop-downs and a Play
+  button; choices refresh with the character (#336).
+
+* Every character must now have a `wave` and a `nod` gesture that visibly move. `wave` must move a part other than `root` (an arm, a hand, a fin), so it is more than a tilt of the whole body; `nod` may move any part, `root` included. A character that breaks this is refused with a message naming the gesture (#328).
+
+* When a Shiny connection drops, each mascot immediately shows its worried mood and a readable connection message above the Shiny disconnect overlay. It restores the latest mood and status when Shiny reconnects (#70).
+
+* `mascot_mood()` and `mascot_gesture()` now check only the form of an id (lowercase letters, digits and underscores). `mascot()`, `update_mascot()` and `mascot_preview()` check it against the chosen character and list that character's moods or gestures when it is wrong, so `mascot_mood("hapy")` alone no longer errors but `mascot("helper", mood = "hapy")` does (#309).
+
+* Tessa is now drawn and animated by the same engine as every other character. She keeps her five moods, the wiggle on a mood change, her gestures, bow and clip, and every colour role name a theme can use; a few small face details are drawn slightly differently, and at the smallest sizes her bow and clip are hidden. The restore button now reads "Restore Tessa, <status>" instead of the mood's id (#308).
+
+* Mascots work in nested Shiny modules, function-built user interfaces in `golem` and rhino-shaped view modules. Bundled `golem` and `rhino` examples each show two independent nested modules (#133).
+
+* Minimising and restoring a mascot sets `input$<id>_minimised` in its owning module (#133).
+
+* `mascot(id, ..., character = "tessa")` requires an id first; arguments after it are named. `mascot()` adds a character with a mood, a status line and an optional message bubble to a Shiny app or Quarto page. It floats in the bottom-right corner by default (#190, #223).
+  * `placement = "inline"` places it in the page flow; a corner name or `mascot_placement()` gives the other options (#223).
+  * `bubble` shows a message (#196), `size` takes pixels, a percentage or `mascot_size()` (#201), `theme` takes colours, a `bslib::bs_theme()` or `mascot_theme()` (#202), `motion = FALSE` stops animation (#203), and `click` says what a click does: one action with a label, or a menu (#257).
+  * Without `click`, the mascot is a picture: no keyboard stop and no events. With one, it is a button named for screen readers, and every action activation (a click or tap, Enter or Space, a screen reader's activate command) sets `input$<id>_click` to a count. Holding a key down counts once, and a drag never counts (#237, #257).
+
+* `mascot_action()` makes the mascot a button for one action of the app, such as opening a help panel; `click = "Open help"` is the short form. Its label names the button for screen readers and shows in a tooltip on hover and keyboard focus, which Escape hides; `tooltip = FALSE` turns the tooltip off. `disabled = TRUE` keeps the button but sends nothing: it stays reachable with the keyboard, and screen readers announce it as unavailable (#257).
+
+* `mascot_bubble(text = NULL, ..., duration = 5, closable = TRUE)` names its options and rejects `duration = NULL`; use `Inf` instead. It sets a speech bubble with escaped text, or HTML only through `htmltools::HTML()` or tags (#196).
+  * `duration` is in seconds (default `5`); `duration = Inf` keeps the bubble until it is closed, replaced or cleared. `closable = FALSE` hides the close button; Escape still closes the bubble (#196).
+  * The countdown pauses while the mascot is hidden or minimised, while the pointer is over the bubble, and while keyboard focus is inside the mascot, then resumes with the time left (#196, #199, #229).
+  * Space is reserved above the mascot, so a bubble never moves the page (#196).
+  * While a bubble shows, the mascot looks towards it: up when it is above, down when it is below a top-corner mascot. Only the pupils move, at once and without animation, so eyes without visible pupils keep their look (#241).
+
+* `mascot_character()` chooses a character by id (#190).
+
+* *Experimental:* Knurl and Neer. Three more built-in characters: Sela, a second hexagon; Knurl, a robot; and Neer, a water elemental. `mascot_characters()` gains a `lifecycle` column. Tessa and Sela are stable: their id, name, five moods, gesture names, colour role names and palette names stay the same in every release, while their drawing, motion and exact colours may be polished. Knurl and Neer are experimental: anything about them may change, and neither is removed without a warning one release before. The help pages carry an experimental badge for them. The character file format and the functions for making your own characters are experimental too (#317, #318, #319, #26, #387).
+
+* `mascot_colour_roles()` lists a character's colour roles with their colours, the leaders they follow and their shade (#202, #213).
+  * It gains a `description` column and a `brand` column naming the `bslib` primary or secondary slot a role fills. The first four columns are unchanged (#296).
+  * `character` also accepts a `mascot_character()` helper.
+
+* `mascot_characters(..., family = NULL)`, `mascot_families()`, `mascot_anchors(character = "tessa")` and `mascot_palettes(character = "tessa")` list the characters this R session knows, their families, a character's attachment points and its colour palettes. Every listing is a base data frame whose first column is the value you pass on, and later versions only add columns at the end. (#296).
+
+* `mascot_example(name, ..., run = TRUE)` requires `run` to be named. It runs one bundled example app, or with `run = FALSE` returns the path to its `app.R` without copying any file (#178).
+
+* `mascot_examples()` lists the bundled Shiny apps in teaching order. The studio comes first; each other app is a copyable `app.R` for one scenario, built with `bslib` cards (#177, #213).
+
+* `mascot_gesture(name)` rejects extra arguments. It plays one movement once, without changing the mood: `"nod"` acknowledges an action and `"wave"` greets. Use it on its own or pass a plain name to `update_mascot()` (#196).
+
+* `mascot_gestures(character = NULL)` lists the gestures, with a description of each (#196). It gains `fallback` and `frames` columns; with a `character`, `frames` is the length of the movement that plays, so a wave that falls back to a rock reports the rock's length. (#296).
+
+* `mascot_mood()` chooses a mood for `mascot()` and `update_mascot()`; `"idle"` is the default (#190).
+
+* `mascot_moods(character = NULL)` lists the built-in moods and what each means (#190). It gains `status`, `shared` and `fallback` columns; with a `character`, it lists that character's moods, the five shared ones first. (#296).
+
+* `mascot_motion_settings()` independently controls `idle`, `mood_change`, `gestures`, `swap`, `minimising`, `restoring` and `messages`. Unnamed switches, including future ones, follow `others`; named switches win. Messages can move for selected panels, and minimise/restore gain short transitions. The visitor's reduced-motion preference always wins (#239).
+
+* `update_mascot()` skips gestures when `gestures = FALSE` while applying the mood, bubble and status in the same update; Shiny development mode reports the skipped gesture (#239).
+
+* `mascot_placement(position = "bottom-right", ..., minimise = TRUE, drag = "none")` names its options and rejects logical dragging values. It sets where a mascot sits: a floating corner (`"bottom-right"` by default, `"top-left"`, `"top-right"` or `"bottom-left"`) or `"inline"` (#201, #223).
+  * A floating mascot sits 1rem from the window edges, above fixed navigation bars and below modals. A bottom-right mascot moves above Shiny notifications while they show (#201).
+  * `minimise = TRUE` (the default for floating mascots) shows a minimise control. It appears on hover or keyboard focus, stays visible on touch screens, and hides while the mascot menu is open. A minimised mascot becomes a round restore button; updates still apply and bubble countdowns pause until it is restored (#201, #208, #229).
+  * `drag = "snap"` lets visitors drag a floating mascot, or its minimised restore button, to the nearest corner on release. The new corner becomes its `position` (#220).
+  * *Experimental:* `drag = "free"` keeps the mascot where it is dropped, at least 1rem inside the window. The reported position and how to restore it may still change (#220, #224).
+  * In Shiny, each drop sets `input$<id>_position`: a corner name after a snap, or a list with `x` and `y` after a free drop (#220).
+  * Inline mascots ignore `minimise` and `drag`; an explicitly supplied value gives an informational message, not an error (#229).
+
+* `mascot_popup_menu()` makes a click open a menu of app-defined items: pass it as `click`. A chosen item sets `input$<id>_menu` to its ID, so choosing the same item twice triggers the input twice (#143, #213, #257).
+  * `direction` is `"auto"` (the default), `"top"`, `"bottom"`, `"left"` or `"right"`. The menu opens from the mascot's on-screen position, and falls back to the opposite side when the chosen side has no room (#225).
+  * Opening the menu closes a speech bubble, and a new bubble closes an open menu (#225).
+  * Opening and closing the menu never set `input$<id>_click`. `label` names the menu button for screen readers and shows in a tooltip, which `tooltip = FALSE` turns off; without it, the button is named after the character, such as "Tessa, menu" (#257).
+  * Enter and Space toggle the focused menu control, once while the key is held down; the arrow keys, Home and End move between items, and Escape closes the menu (#213, #257).
+  * While the menu is open, the mascot looks towards it: up, down, left or right, on the side where the menu actually opened, after any fallback. The menu fits short screens and keeps keyboard focus on the visible control (#143, #208, #241).
+
+* `mascot_preview(character = "tessa", ...)` (*experimental*) names its options and shows an offline page that compares moods, sizes and light and dark colours, with contrast findings on the page and in R (#175, #213). It starts no Shiny app and writes no files; printing the page opens the Viewer or a browser.
+  * Rows are moods; columns are the requested size, then 160, 96 and 24 CSS pixels (#175, #350).
+  * Light and dark backgrounds are checked separately. Contrast warnings have the class `mascot_contrast` (#213).
+  * Each cell is wide enough for its bubble, so bubbles no longer cover neighbouring cells at any size (#244).
+
+* `mascot_size(size = 160, ..., small_screen = "auto")` sets the size in CSS pixels (at least 24) or as a percentage: of the parent width when inline, or of the window width when floating (#201).
+  * `small_screen = "auto"` (the default) scales floating mascots down on phones (at most 96 pixels) while leaving inline mascots unchanged. `small_screen = NULL` keeps the same size on every screen (#261).
+
+* `mascot_status()` sets the status text beside the mascot. The text is always plain, and `NULL` (the default) follows the mood (#190).
+
+* `mascot_studio(view = "studio", ..., fn = NULL, character = "tessa", run = TRUE)` (*experimental*) opens the studio, an app for exploring the package: a Guide to every exported function and argument, with explanations and the code to copy; a Code tray with UI, Server, App and Log tabs; and a canvas that shows the live mascot, or the page `mascot_preview()` returns when that function is selected (#38, #218).
+  * `view = "examples"` opens the bundled examples instead. `fn` starts on a named function's Guide entry, and `character` chooses the character (#38).
+  * `run = FALSE` returns the app without launching it.
+  * Show bubble sits right under the message box, and always shows the example just chosen, even when clicked at once (#249).
+
+* `mascot_theme(..., palette = NULL, light = NULL, dark = NULL, mode = "auto", css = NULL)` sets a character's colours and its light or dark mode (#202, #213).
+  * Colours you supply are kept exactly. Roles you leave out follow the character's declared leaders, such as `body`, in priority order; `mascot_colour_roles()` lists them (#213).
+  * `mode = "auto"` (the default) follows the page's light or dark mode, and uses light mode when the page gives no signal (#213).
+  * A chosen colour below 3:1 contrast with its background is kept; R warns in development mode, previews and the studio unless the contrast option overrides it. `bslib::bs_theme()` contrast checks use the light and dark backgrounds separately (#213).
+  * A `bslib::bs_theme()` fills a character's brand colours with its primary and secondary colours (#202).
+  * *Experimental:* `css` maps colour roles to CSS variables, such as `list(body = "--team-blue")`. The browser reads them, so R cannot check their values (#202).
+
+* `update_mascot(id, ..., session = shiny::getDefaultReactiveDomain())` names every update option; `NULL` leaves it unchanged and empty helpers reset settings. `update_mascot()` changes a mascot from the Shiny server: its character, mood, status, bubble, size, placement, theme, motion, click and gesture. Arguments left as `NULL` stay unchanged (#190, #196, #201, #202, #203, #143).
+  * An update sent before the mascot appears is kept until it does. The latest state is kept for a later first mascot with the same ID (#193), and only the latest early gesture plays, once (#200).
+  * A new `placement` replaces any position the visitor dragged the mascot to (#220).
+  * Invalid values give a warning and leave the mascot unchanged.
+
+</details>
+
+<details>
+<summary>Minor improvements and fixes</summary>
+
+* In a Shiny app that lets the browser reconnect (`session$allowReconnect()`), a mascot takes `update_mascot()` calls again after the browser reconnects into a new server session. Before, it showed its last state, then ignored every update until the page was reloaded. The page keeps what it shows until the new session sends a state, and that state then replaces it (#426).
+
+* `?update_mascot` names the `mascot_update_ignored` condition class, and `?update_mascot` and `?mascot_theme` explain that an unknown palette id is an error in `mascot()` but only a warning in `update_mascot()` (#387).
+
+* The character-file check names both format versions when a file's `format_version` is not supported (#339).
+
+* `?mascot_character_format` gains a Compatibility section: version-1 files keep loading through 0.1.x (#339).
+
+* `?mascot_theme` and the Get started article say that which parts of a character a `bslib::bs_theme()` colours is experimental and may change in a later release (#385).
+
+* `?mascot_theme` explains that built-in characters keep one outline colour in both modes, and how to set your own dark-mode outline with `dark = list(outline = )` (#380).
+
+* Exported examples assign mascot tags instead of printing the embedded character data (#350).
+
+* A `bslib::bs_theme()` used as `theme` needs `bslib` 0.7.0 or later. With an older `bslib`, mascot says so clearly instead of failing with an error about `body-bg-dark`, and the studio and its example ask for the same version. The minimum versions of `bslib` (0.7.0) and `shinytest2` (0.5.0) are now declared in `DESCRIPTION` (#431).
+
+* `mascot_motion_settings()` reports invalid `messages` panel names with class `mascot_error_choice` (#350).
+
+* `update_mascot()` help lists every helper reset and explains that each supplied setting replaces the whole group. Module warnings consistently name the local mascot id (#350).
+
+* Checked character data gains a compact `format()` method; `print()` assertion failures carry `mascot_error` (#350).
+
+* `mascot()` preserves specific error classes and their choice fields for handlers.
+  Malformed mood ids list the chosen character's moods as well as the lowercase
+  rule; unexpected arguments count unnamed values and list named ones (#350).
+
+* `mascot_placement()` prints logical drag values without quotes and explains
+  the `"none"`, `"snap"` and `"free"` modes in errors (#350).
+
+* Mascot conditions are listed in the package help, including choice, authoring and development diagnostics (#350).
+
+* Palette ids reserve `minimal`, `pastel`, `vivid`, `corporate`, `earthy` and `night` for style aliases (#350).
+
+* A character file's name for its own colours (`native_palette`) cannot be one of these style aliases either (#390).
+
+* Shiny excludes private mascot state inputs from bookmarks even when the app
+  later replaces its exclusions, including inside modules, and shows the
+  development problem overlay when a buffered update fails at mount (#350).
+
+* Theme errors list valid roles, invalid contrast-warning options warn once, and theme mode, drag and studio choices carry `mascot_error_choice` (#350).
+
+* `mascot_motion_settings(others = FALSE)` uses the same reduced-motion poses and instant drag transitions as `motion = FALSE` when no named switch enables movement (#349).
+
+* `mascot_popup_menu()` includes `tooltip` in its unexpected-argument hint (#349).
+
+* `update_mascot()` catches `mascot_error` conditions raised by inline helpers, warns with `mascot_update_ignored` and ignores the whole update so an observer can continue (#349).
+
+* `mascot_anchors("neer")` now lists 14 attachment points. The help explains
+  what anchors are for and that characters may have none (#360).
+
+* Click menus and other panels opening below a mascot leave room for its status text, including wrapped lines, and fall back to another side when there is not enough room (#344).
+
+* Tessa's default status now uses a sentence for each mood, so apps that use her default status show the new text beside her and to screen readers (#142).
+
+* `mascot_studio()` shows its canvas and mascot on narrow screens again; on screens narrower than 576 pixels the main area was empty (#341).
+
+* `update_mascot()` changes survive a mascot being re-rendered: a replaced mascot comes back as the server last set it, a gesture plays only once and a dismissed bubble stays dismissed, also in Quarto and R Markdown documents that run Shiny (#305).
+
+* Mascot layout reads batch into one animation frame per burst of page changes; unrelated changes are ignored unless an inline bubble needs refitting. Animating mascots pause drawing while scrolled outside the viewport; see the engine changelog on the package website (#295).
+
+* Minimised mascots restore sharp without interaction: the canvas backing size matches its displayed size times the device pixel ratio, and the character is redrawn on restore, including when animated, with `restoring = FALSE` and under reduced motion (#275).
+
+* `update_mascot()` accepts `session$ns()` ids without adding the module namespace twice, including when replaying updates after a mascot reappears (#133).
+
+* The help of `update_mascot()` shows how to make the mascot react to an app's state with an observer: a long computation run as a `shiny::ExtendedTask`, and form validation (#272).
+
+* Styling has five public classes, shared panel colours (`--mascot-panel-bg`, `--mascot-panel-color`, `--mascot-panel-border`), restore-button colours (`--mascot-restore-bg`, `--mascot-restore-fg`, `--mascot-restore-glow`) and `--mascot-z-index` (default 1031), documented in `?mascot_styling`. User colours win over page and Bootstrap colours; other custom properties use the private `--_mascot-*` prefix (#260).
+
+* The studio's sidebars use an opaque page background on phones, hiding the floating mascot beneath them in light and dark mode (#265).
+
+* Helper print methods show calls using only non-default public arguments; their fields are internal. Listings return base data frames with stable existing columns and the accepted value in the first column (#259).
+
+* R conditions carry `mascot_error`, `mascot_warning` or `mascot_message`; ignored updates also carry `mascot_update_ignored`. R contrast warnings appear in development mode, previews and the studio by default, with `mascot.contrast_warnings` forcing them on or off everywhere (#259).
+
+* The speech bubble, the menu and the action tooltip share one look and appear motion, in the page's light or dark colours; the menu and the tooltip also share one placement next to the character. The bubble keeps its own placement, which works before the page's scripts run (#233).
+
+* `mascot_theme()` reads short hex colours such as `"#000"`, which `bslib::bs_theme()` can return, on every supported R version, and the studio runs on R 4.1 to 4.3 (#255).
+* The mascot helper objects (`mascot_bubble()`, `mascot_theme()` and the others) print and format readably (#213).
+* `mascot()` without an `id` explains that every mascot needs one and shows `mascot("helper")` (#259).
+* Every size draws the full character. The separate small-size drawing from 0.0.2 is removed, because below 72 pixels it looked worse than the full face (#219).
+* The speech bubble follows the page's light or dark signal, like the drawing; a dark system setting alone keeps it light (#215).
+* The Shiny examples show live theme and motion settings, a colour reset and a complete module menu (#208). The long-task example runs its slow step with `shiny::ExtendedTask`, so the app stays responsive, and every example has a title, a one-line purpose and a light and dark switch (#215).
+* The Get started article walks through the helpers, modules and personalising Tessa, with runnable examples and screenshots of themes and menu actions (#177).
+
+</details>

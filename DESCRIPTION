@@ -8,10 +8,10 @@ Description: Adds a character drawn in code to 'Shiny' apps and 'Quarto'
     animates when the mood changes; a 'Shiny' server can change its mood,
     status, speech bubble and gestures, and a click can run an action or
     open a menu. It follows light and dark mode and takes its colours from
-    built-in palettes, your own colours or the app's 'Bootstrap' theme. You
-    can describe your own characters in 'JSON' and check them before use,
-    and a local studio app demonstrates every function. It works offline:
-    the drawing is done in the browser from bundled 'JavaScript'.
+    built-in palettes, your own colours or a 'bslib' theme. You can describe
+    your own characters in 'JSON' and check them before use, and a local
+    studio app demonstrates every function. It works offline: the drawing is
+    done in the browser from bundled 'JavaScript'.
 License: MIT + file LICENSE
 URL: https://insightsurge.github.io/mascot/, https://github.com/insightsurge/mascot
 BugReports: https://github.com/insightsurge/mascot/issues

@@ -8,11 +8,11 @@ mascot adds a live character to a Shiny app or a Quarto page. The character is d
 
 * `mascot()` places a mascot in a Shiny UI or a rendered Quarto or R Markdown page, floating in a corner or inline in the page. `update_mascot()` changes its mood, status, bubble, gesture, size, placement, theme, motion or character from the Shiny server, also inside modules, `golem` and rhino-style apps.
 
-* Each `mascot()` argument takes a plain value or a helper: `mascot_mood()`, `mascot_status()`, `mascot_bubble()` (a speech bubble), `mascot_gesture()` (a nod or a wave), `mascot_size()`, `mascot_placement()` (corners, inline, minimising and dragging), `mascot_theme()`, `mascot_motion_settings()`, `mascot_character()`, and for clicks `mascot_action()` (one action) or `mascot_popup_menu()` (a menu).
+* Each `mascot()` argument takes a plain value or a helper: `mascot_mood()`, `mascot_status()`, `mascot_bubble()` (a speech bubble), `mascot_gesture()` (a nod or a wave), `mascot_size()`, `mascot_placement()` (corners, inline, minimising and dragging; `drag = "free"` is *experimental*), `mascot_theme()`, `mascot_motion_settings()`, `mascot_character()`, and for clicks `mascot_action()` (one action) or `mascot_popup_menu()` (a menu).
 
 * Four built-in characters: Tessa and Sela (two hexagons, stable), and Knurl (a robot) and Neer (a water elemental), both *experimental*. They share five moods, `"idle"`, `"thinking"`, `"happy"`, `"worried"` and `"celebrating"`, and the `nod` and `wave` gestures. `mascot_characters()`, `mascot_families()`, `mascot_moods()`, `mascot_gestures()`, `mascot_anchors()`, `mascot_palettes()` and `mascot_colour_roles()` list what each character offers.
 
-* Colours: each character has named palettes, and `mascot_theme()` takes your own colours for light and dark mode, the primary and secondary colours of a `bslib::bs_theme()`, or (*experimental*) CSS variables. Mascots follow the page's light or dark mode. `?mascot_styling` lists the classes and CSS variables you can style.
+* Colours: each character has named palettes, and `mascot_theme()` takes your own colours for light and dark mode, the primary and secondary colours of a `bslib::bs_theme()`, or CSS variables. Two of these are *experimental*: which parts of a character a `bs_theme()` colours, and CSS variables, may change in a later release. Mascots follow the page's light or dark mode. `?mascot_styling` lists the classes and CSS variables you can style.
 
 ## Accessibility
 
@@ -30,7 +30,7 @@ mascot adds a live character to a Shiny app or a Quarto page. The character is d
 
 ## Your own characters (experimental)
 
-* A character is a JSON file in character format version 1. `mascot_read_character()` reads one and `mascot_check_character()` checks one, with messages that say what to fix; pass the result to `mascot_character()`. The "Write your own character" article walks through it. These functions and the format are *experimental*: their arguments, results and messages may change in 0.1.x, and format version 1 files keep loading.
+* A character is a JSON file in character format version 1. `mascot_read_character()` reads one and `mascot_check_character()` checks one, with messages that say what to fix; pass the result to `mascot_character()`. The "Write your own character" article walks through it. These functions and the format are *experimental*: the functions' arguments, results and messages may change in a later release, and what the format accepts may grow, while format version 1 files keep loading.
 
 ## Built for `GxP` work
 

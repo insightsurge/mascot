@@ -15,27 +15,42 @@ the first CRAN release.
 ## Summary
 
 * **One drawing path.** Every character, built-in or your own, is drawn from a character file in format version 1:
-  parts and geometry, faces, mood channels, motion tracks, detail bands for small sizes and kit effects. The older
-  drawing code and the bridge that drew Tessa through it are gone (#308, #313, #463).
+  parts and geometry, faces, mood channels, motion tracks, detail bands for small sizes and kit effects. A part item
+  can glow in a palette colour, and outlines are painted under the fill so that only their outer half shows. The
+  older drawing code and the bridge that drew Tessa through it are gone (#300, #308, #313, #325, #463).
+* **Detail bands.** The band comes from the canvas width: micro below 48 pixels, small from 48 to 127 and full from
+  128. A band over its limits is refused before anything is painted; the old band stays and the refusal is reported
+  once in the browser console (#303).
 * **Deterministic.** A frame is worked out from the character and its state only: the engine never reads the clock
   to draw and never calls `Math.random()`.
 * **The browser checks what R checks.** It counts drawing work with the same rules and limits as R for each detail
   band, refuses reserved capabilities and requires a `wave` and a `nod` that move, so a character R accepts draws in
-  the browser and the other way round (#304, #306, #328, #493).
+  the browser and the other way round. Accessory part ids cannot collide, and the optional parts of the format
+  (`requires`, `$schema`, `note` and `x_` keys) are accepted as in R (#304, #306, #312, #328, #493).
 * **The host.** It mounts mascots in Shiny apps, saved pages and Quarto or R Markdown pages, keeps updates that
   arrive before a mascot appears, survives re-rendering, works in nested modules, shows connection loss and starts
-  again when a page reconnects into a new Shiny session (#70, #133, #305, #426).
+  again when a page reconnects into a new Shiny session. Shiny keeps one complete state per mount, so a used gesture
+  or a dismissed bubble stays that way when an element is replaced (#70, #133, #305, #426).
 * **Panels and clicks.** The speech bubble, the menu and the action tooltip share one panel look; the mascot looks
-  towards an open bubble or menu. Menus open on the side with room and can be disabled; the space kept for the
-  bubble lets clicks through (#225, #233, #241, #257, #350, #506).
-* **Placement.** Floating corners, inline placement, minimising with a sharp redraw on restore, and dragging that
-  snaps to the nearest corner or (experimental) stays where it is dropped (#220, #275, #513).
+  towards an open bubble or menu. A click does nothing, runs one action or opens a menu; only the action sends
+  `input$<id>_click`. Menus open on the side with room, one at a time, and can be disabled; the space kept for the
+  bubble lets clicks through (#225, #233, #241, #257, #349, #350, #506).
+* **Placement.** Floating corners, inline placement, minimising with a sharp redraw on restore (reported to Shiny as
+  `input$<id>_minimised`), a default size capped at 96 pixels on narrow screens with `small_screen = "auto"`, and
+  dragging that snaps to the nearest corner or (experimental) stays where it is dropped (#133, #220, #259, #275,
+  #513).
+* **Motion.** Gestures play from tracks with five easing curves, interruption, reduced motion and a five-second
+  deadline. A swap to another character fades the old one out and the new one in, and is instant with reduced
+  motion. Idle, mood change, gestures, swaps, minimising, restoring and panel messages each have their own switch
+  (#239, #299, #307).
 * **Character files stay as they are.** Frozen copies of the 0.1.0 character files and face kits live in the tests'
   golden folder with their checksums: a test fails when a frozen file changes or goes, every frozen character must
   keep loading, and a shipped face kit can change only on purpose, through a copy for the next version and a NEWS
   line (#467, #554).
 * **Light on the page.** Layout reads are batched, mascots scrolled off-screen stop drawing, and a page carries each
   built-in character's data once (#295, #497).
+* **Palettes.** R resolves a named palette; the host applies palette colours first, then role overrides, then CSS.
+  A swap keeps the palette when the incoming character's own colours carry its id (#336, #358).
 * **Styling and version.** Public classes, `--mascot-*` custom properties and the `.mascot-bubble-region` class are
   documented in `?mascot_styling`; everything else is private. `window.mascot.version` gives the version on the
   page, and a page that loads a second copy of the engine in another version keeps the first and says so in the
@@ -44,742 +59,238 @@ the first CRAN release.
 ## Development entries
 
 <details class="engine-dev-entries">
-<summary>The 43 dated entries recorded while 0.1.0 was developed, newest first</summary>
-
-The visual tool some of them mention (`tools/visual/`) is no longer in the repository.
-
-<h3 id="2026-10-25-the-bubble-space-is-a-public-styling-class-558">2026-10-25 — The bubble space is a public styling class (#558)</h3>
-
-**In brief:** `.mascot-bubble-region`, the space kept for the speech bubble, is now a public styling class next to
-`.mascot-bubble`: hide it with `display: none` on a page that never shows a bubble. From 0.1.0 on, renaming it needs
-a deprecation.
-
-**Technical:**
-
-* No engine code changes. `?mascot_styling` lists the class, and a test checks that `mascot()` puts it on the page.
-
-<h3 id="2026-10-24-empty-speech-bubble-space-lets-clicks-through-506">2026-10-24 — Empty speech-bubble space lets clicks through (#506)</h3>
-
-**In brief:** The reserved space above an inline mascot lets clicks reach neighbouring page controls when no
-bubble shows and around a shown bubble. The bubble, its scrolling text and its close button remain interactive.
-
-**Technical:**
-
-* `mascot.css`: `.mascot-bubble-region` uses `pointer-events: none`, and `.mascot-bubble` restores
-  `pointer-events: auto` for itself and its contents. The reserved dimensions and floating placement rules stay
-  the same; status text and reduced-motion rules are unchanged.
-
-<h3 id="2026-10-23-a-dragged-mascot-snaps-to-the-corner-it-was-dropped-at-513">2026-10-23 — A dragged mascot snaps to the corner it was dropped at (#513)</h3>
-
-**In brief:** With `drag = "snap"`, a mascot taller (or wider) than the window less its margins now snaps to the
-corner it was dragged to. Before, it was kept inside the window first, which left it in the lower (or right) half, so
-a drag to the top snapped it back to the bottom.
-
-**Technical:**
-
-* `mascot-host.js`: `drop()` picks the corner with `nearestCorner()` from the drop point before `clampPoint()` (the
-  pointer's move added to where the mascot started), with the mascot's own size, instead of from the box it has once
-  kept inside the window. A mascot that fits is placed as before; the box after the drop still starts the snap
-  animation.
-
-<h3 id="2026-10-23-a-built-in-character-s-data-once-per-page-497">2026-10-23 — A built-in character's data once per page (#497)</h3>
-
-**In brief:** A built-in character's data block sits once in the page head, however many mascots use the character;
-a custom character's block stays inside its mascot element. Nothing drawn changes.
-
-**Technical:**
-
-* `mascot()` no longer puts the `<script type="application/json" data-mascot-character="<id>">` block of a built-in
-  character inside the tag. An HTML dependency named `mascot-character-<id>` puts the same block in the page head;
-  `htmltools` and Shiny add it once per page by name, and Shiny adds it before it inserts the HTML of `renderUI()`,
-  `insertUI()` or a modal, so it is on the page before the engine mounts.
-* `mascot.js` has `characterScript(id, scope)`, which finds the block: with a mascot element as `scope`, the
-  element's own block first, then a block outside every mascot element (the page's copy), never a block inside another
-  mascot. `readCharacter(id, scope)` parses what it finds; with no scope it searches the whole page, as before.
-* `mascot-host.js` takes the character text for a `template-needed` recovery through `characterScript()`, so a mascot
-  whose character data is in the page head recovers as before.
-
-<h3 id="2026-10-23-character-format-version-1-settled-for-outside-authors-493">2026-10-23 — Character format version 1 settled for outside authors (#493)</h3>
-
-**In brief:** The engine accepts what the R checker accepts and refuses what it refuses: `requires` is optional, a
-top-level `$schema` and `x_` extension keys are accepted and never read, and a `note` is accepted wherever R accepts
-one. An unknown capability is named in the error, and errors about kit effect settings point to the kit definition.
-
-**Technical:**
-
-* `mascot-parts.js`: an unknown name in `requires` gives "This file needs the capability ..." with the name. The
-  band overrides (`lod`, its bands and their face flags) and a mood's face controls (and its reduced face) skip a
-  `note` and keys that start with `x_`. The id walk never reads an `x_` key, in any object (R checks the ids of a
-  map in full first).
-  `mascot.parts.capabilities` lists the supported and reserved capability names, for the parity test with the format
-  policy.
-* `mascot-motion.js`: a track object and the `motion`, `motion.change` and `motion.idle` objects accept a `note` and
-  `x_` keys, and the motion settings never read them.
-* `mascot-host.js`: with a brand theme, the host fills only the `primary` and `secondary` slots of a character's
-  `brand`, so a `note` or an `x_` key there no longer stops the mount.
-* `mascot-geometry.js`: a `ref` item accepts `x_` keys beside its overrides.
-* `mascot-faces.js`: a clip on a kit effect item is refused at
-  `$.face.kit_definition.effects.<id>.items[<n>].clip` (or `reduced_items`), and the `fade_at`, `amplitude` and `rate`
-  checks report `$.face.kit_definition.effects.<id>.<setting>`, the paths the R checker uses. `fade_at` must be below
-  1, as in R, rather than at most `1 - Number.EPSILON`.
-
-<h3 id="2026-10-22-one-copy-of-the-sweat-and-sparkle-maths-465">2026-10-22 — One copy of the sweat and sparkle maths (#465)</h3>
-
-**In brief:** Nothing drawn changes. The sweat drop and the sparkle star are drawn with
-`mascot.parts.sweatProgress()` and `mascot.parts.sparklePulse()`, so the tests of those two functions test the maths the
-drawing uses.
-
-**Technical:** `mascot.faces.effects()` takes the offset and opacity of a `progress` effect from
-`mascot.parts.sweatProgress()`, and the scale and reduced-motion form of a `pulse` effect from
-`mascot.parts.sparklePulse()`, instead of repeating their formulas. It checks the effect value itself first, so an
-invalid value fails with code `input_type` at the path `$.effects.<id>`.
-
-<h3 id="2026-10-22-a-readable-engine-version-and-comments-that-say-what-the-code-does-464">2026-10-22 — A readable engine version, and comments that say what the code does (#464)</h3>
-
-**In brief:** `window.mascot.version` gives the version of mascot that a page runs, in Shiny apps, `mascot_preview()`
-and Quarto or R Markdown pages. A page that loads a second engine of another version keeps the first and says so in
-the browser console, instead of ignoring the second without a word.
-
-**Technical:**
-
-* `mascot_dependency()` gives the `mascot.js` script tag a `data-mascot-version` attribute with the package version;
-  `mascot.js` reads it into `window.mascot.version` (`null` when a page loads the file without it). Its load-twice
-  guard warns once through `console.warn` when the second copy has another version.
-* Comments in `mascot-host.js`, `mascot-player.js`, `mascot-parts.js`, `mascot-geometry.js` and `mascot.css` say what
-  the code does now, without internal stage names or references to documents outside the package.
-* `mascot-player.js` reads a gesture track's key values as `k.value` (normalised keys are always objects), and
-  `mascot-host.js` drops a check for a missing description that an earlier line already makes.
-
-<h3 id="2026-10-22-the-engine-has-one-drawing-path-463">2026-10-22 — The engine has one drawing path (#463)</h3>
-
-**In brief:** The engine draws characters with `format_version` 1 only, the format of every built-in character and of
-every character the R functions accept. The second drawing path, for the data shape of 0.0.2, could not be reached
-from R and is removed: about 2,090 lines and 87 KB less JavaScript on every page. Nothing drawn through the R
-functions changes.
-
-**Technical:**
-
-* `mascot-draw.js` is removed, and `mascot_dependency()` no longer lists it.
-* `mascot.js` keeps `fps`, `readCharacter()` and `validColour()`; `draw()`, `validateCharacter()` and
-  `checkCharacter()` are removed. Its load-twice guard now keys on `readCharacter`.
-* `mascot-motion.js` keeps `mascot.motion.tracks`, `mascot.motion.shared` (with `swapTiming`),
-  `mascot.motion.settings` and `mascot.motion.panels`; the player for the 0.0.2 shape, `mascot.motion.pose()`,
-  `mascot.motion.frame()` and `mascot.motion.validate()` are removed. `mascot.mount()` always mounts with
-  `mascot.runtime`.
-* `mascot-player.js`: its header holds the player contract. `update({ character })` with a description that is not
-  format version 1 fails with "update.character: expected a character with format_version 1".
-* `mascot-host.js`: validation, the detail band check (`mascot.runtime.check()`), the gaze, the restore control and
-  a swap without a mood always take the format-v1 route; the branches for the 0.0.2 shape are removed.
-
-<h3 id="2026-10-21-a-page-that-reconnects-into-a-new-shiny-session-starts-the-protocol-again-426">2026-10-21 — A page that reconnects into a new Shiny session starts the protocol again (#426)</h3>
-
-**In brief:** After Shiny reconnects the browser into a new server session (`allowReconnect()` on Shiny Server or
-Connect), mascots take `update_mascot()` calls again. Before, they kept their last state and ignored every update until
-the page was reloaded.
-
-**Technical:** `mascot-host.js` listens to `shiny:sessioninitialized` and, when the session id differs from the one it
-knew, resets each live mascot's applied revision and its gesture and bubble watermarks to zero and publishes the
-snapshot again as a new kind of start, `resume`, keeping the mount and its generation. The new session has issued no
-numbers, so the old ones would have been rejected by both sides. A `template-needed` reply is answered with a `resume`
-snapshot that carries the baseline. The page keeps what it shows until the new session sends a state (the server sends
-nothing at resume unless the app has already called `update_mascot()` in the new session); that state then replaces the
-old one, and the bubble written into the page by `mascot()` is not counted as a new bubble, so a dismissed bubble does not reopen. Within one
-session nothing changes.
-
-<h3 id="2026-10-20-removed-the-module-namespace-hint-392">2026-10-20 — Removed the module namespace hint (#392)</h3>
-
-`mascot-host.js` no longer has `suggestNamespace()`, the two-second development-mode hint for a missing `ns()`. It could
-not be reached from Shiny, because R drops an update for an id that is not mounted, so no user ever saw it. The module
-rule stays documented in `?mascot` and `?update_mascot`.
-
-<h3 id="2026-10-19-palette-kept-on-a-swap-when-it-names-the-incoming-character-s-own-colours-358">2026-10-19 — Palette kept on a swap when it names the incoming character's own colours (#358)</h3>
-
-When a mascot swaps to a character whose own colours carry the selected palette id (its `native_palette`), the host
-keeps that palette id and applies no palette colours, as it does for `original`.
-
-<h3 id="2026-10-19-disabled-menus-350">2026-10-19 — Disabled menus (#350)</h3>
-
-Menu click settings carry a `disabled` flag through validation and replacement.
-The host reuses the action button's `aria-disabled` and activation guard: the
-button stays focusable but opens nothing and sends no input. Disabling an open
-menu closes it; replacing it with an enabled menu allows activation again.
-
-<h3 id="2026-10-18-menu-toggles-no-longer-send-action-clicks-349">2026-10-18 — Menu toggles no longer send action clicks (#349)</h3>
-
-`mascot-host.js` sends `input$<id>_click` only for action buttons. Opening or closing a menu by pointer or keyboard
-leaves the click count unchanged; choosing an item still sends `input$<id>_menu` with event priority.
-
-<h3 id="2026-10-18-named-palettes-resolved-in-r-336">2026-10-18 — Named palettes resolved in R (#336)</h3>
-
-The host receives a palette id and its light and dark leader colours separately
-from explicit overrides. It applies palette colours first, role overrides next,
-and CSS last. R settles palette retention on character swaps and warns when the
-incoming character lacks the id. Host patches outside Shiny also resolve a shared
-palette against the incoming character, or drop it when unavailable, keeping explicit
-overrides. Followers continue to use the character's rules.
-
-<h3 id="2026-10-17-mascots-show-connection-loss-in-shiny-70">2026-10-17 — Mascots show connection loss in Shiny (#70)</h3>
-
-**In brief:** When Shiny loses its connection, every mounted mascot switches straight to its worried mood and announces
-"Connection lost. Reload the page to continue." above the disconnect overlay. Updates received during the outage are
-retained as the state to restore when Shiny reconnects.
-
-**Technical:** `mascot-host.js` listens to Shiny `shiny:disconnected` and `shiny:connected` document events, keeps
-the disconnect mood authoritative across updates and remounts, and restores the latest host state on reconnect.
-`mascot.css` raises each mascot above the Shiny disconnect overlay.
-
-<h3 id="2026-10-17-browser-validation-requires-moving-wave-and-nod-gestures-328">2026-10-17 — Browser validation requires moving wave and nod gestures (#328)</h3>
-
-The browser character validator now refuses a character without `wave` or `nod`, or with a gesture whose keyed values
-never change. A wave needs a changing track on a non-root part; a nod can change any channel, including `root`.
-
-<h3 id="2026-10-17-outlines-sit-under-the-fill-slim-as-in-the-drawings-325">2026-10-17 — Outlines sit under the fill, slim as in the drawings (#325)</h3>
-
-**In brief:** Sela, Knurl and Neer looked heavier in the engine than in their drawings. The outline is now painted
-under the shape's colour, as in the drawings: only its outer half shows, and its light edge sits outside the shape
-instead of inside it. Their outline widths grow by half so the visible line keeps a clear weight (the package creator chose this
-from three options). Tessa has no outlined parts and does not change.
-
-**Technical:**
-
-* `mascot.geometry` paints an item with `outline: true` in the order second outline, outline, fill, then the item's
-  own `stroke`. Before, the fill came first and both outline strokes covered it.
-* The same paint passes in a different order, so the drawing-work counts are unchanged.
-* `sela.json` and `neer.json`: outline 3 to 4.5, second outline 5 to 6.5; `knurl.json`: 2.5 to 3.75 and 5 to 6.25 (its
-  micro-band outline is unchanged).
-
-<h3 id="2026-10-17-the-browser-counts-drawing-work-the-way-r-does-304">2026-10-17 — The browser counts drawing work the way R does (#304)</h3>
-
-**In brief:** Before a character is drawn, the browser works out the most drawing work it can ever need in each detail
-band and refuses a band that is over its limits. It now counts everything R counts, with the same rules, so a
-character that R accepts is accepted in the browser and the other way round.
-
-**Technical:**
-
-* `mascot.runtime.bound()` (`mascot-player.js`) counts all nine limits of the format: parts and one accessory per slot,
-  the face kit (brows, eyes, eyelids, lashes, clips, mouth, blush, glow), kit effects, both declared and started by a
-  gesture, the ground shadow, mood and reduced-motion item changes, clips and gradients.
-* Glow is counted on the box a shape really covers (after `ref` and `transform` moves, rotation and scale), on the
-  style a shared shape resolves to, and on the largest of an item's mood alternatives. R gained the last rule too
-  (`R/character-work.R`): a mood that adds a stroke to a glowing item was counted too low on both sides.
-* Scale ranges start from every part's resting scale, worn or not; `null` keys of `set` tracks are ignored. A clip
-  whose target item is missing in a reachable variant throws `missing_reference` at `$.clip`, as in R.
-* `mascot.geometry.bandBound()` and `checkBudget()` are removed: their only user was the Tessa bridge (#313), and
-  they had drifted from the count in the runtime. `mascot.geometry.checkWork()` stays.
-* Accessory part ids are built in one place, `mascot.parts.accessoryPartId()`.
-* Tests compare the browser with R at 1e-12 for every reference character and Tessa in all three bands.
-
-<h3 id="2026-10-17-accessory-part-ids-can-no-longer-collide-312">2026-10-17 — Accessory part ids can no longer collide (#312)</h3>
-
-**In brief:** A worn accessory's parts get ids of the form `wear__<accessory>__<part>`, and authored ids may not
-contain two underscores in a row. Before, the accessory `a_b` with part `c` and the accessory `a` with part `b_c`
-both became `wear_a_b_c`.
-
-**Technical:**
-
-* `R/character-references.R` and `inst/www/mascot-parts.js` build the same expanded ids; the schema
-  (`inst/format/character-v1.json`) and the browser check refuse `__` in authored ids at their path.
-* Tessa's `lod.micro.hide` names her bow and clip parts with the new ids.
-
-<h3 id="2026-10-17-the-provisional-tessa-bridge-is-removed-313">2026-10-17 — The provisional Tessa bridge is removed (#313)</h3>
-
-**In brief:** Tessa has one drawing path now, the format-v1 engine. The temporary bridge that drew her old recipe
-through the new modules, and the internal switch that turned it on, are gone. Nothing users see changes.
-
-**Technical:**
-
-* Removed `inst/www/mascot-tessa-adapter.js` and its tests, and every branch that read
-  `mascot.internal.useCharacterAdapter` (`mascot.js`, `mascot-host.js`, `mascot-draw.js`, `mascot-motion.js`).
-* The old recipe `inst/characters/tessa.json` left the package; the legacy tests read it from
-  `tests/testthat/fixtures/characters/tessa.json`. The public recipe stays `inst/format/characters/tessa.json`.
-* The visual tool (`tools/visual/`) draws the format-v1 path by default, with detail bands; `--adapter` is gone.
-* Still here: the legacy drawing code (`mascot-draw.js`) and player (`mascot-motion.js`), used by tests of characters
-  without `format_version: 1`.
-
-<h3 id="2026-10-17-default-character-tessa-moves-onto-the-format-v1-engine-308">2026-10-17 — Default character Tessa moves onto the format-v1 engine (#308)</h3>
-
-**In brief:** The default character Tessa is now drawn and animated through the format-v1 character engine
-(`inst/format/characters/tessa.json` played via `inst/www/mascot-player.js`) instead of the legacy drawing code.
-`mascot(character = "tessa")`, `update_mascot()`, `mascot_preview()` and the mascot studio mount Tessa on the
-format-v1 runtime, preserving all five moods, wiggle on mood change, gestures (nod, wave), anchors and accessories
-(bow, clip), blink, sizes, and detail-band level-of-detail hiding at micro size. Public colour role names and theme
-mappings continue to work without change.
-
-**Technical:**
-
-* `R/characters.R`: `character_json("tessa")` serves `inst/format/characters/tessa.json` (format version 1).
-  The host detects format version 1 and dispatches Tessa to `mascot.runtime.mount()`.
-* Public colour role mapping: all public colour role names (`body`, `rim`, `limb`, `sleeve`, `eyelid`, `blush`,
-  `accessory`, and related roles) are preserved in `mascot_colour_roles("tessa")`. Internal role mappings ensure theme overrides
-  map directly onto the format-v1 recipe.
-* The restore button label for Tessa becomes "Restore Tessa, <shown status>" (e.g. "Restore Tessa, Resting, ready for the next piece."), matching
-  format-v1 character conventions.
-* `inst/www/mascot-player.js`: `ns.geometry.draw()` receives frame elapsed time and active colour overrides in options;
-  `inst/www/mascot-host.js` safely guards controller availability during initial snapshot and mount.
-* Legacy drawing code (`mascot-draw.js`), `inst/www/mascot-tessa-adapter.js` and the internal switch
-  `mascot.internal.useCharacterAdapter` remain in place and kept intact until final look approval.
-
-<h3 id="2026-10-16-format-v1-characters-mount-and-run-in-the-real-host-307">2026-10-16 — Format-v1 characters mount and run in the real host (#307)</h3>
-
-**In brief:** A checked format-v1 character now mounts in the page host and runs end to end: it is drawn through the
-format-v1 modules, moves along its own tracks, swaps with another character, restores after a remount, and shows its
-own status, accessible label, gaze, theme and detail band. The default Tessa path is untouched and draws the same
-pixels. Nothing public changes: custom characters are still internal, so no user sees this until the character API
-lands.
-
-**Technical:**
-
-* `inst/www/mascot-player.js` (new): `mascot.runtime` compiles a checked character once (`compile()`, a weak cache that
-  keeps failures too) and plays it. `mount()` returns the same controller the legacy player returns (`update`, `gesture`,
-  `setMood`, `seek`, `redraw`, `setBand`, `pause`, `play`, `holdVisibility`, `destroy`, `current`, `onChange`). A frame is
-  `tracks.frameAt()` (change, gesture, idle extra, breathing, blink, deadline settle, reduction), the mood's base channels
-  (reduced ones under reduced motion), held look last, then `parts.frame()`, the ground shadow, the part layers, the face
-  and each kit effect in the order the data declares (parts by layer, the face at its owner's layer plus 0.5, effects at
-  their own layer). Colours are the character's roles, the user's overrides, then the mood's recolour with an explicit
-  user colour winning, computed again only when the mood, reduction or overrides change. The channel table of a plain
-  frame is one object per player; the face controls, the draw view and the shadow channels are reused. Validation of a
-  whole patch comes before any state or pixel changes; a frame is resolved and checked before the canvas is cleared.
-* Swaps keep the legacy timeline: the outgoing character waves (its own `wave` tracks laid over the captured channels)
-  and fades out over thirty frames, the incoming one waves and fades in over thirty, composited once through a private
-  canvas, with durations fitted to the incoming activity window. A new target mid-fade keeps the exit time that remains,
-  asking for the exiting character again reverses directly, a mood change mid-swap commits without a wiggle and does not
-  extend it, a gesture during a swap is dropped, and reduced motion or `swap: false` is instant. Without a mood in the
-  patch the incoming mood follows the contract's chain (`mascot.parts.swapMood()`). The legacy speed limit on a very early
-  reversal (`recoveryFrames()`) is not ported: the recovery lasts the entrance that remains. A format-v1 character cannot
-  swap into a legacy one or back; `update()` rejects it before any change.
-* Detail bands: `bound()` is the componentwise upper bound of the painted work of parts and their items per band: the main
-  anatomy plus, for each exclusive accessory slot, the largest declared accessory (one compile per accessory, not a product
-  over slots), blur by maximum; frozen and cached per character and band. `check()` throws `budget` at `$` before any
-  painting, and a band that passed once is not checked again. As `mascot.geometry.bandBound()` does, it counts parts and
-  items only: the face, the ground shadow and the effects are not counted here, so browser and R counts still differ there
-  (#304).
-* Gaze: held look is `face.look_x` and `face.look_y` only. `compile()` records whether the face can look (a kit with an
-  elliptical pupil); a faceless character or a kit of arcs, paths and dots has no gaze channels, and the host sends none.
-* `inst/www/mascot-host.js`: a format-v1 description is detected with `mascot.runtime.isFormat()`. Mood and gesture checks go
-  through `mascot.runtime.validate()`; the gaze goes to `face.look_x`/`face.look_y`, flipped back by the shown mood's
-  `root.flip`, and is cleared with the same channels; the band follows the canvas width for a format-v1 character with no
-  switch (the legacy path still needs the internal adapter switch); a swap without a mood records the incoming mood by
-  the fallback chain, so the host's mood matches the player's; the restore control is named with the shown status instead of
-  a mood id and takes its colours from the brand leaders. `mascot.host.state()` also reports `band`. Status in mood mode, the
-  accessible label, themes, bubbles, panels and the four public inputs already read the description generically and are
-  unchanged.
-* `inst/www/mascot-motion.js`: `mascot.mount()` hands a format-v1 character to `mascot.runtime.mount()` and every other
-  character to the legacy player; `mascot.motion.shared` exports the guards both players use (`named`, `object`,
-  `overrides`, `same`, `swapTiming`, `recoverPose`, the patch field names) so each rule has one copy; the legacy player
-  rejects a format-v1 character in `update()` with a clear message. `inst/www/mascot.js`: `checkCharacter()` dispatches the
-  same way.
-* `R/mascot.R`: the dependency now ships `mascot-parts.js`, `mascot-geometry.js`, `mascot-faces.js` and `mascot-player.js`
-  (144 KB uncompressed together, by `wc -c`) before the host. `R/preview.R`: `mascot_preview()` resolves its theme through the
-  same boundary `mascot()` uses, so a character that is not built in no longer fails its theme check there.
-
-<h3 id="2026-10-16-r-settled-shiny-state-and-mount-generations-305">2026-10-16 — R-settled Shiny state and mount generations (#305)</h3>
-
-**In brief:** Shiny sends the latest complete accepted state for one mount generation. A connection ledger
-preserves gesture consumption and bubble dismissal when an element is replaced. The canvas label follows
-the status of the character and mood actually shown.
-
-**Technical:** `mascot-host.js` checks complete versioned envelopes before installation, ignores stale
-revisions and terminated generations, publishes mount and state snapshots with event priority on the existing input,
-and restores open bubbles with their remaining lifetime. Duplicate live ids leave the first binding
-authoritative. The unversioned patch path remains for browser-only/custom hosts. Optional envelope metadata
-is ignored; the version 1 core state and snapshot shapes are checked. Unknown static UI tokens trigger a
-one-time baseline exchange, allowing pages rendered before the server starts and cached pages to bind after a server restart or
-cache eviction. R checks every baseline field, character content, payload limits and the content-derived
-token before accepting it into session-owned storage; invalid baselines show a diagnostic. Dynamic tokens
-remain session-owned. Checked character metadata and content keys use bounded immutable caches.
-The public argument forms remain unchanged; target-specific forms are internal until their API unit lands.
-
-<h3 id="2026-10-16-reserved-capabilities-rejected-in-r-and-the-browser-engine-306">2026-10-16 — Reserved capabilities rejected in R and the browser engine (#306)</h3>
-
-**In brief:** Every capability and field the format reserves for later (`extends`, `connector`, `ring_pulse`, `follow`,
-`particles`, `morph`, `blend`, `inputs`, `fit`, `wardrobe` and `vividness`) is rejected with the stable code `capability`
-and the message "not supported by this version of mascot". Nothing is ignored or partly run. No reserved feature runs,
-and no shipped character uses one.
-
-**Technical:**
-
-* `inst/www/mascot-parts.js`: `compile()` first rejects a name in `requires` that is not one of the eight supported
-  capabilities, at `$.requires[n]` (R does the same). A reserved name is then rejected only as a key of a fixed-field
-  object, at its own path (for example `$.parts[0].follow`, `$.parts[0].items[0].blend`, `$.accessories.badge.fit` or
-  `$.palettes.sea_glass.vividness`). Position decides, not the name of the parent key. The fixed objects follow
-  `inst/format/character-v1.json`: an `object` with `fields` is closed, as R treats it. Map keys (ids, colour and
-  recolour roles, style ids, track targets) and the free numeric tree `face.tune` are never checked, so a colour role
-  called `follow` and a kit eye style called `follow` compile. Before this change these keys were ignored.
-* Order: R reports the first problem in document order. The engine checks the top-level object first, then each
-  object as it reads it (`lod`, parts, anchors, face, moods), then the objects it does not read (palettes, paints,
-  gestures, unworn accessories and the rest) after its structural checks. So the two can differ when a reserved key
-  comes before a structural error in the document: the engine reports a top-level reserved key first, where R reports
-  the structural error if it comes first. Both results are pinned in the tests (`test-character-check.R` and
-  `test-engine-parts-browser.R`).
-* `R/character-format.R`: a reserved name in `requires` now gives the version message; the R checker already rejected
-  each reserved field with code `capability` at its path.
-* Fixtures: ten new invalid recipes in `tests/testthat/fixtures/format/invalid/`, one per reserved name still missing
-  (`particles` keeps its existing fixture). Each differs from its base recipe only by the reserved entry and is listed in
-  `diagnostic-expected.json`.
-
-<h3 id="2026-10-16-internal-detail-bands-band-policy-and-atomic-band-changes-303">2026-10-16 — Internal detail bands, band policy and atomic band changes (#303)</h3>
-
-**In brief:** The internal Tessa adapter can draw in three detail bands (full, small and micro), chosen from the
-canvas's untransformed CSS width. Each band applies its own overrides and refuses work over its budget before anything
-is painted. A band change on resize is atomic: a refused band keeps the old one and is reported once, and a change
-redraws without replaying motion. Nothing changes by default; all of this sits behind the internal adapter switch.
-Full parity between the browser and R work counts follows in #304.
-
-**Technical:**
-
-* `inst/www/mascot-parts.js`: `bandFor(width)` classifies the exact CSS width (micro below 48, small from 48 to
-  127.999, full from 128) and rejects a non-finite or negative width. `compile()` checks band overrides first:
-  `lod.full` and any other name other than `small` or `micro` reject with `unknown_key` at the authored path (R does the
-  same); an unknown key, a `face` flag other than `scale`, `lashes`, `brows` or `iris`, or a non-boolean `glow` are
-  rejected at their paths; `lod.micro.glow: true` is rejected with code `budget` at root path `$`, and the message names
-  the band, the key and the fix. Part `lod` lists must name bands.
-* `inst/www/mascot-geometry.js`: `bandBound(compiled, band)` gives an upper bound on the painted items, paint passes,
-  path numbers, glow emitters and blur of the geometry of the parts (including `lod.hide`, part and item `lod`, and
-  glow passes). It keeps the largest candidate of each part's variants, is frozen and cached per compiled character and
-  band.
-  Worn accessories are counted as parts. It does not yet count the face, the ground shadow, the effects, mood item
-  paints or the reduced-motion items that R counts, nor clip applications, gradient uses or the glow area ratio. `checkBudget(compiled, band)` throws `budget` at `$` naming the
-  metric and limit. `bandCaps` mirrors the counted metrics of `inst/format/policy-v1.json`.
-* `inst/www/mascot-tessa-adapter.js`: `bound(character, band)` is the componentwise maximum of `bandBound()` over every
-  scene the character can reach: the feet tucked or not, times every selection of its declared accessories with at most
-  one per slot (a selection the drawing refuses is skipped). It is frozen and cached per character and band. `check()`
-  throws `budget` at `$` when that bound is over the band's caps, without painting. `draw()` checks first, then builds
-  and paints, so a refused band never paints; the carried `lod` and the band reach `frame()`.
-* `inst/www/mascot.js`: `ns.draw` passes the band to the adapter branch only; `ns.checkCharacter(character, band)` runs
-  the adapter's per-character check without painting (a no-op with the switch off).
-* `inst/www/mascot-motion.js`: `mount()` accepts `band`. `drawFrame()` checks the visible character before it clears the
-  canvas, so a refused frame keeps its pixels. `controller.setBand(name)` checks the visible character first and throws
-  with the old band, canvas pixels and state unchanged when the new band is over budget. It returns true when it drew and
-  false when the band was already set. `update()` checks an incoming character before any state changes.
-* `inst/www/mascot-host.js`: `mount()` checks the band the canvas measures and mounts at it, so a small mascot never
-  draws a full-band frame first; a band over budget mounts at `full` with one warning. A width that is not laid out (not
-  a pixel width, or a hidden container) mounts at `full` and decides the band on the first real measure. `measure()` calls
-  `setBand()` only when the band changes; a refused band keeps the old one, measuring goes on, the refusal is reported
-  once per band through `console.warn`, and nothing is thrown out of `measure()`. The canvas is redrawn once after a
-  resize: by `setBand()` when it drew, otherwise by `redraw()`. All of this runs only when
-  `mascot.internal.useCharacterAdapter` is true.
-* `R/character-work.R`: `character_format_work()` refuses `lod.micro.glow: true` with code `budget` at root path `$`, the
-  same diagnostic as the browser, so the R checker rejects it.
-
-<h3 id="2026-10-16-internal-format-v1-mood-channels-recolour-switches-and-kit-effects-302">2026-10-16 — Internal format-v1 mood channels, recolour, switches and kit effects (#302)</h3>
-
-**In brief:** The parts and motion modules can now resolve format-v1 mood channel hierarchies, acyclic recolour
-role redirection, item overrides, variant anchors, declarative threshold switches, kit effects progress and
-swap mood fallback chains. Nothing changes by default; all character changes operate behind internal compile
-and adapter switches.
-
-**Technical:**
-
-* `inst/www/mascot-parts.js`: channel vocabulary validation against known rig target channels (`root.*`, `face.*`,
-  `effects.*`, and part transforms); merge resolution in contract order (part resting defaults -> named pose ->
-  mood channels -> reduced channels); compile-time validation requiring core moods (`idle`, `thinking`, `happy`,
-  `worried`, `celebrating`), metadata schema checks, and fallback chain traversal ending at core moods (`swapMood()`); acyclic
-  colour role redirection (`recolour`, `reduced.recolour`) resolving before paints and gradients with explicit user
-  overrides taking priority and cycle detection rejecting with `invalid_colour`; item overrides (`fill`, `stroke`,
-  `alpha`) applied per part item with undeclared target/colour validation; declarative threshold switches
-  (`switch: { channel, above, variant }`) evaluating strictly above the threshold; variant anchors recomputed
-  when owning part variant changes; numerical kit effects progress helpers (`sweatProgress()`, `sparklePulse()`)
-  with reduced motion handling.
-* `inst/www/mascot-geometry.js`: `draw()` honours dynamic mood item overrides (`state.item_overrides`,
-  `options.items`) for item fill, stroke and alpha.
-* `inst/www/mascot-motion.js`: carry-overs resolved for `pose()` bridge passing `reduced: Boolean(state.reduced)`
-  and `idle: state.idle !== false`; deterministic seeded idle extra start time scheduling when `state.extraAt` is
-  omitted using the window-proportional seeded hash rule, with suppression when `state.extraAt` is explicitly `null`.
-
-<h3 id="2026-10-16-internal-part-glow-blur-units-and-drawing-work-accounting-300">2026-10-16 — Internal part glow, blur units and drawing-work accounting (#300)</h3>
-
-**In brief:** Saved-format characters can give one item of a part a soft glow in a palette colour. Glow is drawn on a
-small surface sized to the item, so it costs little, and it fades with the mascot. Nothing changes by default; the
-provisional adapter uses it behind its internal switch.
-
-**Technical:**
-
-* `inst/www/mascot-geometry.js`: `glowPass()` emits one blurred pass per fill or stroke of the named emitter item on
-  a backing-pixel scratch surface sized exactly for that pass (output never depends on an earlier pass), crops the
-  distant shadow band and multiplies the caller's alpha. `backingBlur()` converts design units to backing pixels
-  (`blur * cssWidth / 300 * dpr`); `scratchBounds()` inflates the transformed item box by three blur radii. Glow is
-  off in the micro band and at alpha 0; emission-only items are drawn and counted.
-* `inst/www/mascot-geometry.js`: `draw()` reports active parts, glow emitters and blur design units beside the
-  existing counts; `combineCounts()` sums additive counts, keeps the largest blur and counts each part once across
-  draw calls. The part lookup is built once per compiled character; compiled data is never changed while drawing.
-* `inst/www/mascot-faces.js` and `inst/www/mascot-tessa-adapter.js`: faces use the shared glow pass and both use the
-  shared count combiner.
-* `R/character-work.R`: a glow paints a solid colour, so it adds no gradient use; a fill-and-stroke emitter counts
-  two blurred passes, as the contract says (fill and stroke never merge).
-
-<h3 id="2026-10-16-internal-format-v1-tracks-needs-and-fallback-interruption-and-deadlines-299">2026-10-16 — Internal format-v1 tracks, needs and fallback, interruption and deadlines (#299)</h3>
-
-**In brief:** The motion module can now evaluate saved-format gestures (tracks, fallback gestures, the five easing curves,
-interruption, reduced motion and the five-second deadline) as pure functions. Nothing changes by default;
-the provisional Tessa adapter can use it behind its internal switch.
-
-**Technical:**
-
-* `inst/www/mascot-motion.js`: added `mascot.motion.tracks`: `normalise()`/`sample()` for `[[at, value, ease?], ...]`
-  and `{ mode, keys }` tracks (add and set modes, null as the mood base, discrete values that switch at keys,
-  `linear`/`ease_in`/`ease_out`/`ease_in_out`/`step`, exact rest at the end); `compile()` for needs and fallback
-  traversal (missing, cyclic and unplayable chains error with `{ code, path }`), target-part checks and the 1 to 150
-  frame budget; `settings()` for the motion defaults and limits; `fit()` for late effects; `frameAt()` for one
-  frame-by-frame result with interruption, reduction, absolute deadline settlement, multiplicative breathing, blink
-  skipping and separate effect instances; `drawn()` for the frames a window draws.
-* `inst/www/mascot-motion.js`: `pose()` replaces the legacy change and gesture layers with these tracks only when
-  `mascot.internal.useCharacterAdapter` is true and `mascot.internal.tracks[id]` is registered. Idle stays legacy.
-  Differences from the legacy gestures on Tessa: the nod adds its offsets to the mood (celebrating lifts
-  from its own 10, not from an absolute -3); a hop follows `height * sin(pi * u)` instead of a parabola. Everything
-  else matched to 1e-9 over every mood, gesture and half-frame.
-* Room to grow: unknown gesture, channel, easing or effect names are errors, new optional fields keep defaults,
-  and morph, blend and particle behaviour stay reserved. The idle `extra` start time is not defined by the
-  format yet, so the scheduler accepts `state.extraAt` from the host rather than inventing one.
-
-<h3 id="2026-10-16-filter-page-mutations-batch-layout-reads-and-pause-off-screen-mascots-295">2026-10-16 — Filter page mutations, batch layout reads and pause off-screen mascots (#295)</h3>
-
-**In brief:** Mascots ignore unrelated page changes unless an inline bubble needs refitting. Relevant
-layout checks batch into one animation frame, and animating mascots pause drawing while scrolled outside
-the viewport.
-
-**Technical:**
-
-* `inst/www/mascot-host.js`: filtered `MutationObserver` records (`relevantMutation()`) so attribute and
-  child-list mutations outside a mascot's ancestor chain, `.mascot-source` anchor, `<head>` styles or
-  `#shiny-notification-panel` do no work; coalesced `refreshPage()` and theme-mode mutations through
-  `schedulePageRefresh()` into at most one `requestAnimationFrame` per burst. Compare each attribute
-  transition and ignore changes confined to private host style properties, preserving application theme
-  changes and source removals in the same task. While an inline bubble shows, also watch sibling layout
-  changes so the message remains inside the viewport. Expose `measures` and `offscreen` in
-  `mascot.host.state(el)`.
-* `inst/www/mascot-host.js`: added a shared, reference-counted `IntersectionObserver` (`watchViewport()`)
-  that calls `controller.holdVisibility()` when a mascot leaves or re-enters the viewport.
-  `inst/www/mascot-motion.js` keeps that hold independent of user pause and activity: returning does
-  not draw, renew the five-second window or override another pause. Moving players continue from
-  their saved frame without clock-based catch-up. The observer disconnects on the last unmount.
-* Browser regressions cover coincident application and host writes, sibling layout changes, active scrolling,
-  and rested or explicitly paused players returning to view; budgets count work rather than elapsed time.
-
-<h3 id="2026-10-16-internal-generic-faces-and-default-glow-alpha-a35da74-df2895c">2026-10-16 — Internal generic faces and default glow alpha (<code>a35da74</code>, <code>df2895c</code>)</h3>
-
-**In brief:** Internal character-format previews can draw generic face kits, and omitted glow alpha
-uses full opacity.
-
-**Technical:**
-
-* `inst/www/mascot-faces.js`: added internal face-kit painters; `mascot-draw.js` resolves and draws
-  generic faces on character-format anchors (`a35da74`).
-* `inst/www/mascot-faces.js`: defaults omitted glow alpha to one (`df2895c`).
-
-<h3 id="2026-10-16-cache-compiled-tessa-adapter-scenes-and-shadows-d13f301">2026-10-16 — Cache compiled Tessa adapter scenes and shadows (<code>d13f301</code>)</h3>
-
-**In brief:** Tessa's `format_version: 1` bridge reuses its compiled part tree and ground shadow across
-frames instead of rebuilding and cloning the character on every frame.
-
-**Technical:**
-
-* `inst/www/mascot-tessa-adapter.js`: added `WeakMap` caches `scenes` (keyed by character object, then
-  `JSON.stringify([tucked, !!character.arms, names])`) and `shadows` (keyed by character object) so
-  `ns.parts.compile()` runs once per worn-accessory and foot-tuck combination rather than on every
-  `draw()` call.
-* `inst/www/mascot-tessa-adapter.js`: kept `ns.drawing.accessories(character, pose)` before the cache
-  lookup so duplicate accessory slots still fail immediately on cached scenes; bound per-call colour
-  overrides and alpha roles after cache retrieval via `bindings`.
-* `inst/www/mascot-tessa-adapter.js`: moved arm rotation into `arm_left.rotate` and
-  `arm_right.rotate` channels; the earlier adapter rebuilt parts with per-pose arm angles.
-
-<h3 id="2026-10-16-respect-part-layer-overrides-and-guard-known-paint-layers-9c87017">2026-10-16 — Respect part layer overrides and guard known paint layers (<code>9c87017</code>)</h3>
-
-**In brief:** The Tessa adapter honours custom layer overrides on body, feet, arms and accessories and
-rejects unknown part layers rather than silently skipping parts that sit outside the layers it interleaves
-with the face and effects.
-
-**Technical:**
-
-* `inst/www/mascot-tessa-adapter.js`: forwarded `character.body?.layer ?? 1`, `feet.layer ?? 0`,
-  `arms.layer ?? 4` and `item.layer ?? 3` when building the adapter's part hierarchy, and guarded
-  `state.parts` layers in `scene()` so any part layer outside `{0, 1, 3, 4}` throws
-  `mascot: unsupported part layer <n> for part '<id>'; must be in {0, 1, 3, 4}`.
-* `inst/www/mascot-tessa-adapter.js`: ensured `draw()` calls `scene()` before touching the canvas so
-  missing modules or unsupported characters leave caller canvas state and pixels untouched.
-
-<h3 id="2026-10-15-expand-the-internal-tessa-adapter-66ed30f-9b850ce">2026-10-15 — Expand the internal Tessa adapter (<code>66ed30f</code>, <code>9b850ce</code>)</h3>
-
-**In brief:** Added an internal opt-in bridge (`mascot-tessa-adapter.js`) that draws Tessa's body, feet,
-arms, shadow and accessories through the `format_version: 1` parts and geometry modules while mounting the
-existing face and effect painters on resolved part matrices.
-
-**Technical:**
-
-* `inst/www/mascot-tessa-adapter.js`: implemented `window.mascot.tessaAdapter` (`{ scene, draw }`, frozen)
-  translating legacy Tessa descriptions (`body`, `feet`, `arms`, `anchors`, `accessories`, `shadow`) into
-  `format_version: 1` part hierarchies and channel maps (`root.lift`, `root.rotate`, `root.scale_x`,
-  `root.scale_y`, `root.flip`); arm rotation becomes channel-driven in `d13f301`.
-* `inst/www/mascot-tessa-adapter.js`: preserved legacy fill-only item `alpha` semantics (where
-  `format_version: 1` item `alpha` multiplies both fill and stroke) by synthesising `RGBA` colour roles per
-  alpha-bearing item.
-* `inst/www/mascot-draw.js`: added `drawFace(..., placed = false)` and an internal opt-in branch
-  (`window.mascot.internal?.useCharacterAdapter === true`) in `character()` that delegates to
-  `ns.tessaAdapter.draw(...)` and mounts `drawFace`, `drawSparkle` and `drawSweat` onto the resolved `face`
-  anchor and `torso` part transforms.
-
-<h3 id="2026-10-14-to-2026-10-15-character-format-v1-parts-and-geometry-modules-651ca64-346e9bf">2026-10-14 to 2026-10-15 — Character format v1 parts and geometry modules (<code>651ca64</code>, <code>346e9bf</code>)</h3>
-
-**In brief:** Added the two core runtime modules for character format v1: hierarchical `2D` part transforms
-(`mascot-parts.js`) and `Path2D` shape compilation, clipping, outlines and gradients
-(`mascot-geometry.js`).
-
-**Technical:**
-
-* `inst/www/mascot-parts.js`: added `window.mascot.parts`
-  (`{ identity, own, multiply, point, root, child, compile, frame }`, frozen).
-  * Enforces `format_version === 1`, reserved part identifiers (`root`, `face`, `effects`), unique
-    `snake_case` identifiers, single accessory per slot, acyclic part and anchor dependency ordering, and
-    deep-frozen compiled scenes via `JSON.parse(JSON.stringify(character))`.
-  * Computes per-frame `2D` affine matrices (`[a, b, c, d, e, f]`), `keep_upright` and `no_flip`
-    orientation filtering, channel-driven variant switches (`part.switch`), detail-band (`full`, `small`,
-    `micro`) hiding and variant overrides, and layer and declaration sorting.
-  * Uses `Object.hasOwn` (`own()`) for all data-named lookups (`parts`, `anchors`, `accessories`,
-    `variants`) to prevent `Object.prototype` pollution (`346e9bf`).
-* `inst/www/mascot-geometry.js`: added `window.mascot.geometry`
-  (`{ commands, compile, paint, draw }`, frozen).
-  * Compiles `path` (absolute `M/L/Q/C/Z`), `circle`, `arc`, `ellipse`, `rect`, `round_rect`, `polyline`,
-    `polygon`, `hexagon` and `ref` shapes into cached `Path2D` instances (`prepared` `WeakMap` keyed by
-    compiled scene and `${partId}.${variant}[${index}]`).
-  * Supports linear and radial canvas gradients (`2..6` ordered colour stops with role-resolved alpha),
-    dual cartoon outlines (`outline` and `outline.second` with per-band overrides), detail strokes, and
-    cross-part `Path2D` clipping (`style.clip`) with singular-matrix guards (`|det| < 1e-12`).
-  * Returns per-draw work counters (`{ painted_items, paint_passes, path_numbers, clip_applications, gradient_uses }`)
-    for budget verification.
-
-<h3 id="2026-10-13-redraw-sharp-after-restoring-from-minimised-ace06f5-275-276">2026-10-13 — Redraw sharp after restoring from minimised (<code>ace06f5</code>, #275, #276)</h3>
-
-**In brief:** Restoring a minimised floating mascot immediately re-measures the canvas and redraws at full
-device-pixel resolution, both before and after the restore animation.
-
-**Technical:**
-
-* Uses the existing `controller.redraw()` (introduced in `ea35c6f`) to repeat `drawFrame()` at the
-  current frame without resetting `activeAt`, advancing time, or scheduling `requestAnimationFrame`.
-* `inst/www/mascot-host.js`: called `measure(record)` and `record.controller.redraw()` immediately when
-  restoring from minimised and again in the restore Web Animations `onfinish` and `oncancel` clean-up, and
-  whenever `measure()` changes `canvas.width` or `canvas.height`.
-
-<h3 id="2026-10-13-nested-shiny-modules-golem-and-rhino-support-44e0e81-133-273">2026-10-13 — Nested Shiny modules, <code>golem</code> and <code>rhino</code> support (<code>44e0e81</code>, #133, #273)</h3>
-
-**In brief:** Added examples for nested `Shiny` modules, delayed `renderUI` outputs and re-rendered
-containers; the host now reports minimise and restore actions back to the server.
-
-**Technical:**
-
-* `inst/www/mascot-host.js`: emitted `input$<id>_minimised` (`priority: 'event'`) when minimising or
-  restoring.
-
-<h3 id="2026-10-12-public-css-styling-hooks-and-private-mascot-internals-5157974-260-270">2026-10-12 — Public CSS styling hooks and private <code>--_mascot-*</code> internals (<code>5157974</code>, #260, #270)</h3>
-
-**In brief:** Separated public `CSS` custom properties (`--mascot-panel-*`, `--mascot-restore-*`,
-`--mascot-z-index`) from internal layout variables (`--_mascot-*`) so user style sheets always win over
-`Bootstrap` and page defaults.
-
-**Technical:**
-
-* `inst/www/mascot.css`, `inst/www/mascot-host.js`: renamed internal custom properties to
-  `--_mascot-size`, `--_mascot-source-*`, `--_mascot-drag-*`, `--_mascot-menu-*`, `--_mascot-tooltip-*`,
-  `--_mascot-panel-tail` and `--_mascot-notification-offset`; copied inherited public `--mascot-*` hooks
-  from the source anchor to `--_mascot-source-*` when moving floating mascots to `document.body`.
-
-<h3 id="2026-10-12-separate-motion-switches-in-mascot-motion-settings-bf2aed2-239-267">2026-10-12 — Separate motion switches in <code>mascot_motion_settings()</code> (<code>bf2aed2</code>, #239, #267)</h3>
-
-**In brief:** Replaced the single `animate` toggle with independent switches for `idle`, `mood_change`,
-`gestures`, `swap`, `minimising`, `restoring`, `others` and per-panel `messages` (`bubble`, `tooltip`,
-`menu`).
-
-**Technical:**
-
-* `inst/www/mascot-motion.js`: exported `mascot.motion.settings` and `mascot.motion.panels` (frozen);
-  updated `pose()`, `moving()`, `preparePatch()`, `controller.update()` and `controller.gesture()` to
-  check `state.idle`, `state.mood_change`, `state.gestures` and `state.swap` independently.
-* `inst/www/mascot-host.js`, `inst/www/mascot.css`: added Web Animations (`Element.prototype.animate`)
-  transitions for minimise and restore (240 `ms` transform and opacity using a temporary
-  `.mascot-motion-copy` canvas clone) and panel exit fades (150 `ms` inert `DOM` clone), plus a
-  development-mode `shiny:client-message` warning when a server gesture is skipped because
-  `gestures = false`.
-
-<h3 id="2026-10-12-automatic-phone-sizing-and-patch-contract-2bd43fa-c9ef831-259-261-264-266">2026-10-12 — Automatic phone sizing and patch contract (<code>2bd43fa</code>, <code>c9ef831</code>, #259, #261, #264, #266)</h3>
-
-**In brief:** Floating mascots cap their default size at 96 pixels on narrow screens (`<= 575.98px`) when
-`small_screen = "auto"`.
-
-**Technical:**
-
-* `inst/www/mascot-host.js`, `inst/www/mascot.css`: supported `small_screen: "auto"` in `validateSize()`
-  and the `.mascot[data-floating="true"][data-small-screen="auto"]` media query
-  (`min(var(--_mascot-size-default, 160px), 96px)`).
-
-<h3 id="2026-10-12-shared-mascot-panel-backend-click-actions-tooltips-and-gaze-fd50085-0417e2d-233-237-241-244-248-249-250-254-257-263">2026-10-12 — Shared <code>.mascot-panel</code> backend, <code>click</code> actions, tooltips and gaze (<code>fd50085</code>, <code>0417e2d</code>, #233, #237, #241, #244, #248, #249, #250, #254, #257, #263)</h3>
-
-**In brief:** Unified speech bubbles, pop-up menus and action tooltips under one visual panel system, added
-single-action click buttons with `WCAG` 1.4.13 hover tooltips, and made the mascot's pupils look towards
-open menus or bubbles.
-
-**Technical:**
-
-* `inst/www/mascot-host.js`: replaced `popup_menu` with `click` (`type: 'none' | 'action' | 'menu'`),
-  wrapping the canvas in a single native `<button class="mascot-button">` when clickable, emitting
-  `input$<id>_click` (monotonic counter, ignoring key-repeat and drag releases), and managing
-  `.mascot-tooltip` with a 150 `ms` pointer-leave grace timer and shared `Escape` listener.
-* `inst/www/mascot-host.js`: added `inkBox()` (alpha-channel bounding-box scan via `getImageData` when a
-  menu or tooltip opens) and `placePanel()` (shared placement with opposite-side and `auto` fallback choices
-  inside `clipBounds()`, plus `--_mascot-panel-tail` positioning).
-* `inst/www/mascot-host.js`: added `gazeSide()`, `gazePose()` and `refreshGaze()` to set held `look` and
-  `lookY` pose overrides towards the active menu's resolved `data-side` or active bubble, compensating for
-  horizontal `flip`.
-
-<h3 id="2026-10-10-floating-drag-snap-and-free-minimised-drag-and-directional-menus-42227c9-6ed258d-5edadb3-220-222-225-229-231-232">2026-10-10 — Floating drag (<code>snap</code> and <code>free</code>), minimised drag and directional menus (<code>42227c9</code>, <code>6ed258d</code>, <code>5edadb3</code>, #220, #222, #225, #229, #231, #232)</h3>
-
-**In brief:** Visitors can drag floating mascots (or their minimised restore button) with pointer capture
-to snap to the nearest corner or drop freely inside the window, and open pop-up menus on a chosen side
-(`auto`, `top`, `bottom`, `left`, `right`) with one menu open at a time.
-
-**Technical:**
-
-* `inst/www/mascot-host.js`, `inst/www/mascot.css`: added `listenDrag()`, `drop()`, `cancelDrag()`,
-  `clampPoint()` and `nearestCorner()` with a 4-pixel movement threshold (`dragThreshold`),
-  `setPointerCapture`, capture-phase click suppression after drag, 200 `ms` snap animation, and
-  `input$<id>_position` event reporting.
-* `inst/www/mascot-host.js`: tracked open menus in a shared `openMenus` set so opening one closes any
-  other, paused bubble timers while a menu is open or while minimised, and transferred focus safely before
-  hiding controls.
-
-<h3 id="2026-10-10-remove-simplify-when-small-18403f2-219-221">2026-10-10 — Remove <code>simplify_when_small</code> (<code>18403f2</code>, #219, #221)</h3>
-
-**In brief:** Removed the separate small-size face drawing so every size draws the full character.
-
-**Technical:**
-
-* `inst/www/mascot-draw.js`, `inst/www/mascot-motion.js`, `inst/www/mascot-host.js`: removed the `small`
-  boolean option and small-size branch in `drawEyes()`, `drawMouth()`, `drawBlush()` and `character()`.
-
-<h3 id="2026-10-07-to-2026-10-10-host-life-cycle-late-mount-queue-themes-menus-motion-size-and-placement-8c09d2a-c42dd66-bc06a44-69086f3-b396562-266e442-17bea5a-637039d-009334b">2026-10-07 to 2026-10-10 — Host life cycle, late-mount queue, themes, menus, motion, size and placement (<code>8c09d2a</code>, <code>c42dd66</code>, <code>bc06a44</code>, <code>69086f3</code>, <code>b396562</code>, <code>266e442</code>, <code>17bea5a</code>, <code>637039d</code>, <code>009334b</code>)</h3>
-
-**In brief:** Built `mascot-host.js` and `mascot.css`: the `Shiny` input binding (`mascot.mascot`) and
-static-page host, custom message queue (`mascot:update`), speech bubbles, pop-up menus, light and dark page
-theming with follower-role shading and `WCAG` 3:1 contrast warnings, floating corner placement, and
-responsive sizing.
-
-**Technical:**
-
-* `inst/www/mascot-host.js`: created `window.mascot.host` (`{ mount, unmount, receive, state }`),
-  registering `MascotBinding` on `Shiny.inputBindings` and `mascot:update` custom messages; bounded the
-  pre-mount queue (`queueLimit = 20`) and added a two-second development-mode namespace mismatch hint
-  (`suggestNamespace`).
-* `inst/www/mascot-host.js`: implemented `resolveTheme()`, `shadeColour()` (`HSL` lightness and saturation
-  shifts from leader roles in `description.follows`), `colourContrast()` (`WCAG` relative luminance), and
-  `pageMode()` watching `[data-bs-theme]` and `body.quarto-dark` / `quarto-light` (defaulting to light when
-  no page signal is present).
-* `inst/www/mascot-host.js`: implemented floating `DOM` placement (`portal()` to `document.body` with a
-  `.mascot-source` placeholder span to preserve `Shiny` `unbindAll` tear-down and source container
-  visibility and styles), `ResizeObserver` device-pixel-ratio canvas scaling, and
-  `#shiny-notification-panel` offset tracking.
-
-* `inst/www/mascot-host.js`: mount serials and retained per-field revision watermarks
-  (`message.replay`, `message.fields`, `record.fields`) let the server replay state after remounts;
-  `playedGestures` prevents replaying a previously handled gesture (`c42dd66`).
+<summary>What changed while 0.1.0 was developed, by topic</summary>
+
+The visual tool some of these changes mention (`tools/visual/`) is no longer in the repository.
+
+<h3 id="dev-drawing">Drawing and the character format</h3>
+
+* **Parts and geometry (`mascot-parts.js`, `mascot-geometry.js`).** `mascot.parts` works out hierarchical 2D
+  transforms per frame: reserved ids `root`, `face` and `effects`, unique `snake_case` ids, one accessory per slot,
+  acyclic part and anchor order, `keep_upright` and `no_flip`, channel-driven variant switches (`part.switch`), band
+  hiding, layer sorting. Lookups of data-named keys go through `own()` (`Object.hasOwn`), so a key cannot reach
+  `Object.prototype`. `mascot.geometry` compiles `path`, `circle`, `arc`, `ellipse`, `rect`, `round_rect`,
+  `polyline`, `polygon`, `hexagon` and `ref` shapes into cached `Path2D` objects, with linear and radial gradients (2
+  to 6 stops), two outlines (`outline`, `outline.second`, per-band overrides), detail strokes and cross-part clipping
+  (`style.clip`, guarded against singular matrices). Each draw returns work counters for the budget checks.
+* **Player (`mascot-player.js`).** `mascot.runtime` compiles a character once (`compile()`, a weak cache that keeps
+  failures) and plays it. `mount()` returns the controller the host uses (`update`, `gesture`, `setMood`, `seek`,
+  `redraw`, `setBand`, `pause`, `play`, `holdVisibility`, `destroy`, `current`, `onChange`). A frame is
+  `tracks.frameAt()`, then the mood's channels (the reduced ones under reduced motion), then held look, then
+  `parts.frame()`, the ground shadow, the part layers, the face and each kit effect in the layer order the data
+  declares. Colours are the character's roles, the user's overrides, then the mood's recolour; an explicit user
+  colour wins. A patch is validated whole before any state or pixel changes, and a frame is resolved and checked
+  before the canvas is cleared (#307).
+* **Mood channels, recolour and switches (#302).** Channel names are checked against the rig (`root.*`, `face.*`,
+  `effects.*`, part transforms). Values merge in the order part resting defaults, named pose, mood channels, reduced
+  channels. `idle`, `thinking`, `happy`, `worried` and `celebrating` are required, and fallback chains end at them
+  (`swapMood()`). `recolour` and `reduced.recolour` redirect colour roles before paints and gradients; a cycle fails
+  with `invalid_colour`. Item overrides set `fill`, `stroke` and `alpha`; a `switch: { channel, above, variant }`
+  applies strictly above its threshold, and anchors follow a changed variant.
+* **Face kits and kit effects.** `mascot-faces.js` paints generic face kits; an omitted glow `alpha` is 1. The sweat
+  drop and sparkle star use `mascot.parts.sweatProgress()` and `mascot.parts.sparklePulse()`, so the tests of those
+  two functions test the drawing's maths. `mascot.faces.effects()` checks the effect value first (code `input_type`
+  at `$.effects.<id>`) (#465).
+* **Glow (#300).** One item of a part can glow in a palette colour. `glowPass()` draws one blurred pass per fill or
+  stroke on a scratch surface sized to that pass, so output never depends on an earlier pass; `backingBlur()` turns
+  design units into backing pixels (`blur * cssWidth / 300 * dpr`). Glow is off in the micro band and at alpha 0.
+  A fill-and-stroke emitter counts two blurred passes.
+* **Outlines (#325).** An item with `outline: true` is painted second outline, outline, fill, then its own `stroke`,
+  so only the outer half of an outline shows, as in the drawings. Sela, Neer (outline 3 to 4.5, second 5 to 6.5) and
+  Knurl (2.5 to 3.75, 5 to 6.25) have wider outlines to keep the visible weight; the micro outline of Knurl is unchanged.
+* **Detail bands (#303).** `bandFor(width)` classifies the untransformed CSS width: micro below 48, small from 48 to
+  127.999, full from 128. The host mounts at the band the canvas measures and calls `setBand()` only when the band
+  changes. A band over its limits is refused before anything paints: the old band, pixels and state stay, and the
+  refusal is reported once per band through `console.warn`. A canvas with no layout width mounts at `full`. The
+  canvas is redrawn once after a resize.
+* **Tessa (#307, #308, #313).** A format-v1 character mounts in the host and runs end to end: it draws through the
+  modules, moves along its tracks, swaps, restores after a remount and shows its own status, label, gaze, theme and
+  band. Tessa moved onto this path from the older drawing code; her public colour role names are kept
+  (`mascot_colour_roles("tessa")`) and her restore button reads "Restore Tessa, <shown status>". A temporary bridge
+  (`mascot-tessa-adapter.js`, switched on by `mascot.internal.useCharacterAdapter`) drew her through the modules in
+  between; it and its tests went in #313, and `inst/characters/tessa.json` left the package.
+* **Gaze.** Held look is `face.look_x` and `face.look_y` only. `compile()` records whether a face can look (a kit
+  with an elliptical pupil); a faceless character or a kit of arcs, paths and dots has no gaze channels, and the
+  host sends none.
+
+<h3 id="dev-checks">Checks shared with R</h3>
+
+* **Same counts as R (#304).** `mascot.runtime.bound()` counts all nine limits of the format for each band: parts and
+  one accessory per slot, the face kit, kit effects (declared and started by a gesture), the ground shadow, mood and
+  reduced-motion item changes, clips and gradients. Glow is counted on the box a shape covers after `ref` and
+  `transform` moves, on the style a shared shape resolves to, and on the largest of an item's mood alternatives; R
+  (`R/character-work.R`) got the last rule too. Scale ranges start from every part's resting scale; `null` keys of
+  `set` tracks are ignored. A clip whose target is missing in a reachable variant throws `missing_reference` at
+  `$.clip`. `check()` throws `budget` at `$` before painting. `lod.micro.glow: true` is refused with `budget` at `$`
+  in both. Tests compare the browser with R at 1e-12 for the reference characters and Tessa in all three bands.
+* **Band overrides (#303).** `lod.full` or any name other than `small` and `micro` is refused with `unknown_key`;
+  so are an unknown key, a `face` flag other than `scale`, `lashes`, `brows` or `iris`, and a non-boolean `glow`.
+* **Reserved capabilities (#306).** `extends`, `connector`, `ring_pulse`, `follow`, `particles`, `morph`, `blend`,
+  `inputs`, `fit`, `wardrobe` and `vividness` are refused with code `capability` and "not supported by this version
+  of mascot". A name in `requires` outside the eight supported capabilities is refused at `$.requires[n]`. A reserved
+  name counts only as a key of a fixed-field object (as in `inst/format/character-v1.json`), so a colour role or a
+  kit eye style called `follow` compiles. R reports the first problem in document order; the engine checks the
+  top-level object first, so the two can differ when a reserved key comes before a structural error. Both results
+  are pinned in `test-character-check.R` and `test-engine-parts-browser.R`.
+* **Required gestures (#328).** A character needs a `wave` and a `nod` whose keyed values change. A wave needs a
+  changing track on a non-root part; a nod can change any channel, `root` included.
+* **Accessory ids (#312).** A worn accessory's parts are `wear__<accessory>__<part>`, and authored ids may not
+  contain two underscores in a row (schema and browser check); `a_b`/`c` and `a`/`b_c` no longer collide.
+  `mascot.parts.accessoryPartId()` builds the id in one place.
+* **Format 1 for outside authors (#493).** `requires` is optional; a top-level `$schema`, `x_` keys and a `note` are
+  accepted where R accepts them and never read (including in `mascot-motion.js`, `mascot-geometry.js` and a brand
+  theme's `primary` and `secondary` slots). `mascot.parts.capabilities` lists supported and reserved names for the
+  parity test. An unknown capability is named in the error; kit effect errors use the paths the R checker uses, such as
+  `$.face.kit_definition.effects.<id>.items[<n>].clip`, and `fade_at` must be below 1.
+
+<h3 id="dev-host">The host and Shiny</h3>
+
+* **Life cycle.** `mascot-host.js` creates `window.mascot.host` (`mount`, `unmount`, `receive`, `state`), registers
+  `MascotBinding` on `Shiny.inputBindings` and handles `mascot:update` messages. Updates that arrive before a mount
+  wait in a queue limited to 20. Mount serials and per-field revision watermarks (`message.replay`, `message.fields`,
+  `record.fields`) let the server replay state after a remount, and `playedGestures` stops a handled gesture from
+  playing twice. `state()` reports `band`, `measures` and `offscreen`.
+* **R-settled state (#305).** Shiny sends the latest complete accepted state for one mount generation. The host
+  checks versioned envelopes, ignores stale revisions and ended generations, publishes mount and state snapshots with
+  event priority and restores open bubbles with their remaining lifetime. A connection ledger keeps gesture use and
+  bubble dismissal when an element is replaced. A duplicate live id leaves the first binding in charge. An unknown
+  static UI token starts a one-time baseline exchange, so pages rendered before the server starts, and cached pages,
+  bind after a restart; R checks the baseline fully before storing it. The canvas label follows the status of the
+  character and mood shown.
+* **New Shiny session (#426).** On `shiny:sessioninitialized` with a different session id, each live mascot resets
+  its revision and its gesture and bubble watermarks and publishes its snapshot again as a `resume` start, keeping
+  mount and generation. The page keeps what it shows until the new session sends a state, and a dismissed bubble
+  does not reopen.
+* **Connection loss (#70).** On `shiny:disconnected` every mascot switches to its worried mood and announces
+  "Connection lost. Reload the page to continue." above the disconnect overlay (`mascot.css` raises it). Updates
+  during the outage are kept and restored on `shiny:connected`.
+* **Modules and re-rendering (#133, #273).** Examples cover nested modules, delayed `renderUI()` outputs and
+  re-rendered containers. The host sends `input$<id>_minimised` (event priority) on minimise and restore.
+* **Version (#464).** `mascot_dependency()` gives the `mascot.js` tag a `data-mascot-version` attribute, which
+  `window.mascot.version` reads (`null` without it). A second copy of another version warns once through
+  `console.warn` and the first stays.
+* **Format-1 route.** `mascot.runtime.isFormat()` detects the description; `mascot.runtime.validate()` checks moods
+  and gestures; `mascot.mount()` always uses `mascot.runtime`. A swap without a mood takes the incoming mood from the
+  fallback chain. `mascot_preview()` resolves its theme the way `mascot()` does, so a character that is not built in
+  passes the theme check there.
+* **Comments.** Comments in the engine files say what the code does, without internal stage names or references to
+  documents outside the package (#464).
+
+<h3 id="dev-panels">Panels, clicks and menus</h3>
+
+* **One panel system (#233, #237, #241, #244, #248, #249, #250, #254, #257, #263).** Speech bubbles, pop-up menus
+  and action tooltips share `.mascot-panel`. `click` (`type: 'none' | 'action' | 'menu'`) replaced `popup_menu`. A
+  clickable mascot is wrapped in one native `<button class="mascot-button">` that sends `input$<id>_click` (a
+  monotonic counter that ignores key repeat and drag releases). `.mascot-tooltip` follows `WCAG` 1.4.13: a 150 ms
+  pointer-leave grace and a shared `Escape` listener.
+* **Placement of panels.** `inkBox()` scans the alpha channel for the drawn box when a menu or tooltip opens;
+  `placePanel()` chooses the side (`auto`, `top`, `bottom`, `left`, `right`, falling back to the opposite side or `auto`)
+  inside `clipBounds()` and positions `--_mascot-panel-tail`. Only one menu is open at a time (`openMenus`); bubble
+  timers pause while a menu is open or the mascot is minimised, and focus moves before controls are hidden. Panels
+  fade out over 150 ms, using an inert DOM clone.
+* **Gaze.** `gazeSide()`, `gazePose()` and `refreshGaze()` hold `look` and `lookY` towards the open menu's resolved
+  `data-side` or the active bubble, allowing for horizontal `flip`.
+* **Menus (#349, #350).** Only action buttons send `input$<id>_click`; opening or closing a menu leaves the count
+  alone, and choosing an item sends `input$<id>_menu` with event priority. A menu click setting carries a `disabled`
+  flag: the button stays focusable (`aria-disabled`) but opens nothing and sends nothing; disabling an open menu
+  closes it.
+* **Clicks through the bubble space (#506).** `.mascot-bubble-region` has `pointer-events: none` and `.mascot-bubble`
+  restores `auto` for itself and its contents, so clicks reach page controls around a bubble.
+* **Inline bubbles.** While one shows, the host also watches sibling layout changes so the message stays inside the
+  viewport.
+
+<h3 id="dev-placement">Placement, dragging and minimising</h3>
+
+* **Floating placement.** `portal()` moves a floating mascot to `document.body` and leaves a `.mascot-source`
+  placeholder span, so the `unbindAll` call of Shiny and the source container's visibility and styles still work. A
+  `ResizeObserver` scales the canvas by the device pixel ratio, and the offset of `#shiny-notification-panel` is
+  tracked.
+* **Phone sizing (#259, #261, #264, #266).** With `small_screen: "auto"` (`validateSize()`), floating mascots cap their
+  default size at 96 pixels at `<= 575.98px`
+  (`.mascot[data-floating="true"][data-small-screen="auto"]`).
+* **Dragging (#220, #222, #225, #229, #231, #232).** Pointer capture, `listenDrag()`, `drop()`, `cancelDrag()`,
+  `clampPoint()` and `nearestCorner()`, a 4-pixel threshold (`dragThreshold`), click suppression after a drag in the
+  capture phase, a 200 ms snap animation and `input$<id>_position`. `snap` goes to the nearest corner and `free`
+  stays where it is dropped. The minimised restore button drags too.
+* **Snap corner (#513).** `drop()` picks the corner with `nearestCorner()` from the drop point, with the mascot's own
+  size, before `clampPoint()`; a mascot taller or wider than the window less its margins used to be clamped first and
+  snapped back to the bottom or right.
+* **Minimise and restore (#275, #276).** Minimising and restoring animate with Web Animations (240 ms transform and
+  opacity, using a `.mascot-motion-copy` canvas clone). The host re-measures and calls `controller.redraw()` when
+  restoring, when the animation finishes or is cancelled, and whenever `measure()` changes the canvas size, so the
+  mascot is sharp at full device resolution. `redraw()` repeats `drawFrame()` without moving time or the activity
+  window.
+
+<h3 id="dev-motion">Motion</h3>
+
+* **Tracks (#299).** `mascot.motion.tracks`: `normalise()` and `sample()` for `[[at, value, ease?], ...]` and
+  `{ mode, keys }` tracks (add and set modes, `null` as the mood base, discrete values that switch at keys, the
+  easing curves `linear`, `ease_in`, `ease_out`, `ease_in_out` and `step`, exact rest at the end); `compile()` for needs and
+  fallback traversal (missing, cyclic and unplayable chains fail with `{ code, path }`), target-part checks and the
+  1 to 150 frame budget; `settings()`; `fit()` for late effects; `frameAt()` for interruption, reduction, a
+  five-second absolute deadline, multiplicative breathing, blink skipping and separate effect instances; `drawn()`.
+  Unknown gesture, channel, easing and effect names are errors; morph, blend and particles stay reserved. The idle
+  `extra` start time comes from `state.extraAt` (the host's seeded value; `null` suppresses it).
+* **Swapping characters (#307).** The outgoing character waves (its `wave` tracks over the captured channels) and fades
+  over thirty frames, the incoming one waves and fades in over thirty, composited once through a private canvas, with
+  durations fitted to the incoming activity window. A new target mid-fade keeps the exit time that remains; asking for
+  the exiting character again reverses; a mood change mid-swap commits without a wiggle; a gesture during a swap is
+  dropped; reduced motion or `swap: false` is instant.
+* **Separate switches (#239, #267).** `animate` became independent switches for `idle`, `mood_change`, `gestures`,
+  `swap`, `minimising`, `restoring`, `others` and per-panel `messages` (`bubble`, `tooltip`, `menu`);
+  `mascot.motion.settings` and `mascot.motion.panels` are frozen exports. In development mode a
+  `shiny:client-message` warns when a server gesture is skipped because `gestures = false`.
+
+<h3 id="dev-styling">Styling and theming</h3>
+
+* **Public hooks (#260, #270).** `--mascot-panel-*`, `--mascot-restore-*` and `--mascot-z-index` are public; layout
+  variables are private `--_mascot-*` (`size`, `source-*`, `drag-*`, `menu-*`, `tooltip-*`, `panel-tail`,
+  `notification-offset`), so user style sheets win over Bootstrap and page defaults. For a floating mascot moved to
+  `document.body`, the inherited public hooks are copied from the source anchor to `--_mascot-source-*`.
+* **Bubble space class (#558).** `.mascot-bubble-region` is a public class next to `.mascot-bubble`; hide it with
+  `display: none` on a page that never shows a bubble. Renaming it needs a deprecation. `?mascot_styling` lists it
+  and a test checks that `mascot()` puts it on the page.
+* **Page themes.** `resolveTheme()`, `shadeColour()` (`HSL` lightness and saturation shifts from the leader roles in
+  `description.follows`), `colourContrast()` (`WCAG` relative luminance, 3:1 warnings) and `pageMode()`, which watches
+  `[data-bs-theme]` and `body.quarto-dark` / `quarto-light` and defaults to light.
+* **Palettes (#336, #358).** R resolves a named palette; the host receives its id and light and dark leader colours
+  apart from explicit overrides and applies palette colours, then role overrides, then CSS. R decides whether a
+  palette is kept on a character swap and warns when the incoming character lacks the id. Outside Shiny, a host patch
+  resolves a shared palette against the incoming character or drops it. When the incoming character's own colours
+  carry the palette id (`native_palette`), the id is kept and no palette colours are applied, as for `original`.
+
+<h3 id="dev-performance">Performance</h3>
+
+* **Page changes and layout (#295).** `relevantMutation()` filters `MutationObserver` records, so changes outside a
+  mascot's ancestor chain, its `.mascot-source` anchor, `<head>` styles or `#shiny-notification-panel` do no work.
+  Page refreshes and theme-mode changes coalesce through `schedulePageRefresh()` into one `requestAnimationFrame`
+  per burst; changes confined to private host style properties are ignored.
+* **Off-screen mascots (#295).** A shared, reference-counted `IntersectionObserver` (`watchViewport()`) calls
+  `controller.holdVisibility()` when a mascot leaves or re-enters the viewport. The hold is independent of user pause
+  and activity: returning does not draw, renew the five-second window or override another pause, and a moving
+  player continues from its saved frame. The observer disconnects with the last unmount.
+* **Character data once per page (#497).** `mascot()` puts a built-in character's
+  `<script type="application/json" data-mascot-character="<id>">` block in the page head through an HTML dependency
+  named `mascot-character-<id>`; a custom character's block stays inside its element. `characterScript(id, scope)`
+  in `mascot.js` finds it: the element's own block, then one outside every mascot element, never another mascot's.
+  `readCharacter(id, scope)` parses it, and the host's `template-needed` recovery reads through `characterScript()`.
+* **Caches.** `bound()` is frozen and cached per character and band; a band that passed once is not checked again.
+  The channel table of a plain frame is one object per player.
+
+<h3 id="dev-removed">What was removed</h3>
+
+* **The older drawing path (#463).** `mascot-draw.js` is gone and `mascot_dependency()` no longer lists it: about
+  2,090 lines and 87 KB less JavaScript on every page. `mascot.js` keeps `fps`, `readCharacter()` and `validColour()`
+  (its load-twice guard keys on `readCharacter`); `draw()`, `validateCharacter()` and `checkCharacter()` are removed.
+  `mascot-motion.js` keeps `tracks`, `shared` (with `swapTiming`), `settings` and `panels`; its older player,
+  `pose()`, `frame()` and `validate()` are removed. `update({ character })` with a description that is not format
+  version 1 fails with "update.character: expected a character with format_version 1".
+* **The Tessa bridge (#313).** See the Tessa item under drawing. `mascot.geometry.bandBound()` and `checkBudget()`
+  went with it; `checkWork()` stays.
+* **Namespace hint (#392).** `suggestNamespace()`, a two-second development-mode hint for a missing `ns()`, could not
+  be reached from Shiny, because R drops an update for an id that is not mounted. The module rule stays in
+  `?mascot` and `?update_mascot`.
+* **`simplify_when_small` (#219, #221).** The separate small-size face drawing is gone; detail bands replace it.
 
 </details>
 

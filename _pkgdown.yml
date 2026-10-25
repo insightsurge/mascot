@@ -52,7 +52,7 @@ navbar:
       menu:
         - text: "R package"
           href: news/index.html
-        - text: "Engine"
+        - text: "mascot-engine"
           href: articles/engine-changelog.html
         - text: "Development of 0.1.0 (archive)"
           href: articles/development-history.html

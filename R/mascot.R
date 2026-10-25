@@ -101,12 +101,12 @@
 #' ```
 #'
 #' The same pattern works in the function-built `app_ui()` of a `golem` app and in
-#' rhino's `app/view/` modules using [shiny::moduleServer()]. The engine's
+#' rhino's `app/view/` modules using [shiny::moduleServer()]. The package's
 #' scripts and styles are attached through [htmltools::htmlDependency()],
 #' including with [shiny::renderUI()], and shared by mascots on the page.
 #' A built-in character's data travels the same way, once per page for each
 #' character in use; a custom character's data stays inside its own tag.
-#' No app-side copying of engine files is needed. Try
+#' You do not need to copy any of the package's files into your app. Try
 #' `mascot_example("golem")` (requires `golem`) or `mascot_example("rhino")`
 #' (a plain Shiny structure without rhino or box).
 #'

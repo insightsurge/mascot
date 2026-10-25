@@ -56,7 +56,7 @@ Each assertion prints one line:
 - `KNOWN <app> <check>: #<issue>`: the check fails because of an open package issue. It doesn't fail the run. Once
   the issue is fixed the check passes and prints `FAIL ... now passes`, so the fix PR removes the marker.
 - `SKIP`: missing shinytest2, chromote or Chrome, including failure to start Chrome. A SKIP exits zero, so never
-  read a zero exit as a stress pass when SKIP lines appear. With `--strict` (for CI), any SKIP exits non-zero.
+  read a zero exit as a stress pass when SKIP lines appear. With `--strict` (for a CI job, if one is added), any SKIP exits non-zero.
 
 Static syntax checks are explicitly labelled and do not count as browser passes. Failures include the actual host
 state (character, mood, status, bubble, the drawn frame, snapshot) and the Shiny inputs beside the expected condition.

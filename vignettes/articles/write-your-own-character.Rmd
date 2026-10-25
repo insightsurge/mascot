@@ -41,8 +41,8 @@ bot
 Printing the object shows a concise summary: the character identifier, display
 name, family, supported moods, gestures, detail overrides, and the source path.
 
-Checked character objects are self-contained and opaque. Edits to the object
-itself are refused at every package boundary. Always edit the source JSON or
+A checked character object cannot be edited: package functions refuse an object
+that has been changed. Always edit the source JSON or
 plain list, then read or check it again.
 
 ## Inside the character format
@@ -50,7 +50,7 @@ plain list, then read or check it again.
 `study_bot.json` holds a single JSON object, and the checker tests every field
 against the format rules:
 
-* `format_version`: The integer `1`. This identifies the file grammar.
+* `format_version`: The integer `1`. It says which version of the file format the file uses.
 * `id`: A unique lowercase identifier (`"study_bot"`). Built-in character ids
   (`"tessa"`, `"sela"`, `"knurl"`, `"neer"`) are reserved and refused.
 * `name`: The human-readable name shown in titles and summaries (`"Study Bot"`).
@@ -101,8 +101,9 @@ and mascot keeps it without reading it:
 * Any key that starts with `x_` in an object whose fields the format fixes:
   the character itself, a part, an item, a mood, a gesture, the face and so on.
   Its value can be any JSON value, and it stays in the file, as written, when
-  the character is checked and saved. It counts towards the file's size limits. In an object whose keys are ids or names, such as
-  `colours`, `moods` or `palettes`, a key that starts with `x_` is an ordinary id.
+  the character is checked and saved. It counts towards the file's size limits.
+  In an object whose keys are ids or names, such as `colours`, `moods` or
+  `palettes`, a key that starts with `x_` is an ordinary id.
 * A `"note"` string in any of those objects, as a comment.
 
 The start of such a file, shortened:
@@ -126,7 +127,7 @@ there are nine kinds of item. Together they can draw any silhouette:
 
 | Item | What it draws |
 |---|---|
-| `circle`, `ellipse`, `rect`, `round_rect` | The basic shapes, with a centre and sizes. A `round_rect` has rounded corners. |
+| `circle`, `ellipse`, `rect`, `round_rect` | The basic shapes. A `circle` or `ellipse` has a centre and radii; a `rect` or `round_rect` has its top-left corner, a width and a height. A `round_rect` has rounded corners. |
 | `polygon`, `hexagon` | A regular shape with 3 to 12 equal sides (a `hexagon` always has 6), around a centre, with optional rounded corners. |
 | `polyline` | A line through a list of points, joined by straight segments. Good for whiskers, antennae, cracks and hair strands. |
 | `arc` | A piece of a circle between two angles (in radians). Good for smiles, eyebrows, rings, or a spanner head with a gap. |
@@ -180,12 +181,12 @@ character object.
 
 The checker stops at the first problem and raises an error of class
 `mascot_error_character` (which also inherits from `mascot_error`). The error
-carries structured diagnostic metadata:
+carries these fields:
 
 * `code`: A stable problem identifier (such as `"version"` or `"input_type"`).
 * `path`: The JSON path where the error occurred (for example `$.format_version`).
 * `value`: The invalid value that was rejected.
-* `fix`: Plain-words guidance explaining how to resolve the problem. For a value
+* `fix`: Plain-words advice on how to fix the problem. For a value
   out of range it gives the range or the choices, for a drawing budget the count
   and the limit, and for a character too big for its frame the part that reaches
   furthest outside it.

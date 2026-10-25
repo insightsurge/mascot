@@ -30,7 +30,8 @@
 #' * `--mascot-restore-fg`: restore button text, border and focus outline.
 #'   Default: character outline colour, or its first colour if absent.
 #' * `--mascot-restore-glow`: restore button glow on hover or keyboard focus.
-#'   Default: character rim colour, then body colour, then its first colour.
+#'   Default: the character's accent colour (its secondary brand colour, or `rim`), then
+#'   its main colour, then its first colour.
 #' * `--mascot-z-index`: floating mascot's stacking order.
 #'   Default: `1031`, above Bootstrap fixed navigation bars and below overlay
 #'   panels and modals. A supplied value wins over this default.

@@ -20,7 +20,7 @@ guide_each_character(function(ch) {
       htmltools::tags$p(paste(resting_name, "is", paste0(mascot::mascot_character(ch)$name, "'s"), "idle animation."))
     },
     if (in_studio() && any(resting)) {
-      htmltools::tags$p("Choose its resting animation entry in the sentence to try it.")
+      htmltools::tags$p("To try it, choose the option labelled \"(resting animation)\" in the gesture list at the top.")
     },
     guide_gesture_cards(gestures[!resting, ])
   )

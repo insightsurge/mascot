@@ -56,7 +56,7 @@ claim about the package's status.
 Building UI with `mascot()` or helpers errors on invalid values; `update_mascot()` warns and leaves the
 mascot unchanged. cli conditions have `mascot_error`, `mascot_warning` or `mascot_message` classes;
 ignored updates also have `mascot_update_ignored`, contrast warnings have `mascot_contrast`, and inline
-placement messages have `mascot_placement_ignored`. Checkmate assertion errors retain their own classes.
+placement messages have `mascot_placement_ignored`. Checkmate assertion errors are re-raised with class `mascot_error` and keep checkmate's message.
 R contrast warnings appear in Shiny development mode, previews and the studio by default;
 `options(mascot.contrast_warnings = TRUE)` or `FALSE` forces them on or off everywhere. Colours are kept.
 
@@ -172,7 +172,7 @@ The engine is most of what a user sees, so it has its own rules. All of these ar
 - Three layers: an `htmltools::htmlDependency()` built inside a function at run time (never with `system.file()` at
   build time), with `version` equal to the package version; a Shiny input binding registered once as `mascot.mascot`,
   mounting on subscribe and cleaning up on unsubscribe; and custom messages (`mascot:update`) addressed by the
-  module-namespaced id and queued in JS until the element is bound. Only input bindings have these lifecycle hooks,
+  module-namespaced id and kept in R until the element is bound (a bounded buffer sent as complete state). Only input bindings have these lifecycle hooks,
   and Shiny's duplicate-id check then covers mascots. No `mascotOutput()` or `renderMascot()`.
 - No htmlwidgets. It adds a dependency built around plots, and its Shiny proxy pattern is custom messages anyway.
   Revisit only if a standalone viewer or print method is wanted.
@@ -256,7 +256,7 @@ widget's rendered output (section 6). Every change in `inst/www/` adds an entry 
 - URLs use https and are canonical. Software names in `DESCRIPTION` are in single quotes.
 - Wording: no hype, no unmeasured numbers, "built for GxP work" and never "validated" or "GxP compliant", and no
   employer, client or internal system named (**house**).
-- Every user-facing change adds a bullet to `NEWS.md` in the same PR (tidyverse style, see `CLAUDE.md`).
+- Every user-facing change adds a bullet to `NEWS.md` in the same PR (tidyverse style, see `.claude/rules/description-news.md`).
 
 **Dependencies:**
 
@@ -275,7 +275,7 @@ widget's rendered output (section 6). Every change in `inst/www/` adds an entry 
 use plain words in help pages:
 - **informal:** the shape is not promised (example: the palettes text in `mascot_characters()`).
 - **add-only:** ids and columns may be added, never removed or renamed.
-- **reserved:** a name held back so nothing else can take it (example: `wear`, `minimal`, `pastel`, `vivid`, `corporate`, `earthy`, `night`, `original`).
+- **reserved:** a name held back so nothing else can take it (example: `wardrobe`, `minimal`, `pastel`, `vivid`, `corporate`, `earthy`, `night`, `original`).
 - **dev-mode only:** appears only in Shiny development mode.
 
 **Experimental in 0.1.0:**
@@ -292,16 +292,16 @@ use plain words in help pages:
 
 - **A pyramid.** Most tests are fast unit tests. Above them sit `shiny::testServer()` tests for server logic, and
   above those a small number of shinytest2 tests for what a user sees.
-- **BDD style** (testthat 3rd edition). One test file per R file, plus a `-browser.R` and a `-snap.R` file for the
-  tests CRAN skips (below). `describe()` names the function or behaviour and
+- **BDD style** (testthat 3rd edition). One test file per R file, plus a `-browser.R` and a `-snap.R` file when it
+  has tests CRAN skips (below). `describe()` names the function or behaviour and
   `it()` states the expected behaviour in plain words, so the test names read as requirements.
 - **Every argument check has a test** showing it fails with a clear message. Every bug fix gets a test.
 - **Snapshots** (`expect_snapshot()`) for printed output and generated HTML. Review every snapshot change in the PR
   like code.
 - **shinytest2 assertions are on values, DOM state and status text, not on screenshots.** Use `app$get_value()`,
-  `app$expect_values()`, and `app$get_js()` reading the engine's exposed state (current mood, frame number, a hash of
-  the draw-call list), `data-*` attributes and the `role="status"` text. Because frames are deterministic, a hash of
-  the draw calls is a stable target across operating systems. A pixel hash is only for one pinned Chrome. Apps live
+  `app$expect_values()`, and `app$get_js()` reading the engine's exposed state (`mascot.host.state(el)`: mood,
+  character, bubble, colours, placement, menu state and so on), `data-*` attributes and the `role="status"` text. A
+  test that compares drawn pictures sums or counts the canvas pixels in the page, not a screenshot. Apps live
   in `tests/testthat/apps/<name>/app.R`.
 - **Skips.** Every shinytest2 test starts with `skip_on_cran()`, `skip_if_not_installed("shinytest2")` and a skip
   when `chromote::find_chrome()` returns `NULL`, and stops the app with `withr::defer(app$stop())`.
@@ -315,7 +315,9 @@ use plain words in help pages:
 - **Coverage is at least 70 percent, measured with covr on R code only.** This is our rule: CRAN's policy and
   `R CMD check` say nothing about coverage. The limit is `Config/cran-gate/coverage` in `DESCRIPTION`. covr does not
   see JS, so JS is covered by the shinytest2 behaviour tests. A PR never lowers coverage. `# nocov` is only for code
-  that cannot run in a test, with a comment saying why.
+  that cannot run in a test, with a comment saying why. The coverage job also sends
+  the figure to Codecov for the README badge; Codecov only reports (no pull request comments, informational
+  statuses), and the job itself enforces the limit.
 - **No jest or vitest for now.** If pure JS functions grow (colour maths, easing), `node --test` needs no dependency.
 - **Guardrails are tested too.** Each gate step has a probe in the gate's self-test that plants a defect and
   expects the step to fail, and a clean copy must pass (section 7.2).
@@ -413,7 +415,6 @@ SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep
 | Left out | Why |
 |---|---|
 | Pre-commit framework | One maintainer and no shared clone yet; it needs a Python tool. The gate and CI cover the same checks. Revisit when others commit |
-| Codecov | Not used: the 70 percent limit runs inside the coverage workflow. A coverage upload can be added later |
 | Screenshot tests in the test suite and CI | They differ between operating systems and Chrome versions. Values, DOM state and draw-call hashes are stable. |
 | jest or vitest | JS logic is kept small and tested through shinytest2. `node --test` is the fallback if pure functions grow |
 | TypeScript and a build step | Only needed for TypeScript or npm libraries. Plain JS is its own source and needs no Node in CI |

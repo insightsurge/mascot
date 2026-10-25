@@ -4,9 +4,10 @@
 #
 #   Rscript <path to this file> [fast|tests|full|lint|nosuggests] [options]   (--help lists the options)
 #
-#   fast  (default) tools, style, docs in sync, \value, spelling, R CMD check --as-cran without tests
+#   fast  (default) tools, style, docs in sync, \value, spelling, pkgdown, R CMD check --as-cran without tests
 #   tests           tools, tests (NOT_CRAN=true, so tests that CRAN skips run too), coverage and new lines
-#   full            everything: fast steps, tests, coverage, new lines, CRAN-like check with tests, built tarball
+#   full            everything: fast steps, tests, coverage, new lines, CRAN-like check with tests, built tarball and
+#                   the check without Suggests
 #   lint            the quick static steps only: tools, style, docs in sync, \value, spelling
 #   nosuggests      R CMD check with only the hard dependencies on the library path (CI's check-no-suggests job)
 #

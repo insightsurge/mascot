@@ -47,7 +47,8 @@ mascot_examples <- function() {
 #' Opens only the example you ask for, like [shiny::runExample()], and copies or
 #' writes no files. Use `run = FALSE` to read the app's code
 #' or pass its directory to [shiny::runApp()]. The single-file scenarios can be
-#' copied into a project with Shiny, `bslib` and mascot installed. Copy the whole
+#' copied into a project with Shiny, `bslib` and mascot installed (`long-task` also
+#' needs `promises` and `later`). Copy the whole
 #' folder for the studio, `golem` and rhino-shaped examples; `golem` also needs the
 #' `golem` package. `"theme"` is a page of the studio's app: `run = FALSE` returns
 #' the studio's `app.R`, and `run = TRUE` opens the app on that page, as

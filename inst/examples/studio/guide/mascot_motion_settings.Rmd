@@ -19,7 +19,7 @@ Turning panel movement off still leaves the panels available.
 | `swap` | One character changes into another. |
 | `minimising` | The mascot travels to its round restore button. |
 | `restoring` | The mascot returns from its restore button. |
-| `messages` | The bubble, tooltip and menu animate as panels. |
+| `messages` | Animation of the bubble, tooltip and menu. |
 | `others` | Movement whose switch is left at `NULL`, including future switches. |
 
 ### Which setting wins

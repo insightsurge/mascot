@@ -10,8 +10,8 @@ if (!in_studio()) guide_try_live("mascot_colour_roles")
 guide_heading(paste0(mascot::mascot_character(studio_character)$name, "'s parts"), "Parts")
 ```
 
-Leaders adopt the colours you supply. Followers copy the first leader you customise, shaded the same,
-lighter, or darker, unless you customise them directly. Low contrast against the page warns in development
+Leaders adopt the colours you supply. Followers copy the first leader you customise, in the same shade,
+lighter or darker, unless you customise them directly. Low contrast against the page warns in development
 mode and previews; the colour is kept. The mascot.contrast_warnings option forces R warnings on or off.
 
 ```{r mascot_colour_roles-table, echo = FALSE}

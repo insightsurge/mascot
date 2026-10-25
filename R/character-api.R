@@ -16,7 +16,7 @@
 #'   must change a channel of a part other than `root`; `nod` may change any
 #'   channel, including `root`. A checked object is not stored anywhere, so pass
 #'   it each time you use it. The format version, the set of supported
-#'   capabilities and the admission policy version can each change on their own.
+#'   capabilities and the version of the input and drawing limits can each change on their own.
 #'   Built-in character ids are reserved and refused here, so give your
 #'   character its own id before checking it.
 #' @seealso [mascot_character_format]
@@ -286,10 +286,10 @@ format.mascot_character_data <- function(x, ...) {
 #' the part, face, effect or shadow that reaches furthest outside, the side and
 #' by how much. The limits on input bytes, depth and node count, and the drawing
 #' budgets, apply to every input form. The format version, the capability set
-#' and the admission policy version can each change on their own. The installed
-#' grammar and policy live in
-#' `system.file("format", package = "mascot")`; the policy holds the input limits,
-#' the capability names and the drawing budget of each detail band.
+#' and the version of the input and drawing limits can each change on their own.
+#' The installed files are in `system.file("format", package = "mascot")`:
+#' `character-v1.json` describes the allowed fields, types and values; `policy-v1.json`
+#' holds the input limits, the capability names and the drawing budget of each detail band.
 #'
 #' @section Compatibility:
 #' The format is experimental and its future direction is open; these points hold

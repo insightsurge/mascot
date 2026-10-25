@@ -78,7 +78,7 @@
 
 * The studio follows native palette names and all character colour roles, marks Tessa's resting shimmer, and demonstrates palette precedence and overrides, unknown-palette mistakes, character swaps and menus beside long status text (#353).
 
-* The studio's Guide is written once, as R Markdown pages in `inst/examples/studio/guide/` (one per function, 26 in all), and the website shows the same pages in a new Studio guide menu. The studio now needs the optional package `knitr` (#353).
+* The studio's Guide is written once, as R Markdown pages in `inst/examples/studio/guide/` (one per function, 26 in all), and the website shows the same pages under its Guides menu, on the Studio guide page. The studio now needs the optional package `knitr` (#353).
 
 * The studio updates its Guide and code builders for recent API changes: `mascot_popup_menu()` explains that clicks never fire, option-only helper calls are prevented, `update_mascot()` documents its reset table and ignored-helper warnings, `mascot_preview()` aligns with its remaining arguments and 160, 96 and 24 pixel comparison columns, and `mascot_theme()` documents `bs_theme()` constraints (#353).
 
@@ -219,7 +219,7 @@
   * `run = FALSE` returns the app without launching it.
   * Show bubble sits right under the message box, and always shows the example just chosen, even when clicked at once (#249).
 
-* `mascot_theme(..., light = NULL, dark = NULL, mode = "auto", css = NULL)` sets a character's colours and its light or dark mode (#202, #213).
+* `mascot_theme(..., palette = NULL, light = NULL, dark = NULL, mode = "auto", css = NULL)` sets a character's colours and its light or dark mode (#202, #213).
   * Colours you supply are kept exactly. Roles you leave out follow the character's declared leaders, such as `body`, in priority order; `mascot_colour_roles()` lists them (#213).
   * `mode = "auto"` (the default) follows the page's light or dark mode, and uses light mode when the page gives no signal (#213).
   * A chosen colour below 3:1 contrast with its background is kept; R warns in development mode, previews and the studio unless the contrast option overrides it. `bslib::bs_theme()` contrast checks use the light and dark backgrounds separately (#213).
@@ -247,7 +247,7 @@
 
 * Exported examples assign mascot tags instead of printing the embedded character data (#350).
 
-* A `bslib::bs_theme()` used as `theme` needs `bslib` 0.6.0 or later. With an older `bslib`, mascot says so clearly instead of failing with an error about `body-bg-dark`, and the studio and its example ask for the same version. The minimum versions of `bslib` (0.6.0) and `shinytest2` (0.5.0) are now declared in `DESCRIPTION` (#431).
+* A `bslib::bs_theme()` used as `theme` needs `bslib` 0.7.0 or later. With an older `bslib`, mascot says so clearly instead of failing with an error about `body-bg-dark`, and the studio and its example ask for the same version. The minimum versions of `bslib` (0.7.0) and `shinytest2` (0.5.0) are now declared in `DESCRIPTION` (#431).
 
 * `mascot_motion_settings()` reports invalid `messages` panel names with class `mascot_error_choice` (#350).
 

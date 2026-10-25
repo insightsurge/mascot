@@ -93,9 +93,9 @@ colours to character parts, and the character file format.
 
 You can read a local JSON character file with `mascot_read_character()` or check JSON text or a parsed list with
 `mascot_check_character()`. Both functions are experimental; their arguments, results and diagnostics may change
-in a later release. You can preview a checked character and use it in Shiny; the studio does not take custom characters yet. Public
-functions for saving and registering characters and palettes are planned for a later release. See
-[Make your own character](https://insightsurge.github.io/mascot/articles/write-your-own-character.html).
+in a later release. You can preview a checked character and use it in Shiny; the studio does not take custom
+characters yet. Public functions for saving and registering characters and palettes are planned for a later
+release. See [Make your own character](https://insightsurge.github.io/mascot/articles/write-your-own-character.html).
 
 The coverage badge counts the R code the tests run. The JavaScript engine that draws and animates the mascots is
 tested in a browser and is not part of that figure.

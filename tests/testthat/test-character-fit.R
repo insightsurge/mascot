@@ -42,7 +42,7 @@ describe("conservative authored frame fit", {
 
   it("matches hand-calculated bounds for a rotated part under host placement", {
     # Hand calculation:
-    # 1. Coordinate frame and host placement conventions (policy-v1.json, character-fit.R):
+    # 1. Coordinate frame and host placement conventions (R/character-fit.R, inst/www/mascot-player.js):
     #    Canvas frame: 300 x 300; ground origin: (150, 270).
     #    Default host placement maps local ground-origin coordinates (x, y) to:
     #      x_host = x + 150

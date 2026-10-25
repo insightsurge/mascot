@@ -107,7 +107,7 @@ mascot_studio()
 
 - **One id connects UI and server:** pass the same id string to [`mascot()`](`r paste0(site_url, "articles/guide-mascot.html")`) in the UI and [`update_mascot()`](`r paste0(site_url, "articles/guide-update_mascot.html")`) in the server, naming all other arguments.
 - **Mood plus status text:** the text beside the character carries the meaning for your users and screen readers, so the face never stands alone.
-- **`NULL` leaves a setting unchanged:** in `update_mascot()`, `NULL` keeps the current value on the page, while an empty helper resets it.
+- **`NULL` leaves a setting unchanged:** in `update_mascot()`, `NULL` keeps the current value on the page, while calling a helper such as `mascot_bubble()` with no arguments resets it.
 - **Bad runtime values warn without crashing:** invalid values in `update_mascot()` warn and leave the mascot untouched instead of stopping the app.
 - **Helpers are optional shortcuts:** pass a plain value like `size = 180`, or use [`mascot_size()`](`r paste0(site_url, "articles/guide-mascot_size.html")`) when you want extra options.
 

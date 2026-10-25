@@ -26,7 +26,7 @@ file.copy(path, "app.R", overwrite = FALSE)
 Choose a destination without an existing `app.R`. For the multi-file examples
 (`"studio"`, `golem` and the rhino-shaped one), copy the whole containing folder instead so
 that their supporting files stay together. The `golem` example needs golem;
-the single-file scenarios need Shiny, bslib and mascot.
+the single-file scenarios need Shiny, bslib and mascot (`long-task` also needs promises and later).
 
 ### Run one
 

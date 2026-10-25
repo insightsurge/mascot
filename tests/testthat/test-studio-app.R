@@ -431,17 +431,17 @@ describe("studio host choices, reading tabs, dock and examples browser", {
     expect_identical(eval(env$code_bubble("", FALSE, 10, FALSE)$helper), mascot_bubble())
 
     action_guide <- as.character(env$selected_guide("mascot_action"))
-    expect_match(action_guide, "Options need their main argument.", fixed = TRUE)
-    expect_match(action_guide, "An empty call removes it.", fixed = TRUE)
+    expect_match(action_guide, "Supply a label when setting options.", fixed = TRUE)
+    expect_match(action_guide, "To remove the click behaviour", fixed = TRUE)
 
     menu_guide <- as.character(env$selected_guide("mascot_popup_menu"))
     expect_match(menu_guide, "input$&lt;id&gt;_menu vs input$&lt;id&gt;_click", fixed = TRUE)
-    expect_match(menu_guide, "Options need their main argument.", fixed = TRUE)
-    expect_match(menu_guide, "An empty call removes it.", fixed = TRUE)
+    expect_match(menu_guide, "Supply menu items when setting options.", fixed = TRUE)
+    expect_match(menu_guide, "To remove the click behaviour", fixed = TRUE)
 
     bubble_guide <- as.character(env$selected_guide("mascot_bubble"))
-    expect_match(bubble_guide, "Options need their main argument.", fixed = TRUE)
-    expect_match(bubble_guide, "An empty call removes it.", fixed = TRUE)
+    expect_match(bubble_guide, "Supply text when setting options.", fixed = TRUE)
+    expect_match(bubble_guide, "To remove the bubble", fixed = TRUE)
 
     theme_guide <- as.character(env$selected_guide("mascot_theme"))
     expect_match(theme_guide, "A bs_theme() always uses mode = \"auto\"", fixed = TRUE)

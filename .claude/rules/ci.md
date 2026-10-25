@@ -53,4 +53,5 @@ Reasons and sources: `docs/standards.md`. What each workflow runs, and the gate 
   works on copies in `tempdir()` and must end with "All probes behaved as expected". Its "copies in step" check runs
   only when `CRAN_GATE_COPY_DIR` names another copy of the gate to compare with.
 - The gate's `new_lines` step (every added `R/` line run by a test) has no CI job: it needs the branch's base, which a
-  shallow CI checkout lacks, so it SKIPs there and runs locally.
+  shallow CI checkout lacks, so it SKIPs there and runs locally. The pull request's CI report comment still lists
+  the added `R/` lines the coverage job's tests don't run, as information (`.github/scripts/coverage-report.R`).

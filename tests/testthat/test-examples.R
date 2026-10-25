@@ -1115,6 +1115,45 @@ describe("the preview page and the host mode", {
 })
 
 describe("the studio's echo of a change it applied", {
+  it("leaves a typed bubble draft alone when an editor-open request arrives afterwards", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      messages <- list()
+      session$sendInputMessage <- function(id, message) messages[[id]] <<- message
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      # The text input has arrived, but the chip's delayed application has not. The live bubble
+      # still contains the welcome text when the earlier request to open its editor arrives.
+      session$setInputs(
+        bubble_text = "abc",
+        bubble_html = TRUE,
+        bubble_forever = TRUE,
+        bubble_duration = 9,
+        bubble_closable = FALSE
+      )
+      before <- live_demo$bubble
+      expect_identical(as.character(eval(before$helper)$text), get("welcome", parts$env))
+      call <- last_call()
+      messages <- list()
+      session$setInputs(chip_argument = "bubble")
+      for (id in c("bubble_text", "bubble_html", "bubble_forever", "bubble_duration", "bubble_closable")) {
+        expect_null(messages[[id]], info = id)
+      }
+      expect_identical(live_demo$bubble, before)
+      expect_identical(last_call(), call)
+      expect_identical(bubble_draft$text, "abc")
+      expect_true(bubble_draft$html)
+      # Show must use the draft too, even before the chip's application arrives.
+      session$setInputs(bubble_show = 1)
+      shown <- eval(state$bubble$helper)
+      expect_identical(as.character(shown$text), "abc")
+      expect_true(shown$html)
+      expect_identical(shown$duration, Inf)
+      expect_false(shown$closable)
+    })
+  })
+
   it("sets a control only when the control did not send that value itself", {
     parts <- studio_parts()
     start <- studio_start_values(parts$page)
@@ -2112,9 +2151,12 @@ describe("each studio control's update, generated code and default", {
         wait = 700,
         sent = function(p) identical(p$status$text, "Saving")
       ),
-      bubble_text = row(show(bubble_text = "Hi there"), "bubble", 'bubble = "Hi there"', sent = function(p) {
-        identical(p$bubble$text, "Hi there")
-      }),
+      bubble_text = row(
+        show(bubble_text = "Hi there"),
+        "bubble",
+        'mascot_bubble("Hi there", duration = 8)',
+        sent = function(p) identical(p$bubble$text, "Hi there") && identical(p$bubble$duration, 8)
+      ),
       bubble_html = row(
         show(bubble_text = "<b>Hi</b>", bubble_html = TRUE),
         "bubble",
@@ -2474,13 +2516,16 @@ describe("each studio control's update, generated code and default", {
       )
     ))
     # Each control starts at the value its argument has by default (the overrides above aside).
+    # The bubble controls follow the welcome demonstration without an editor-open round trip.
+    start_bubble <- eval(env$start$bubble$helper)
     start_menu <- eval(env$start$click$helper)$items
     expected <- list(
       status_text = "", # status = NULL follows the mood
-      bubble_duration = bubble$duration,
-      bubble_forever = is.infinite(bubble$duration),
-      bubble_closable = bubble$closable,
-      bubble_html = FALSE, # plain text unless wrapped in HTML()
+      bubble_text = as.character(start_bubble$text),
+      bubble_duration = start_bubble$duration,
+      bubble_forever = is.infinite(start_bubble$duration),
+      bubble_closable = start_bubble$closable,
+      bubble_html = isTRUE(start_bubble$html),
       idle = "follow",
       mood_change = "follow",
       gestures = "follow",

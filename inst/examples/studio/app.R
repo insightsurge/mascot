@@ -22,7 +22,7 @@ examples <- mascot_examples()
 start <- lapply(defaults, code_pair)
 # The canvas opts into inline placement; a plain mascot() floats in the bottom-right corner.
 start$placement <- code_placement(position = "inline")
-start$bubble <- code_bubble(welcome, FALSE, 8, TRUE)
+start$bubble <- do.call(code_bubble, welcome_bubble)
 start$click <- code_menu(default_menu)
 
 # The mascot() call for a state: only the arguments that differ from the defaults.
@@ -492,6 +492,8 @@ studio_server <- function(input, output, session) {
 
   sync_bubble_controls <- function(pair) {
     checkmate::assert_list(pair)
+    # Only applied changes and explicit resets write these controls. Opening the editor moves
+    # the mounted controls, whose initial values already describe the welcome demonstration.
     bubble <- eval(pair$helper)
     # Show reads the draft (see bubble_draft below), so it follows the controls at once too.
     bubble_draft$text <- as.character(bubble$text %||% "")
@@ -558,10 +560,6 @@ studio_server <- function(input, output, session) {
     }
     invisible(ok)
   }
-
-  observeEvent(input$chip_argument, {
-    if (identical(input$chip_argument, "bubble")) sync_bubble_controls(live_demo$bubble)
-  })
 
   # Clicks on buttons that carry data-event and data-value arrive as input$<event>.
   observeEvent(input$select_function, {

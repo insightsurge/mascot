@@ -393,8 +393,6 @@
       item.marker.replaceWith(item.element);
     }
     moved = [];
-    // DOM-ready initialisation also calls this before Shiny installs setInputValue().
-    if (chipArgument !== null) send('chip_argument', '');
     for (const chip of document.querySelectorAll('[data-call-arg]')) chip.setAttribute('aria-expanded', 'false');
   }
   function inspectorButton() {
@@ -951,7 +949,6 @@
     }
     closeSelects();
     if (chipArgument === 'id') byId('chip_editor_body').textContent = 'Fixed studio id: "helper".';
-    send('chip_argument', chipArgument);
     positionChip();
     // Focus the surface, which leaves selectize closed until the visitor chooses it.
     byId('chip_editor').tabIndex = -1;

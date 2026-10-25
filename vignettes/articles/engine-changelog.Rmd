@@ -19,9 +19,9 @@ CRAN release.
   drawing code and the bridge that drew Tessa through it are gone (#308, #313, #463).
 * **Deterministic.** A frame is worked out from the character and its state only: the engine never reads the clock
   to draw and never calls `Math.random()`.
-* **The browser checks what R checks.** It counts drawing work with the same rules and limits as R for each detail band,
-  refuses reserved capabilities and requires a `wave` and a `nod` that move, so a character R accepts draws in the
-  browser and the other way round (#304, #306, #328, #493).
+* **The browser checks what R checks.** It counts drawing work with the same rules and limits as R for each detail
+  band, refuses reserved capabilities and requires a `wave` and a `nod` that move, so a character R accepts draws in
+  the browser and the other way round (#304, #306, #328, #493).
 * **The host.** It mounts mascots in Shiny apps, saved pages and Quarto or R Markdown pages, keeps updates that
   arrive before a mascot appears, survives re-rendering, works in nested modules, shows connection loss and starts
   again when a page reconnects into a new Shiny session (#70, #133, #305, #426).
@@ -30,12 +30,12 @@ CRAN release.
   bubble lets clicks through (#225, #233, #241, #257, #350, #506).
 * **Placement.** Floating corners, inline placement, minimising with a sharp redraw on restore, and dragging that
   snaps to the nearest corner or (experimental) stays where it is dropped (#220, #275, #513).
-* **Light on the page.** Layout reads are batched, mascots scrolled off-screen stop drawing, and a page carries
-  each built-in character's data once (#295, #497).
+* **Light on the page.** Layout reads are batched, mascots scrolled off-screen stop drawing, and a page carries each
+  built-in character's data once (#295, #497).
 * **Styling and version.** Public classes, `--mascot-*` custom properties and the `.mascot-bubble-region` class are
   documented in `?mascot_styling`; everything else is private. `window.mascot.version` gives the version on the
-  page, and a page that loads a second copy of the engine in another version keeps the first and says so in the browser
-  console (#260, #464, #558).
+  page, and a page that loads a second copy of the engine in another version keeps the first and says so in the
+  browser console (#260, #464, #558).
 
 ## Development entries
 

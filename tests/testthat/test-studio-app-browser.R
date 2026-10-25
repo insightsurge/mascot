@@ -43,19 +43,81 @@ studio_select_function <- function(app, fn) {
   ))
 }
 
-# Waits until the Help or Guide panel shows the page of `fn`: the studio marks a panel busy until its card names `fn`.
-wait_studio_panel <- function(app, panel, fn) {
+# Waits until "R code for this function" shows the code of `fn`: the studio marks it busy until the server has stamped
+# the text it drew with the function it is for.
+wait_studio_code <- function(app, fn) {
   checkmate::assert_r6(app, "AppDriver")
-  checkmate::assert_choice(panel, c("help", "guide"))
   checkmate::assert_string(fn)
   app$wait_for_js(sprintf(
-    paste(
-      "(() => { const p = document.getElementById('inspector_%s');",
-      "return !p.hidden && !p.hasAttribute('aria-busy') &&",
-      "p.querySelector('[data-guide-function]')?.dataset.guideFunction === '%s'; })()"
-    ),
-    panel,
+    "!document.getElementById('code_pin').hasAttribute('aria-busy') && document.getElementById('code_function').dataset.stamp === '%s'",
     fn
+  ))
+}
+
+# Holds back what the browser sends for the inputs `names`, to stand in for a server that has not answered yet: the
+# page changes at once, and the server's reply (a redrawn panel, a new chip) is missing until `release_studio_inputs()`.
+# Setting an input with `app$set_inputs()` waits for the server, so change a held input in the page itself.
+hold_studio_inputs <- function(app, names) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_character(names, min.len = 1, any.missing = FALSE, min.chars = 1)
+  app$run_js(sprintf(
+    paste(
+      "(() => { const socket = Shiny.shinyapp.$socket, names = %s;",
+      "if (!window.studioHold) {",
+      "  const send = socket.send.bind(socket);",
+      "  window.studioHold = { names: [], held: [], send,",
+      "    release() { this.names = []; for (const message of this.held.splice(0)) send(message); } };",
+      "  socket.send = (message) => {",
+      "    const hold = window.studioHold;",
+      "    if (typeof message === 'string' && hold.names.some((name) => message.includes('\"' + name + '\"'))) hold.held.push(message);",
+      "    else send(message);",
+      "  };",
+      "}",
+      "window.studioHold.names = names; })()"
+    ),
+    jsonlite::toJSON(names)
+  ))
+}
+
+# Sends what `hold_studio_inputs()` kept, and returns how many messages that was.
+release_studio_inputs <- function(app) {
+  checkmate::assert_r6(app, "AppDriver")
+  app$get_js("(() => { const n = window.studioHold.held.length; window.studioHold.release(); return n; })()")
+}
+
+# Holds back what the server sends to the page, to stand in for a slow connection: the page goes on working, and the
+# server's replies (a redrawn panel, a control set by updateTextInput()) arrive, in order, when `release_studio_replies()`
+# is called. Everything the server has sent since is in `window.studioReplies.held`.
+hold_studio_replies <- function(app) {
+  checkmate::assert_r6(app, "AppDriver")
+  app$run_js(paste(
+    "(() => { const shinyApp = Shiny.shinyapp, dispatch = shinyApp.dispatchMessage.bind(shinyApp);",
+    "const hold = window.studioReplies = { on: true, held: [], dispatch,",
+    "  release() { this.on = false; for (const message of this.held.splice(0)) dispatch(message); } };",
+    "shinyApp.dispatchMessage = (message) => (hold.on ? hold.held.push(message) : dispatch(message)); })()"
+  ))
+}
+
+# Waits until the server has sent a message that `condition` (JavaScript on `reply`, the parsed message) accepts, and
+# the page is holding it back (`hold_studio_replies()`).
+wait_studio_reply <- function(app, condition) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(condition, min.chars = 1)
+  app$wait_for_js(sprintf(
+    "window.studioReplies.held.some((message) => { const reply = typeof message === 'string' ? JSON.parse(message) : message; return %s; })",
+    condition
+  ))
+}
+
+# Types `value` into the text control `id`, as a visitor does: the control changes at once, Shiny sends it a moment later.
+type_studio_text <- function(app, id, value) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(id, min.chars = 1)
+  checkmate::assert_string(value)
+  app$run_js(sprintf(
+    "{ const field = document.getElementById('%s'); field.value = %s; field.dispatchEvent(new Event('input', { bubbles: true })); }",
+    id,
+    jsonlite::toJSON(value, auto_unbox = TRUE)
   ))
 }
 
@@ -230,14 +292,12 @@ describe("studio overlays and live controls", {
       "document.getElementById('studio_inspector').contains(window.studioStatus) && document.querySelectorAll('#status_text').length === 1"
     ))
     app$click(selector = "#close_inspector")
-    # A real copy is allowed to succeed or report browser denial; a denial must never say Copied.
-    app$run_js(
-      "window.studioCopy = document.querySelector('#studio_dock [data-copy=code_ui]'); window.studioCopy.click();"
-    )
-    app$wait_for_js("['Copied', 'Copy failed', 'Copy unavailable'].includes(window.studioCopy.textContent)")
-    if (identical(app$get_js("window.studioCopy.textContent"), "Copied")) {
-      expect_match(app$get_value(output = "code_ui"), 'status = "Checking a draft"', fixed = TRUE)
-    }
+    # The dock's Copy copies the settings code, with the status just set
+    stub_studio_clipboard(app)
+    click_now(app, "#studio_dock [data-copy=code_ui]")
+    app$wait_for_js("window.copied !== null")
+    expect_match(app$get_js("window.copied"), 'status = "Checking a draft"', fixed = TRUE)
+    app$wait_for_js("document.querySelector('#studio_dock [data-copy=code_ui]').textContent === 'Copied'")
   })
   it("preserves bubbles, motion, placement, actions, menus, gestures, code and host modes", {
     local_shiny_browser()
@@ -305,9 +365,8 @@ describe("studio overlays and live controls", {
     )
     app$click(selector = "#close_inspector")
     app$set_inputs(host_mode = "preview")
-    app$wait_for_js(
-      "document.querySelector('[data-canvas=preview]').hidden === false && document.querySelector('#preview_frame iframe') !== null"
-    )
+    wait_studio_preview(app)
+    expect_false(app$get_js("document.querySelector('[data-canvas=preview]').hidden"))
     expect_match(app$get_value(output = "code_preview"), "mascot_preview(", fixed = TRUE)
     app$run_js("document.getElementById('more_examples').click()")
     app$wait_for_js(
@@ -571,10 +630,13 @@ describe("studio behaviour for each function", {
     app$run_js(
       "document.querySelector('[data-event=\"colours-reset_colour\"][data-value=\"light:body_highlight\"]').click()"
     )
-    app$wait_for_js("!document.getElementById('code_ui').textContent.includes('#abcdef')")
-    # The reset reaches the picker itself: Shiny adds the module's prefix to the input message.
+    # The reset reaches the picker itself (Shiny adds the module's prefix to the input message), and the code in the
+    # same answer. The picker is the positive sign of the answer; code that lacks the colour is true before it.
     highlight <- tolower(mascot_colour_roles("tessa")$colour[mascot_colour_roles("tessa")$role == "body_highlight"])
-    app$wait_for_js(sprintf("document.getElementById('colours-light_body_highlight').value === '%s'", highlight))
+    app$wait_for_js(sprintf(
+      "document.getElementById('colours-light_body_highlight').value === '%s' && !document.getElementById('code_ui').textContent.includes('#abcdef')",
+      highlight
+    ))
     studio_colour(app, "colours-dark_body", "#224466")
     app$set_inputs(theme_mode = "dark")
     app$wait_for_js(sprintf("%s.mode === 'dark' && %s.colours.body?.toLowerCase() === '#224466'", state, state))
@@ -585,12 +647,15 @@ describe("studio behaviour for each function", {
     app$set_inputs(`colours-css_roles` = character(), theme_mode = "light")
     studio_colour(app, "colours-light_body", "#f8f9fa")
     app$wait_for_js(sprintf("%s.colours.body?.toLowerCase() === '#f8f9fa'", state))
-    app$click(selector = "#contrast_check")
-    app$wait_for_js("document.getElementById('contrast').textContent.includes('hard to see')")
+    click_studio_busy(app, "contrast_check")
+    expect_match(app$get_js("document.getElementById('contrast').textContent"), "hard to see", fixed = TRUE)
     studio_colour(app, "colours-light_body", "#1f6feb")
     app$wait_for_js("document.getElementById('contrast').textContent.includes('settings changed since the last check')")
+    # The reset reaches the picker and the code in one answer; the picker is the positive sign of it
+    body <- tolower(mascot_colour_roles("tessa")$colour[mascot_colour_roles("tessa")$role == "body"])
     app$run_js("document.querySelector('[data-event=\"colours-reset_mode\"][data-value=light]').click()")
-    app$wait_for_js("!document.getElementById('code_ui').textContent.includes('#1f6feb')")
+    app$wait_for_js(sprintf("document.getElementById('colours-light_body').value === '%s'", body))
+    expect_false(grepl("#1f6feb", app$get_value(output = "code_ui"), fixed = TRUE))
     studio_select_function(app, "mascot_characters")
     family <- mascot_families()$id[1]
     app$set_inputs(list_family = family)
@@ -657,6 +722,101 @@ describe("studio behaviour for each function", {
     # Then the Guide is drawn for it
     wait_studio_panel(app, "guide", "mascot_placement")
     expect_false(app$get_js("Shiny.shinyapp.$inputValues['.clientdata_output_guide_hidden']"))
+  })
+  it("marks the Guide busy while it shows another character's page", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_moods")
+    app$click(selector = "#inspector_tab_guide")
+    wait_studio_panel(app, "guide", "mascot_moods")
+    # Given the server has not answered the change of character yet
+    hold_studio_inputs(app, "character")
+    # When another character is chosen, the page still holds the Guide of the first, and says so at once
+    state <- app$get_js(paste(
+      "(() => { const select = document.getElementById('character'); select.value = 'sela'; $(select).trigger('change');",
+      "return [document.getElementById('inspector_guide').getAttribute('aria-busy'),",
+      "getComputedStyle(document.querySelector('#guide > .card')).opacity]; })()"
+    ))
+    expect_identical(unlist(state), c("true", "0.5"))
+    # Then it comes back once the server has drawn the Guide for the new character
+    expect_gte(release_studio_inputs(app), 1L)
+    wait_studio_panel(app, "guide", "mascot_moods", character = "sela")
+    expect_match(app$get_js("document.getElementById('guide').textContent"), "Sela's", fixed = TRUE)
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('#guide > .card')).opacity"), "1")
+  })
+  it("marks the code of the function busy while it shows the code of another function", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_moods")
+    wait_studio_code(app, "mascot_moods")
+    expect_match(app$get_js("document.getElementById('code_function').textContent"), "mascot_moods(", fixed = TRUE)
+    # Given the server has not answered the change of function yet
+    hold_studio_inputs(app, "select_function")
+    # When another function is picked, the code of the first is still there, and says it is busy at once
+    studio_select_function(app, "mascot_gestures")
+    expect_identical(app$get_js("document.getElementById('code_pin').getAttribute('aria-busy')"), "true")
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('#code_pin .pg-code')).opacity"), "0.5")
+    expect_match(app$get_js("document.getElementById('code_function').textContent"), "mascot_moods(", fixed = TRUE)
+    # Then it comes back once the code of the new function is drawn
+    expect_gte(release_studio_inputs(app), 1L)
+    wait_studio_code(app, "mascot_gestures")
+    expect_match(app$get_js("document.getElementById('code_function').textContent"), "mascot_gestures(", fixed = TRUE)
+    expect_identical(app$get_js("getComputedStyle(document.querySelector('#code_pin .pg-code')).opacity"), "1")
+  })
+  it("clears the argument marker of the Help panel when another function or whole-function help opens", {
+    local_shiny_browser()
+    app <- studio_driver(width = 1440, height = 900)
+    wait_studio_mood(app, "idle")
+    marker <- "document.getElementById('function_help').dataset.activeArgument || ''"
+    open_argument_help <- function() {
+      click_now(app, "[data-call-arg=size]")
+      app$click(selector = "#chip_inspector")
+      app$click(selector = "[data-function=mascot_size] [data-argument=small_screen] .pg-arg-chip")
+      app$wait_for_js("!!document.querySelector('.popover.show [data-argument-help=small_screen]')")
+      app$click(selector = ".popover.show [data-argument-help=small_screen]")
+      app$wait_for_js(paste0(
+        marker,
+        " === 'small_screen' && !!document.querySelector('#function_help [data-guide-function=mascot_size]')"
+      ))
+    }
+    # Given the Help panel was opened at an argument of mascot_size()
+    open_argument_help()
+    # When another function is picked, the marker goes with it
+    studio_select_function(app, "mascot_placement")
+    expect_identical(app$get_js(marker), "")
+    app$click(selector = "#inspector_tab_help")
+    wait_studio_panel(app, "help", "mascot_placement")
+    # And when the help of the whole function opens
+    studio_select_function(app, "mascot_size")
+    open_argument_help()
+    click_now(app, "[data-call-arg=size]")
+    app$click(selector = "#chip_help")
+    wait_studio_panel(app, "help", "mascot_size")
+    expect_identical(app$get_js(marker), "")
+  })
+  it("opens argument help once the Help page of its function is drawn", {
+    local_shiny_browser()
+    app <- studio_driver(width = 1440, height = 900)
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_placement")
+    app$click(selector = "#inspector_tab_help")
+    wait_studio_panel(app, "help", "mascot_placement")
+    # Given the server has not answered the change of function yet
+    hold_studio_inputs(app, "select_function")
+    # When the help of an argument of mascot_size() is asked for, as a link in an argument's popover does
+    app$run_js(paste(
+      "(() => { const link = document.createElement('button'); link.dataset.helpFunction = 'mascot_size';",
+      "link.dataset.argumentHelp = 'small_screen'; document.body.append(link); link.click(); link.remove(); })()"
+    ))
+    # Then no argument is marked while the page of mascot_placement() is still the one shown
+    expect_identical(app$get_js("document.getElementById('inspector_help').getAttribute('aria-busy')"), "true")
+    expect_identical(app$get_js("document.getElementById('function_help').dataset.activeArgument || ''"), "")
+    # And the argument is marked once the page of mascot_size() is drawn
+    expect_gte(release_studio_inputs(app), 1L)
+    wait_studio_panel(app, "help", "mascot_size")
+    app$wait_for_js("document.getElementById('function_help').dataset.activeArgument === 'small_screen'")
   })
   it("runs combined updates, invalid calls and delayed success and failure beside an activity log", {
     local_shiny_browser()
@@ -741,8 +901,9 @@ describe("studio actions, menus and generated preview", {
     app$set_inputs(action_disabled = FALSE, action_tooltip = TRUE)
     app$wait_for_js(sprintf("%s.click.disabled === false && %s.click.tooltip === true", state, state))
     app$run_js(sprintf("%s.querySelector('.mascot-button').click()", studio_live))
+    # The server's answer is the click counted ("1 click") and the wave it sent; the text before any click mentions clicks too
     app$wait_for_js(
-      "document.getElementById('click_last').textContent.includes('click') && document.getElementById('code_last').textContent.includes('wave')"
+      "document.getElementById('click_last').textContent === '1 click' && document.getElementById('code_last').textContent.includes('wave')"
     )
     expect_false(grepl("mascot_gesture(", app$get_value(output = "code_ui"), fixed = TRUE))
     studio_select_function(app, "mascot_popup_menu")
@@ -782,18 +943,19 @@ describe("studio actions, menus and generated preview", {
         studio_frame_wait
       )
     )
+    # Bootstrap ignores a dismissal while the modal is still fading in: wait for its "shown" event before closing it
+    app$run_js(
+      "window.modalShown = false; document.addEventListener('shown.bs.modal', () => { window.modalShown = true; }, { once: true });"
+    )
     app$run_js(sprintf(
       "%s.document.querySelector('.mascot-menu:not([hidden]):not(.mascot-motion-copy) [data-item-id=about]').click()",
       studio_frame
     ))
-    app$wait_for_js("document.querySelector('.modal.show .modal-title')?.textContent === 'About this studio'")
-    # Bootstrap ignores a dismissal while the modal is still fading in, so retry until it has closed.
-    for (attempt in 1:20) {
-      app$run_js("document.querySelector('.modal.show [data-bs-dismiss=modal]')?.click()")
-      Sys.sleep(0.5)
-      if (isTRUE(app$get_js("!document.querySelector('.modal.show')"))) break
-    }
-    expect_true(app$get_js("!document.querySelector('.modal.show')"))
+    app$wait_for_js("window.modalShown")
+    expect_identical(app$get_js("document.querySelector('.modal.show .modal-title')?.textContent"), "About this studio")
+    click_now(app, ".modal.show [data-bs-dismiss=modal]")
+    # Bootstrap takes "modal-open" off the page once the modal has gone
+    app$wait_for_js("!document.querySelector('.modal.show') && !document.body.classList.contains('modal-open')")
   })
 
   it("rebuilds preview code from controls, returns to the mounted host and opens standalone examples", {
@@ -802,7 +964,7 @@ describe("studio actions, menus and generated preview", {
     wait_studio_mood(app, "idle")
     app$run_js(sprintf("window.originalHost = %s", studio_live))
     studio_select_function(app, "mascot_preview")
-    app$wait_for_js("!!document.querySelector('iframe.pg-preview')")
+    wait_studio_preview(app)
     expect_true(app$get_js("document.querySelector('[data-canvas=mascot]').hidden"))
     studio_colour(app, "preview_body", "#1f6feb")
     studio_colour(app, "preview_rim", "#966600")
@@ -819,9 +981,8 @@ describe("studio actions, menus and generated preview", {
       "window.sawBuilding = false; window.buildObserver = new MutationObserver(() => {if (document.querySelector('.pg-building')) window.sawBuilding = true;}); window.buildObserver.observe(document.body, {childList:true, subtree:true});"
     )
     app$set_inputs(preview_status = "Auto build status")
-    app$wait_for_js(
-      "document.getElementById('code_preview').textContent.includes('status = \"Auto build status\"') && !document.querySelector('.pg-building')"
-    )
+    app$wait_for_js("document.getElementById('code_preview').textContent.includes('status = \"Auto build status\"')")
+    wait_studio_preview(app)
     expect_true(app$get_js("window.sawBuilding"))
     app$run_js("window.buildObserver.disconnect()")
     studio_select_function(app, "mascot_mood")
@@ -969,7 +1130,6 @@ describe("small current-configuration editors", {
     )
     click_now(app, '[data-call-arg=click]')
     app$set_inputs(click_type = "action")
-    app$wait_for_js("document.querySelector('[data-call-arg=click]').dataset.callFunction === 'mascot_action'")
     app$click(selector = "#chip_inspector")
     app$wait_for_js("!document.querySelector('[data-function=mascot_action]').hidden")
     click_now(app, '[data-call-arg=theme]')
@@ -979,27 +1139,108 @@ describe("small current-configuration editors", {
     )
     click_now(app, '[data-call-arg=status]')
     app$click(selector = "#chip_help")
-    app$wait_for_js(
-      "document.getElementById('inspector_tab_help').getAttribute('aria-selected') === 'true' && !!document.querySelector('#function_help [data-guide-function=mascot_status]') && document.activeElement.id === 'inspector_sidebar'"
-    )
+    wait_studio_panel(app, "help", "mascot_status")
+    app$wait_for_js("document.activeElement.id === 'inspector_sidebar'")
     # The chip's Help opens the helper's own help page, not mascot()'s.
     expect_true(app$get_js(
       "document.querySelector('#function_help [data-guide-function=mascot_status]').textContent.trim().length > 0"
     ))
     click_now(app, '[data-call-arg=bubble]')
     app$click(selector = "#chip_help")
-    app$wait_for_js(
-      "document.activeElement.id === 'inspector_sidebar' && !!document.querySelector('#function_help [data-guide-function=mascot_bubble]') && !document.getElementById('inspector_help').hidden"
-    )
+    wait_studio_panel(app, "help", "mascot_bubble")
+    app$wait_for_js("document.activeElement.id === 'inspector_sidebar'")
     app$click(selector = "#close_inspector")
     click_now(app, '[data-call-arg=size]')
     app$click(selector = "#chip_inspector")
     app$click(selector = '[data-function=mascot_size] [data-argument=small_screen] .pg-arg-chip')
     app$wait_for_js("!!document.querySelector('.popover.show [data-argument-help=small_screen]')")
     app$click(selector = '.popover.show [data-argument-help=small_screen]')
+    wait_studio_panel(app, "help", "mascot_size")
     app$wait_for_js(
-      "document.activeElement.id === 'inspector_sidebar' && document.getElementById('function_help').dataset.activeArgument === 'small_screen' && !document.getElementById('inspector_help').hidden"
+      "document.activeElement.id === 'inspector_sidebar' && document.getElementById('function_help').dataset.activeArgument === 'small_screen'"
     )
+  })
+})
+
+describe("the click chip editor and the Click control", {
+  it("opens the helper the Click control names, before the server has drawn the chip again", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    title <- "document.getElementById('inspector_title').textContent"
+    pick_click <- function(kind) {
+      app$run_js(sprintf(
+        "(() => { const s = document.getElementById('click_type'); if (s.selectize) s.selectize.setValue('%s'); else { s.value = '%s'; $(s).trigger('change'); } })()",
+        kind,
+        kind
+      ))
+    }
+    # Given the click chip editor is open on the menu, and the server has not answered a change of the Click control
+    click_now(app, "[data-call-arg=click]")
+    app$wait_for_js("!document.getElementById('chip_editor').hidden")
+    hold_studio_inputs(app, "click_type")
+    # When the control is set to an action, the chip editor opens that helper's controls and help
+    pick_click("action")
+    click_now(app, "#chip_inspector")
+    expect_identical(app$get_js(title), "mascot_action()")
+    click_now(app, "[data-call-arg=click]")
+    pick_click("menu")
+    click_now(app, "#chip_help")
+    expect_identical(app$get_js(title), "mascot_popup_menu()")
+    wait_studio_panel(app, "help", "mascot_popup_menu")
+    # And with no click, the empty action helper, as the chip shows
+    click_now(app, "[data-call-arg=click]")
+    pick_click("none")
+    click_now(app, "#chip_inspector")
+    expect_identical(app$get_js(title), "mascot_action()")
+    # And the control opens at its own argument
+    click_now(app, "[data-call-arg=click]")
+    pick_click("menu")
+    app$click(selector = "#chip_inspector")
+    app$wait_for_js(
+      "document.activeElement.id === 'inspector_sidebar' && document.getElementById('menu_items').getClientRects().length > 0"
+    )
+    expect_gte(release_studio_inputs(app), 1L)
+  })
+})
+
+describe("the Check contrast button of the studio's colour controls", {
+  it("says it is busy until the result of its own click is drawn, and keeps keyboard focus", {
+    local_shiny_browser()
+    app <- studio_driver(width = 1440, height = 900)
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_theme")
+    app$set_inputs(theme_source = "mascot")
+    app$wait_for_js("document.getElementById('contrast_check').getClientRects().length > 0")
+    button <- "document.getElementById('contrast_check')"
+    # When the focused button is clicked, it says so at once, and focus stays on it
+    state <- app$get_js(sprintf(
+      paste(
+        "(() => { const b = %s; b.focus(); b.click();",
+        "return [b.textContent, b.getAttribute('aria-busy'), b.getAttribute('aria-disabled'), document.activeElement.id]; })()"
+      ),
+      button
+    ))
+    expect_identical(unlist(state), c("Checking\u2026", "true", "true", "contrast_check"))
+    # Then it is back once the result shows, and the result is the one for that click
+    app$wait_for_js(sprintf("!%s.hasAttribute('aria-busy')", button))
+    expect_identical(app$get_js(sprintf("%s.textContent", button)), "Check contrast")
+    expect_null(app$get_js(sprintf("%s.getAttribute('aria-disabled')", button)))
+    expect_identical(app$get_js("document.activeElement.id"), "contrast_check")
+    expect_true(app$get_js("document.getElementById('contrast').textContent.trim().length > 0"))
+    expect_identical(app$get_js("document.querySelector('#contrast [data-busy-done]').dataset.busyDone"), "1")
+    # And when the server has not answered a second click, the first result is not taken for its answer, and a click
+    # while it is busy sends nothing
+    hold_studio_inputs(app, "contrast_check")
+    app$run_js(sprintf("%s.click(); %s.click();", button, button))
+    expect_identical(app$get_js(sprintf("%s.getAttribute('aria-busy')", button)), "true")
+    expect_identical(app$get_js("window.studioHold.held.length"), 1L)
+    expect_identical(app$get_js("document.querySelector('#contrast [data-busy-done]').dataset.busyDone"), "1")
+    expect_identical(release_studio_inputs(app), 1L)
+    app$wait_for_js(sprintf(
+      "!%s.hasAttribute('aria-busy') && document.querySelector('#contrast [data-busy-done]').dataset.busyDone === '2'",
+      button
+    ))
   })
 })
 
@@ -1056,15 +1297,12 @@ describe("studio code arguments, chips, anchors and menus", {
     }
     click_now(app, '[data-call-arg=gesture]')
     app$click(selector = '#chip_help')
-    app$wait_for_js(
-      "document.getElementById('function_help').dataset.activeArgument === 'name' && !!document.querySelector('#function_help [data-guide-function=mascot_gesture]')"
-    )
+    wait_studio_panel(app, "help", "mascot_gesture")
+    app$wait_for_js("document.getElementById('function_help').dataset.activeArgument === 'name'")
     click_now(app, '[data-call-arg=placement]')
     app$click(selector = '#chip_guide')
     expect_identical(app$get_js("document.getElementById('inspector_view_guide').getAttribute('aria-pressed')"), "true")
-    app$wait_for_js(
-      "!document.getElementById('inspector_guide').hidden && !!document.querySelector('#guide [data-guide-function=mascot_placement]')"
-    )
+    wait_studio_panel(app, "guide", "mascot_placement")
     expect_identical(app$get_js("document.activeElement.id"), "inspector_sidebar")
   })
 
@@ -1215,7 +1453,6 @@ describe("studio sentence controls and overview", {
     app$click(selector = "#gesture_play")
     app$wait_for_js("window.gestureCalls.length === 2")
     app$set_inputs(gesture = "")
-    app$wait_for_js("document.getElementById('gesture').value === ''")
     app$click(selector = "#gesture_play")
     app$wait_for_js("window.gestureCalls.length === 3 && window.gestureCalls[2] === 'wave'")
     for (character in c("sela", "neer", "tessa")) {
@@ -1271,9 +1508,8 @@ describe("studio sentence controls and overview", {
     ))
     app$run_js("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
     app$click(selector = '#chip_help')
-    app$wait_for_js(
-      "!!document.querySelector('#function_help [data-guide-function=mascot_placement]') && document.getElementById('inspector_tab_help').getAttribute('aria-selected') === 'true' && document.activeElement.id === 'inspector_sidebar'"
-    )
+    wait_studio_panel(app, "help", "mascot_placement")
+    app$wait_for_js("document.activeElement.id === 'inspector_sidebar'")
   })
 })
 
@@ -1418,9 +1654,7 @@ describe("studio inline help and movable anchors", {
     app$run_js("testPin.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
     app$wait_for_js("document.getElementById('reset_anchors').hidden")
     app$set_inputs(character = "neer")
-    app$wait_for_js(
-      "!document.getElementById('show_anchors').disabled && document.getElementById('no_anchors').hidden"
-    )
+    wait_studio_js(app, paste0(studio_live_wait, ".dataset.character === 'neer'"))
     wait_studio_js(
       app,
       paste0(
@@ -1439,6 +1673,7 @@ describe("studio inline help and movable anchors", {
       mascot_anchors("neer")$name
     )
     app$set_inputs(character = "tessa")
+    wait_studio_js(app, paste0(studio_live_wait, ".dataset.character === 'tessa'"))
     app$wait_for_js("!document.getElementById('show_anchors').disabled && document.getElementById('no_anchors').hidden")
   })
 })
@@ -1831,14 +2066,18 @@ describe("studio palette help and warnings", {
     click_now(app, "[data-call-arg=status]")
     app$wait_for_js("!document.getElementById('chip_editor').hidden")
     app$click(selector = "#chip_help")
-    app$wait_for_js("!!document.querySelector('#function_help [data-guide-function=mascot_status]')")
+    wait_studio_panel(app, "help", "mascot_status")
     expect_identical(app$get_js("document.getElementById('function_help').dataset.activeArgument || ''"), "")
     expect_identical(
       app$get_js("document.getElementById('inspector_tab_help').getAttribute('aria-selected')"),
       "true"
     )
     click_now(app, "button.pg-call-name")
-    app$wait_for_js("!!document.querySelector('#function_help [data-guide-function=mascot]')")
+    # The call name opens the Controls of mascot(); its Help page is drawn behind them, not shown
+    app$wait_for_js(paste(
+      "!document.getElementById('inspector_help').hasAttribute('aria-busy') &&",
+      "document.querySelector('#function_help [data-guide-function]')?.dataset.guideFunction === 'mascot'"
+    ))
     expect_true(app$get_js(
       "!document.querySelector('#studio_inspector [data-function=mascot]').hidden && !document.getElementById('inspector_sidebar').hidden"
     ))
@@ -1868,7 +2107,9 @@ describe("studio palette help and warnings", {
     expect_match(app$get_js(sentence), "Showing Sela in Sela's own colours (lilac_violet)", fixed = TRUE)
     studio_select_function(app, "mascot_palettes")
     app$click(selector = "#inspector_tab_guide")
-    app$wait_for_js("document.querySelector('#guide .pg-palette-table td')?.getBoundingClientRect().width > 0")
+    # The Guide of mascot_theme() has palette tables too: wait for the page of mascot_palettes()
+    wait_studio_panel(app, "guide", "mascot_palettes", character = "sela")
+    expect_gt(app$get_js("document.querySelector('#guide .pg-palette-table td').getBoundingClientRect().width"), 0)
     expect_true(app$get_js(
       "[...document.querySelectorAll('#guide .pg-palette-table td:not(:nth-child(2))')].every(n=>getComputedStyle(n).whiteSpace==='nowrap')"
     ))
@@ -1904,5 +2145,213 @@ describe("studio palette help and warnings", {
       "sea_green"
     )
     wait_studio_mood(app, "happy")
+  })
+})
+
+describe("the controls and the server's echo of a change it applied", {
+  # The server applies a change a moment after it is made and sets the control to what it applied. When the visitor has
+  # changed the control again meanwhile, that echo must not set it back. Each test holds the server's replies back, makes
+  # the change, waits until the server has applied it, changes the control again and lets the replies through in the same
+  # step in the page, so nothing else can reach the control first. The echo lands a moment after that (Shiny applies a
+  # control's update asynchronously), so the test waits for the control to change or for the server to take the new text.
+  it("keeps the status text typed after a change, when the echo of that change arrives late", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    hold_studio_replies(app)
+    type_studio_text(app, "status_text", "ab")
+    wait_studio_reply(app, "!!reply.custom?.['mascot:update']")
+    # When "abc" is typed just before the echo of "ab" arrives
+    app$run_js(paste(
+      "(() => { const field = document.getElementById('status_text'); field.value = 'abc';",
+      "field.dispatchEvent(new Event('input', { bubbles: true })); window.studioReplies.release(); })()"
+    ))
+    wait_studio_js(
+      app,
+      "document.getElementById('status_text').value !== 'abc' || live.querySelector('.mascot-status')?.textContent.trim() === 'abc'"
+    )
+    # Then the control still shows what was typed, and the server ends with it
+    expect_identical(app$get_js("document.getElementById('status_text').value"), "abc")
+    wait_studio_js(app, "live.querySelector('.mascot-status')?.textContent.trim() === 'abc'")
+    expect_identical(app$get_js("Shiny.shinyapp.$inputValues.status_text"), "abc")
+  })
+  it("keeps the mood picked after a change, when the echo of that change arrives late", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    hold_studio_replies(app)
+    app$run_js("{ const s = document.getElementById('mood'); s.value = 'happy'; $(s).trigger('change'); }")
+    wait_studio_reply(app, "!!reply.custom?.['mascot:update']")
+    # When another mood is picked just before the echo of the first arrives
+    app$run_js(paste(
+      "(() => { const s = document.getElementById('mood'); s.value = 'worried'; $(s).trigger('change');",
+      "window.studioReplies.release(); })()"
+    ))
+    wait_studio_js(app, "document.getElementById('mood').value !== 'worried' || live.dataset.shownMood === 'worried'")
+    # Then the control still shows it, and the mascot ends in it
+    expect_identical(app$get_js("document.getElementById('mood').value"), "worried")
+    wait_studio_mood(app, "worried")
+    expect_identical(app$get_js("document.getElementById('mood').value"), "worried")
+  })
+  it("keeps the bubble text typed in the chip editor, when the echo of an earlier text arrives late", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    click_now(app, "[data-call-arg=bubble]")
+    app$wait_for_js("!document.getElementById('chip_editor').hidden")
+    hold_studio_replies(app)
+    type_studio_text(app, "bubble_text", "ab")
+    wait_studio_reply(app, "!!reply.custom?.['mascot:update']")
+    app$run_js(paste(
+      "(() => { const field = document.getElementById('bubble_text'); field.value = 'abc';",
+      "field.dispatchEvent(new Event('input', { bubbles: true })); window.studioReplies.release(); })()"
+    ))
+    wait_studio_js(
+      app,
+      "document.getElementById('bubble_text').value !== 'abc' || live.querySelector('.mascot-bubble')?.textContent.includes('abc')"
+    )
+    expect_identical(app$get_js("document.getElementById('bubble_text').value"), "abc")
+    wait_studio_js(app, "live.querySelector('.mascot-bubble')?.textContent.includes('abc')")
+    expect_identical(app$get_js("document.getElementById('bubble_text').value"), "abc")
+  })
+})
+
+describe("the copy buttons", {
+  # A copy button must copy the text that belongs to what the visitor has changed, never the text an earlier state left
+  # in the page while the server has not answered. Each test holds back what the page sends (or makes a change the server
+  # holds back by design), clicks Copy, and checks that nothing is copied until the server has answered.
+  it("copies the code of the function just picked, not the code of the one before", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_moods")
+    wait_studio_code(app, "mascot_moods")
+    stub_studio_clipboard(app)
+    # Given the server has not answered the change of function yet
+    hold_studio_inputs(app, c("select_function", "copy_ticket"))
+    studio_select_function(app, "mascot_gestures")
+    # When Copy is clicked, the button says it waits, and the old code is not copied
+    click_now(app, "#code_pin [data-copy=code_function]")
+    state <- app$get_js(paste(
+      "(() => { const b = document.querySelector('#code_pin [data-copy=code_function]');",
+      "return [b.textContent, b.getAttribute('aria-busy'), String(window.copied)]; })()"
+    ))
+    expect_identical(unlist(state), c("Copying\u2026", "true", "null"))
+    # Then the code of the function just picked is copied, once the server has drawn it
+    expect_gte(release_studio_inputs(app), 1L)
+    app$wait_for_js("window.copied !== null")
+    wait_studio_code(app, "mascot_gestures")
+    copied <- app$get_js("window.copied")
+    expect_match(copied, "mascot_gestures(", fixed = TRUE)
+    expect_identical(copied, app$get_js("document.getElementById('code_function').textContent"))
+    app$wait_for_js("document.querySelector('#code_pin [data-copy=code_function]').textContent === 'Copied'")
+  })
+  it("copies the code with the status text typed just before, which the studio applies after a pause", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    stub_studio_clipboard(app)
+    # When the status text is typed and Copy is clicked at once (leaving the box sends its change at once)
+    app$run_js(paste(
+      "(() => { const field = document.getElementById('status_text'); field.value = 'Draft ready';",
+      "field.dispatchEvent(new Event('input', { bubbles: true })); field.dispatchEvent(new Event('change', { bubbles: true }));",
+      "document.querySelector('#studio_dock [data-copy=code_ui]').click(); })()"
+    ))
+    # Then the copied code has the status
+    app$wait_for_js("window.copied !== null")
+    expect_match(app$get_js("window.copied"), 'status = "Draft ready"', fixed = TRUE)
+    expect_identical(app$get_js("window.copied"), app$get_js("document.getElementById('code_ui').textContent"))
+  })
+  it("copies the code of the example just picked, not the one before", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    app$run_js("window.location.search = '?view=examples'")
+    app$wait_for_js(
+      "!!document.getElementById('example_code') && !!document.getElementById('live_frame') && Shiny.shinyapp.isConnected()"
+    )
+    stub_studio_clipboard(app)
+    before <- app$get_js("document.getElementById('example_code').textContent")
+    # Given the server has not answered the pick of another example yet
+    hold_studio_inputs(app, c("example_name", "copy_ticket"))
+    app$run_js("document.getElementById('example_name').selectize.setValue('form-check')")
+    click_now(app, "[data-copy=example_code]")
+    expect_identical(app$get_js("String(window.copied)"), "null")
+    # Then the code of the example just picked is copied: the server drew it before it answered the copy
+    expect_gte(release_studio_inputs(app), 1L)
+    app$wait_for_js("window.copied !== null")
+    expect_match(app$get_js("document.getElementById('example_call').textContent"), '"form-check"', fixed = TRUE)
+    copied <- app$get_js("window.copied")
+    expect_false(identical(copied, before))
+    expect_identical(copied, app$get_js("document.getElementById('example_code').textContent"))
+    # And the button the server drew with the new code says so, although the click was on the one before it
+    app$wait_for_js("document.querySelector('[data-copy=example_code]').textContent === 'Copied'")
+  })
+  it("copies through a selection when the browser refuses the clipboard API", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    # The inspector shows the code of the function, with its Copy button
+    studio_select_function(app, "mascot_mood")
+    wait_studio_code(app, "mascot_mood")
+    # Given a browser that refuses the clipboard API, as in a frame without clipboard access
+    app$run_js(paste(
+      "window.copied = null;",
+      "const refuse = () => Promise.reject(new DOMException('Not allowed', 'NotAllowedError'));",
+      "navigator.clipboard.write = refuse; navigator.clipboard.writeText = refuse;",
+      "document.execCommand = (command) => {",
+      "  if (command === 'copy') window.copied = [...document.querySelectorAll('body > textarea[readonly]')].pop()?.value;",
+      "  return true; };"
+    ))
+    # When the focused Copy button is clicked
+    focused <- app$get_js(paste(
+      "(() => { const b = document.querySelector('#code_pin [data-copy=code_function]'); b.focus();",
+      "const focused = document.activeElement === b; b.click(); return focused; })()"
+    ))
+    expect_true(focused)
+    # Then the code is copied through a selection, the button says it was copied, and it keeps keyboard focus
+    app$wait_for_js("document.querySelector('#code_pin [data-copy=code_function]').textContent === 'Copied'")
+    expect_identical(app$get_js("window.copied"), app$get_js("document.getElementById('code_function').textContent"))
+    expect_true(app$get_js("document.activeElement === document.querySelector('#code_pin [data-copy=code_function]')"))
+  })
+  it("says so when the server does not answer, and copies nothing", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    stub_studio_clipboard(app)
+    hold_studio_inputs(app, "copy_ticket")
+    click_now(app, "#code_pin [data-copy=code_function]")
+    app$wait_for_js("document.querySelector('#code_pin [data-copy=code_function]').textContent === 'Copy unavailable'")
+    expect_identical(app$get_js("String(window.copied)"), "null")
+    expect_null(app$get_js("document.querySelector('#code_pin [data-copy=code_function]').getAttribute('aria-busy')"))
+  })
+})
+
+describe("the preview page's busy badge", {
+  it("stays until the page inside the frame has loaded", {
+    local_shiny_browser()
+    app <- studio_driver(width = 1440, height = 900)
+    wait_studio_mood(app, "idle")
+    # Given a record of what the page shows at every frame it draws: is the badge shown, is there a frame, is its page
+    # loaded (the page marks a frame data-loaded when that happens)
+    app$run_js(paste(
+      "window.badgeSamples = [];",
+      "const sample = () => { const frame = document.querySelector('iframe.pg-preview');",
+      "  window.badgeSamples.push({ badge: !!document.querySelector('.pg-building'), frame: !!frame,",
+      "    loaded: frame ? frame.dataset.loaded === 'true' : null });",
+      "  requestAnimationFrame(sample); };",
+      "sample();"
+    ))
+    # When the preview page is built, and built again after a change
+    studio_select_function(app, "mascot_preview")
+    app$wait_for_js("window.badgeSamples.some((s) => s.loaded === true)")
+    type_studio_text(app, "preview_status", "Second build")
+    app$wait_for_js(
+      "document.getElementById('code_preview').textContent.includes('Second build') && !document.querySelector('.pg-building')"
+    )
+    # Then no drawn frame showed a frame still loading its page without the badge
+    early <- app$get_js("window.badgeSamples.filter((s) => !s.badge && s.frame && s.loaded === false).length")
+    expect_identical(early, 0L)
+    expect_true(app$get_js("window.badgeSamples.some((s) => s.badge && s.frame && s.loaded === false)"))
   })
 })

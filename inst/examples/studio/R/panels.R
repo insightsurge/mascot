@@ -181,14 +181,16 @@ panel_messages <- function() {
       "text",
       tagList(
         selectInput("bubble_example", "Start from an example", names(bubble_examples)),
-        textAreaInput("bubble_text", "Bubble content", bubble_examples[[1]]$text, rows = 5, resize = "vertical"),
+        # The mounted controls start with the live demonstration. Opening their chip only moves them;
+        # it must not ask the server to replace a draft the visitor may already be editing.
+        textAreaInput("bubble_text", "Bubble content", welcome_bubble$text, rows = 5, resize = "vertical"),
         # Right under the message box, so the next step after typing is in view.
         div(
           class = "pg-actions",
           actionButton("bubble_show", "Show bubble", class = "btn-primary btn-sm"),
           actionButton("bubble_clear", "Clear bubble", class = "btn-outline-primary btn-sm")
         ),
-        input_switch("bubble_html", "Treat as HTML (wraps it in HTML())", FALSE)
+        input_switch("bubble_html", "Treat as HTML (wraps it in HTML())", welcome_bubble$html)
       ),
       note = div(
         class = "pg-hint",
@@ -199,11 +201,18 @@ panel_messages <- function() {
       "mascot_bubble",
       "duration",
       tagList(
-        div(id = "bubble_seconds", sliderInput("bubble_duration", "Seconds", min = 1, max = 30, value = 5)),
-        input_switch("bubble_forever", "Until closed (Inf)", FALSE)
+        div(
+          id = "bubble_seconds",
+          sliderInput("bubble_duration", "Seconds", min = 1, max = 30, value = welcome_bubble$duration)
+        ),
+        input_switch("bubble_forever", "Until closed (Inf)", is.infinite(welcome_bubble$duration))
       )
     ),
-    arg_field("mascot_bubble", "closable", input_switch("bubble_closable", "Show a close button", TRUE)),
+    arg_field(
+      "mascot_bubble",
+      "closable",
+      input_switch("bubble_closable", "Show a close button", welcome_bubble$closable)
+    ),
     fn_heading("mascot_action"),
     selectInput("click_type", "Click", c(None = "none", Action = "action", Menu = "menu"), selected = "menu"),
     try_button("select_function", "mascot_popup_menu", "Use a popup menu instead"),
@@ -541,7 +550,17 @@ panel_colours <- function() {
       ),
       conditionalPanel(
         "input.theme_source != 'own'",
-        actionButton("contrast_check", "Check contrast", class = "btn-outline-primary btn-sm"),
+        # inputs.js shows "Checking..." on the button until the result is drawn. Its click sends a number of its own as
+        # input$contrast_check, which the result carries back (busy_done_mark()), hence data-event, not actionButton().
+        tags$button(
+          id = "contrast_check",
+          type = "button",
+          class = "btn btn-outline-primary btn-sm",
+          `data-event` = "contrast_check",
+          `data-busy-label` = "Checking\u2026",
+          `data-busy-output` = "contrast",
+          "Check contrast"
+        ),
         uiOutput("contrast")
       )
     ),

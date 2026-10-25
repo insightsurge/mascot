@@ -22,7 +22,7 @@ examples <- mascot_examples()
 start <- lapply(defaults, code_pair)
 # The canvas opts into inline placement; a plain mascot() floats in the bottom-right corner.
 start$placement <- code_placement(position = "inline")
-start$bubble <- code_bubble(welcome, FALSE, 8, TRUE)
+start$bubble <- do.call(code_bubble, welcome_bubble)
 start$click <- code_menu(default_menu)
 
 # The mascot() call for a state: only the arguments that differ from the defaults.
@@ -71,6 +71,7 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
         "mascot"
       },
       `data-initial-character` = character,
+      `data-click-routes` = jsonlite::toJSON(studio_click_routes(), auto_unbox = TRUE),
       `data-initial-open` = if (open_guide) "guide",
       panel_character_bar(character = character),
       div(
@@ -212,6 +213,7 @@ studio_page <- function(character, fn, view = "studio", open_guide = FALSE) {
         uiOutput("guide")
       ),
       div(
+        id = "code_pin",
         class = "pg-code-pin",
         div(class = "pg-eyebrow", "R code for this function"),
         div(class = "pg-code-wrap", code_output("code_function"), copy_button("code_function"))
@@ -452,17 +454,65 @@ studio_server <- function(input, output, session) {
     result$ok
   }
 
+  # Sets a control to what the server applied, unless the control already told the server that value. The page changed
+  # the control first and the server answers a moment later: if the visitor has changed it again meanwhile, that change is
+  # still on its way, and an update that is only the echo of the earlier one would set the control back to it (and the
+  # page would then send that old value as a new change). A value the server sent to the control and the control has not
+  # answered yet is not what the control holds, so it does not count: `echoed` keeps it until the control sends a value.
+  echoed <- new.env(parent = emptyenv())
+  echo_to_control <- function(id, value, update) {
+    checkmate::assert_string(id, min.chars = 1)
+    checkmate::assert_function(update)
+    held_by_page <- isTRUE(all.equal(isolate(input[[id]]), value)) &&
+      (is.null(echoed[[id]]) || isTRUE(all.equal(echoed[[id]], value)))
+    if (!held_by_page) {
+      echoed[[id]] <- value
+      update(value)
+    }
+    invisible(NULL)
+  }
+  for (echoed_id in c(
+    "status_text",
+    "mood",
+    "bubble_text",
+    "bubble_html",
+    "bubble_forever",
+    "bubble_duration",
+    "bubble_closable"
+  )) {
+    local({
+      id <- echoed_id
+      observeEvent(
+        input[[id]],
+        if (exists(id, envir = echoed, inherits = FALSE)) rm(list = id, envir = echoed),
+        ignoreInit = TRUE
+      )
+    })
+  }
+
   sync_bubble_controls <- function(pair) {
     checkmate::assert_list(pair)
+    # Only applied changes and explicit resets write these controls. Opening the editor moves
+    # the mounted controls, whose initial values already describe the welcome demonstration.
     bubble <- eval(pair$helper)
     # Show reads the draft (see bubble_draft below), so it follows the controls at once too.
     bubble_draft$text <- as.character(bubble$text %||% "")
     bubble_draft$html <- isTRUE(bubble$html)
-    updateTextAreaInput(session, "bubble_text", value = as.character(bubble$text %||% ""))
-    update_switch("bubble_html", value = isTRUE(bubble$html), session = session)
-    update_switch("bubble_forever", value = is.infinite(bubble$duration), session = session)
-    updateSliderInput(session, "bubble_duration", value = if (is.finite(bubble$duration)) bubble$duration else 5)
-    update_switch("bubble_closable", value = bubble$closable, session = session)
+    echo_to_control("bubble_text", as.character(bubble$text %||% ""), function(value) {
+      updateTextAreaInput(session, "bubble_text", value = value)
+    })
+    echo_to_control("bubble_html", isTRUE(bubble$html), function(value) {
+      update_switch("bubble_html", value = value, session = session)
+    })
+    echo_to_control("bubble_forever", is.infinite(bubble$duration), function(value) {
+      update_switch("bubble_forever", value = value, session = session)
+    })
+    echo_to_control("bubble_duration", if (is.finite(bubble$duration)) bubble$duration else 5, function(value) {
+      updateSliderInput(session, "bubble_duration", value = value)
+    })
+    echo_to_control("bubble_closable", bubble$closable, function(value) {
+      update_switch("bubble_closable", value = value, session = session)
+    })
   }
 
   # Sends the changed settings in one update_mascot() call; TRUE when it ran, FALSE on an error,
@@ -494,23 +544,22 @@ studio_server <- function(input, output, session) {
           live_demo[[field]] <- pairs[[field]]
         }
         if (field == "mood") {
-          updateSelectInput(session, "mood", selected = eval(pairs[[field]]$short))
+          echo_to_control("mood", eval(pairs[[field]]$short), function(value) {
+            updateSelectInput(session, "mood", selected = value)
+          })
         }
         if (field == "bubble") {
           sync_bubble_controls(pairs[[field]])
         }
         if (field == "status") {
-          value <- eval(pairs[[field]]$helper)$text
-          updateTextInput(session, "status_text", value = value %||% "")
+          echo_to_control("status_text", eval(pairs[[field]]$helper)$text %||% "", function(value) {
+            updateTextInput(session, "status_text", value = value)
+          })
         }
       }
     }
     invisible(ok)
   }
-
-  observeEvent(input$chip_argument, {
-    if (identical(input$chip_argument, "bubble")) sync_bubble_controls(live_demo$bubble)
-  })
 
   # Clicks on buttons that carry data-event and data-value arrive as input$<event>.
   observeEvent(input$select_function, {
@@ -620,7 +669,8 @@ studio_server <- function(input, output, session) {
   observeEvent(input$mood, send(list(mood = code_mood(input$mood))), ignoreInit = TRUE)
 
   # Messages
-  status_text <- debounce(reactive(input$status_text), 600)
+  status_raw <- reactive(input$status_text)
+  status_text <- debounce(status_raw, 600)
   observeEvent(status_text(), send(list(status = code_status(status_text()))), ignoreInit = TRUE)
   observeEvent(input$status_clear, {
     updateTextInput(session, "status_text", value = "")
@@ -739,11 +789,13 @@ studio_server <- function(input, output, session) {
   output$position_last <- renderText(position_last())
   minimised_last <- reactiveVal("Not minimised.")
   observeEvent(input$helper_minimised, {
-    minimised_last(if (isTRUE(input$helper_minimised)) "TRUE: minimised" else "FALSE: restored")
+    # The mascot sends this when it is minimised or restored, by the visitor or by an update_mascot() call that
+    # changes the placement, so the wording does not say who did it.
+    minimised_last(if (isTRUE(input$helper_minimised)) "TRUE: minimised" else "FALSE: not minimised")
     add_log(
       paste0("input$helper_minimised  # ", input$helper_minimised),
       "event",
-      if (isTRUE(input$helper_minimised)) "The visitor minimised the mascot." else "The visitor restored the mascot."
+      if (isTRUE(input$helper_minimised)) "The mascot was minimised." else "The mascot is no longer minimised."
     )
   })
   output$minimised_last <- renderText(minimised_last())
@@ -845,19 +897,28 @@ studio_server <- function(input, output, session) {
     accepted_theme = state$theme,
     css = colours$css_values()
   ))
-  checked_contrast <- eventReactive(input$contrast_check, contrast_settings())
+  # The result carries the number of the click it answers (busy_done_mark()), which the busy button waits for.
+  checked_contrast <- eventReactive(
+    input$contrast_check,
+    list(settings = contrast_settings(), click = input$contrast_check)
+  )
   output$contrast <- renderUI({
     req(input$contrast_check)
     checked <- checked_contrast()
-    if (!identical(checked, contrast_settings())) {
-      return(contrast_stale_ui())
-    }
-    # The check and its result are shared with the theme view (R/shared-check.R).
-    contrast_result_ui(
-      contrast_check(checked$character, eval(checked$theme$short)),
-      if (input$theme_source == "mascot") names(colours$css()) else character(),
-      chosen = input$theme_source == "bslib" ||
-        (input$theme_source == "mascot" && length(c(colours$light(), colours$dark())) > 0L)
+    settings <- checked$settings
+    tagList(
+      if (!identical(settings, contrast_settings())) {
+        contrast_stale_ui()
+      } else {
+        # The check and its result are shared with the theme view (R/shared-check.R).
+        contrast_result_ui(
+          contrast_check(settings$character, eval(settings$theme$short)),
+          if (input$theme_source == "mascot") names(colours$css()) else character(),
+          chosen = input$theme_source == "bslib" ||
+            (input$theme_source == "mascot" && length(c(colours$light(), colours$dark())) > 0L)
+        )
+      },
+      busy_done_mark(checked$click)
     )
   })
 
@@ -941,20 +1002,18 @@ studio_server <- function(input, output, session) {
   click_problem <- reactive({
     switch(click_kind(), action = action_problem(), menu = menu_parsed()$problem, NULL)
   })
-  click_text <- debounce(
-    reactive(list(
-      click_kind(),
-      input$action_label,
-      input$action_tooltip,
-      input$action_disabled,
-      input$menu_items,
-      input$menu_direction,
-      input$menu_label,
-      input$menu_tooltip,
-      input$menu_disabled
-    )),
-    600
-  )
+  click_raw <- reactive(list(
+    click_kind(),
+    input$action_label,
+    input$action_tooltip,
+    input$action_disabled,
+    input$menu_items,
+    input$menu_direction,
+    input$menu_label,
+    input$menu_tooltip,
+    input$menu_disabled
+  ))
+  click_text <- debounce(click_raw, 600)
   observeEvent(
     click_text(),
     {
@@ -1102,12 +1161,12 @@ studio_server <- function(input, output, session) {
   })
 
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
-  # selection). While the function is selected the canvas shows the page the call returns, in place
+  # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
-  # rebuilds the page after a short pause, with a "Building..." badge until it is shown.
-  preview_selected <- reactive(
-    identical(selected_function(), "mascot_preview") || identical(input$host_mode, "preview")
-  )
+  # rebuilds the page after a short pause, with a "Building..." badge until it is shown. The browser sets the
+  # host mode whenever it selects the function (studio.js, mode()), so the host mode alone says whether the
+  # page is shown; leaving it for the live mascot stops the rebuilds although the function stays selected.
+  preview_selected <- reactive(identical(input$host_mode, "preview"))
   preview_roles <- reactive(mascot_colour_roles(current_character(), palette = selected_palette()))
   output$preview_pickers <- renderUI({
     tagList(lapply(preview_roles()$role, function(role) {
@@ -1179,13 +1238,15 @@ studio_server <- function(input, output, session) {
     is_building(TRUE)
     preview_request(preview_request() + 1)
   }
-  # The page is built on the first visit, and again when the arguments changed since the last build.
+  # The page is built on the first visit, and again when the arguments changed since the last build. A change made
+  # while the page was shown, and left before its pause ended, is not built while the page is hidden (see below): it
+  # is built when the page is shown again. Meanwhile nothing is being built, so "Building" goes off; the copy buttons
+  # wait for it (copy_gate()).
   observeEvent(preview_selected(), {
-    if (preview_selected()) {
-      args <- preview_inputs()
-      if (preview_request() == 0 || !identical(args, last_preview_attempt()$args)) {
-        build_preview()
-      }
+    if (preview_selected() && (preview_request() == 0 || !identical(preview_inputs(), last_preview_attempt()$args))) {
+      build_preview()
+    } else {
+      is_building(FALSE)
     }
   })
   observeEvent(
@@ -1239,8 +1300,19 @@ studio_server <- function(input, output, session) {
     last_built_call(args)
     list(file = file, contrast = attr(page, "contrast"), code = format_call("mascot_preview", args))
   })
+  # The page is shown once its frame has loaded it, which the browser reports as input$preview_loaded (studio.js):
+  # a frame that is drawn is still empty. A build with no page (an error) has nothing to wait for.
+  preview_page_shown <- reactive({
+    if (preview_request() == 0) {
+      return(TRUE)
+    }
+    file <- built_preview()$file
+    is.null(file) || identical(input$preview_loaded, paste0(prefix, "/", file))
+  })
   output$preview_status_badge <- renderUI({
-    if (is_building()) tags$span(class = "badge text-bg-secondary pg-building", "Building\u2026")
+    if (is_building() || !preview_page_shown()) {
+      tags$span(class = "badge text-bg-secondary pg-building", "Building\u2026")
+    }
   })
   output$preview_frame <- renderUI({
     if (preview_request() == 0) {
@@ -1272,6 +1344,10 @@ studio_server <- function(input, output, session) {
     }
     result <- built_preview()
     if (!identical(preview_inputs(), last_preview_attempt()$args)) {
+      # A hidden page is not rebuilt until it is shown again, so its code is the call that will build it.
+      if (!preview_selected()) {
+        return(format_call("mascot_preview", preview_args()))
+      }
       return("# Building preview for the current settings.")
     }
     result$code
@@ -1482,6 +1558,8 @@ studio_server <- function(input, output, session) {
   output$characters_table <- renderUI(data_table(family_listing()))
   output$code_function <- renderText({
     fn <- selected_function()
+    # The page says the code is busy until it is the code of the function it selected (studio.js).
+    stamp_output(session, "code_function", fn)
     if (fn %in% c("mascot", "update_mascot", "mascot_action", "mascot_popup_menu") && !is.null(settings_problem())) {
       return(problem_comment(settings_problem()))
     }
@@ -1548,6 +1626,19 @@ studio_server <- function(input, output, session) {
     )
   })
   outputOptions(output, "code_function", suspendWhenHidden = FALSE)
+
+  # The copy buttons wait for the server's answer to their click, and the answer waits for the changes the server
+  # holds back for a moment: the status text, the click's texts, the theme and a preview that is being built.
+  copy_gate(
+    input,
+    session,
+    pending = function() {
+      !identical(status_raw(), status_text()) ||
+        !identical(click_raw(), click_text()) ||
+        !identical(theme_now(), theme_code()) ||
+        isTRUE(is_building())
+    }
+  )
 }
 
 examples_server <- function(input, output, session) {

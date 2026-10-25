@@ -31,6 +31,9 @@ studio_go_live <- function(session) {
   invisible(NULL)
 }
 
+# The first value unless it is NULL; base R has `%||%` only from 4.4 and the package supports R 4.1.
+value_or <- function(value, fallback) if (is.null(value)) fallback else value
+
 # The studio app's own environment (its server, data and code builders) and its page, built without a browser.
 studio_parts <- function() {
   skip_without_studio_packages("studio")
@@ -451,6 +454,14 @@ describe("the studio's controls", {
       expect_no_warning(html <- as.character(ui$selected_guide(fn)), message = "could not be built")
       expect_false(grepl("could not be built", html, fixed = TRUE), info = fn)
       expect_match(html, paste0('data-guide-function="', fn, '"'), fixed = TRUE)
+      # The card names the character it was drawn for, which the page compares with the chosen one
+      expect_match(html, 'data-guide-character="tessa"', fixed = TRUE)
+      expect_match(
+        as.character(ui$selected_guide(fn, "sela")),
+        'data-guide-character="sela"',
+        fixed = TRUE,
+        info = fn
+      )
       # Function code has one pinned output outside the Guide; no duplicate id.
       expect_false(grepl('id="code_function"', html, fixed = TRUE))
       expect_match(html, "pg-guide-piece", fixed = TRUE)
@@ -761,12 +772,13 @@ describe("studio state and built previews", {
       session$setInputs(send_many = 1)
       expect_identical(messages$bubble_text$value, "All 120 rows passed.")
       expect_true(messages$bubble_forever$value)
-      # Browser input acknowledgements are separate from server update messages.
+      # Browser input acknowledgements are separate from server update messages. A control the server did not set
+      # (it already held the value) keeps the value it sent.
       session$setInputs(
         bubble_text = messages$bubble_text$value,
-        bubble_html = messages$bubble_html$value,
+        bubble_html = value_or(messages$bubble_html$value, input$bubble_html),
         bubble_forever = messages$bubble_forever$value,
-        bubble_closable = messages$bubble_closable$value,
+        bubble_closable = value_or(messages$bubble_closable$value, input$bubble_closable),
         select_function = "mascot_bubble"
       )
       expect_identical(eval(parse(text = output$code_function))$text, eval(state$bubble$helper)$text)
@@ -782,13 +794,21 @@ describe("studio state and built previews", {
       session$setInputs(menu_items = "finish = Finish review")
       session$elapse(700)
       # An HTML bubble keeps its HTML switch on after it is shown.
+      messages$bubble_html <- NULL
       session$setInputs(bubble_text = "<b>Saved</b>", bubble_html = TRUE, bubble_show = 1)
-      expect_true(messages$bubble_html$value)
+      expect_true(is.null(messages$bubble_html$value) || messages$bubble_html$value)
+      expect_true(input$bubble_html)
       session$setInputs(contrast_check = 1)
       # No colour of the studio's own is chosen yet, so nothing is checked in R.
       expect_match(output$contrast$html, "No colour of your own was chosen in R")
+      # The result carries the number of the click it answers, which the busy button waits for
+      expect_match(output$contrast$html, 'data-busy-done="1"', fixed = TRUE)
       session$setInputs(theme_source = "mascot", theme_mode = "dark")
       expect_match(output$contrast$html, "The settings changed since the last check")
+      # The note after a settings change still answers the earlier click
+      expect_match(output$contrast$html, 'data-busy-done="1"', fixed = TRUE)
+      session$setInputs(contrast_check = 2)
+      expect_match(output$contrast$html, 'data-busy-done="2"', fixed = TRUE)
       session$setInputs(theme_source = "own", theme_mode = "auto")
       session$elapse(400)
       bubble <- state$bubble
@@ -801,10 +821,11 @@ describe("studio state and built previews", {
       session$setInputs(menu_on = FALSE)
       session$elapse(700)
       expect_false(grepl("observeEvent(input$helper_menu", output$code_app, fixed = TRUE))
+      # The mood the page holds is "happy": the server does not send it back, as it already holds it.
       session$setInputs(mood = "happy")
+      expect_identical(input$mood, "happy")
       # Re-selecting the available character exercises the same atomic update as a future character swap.
       # Mood must be present even when it matches state: the engine resets mood on a changed character id.
-      session$setInputs(mood = messages$mood$value)
       custom_messages <- list()
       session$sendCustomMessage <- function(type, message) {
         custom_messages[[length(custom_messages) + 1L]] <<- list(type = type, message = message)
@@ -819,7 +840,7 @@ describe("studio state and built previews", {
       expect_identical(envelopes[[1]]$message$state$character$id, formals(mascot)$character)
       expect_identical(envelopes[[1]]$message$state$mood, "happy")
       expect_identical(state$mood$short, "happy")
-      expect_identical(messages$mood$value, "happy")
+      expect_identical(input$mood, "happy")
       expect_match(output$code_ui, 'mood = "happy"', fixed = TRUE)
       session$setInputs(select_function = "mascot_example")
       example_call <- output$code_function
@@ -956,9 +977,9 @@ describe("studio state and built previews", {
         preview_motion = FALSE,
         preview_width = "full"
       )
-      # Nothing is built until mascot_preview() is selected.
+      # Nothing is built until the preview page is shown: the browser sets the host mode when it selects the function.
       expect_match(output$code_preview, "Select mascot_preview()", fixed = TRUE)
-      session$setInputs(select_function = "mascot_preview")
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
       session$elapse(500)
       built <- output$code_preview
       expect_match(built, "mascot_preview(", fixed = TRUE)
@@ -988,10 +1009,10 @@ describe("studio state and built previews", {
       expect_identical(last_preview_attempt()$args, last_built_call())
       session$setInputs(preview_size = 10)
       session$elapse(500)
-      session$setInputs(select_function = "mascot_mood", preview_size = 120)
+      session$setInputs(select_function = "mascot_mood", host_mode = "mascot", preview_size = 120)
       session$elapse(500)
       expect_identical(last_preview_attempt()$outcome, "error")
-      session$setInputs(select_function = "mascot_preview")
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
       session$elapse(500)
       expect_match(output$preview_frame$html, "iframe")
       expect_identical(last_preview_attempt()$outcome, "ok")
@@ -1005,6 +1026,169 @@ describe("studio state and built previews", {
           c(preview_count() - 1, preview_count())
         )
       ))))
+    })
+  })
+})
+
+describe("the preview page and the host mode", {
+  it("stops rebuilding the page once the host mode leaves it, although mascot_preview() stays selected", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      # Given the preview page is shown, as the browser's host mode says when it selects mascot_preview()
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
+      session$elapse(500)
+      expect_identical(preview_request(), 1)
+      # And the host mode is back on the live mascot, while the function is still mascot_preview()
+      session$setInputs(host_mode = "mascot")
+      expect_false(preview_selected())
+      # When the character changes, nothing builds the hidden page
+      session$setInputs(character = "sela")
+      session$elapse(500)
+      expect_identical(preview_request(), 1)
+      expect_false(is_building())
+      # And it is built for the character chosen meanwhile when the page is shown again
+      session$setInputs(host_mode = "preview")
+      session$elapse(500)
+      expect_identical(preview_request(), 2)
+      expect_match(output$code_preview, 'character = "sela"', fixed = TRUE)
+    })
+  })
+  it("stops saying Building, and answers Copy, when the page is left before a change is built", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      answers <- integer()
+      session$sendCustomMessage <- function(type, message) {
+        if (identical(type, "studio:copy")) answers <<- c(answers, message$ticket)
+      }
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
+      session$elapse(500)
+      expect_identical(preview_request(), 1)
+      # Given a change to the page, and the page left before its pause ends
+      session$setInputs(preview_status = "Second build")
+      expect_true(is_building())
+      session$setInputs(host_mode = "mascot")
+      session$elapse(500)
+      # Then nothing is being built, the code is the call that will build the page, and a copy button's ticket is answered
+      expect_false(is_building())
+      expect_identical(preview_request(), 1)
+      expect_match(output$code_preview, 'status = "Second build"', fixed = TRUE)
+      session$setInputs(copy_ticket = 1)
+      expect_identical(answers, 1L)
+      # And the change is built when the page is shown again
+      session$setInputs(host_mode = "preview")
+      session$elapse(500)
+      expect_identical(preview_request(), 2)
+      expect_match(output$code_preview, 'status = "Second build"', fixed = TRUE)
+      # And a change undone while the page was hidden needs no build, so "Building" is not left on either
+      session$setInputs(preview_status = "Third build")
+      session$setInputs(host_mode = "mascot")
+      session$setInputs(preview_status = "Second build")
+      session$setInputs(host_mode = "preview")
+      session$elapse(500)
+      expect_false(is_building())
+      expect_identical(preview_request(), 2)
+    })
+  })
+  it("says Building until the browser reports that the page has loaded in its frame", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(select_function = "mascot_preview", host_mode = "preview")
+      session$elapse(500)
+      # Given the page is built and its frame is drawn, the page inside has not loaded: the badge stays
+      expect_false(is_building())
+      expect_match(output$preview_frame$html, built_preview()$file, fixed = TRUE)
+      badge_shown <- function() any(grepl("Building", output$preview_status_badge$html, fixed = TRUE))
+      expect_true(badge_shown())
+      # When the frame reports the page it loaded, the badge goes
+      session$setInputs(preview_loaded = paste0(prefix, "/", built_preview()$file))
+      expect_false(badge_shown())
+      # And a rebuilt page is a new page: the report of the old one does not count, and the badge is back
+      session$setInputs(preview_mood = "happy")
+      session$elapse(500)
+      expect_false(is_building())
+      expect_true(badge_shown())
+      # Until the new page reports that it has loaded
+      session$setInputs(preview_loaded = paste0(prefix, "/", built_preview()$file))
+      expect_false(badge_shown())
+    })
+  })
+})
+
+describe("the studio's echo of a change it applied", {
+  it("leaves a typed bubble draft alone when an editor-open request arrives afterwards", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      messages <- list()
+      session$sendInputMessage <- function(id, message) messages[[id]] <<- message
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      # The text input has arrived, but the chip's delayed application has not. The live bubble
+      # still contains the welcome text when the earlier request to open its editor arrives.
+      session$setInputs(
+        bubble_text = "abc",
+        bubble_html = TRUE,
+        bubble_forever = TRUE,
+        bubble_duration = 9,
+        bubble_closable = FALSE
+      )
+      before <- live_demo$bubble
+      expect_identical(as.character(eval(before$helper)$text), get("welcome", parts$env))
+      call <- last_call()
+      messages <- list()
+      session$setInputs(chip_argument = "bubble")
+      for (id in c("bubble_text", "bubble_html", "bubble_forever", "bubble_duration", "bubble_closable")) {
+        expect_null(messages[[id]], info = id)
+      }
+      expect_identical(live_demo$bubble, before)
+      expect_identical(last_call(), call)
+      expect_identical(bubble_draft$text, "abc")
+      expect_true(bubble_draft$html)
+      # Show must use the draft too, even before the chip's application arrives.
+      session$setInputs(bubble_show = 1)
+      shown <- eval(state$bubble$helper)
+      expect_identical(as.character(shown$text), "abc")
+      expect_true(shown$html)
+      expect_identical(shown$duration, Inf)
+      expect_false(shown$closable)
+    })
+  })
+
+  it("sets a control only when the control did not send that value itself", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    status_code <- get("code_status", parts$env)
+    shiny::testServer(get("studio_server", parts$env), {
+      messages <- list()
+      session$sendInputMessage <- function(id, message) messages[[id]] <<- message
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      messages <- list()
+      # Given the status text came from the page, the server applies it and leaves the control alone
+      session$setInputs(status_text = "ab")
+      session$elapse(700)
+      expect_identical(state$status$helper, quote(mascot_status("ab")))
+      expect_null(messages$status_text)
+      # When a chip sets the status instead, the control follows
+      session$setInputs(chip_reset = "status")
+      expect_identical(messages$status_text$value, "")
+      # And the same value sent to the control twice, before it answers, is sent twice: the control may not hold the first
+      messages <- list()
+      send(list(status = status_code("one")), force = TRUE)
+      expect_identical(messages$status_text$value, "one")
+      send(list(status = status_code("")), force = TRUE)
+      expect_identical(messages$status_text$value, "")
+      expect_error(echo_to_control("", "x", identity), "Assertion on 'id' failed")
+      expect_error(echo_to_control("mood", "x", 1), "Assertion on 'update' failed")
     })
   })
 })
@@ -1976,9 +2160,12 @@ describe("each studio control's update, generated code and default", {
         wait = 700,
         sent = function(p) identical(p$status$text, "Saving")
       ),
-      bubble_text = row(show(bubble_text = "Hi there"), "bubble", 'bubble = "Hi there"', sent = function(p) {
-        identical(p$bubble$text, "Hi there")
-      }),
+      bubble_text = row(
+        show(bubble_text = "Hi there"),
+        "bubble",
+        'mascot_bubble("Hi there", duration = 8)',
+        sent = function(p) identical(p$bubble$text, "Hi there") && identical(p$bubble$duration, 8)
+      ),
       bubble_html = row(
         show(bubble_text = "<b>Hi</b>", bubble_html = TRUE),
         "bubble",
@@ -2338,13 +2525,16 @@ describe("each studio control's update, generated code and default", {
       )
     ))
     # Each control starts at the value its argument has by default (the overrides above aside).
+    # The bubble controls follow the welcome demonstration without an editor-open round trip.
+    start_bubble <- eval(env$start$bubble$helper)
     start_menu <- eval(env$start$click$helper)$items
     expected <- list(
       status_text = "", # status = NULL follows the mood
-      bubble_duration = bubble$duration,
-      bubble_forever = is.infinite(bubble$duration),
-      bubble_closable = bubble$closable,
-      bubble_html = FALSE, # plain text unless wrapped in HTML()
+      bubble_text = as.character(start_bubble$text),
+      bubble_duration = start_bubble$duration,
+      bubble_forever = is.infinite(start_bubble$duration),
+      bubble_closable = start_bubble$closable,
+      bubble_html = isTRUE(start_bubble$html),
       idle = "follow",
       mood_change = "follow",
       gestures = "follow",

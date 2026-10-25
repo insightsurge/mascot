@@ -46,38 +46,86 @@
     role.classList.toggle('is-changed', changed);
   });
 
-  // Copies the text of the element that data-copy names, then says so on the button for a moment.
+  // Copies the text of the element that data-copy names, then says so on the button for a moment. The text may be a
+  // little behind the page: a change the visitor just made is applied by the server a moment later, and some changes
+  // wait a moment more (a text box is applied when typing pauses). So a click does not copy at once. It sends a ticket
+  // (input$copy_ticket) and copies when the server answers that ticket (copy_gate() in R/shared-ui.R), by which time
+  // everything sent before the click has been applied and drawn. The button says "Copying" until then, and gives up
+  // after a few seconds, for a server that does not answer.
+  const copyWaiting = new Map();
+  const copyHooks = [];
+  let copyTickets = 0;
+  window.Shiny.addCustomMessageHandler('studio:copy', ({ ticket }) => copyWaiting.get(ticket)?.());
+  const copyViaSelection = (text) => {
+    // Selecting the hidden field moves keyboard focus to it; give focus back to where it was (the copy button).
+    const focused = document.activeElement;
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.append(field);
+    field.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    }
+    field.remove();
+    if (focused?.isConnected) focused.focus({ preventScroll: true });
+    return ok ? Promise.resolve() : Promise.reject(new Error('selection copy failed'));
+  };
+  // The clipboard API needs a secure page; a studio opened by a network address falls back to a selection copy, and so
+  // does a page whose browser refuses the clipboard API (a studio shown in a frame without clipboard access, such as an
+  // IDE's viewer). Where the browser takes the text as a promise, the write starts inside the click and the text arrives
+  // with the answer.
+  const writeClipboard = (text) => {
+    if (!(navigator.clipboard && window.isSecureContext)) return text.then(copyViaSelection);
+    if (window.ClipboardItem && navigator.clipboard.write) {
+      const blob = text.then((value) => new Blob([value], { type: 'text/plain' }));
+      return navigator.clipboard
+        .write([new window.ClipboardItem({ 'text/plain': blob })])
+        .catch(() => text.then(copyViaSelection));
+    }
+    return text.then((value) => navigator.clipboard.writeText(value).catch(() => copyViaSelection(value)));
+  };
   const copy = (target) => {
-    const source = document.getElementById(target.dataset.copy)?.textContent || '';
+    if (target.getAttribute('aria-busy') === 'true') return;
+    for (const hook of copyHooks) hook();
     if (!target.dataset.label) target.dataset.label = target.textContent;
     const label = target.dataset.label;
-    const done = (ok) => {
-      target.textContent = ok ? 'Copied' : 'Copy failed';
+    const ticket = ++copyTickets;
+    let timedOut = false;
+    const answered = new Promise((resolve, reject) => {
+      copyWaiting.set(ticket, resolve);
       setTimeout(() => {
-        target.textContent = label;
+        timedOut = true;
+        reject(new Error('no answer'));
+      }, 5000);
+    });
+    const text = answered.then(() => document.getElementById(target.dataset.copy)?.textContent || '');
+    const done = (message) => {
+      copyWaiting.delete(ticket);
+      target.removeAttribute('aria-busy');
+      // The server may have drawn the button again with its output while the copy waited (an example's code): say so
+      // on the button that is on the page now.
+      const shown = target.isConnected ? target : document.querySelector(`[data-copy="${target.dataset.copy}"]`);
+      if (!shown) return;
+      // A button drawn again has no remembered label yet: a click during the message must not take it as its label.
+      if (!shown.dataset.label) shown.dataset.label = label;
+      shown.textContent = message;
+      setTimeout(() => {
+        shown.textContent = label;
       }, 1500);
     };
-    // The clipboard API needs a secure page; a studio opened by a network address falls back to a selection copy.
-    const fallback = () => {
-      const field = document.createElement('textarea');
-      field.value = source;
-      field.setAttribute('readonly', '');
-      field.style.position = 'fixed';
-      field.style.opacity = '0';
-      document.body.append(field);
-      field.select();
-      let ok = false;
-      try {
-        ok = document.execCommand('copy');
-      } catch {
-        ok = false;
-      }
-      field.remove();
-      done(ok);
-    };
-    if (navigator.clipboard && window.isSecureContext)
-      navigator.clipboard.writeText(source).then(() => done(true), fallback);
-    else fallback();
+    target.setAttribute('aria-busy', 'true');
+    target.textContent = 'Copying\u2026';
+    window.Shiny.setInputValue('copy_ticket', ticket, { priority: 'event' });
+    writeClipboard(text).then(
+      () => done('Copied'),
+      () => done(timedOut ? 'Copy unavailable' : 'Copy failed'),
+    );
   };
 
   // A button or link with data-event sends data-value (or "click") as input$<data-event>, with any module prefix
@@ -101,8 +149,20 @@
     }
   });
 
-  // A button with data-busy-label says so while the server works on its click: the label, aria-busy and disabled,
-  // until the output data-busy-output names shows the result of that click, or an error. Each click sends a number of
+  // A frame says when the page inside it has loaded (data-loaded). The server draws a frame's tag first and the page
+  // arrives a moment later, so a frame that is drawn is not yet a frame that is shown. A load event does not reach the
+  // window from an element, only the document, and it does not bubble: listen on the document, while capturing.
+  document.addEventListener(
+    'load',
+    (event) => {
+      if (event.target.tagName === 'IFRAME') event.target.dataset.loaded = 'true';
+    },
+    true,
+  );
+
+  // A button with data-busy-label says so while the server works on its click: the label, aria-busy and aria-disabled
+  // (not disabled, which would move keyboard focus from the button to the page), until the output data-busy-output
+  // names shows the result of that click, or an error. Each click sends a number of
   // its own, and the server draws it into the result as data-busy-done (busy_done_mark() in R/shared-check.R), so a
   // result that answers an earlier click or a settings change doesn't count. Shiny's events are no sign of it:
   // shiny:value comes before the value is drawn (asynchronously), and "idle" comes before the values of the same
@@ -116,26 +176,34 @@
     const output = document.getElementById(button.dataset.busyOutput);
     if (!output) return;
     const click = String(++clicks);
-    const answered = new MutationObserver(() => {
-      if (output.querySelector(`[data-busy-done="${click}"]`)) done(button);
-    });
+    // The result is shown when it is drawn and the page inside any frame of it has loaded (data-loaded, set above).
+    const check = () => {
+      if (output.querySelector(`[data-busy-done="${click}"]`) && !output.querySelector('iframe:not([data-loaded])')) {
+        done(button);
+      }
+    };
+    const answered = new MutationObserver(check);
     answered.observe(output, { childList: true, subtree: true });
-    busyButtons.set(button, answered);
+    document.addEventListener('load', check, true);
+    busyButtons.set(button, () => {
+      answered.disconnect();
+      document.removeEventListener('load', check, true);
+    });
     button.dataset.busyClick = click;
     button.dataset.idleLabel = button.textContent;
     button.textContent = button.dataset.busyLabel;
     button.setAttribute('aria-busy', 'true');
-    button.disabled = true;
+    button.setAttribute('aria-disabled', 'true');
   };
   const done = (button) => {
-    const answered = busyButtons.get(button);
-    if (!answered) return;
-    answered.disconnect();
+    const stop = busyButtons.get(button);
+    if (!stop) return;
+    stop();
     busyButtons.delete(button);
     delete button.dataset.busyClick;
     button.textContent = button.dataset.idleLabel;
     button.removeAttribute('aria-busy');
-    button.disabled = false;
+    button.removeAttribute('aria-disabled');
   };
   const silentError = (error) => {
     const types = [].concat(error?.type ?? []);
@@ -232,6 +300,8 @@
 
   window.mascotStudioInputs = {
     on: (name, handler) => handlers.set(name, handler),
+    // Runs just before a copy button sends its ticket: a page that holds a change back itself sends it now.
+    beforeCopy: (hook) => copyHooks.push(hook),
     viewportBounds,
     positionWordTooltip,
     sizeSentence,

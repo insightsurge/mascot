@@ -6,6 +6,18 @@
 
 * In `mascot_studio()`, keyboard focus stays on a chip of the current call when the studio redraws the call, for example just after Reset; before, it could fall back to the page. The theme view's Check contrast and Show every mood buttons now say they are busy until the result of that click, or an error, shows, instead of coming back a moment early or when an earlier result is redrawn (#513, #530, #545). The inspector's Help and Guide panels say they are busy, and dim the page of the function before, until the page of the function just picked is drawn (#545).
 
+* In `mascot_studio()`, a panel or button no longer shows an earlier state as if it were current while the studio answers a change (#548):
+  * The Guide says it is busy, and dims the page of the character before, until it is drawn for the character just chosen.
+  * The click chip's editor opens the helper of the Click control as soon as you set it to an action or a menu; before, "Advanced controls", Help and Guide opened the previous one until the studio redrew the chip.
+  * Setting Host mode back to Live mascot while `mascot_preview()` is selected moves the Code tray off its Preview tab and stops building the hidden preview page. A change you made just before is built when the page is shown again, and the "Building..." badge no longer stays on meanwhile.
+  * The Check contrast button of the colour controls says it is busy until the result of that click shows.
+  * The Check contrast and Show every mood buttons keep keyboard focus while they say they are busy; before, focus left the button for the page.
+  * The studio's log and its `input$helper_minimised` readout no longer say the visitor restored the mascot: the mascot sends `FALSE` also when an `update_mascot()` call changes its placement, so they say "The mascot is no longer minimised".
+  * "R code for this function" says it is busy, and dims the code of the function before, until the code of the function just picked is drawn.
+  * The Copy buttons copy the code that belongs to what you just changed. Copy now waits for the studio's answer to its click, and the button reads "Copying..." meanwhile; before, it copied the code of a moment before and said "Copied". It reads "Copy unavailable" when no answer comes within five seconds.
+  * The status text, the mood and the bubble text keep what you typed or picked when the studio's answer to an earlier change arrives late; before, a slow connection could set the control back to the earlier value.
+  * The preview's "Building..." badge and the theme view's "Show every mood" button stay until the page inside the frame has loaded, not only until the studio has built it.
+
 * The website is now at <https://insightsurge.github.io/mascot/>, and the studio's "Package website" link and its guide links point there (#115).
 
 * A page carries each built-in character's data once, and only for the characters its mascots use. Before, every `mascot()` tag carried its character's whole data: a page with five Tessa mascots saved by `htmltools::save_html()` drops from 263 KB to 59 KB, and a `renderUI()` that redraws eight cards with Tessa sends 72 KB instead of 475 KB on each update. The data travels as an HTML dependency named after the character, so it works in Shiny apps (also with `renderUI()`, `insertUI()` and modals), saved and self-contained pages, and Quarto or R Markdown documents. Your own characters keep their data inside their tag, as before (#497).

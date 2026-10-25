@@ -393,8 +393,6 @@
       item.marker.replaceWith(item.element);
     }
     moved = [];
-    // DOM-ready initialisation also calls this before Shiny installs setInputValue().
-    if (chipArgument !== null) send('chip_argument', '');
     for (const chip of document.querySelectorAll('[data-call-arg]')) chip.setAttribute('aria-expanded', 'false');
   }
   function inspectorButton() {
@@ -494,19 +492,46 @@
     // miss a quick switch of the hidden attribute. Binding the panel again makes it send every output's visibility now.
     if (window.Shiny?.shinyapp?.isConnected()) window.Shiny.bindAll(byId(`inspector_${name}`));
   }
-  // The server draws Help and Guide for the selected function a moment after it changes, and Guide only once its tab
-  // shows, so for a while a panel can show an earlier function's page. Each card names its function in
-  // data-guide-function; until that is the selected function, the panel says it is busy and dims the old page.
-  const stampedPanels = { inspector_help: 'function_help', inspector_guide: 'guide' };
+  // The server draws Help, Guide and the code of the selected function a moment after it changes, and Guide only once
+  // its tab shows, so for a while a panel can show an earlier function's page. The server stamps what it drew: each
+  // card names its function in data-guide-function, and the code's text output gets a stamp with the function it
+  // shows (stamp_output() in R/shared-ui.R). Until the stamp is the selected function, the panel says it is busy and
+  // dims the old page. The Guide is also drawn for a character (data-guide-character), so it waits for the one chosen
+  // in the top bar too.
+  const cardStamp = (output, name) => byId(output)?.querySelector('[data-guide-function]')?.dataset[name];
+  const stampedPanels = {
+    inspector_help: () => cardStamp('function_help', 'guideFunction') === selectedFunction,
+    inspector_guide: () =>
+      cardStamp('guide', 'guideFunction') === selectedFunction &&
+      cardStamp('guide', 'guideCharacter') === byId('character')?.value,
+    code_pin: () => byId('code_function')?.dataset.stamp === selectedFunction,
+  };
   function syncPanelStamps() {
-    for (const [panel, output] of Object.entries(stampedPanels)) {
-      const stamp = byId(output)?.querySelector('[data-guide-function]')?.dataset.guideFunction;
-      if (stamp === selectedFunction) byId(panel)?.removeAttribute('aria-busy');
+    for (const [panel, current] of Object.entries(stampedPanels)) {
+      if (current()) byId(panel)?.removeAttribute('aria-busy');
       else byId(panel)?.setAttribute('aria-busy', 'true');
     }
   }
+  // The preview page is drawn as a frame and its page arrives a moment later. The server says "Building" until the page
+  // has loaded, so each frame reports which page it loaded (inputs.js marks the frame; a load event does not bubble).
+  document.addEventListener(
+    'load',
+    (event) => {
+      if (event.target.matches?.('iframe.pg-preview')) {
+        window.Shiny.setInputValue('preview_loaded', event.target.getAttribute('src'), { priority: 'event' });
+      }
+    },
+    true,
+  );
+  window.Shiny.addCustomMessageHandler('studio:stamp', ({ id, stamp }) => {
+    const output = byId(id);
+    if (output) output.dataset.stamp = stamp;
+    syncPanelStamps();
+  });
   function showControls() {
     syncPanelStamps();
+    // The argument whose help the Help panel last opened at belongs to the function it was opened for.
+    if (byId('function_help')) delete byId('function_help').dataset.activeArgument;
     restoreEditor();
     close('chip_editor', false);
     for (const group of document.querySelectorAll('#studio_inspector [data-function]')) {
@@ -856,6 +881,20 @@
       option.setAttribute('aria-pressed', String(option.dataset.chipStyle === button.dataset.callStyle));
     }
   }
+  // The Click control chooses which helper the click chip stands for. The server redraws the chip a moment after the
+  // control changes (and not at all while the new kind has a problem to fix), so the chip editor reads the control
+  // itself: its function, input and argument come from the table R sends (studio_click_routes()).
+  let clickRoutes = null;
+  function followClick() {
+    if (chipArgument !== 'click') return;
+    clickRoutes ??= JSON.parse(byId('studio_centre').dataset.clickRoutes);
+    const kind = byId('click_type')?.value;
+    if (!Object.hasOwn(clickRoutes, kind)) return;
+    ({ fn: chipFunction, input: chipInput, field: chipField } = clickRoutes[kind]);
+  }
+  $(document).on('change', '#click_type', () => {
+    if (!byId('chip_editor').hidden) followClick();
+  });
   function chipOpen(button) {
     close('chip_editor', false);
     close('inspector_sidebar', false);
@@ -877,8 +916,8 @@
         placement: 'position',
         theme: 'mode',
         motion: 'others',
-        click: chipFunction === 'mascot_popup_menu' ? 'items' : 'label',
       }[chipArgument] || chipArgument;
+    followClick();
     byId('chip_editor_body').replaceChildren();
     byId('chip_title').textContent = `${chipArgument} =`;
     for (const overview of document.querySelectorAll('[data-chip-overview]')) {
@@ -910,7 +949,6 @@
     }
     closeSelects();
     if (chipArgument === 'id') byId('chip_editor_body').textContent = 'Fixed studio id: "helper".';
-    send('chip_argument', chipArgument);
     positionChip();
     // Focus the surface, which leaves selectize closed until the visitor chooses it.
     byId('chip_editor').tabIndex = -1;
@@ -1204,8 +1242,18 @@
       // One update when typing pauses, not one per keystroke (each restarts the bubble and is announced).
       clearTimeout(bubbleTimer);
       const text = event.target.value;
-      bubbleTimer = setTimeout(() => send('chip_bubble', text), 600);
+      bubbleTimer = setTimeout(() => {
+        bubbleTimer = null;
+        send('chip_bubble', text);
+      }, 600);
     }
+  });
+  // Copying does not wait for the pause: the bubble text typed so far is sent first, and the copy follows it.
+  window.mascotStudioInputs.beforeCopy(() => {
+    if (bubbleTimer === null) return;
+    clearTimeout(bubbleTimer);
+    bubbleTimer = null;
+    send('chip_bubble', byId('bubble_text').value);
   });
   $(document).on('change', '#size_unit', () => {
     if (byId('chip_editor').hidden || chipArgument !== 'size') return;
@@ -1221,6 +1269,8 @@
     moveQuick(byId('size_unit').querySelector('input:checked').value === 'pct' ? 'size_pct' : 'size_px');
     positionChip();
   });
+  // The Guide is drawn for the chosen character, so a change of it makes the Guide out of date until the server answers.
+  $(document).on('change', '#character', syncPanelStamps);
   $(document).on('change', '#host_mode', () => {
     const value = byId('host_mode').value;
     if (value !== hostMode) mode(value);
@@ -1377,10 +1427,8 @@
       if (!byId('chip_editor').hidden && chip.dataset.callArg === chipArgument) {
         chip.setAttribute('aria-expanded', 'true');
         chipContext(chip);
-        // The click can switch between action and menu while this editor stays open.
-        chipFunction = chip.dataset.callFunction;
-        if (chipArgument === 'click') chipInput = chip.dataset.callInput;
-        if (chipArgument === 'click') chipField = chipFunction === 'mascot_popup_menu' ? 'items' : 'label';
+        // The click chip follows the Click control (followClick()), not the chip the server drew last.
+        if (chipArgument !== 'click') chipFunction = chip.dataset.callFunction;
       }
     }
   }
@@ -1507,7 +1555,7 @@
     }
     help.addEventListener('scroll', markStickyUsage);
     new MutationObserver(markStickyUsage).observe(help, { childList: true, subtree: true });
-    for (const output of Object.values(stampedPanels)) {
+    for (const output of ['function_help', 'guide']) {
       new MutationObserver(syncPanelStamps).observe(byId(output), { childList: true, subtree: true });
     }
     syncExpansion();

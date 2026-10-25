@@ -334,9 +334,12 @@ selected_guide <- function(fn, character = formals(mascot::mascot)$character) {
   if (length(content)) {
     sections <- c(sections, list(div(class = "pg-guide-piece", content)))
   }
+  # The card names the function and the character it was drawn for; the page says the Guide is busy until both are
+  # the ones chosen (syncPanelStamps() in studio.js).
   bslib::card(
     full_screen = FALSE,
     `data-guide-function` = fn,
+    `data-guide-character` = character,
     bslib::card_header(tags$code(paste0(fn, "()")), studio_expand_icon("expand_inspector_guide")),
     tagAppendAttributes(
       div(
@@ -661,6 +664,19 @@ studio_route <- function(arg) {
   list(fn = fn, input = if (arg != "id" && length(ids)) ids[[1]] else "")
 }
 
+# Where the click chip opens for each kind of Click control: the helper's function, the control that sets it and the
+# argument of that control. call_chips() reads it for the chip the server draws, and the page carries the same table
+# (data-click-routes on #studio_centre) so that the chip editor follows the Click control at once, before the server
+# has drawn the chip again. With no click the chip shows the empty mascot_action().
+studio_click_routes <- function() {
+  action <- list(fn = "mascot_action", input = "action_label", field = "label")
+  list(
+    none = action,
+    action = action,
+    menu = list(fn = "mascot_popup_menu", input = "menu_items", field = "items")
+  )
+}
+
 studio_search <- function() {
   div(
     id = "studio_search",
@@ -762,11 +778,9 @@ call_chips <- function(state, style, gesture = NULL, demo = character()) {
       }
       route <- studio_route(arg)
       if (arg == "click") {
-        route <- if (inherits(eval(state$click$helper), "mascot_popup_menu")) {
-          list(fn = "mascot_popup_menu", input = "menu_items")
-        } else {
-          list(fn = "mascot_action", input = "action_label")
-        }
+        route <- studio_click_routes()[[
+          if (inherits(eval(state$click$helper), "mascot_popup_menu")) "menu" else "action"
+        ]]
       }
       chosen <- if (length(style) == 1L) style else style[[arg]] %||% style[[".default"]]
       changed <- !is.null(state[[arg]]) && !identical(state[[arg]]$short, defaults[[arg]])

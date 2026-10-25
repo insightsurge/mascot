@@ -38,7 +38,7 @@ mascot adds a live character to a Shiny app or a Quarto page. The character is d
 
 ## Before 0.1.0
 
-* Versions 0.0.1 and 0.0.2 were development milestones on GitHub and exported no R functions. The functions and arguments took their current form while 0.1.0 was developed, so there is no earlier R code to update. The development history is in the pull requests on GitHub.
+* Versions 0.0.1 and 0.0.2 were development milestones on GitHub, not released on CRAN, and exported no R functions. While 0.1.0 was developed, some functions and arguments were renamed or removed, so code written against a development version installed from GitHub may need small changes. The pull requests on GitHub record each change.
 
 # mascot 0.0.2
 

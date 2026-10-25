@@ -9,8 +9,8 @@ covered in `NEWS.md`.
 
 # mascot 0.1.0
 
-The engine is versioned with the package; character files use format version 1. This is the engine of the first
-CRAN release.
+**mascot-engine 0.1.0; character-format-version 1.** The engine is versioned with the package; this is the engine of
+the first CRAN release.
 
 ## Summary
 
@@ -30,6 +30,10 @@ CRAN release.
   bubble lets clicks through (#225, #233, #241, #257, #350, #506).
 * **Placement.** Floating corners, inline placement, minimising with a sharp redraw on restore, and dragging that
   snaps to the nearest corner or (experimental) stays where it is dropped (#220, #275, #513).
+* **Character files stay as they are.** Frozen copies of the 0.1.0 character files and face kits live in the tests'
+  golden folder with their checksums: a test fails when a frozen file changes or goes, every frozen character must
+  keep loading, and a shipped face kit can change only on purpose, through a copy for the next version and a NEWS
+  line (#467, #554).
 * **Light on the page.** Layout reads are batched, mascots scrolled off-screen stop drawing, and a page carries each
   built-in character's data once (#295, #497).
 * **Styling and version.** Public classes, `--mascot-*` custom properties and the `.mascot-bubble-region` class are

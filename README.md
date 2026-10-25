@@ -13,7 +13,7 @@ Set the mood from R when a form needs attention or a task finishes. Mascots foll
 brand colours, work offline and respect reduced-motion settings. The package is built for `GxP` work: use it alongside
 your app's field errors and results.
 
-**Status:** early development, before 0.1.0. Some features are [experimental](#development-status).
+**Status:** some features are [experimental](#development-status).
 
 [Get started](https://insightsurge.github.io/mascot/articles/mascot.html) ·
 [Meet your mascots](https://insightsurge.github.io/mascot/articles/meet-your-mascots.html) ·
@@ -21,7 +21,13 @@ your app's field errors and results.
 
 ## Installation
 
-mascot needs R 4.1.0 or later. Install the development version from GitHub.
+mascot needs R 4.1.0 or later. Install the released version from CRAN:
+
+```r
+install.packages("mascot")
+```
+
+Or install the development version from GitHub:
 
 ```r
 # install.packages("pak")

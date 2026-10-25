@@ -7,7 +7,21 @@ This article records changes to the browser engine in `inst/www/` (`mascot.js`, 
 newest first. User-facing R functions and arguments are
 covered in `NEWS.md`.
 
-# mascot (development version)
+# mascot 0.1.0
+
+The engine is versioned with the package; character files use format version 1. The entries below record the
+engine's development before this first CRAN release. The visual tool some of them mention (`tools/visual/`) is no
+longer in the repository.
+
+## 2026-10-25 — The bubble space is a public styling class (#558)
+
+**In brief:** `.mascot-bubble-region`, the space kept for the speech bubble, is now a public styling class next to
+`.mascot-bubble`: hide it with `display: none` on a page that never shows a bubble. From 0.1.0 on, renaming it needs
+a deprecation.
+
+**Technical:**
+
+* No engine code changes. `?mascot_styling` lists the class, and a test checks that `mascot()` puts it on the page.
 
 ## 2026-10-24 — Empty speech-bubble space lets clicks through (#506)
 

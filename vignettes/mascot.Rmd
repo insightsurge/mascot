@@ -27,9 +27,15 @@ What you get:
 - **Offline by design:** ships every script and style in the package, and shows a worried face if Shiny disconnects.
 - **A studio to explore:** [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`) (experimental) lets you try every function live and copy the R code.
 
-Install the development version of `mascot` from GitHub with `pak`:
+Install the released version of `mascot` from CRAN:
 
 ```{r install, eval=FALSE}
+install.packages("mascot")
+```
+
+Or install the development version from GitHub with `pak`:
+
+```{r install-dev, eval=FALSE}
 # install.packages("pak")
 pak::pak("insightsurge/mascot")
 ```

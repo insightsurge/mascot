@@ -116,9 +116,8 @@ with the function or feature, and end with the issue number:
 * `update_mascot()` gains a `message` argument for a speech bubble (#30).
 ```
 
-Until 0.1.0, bullets go under the heading `# mascot (development version)` at the top of `NEWS.md`; the milestone's
-release PR renames that heading to the milestone's version. Leave out internal changes such as CI, refactors and
-tests.
+Bullets go under the heading `# mascot (development version)` at the top of `NEWS.md`; the release PR renames that
+heading to the release's version. Leave out internal changes such as CI, refactors and tests.
 
 ## Known users
 

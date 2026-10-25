@@ -5,8 +5,8 @@ directly; Claude reads it through the `@AGENTS.md` import at the top of `CLAUDE.
 
 An R package for **live, mood-driven mascots** in Shiny apps and Quarto sites: a character drawn in code shows a
 mood and animates when the mood changes (a short wiggle, then the new face). Scope, target users and releases:
-`docs/scope.md`. Status: before 0.1.0, the first CRAN release. The author, maintainer and copyright holder (the
-**package creator**) is Harsh Verma; `Authors@R` in `DESCRIPTION` is the source for names and roles.
+`docs/scope.md`. The author, maintainer and copyright holder (the **package creator**) is Harsh Verma; `Authors@R` in
+`DESCRIPTION` is the source for names and roles.
 
 ## Rules: where they live
 The detailed rules are in `.claude/rules/` and, with reasons and sources, in `docs/standards.md`. Claude loads a
@@ -88,7 +88,7 @@ lintr or Air yourself. **Which mode when, every option, the exit codes, the run 
   the Quarto shortcode, colours, sizes).
 - A change that may affect a known user gets the `consumer-impact` label and a line in the PR on how each
   affected user was checked. A change to the public API gets `breaking-change`, a `NEWS.md` entry and a
-  deprecation first (`lifecycle::deprecate_warn()` for at least one release) unless the API is still before 0.1.0.
+  deprecation first (`lifecycle::deprecate_warn()` for at least one release).
 
 ## Website
 The pkgdown site builds with `Rscript tools/build-site.R` (into `site/`; it keeps `CLAUDE.md` and `AGENTS.md` out of

@@ -61,8 +61,9 @@ Menus never set `input$<id>_click`; only `mascot_action()` does. Choosing an ite
 
 <div class="pg-callout">
 
-<strong>Options need their main argument.</strong>
-An empty call removes it.
+<strong>Supply menu items when setting options.</strong>
+Setting `disabled`, `direction`, `label` or `tooltip` requires `items`.
+To remove the click behaviour, pass `click = mascot_popup_menu()` to `update_mascot()`.
 
 </div>
 

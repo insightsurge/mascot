@@ -299,9 +299,9 @@ use plain words in help pages:
 - **Snapshots** (`expect_snapshot()`) for printed output and generated HTML. Review every snapshot change in the PR
   like code.
 - **shinytest2 assertions are on values, DOM state and status text, not on screenshots.** Use `app$get_value()`,
-  `app$expect_values()`, and `app$get_js()` reading the engine's exposed state (current mood, frame number, a hash of
-  the draw-call list), `data-*` attributes and the `role="status"` text. Because frames are deterministic, a hash of
-  the draw calls is a stable target across operating systems. A pixel hash is only for one pinned Chrome. Apps live
+  `app$expect_values()`, and `app$get_js()` reading the engine's exposed state (`mascot.host.state(el)`: mood,
+  character, bubble, colours, placement, menu state and so on), `data-*` attributes and the `role="status"` text. A
+  test that compares drawn pictures sums or counts the canvas pixels in the page, not a screenshot. Apps live
   in `tests/testthat/apps/<name>/app.R`.
 - **Skips.** Every shinytest2 test starts with `skip_on_cran()`, `skip_if_not_installed("shinytest2")` and a skip
   when `chromote::find_chrome()` returns `NULL`, and stops the app with `withr::defer(app$stop())`.

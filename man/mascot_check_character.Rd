@@ -29,7 +29,7 @@ Every character needs \code{wave} and \code{nod} tracks that change something. \
 must change a channel of a part other than \code{root}; \code{nod} may change any
 channel, including \code{root}. A checked object is not stored anywhere, so pass
 it each time you use it. The format version, the set of supported
-capabilities and the admission policy version can each change on their own.
+capabilities and the version of the input and drawing limits can each change on their own.
 Built-in character ids are reserved and refused here, so give your
 character its own id before checking it.
 }

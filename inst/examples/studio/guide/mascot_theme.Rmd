@@ -39,9 +39,9 @@ if (in_studio()) palette_swap_section(studio_character)
 ```{r mascot_theme-mode-flow, echo = FALSE}
 guide_flow(
   guide_step(htmltools::tags$code('mode = "light"'), " or ", htmltools::tags$code('"dark"'), htmltools::div("always wins")),
-  guide_step("page switch", htmltools::div(htmltools::tags$code("data-bs-theme"))),
+  guide_step("page's own switch", htmltools::div(htmltools::tags$code("data-bs-theme"))),
   guide_step("Quarto", htmltools::div(htmltools::tags$code("quarto-dark"))),
-  guide_step("no signal", htmltools::div("light"))
+  guide_step("neither found", htmltools::div("light"))
 )
 ```
 
@@ -57,15 +57,15 @@ guide_each_character(function(ch) {
   if (!length(brand)) {
     return(htmltools::tags$p(
       mascot::mascot_character(ch)$name,
-      " has no brand parts: a bslib theme leaves it unchanged."
+      " has no colours that bslib's primary or secondary colour changes: a bslib theme leaves it unchanged."
     ))
   }
   guide_flow(
     guide_step(htmltools::tags$code("bs_theme(primary =)")),
-    guide_step(htmltools::tags$code(brand$primary), htmltools::div("and its followers")),
+    guide_step(htmltools::tags$code(brand$primary), htmltools::div("and the colours that follow it")),
     guide_gap(),
     guide_step(htmltools::tags$code("bs_theme(secondary =)")),
-    guide_step(htmltools::tags$code(brand$secondary), htmltools::div("and its followers"))
+    guide_step(htmltools::tags$code(brand$secondary), htmltools::div("and the colours that follow it"))
   )
 })
 ```

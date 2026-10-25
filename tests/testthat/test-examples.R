@@ -1319,7 +1319,7 @@ describe("studio guide pages", {
       "duration = 5: hides",
       "Inf: stays",
       "HTML is trusted as it is.",
-      "Options need their main argument.",
+      "Supply text when setting options.",
       "pg-timeline",
       "pg-callout-warn"
     ),
@@ -1331,7 +1331,7 @@ describe("studio guide pages", {
       "observeEvent()",
       "can answer too",
       "A picture or a button.",
-      "Options need their main argument."
+      "Supply a label when setting options."
     ),
     mascot_preview = c("Offline comparison", "160, 96 and 24 px columns", "no placement or click arguments"),
     update_mascot = c(
@@ -1356,7 +1356,7 @@ describe("studio guide pages", {
       "From a click to your server",
       "Long status",
       "Your server code for these items",
-      "Options need their main argument.",
+      "Supply menu items when setting options.",
       "Keyboard.",
       "Opening and closing the menu sends no Shiny input."
     ),
@@ -1741,7 +1741,7 @@ describe("studio guide pages", {
       }
       if (any(resting)) {
         expect_match(gestures, "idle animation.", fixed = TRUE)
-        expect_match(gestures, "Choose its resting animation entry", fixed = TRUE)
+        expect_match(gestures, "in the gesture list at the top.", fixed = TRUE)
       }
     }
     for (helper in c("palette_table", "palette_guide_notes", "palette_guide_demo")) {
@@ -3475,7 +3475,7 @@ describe("studio colour inputs, demonstration labels and guide notes", {
       ),
       collapse = "\n"
     )
-    expect_match(page, "has no brand parts", fixed = TRUE)
+    expect_match(page, "has no colours that bslib", fixed = TRUE)
   })
 })
 

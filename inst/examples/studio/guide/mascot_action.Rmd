@@ -27,8 +27,9 @@ label, so screen readers say what a click does.
 
 <div class="pg-callout">
 
-<strong>Options need their main argument.</strong>
-An empty call removes it.
+<strong>Supply a label when setting options.</strong>
+Setting `tooltip` or `disabled` requires `label`.
+To remove the click behaviour, pass `click = mascot_action()` to `update_mascot()`.
 
 </div>
 

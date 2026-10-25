@@ -73,10 +73,10 @@ the band, the count and the limit; a character too big for its frame names
 the part, face, effect or shadow that reaches furthest outside, the side and
 by how much. The limits on input bytes, depth and node count, and the drawing
 budgets, apply to every input form. The format version, the capability set
-and the admission policy version can each change on their own. The installed
-grammar and policy live in
-\code{system.file("format", package = "mascot")}; the policy holds the input limits,
-the capability names and the drawing budget of each detail band.
+and the version of the input and drawing limits can each change on their own.
+The installed files are in \code{system.file("format", package = "mascot")}:
+\code{character-v1.json} describes the allowed fields, types and values; \code{policy-v1.json}
+holds the input limits, the capability names and the drawing budget of each detail band.
 }
 
 \section{Compatibility}{

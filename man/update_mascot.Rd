@@ -84,8 +84,8 @@ continues across changes.}
 default) sends no gesture. Use \code{"nod"} to acknowledge an action or \code{"wave"}
 to greet. Must be named. See \code{\link[=mascot_gestures]{mascot_gestures()}} for descriptions.
 With \code{gestures = FALSE} in \code{\link[=mascot_motion_settings]{mascot_motion_settings()}}, the gesture is
-skipped; the mood, bubble and status in the same update still apply. Shiny
-development mode reports it through the browser's client-message warning.}
+skipped; the mood, bubble and status in the same update still apply. In Shiny
+development mode, the browser asks Shiny to show a warning that says why.}
 
 \item{session}{A Shiny session, defaulting to the current reactive domain.
 Must be named when supplied. \code{NULL} outside a server or module is an error.}

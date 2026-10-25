@@ -56,8 +56,8 @@
 #'   default) sends no gesture. Use `"nod"` to acknowledge an action or `"wave"`
 #'   to greet. Must be named. See [mascot_gestures()] for descriptions.
 #'   With `gestures = FALSE` in [mascot_motion_settings()], the gesture is
-#'   skipped; the mood, bubble and status in the same update still apply. Shiny
-#'   development mode reports it through the browser's client-message warning.
+#'   skipped; the mood, bubble and status in the same update still apply. In Shiny
+#'   development mode, the browser asks Shiny to show a warning that says why.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.

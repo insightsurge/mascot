@@ -73,7 +73,7 @@ The classes are documented in `?"mascot-package"`. Errors carry `mascot_error`, 
 | mascot_placement_ignored | Message | Inline placement ignores minimise or drag |
 | mascot_palette_dropped | Warning | A character swap drops a palette the incoming character lacks |
 | mascot_gesture_dropped | Warning | Development diagnostic: a pending gesture cannot play |
-| mascot_template_evicted | Warning | Development diagnostic: unused UI templates leave the cache |
+| mascot_template_evicted | Warning | Development diagnostic: saved UI settings that no session uses are dropped to limit memory |
 
 ```{r update_mascot-mistakes, echo = FALSE}
 if (!in_studio()) guide_mistakes_html("update_mascot", studio_character)

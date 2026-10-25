@@ -75,8 +75,8 @@ both a light and a dark map, both are shown, even if it sets one mode.
 Backgrounds are white and \verb{#212529}, or the \code{bslib} theme's
 \code{bg} and \code{body-bg-dark}; text uses \code{fg} and \code{body-color-dark}. Only supplied
 colour roles are checked, using the same contrast calculation as \code{\link[=mascot]{mascot()}}.
-Experimental CSS variables are worked out in the browser: their warnings appear
-in its console, outside the R \code{contrast} attribute.
+The browser reads colours from experimental CSS variables and checks them. Any
+warnings appear in the browser's developer console, not in the R \code{contrast} attribute.
 
 \strong{Bubbles.} Cells without a bubble leave out its space; a supplied bubble keeps its
 normal space and timing. Each cell is wide enough to hold it, so bubbles

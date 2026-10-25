@@ -20,9 +20,9 @@ mascot adds a character drawn in code to a 'Shiny' app or a 'Quarto' page; the c
 and moves when the mood changes. The JavaScript and CSS that draw it are plain, unminified files in `inst/www/`,
 written for the package; no third-party code ships.
 
-The README and the Get started vignette say the package is "built for GxP work". GxP is the collective name for the "good practice" quality
-rules in regulated industries such as pharmaceuticals (for example Good Clinical Practice and Good Manufacturing
-Practice). The phrase does not claim that the package is validated. It describes design choices that teams working
+The README and the Get started vignette say the package is "built for GxP work". GxP is the collective name for
+the "good practice" quality rules in regulated industries such as pharmaceuticals (for example Good Clinical
+Practice and Good Manufacturing Practice). The phrase does not claim that the package is validated. It describes design choices that teams working
 under these rules look for: everything ships with the package (nothing is loaded from the internet), the drawing is
 deterministic, a status text sits beside every mascot so its mood never carries meaning alone, and the user's
 reduced-motion setting is honoured.

@@ -24,7 +24,8 @@ With \code{run = TRUE}, the value returned by \code{\link[shiny:runApp]{shiny::r
 Opens only the example you ask for, like \code{\link[shiny:runExample]{shiny::runExample()}}, and copies or
 writes no files. Use \code{run = FALSE} to read the app's code
 or pass its directory to \code{\link[shiny:runApp]{shiny::runApp()}}. The single-file scenarios can be
-copied into a project with Shiny, \code{bslib} and mascot installed. Copy the whole
+copied into a project with Shiny, \code{bslib} and mascot installed (\code{long-task} also
+needs \code{promises} and \code{later}). Copy the whole
 folder for the studio, \code{golem} and rhino-shaped examples; \code{golem} also needs the
 \code{golem} package. \code{"theme"} is a page of the studio's app: \code{run = FALSE} returns
 the studio's \code{app.R}, and \code{run = TRUE} opens the app on that page, as

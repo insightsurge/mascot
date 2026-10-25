@@ -15,8 +15,8 @@ guide_table(mascot::mascot_moods())
 <div class="pg-callout">
 
 <strong>The mood never speaks alone.</strong>
-The status line under the mascot shows the character's line for the mood (or displays your custom text),
-providing clear meaning for screen readers and anyone who cannot distinguish facial expressions.
+The status line under the mascot shows the character's line for the mood (or your custom text), so screen readers
+and anyone who cannot read facial expressions still get the meaning.
 
 ```{r mascot_mood-controls, echo = FALSE}
 if (in_studio()) htmltools::tags$p("Try moods with the Mood drop-down in the top bar.")

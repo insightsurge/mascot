@@ -1,15 +1,17 @@
 #' Launch the interactive mascot studio
 #'
 #' Explore the package's functions, try their controls with live feedback, and
-#' copy the working R code into your own app. The studio is
-#' experimental and may change in a later release. What you choose in it stays
+#' copy the working R code into your own app. The studio needs the
+#' suggested packages `bslib` (0.7.0 or later) and `knitr`; the `"theme"` view needs only `bslib`.
+#' The studio is experimental and may change in a later release. What you choose in it stays
 #' in the returned app; it changes no global options.
 #' @param view Which view to open: `"studio"` (the default) for the studio, one
 #'   page per function, `"examples"` for the gallery of bundled examples, or `"theme"`
 #'   to theme one character.
 #' @param ... Must be empty. Forces the arguments after it to be named.
 #' @param fn A function name in the studio's Guide, without parentheses.
-#'   `NULL` starts with `mascot_mood()`. Used in the studio view only.
+#'   `NULL` starts on the canvas with `mascot_mood()` selected; a name opens that function's Guide.
+#'   Used in the studio view only.
 #' @param character A built-in character id string from the studio's character
 #'   selector, or a [mascot_character()] helper for a built-in character.
 #'   Defaults to the default character of [mascot()]. A checked character object

@@ -87,7 +87,7 @@ if (in_studio()) {
 ```{r mascot_theme-bs-theme-note, echo = FALSE}
 guide_callout(
   htmltools::tags$strong("bs_theme(). "),
-  'A bs_theme() always uses mode = "auto" and cannot be combined with a forced mode or extra roles.'
+  'A bs_theme() always uses mode = "auto" and cannot be combined with palette, light, dark or css.'
 )
 ```
 

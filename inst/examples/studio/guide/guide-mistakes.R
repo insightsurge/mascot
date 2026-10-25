@@ -52,8 +52,8 @@ guide_mistake_base <- list(
   `The wrong id` = list(
     code = "update_mascot(\"helpr\", mood = \"happy\")",
     why = paste(
-      "No error and no change: the server cannot see browser elements. With shiny::devmode(TRUE), the browser",
-      "console reports the missing element."
+      "No error, warning or console message, even in development mode: the server cannot see browser elements.",
+      "The update is kept and applied if a mascot with that id appears later. Check the id against the one in the UI."
     )
   )
 )

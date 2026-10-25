@@ -37,7 +37,8 @@ Default: character body colour, or its first colour if absent.
 \item \code{--mascot-restore-fg}: restore button text, border and focus outline.
 Default: character outline colour, or its first colour if absent.
 \item \code{--mascot-restore-glow}: restore button glow on hover or keyboard focus.
-Default: character rim colour, then body colour, then its first colour.
+Default: the character's accent colour (its secondary brand colour, or \code{rim}), then
+its main colour, then its first colour.
 \item \code{--mascot-z-index}: floating mascot's stacking order.
 Default: \code{1031}, above Bootstrap fixed navigation bars and below overlay
 panels and modals. A supplied value wins over this default.

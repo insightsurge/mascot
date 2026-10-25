@@ -7,7 +7,7 @@ ui <- shiny::fluidPage(
   mascot::mascot("helper", placement = "inline", status = "Ready")
 )
 server <- function(input, output, session) {
-  # "force" lets a local runApp() resume the same session after the socket closes (testing only).
+  # "force" lets a local runApp() reconnect, into a new server session, after the socket closes (testing only).
   session$allowReconnect("force")
   handled <- shiny::reactiveVal(0)
   output$handled <- shiny::renderText(handled())

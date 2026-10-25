@@ -12,7 +12,7 @@
 #' `bs_theme()` always uses `mode = "auto"`. Which parts of a character a
 #' `bs_theme()` colours is experimental and may change in a later release.
 #'
-#' After a character swap, the follow rules are applied again, and roles the
+#' After a character swap, roles you did not set follow their leaders again, and roles the
 #' new character does not have are ignored. A palette is kept if the new
 #' character has a palette with the same id. If not, R warns, the new character
 #' gets its own colours, and role colours you set explicitly stay. An empty

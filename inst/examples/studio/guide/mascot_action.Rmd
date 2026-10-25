@@ -20,7 +20,7 @@ guide_flow(
 <div class="pg-callout">
 
 <strong>A picture or a button.</strong>
-Without click, the mascot is a picture: no keyboard stop, no events. With one, it is a button named by its
+Without a click, the mascot is a picture: you cannot tab to it and it sends no events. With one, it is a button named by its
 label, so screen readers say what a click does.
 
 </div>

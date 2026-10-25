@@ -20,8 +20,9 @@ test_browser_env$restarts <- 0L
 chrome_restart_limit <- 2L
 
 # Milliseconds any browser test waits for a signal (a Shiny value, a DOM state, a finished animation) before it fails.
-# One generous limit for every wait: a busy machine or a slow CI runner can take seconds to answer, while a passing
-# wait returns as soon as its signal arrives, so a long limit costs nothing on a fast machine (#250). Never sleep for a
+# One generous default for every wait (a wait that needs longer passes its own `timeout`): a busy machine or a slow
+# CI runner can take seconds to answer, while a passing wait returns as soon as its signal arrives, so a long limit
+# costs nothing on a fast machine (#250). Never sleep for a
 # fixed time instead: wait for the signal.
 browser_timeout <- 30000
 

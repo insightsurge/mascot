@@ -36,7 +36,7 @@ exception is fine with a comment saying why). Reasons and sources: `docs/standar
   `R/mascot-package.R`; never `@import` a whole package.
 - **CRAN:** every package used is declared in `DESCRIPTION` (R CMD check warns otherwise). `Imports` stays
   minimal (the list in `DESCRIPTION`); optional features use `Suggests` and check with
-  `rlang::check_installed()` or `requireNamespace()` before use (CRAN also checks without Suggests).
+  `requireNamespace()` before use (CRAN also checks without Suggests).
 - **CRAN:** no `library()`, `require()` or `attach()` in package code.
 
 ## Behaviour

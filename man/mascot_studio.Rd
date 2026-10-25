@@ -14,7 +14,8 @@ to theme one character.}
 \item{...}{Must be empty. Forces the arguments after it to be named.}
 
 \item{fn}{A function name in the studio's Guide, without parentheses.
-\code{NULL} starts with \code{mascot_mood()}. Used in the studio view only.}
+\code{NULL} starts on the canvas with \code{mascot_mood()} selected; a name opens that function's Guide.
+Used in the studio view only.}
 
 \item{character}{A built-in character id string from the studio's character
 selector, or a \code{\link[=mascot_character]{mascot_character()}} helper for a built-in character.
@@ -32,8 +33,9 @@ the value returned by \code{\link[shiny:runApp]{shiny::runApp()}} after the app 
 }
 \description{
 Explore the package's functions, try their controls with live feedback, and
-copy the working R code into your own app. The studio is
-experimental and may change in a later release. What you choose in it stays
+copy the working R code into your own app. The studio needs the
+suggested packages \code{bslib} (0.7.0 or later) and \code{knitr}; the \code{"theme"} view needs only \code{bslib}.
+The studio is experimental and may change in a later release. What you choose in it stays
 in the returned app; it changes no global options.
 }
 \examples{

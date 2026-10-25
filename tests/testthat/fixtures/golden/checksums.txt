@@ -1,0 +1,7 @@
+952ca40d6168eef07a5db7744ce17f0f 0.1.0/kits/classic.json
+a7fba201b00247f30fdb011185177151 0.1.0/kits/screen.json
+71387c229d68468e99b0e7a5bbdd352f 0.1.0/knurl.json
+b23cab5a43f988dfc787e815f93a759a 0.1.0/neer.json
+169fbf7fc5a69898f43bce088dfac1f8 0.1.0/sela.json
+ffa2d92281d715eb0e933d53a745bb7f 0.1.0/study_bot.json
+1e8ec2ea193289e4f24f24d25880afea 0.1.0/tessa.json

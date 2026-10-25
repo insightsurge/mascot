@@ -1,3 +1,21 @@
+# A Windows checkout may turn line endings into CRLF, so fingerprint the content without carriage returns.
+golden_md5 <- function(files) {
+  vapply(
+    files,
+    function(file) {
+      if (!file.exists(file)) {
+        return(NA_character_)
+      }
+      bytes <- readBin(file, "raw", file.size(file))
+      path <- withr::local_tempfile()
+      writeBin(bytes[bytes != as.raw(13L)], path)
+      unname(tools::md5sum(path))
+    },
+    character(1),
+    USE.NAMES = FALSE
+  )
+}
+
 describe("character_format_check()", {
   it("requires wave and nod tracks whose keyed values change", {
     data <- format_recipe()
@@ -331,16 +349,33 @@ describe("released character files", {
   it("keeps every golden character file loading unchanged", {
     root <- test_path("fixtures", "golden")
     folders <- list.dirs(root, recursive = FALSE, full.names = TRUE)
-    expect_gt(length(folders), 0L)
-    for (folder in folders) {
-      files <- list.files(folder, pattern = "\\.json$", full.names = TRUE)
-      expect_gt(length(files), 0L)
-      for (file in files) {
-        # Built-in ids are reserved, so only the shipped built-ins use the internal admission route.
-        built_in <- tools::file_path_sans_ext(basename(file)) %in% builtin_characters()$id
-        expect_no_error(character_format_check(file, from = "file", builtin = built_in))
-      }
+    # A folder for the next version may hold only a changed kit until its release, so count the files overall.
+    files <- list.files(folders, pattern = "\\.json$", full.names = TRUE)
+    expect_gt(length(files), 0L)
+    for (file in files) {
+      # Built-in ids are reserved, so only the shipped built-ins use the internal admission route.
+      built_in <- tools::file_path_sans_ext(basename(file)) %in% builtin_characters()$id
+      expect_no_error(character_format_check(file, from = "file", builtin = built_in))
     }
+  })
+
+  it("keeps every recorded golden file in place and unchanged", {
+    # Given the recorded list of released golden files and their checksums
+    root <- test_path("fixtures", "golden")
+    recorded <- utils::read.table(
+      file.path(root, "checksums.txt"),
+      col.names = c("md5", "file"),
+      colClasses = "character"
+    )
+    # When the files in each recorded folder are listed and fingerprinted
+    folders <- unique(sub("/.*", "", recorded$file))
+    present <- unlist(lapply(folders, function(folder) {
+      file.path(folder, list.files(file.path(root, folder), recursive = TRUE))
+    }))
+    # Then no recorded file is missing and no unrecorded file sits in a recorded folder; new folders are allowed
+    expect_setequal(present, recorded$file)
+    # And no recorded file has been edited
+    expect_identical(golden_md5(file.path(root, recorded$file)), recorded$md5)
   })
 })
 

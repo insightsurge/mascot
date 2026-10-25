@@ -286,6 +286,54 @@ describe("with_mascot_asserts()", {
       trimws(strsplit(conditionMessage(original), "\n", fixed = TRUE)[[1]])
     )
   })
+  it("gives an unnamed union assertion mascot_error and keeps every line of its message", {
+    value <- 1
+    original <- tryCatch(
+      checkmate::assert(checkmate::check_flag(value), checkmate::check_string(value)),
+      error = identity
+    )
+    wrapped <- tryCatch(
+      with_mascot_asserts({
+        checkmate::assert(checkmate::check_flag(value), checkmate::check_string(value))
+      }),
+      error = identity
+    )
+    # Checkmate has no variable name to show, so it opens with "Assertion failed." instead of "Assertion on '...'".
+    expect_match(conditionMessage(original), "^Assertion failed\\.")
+    expect_s3_class(wrapped, "mascot_error")
+    expect_s3_class(wrapped, "error")
+    expect_null(wrapped$parent)
+    lines <- trimws(cli::ansi_strip(strsplit(conditionMessage(wrapped), "\n", fixed = TRUE)[[1]]))
+    expect_gt(length(lines), 2L)
+    expect_identical(lines, trimws(strsplit(conditionMessage(original), "\n", fixed = TRUE)[[1]]))
+  })
+  it("gives mascot_error to each kind of checkmate failure that mascot's checks can produce", {
+    value <- 1
+    failures <- list(
+      "an assert_* function" = quote(checkmate::assert_string(value)),
+      "a named union" = quote(checkmate::assert(
+        checkmate::check_flag(value),
+        checkmate::check_string(value),
+        .var.name = "value"
+      )),
+      "an unnamed union" = quote(checkmate::assert(checkmate::check_flag(value), checkmate::check_string(value))),
+      "an unnamed union with combine = and" = quote(checkmate::assert(
+        checkmate::check_number(value, lower = 2),
+        checkmate::check_string(value),
+        combine = "and"
+      )),
+      "qassert()" = quote(checkmate::qassert(value, "S1")),
+      "a collection" = quote({
+        collection <- checkmate::makeAssertCollection()
+        checkmate::assert_string(value, add = collection)
+        checkmate::reportAssertions(collection)
+      })
+    )
+    for (name in names(failures)) {
+      error <- tryCatch(with_mascot_asserts(eval(failures[[name]])), error = identity)
+      expect_true(inherits(error, "mascot_error"), info = name)
+    }
+  })
   it("attributes assertion errors to the public caller", {
     error <- tryCatch(mascot(id = 1), error = identity)
     expect_identical(conditionCall(error)[[1L]], quote(mascot))
@@ -300,6 +348,14 @@ describe("with_mascot_asserts()", {
       }),
       error = identity
     )
+    expect_identical(error, original)
+    # An unrelated error that borrows a checkmate prefix but is not one of its messages.
+    original <- simpleError("Assertion failed. This is not a checkmate message")
+    error <- tryCatch(with_mascot_asserts(stop(original)), error = identity)
+    expect_identical(error, original)
+    # The same for the collection wording without checkmate's bullet list.
+    original <- simpleError("3 assertions failed: not a checkmate message")
+    error <- tryCatch(with_mascot_asserts(stop(original)), error = identity)
     expect_identical(error, original)
   })
   it("evaluates successful assertions once and validates its call argument", {

@@ -8,6 +8,19 @@ destination: site
 template:
   bootstrap: 5
   light-switch: true
+  opengraph:
+    image:
+      src: card.gif
+      alt: >
+        The word mascot in large letters with the line Live, mood-driven mascots for Shiny apps and Quarto sites,
+        beside the mascot hex logo: a small app inside a hex, with a mascot at the bottom that leans in while the app
+        runs and bounces when it is done, and a progress card, chart bars and a ready label floating around it.
+  includes:
+    in_header: |
+      <meta property="og:image" content="https://insightsurge.github.io/mascot/card.gif">
+      <meta property="og:image:alt" content="The word mascot in large letters with the line Live, mood-driven mascots for Shiny apps and Quarto sites, beside the mascot hex logo: a small app inside a hex, with a mascot at the bottom that leans in while the app runs and bounces when it is done, and a progress card, chart bars and a ready label floating around it.">
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:description" content="Live, mood-driven mascots for Shiny apps and Quarto sites, drawn in code and controlled from R.">
   bslib:
     bg: "#F5FAFC"
     fg: "#172E36"
@@ -33,8 +46,7 @@ template:
     link-underline-offset: "0.2em"
 
 # pkgdown links the code of conduct and the contributing guide in the home page sidebar by itself, and builds
-# SECURITY.html from .github/SECURITY.md, but has no sidebar entry for it. inst/COPYRIGHTS isn't part of the site,
-# so its entry links to the file on GitHub.
+# SECURITY.html from .github/SECURITY.md, but has no sidebar entry for it.
 home:
   links:
     - text: Security policy

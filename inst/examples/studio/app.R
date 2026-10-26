@@ -1,7 +1,7 @@
 # The mascot studio: every exported function and argument, live, with explanations.
 # Run it with mascot::mascot_example("studio"). Shiny first loads the files in R/ (the
 # explanations, data, code builders, Controls and guide pieces) and serves www/ (styles
-# and the colour picker). Contributors: docs/studio.md in the package's source repository maps these files.
+# and the colour picker). Contributors: docs/examples.md in the package's source repository maps these files.
 library(shiny)
 if (!requireNamespace("bslib", quietly = TRUE) || utils::packageVersion("bslib") < "0.7.0") {
   stop("This example needs bslib 0.7.0 or later. Install or update it before running the app.")

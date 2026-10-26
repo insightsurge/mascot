@@ -1,14 +1,46 @@
-# The studio app: a map for contributors
+# The example apps: a map for contributors
 
-The studio is a Shiny app in [`inst/examples/studio/`](../inst/examples/studio/). It shows every exported function
-and argument working on a live mascot, with the help page beside it and the code to copy. Read this page before
-you change an exported function or argument: the studio changes in the same PR (the rule is in
-[`AGENTS.md`](../AGENTS.md), section "Keep mascot studio up to date").
+mascot ships its example apps in [`inst/examples/`](../inst/examples/). `mascot_examples()` lists them and
+`mascot_example()` runs one or returns the path of its `app.R` (both in [`R/examples.R`](../R/examples.R)). Most of
+this page is about the studio, the largest of them: it shows every exported function and argument, so it changes
+whenever the API does. Read the studio sections before you change an exported function or argument: the studio
+changes in the same PR (the rule is in [`AGENTS.md`](../AGENTS.md), section "Keep mascot studio up to date").
 
-This page lives in `docs/` because `mascot_example("studio")` copies the studio folder to users, and contributor
-notes don't belong there.
+This page lives in `docs/` because `mascot_example()` copies an app's folder to users, and contributor notes don't
+belong there.
 
-## How it opens, and its views
+## The apps
+
+| Name in `mascot_examples()` | Folder | What it shows | Needs |
+|---|---|---|---|
+| `studio` | `studio/` | Every exported function and argument, live (the rest of this page) | bslib, knitr |
+| `form-check` | `form-check/app.R` | A worried mascot names invalid fields and turns happy when both pass | bslib |
+| `long-task` | `long-task/app.R` | Thinking during a slow step, then success or a lasting error bubble | bslib, promises, later |
+| `modules` | `modules/app.R` | Two module mascots and a floating one the parent owns | bslib |
+| `theme` | `studio/` (the theme view) | One character themed with live feedback | bslib |
+| `golem` | `golem/` (`app.R` and `R/`) | Function-built UI, golem runtime options, nested modules | golem |
+| `rhino` | `rhino/` (`app.R` and `app/view/`) | Plain Shiny view modules in a rhino-shaped folder | nothing extra |
+
+`inst/examples/characters/study_bot.json` is not an app: it is the character file that the help examples in
+[`R/character-api.R`](../R/character-api.R) read.
+
+The scenario apps are plain Shiny and use only exported functions, so they change only when the behaviour they show
+changes. Their tests:
+
+- [`test-examples.R`](../tests/testthat/test-examples.R), on CRAN too: `mascot_examples()` lists the apps in this
+  order; each folder holds only its expected files; every R file parses; each page draws offline (no `http` link
+  other than the two navbar links).
+- [`test-examples-browser.R`](../tests/testthat/test-examples-browser.R), never on CRAN: each scenario app runs in
+  Chrome and does what its row above says.
+
+To add an app: put it in its own folder with an `app.R`, add a row to `mascot_examples()` (name, title,
+description, and "Requires ..." for any extra package), and update the expected list and folder contents in
+`test-examples.R`, a browser test in `test-examples-browser.R`, `mascot_examples()`'s help, and `NEWS.md`. A new
+app gets a `-extended.R` file only when it has detailed tests (see "Adding tests for a new example app" in
+[`tests/README.md`](../tests/README.md)).
+
+## The studio: how it opens, and its views
+
 
 `mascot_studio()` ([`R/studio.R`](../R/studio.R)) and `mascot_example("studio")` ([`R/examples.R`](../R/examples.R))
 both run the same folder. `mascot_example("theme")` runs it too, opened on the theme view.
@@ -32,7 +64,7 @@ The routing is in [`R/views.R`](../inst/examples/studio/R/views.R) and at the en
 
 The preview page (`mascot_preview()`) is not a view: it is a host mode of the studio page, chosen under "Host mode".
 
-## The files
+## The studio's files
 
 Shiny sources every file in `R/` before `app.R` attaches mascot, so files in `R/` hold functions and plain data
 only. They call mascot as `mascot::` or inside functions that run later.
@@ -109,7 +141,7 @@ Then open the studio (`devtools::load_all()`, then `mascot_studio()`), try the c
 The tests catch a missing function, argument or control, and check the controls they have rows for; they don't
 catch a changed default or behaviour that no row covers.
 
-## Which tests catch what
+## Which studio tests catch what
 
 The studio's tests come in four kinds, by where they run. How the kinds work is in
 [`tests/README.md`](../tests/README.md); what each CI job runs is in
@@ -120,11 +152,11 @@ The studio's tests come in four kinds, by where they run. How the kinds work is 
 | Completeness and detail | [`test-studio-extended.R`](../tests/testthat/test-studio-extended.R), `test-studio-app-extended.R`, `test-studio-shared-extended.R`, `test-studio-theme-extended.R` | Locally, the coverage job, the off-CRAN job and the weekly extended-tests run; not on CRAN or in R CMD check | An export or argument missing from `studio_guide` or `studio_controls`, a mapped control with no update row, a `mascot()` argument missing from `defaults` or with no call chip route, prose in `guide.R`, help text that doesn't come from the help pages, code that doesn't parse, a missing website stub, a theme view that uses a part it doesn't list, a view missing from the `mascot_studio()` guide page |
 | Examples | [`test-examples.R`](../tests/testthat/test-examples.R) | Everywhere, CRAN included | A missing guide page, a file in the studio folder that isn't `app.R`, `R/`, `guide/` or `www/`, a file in `www/` that the app never uses |
 | Smoke | [`test-studio.R`](../tests/testthat/test-studio.R), `test-studio-theme.R` | Everywhere, CRAN included | `mascot_studio()`'s arguments, the routing between views, and that each view's page draws |
-| Browser | `test-studio-browser.R`, `test-studio-app-browser.R`, `test-studio-theme-browser.R` | Locally with Chrome and in the off-CRAN job; not on CRAN or in R CMD check | What a user sees and clicks: controls, chips, panels, search, updates of the live mascot |
+| Browser | `test-studio-browser.R`, `test-studio-app-browser.R`, `test-studio-theme-browser.R`, and the studio's narrow layout and palette tests in `test-examples-browser.R` | Locally with Chrome and in the off-CRAN job; not on CRAN or in R CMD check | What a user sees and clicks: controls, chips, panels, search, updates of the live mascot |
 
 `Rscript tools/cran-gate.R tests` and `devtools::test()` run all of them; the browser tests need Chrome.
 
-## Adding a view
+## Adding a view to the studio
 
 A view is a page of the same app, such as the planned builder. To add one:
 

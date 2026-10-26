@@ -58,7 +58,7 @@ For labels you cannot apply, list the suggested labels in Notes so the package c
 - [ ] I have reviewed the whole diff, understand the changes and can explain the checks reported above.
 - [ ] User-facing changes have a `NEWS.md` bullet ending with `(#issue)`; release headings and versions are left to the package creator.
 - [ ] Behaviour changes have BDD tests (`describe()` / `it()`); visible Shiny changes have shinytest2 tests. New or changed R argument checks use checkmate and are tested.
-- [ ] Exports or argument changes include roxygen updates and the studio changes listed in [`docs/studio.md`](https://github.com/insightsurge/mascot/blob/main/docs/studio.md) in this PR; the changed behaviour has been tried in the studio.
+- [ ] Exports or argument changes include roxygen updates and the studio changes listed in [`docs/examples.md`](https://github.com/insightsurge/mascot/blob/main/docs/examples.md) in this PR; the changed behaviour has been tried in the studio.
 - [ ] Known users in `docs/consumers.md` have been checked where affected; the PR records each result and has `consumer-impact` where needed. Public API changes have `breaking-change`, a NEWS entry and a deprecation plan where required by `AGENTS.md`.
 - [ ] JS/CSS changes keep status text and honour reduced motion; the changed visual behaviour has been tried with reduced motion on and off.
 - [ ] New `inst/` files have the required licence and `inst/COPYRIGHTS` entries; their presence in the built tarball has been checked using the gate's `full` mode.

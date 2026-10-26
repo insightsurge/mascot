@@ -77,7 +77,7 @@ lintr or Air yourself. **Which mode when, every option, the exit codes, the run 
   function, for every character.
 - **Rule: a PR that adds, removes or changes an exported function or an argument (its name, values, default or
   behaviour) also updates the studio in the same PR.** No studio follow-up PRs. Which files to change, in which
-  order, and which test catches a miss: `docs/studio.md`. Explanations come from the help pages, so update the
+  order, and which test catches a miss: `docs/examples.md`. Explanations come from the help pages, so update the
   roxygen, never copy it into the studio.
 - The completeness tests in `tests/testthat/test-studio-extended.R` catch a missing function, argument or control;
   they do not catch a changed default or behaviour, so try the change in the studio before the PR and say so in its

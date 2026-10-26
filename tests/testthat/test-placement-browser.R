@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("dragging in a Shiny browser", {
   it("reports a snapped corner in a module and a free drop point, and a placement update replaces them", {
     local_shiny_browser()

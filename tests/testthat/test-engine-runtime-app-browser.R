@@ -1,6 +1,9 @@
 # App scenarios: a checked format-v1 character through real Shiny, in real Chrome. The characters are built by
 # `runtime_character()` and handed to the app process in a file (see helper-runtime.R).
 
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # Built when a test first uses them, so a run without Chrome (which skips every test here) pays nothing.
 delayedAssign("alpha", runtime_character())
 delayedAssign("other", runtime_character(runtime_other()))

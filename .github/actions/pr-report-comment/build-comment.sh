@@ -29,6 +29,8 @@ footer=()
 states=()
 waiting=()
 silent=()
+failures=()
+summary_jobs=$(jq -r '.summary_jobs // [] | .[]' "${CONFIG}")
 mkdir -p "${work}/parts"
 while IFS= read -r workflow; do
   # The newest run for this commit and this pull request: two pull requests can share a commit.
@@ -44,20 +46,51 @@ while IFS= read -r workflow; do
   IFS=$'\t' read -r id status conclusion url <<<"${run}"
   # A run is finished for the report when all its jobs but the report jobs are: its own report job (and this one)
   # may still be running.
+  # Each job: its status, conclusion, name, link and the first step that failed ("-" when none).
   jobs=$(gh api --paginate "repos/${repo}/actions/runs/${id}/jobs" \
-    --jq ".jobs[] | select(.name != \"${report_job}\") | [.status, (.conclusion // \"-\")] | @tsv")
+    --jq ".jobs[] | select(.name != \"${report_job}\") |
+      [.status, (.conclusion // \"-\"), .name, .html_url,
+       ([.steps[]? | select(.conclusion == \"failure\") | .name][0] // \"-\")] | @tsv")
   pending=$(printf '%s\n' "${jobs}" | awk -F '\t' '$1 != "" && $1 != "completed"' | wc -l)
   failed=$(printf '%s\n' "${jobs}" | awk -F '\t' '$2 == "failure" || $2 == "timed_out"' | wc -l)
-  if [ "${status}" = "completed" ]; then
-    state=${conclusion}
-  elif [ "${pending}" -gt 0 ]; then
+  cancelled=$(printf '%s\n' "${jobs}" | awk -F '\t' '$2 == "cancelled"' | wc -l)
+  # Read from those jobs, not the run's own conclusion: GitHub cancels a report job that waits behind another (they
+  # share one concurrency group), which would mark a run whose tests passed as cancelled.
+  if [ "${status}" != "completed" ] && [ "${pending}" -gt 0 ]; then
     state="running"
   elif [ "${failed}" -gt 0 ]; then
     state="failure"
+  elif [ "${cancelled}" -gt 0 ]; then
+    state="cancelled"
   else
     state="success"
   fi
   states+=("${state}")
+  # The jobs that failed, with the step they failed at, so the comment says where to look. A summary job
+  # ("summary_jobs" in the config) is listed only when it failed on its own: otherwise it repeats its matrix.
+  run_failures=()
+  summary_failures=()
+  while IFS=$'\t' read -r _ job_conclusion job_name job_url job_step; do
+    case "${job_conclusion}" in
+      failure | timed_out) ;;
+      *) continue ;;
+    esac
+    if [ "${job_step}" = "-" ]; then
+      line="[${job_name}](${job_url}) (${workflow%.*}): ${job_conclusion/_/ }"
+    else
+      line="[${job_name}](${job_url}) (${workflow%.*}): failed at \"${job_step}\""
+    fi
+    if printf '%s\n' "${summary_jobs}" | grep -qxF -- "${job_name}"; then
+      summary_failures+=("${line}")
+    else
+      run_failures+=("${line}")
+    fi
+  done <<<"${jobs}"
+  if [ "${#run_failures[@]}" -gt 0 ]; then
+    failures+=("${run_failures[@]}")
+  elif [ "${#summary_failures[@]}" -gt 0 ]; then
+    failures+=("${summary_failures[@]}")
+  fi
   footer+=("[${workflow%.*}](${url}) (${state})")
   found=0
   while IFS=$'\t' read -r artifact name; do
@@ -122,6 +155,15 @@ fi
   fi
   if [ "${#silent[@]}" -gt 0 ]; then
     echo "Finished without a report (see the run): $(printf '%s, ' "${silent[@]}" | sed 's/, $//')."
+    echo
+  fi
+  if [ "${#failures[@]}" -gt 0 ]; then
+    echo "<details open>"
+    echo "<summary><b>Failed jobs (${#failures[@]})</b>: each with the step it failed at</summary>"
+    echo
+    printf -- '- %s\n' "${failures[@]}"
+    echo
+    echo "</details>"
     echo
   fi
   if [ "${#footer[@]}" -gt 0 ]; then

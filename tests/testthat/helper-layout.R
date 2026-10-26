@@ -1,9 +1,9 @@
-# The tests CRAN skips live in files of their own (#516): browser tests (Chrome, through shinytest2 or chromote) in
-# `test-<name>-browser.R` and snapshot tests (`expect_snapshot()` skips itself on CRAN) in `test-<name>-snap.R`. CI's
-# browser job picks those files by name, so a browser or snapshot test anywhere else would skip in R CMD check and
-# never run, and a plain test in them would run twice. These helpers read the test files' code to check the layout.
+# The tests CRAN skips live in files of their own (tests/README.md): -browser.R, -snap.R and -extended.R. Browser and
+# extended files start with their skip; snapshot files don't, because a snapshot file skipped as a whole makes testthat
+# delete its saved snapshots. These helpers read the test files' code to check the layout.
 
-# What a call to a function needs: "browser" for anything that starts Chrome or skips on CRAN, "snap" for a snapshot.
+# What a call to a function needs: Chrome (a -browser.R file), a skip on CRAN (a -browser.R or -extended.R file), or a
+# snapshot (a -snap.R file).
 layout_snapshot_calls <- c(
   "expect_snapshot",
   "expect_snapshot_error",
@@ -12,7 +12,11 @@ layout_snapshot_calls <- c(
   "expect_snapshot_value",
   "expect_snapshot_warning"
 )
-layout_browser_seeds <- c("skip_on_cran", "chromote::", "shinytest2::")
+layout_chrome_seeds <- c("chromote::", "shinytest2::")
+layout_skip_seeds <- "skip_on_cran"
+
+# The skip a browser or extended file starts with, as its first expression.
+layout_file_skips <- c(browser = "skip_without_chrome", extended = "skip_unless_extended")
 
 # `f` applied to each part of `x` (code), leaving out empty arguments (such as the `i` of `x[, 1]` or a formal
 # argument without a default), which cannot be passed on.
@@ -62,10 +66,12 @@ layout_definitions <- function(x) {
   c(own, do.call(c, layout_map(x[-1], layout_definitions)))
 }
 
-# The names among `definitions` that start Chrome or skip on CRAN, directly or through another definition.
-layout_browser_names <- function(definitions) {
+# The names among `definitions` that reach `seeds` (calls, or "pkg::" namespaces), directly or through another
+# definition, plus the seeds themselves.
+layout_names_reaching <- function(definitions, seeds) {
   checkmate::assert_list(definitions, names = "named")
-  found <- layout_browser_seeds
+  checkmate::assert_character(seeds, min.len = 1L)
+  found <- seeds
   repeat {
     more <- names(definitions)[vapply(definitions, function(calls) any(calls %in% found), logical(1))]
     if (all(more %in% found)) {
@@ -73,6 +79,18 @@ layout_browser_names <- function(definitions) {
     }
     found <- union(found, more)
   }
+}
+
+# The name of the function `x` (one expression) calls with no arguments, without its "pkg::"; NULL for anything else.
+layout_bare_call <- function(x) {
+  if (!is.call(x) || length(x) != 1L) {
+    return(NULL)
+  }
+  head <- x[[1]]
+  if (is.call(head) && as.character(head[[1]]) %in% c("::", ":::")) {
+    return(as.character(head[[3]]))
+  }
+  if (is.name(head)) as.character(head) else NULL
 }
 
 # The `it()` calls in `x` (code), at any depth.
@@ -95,56 +113,44 @@ layout_problems <- function(dir) {
   read <- function(file) parse(file.path(dir, file), keep.source = FALSE)
   helpers <- do.call(c, lapply(list.files(dir, "^helper.*[.]R$"), function(file) layout_definitions(read(file))))
   problems <- character()
+  add <- function(text) problems <<- c(problems, cli::format_inline(text, .envir = parent.frame()))
   for (file in list.files(dir, "^test.*[.]R$")) {
     code <- read(file)
-    browser <- layout_browser_names(c(helpers, layout_definitions(code)))
-    kind <- if (grepl("-browser[.]R$", file)) {
-      "browser"
-    } else if (grepl("-snap[.]R$", file)) {
-      "snap"
-    } else {
-      "plain"
-    }
+    definitions <- c(list(), helpers, layout_definitions(code))
+    chrome <- layout_names_reaching(definitions, layout_chrome_seeds)
+    skipping <- layout_names_reaching(definitions, c(layout_skip_seeds, chrome))
+    kind <- regmatches(file, regexpr("(?<=-)(browser|snap|extended)(?=[.]R$)", file, perl = TRUE))
+    kind <- if (length(kind)) kind else "plain"
     calls <- layout_calls(code)
-    uses_browser <- intersect(calls, browser)
+    uses_chrome <- intersect(calls, chrome)
+    uses_skip <- intersect(calls, skipping)
     uses_snapshot <- intersect(calls, layout_snapshot_calls)
-    if (kind == "plain" && length(uses_browser) > 0L) {
-      problems <- c(
-        problems,
-        cli::format_inline(
-          "{file} starts Chrome or skips on CRAN ({.code {uses_browser}}): move those tests to a -browser.R file."
-        )
+    if (kind == "plain" && length(uses_skip) > 0L) {
+      add(
+        "{file} starts Chrome or skips on CRAN ({.code {uses_skip}}): move those tests to a -browser.R or -extended.R file."
       )
     }
-    if (kind == "plain" && length(uses_snapshot) > 0L) {
-      problems <- c(
-        problems,
-        cli::format_inline(
-          "{file} has snapshot tests ({.code {uses_snapshot}}): move them to a -snap.R file."
-        )
-      )
+    if (kind %in% c("snap", "extended") && length(uses_chrome) > 0L) {
+      add("{file} starts Chrome ({.code {uses_chrome}}): move those tests to a -browser.R file.")
     }
-    if (kind == "snap" && length(uses_browser) > 0L) {
-      problems <- c(
-        problems,
-        cli::format_inline(
-          "{file} starts Chrome or skips on CRAN ({.code {uses_browser}}): move those tests to a -browser.R file."
-        )
-      )
+    if (kind %in% c("plain", "browser", "extended") && length(uses_snapshot) > 0L) {
+      add("{file} has snapshot tests ({.code {uses_snapshot}}): move them to a -snap.R file.")
     }
     if (kind == "plain") {
       next
     }
-    needs <- if (kind == "browser") browser else layout_snapshot_calls
+    skip <- if (kind %in% names(layout_file_skips)) layout_file_skips[[kind]]
+    if (!is.null(skip) && !identical(if (length(code)) layout_bare_call(code[[1]]), skip)) {
+      add("{file} must start with {.code {skip}()}, so CRAN skips the whole file before any of its code runs.")
+    }
+    if (kind == "extended") {
+      next
+    }
+    needs <- if (kind == "browser") skipping else layout_snapshot_calls
     for (test in layout_tests(code)) {
       if (!any(layout_calls(test) %in% needs)) {
         name <- if (is.character(test[[2]])) test[[2]] else deparse1(test[[2]])
-        problems <- c(
-          problems,
-          cli::format_inline(
-            "{file}: {.val {name}} runs on CRAN too, so it belongs in the plain test file."
-          )
-        )
+        add("{file}: {.val {name}} runs on CRAN too, so it belongs in the plain test file.")
       }
     }
   }

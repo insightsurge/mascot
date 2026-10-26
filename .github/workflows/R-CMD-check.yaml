@@ -1,8 +1,6 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (check-standard.yaml).
-# The repo rule is 0 errors, 0 warnings, 0 notes, so any note fails the check. As on CRAN, the browser tests skip
-# here: browser-tests.yaml runs them. Every pull request, push to main, weekly run and manual run checks the full
-# matrix. A pull request that changes only documentation starts the jobs and skips their steps
-# (.github/scripts/r-changes.sh).
+# The repo rule is 0 errors, 0 warnings, 0 notes, so any note fails the check. R CMD check as CRAN runs it: what it
+# runs and when, the time limit and its line in the CI report are in .github/workflows/README.md.
 on:
   push:
     branches: [main]
@@ -22,6 +20,9 @@ concurrency:
 jobs:
   check:
     runs-on: ${{ matrix.config.os }}
+    outputs:
+      # Whether the R steps ran (false for a pull request that changes only documentation), for the report line.
+      r: ${{ steps.changes.outputs.r }}
     timeout-minutes: 120  # about twice the slowest run: R-devel took 56 min on a slow day (installing R 12-20 min
     # from a slow package mirror, then building packages from source); usually 7-14 min
 
@@ -68,6 +69,11 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      - name: Note when the check starts
+        if: steps.changes.outputs.r == 'true'
+        shell: bash
+        run: echo "CHECK_START=$(date +%s)" >> "${GITHUB_ENV}"
+
       - uses: r-lib/actions/check-r-package@v2
         if: steps.changes.outputs.r == 'true'
         env:
@@ -86,6 +92,27 @@ jobs:
           error-on: '"note"'
           build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'
 
+      # Each platform's times for the CI report, and the time limit on one runner (.github/workflows/README.md, "The
+      # time limit").
+      - name: Note the check's times
+        if: always() && steps.changes.outputs.r == 'true'
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.config.os }}, R ${{ matrix.config.r }}
+          STATUS: ${{ job.status }}
+          LIMIT_SECONDS: ${{ matrix.config.os == 'ubuntu-26.04' && matrix.config.r == 'release' && '180' || '' }}
+          OUT: ${{ runner.temp }}/check-time-${{ strategy.job-index }}.txt
+        run: bash .github/scripts/check-times.sh note
+
+      - name: Keep the check's times
+        if: always() && steps.changes.outputs.r == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: check-time-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/check-time-${{ strategy.job-index }}.txt
+          if-no-files-found: ignore
+          overwrite: true  # a re-run job replaces it
+
   # One stable check name that sums up the jobs above (a branch ruleset could require it): it fails unless every
   # matrix job above succeeded.
   R-CMD-check:
@@ -93,11 +120,66 @@ jobs:
     if: always()
     runs-on: ubuntu-26.04
     name: R-CMD-check
-    timeout-minutes: 5  # only reads the matrix result
+    timeout-minutes: 5  # reads the matrix result and the platforms' times
     steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Get the platforms' times
+        uses: actions/download-artifact@v8
+        continue-on-error: true  # none when the R steps were skipped or every check stopped first
+        with:
+          pattern: check-time-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/check-times
+
+      # Plain shell: this job's runner has no R.
+      - name: Write the report
+        env:
+          DIR: ${{ runner.temp }}/check-times
+          RESULT: ${{ needs.check.result }}
+          R_STEPS: ${{ needs.check.outputs.r }}
+          OUT: ${{ runner.temp }}/check-part.md
+        run: bash .github/scripts/check-times.sh report
+
+      - name: Keep the report
+        uses: ./.github/actions/pr-report-part
+        with:
+          name: tests-0-check
+          file: ${{ runner.temp }}/check-part.md
+
       - name: Require every matrix job to succeed
         env:
           RESULT: ${{ needs.check.result }}
         run: |
           echo "Matrix result: ${RESULT}"
           test "${RESULT}" = "success"
+
+  # Rewrites the pull request's CI report comment (.github/actions/pr-report-comment). Pull requests from forks and
+  # from Dependabot get the job summaries only: their token can't write to the pull request.
+  report:
+    needs: [check, R-CMD-check]  # after the summary job too, so the run counts as finished
+    if: >-
+      always() && github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10  # a few API calls
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    # One report job at a time per pull request, across the workflows that write the comment.
+    concurrency:
+      group: pr-report-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - uses: ./.github/actions/pr-report-comment
+        with:
+          config: .github/pr-report.json

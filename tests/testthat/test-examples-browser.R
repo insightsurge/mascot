@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # A literal scenario name is embedded so the child R process needs no test globals.
 example_driver <- function(name, width = 1100, env = parent.frame()) {
   checkmate::assert_string(name)

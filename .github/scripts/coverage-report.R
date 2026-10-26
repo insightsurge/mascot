@@ -1,7 +1,7 @@
 # Writes the coverage part of the pull request's CI report (test-coverage.yaml): the figure and its limit, the
 # difference from main, and on a pull request the added R/ lines that the job's tests don't run. The untested lines
-# are a report only: the gate's new_lines step is the check, run locally. The job's tests skip the browser tests, so a
-# line listed here may still be run by a browser test.
+# are a report only: the gate's new_lines step is the check, run locally. The job's tests skip the browser and
+# snapshot tests, so a line listed here may still be run by one of them.
 # Environment: COV_DIR (coverage.dcf and coverage.rds from the coverage step), BASELINE_DIR (coverage.dcf from main,
 # when BASELINE_FOUND is true), BASELINE_SHA, EVENT_NAME, OUT (the Markdown part to write).
 
@@ -80,7 +80,7 @@ untested_text <- function(cov) {
     sprintf(
       paste(
         "<summary>%d added <code>R/</code> line%s not run by the tests in this job",
-        "(browser tests excluded; a report, not a check)</summary>"
+        "(browser and snapshot tests excluded; a report, not a check)</summary>"
       ),
       nrow(untested),
       if (nrow(untested) == 1) "" else "s"
@@ -114,7 +114,7 @@ coverage_report <- function() {
     }
     verdict <- if (isTRUE(figures$passed)) "" else " · **Under the limit: the job fails.**"
     first <- sprintf(
-      "%s **Coverage:** %.1f%% of R lines, without the browser tests · limit %g%% (from `DESCRIPTION`)%s%s",
+      "%s **Coverage:** %.1f%% of R lines, without the browser and snapshot tests · limit %g%% (from `DESCRIPTION`)%s%s",
       if (isTRUE(figures$passed)) "\u2705" else "\u274c",
       figures$percent,
       figures$limit,

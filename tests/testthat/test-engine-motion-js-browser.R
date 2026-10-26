@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # mascot.motion.tracks: the format-v1 tracks. Pure numeric checks in the shared offline page; no canvas is needed.
 tracks_js <- function(code) {
   v1 <- paste(readLines(system.file("format", "characters", "tessa.json", package = "mascot")), collapse = "\n")

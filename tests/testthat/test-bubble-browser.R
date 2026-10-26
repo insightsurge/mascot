@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("speech bubbles in a Shiny browser", {
   it("lets clicks through reserved space while keeping the bubble interactive", {
     local_shiny_browser()

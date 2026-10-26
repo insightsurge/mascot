@@ -1,6 +1,9 @@
 # The shared Chromes are checked and replaced when one dies (tests/testthat/helper-chrome.R, #446). These tests close a
 # Chrome on purpose; the restarts they cause are not counted against the run's own allowance.
 
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # Count restarts from `used` while the calling test runs. When it ends, a Chrome the test left dead is replaced (with
 # nothing counted) and the run's own count comes back.
 local_chrome_restarts <- function(used = 0L, env = parent.frame()) {

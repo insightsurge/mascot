@@ -2,8 +2,9 @@
 # Fails when line coverage is under the limit in DESCRIPTION (Config/cran-gate/coverage,
 # 70% when the field is missing), the same limit the gate uses. A pull request is held to the higher of its base
 # branch's limit and its own, so a pull request cannot lower the limit by editing DESCRIPTION; changes to this
-# workflow are reviewed like any other change. A push to main reads the checked-out DESCRIPTION. The browser tests
-# skip here, as on CRAN (browser-tests.yaml runs them): this is the coverage the tests give without Chrome. A pull
+# workflow are reviewed like any other change. A push to main reads the checked-out DESCRIPTION. The browser and
+# snapshot tests skip here, as on CRAN (off-cran-tests.yaml runs them), and the example apps' detailed tests
+# (test-*-extended.R) run: this is the coverage all the tests give without Chrome. A pull
 # request that changes only documentation starts the job and skips its steps (.github/scripts/r-changes.sh).
 # The coverage part of the pull request's CI report (.github/pr-report.json): the figure, the difference from main and
 # the added R/ lines these tests don't run, in the job summary and, through the report job, in the comment.
@@ -69,6 +70,8 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           # As CRAN: setup-r sets NOT_CRAN to true, which would run the browser tests here too.
           NOT_CRAN: false
+          # Apart from the extended tests, which CRAN skips: coverage counts them (tests/testthat/helper-extended.R).
+          EXTENDED_TESTS: true
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,

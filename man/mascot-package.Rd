@@ -7,7 +7,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Adds a character drawn in code to 'Shiny' apps and 'Quarto' sites. The character shows a mood and animates when the mood changes, follows light and dark mode, and takes its colours from the theme. It works offline: the drawing is done in the browser from bundled 'JavaScript'.
+Adds a character drawn in code to 'Shiny' apps and 'Quarto' sites. The character shows a mood with a status text beside it and animates when the mood changes; a 'Shiny' server can change its mood, status, speech bubble and gestures, and a click can run an action or open a menu. It follows light and dark mode and takes its colours from built-in palettes, your own colours or a 'bslib' theme. You can describe your own characters in 'JSON' and check them before use, and a local studio app demonstrates every function. It works offline: the drawing is done in the browser from bundled 'JavaScript'.
 }
 \section{Conditions}{
 

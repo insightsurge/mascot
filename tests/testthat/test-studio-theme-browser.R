@@ -22,6 +22,21 @@ theme_driver <- function(width = 1280, height = 800, env = parent.frame()) {
   app_driver(app, width = width, height = height, env = env)
 }
 
+# Opens a tab of the theme view and waits until its panel shows. The click is repeated until then: a click that lands
+# before the page's tab code is ready does nothing.
+open_theme_tab <- function(app, tab) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_choice(tab, c("palette", "colours", "brand", "check"))
+  app$wait_for_js(sprintf(
+    paste0(
+      "(() => { const pane = document.querySelector('#theme_tabs + .tab-content > .tab-pane[data-value=\"%1$s\"]'); ",
+      "if (pane && pane.classList.contains('active')) return true; ",
+      "document.querySelector('#theme_tabs a[data-value=\"%1$s\"]')?.click(); return false; })()"
+    ),
+    tab
+  ))
+}
+
 describe("the theme view in a browser", {
   it("switches tabs, draws the chosen palette, copies its code and links back from the studio", {
     local_shiny_browser()
@@ -58,11 +73,7 @@ describe("the theme view in a browser", {
     )))
     # Each tab shows its own panel.
     for (tab in c("colours", "brand", "check", "palette")) {
-      app$run_js(sprintf("document.querySelector('#theme_tabs a[data-value=\"%s\"]').click()", tab))
-      app$wait_for_js(sprintf(
-        "document.querySelector('#theme_tabs + .tab-content > .tab-pane[data-value=\"%s\"]')?.classList.contains('active')",
-        tab
-      ))
+      open_theme_tab(app, tab)
     }
     # A palette card recolours the live mascot and the code.
     coral <- mascot_colour_roles("tessa", palette = "coral_navy")
@@ -93,7 +104,7 @@ describe("the theme view in a browser", {
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    app$run_js("document.querySelector('#theme_tabs a[data-value=\"palette\"]').click()")
+    open_theme_tab(app, "palette")
     app$wait_for_js("!!document.querySelector('label.theme-palette-card:has(input[value=coral_navy])')")
     stub_studio_clipboard(app)
     # When a palette card and Copy are clicked one right after the other, the page still shows the code before the card
@@ -148,13 +159,13 @@ describe("the forced mode in a browser", {
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    app$run_js("document.querySelector('#theme_tabs a[data-value=colours]').click()")
+    open_theme_tab(app, "colours")
     app$wait_for_js("!!document.querySelector('input[name=mode][value=dark]')")
     # Given Force the mascot: dark
     app$click(selector = "input[name=mode][value=dark]")
     app$wait_for_js("document.getElementById('theme_code').textContent.includes('mode = \"dark\"')")
     # When the theme goes to bs_theme() and back
-    app$run_js("document.querySelector('#theme_tabs a[data-value=brand]').click()")
+    open_theme_tab(app, "brand")
     app$click(selector = "[data-event=brand_source][data-value=bslib]")
     app$wait_for_js("document.getElementById('theme_code').textContent.includes('bs_theme')")
     expect_true(app$get_js("document.querySelector('input[name=mode][value=dark]').checked"))
@@ -173,7 +184,7 @@ describe("the colour tiles in a browser", {
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    app$run_js("document.querySelector('#theme_tabs a[data-value=colours]').click()")
+    open_theme_tab(app, "colours")
     app$wait_for_js("!!document.getElementById('colours-light_body')")
     tile <- "document.getElementById('colours-light_body').closest('.pg-role')"
     reset_shown <- sprintf("getComputedStyle(%s.querySelector('.pg-role-reset')).display !== 'none'", tile)
@@ -218,7 +229,7 @@ describe("the Brand colours tab for a character with no brand parts", {
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    app$run_js("document.querySelector('#theme_tabs a[data-value=brand]').click()")
+    open_theme_tab(app, "brand")
     app$wait_for_js("document.getElementById('brand_primary').offsetParent !== null")
     app$set_inputs(character = "neer")
     app$wait_for_js("document.getElementById('brand_primary').offsetParent === null")
@@ -234,7 +245,7 @@ describe("the Check tab's slow buttons in a browser", {
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    app$run_js("document.querySelector('#theme_tabs a[data-value=check]').click()")
+    open_theme_tab(app, "check")
     for (case in list(
       c("check_contrast", "Checking…", "Check contrast"),
       c("check_preview", "Building…", "Show every mood")
@@ -260,7 +271,7 @@ describe("the Check tab's slow buttons in a browser", {
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
-    app$run_js("document.querySelector('#theme_tabs a[data-value=check]').click()")
+    open_theme_tab(app, "check")
     # Given a record of what the page shows at every frame it draws: is the button busy, is there a frame, is its page
     # loaded (the page marks a frame data-loaded when that happens)
     app$run_js(paste(
@@ -370,7 +381,7 @@ describe("a translucent colour typed half way, in a browser", {
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
     app$set_inputs(character = "knurl")
-    app$run_js("document.querySelector('#theme_tabs a[data-value=colours]').click()")
+    open_theme_tab(app, "colours")
     app$wait_for_js("!!document.getElementById('colours-light_shine_translucent')")
     box <- "document.getElementById('colours-light_shine_translucent')"
     app$run_js(sprintf("const b = %s; b.value = 'rgba(1,2'; $(b).trigger('change');", box))

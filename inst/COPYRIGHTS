@@ -73,6 +73,13 @@ tests/testthat/fixtures/format/invalid/*.json
     Source: deliberately malformed character-format reference inputs written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
+tests/testthat/fixtures/golden/checksums.txt
+tests/testthat/fixtures/golden/0.1.0/*.json
+tests/testthat/fixtures/golden/0.1.0/kits/*.json
+    Source: frozen copies of the character files and face kits that 0.1.0 ships, with their checksums, kept so the
+    tests can check that later versions still load them.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
 inst/examples/characters/study_bot.json
     Source: complete small Study Bot format-v1 example written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.

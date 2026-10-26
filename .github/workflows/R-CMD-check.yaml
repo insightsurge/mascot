@@ -196,26 +196,26 @@ jobs:
           name: cran-test-time
           path: ${{ runner.temp }}/test-time
 
+      # Plain shell: this job's runner has no R.
       - name: Write the report
         env:
           RESULT: ${{ needs.check.result }}
           TIME_FILE: ${{ runner.temp }}/test-time/test-time.dcf
           OUT: ${{ runner.temp }}/check-part.md
-        shell: Rscript {0}
         run: |
-          result <- Sys.getenv("RESULT")
-          status <- switch(result,
-            success = "\u2705 **R CMD check (as CRAN):** every platform passed",
-            cancelled = "\u23f9\ufe0f **R CMD check (as CRAN):** cancelled",
-            "\u274c **R CMD check (as CRAN):** a platform failed (see the run)"
-          )
-          time <- if (file.exists(Sys.getenv("TIME_FILE"))) {
-            t <- read.dcf(Sys.getenv("TIME_FILE"))
-            sprintf(" · tests %s s on Ubuntu, R release (limit %s s)", t[1, "Elapsed"], t[1, "Limit"])
-          } else {
-            " · tests not timed (a documentation-only change, or the check stopped first)"
-          }
-          writeLines(paste0(status, time), Sys.getenv("OUT"))
+          case "${RESULT}" in
+            success) status="✅ **R CMD check (as CRAN):** every platform passed" ;;
+            cancelled) status="⏹️ **R CMD check (as CRAN):** cancelled" ;;
+            *) status="❌ **R CMD check (as CRAN):** a platform failed (see the run)" ;;
+          esac
+          if [ -s "${TIME_FILE}" ]; then
+            elapsed=$(sed -n 's/^Elapsed: *//p' "${TIME_FILE}")
+            limit=$(sed -n 's/^Limit: *//p' "${TIME_FILE}")
+            time=" · tests ${elapsed} s on Ubuntu, R release (limit ${limit} s)"
+          else
+            time=" · tests not timed (a documentation-only change, or the check stopped first)"
+          fi
+          echo "${status}${time}" > "${OUT}"
 
       - name: Keep the report
         uses: ./.github/actions/pr-report-part

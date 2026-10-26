@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# cran-gate version: 2026-10-24
+# cran-gate version: 2026-10-25
 # Self-test for the CRAN gate (cran-gate.R, in the same folder): a check that can't fail protects nothing.
 #
 #   Rscript <path to this file> [all|unit|static|heavy] [step,step,...]
@@ -341,6 +341,14 @@ static_probes <- function(uses) {
       "lint",
       function(dir) plant(dir, "R/zz-gate-probe.R", roxygen_function("Probe")),
       expect_fail = "docs",
+      skip = no_roxygen
+    ),
+    probe(
+      "docs: a folder in man/ (man/figures holds a package logo) is not a change",
+      "static",
+      "lint",
+      function(dir) plant(dir, "man/figures/gate-probe.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>"),
+      expect_pass = "docs",
       skip = no_roxygen
     ),
     # Several lints at once (= for assignment, a semicolon, T for TRUE, trailing spaces), so at least one is caught

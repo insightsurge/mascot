@@ -539,7 +539,8 @@ studio_rail <- function() {
       `aria-describedby` = "function_index_tooltip",
       `aria-expanded` = "false",
       `aria-controls` = "function_flyout",
-      "m",
+      # The package's small logo mark; the button's name comes from aria-label, so the picture is decorative.
+      tags$img(src = "mascot-mark.svg", alt = "", class = "pg-logo-mark"),
       tags$span(class = "pg-phone-label", "Functions"),
       tags$span(
         id = "function_index_tooltip",

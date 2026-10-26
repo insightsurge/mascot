@@ -3,6 +3,7 @@ title: "Meet your mascots"
 resource_files:
   - story/story.mp4
   - story/poster.png
+  - cast/cast-demo.svg
 ---
 
 ```{r setup, include=FALSE}
@@ -100,6 +101,12 @@ htmltools::tags$style(
 Each of the four characters has a distinct personality, five moods and a set of
 colour palettes. Tessa and Sela are stable; Knurl and Neer are experimental and
 may change.
+
+<img src="cast/cast-demo.svg" style="width: 100%; max-width: 720px; height: auto;"
+  alt="A short animation: in one small app, Tessa is happy when the settings are saved, Sela thinks while the analysis runs, the app switches to dark mode, Knurl is worried about a file and Neer celebrates when the report is ready. Each one shows its status text beside it, and the matching update_mascot() call is shown below." />
+
+<p><em>The four characters take turns in the same app, in light and dark mode. Each status line sits beside the
+character, and the code below shows the <code>update_mascot()</code> call behind each change.</em></p>
 
 Here is what a busy afternoon looks like when all four work together.
 

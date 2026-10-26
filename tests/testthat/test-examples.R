@@ -121,9 +121,10 @@ describe("mascot_examples()", {
           expect_gt(length(list.files(file.path(studio_dir, folder))), 0, label = folder)
         }
         # Every R file in the folder is plain R (parsed below with the other examples) and nothing else ships
-        # beside the app except the guide pages, their helpers and styles, and the web files.
+        # beside the app except the guide pages, their helpers and styles, and the web files (scripts, styles and
+        # the logo mark).
         expect_true(all(
-          grepl("^(app[.]R|R/[^/]+[.]R|guide/[^/]+[.](R|Rmd|css)|www/[^/]+[.](js|css))$", sources)
+          grepl("^(app[.]R|R/[^/]+[.]R|guide/[^/]+[.](R|Rmd|css)|www/[^/]+[.](js|css|svg))$", sources)
         ))
         # One guide page for each exported function (the leading underscore marks a page that is only included).
         pages <- sub("[.]Rmd$", "", basename(grep("^guide/.*[.]Rmd$", sources, value = TRUE)))
@@ -133,7 +134,7 @@ describe("mascot_examples()", {
           list.files(studio_dir, pattern = "[.]R$", recursive = TRUE, full.names = TRUE),
           readLines
         ))
-        for (asset in basename(grep("^(www|guide)/.*[.](js|css)$", sources, value = TRUE))) {
+        for (asset in basename(grep("^(www|guide)/.*[.](js|css|svg)$", sources, value = TRUE))) {
           expect_true(any(grepl(asset, code, fixed = TRUE)), info = asset)
         }
       } else if (name == "rhino") {

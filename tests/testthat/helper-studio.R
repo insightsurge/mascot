@@ -112,9 +112,8 @@ studio_go_live <- function(session) {
 # The first value unless it is NULL; base R has `%||%` only from 4.4 and the package supports R 4.1.
 value_or <- function(value, fallback) if (is.null(value)) fallback else value
 
-# The pages of the studio's views, drawn once per R process and only when a test first asks for one: a page takes about
-# a second to draw and is the same in every test file (testthat runs each file in one process). The environments the
-# `*_parts()` functions return are always fresh. A test that needs a page drawn afresh draws its own with app_page().
+# The studio's pages, drawn once per R process when a test first asks for one (a page takes about a second). The
+# environments the `*_parts()` functions return are always fresh; a test that needs a fresh page uses app_page().
 studio_page_cache <- new.env(parent = emptyenv())
 
 # The page `draw()` returns, drawn the first time `key` is asked for.

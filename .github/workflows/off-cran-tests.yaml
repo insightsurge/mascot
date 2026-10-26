@@ -39,8 +39,7 @@ jobs:
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      # Run the tests CRAN skips: the browser tests (the runner has Chrome), the snapshot tests and the extended tests
-      # (NOT_CRAN alone turns those on; the switch says so explicitly, as in the coverage job).
+      # Everything CRAN skips: browser (the runner has Chrome), snapshot and extended tests.
       NOT_CRAN: true
       EXTENDED_TESTS: true
 
@@ -98,10 +97,7 @@ jobs:
           # The package's name from DESCRIPTION, so the workflow names no package.
           package <- read.dcf("DESCRIPTION", fields = "Package")[[1]]
           library(package, character.only = TRUE)
-          # The tests CRAN skips, which R CMD check skips too, live in files of their own: browser tests in
-          # test-<name>-browser.R, snapshot tests (expect_snapshot() skips itself on CRAN) in test-<name>-snap.R and the
-          # example apps' detailed tests in test-<name>-extended.R. A test in tests/testthat/test-helper-layout.R fails
-          # when one of them is anywhere else.
+          # The kinds of test file CRAN skips (tests/README.md); test-helper-layout.R keeps them apart.
           files <- list.files("tests/testthat", "^test-.*-(browser|snap|extended)[.]R$")
           message(length(files), " files with browser, snapshot or extended tests: ", paste(files, collapse = ", "))
           # A line per file when it finishes, with its time, and a status line when one starts (update_interval = Inf:

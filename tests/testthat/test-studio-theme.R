@@ -1,5 +1,4 @@
-# The theme view of the studio app (mascot_studio("theme")) in brief: the tests CRAN runs. Its detailed tests are in
-# test-studio-theme-extended.R and its browser tests in test-studio-theme-browser.R.
+# The theme view of the studio app (mascot_studio("theme")) in brief: the tests CRAN runs.
 describe("the theme view, in brief", {
   it("draws its page with the preview, the code and no duplicate ids", {
     page <- theme_parts()$page

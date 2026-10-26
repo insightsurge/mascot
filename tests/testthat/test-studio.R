@@ -185,9 +185,7 @@ describe("mascot_studio() checked object guidance", {
   })
 })
 
-# The studio app in brief: the tests CRAN runs. Its detailed tests are in test-studio-extended.R,
-# test-studio-app-extended.R and test-studio-shared-extended.R, and its browser tests in test-studio-browser.R and
-# test-studio-app-browser.R. The theme view has its own: test-studio-theme.R, -extended.R and -browser.R.
+# The studio app in brief: the tests CRAN runs. The rest are in the test-studio*-extended.R and -browser.R files.
 describe("the studio app, in brief", {
   it("draws its page with the main controls and no duplicate ids", {
     page <- studio_parts()$page

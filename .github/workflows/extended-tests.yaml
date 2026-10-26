@@ -1,9 +1,6 @@
-# R CMD check on macOS and Windows with the extended tests turned on (EXTENDED_TESTS: the example apps' detailed tests
-# in tests/testthat/test-*-extended.R). Pull requests run those tests only on Ubuntu (test-coverage.yaml and
-# off-cran-tests.yaml), so this is where they meet the other systems: every Monday and on demand. The browser tests
-# still skip: they need Chrome. A workflow of its own, so a failure here leaves R-CMD-check (and its README badge) as
-# it is: it is a warning to fix before the next release. macOS runs R release only: for R 4.1 on Apple silicon there
-# are no ready-built packages, and building them from source broke on the runner's OpenSSL (#568).
+# R CMD check with the extended tests on macOS and Windows, weekly and on demand (.github/workflows/README.md). A
+# workflow of its own, so a failure here leaves R-CMD-check and its badge alone. macOS runs R release only: R 4.1 there
+# has no ready-built packages, and building them from source broke on the runner's OpenSSL.
 on:
   workflow_dispatch:
   schedule:

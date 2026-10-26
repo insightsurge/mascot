@@ -8,10 +8,8 @@
 library(testthat)
 library(mascot)
 
-# The tests run in parallel (Config/testthat/parallel), and CRAN allows at most two cores. testthat takes its number of
-# workers from getOption("Ncpus") first, so a session that has it above two (set for installing packages, say) is
-# lowered to two while the tests run, and restored afterwards. R CMD check runs this file with --vanilla, so no profile
-# sets the option there; when it is unset, testthat's own choice stands (TESTTHAT_CPUS, else two).
+# CRAN allows at most two cores, and testthat takes its number of workers from getOption("Ncpus") first: a session
+# that has it above two is lowered to two while the tests run.
 local({
   ncpus <- suppressWarnings(as.integer(getOption("Ncpus")))
   if (length(ncpus) == 1L && !is.na(ncpus) && ncpus > 2L) {

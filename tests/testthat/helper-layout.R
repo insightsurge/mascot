@@ -1,11 +1,6 @@
-# The tests CRAN skips live in files of their own (#516, #568): browser tests (Chrome, through shinytest2 or chromote)
-# in `test-<name>-browser.R`, snapshot tests (`expect_snapshot()` skips itself on CRAN) in `test-<name>-snap.R`, and the
-# detailed tests of the example apps in `test-<name>-extended.R`. Browser and extended files start with their skip, so
-# CRAN skips the whole file before any of its code runs. Snapshot files don't: a whole snapshot file skipped from its
-# first line reports no snapshots, and testthat then deletes their saved files (expect_snapshot() skips each test on
-# CRAN instead). CI's off-CRAN job picks those files by name, so such a test anywhere else
-# would skip in R CMD check and never run, and a plain test in a browser or snapshot file would run there only. These
-# helpers read the test files' code to check the layout.
+# The tests CRAN skips live in files of their own (tests/README.md): -browser.R, -snap.R and -extended.R. Browser and
+# extended files start with their skip; snapshot files don't, because a snapshot file skipped as a whole makes testthat
+# delete its saved snapshots. These helpers read the test files' code to check the layout.
 
 # What a call to a function needs: Chrome (a -browser.R file), a skip on CRAN (a -browser.R or -extended.R file), or a
 # snapshot (a -snap.R file).

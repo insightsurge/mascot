@@ -1,12 +1,6 @@
 # Derived from https://github.com/r-lib/actions/tree/v2/examples (check-standard.yaml).
-# The repo rule is 0 errors, 0 warnings, 0 notes, so any note fails the check. As on CRAN, the browser, snapshot and
-# extended tests skip here: off-cran-tests.yaml runs them. Every pull request, push to main, weekly run and manual run
-# checks the full matrix. On Ubuntu with R release the check also fails when the tests take longer than the limit, so
-# the time CRAN spends on them stays well inside its 10 minutes for the whole check. extended-tests.yaml runs the
-# extended tests on macOS and Windows, in a workflow of its own so a failure there doesn't turn this one red.
-# The R-CMD-check line of the pull request's CI report (.github/pr-report.json) says whether every platform passed and
-# how long the tests took against the limit. A pull request that changes only documentation starts the jobs and skips
-# their steps (.github/scripts/r-changes.sh).
+# The repo rule is 0 errors, 0 warnings, 0 notes, so any note fails the check. R CMD check as CRAN runs it: what it
+# runs and when, the time limit and its line in the CI report are in .github/workflows/README.md.
 on:
   push:
     branches: [main]
@@ -98,12 +92,8 @@ jobs:
           error-on: '"note"'
           build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'
 
-      # Each platform's times for the CI report: the tests' elapsed time from 00check.log and the whole check from the
-      # clock (.github/scripts/check-times.sh). On Ubuntu with R release the tests are also held to a limit, with room
-      # for the package to grow: CRAN asks for examples, vignettes and tests to take under 10 minutes together, and
-      # its Windows machine has run tests more than twice as slowly as its Debian one. Here they took 384-503 s before
-      # the example apps' detailed tests moved to -extended.R files (#568). One runner only, so the figure stays
-      # comparable from run to run.
+      # Each platform's times for the CI report, and the time limit on one runner (.github/workflows/README.md, "The
+      # time limit").
       - name: Note the check's times
         if: always() && steps.changes.outputs.r == 'true'
         shell: bash

@@ -122,8 +122,18 @@ colour_input <- function(id, value, label, ...) {
 # mascot's state can fill it (the studio does, from its live frame). leader is the word for a role that follows no
 # other: the studio uses the help pages' "leader"; a page for app authors can say "own colour". The picker carries
 # its listed colour (data-default) and is marked is-changed while it differs (inputs.js keeps that mark current), and
-# the hint of a role that follows no other is marked pg-role-leader, so a page can style both.
-role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = shiny::NS(NULL), leader = "leader") {
+# the hint of a role that follows no other is marked pg-role-leader, so a page can style both. problem is the server's
+# warning for a value it cannot use yet; drawing it with the value keeps the warning through a palette change.
+role_picker <- function(
+  mode,
+  role,
+  roles,
+  value = NULL,
+  resolved = TRUE,
+  ns = shiny::NS(NULL),
+  leader = "leader",
+  problem = ""
+) {
   checkmate::assert_choice(mode, c("light", "dark"))
   checkmate::assert_data_frame(roles)
   checkmate::assert_choice(role, roles$role)
@@ -131,6 +141,7 @@ role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = s
   checkmate::assert_flag(resolved)
   checkmate::assert_function(ns)
   checkmate::assert_string(leader, min.chars = 1)
+  checkmate::assert_string(problem)
   row <- roles[roles$role == role, ]
   follows <- if (is.na(row$follows)) leader else paste0("follows ", row$follows, " (", row$shade, ")")
   changed <- !is.null(value) && !identical(tolower(value), tolower(row$colour))
@@ -140,8 +151,13 @@ role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = s
     colour_input(
       ns(paste0(mode, "_", role)),
       if (is.null(value)) row$colour else value,
-      paste(role, "in", mode, "mode")
+      paste(role, "in", mode, "mode"),
+      `aria-invalid` = if (nzchar(problem)) "true",
+      `aria-describedby` = if (nzchar(problem)) ns(paste0(mode, "_", role, "_problem"))
     ),
+    if (nzchar(problem)) {
+      shiny::div(id = ns(paste0(mode, "_", role, "_problem")), class = "pg-field-problem", role = "status", problem)
+    },
     shiny::div(
       class = "pg-role-text",
       shiny::tags$code(role),
@@ -168,7 +184,7 @@ role_picker <- function(mode, role, roles, value = NULL, resolved = TRUE, ns = s
 }
 
 # The pickers for one mode, in the groups of colour_groups(): Main colours open, More parts folded with a heading
-# per group of parts. resolved, ns and leader as in role_picker().
+# per group of parts. resolved, ns and leader as in role_picker(); problems names each warning by its input id.
 role_pickers <- function(
   mode,
   roles,
@@ -177,7 +193,8 @@ role_pickers <- function(
   character = formals(mascot::mascot)$character,
   resolved = TRUE,
   ns = shiny::NS(NULL),
-  leader = "leader"
+  leader = "leader",
+  problems = base::character()
 ) {
   checkmate::assert_choice(mode, c("light", "dark"))
   checkmate::assert_data_frame(roles)
@@ -187,9 +204,20 @@ role_pickers <- function(
   checkmate::assert_flag(resolved)
   checkmate::assert_function(ns)
   checkmate::assert_string(leader, min.chars = 1)
+  checkmate::assert_character(problems, any.missing = FALSE)
   role_groups <- colour_groups(roles, character)
   picker <- function(role) {
-    role_picker(mode, role, roles, values[[role]], resolved = resolved, ns = ns, leader = leader)
+    id <- ns(paste0(mode, "_", role))
+    role_picker(
+      mode,
+      role,
+      roles,
+      values[[role]],
+      resolved = resolved,
+      ns = ns,
+      leader = leader,
+      problem = if (id %in% names(problems)) problems[[id]] else ""
+    )
   }
   more <- role_groups$`More parts`
   panels <- c(
@@ -272,17 +300,30 @@ colour_roles_ui <- function(id, modes = c("light", "dark"), css = TRUE) {
 # character and palette are reactives (a character id and a palette value, "original" for its own colours). css is
 # the variable the CSS part offers, named with its starting value (c(`--brand` = "#7b4fd6")), or NULL for none.
 # resolved shows each role's colour in use now, and leader names a role that follows no other (see role_picker()).
+# problems supplies warnings by input id; stamp supplies the linked choice's group and revision, or NULL. Both are
+# reactives: warnings are read when drawing, and a choice's revision also asks for a drawing stamped for that choice.
 # Returns light, dark and css: reactives of the changed values (role = colour, role = variable), css_values: a
 # reactive of the variable's value, and three functions: reset(mode = NULL, role = NULL) puts pickers back to the
 # listed colours (with no arguments, every picker, and no part reads the variable); set(mode, role, value) sets one;
 # clear_css() makes no part read the variable.
-colour_roles_server <- function(id, character, palette, css = NULL, resolved = FALSE, leader = "leader") {
+colour_roles_server <- function(
+  id,
+  character,
+  palette,
+  css = NULL,
+  resolved = FALSE,
+  leader = "leader",
+  problems = shiny::reactive(base::character()),
+  stamp = shiny::reactive(NULL)
+) {
   checkmate::assert_string(id, min.chars = 1)
   checkmate::assert_class(character, "reactive")
   checkmate::assert_class(palette, "reactive")
   checkmate::assert_character(css, len = 1, any.missing = FALSE, names = "unique", null.ok = TRUE)
   checkmate::assert_flag(resolved)
   checkmate::assert_string(leader, min.chars = 1)
+  checkmate::assert_class(problems, "reactive")
+  checkmate::assert_class(stamp, "reactive")
   shiny::moduleServer(id, function(input, output, session) {
     modes <- c("light", "dark")
     roles <- shiny::reactive(palette_roles(character(), palette()))
@@ -296,54 +337,75 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
     drawn <- shiny::reactiveVal(0L)
     # A new character or palette: keep the colours the user changed for roles the new listing has too, then draw.
     # The first drawing keeps every colour already picked (a set() before it), since no listing came before.
-    shiny::observeEvent(roles(), {
-      for (mode in modes) {
-        now <- as.list(shiny::isolate(picked[[mode]]))
-        kept <- if (is.null(shown$roles)) now else reconcile_colour_values(shown$roles, roles(), now)
-        picked[[mode]] <- changed_colours(Filter(Negate(is.null), kept), roles())
-      }
-      shown$roles <- roles()
-      drawn(shiny::isolate(drawn()) + 1L)
-    })
-    # A picker changed in the browser. Only a picker whose value changed since it was last read is a new choice:
-    # right after a drawing the inputs still hold the old pickers' values, and a late value from an old picker can
-    # still arrive, so the others are not read again against the new listing.
-    shiny::observe({
-      drawn()
-      listed <- shown$roles
-      shiny::req(listed)
-      for (mode in modes) {
-        now <- shiny::isolate(picked[[mode]])
-        for (role in listed$role) {
-          name <- paste0(mode, "_", role)
-          value <- input[[name]]
-          if (is.null(value) || identical(value, shown$values[[name]])) {
-            next
-          }
-          shown$values[[name]] <- value
-          now <- now[names(now) != role]
-          if (tolower(value) != tolower(listed$colour[match(role, listed$role)])) {
-            now[[role]] <- tolower(value)
-          }
+    shiny::observeEvent(
+      roles(),
+      {
+        for (mode in modes) {
+          now <- as.list(shiny::isolate(picked[[mode]]))
+          kept <- if (is.null(shown$roles)) now else reconcile_colour_values(shown$roles, roles(), now)
+          picked[[mode]] <- changed_colours(Filter(Negate(is.null), kept), roles())
         }
-        picked[[mode]] <- now
-      }
-    })
+        shown$roles <- roles()
+        drawn(shiny::isolate(drawn()) + 1L)
+      },
+      priority = 100
+    )
+    # A picker reports its drawing and edit number. Binding a drawing (edit zero) is not a choice and cannot undo
+    # a reset or a brand colour already applied by the server. Waiting edits run before the palette and layout
+    # observers, against the listing they came from; edits arriving after that drawing has gone are ignored.
+    shiny::observe(
+      {
+        drawn()
+        listed <- shown$roles
+        shiny::req(listed)
+        for (mode in modes) {
+          now <- shiny::isolate(picked[[mode]])
+          for (role in listed$role) {
+            name <- paste0(mode, "_", role)
+            received <- input[[name]]
+            value <- received
+            if (is.list(value)) {
+              if (!identical(as.integer(value$revision), drawn()) || !isTRUE(value$edit > 0L)) {
+                next
+              }
+              value <- value$value
+            }
+            if (is.null(value) || identical(received, shown$values[[name]])) {
+              next
+            }
+            shown$values[[name]] <- received
+            now <- now[names(now) != role]
+            if (tolower(value) != tolower(listed$colour[match(role, listed$role)])) {
+              now[[role]] <- tolower(value)
+            }
+          }
+          picked[[mode]] <- now
+        }
+      },
+      priority = 300
+    )
     pickers <- function(mode) {
+      checkmate::assert_choice(mode, modes)
       shiny::req(shown$roles)
-      role_pickers(
-        mode,
-        shown$roles,
-        as.list(shiny::isolate(picked[[mode]])),
-        mascot::mascot_character(shiny::isolate(character()))$name,
-        shiny::isolate(character()),
-        resolved = resolved,
-        ns = session$ns,
-        leader = leader
+      shiny::div(
+        `data-colour-revision` = drawn(),
+        `data-choice-group` = shiny::isolate(stamp())$group,
+        `data-choice-revision` = shiny::isolate(stamp())$revision,
+        role_pickers(
+          mode,
+          shown$roles,
+          as.list(shiny::isolate(picked[[mode]])),
+          mascot::mascot_character(shiny::isolate(character()))$name,
+          shiny::isolate(character()),
+          resolved = resolved,
+          ns = session$ns,
+          leader = leader,
+          problems = shiny::isolate(problems())
+        )
       )
     }
-    output$light <- shiny::bindEvent(shiny::renderUI(pickers("light")), drawn())
-    output$dark <- shiny::bindEvent(shiny::renderUI(pickers("dark")), drawn())
+    output$light <- shiny::bindEvent(shiny::renderUI(pickers("light")), list(drawn(), stamp()))
+    output$dark <- shiny::bindEvent(shiny::renderUI(pickers("dark")), list(drawn(), stamp()))
     output$css <- shiny::bindEvent(
       shiny::renderUI({
         shiny::req(shown$roles, !is.null(css))
@@ -377,7 +439,16 @@ colour_roles_server <- function(id, character, palette, css = NULL, resolved = F
       checkmate::assert_string(role, min.chars = 1)
       checkmate::assert_string(value, min.chars = 1)
       # In a running app Shiny adds the module's prefix to the input's name.
-      session$sendInputMessage(paste0(mode, "_", role), list(value = value))
+      name <- paste0(mode, "_", role)
+      received <- shiny::isolate(input[[name]])
+      session$sendInputMessage(
+        name,
+        list(
+          value = value,
+          revision = shiny::isolate(drawn()),
+          edit = if (is.list(received)) received$edit else 0L
+        )
+      )
       listed <- shiny::isolate(roles())
       now <- shiny::isolate(picked[[mode]])
       now <- now[names(now) != role]

@@ -105,7 +105,8 @@ The full list, with reasons, is in [`docs/standards.md`](https://github.com/insi
   `-extended.R` file, which CRAN skips too; the app's plain file keeps a short smoke test.
 - Cover the happy path, every argument check, edge cases and every bug fix.
 - Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN, so they
-  go in the `-browser.R` file.
+  go in the `-browser.R` file. Each action in an example app (Copy, Download, Build, Check) also gets a test that
+  makes a change and fires the action at once, without waiting for the server in between (`tests/README.md`).
 - Use `shiny::testServer()` for server logic.
 - Coverage must be at least 70%, and a pull request must not lower it.
 

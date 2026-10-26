@@ -3,13 +3,96 @@
 (() => {
   if (!window.Shiny || window.mascotStudioInputs) return;
   const $ = window.jQuery;
+  const waitingColours = new Set();
+  const receivingColours = new WeakSet();
+  const choiceRevisions = new Map();
+  const receivingChoices = new WeakSet();
+  const initialChoices = new WeakMap();
+  // The linked control an input belongs to, when the input is that control itself: the element marked
+  // data-choice-input, or the input it wraps (a select inside its form group). Other inputs inside it, such as the
+  // mascot drawn on each palette card, report their own changes, which are no palette choice.
+  const choiceControl = (el) => {
+    const control = el?.closest?.('[data-choice-input]');
+    if (!control) return null;
+    const own = control.classList.contains('shiny-bound-input') ? control : control.querySelector('.shiny-bound-input');
+    return own === el ? control : null;
+  };
+  $(document).on('shiny:bound', (event) => {
+    if (event.bindingType === 'input' && choiceControl(event.target)) {
+      initialChoices.set(event.target, event.binding.getValue(event.target));
+    }
+  });
+  // Linked controls share a revision counter. Server replies carry the counter they answer and never count as
+  // another user choice, including the change event sent by Shiny's native input bindings.
+  $(document).on('shiny:inputchanged', (event) => {
+    if (event.el?.matches('.pg-colour')) waitingColours.delete(event.el);
+    const control = choiceControl(event.el);
+    if (control || event.el?.id === 'character') flushColours();
+    if (!control) return;
+    if (receivingChoices.has(event.el)) {
+      event.preventDefault();
+      return;
+    }
+    if (initialChoices.has(event.el)) {
+      // Binding a drawn control reports its starting value; that report is not another user choice.
+      const initial = initialChoices.get(event.el);
+      initialChoices.delete(event.el);
+      if (event.value === initial) return;
+    }
+    const group = control.dataset.choiceInput;
+    const revision = (choiceRevisions.get(group) || 0) + 1;
+    choiceRevisions.set(group, revision);
+    window.Shiny.setInputValue(`${group}_revision`, revision);
+    window.Shiny.setInputValue(`${event.name}_revision`, revision);
+    window.Shiny.forgetLastInputValue(event.name);
+  });
+  $(document).on('shiny:updateinput', (event) => {
+    const { group, revision } = event.message;
+    if (!group) return;
+    event.preventDefault();
+    const el = event.target;
+    initialChoices.delete(el);
+    const stale = revision < (choiceRevisions.get(group) || 0);
+    if (stale && !event.message.options) return;
+    // A character's palette options are still needed when its selected value answers an older choice.
+    const message = stale ? { ...event.message, value: event.binding.getValue(el) } : event.message;
+    receivingChoices.add(el);
+    Promise.resolve(event.binding.receiveMessage(el, message)).finally(() => {
+      window.Shiny.forgetLastInputValue(el.id);
+      receivingChoices.delete(el);
+    });
+  });
+  // A redrawn output can also answer an older choice. Its HTML carries the same stamp as a control update.
+  const colourDrawings = new Map();
+  $(document).on('shiny:value', (event) => {
+    if (typeof event.value?.html !== 'string' || !event.value.html.includes('data-colour-revision')) return;
+    const content = document.createElement('template');
+    content.innerHTML = event.value.html;
+    const choice = content.content.querySelector('[data-choice-revision]');
+    if (choice && Number(choice.dataset.choiceRevision) < (choiceRevisions.get(choice.dataset.choiceGroup) || 0)) {
+      event.preventDefault();
+      return;
+    }
+    const drawing = content.content.querySelector('[data-colour-revision]');
+    if (!drawing) return;
+    const revision = Number(drawing.dataset.colourRevision);
+    if (revision < (colourDrawings.get(event.name) || 0)) event.preventDefault();
+    else colourDrawings.set(event.name, revision);
+  });
   // input type="color" as a Shiny input. CSS-variable pickers also set their variable on the page.
   class ColourBinding extends window.Shiny.InputBinding {
     find(scope) {
       return $(scope).find('input.pg-colour');
     }
     getValue(el) {
-      return el.value;
+      const drawing = el.closest('[data-colour-revision]');
+      return drawing
+        ? {
+            value: el.value,
+            revision: Number(drawing.dataset.colourRevision),
+            edit: Number(el.dataset.colourEdit || 0),
+          }
+        : el.value;
     }
     setValue(el, value) {
       el.value = value;
@@ -18,23 +101,45 @@
       if (el.dataset.cssVar) document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
       $(el).on('input.pgColour change.pgColour', () => {
         if (el.dataset.cssVar) document.documentElement.style.setProperty(el.dataset.cssVar, el.value);
+        if (receivingColours.has(el)) return;
+        el.dataset.colourEdit = String(Number(el.dataset.colourEdit || 0) + 1);
+        waitingColours.add(el);
         callback(true);
       });
     }
     unsubscribe(el) {
+      waitingColours.delete(el);
       $(el).off('.pgColour');
     }
     receiveMessage(el, data) {
+      const drawing = el.closest('[data-colour-revision]');
+      if (drawing && data.revision !== Number(drawing.dataset.colourRevision)) return;
+      if (drawing && data.edit < Number(el.dataset.colourEdit || 0)) return;
       if (typeof data.value === 'string') {
         el.value = data.value;
-        $(el).trigger('change');
+        receivingColours.add(el);
+        try {
+          $(el).trigger('change');
+        } finally {
+          receivingColours.delete(el);
+        }
+        window.Shiny.forgetLastInputValue(el.id);
       }
     }
     getRatePolicy() {
       return { policy: 'debounce', delay: 250 };
     }
   }
-  window.Shiny.inputBindings.register(new ColourBinding(), 'mascotStudio.colour');
+  const colourBinding = new ColourBinding();
+  window.Shiny.inputBindings.register(colourBinding, 'mascotStudio.colour');
+  // An immediate send cancels Shiny's pending debounce for that input. Send waiting colours before the action's
+  // event, so its result comes from the server state that includes those edits.
+  const flushColours = () => {
+    for (const el of waitingColours) {
+      if (el.isConnected) window.Shiny.setInputValue(el.id, colourBinding.getValue(el));
+    }
+    waitingColours.clear();
+  };
 
   // A role's picker (R/shared-colours.R role_picker()) is marked is-changed while it differs from its listed colour,
   // including after a reset from the server (receiveMessage() triggers a jQuery change).
@@ -92,6 +197,7 @@
   };
   const copy = (target) => {
     if (target.getAttribute('aria-busy') === 'true') return;
+    flushColours();
     for (const hook of copyHooks) hook();
     if (!target.dataset.label) target.dataset.label = target.textContent;
     const label = target.dataset.label;
@@ -134,6 +240,7 @@
   document.addEventListener('click', (event) => {
     const target = event.target.closest('button, a');
     if (!target || target.getAttribute('aria-disabled') === 'true') return;
+    if (target.dataset.event || target.dataset.busyLabel) flushColours();
     if (target.dataset.busyLabel && target.getAttribute('aria-busy') !== 'true') busy(target);
     if (target.dataset.event) {
       if (target.tagName === 'A') event.preventDefault();

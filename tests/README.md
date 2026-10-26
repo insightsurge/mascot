@@ -29,7 +29,8 @@ One test file per R file (`R/moods.R` is tested in `tests/testthat/test-moods.R`
   goes in its extended file.
 - **Helpers** live in `tests/testthat/helper-<name>.R`, which testthat loads before every file: `helper-extended.R`
   (`skip_unless_extended()`), `helper-engine-js.R` (`skip_without_chrome()`), `helper-studio.R` (the studio's pages,
-  drawn once per process). A helper used by one file only stays at the top of that file.
+  drawn once per process, and `hold_studio_inputs()`, `hold_studio_replies()` and the other helpers that hold back
+  what the page sends or the server answers, for "do X, then Y at once" tests). A helper used by one file only stays at the top of that file.
 - **Apps** for shinytest2 are in `tests/testthat/apps/<name>/app.R`.
 
 ## Where each kind runs
@@ -56,9 +57,23 @@ take longer than 180 s on Ubuntu with R release. When a pull request gets near t
 detailed tests to its extended file, or make the slow tests cheaper (build a fixture once per file with
 `delayedAssign()`, draw a page once and reuse it).
 
+## Testing actions in a Shiny app: "do X, then Y at once"
+
+In a Shiny app the page changes at once and the server answers a moment later, so a quick click can act on an earlier
+state: Copy copies the colour from before the change, a late update puts a menu back. A test that waits for the server
+after each step never sees that gap. So every action (Copy, Download, Build, Check, a busy button) gets one browser test
+that makes a change and fires the action without waiting in between, then checks that the action used the change.
+
+- Make both steps in one `app$run_js()` call (for example, set a colour picker and click Copy), or use no
+  `app$set_inputs()` between them: it waits for the server.
+- To widen the gap, hold back what the page sends or what the server answers, with the studio tests'
+  `hold_studio_inputs()` and `hold_studio_replies()`.
+- The app-side rules these tests check are in `.claude/rules/r-code.md` and `.claude/rules/js-css.md` ("Shiny apps").
+
 ## Adding tests for a new example app
 
 1. A smoke test in the plain file of its exported function (for example `test-builder.R`).
 2. Its detailed tests in `test-<name>-extended.R`, starting with `skip_unless_extended()`.
-3. Its browser tests in `test-<name>-browser.R`, starting with `skip_without_chrome()`.
+3. Its browser tests in `test-<name>-browser.R`, starting with `skip_without_chrome()`, with one "do X, then Y at
+   once" test for each action (above).
 4. Run `devtools::test(filter = "helper-layout")`: it fails when something is in the wrong file.

@@ -24,6 +24,26 @@ copy_button <- function(target, label = "Copy") {
   shiny::tags$button(type = "button", class = "btn btn-sm btn-outline-primary pg-copy", `data-copy` = target, label)
 }
 
+# Updates a linked control with the revision of the choice it answers. The page ignores an older reply and does
+# not report a server update as another choice. choices supplies a select's options when its character changes.
+update_choice <- function(session, id, value, group, revision, choices = NULL) {
+  checkmate::assert_environment(session)
+  checkmate::assert_string(id, min.chars = 1)
+  checkmate::assert_string(value, min.chars = 1)
+  checkmate::assert_string(group, min.chars = 1)
+  checkmate::assert_count(revision)
+  checkmate::assert_character(choices, any.missing = FALSE, null.ok = TRUE)
+  message <- list(value = value, group = group, revision = revision)
+  if (!is.null(choices)) {
+    labels <- if (is.null(names(choices))) choices else names(choices)
+    message$options <- as.character(htmltools::tagList(lapply(seq_along(choices), function(i) {
+      shiny::tags$option(value = choices[[i]], labels[[i]])
+    })))
+  }
+  session$sendInputMessage(id, message)
+  invisible(NULL)
+}
+
 # Stamps a text output with what it was drawn for. The page compares the stamp with what it asked for, and says the
 # output is busy until they match (studio.js, syncPanelStamps()). Call it in the output's render function. The stamp is
 # sent after the flush that sends the text, so it never reaches the page before the text it stands for.

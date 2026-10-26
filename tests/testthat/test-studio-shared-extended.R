@@ -587,6 +587,55 @@ describe("the studio's code builders on their own", {
 
 describe("colour_roles_server() with the browser's timing", {
   module <- function() studio_shared("shared-colours.R")$colour_roles_server
+  for (action in c("reset", "set")) {
+    it(paste("keeps a server", action, "when an earlier drawing binds immediately afterwards"), {
+      skip_if_not_installed("bslib")
+      palette <- shiny::reactiveVal("original")
+      shiny::testServer(module(), args = list(character = shiny::reactiveVal("tessa"), palette = palette), {
+        colours <- session$returned
+        session$setInputs(light_body = list(value = "#123456", revision = 1, edit = 1))
+        palette("coral_navy")
+        session$flushReact()
+        # This is the drawing on its way to the page, before the server applies Reset or a brand colour.
+        expect_match(output$light$html, 'value="#123456"', fixed = TRUE)
+        if (action == "reset") {
+          session$setInputs(reset_colour = "light:body")
+        } else {
+          colours$set("light", "body", "#abcdef")
+          session$flushReact()
+        }
+        session$setInputs(light_body = list(value = "#123456", revision = 2, edit = 0))
+        if (action == "reset") {
+          expect_length(colours$light(), 0L)
+        } else {
+          expect_identical(colours$light(), c(body = "#abcdef"))
+        }
+        # A real edit of that drawing still counts, including a return to the value it was drawn with.
+        session$setInputs(light_body = list(value = "#123456", revision = 2, edit = 1))
+        expect_identical(colours$light(), c(body = "#123456"))
+      })
+    })
+  }
+
+  for (change in c("palette", "character")) {
+    it(paste("applies a waiting edit before a", change, "change in the same input batch"), {
+      skip_if_not_installed("bslib")
+      character <- shiny::reactiveVal("tessa")
+      palette <- shiny::reactiveVal("original")
+      shiny::testServer(module(), args = list(character = character, palette = palette), {
+        session$flushReact()
+        if (change == "palette") {
+          palette("coral_navy")
+        } else {
+          character("sela")
+        }
+        # Both invalidations are waiting for the same flush: the edit belongs to the listing still on the page.
+        session$setInputs(light_body = list(value = "#123456", revision = 1, edit = 1))
+        expect_identical(session$returned$light(), c(body = "#123456"))
+      })
+    })
+  }
+
   it("ignores a late value from the old pickers that arrives after a palette change", {
     skip_if_not_installed("bslib")
     palette <- shiny::reactiveVal("original")

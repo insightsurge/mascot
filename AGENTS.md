@@ -14,10 +14,11 @@ rules file when it reads a matching file; **every other agent reads the matching
 starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Extensions, R CMD check) or **house**
 (ours; a justified exception needs a comment saying why). **Before creating a file** in `R/`, `tests/`, `inst/` or
 `.github/`, read the matching rules file, because a new file doesn't trigger it:
-- `r-code.md` (`R/`, `tools/`, including the gate): checkmate, cli, dependencies, behaviour, names
+- `r-code.md` (`R/`, `tools/` including the gate, the example apps' R code): checkmate, cli, dependencies, behaviour,
+  names, Shiny apps (keeping the page and the server in step)
 - `roxygen.md` (`R/`, `man/`, `NAMESPACE`): documentation and examples
-- `tests.md` (`tests/`): BDD tests, shinytest2, skips, coverage
-- `js-css.md` (`inst/` JS, CSS, Lua): the UI engine, theming, accessibility
+- `tests.md` (`tests/`): BDD tests, shinytest2, skips, coverage, "do X, then Y at once" tests for Shiny apps
+- `js-css.md` (`inst/` JS, CSS, Lua): the UI engine, theming, accessibility, the page side of the Shiny app rules
 - `bundled-files.md` (`inst/`): licences, fonts, the acceptance checklist for shipped files
 - `description-news.md` (`DESCRIPTION`, `NEWS.md`, `cran-comments.md`)
 - `ci.md` (`.github/`, the gate)
@@ -76,12 +77,12 @@ lintr or Air yourself. **Which mode when, every option, the exit codes, the run 
 - `inst/examples/studio/` (`mascot_studio()`) demonstrates every exported function and argument, function by
   function, for every character.
 - **Rule: a PR that adds, removes or changes an exported function or an argument (its name, values, default or
-  behaviour) also updates the studio in the same PR.** No studio follow-up PRs. The places to change, in
-  `inst/examples/studio/`: controls (`R/panels.R`), control map (`R/data.R`), code builders (`R/code.R`), studio-only
-  guide data (`R/guide.R`) and, where needed, pictures (`R/ui.R`) and server code (`app.R`). Explanations come from
-  the help pages (`R/shared-help.R` reads them), so update the roxygen, never copy it into the studio.
-- The completeness tests in `tests/testthat/test-studio-extended.R` catch a missing function or argument; they do not
-  catch a changed default or behaviour, so try the change in the studio before the PR and say so in its checks.
+  behaviour) also updates the studio in the same PR.** No studio follow-up PRs. Which files to change, in which
+  order, and which test catches a miss: `docs/examples.md`. Explanations come from the help pages, so update the
+  roxygen, never copy it into the studio.
+- The completeness tests in `tests/testthat/test-studio-extended.R` catch a missing function, argument or control;
+  they do not catch a changed default or behaviour, so try the change in the studio before the PR and say so in its
+  checks.
 
 ## Known users: never break them
 - **Every known user is listed in `docs/consumers.md`**: what it uses, since which version, and how to check it

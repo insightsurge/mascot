@@ -77,7 +77,8 @@ browser, say) fails many tests with the same message, the line names it once as 
 
 ### The gate and CI
 
-`lint.yaml` and `check-no-suggests.yaml` run the gate itself; the other workflows run R CMD check or covr directly.
+`lint.yaml` and `check-no-suggests.yaml` run the gate itself and `gate-self-test.yaml` its self-test;
+`off-cran-tests.yaml` runs testthat directly, and the other test workflows run R CMD check or covr.
 What each workflow runs and when, which gate mode checks the same thing locally (the evidence when CI can't run),
 which test files run where and the CI report comment on a pull request: [`.github/workflows/README.md`](../.github/workflows/README.md).
 

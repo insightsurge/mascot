@@ -73,15 +73,17 @@ style section. Each workflow adds one part:
 - `R-CMD-check.yaml`: how many platforms passed, how long the tests took on Ubuntu with R release against the limit,
   and a table with each platform's result, test time and whole check time, in minutes
   (`.github/scripts/check-times.sh`); "not run" for a documentation-only change.
-- `test-coverage.yaml`: the line coverage without the browser and snapshot tests, the limit from `DESCRIPTION` and the
-  difference from the latest successful run on `main`; the added `R/` lines that the job's tests don't run (a report,
+- `test-coverage.yaml`: the line coverage without the browser and snapshot tests (the extended tests included), the
+  limit from `DESCRIPTION` and the difference from the latest successful run on `main`; the added `R/` lines that the job's tests don't run (a report,
   not a check: a browser test may run them, and the gate's `new_lines` step is the check); or why nothing was measured.
 - `off-cran-tests.yaml`, per R version: the counts, with the tests in browser, snapshot and extended files, the failing
   and skipped tests, the slowest test files and the files much slower than on `main` (at least 25% and 10 seconds).
 - `lint.yaml`: passed, or the gate steps that failed with the first line of what each found (from the gate's
   `gate.json`). lintr's findings also show inline in the pull request's "Files changed".
 
-Under the parts, the comment lists each failed job with a link and the step it failed at. A summary job (one that only
+Under the parts, the comment lists each failed job with a link and the step it failed at. Every part that can grow
+long folds (`<details>`): tables of times, lists of tests or lines, and the failed jobs; lists of failures start
+open. A summary job (one that only
 sums up a matrix, named in `summary_jobs` in `.github/pr-report.json`) is listed only when it failed on its own.
 
 It looks like this (figures from a real run; the ▸ lines are folded tables):

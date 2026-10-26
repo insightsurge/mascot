@@ -345,7 +345,7 @@ run it:
 |---|---|---|
 | Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; merging a PR (`gh pr merge`) asks for confirmation each time; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
 | The gate (`Rscript tools/cran-gate.R`, section 7.2) | On demand, before a commit or PR | In place |
-| CI | On every PR and push to `main` (the full platform matrix each time), weekly and on demand | In place |
+| CI | On every PR and push to `main`: R CMD check on six platforms, coverage, the off-CRAN tests with Chrome and lint; Mondays and on demand add the extended tests on macOS and Windows (`.github/workflows/README.md`) | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
 framework for now (section 8). A ruleset on `main` blocks force-pushes and deleting the branch; it does not require

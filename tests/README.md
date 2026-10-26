@@ -37,7 +37,7 @@ One test file per R file (`R/moods.R` is tested in `tests/testthat/test-moods.R`
 | Where | plain | browser | snapshot | extended |
 |---|---|---|---|---|
 | CRAN, and R CMD check in CI | yes | | | |
-| Coverage in CI, and the weekly R CMD check on macOS and Windows | yes | | | yes |
+| Coverage in CI, and the weekly extended-tests run on macOS and Windows | yes | | | yes |
 | CI's off-CRAN job (with Chrome) | | yes | yes | yes |
 | `devtools::test()` and the gate's `tests` mode, locally | yes | yes | yes | yes |
 

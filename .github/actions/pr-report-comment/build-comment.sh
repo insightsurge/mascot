@@ -158,9 +158,12 @@ fi
     echo
   fi
   if [ "${#failures[@]}" -gt 0 ]; then
-    echo "**Failed jobs:**"
+    echo "<details open>"
+    echo "<summary><b>Failed jobs (${#failures[@]})</b>: each with the step it failed at</summary>"
     echo
     printf -- '- %s\n' "${failures[@]}"
+    echo
+    echo "</details>"
     echo
   fi
   if [ "${#footer[@]}" -gt 0 ]; then

@@ -70,7 +70,12 @@ jobs:
                 {
                   echo "❌ **Lint:** failed: $(jq -r '[.steps[] | select(.status == "FAIL") | .step] | join(", ")' "${json}"). lintr's findings are also shown inline in Files changed."
                   echo
+                  echo "<details open>"
+                  echo "<summary>What each failed step found</summary>"
+                  echo
                   echo "${failed}"
+                  echo
+                  echo "</details>"
                 } > "${OUT}"
               else
                 echo "❌ **Lint:** failed. lintr's findings are shown inline in Files changed; the gate's FAIL lines in the run's log name the other steps." > "${OUT}"

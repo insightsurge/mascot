@@ -1,4 +1,4 @@
-# mascot
+# mascot <img src="man/figures/logo.png" align="right" height="139" alt="" />
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml)
@@ -8,6 +8,8 @@
 
 Live, mood-driven mascots for Shiny apps and Quarto sites. A character drawn in code shows a mood and gives a short
 wiggle when the mood changes, with status text beside it so the face never carries meaning alone.
+
+<img src="man/figures/readme-demo.svg" width="720" alt="A short animation: Tessa sits beside a small Shiny form. She is idle, then thinking while the rows are checked, worried when two dates need a look, and happy when they are fixed, with her status text beside her each time and the matching update_mascot() call below." />
 
 Set the mood from R when a form needs attention or a task finishes. Mascots follow light and dark mode, can use your
 brand colours, work offline and respect reduced-motion settings. The package is built for `GxP` work: use it alongside

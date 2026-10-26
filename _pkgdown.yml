@@ -8,6 +8,19 @@ destination: site
 template:
   bootstrap: 5
   light-switch: true
+  opengraph:
+    image:
+      src: card.gif
+      alt: >
+        The word mascot in large letters with the line Live, mood-driven mascots for Shiny apps and Quarto sites,
+        beside the mascot hex logo: a small app inside a hex, with a mascot at the bottom that leans in while the app
+        runs and bounces when it is done, and a progress card, chart bars and a ready label floating around it.
+  includes:
+    in_header: |
+      <meta property="og:image" content="https://insightsurge.github.io/mascot/card.gif">
+      <meta property="og:image:alt" content="The word mascot in large letters with the line Live, mood-driven mascots for Shiny apps and Quarto sites, beside the mascot hex logo: a small app inside a hex, with a mascot at the bottom that leans in while the app runs and bounces when it is done, and a progress card, chart bars and a ready label floating around it.">
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:description" content="Live, mood-driven mascots for Shiny apps and Quarto sites, drawn in code and controlled from R.">
   bslib:
     bg: "#F5FAFC"
     fg: "#172E36"
@@ -38,6 +51,8 @@ home:
   links:
     - text: Security policy
       href: SECURITY.html
+    - text: Copyright of shipped files
+      href: https://github.com/insightsurge/mascot/blob/main/inst/COPYRIGHTS
 
 navbar:
   components:

@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `mascot_studio()` shows the package's logo mark on the button that opens the function index, in place of the letter "m" (#469).
+
 * An inline mascot's reserved speech-bubble space lets clicks reach neighbouring page controls, both when no bubble shows and in the empty space around a shown bubble. The bubble's text and close button still take pointer events (#506).
 
 * A floating mascot with `mascot_placement(drag = "snap")` that is taller or wider than the window (less its margins) now snaps to the corner it is dragged to. Before, a drag to the top of a short window, such as a phone held sideways, snapped it back to the bottom (#513).

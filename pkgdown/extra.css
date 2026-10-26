@@ -137,6 +137,29 @@ nav.navbar {
   --bs-navbar-brand-color: var(--m-ink);
   --bs-navbar-brand-hover-color: var(--m-ink);
 }
+/* The small logo mark (the favicon) before the package name: the full hex is too busy at navbar size. The url is
+   relative to this file, which pkgdown puts at the site root beside favicon.svg. */
+.navbar-brand::before {
+  content: "";
+  display: inline-block;
+  width: 22px;
+  height: 26px;
+  margin-right: 0.45rem;
+  vertical-align: -7px;
+  background: url("favicon.svg") center / contain no-repeat;
+}
+/* Home page: the animated hex (logo-animated.svg, from pkgdown/assets) in the logo's own box. The still PNG is moved
+   out of view inside the box, which keeps pkgdown's size and layout; under reduced motion the still one shows. */
+.template-home .page-header img.logo {
+  object-position: -9999px 0;
+  background: url("logo-animated.svg") center / 120% auto no-repeat;
+}
+@media (prefers-reduced-motion: reduce) {
+  .template-home .page-header img.logo {
+    object-position: 50% 50%;
+    background: none;
+  }
+}
 .navbar .nav-link {
   color: var(--m-muted);
 }

@@ -5,6 +5,8 @@
 \alias{mascot-package}
 \title{mascot: Live Mood-Driven Mascots for 'Shiny' Apps and 'Quarto' Sites}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Adds a character drawn in code to 'Shiny' apps and 'Quarto' sites. The character shows a mood and animates when the mood changes, follows light and dark mode, and takes its colours from the theme. It works offline: the drawing is done in the browser from bundled 'JavaScript'.
 }
 \section{Conditions}{

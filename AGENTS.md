@@ -14,10 +14,11 @@ rules file when it reads a matching file; **every other agent reads the matching
 starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Extensions, R CMD check) or **house**
 (ours; a justified exception needs a comment saying why). **Before creating a file** in `R/`, `tests/`, `inst/` or
 `.github/`, read the matching rules file, because a new file doesn't trigger it:
-- `r-code.md` (`R/`, `tools/`, including the gate): checkmate, cli, dependencies, behaviour, names
+- `r-code.md` (`R/`, `tools/` including the gate, the example apps' R code): checkmate, cli, dependencies, behaviour,
+  names, Shiny apps (keeping the page and the server in step)
 - `roxygen.md` (`R/`, `man/`, `NAMESPACE`): documentation and examples
-- `tests.md` (`tests/`): BDD tests, shinytest2, skips, coverage
-- `js-css.md` (`inst/` JS, CSS, Lua): the UI engine, theming, accessibility
+- `tests.md` (`tests/`): BDD tests, shinytest2, skips, coverage, "do X, then Y at once" tests for Shiny apps
+- `js-css.md` (`inst/` JS, CSS, Lua): the UI engine, theming, accessibility, the page side of the Shiny app rules
 - `bundled-files.md` (`inst/`): licences, fonts, the acceptance checklist for shipped files
 - `description-news.md` (`DESCRIPTION`, `NEWS.md`, `cran-comments.md`)
 - `ci.md` (`.github/`, the gate)

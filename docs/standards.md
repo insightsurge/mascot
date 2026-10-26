@@ -218,6 +218,38 @@ itself still uses inline scripts.
 widget's rendered output (section 6). Every change in `inst/www/` adds an entry to
 `vignettes/articles/engine-changelog.Rmd`.
 
+**Shiny apps: the page and the server in step**
+
+The studio and the other example apps (and any Shiny app the package ships later) follow five rules, in
+`.claude/rules/r-code.md` ("Shiny apps") with their page side in `.claude/rules/js-css.md`. In a Shiny app the page
+changes at once and the server answers a moment later. Most of the time the gap is too short to matter, but a quick
+click lands inside it, and so does any click on a slow connection or a busy server. Several things widen it: a
+debounced input (a colour picker reports a change only after a pause), Copy of code the server generates, a control
+the server sets back after the user moved it, and a frame that loads its page after the server has drawn it. The
+studio's main view had bugs of each kind (#548, fixed in #550), and its theme view had the same ones (#574).
+
+1. The server holds the truth. When the page copies or shows as a result a value it reads from its own controls, a
+   click can use a value the server has not seen, or miss one it has. Only server state is the same for the page, the
+   code and the tests. Controls themselves may show a choice the server hasn't had yet (a picker colours the page at
+   once).
+2. An action collects waiting inputs first. A debounced picker holds its value back for a moment; Copy in that moment
+   copies the previous colour and says "Copied". Sending the waiting value first, and answering the action only after
+   it, costs nothing when nothing is waiting. A choice that draws the inputs again (another palette or character)
+   is an action too: an edit still waiting when the pickers are replaced would otherwise be lost (#574).
+3. Never echo the control the user just used. When the server sets the same control back, its answer to the first of
+   two quick choices arrives after the second and undoes it. For the same reason a value the server set, or the
+   value a control reports when it is drawn again, is not a choice: either can undo a reset made just before.
+4. A late answer can't undo a newer choice. Updates that reach the page out of step with the user's choices (a slow
+   connection, two linked controls) carry the revision of the choice they answer, so the page can drop an old one.
+   Inputs drawn again are numbered the same way, so an edit made on the previous drawing can't change the new one.
+5. Busy means "until my own result is drawn". Shiny's `shiny:value` and idle events come before the value is drawn,
+   and an answer to an earlier click or a settings change can look like this click's result (#547, #550). A mark the
+   server draws into the result, with the number of the click it answers, says exactly when it is done; a visible
+   error on the output ends the wait too.
+
+These bugs pass every test that waits for the server after each step, so each action also gets a browser test that
+makes a change and fires the action at once (section 6).
+
 ## 4. Bundled files and licences
 
 - `inst/COPYRIGHTS` lists every bundled file: what it is, where it came from, who holds the copyright and under which
@@ -323,6 +355,10 @@ use plain words in help pages:
   checks, each view builds, the page draws once without duplicate ids, and one server update with its generated
   code. The package's own functions keep every test on CRAN. R CMD check on Ubuntu with R release fails when the tests
   take longer than 180 s, which leaves room under CRAN's 10 minutes on its slower machines.
+- **"Do X, then Y at once."** Every action in a Shiny app the package ships (Copy, Download, Build, Check, a busy
+  button) gets one browser test that makes a change and fires the action without waiting for the server in between,
+  then checks that the action used the change. A test that waits after each step lets the server catch up, so it
+  passes with the bugs of section 3, "Shiny apps", still in place. How: `tests/README.md`.
 - **Files.** Tests that write files use `withr::local_tempdir()`.
 - **Coverage is at least 70 percent, measured with covr on R code only.** This is our rule: CRAN's policy and
   `R CMD check` say nothing about coverage. The limit is `Config/cran-gate/coverage` in `DESCRIPTION`. covr does not

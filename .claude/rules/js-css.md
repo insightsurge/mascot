@@ -26,6 +26,21 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 - **house:** configuration through `data-*` attributes or a `<script type="application/json">` block. No `eval`,
   `new Function`, inline `<script>`, inline `style=` for layout or `javascript:` URLs (mascot adds no inline script
   of its own; Shiny itself still uses some).
+- **house:** the page script of a Shiny app the package ships (`inst/examples/*/www/`) keeps the page and the server
+  in step. The five rules, with their server side, are in `r-code.md`, "Shiny apps"; in the page:
+  1. what the page copies or shows as a result is what the server drew, never a value it reads from its own controls
+     (`copy()` in `inputs.js` copies the code output's text once the server has answered the ticket);
+  2. an action, and a choice that redraws inputs, sends any input still waiting before its own event
+     (`mascotStudioInputs.beforeCopy(() => Shiny.setInputValue(id, el.value))`; an immediate `setInputValue()`
+     cancels the input's pending debounce);
+  3. a value the server sets on a control, and the value a control reports when it is bound, don't count as the
+     user's choice and aren't sent back as one;
+  4. the page numbers its choices and ignores a server update whose revision is older than its latest choice
+     (`if (msg.revision < latest) return;`), but still applies new options such an update carries (a select's list
+     for another character);
+  5. a busy button waits for the `data-busy-done` mark of its own click and for any frame in the result to load, or
+     for a visible error on its output (a silent validation error is no answer), not for `shiny:idle` or
+     `shiny:value`, which come before the value is drawn.
 - **house:** panels follow Bootstrap's CSS variables (`--bs-body-color`, `--bs-body-bg`, `--bs-border-color`) by
   default; public `--mascot-panel-*` and `--mascot-restore-*` colour hooks (`?mascot_styling`) win over them and copied
   page colours. Other mascot custom properties use the private `--_mascot-*` prefix. Follow the page for dark mode

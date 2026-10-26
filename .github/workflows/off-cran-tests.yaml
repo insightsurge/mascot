@@ -1,7 +1,7 @@
 # Runs the tests CRAN skips, with NOT_CRAN=true and Chrome, on R release and R 4.1: the browser tests (shinytest2 and
 # chromote, in tests/testthat/test-*-browser.R), the snapshot tests (test-*-snap.R) and the detailed tests of the
-# example apps (test-*-extended.R). R CMD check skips all three, as CRAN does; the coverage job and R-CMD-check's weekly
-# extended job run the extended tests too. One line per test file as it finishes shows the
+# example apps (test-*-extended.R). R CMD check skips all three, as CRAN does; the coverage job and the weekly
+# extended-tests.yaml run the extended tests too. One line per test file as it finishes shows the
 # progress while the job runs, and a failing test prints in full. A pull request that changes only documentation
 # starts the jobs and skips their steps (.github/scripts/r-changes.sh).
 # Each R version writes its part of the pull request's CI report (.github/pr-report.json): counts, failing and skipped

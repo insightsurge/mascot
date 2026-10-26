@@ -17,8 +17,9 @@ that reproduces each one locally and the CI report comment: `.github/workflows/R
   `air.toml`, `.lintr` and `biome.json`.
 - R-CMD-check fails on any note (`error-on: '"note"'`) and mimics CRAN (`NOT_CRAN: false`, so the browser, snapshot and
   extended tests skip; `setup-r` would set it to true); only the remote CRAN-incoming checks are off. On Ubuntu with
-  R release it also fails when the tests take longer than 180 s. Its weekly and manual runs add the `extended` job:
-  R CMD check on macOS and Windows (R release and 4.1) with `EXTENDED_TESTS: true`, outside the summary check.
+  R release it also fails when the tests take longer than 180 s. `extended-tests.yaml` (weekly and on demand, a
+  workflow of its own so it can't turn R-CMD-check's badge red) runs R CMD check on macOS (R release) and Windows
+  (R release and 4.1) with `EXTENDED_TESTS: true`.
   The tests CRAN skips (browser, snapshot and extended tests, in `test-*-browser.R`, `test-*-snap.R` and
   `test-*-extended.R`) run in `off-cran-tests.yaml` on Linux with R release and R 4.1 (its summary job,
   `off-cran-tests`, is one stable check name for both). The coverage job runs the tests without Chrome
@@ -42,8 +43,8 @@ that reproduces each one locally and the CI report comment: `.github/workflows/R
   may ask for changes after a merge). Its checks and the tag are in `.github/scripts/release-check.sh`; after changing
   either, run `bash .github/scripts/test-release-check.sh` (throwaway repositories, no network). Checkout there keeps
   no credentials; only the release job has `contents: write`.
-- Keep new jobs on Ubuntu unless the platform is the point (macOS minutes count 10x, Windows 2x), as in R-CMD-check's
-  weekly `extended` job.
+- Keep new jobs on Ubuntu unless the platform is the point (macOS minutes count 10x, Windows 2x), as in
+  `extended-tests.yaml`.
 - The tests run in two processes at once (`Config/testthat/parallel: true` in `DESCRIPTION`; two is testthat's
   default and CRAN's limit). R CMD check and the coverage job get two because their tests run without the site
   profile (`--vanilla`), and `tests/testthat.R` lowers a higher `Ncpus` to two; `off-cran-tests.yaml` sets setup-r's

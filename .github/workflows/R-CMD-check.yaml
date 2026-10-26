@@ -2,8 +2,8 @@
 # The repo rule is 0 errors, 0 warnings, 0 notes, so any note fails the check. As on CRAN, the browser, snapshot and
 # extended tests skip here: off-cran-tests.yaml runs them. Every pull request, push to main, weekly run and manual run
 # checks the full matrix. On Ubuntu with R release the check also fails when the tests take longer than the limit, so
-# the time CRAN spends on them stays well inside its 10 minutes for the whole check. The weekly and manual runs also
-# check macOS and Windows with the extended tests turned on (the extended job), the only place they meet those systems.
+# the time CRAN spends on them stays well inside its 10 minutes for the whole check. extended-tests.yaml runs the
+# extended tests on macOS and Windows, in a workflow of its own so a failure there doesn't turn this one red.
 # The R-CMD-check line of the pull request's CI report (.github/pr-report.json) says whether every platform passed and
 # how long the tests took against the limit. A pull request that changes only documentation starts the jobs and skips
 # their steps (.github/scripts/r-changes.sh).
@@ -122,54 +122,6 @@ jobs:
           path: ${{ runner.temp }}/check-time-${{ strategy.job-index }}.txt
           if-no-files-found: ignore
           overwrite: true  # a re-run job replaces it
-
-  # Weekly and on demand: R CMD check on macOS and Windows with the extended tests turned on (EXTENDED_TESTS),
-  # which the pull requests run only on Ubuntu (the coverage and off-CRAN jobs). The browser tests still skip: they
-  # need Chrome. Not part of the R-CMD-check summary: a failure here is a warning to fix before the next release.
-  extended:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120  # as the check job: installing R 4.1 and building packages from source can be slow
-    # No name of its own: GitHub names each run "extended (os, r)", and a skipped job (every pull request) just
-    # "extended". A name built from the matrix would show unfilled on a skipped job.
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ['macos-latest', 'windows-latest']
-        r: ['release', '4.1']
-
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: r-lib/actions/setup-pandoc@v2
-
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: ${{ matrix.r }}
-          use-public-rspm: true
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
-
-      - uses: r-lib/actions/check-r-package@v2
-        env:
-          _R_CHECK_CRAN_INCOMING_REMOTE_: false
-          # As CRAN, apart from the extended tests: the browser tests skip.
-          NOT_CRAN: false
-          EXTENDED_TESTS: true
-          _R_CHECK_TESTS_NLINES_: 0
-        with:
-          args: 'c("--no-manual", "--as-cran")'
-          # The extended tests make the check slower than CRAN's: only errors and warnings count here.
-          error-on: '"warning"'
-          build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'
 
   # One stable check name that sums up the jobs above (a branch ruleset could require it): it fails unless every
   # matrix job above succeeded.

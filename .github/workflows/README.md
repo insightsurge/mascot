@@ -9,7 +9,7 @@ What each workflow runs, when, and how its results reach a pull request. The rul
   It runs only the plain test files, as CRAN will, and on Ubuntu with R release it fails when the tests take longer
   than 180 s.
 - **Everything CRAN skips runs elsewhere:** the browser, snapshot and extended tests in `off-cran-tests.yaml` (with
-  Chrome), the extended tests also in `test-coverage.yaml` and, once a week, on macOS and Windows (job `extended`).
+  Chrome), the extended tests also in `test-coverage.yaml` and, once a week, on macOS and Windows (`extended-tests.yaml`).
 - **One comment per pull request** sums up the results ("CI report"), rewritten as each workflow finishes.
 
 ## Which tests run where
@@ -21,7 +21,7 @@ switch for the extended tests.
 |---|---|---|---|---|---|---|
 | CRAN | on submission and in CRAN's daily checks | unset / unset | yes | | | |
 | `R-CMD-check.yaml`, job `check`: macOS and Windows (R release), Ubuntu (R devel, release, previous release, 4.1) | every pull request, push to `main`, Mondays, by hand | false / unset | yes | | | |
-| `R-CMD-check.yaml`, job `extended`: macOS and Windows, R release and 4.1 | Mondays and by hand only (shown as skipped otherwise) | false / true | yes | | | yes |
+| `extended-tests.yaml`: macOS (R release), Windows (R release and 4.1) | Mondays and by hand only | false / true | yes | | | yes |
 | `test-coverage.yaml`: Ubuntu, R release, under covr | every pull request, push to `main`, by hand | false / true | yes | | | yes |
 | `off-cran-tests.yaml`: Ubuntu, R release and 4.1, with Chrome | every pull request, push to `main`, Mondays, by hand | true / true | | yes | yes | yes |
 | The gate's `tests` mode, locally | before a pull request | true / unset | yes | yes | yes | yes |
@@ -34,7 +34,8 @@ The last column is the gate mode that checks the same thing locally, which is th
 
 | Workflow | What it runs | Locally |
 |---|---|---|
-| `R-CMD-check.yaml` | Job `check`: `R CMD check --as-cran`, failing on any note, with `NOT_CRAN` false (browser, snapshot and extended tests skip, as on CRAN) and the whole test output when a test fails; on Ubuntu with R release it also fails when `Running 'testthat.R'` takes longer than 180 s elapsed. On every pull request, push to `main`, every Monday and on demand: macOS and Windows (R release) and Ubuntu (R devel, release, previous release and 4.1); the `R-CMD-check` check passes only when all six pass. Job `extended`, every Monday and on demand: the same check on macOS and Windows (R release and 4.1) with `EXTENDED_TESTS: true`, outside the `R-CMD-check` check | the `check_full` step of `full` |
+| `R-CMD-check.yaml` | Job `check`: `R CMD check --as-cran`, failing on any note, with `NOT_CRAN` false (browser, snapshot and extended tests skip, as on CRAN) and the whole test output when a test fails; on Ubuntu with R release it also fails when `Running 'testthat.R'` takes longer than 180 s elapsed. On every pull request, push to `main`, every Monday and on demand: macOS and Windows (R release) and Ubuntu (R devel, release, previous release and 4.1); the `R-CMD-check` check passes only when all six pass. | the `check_full` step of `full` |
+| `extended-tests.yaml` | Every Monday and on demand: the same R CMD check on macOS (R release) and Windows (R release and 4.1), with `EXTENDED_TESTS: true` and failing only on errors and warnings. A workflow of its own, so a failure here doesn't turn R-CMD-check's README badge red. macOS runs R release only: R 4.1 there has no ready-built packages, and building them from source broke on the runner's OpenSSL | `tests` (extended tests on this machine only) |
 | `test-coverage.yaml` | The tests without Chrome (`NOT_CRAN` false), the extended tests included (`EXTENDED_TESTS: true`), under covr, and the coverage limit from `DESCRIPTION` (on a pull request, the higher of the base branch's limit and the PR's own, so a pull request cannot lower the limit by editing `DESCRIPTION`; changes to this workflow are reviewed like any other change) | `tests` (a superset: it runs the browser tests too, under covr, so its coverage is higher) |
 | `off-cran-tests.yaml` | The test files that hold the tests CRAN skips (`test-*-browser.R`, `test-*-snap.R` and `test-*-extended.R`), with Chrome and `NOT_CRAN: true`, on Ubuntu with R release and R 4.1, one line per test file as it finishes; fails when a test fails, one of those tests skips or a file reports no test (a file skipped from its first line reports nothing). The `off-cran-tests` check passes only when both R versions pass | `tests` |
 | `check-no-suggests.yaml` | The gate in `nosuggests` mode on a library with only the hard dependencies (plus rcmdcheck, testthat, knitr and rmarkdown): R CMD check with only what the check needs on the library path, so a Suggests package that is installed but not needed stays hidden; a skipped check fails the job | `nosuggests` |
@@ -77,7 +78,11 @@ style section. Each workflow adds one part:
   not a check: a browser test may run them, and the gate's `new_lines` step is the check); or why nothing was measured.
 - `off-cran-tests.yaml`, per R version: the counts, with the tests in browser, snapshot and extended files, the failing
   and skipped tests, the slowest test files and the files much slower than on `main` (at least 25% and 10 seconds).
-- `lint.yaml`: passed or failed. lintr's findings show inline in the pull request's "Files changed".
+- `lint.yaml`: passed, or the gate steps that failed with the first line of what each found (from the gate's
+  `gate.json`). lintr's findings also show inline in the pull request's "Files changed".
+
+Under the parts, the comment lists each failed job with a link and the step it failed at. A summary job (one that only
+sums up a matrix, named in `summary_jobs` in `.github/pr-report.json`) is listed only when it failed on its own.
 
 It looks like this (figures from a real run; the ▸ lines are folded tables):
 

@@ -193,3 +193,83 @@ studio_start_values <- function(page) {
   }
   values
 }
+
+# Holds back what the browser sends for the inputs `names`, to stand in for a server that has not answered yet: the
+# page changes at once, and the server's reply (a redrawn panel, a new chip) is missing until `release_studio_inputs()`.
+# Setting an input with `app$set_inputs()` waits for the server, so change a held input in the page itself.
+hold_studio_inputs <- function(app, names) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_character(names, min.len = 1, any.missing = FALSE, min.chars = 1)
+  app$run_js(sprintf(
+    paste(
+      "(() => { const socket = Shiny.shinyapp.$socket, names = %s;",
+      "if (!window.studioHold) {",
+      "  const send = socket.send.bind(socket);",
+      "  window.studioHold = { names: [], held: [], send,",
+      "    release() { this.names = []; for (const message of this.held.splice(0)) send(message); } };",
+      "  socket.send = (message) => {",
+      "    const hold = window.studioHold;",
+      "    if (typeof message === 'string' && hold.names.some((name) => message.includes('\"' + name + '\"'))) hold.held.push(message);",
+      "    else send(message);",
+      "  };",
+      "}",
+      "window.studioHold.names = names; })()"
+    ),
+    jsonlite::toJSON(names)
+  ))
+}
+
+# Sends what `hold_studio_inputs()` kept, and returns how many messages that was.
+release_studio_inputs <- function(app) {
+  checkmate::assert_r6(app, "AppDriver")
+  app$get_js("(() => { const n = window.studioHold.held.length; window.studioHold.release(); return n; })()")
+}
+
+# Holds back what the server sends to the page, to stand in for a slow connection: the page goes on working, and the
+# server's replies (a redrawn panel, a control set by updateTextInput()) arrive, in order, when `release_studio_replies()`
+# is called. Everything the server has sent since is in `window.studioReplies.held`.
+hold_studio_replies <- function(app) {
+  checkmate::assert_r6(app, "AppDriver")
+  app$run_js(paste(
+    "(() => { const shinyApp = Shiny.shinyapp, dispatch = shinyApp.dispatchMessage.bind(shinyApp);",
+    "const hold = window.studioReplies = { on: true, held: [], dispatch,",
+    "  release() { this.on = false; for (const message of this.held.splice(0)) dispatch(message); } };",
+    "shinyApp.dispatchMessage = (message) => (hold.on ? hold.held.push(message) : dispatch(message)); })()"
+  ))
+}
+
+# Waits until the server has sent a message that `condition` (JavaScript on `reply`, the parsed message) accepts, and
+# the page is holding it back (`hold_studio_replies()`).
+wait_studio_reply <- function(app, condition) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(condition, min.chars = 1)
+  app$wait_for_js(sprintf(
+    "window.studioReplies.held.some((message) => { const reply = typeof message === 'string' ? JSON.parse(message) : message; return %s; })",
+    condition
+  ))
+}
+
+# Types `value` into the text control `id`, as a visitor does: the control changes at once, Shiny sends it a moment later.
+type_studio_text <- function(app, id, value) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(id, min.chars = 1)
+  checkmate::assert_string(value)
+  app$run_js(sprintf(
+    "{ const field = document.getElementById('%s'); field.value = %s; field.dispatchEvent(new Event('input', { bubbles: true })); }",
+    id,
+    jsonlite::toJSON(value, auto_unbox = TRUE)
+  ))
+}
+
+# Edits a bound colour picker as a visitor does, leaving Shiny to send it after its debounce.
+studio_colour <- function(app, id, value) {
+  checkmate::assert_r6(app, "AppDriver")
+  checkmate::assert_string(id)
+  checkmate::assert_string(value)
+  app$wait_for_js(sprintf("Shiny.shinyapp.$inputValues['%s'] !== undefined", id))
+  app$run_js(sprintf(
+    "{ const p = document.getElementById('%s'); p.value = '%s'; p.dispatchEvent(new Event('input', {bubbles:true})); }",
+    id,
+    value
+  ))
+}

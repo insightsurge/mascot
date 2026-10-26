@@ -465,6 +465,57 @@ describe("the Brand colours tab", {
   })
 })
 
+describe("theme actions before picker acknowledgements", {
+  it("keeps a newer menu choice when an older character grid binds without a revision", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "tessa", mood = "idle")
+      session$setInputs(start_from = "forest", start_from_revision = 1, theme_palette_revision = 1)
+      session$setInputs(character = "sela")
+      expect_match(output$palette_grid_ui$html, 'value="forest" checked', fixed = TRUE)
+      session$setInputs(start_from = "coral_navy", start_from_revision = 2, theme_palette_revision = 2)
+      # The held drawing binds after the second choice; the grid has never sent a user revision.
+      session$setInputs(palette_grid = "forest")
+      expect_identical(output$preview_caption, "Sela \u00b7 coral_navy")
+      expect_match(output$theme_code, 'theme = "coral_navy"', fixed = TRUE)
+    })
+  })
+
+  # #574 case 2
+  it("applies a sample pair on the server without waiting for either picker to report it", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "tessa", mood = "idle", mode = "auto")
+      session$setInputs(brand_primary = "#1f6feb", brand_secondary = "#966600")
+      # A sample click is the only input here: no browser is present to echo the updated pickers.
+      session$setInputs(brand_sample = "#0f766e,#c2410c")
+      expect_identical(
+        output$theme_code,
+        'mascot("helper", theme = list(body = "#0f766e", rim = "#c2410c"))'
+      )
+    })
+  })
+
+  # #574 case 3
+  it("updates only the other palette control after each choice", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "tessa", mood = "idle", start_from = "original", palette_grid = "original")
+      updates <- list()
+      session$sendInputMessage <- function(id, message) updates[[id]] <<- message
+      session$setInputs(start_from = "forest")
+      expect_identical(output$theme_code, 'mascot("helper", theme = "forest")')
+      expect_false("start_from" %in% names(updates))
+      expect_identical(updates$palette_grid$value, "forest")
+      updates <- list()
+      session$setInputs(palette_grid = "coral_navy")
+      expect_identical(output$theme_code, 'mascot("helper", theme = "coral_navy")')
+      expect_false("palette_grid" %in% names(updates))
+      expect_identical(updates$start_from$value, "coral_navy")
+    })
+  })
+})
+
 describe("the Check tab", {
   it("offers the four scenarios as buttons beside their own mascot", {
     parts <- theme_parts()
@@ -697,6 +748,21 @@ describe("the Brand colours tab for a character with no brand parts", {
 })
 
 describe("a translucent colour typed half way", {
+  it("carries a stamped invalid draft and its warning through a palette redraw", {
+    env <- theme_parts()$env
+    shiny::testServer(env$theme_view_server, {
+      session$setInputs(character = "knurl", mood = "idle")
+      session$setInputs(`colours-light_shine_translucent` = list(value = "rgba(1,2", revision = 1, edit = 1))
+      palettes <- mascot_palettes("knurl")
+      session$setInputs(start_from = palettes$name[palettes$source != "native"][[1]])
+      html <- output[["colours-light"]]$html
+      expect_match(html, 'value="rgba(1,2"', fixed = TRUE)
+      expect_match(html, 'aria-invalid="true"', fixed = TRUE)
+      expect_match(html, 'aria-describedby="colours-light_shine_translucent_problem"', fixed = TRUE)
+      expect_match(html, "Not a valid colour yet", fixed = TRUE)
+    })
+  })
+
   it("is named by its picker, and only the colours mascot_theme() rejects are", {
     env <- theme_parts()$env
     expect_length(env$theme_draft_problems(c(body = "#123456"), c(shine_translucent = "rgba(1, 2, 3, 0.5)")), 0L)

@@ -37,6 +37,342 @@ open_theme_tab <- function(app, tab) {
   ))
 }
 
+# Keeps the colour binding's 250 ms timer waiting, even on a slow test machine. Immediate input sends still work and
+# can cancel their waiting timer. Timers with other delays run normally. Stopping the driver clears the hold.
+hold_theme_colour_debounce <- function(app) {
+  checkmate::assert_r6(app, "AppDriver")
+  app$run_js(paste(
+    "(() => { const set = window.setTimeout.bind(window), clear = window.clearTimeout.bind(window);",
+    "const hold = window.themeColourDebounce = { timers: new Map(), next: -1,",
+    "  release() { window.setTimeout = set; window.clearTimeout = clear;",
+    "    const waiting = [...this.timers.values()]; this.timers.clear(); waiting.forEach((run) => run()); } };",
+    "window.setTimeout = (run, delay, ...args) => {",
+    "  if (delay !== 250) return set(run, delay, ...args);",
+    "  const id = hold.next--; hold.timers.set(id, () => run(...args)); return id; };",
+    "window.clearTimeout = (id) => { if (!hold.timers.delete(id)) clear(id); }; })()"
+  ))
+}
+
+# Shiny draws asynchronously. Finish each held reply before dispatching the next, as its socket queue does; keep
+# incoming replies held during the drain.
+release_theme_replies <- function(app) {
+  checkmate::assert_r6(app, "AppDriver")
+  app$get_js(paste(
+    "(async () => { const hold = window.studioReplies;",
+    "while (hold.held.length) await hold.dispatch(hold.held.shift());",
+    "hold.on = false; return true; })()"
+  ))
+  invisible(NULL)
+}
+
+describe("actions with a colour still waiting in the theme view", {
+  # #574 case 1
+  it("copies the colour edited immediately before Copy", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "colours")
+    app$wait_for_js("Shiny.shinyapp.$inputValues['colours-light_body'] !== undefined")
+    stub_studio_clipboard(app)
+    hold_theme_colour_debounce(app)
+    app$run_js(paste(
+      "(() => { const field = document.getElementById('colours-light_body'); field.value = '#123456';",
+      "field.dispatchEvent(new Event('input', { bubbles: true }));",
+      "document.querySelector('[data-copy=theme_code]').click(); })()"
+    ))
+    app$wait_for_js("window.copied !== null")
+    expect_match(app$get_js("window.copied"), 'body = "#123456"', fixed = TRUE)
+    expect_identical(app$get_js("window.copied"), app$get_js("document.getElementById('theme_code').textContent"))
+  })
+
+  # #574 case 1
+  it("builds every mood with the colour edited immediately before Show every mood", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "check")
+    app$wait_for_js("Shiny.shinyapp.$inputValues['colours-light_body'] !== undefined")
+    hold_theme_colour_debounce(app)
+    app$run_js(paste(
+      "(() => { const field = document.getElementById('colours-light_body'); field.value = '#123456';",
+      "field.dispatchEvent(new Event('input', { bubbles: true }));",
+      "document.getElementById('check_preview').click(); })()"
+    ))
+    app$wait_for_js(paste(
+      "!!document.querySelector('#check_preview_ui [data-busy-done]') &&",
+      "!document.getElementById('check_preview').hasAttribute('aria-busy')"
+    ))
+    expect_match(
+      app$get_js("document.querySelector('#check_preview_ui .theme-code-text').textContent"),
+      'body = "#123456"',
+      fixed = TRUE
+    )
+    expect_false(app$get_js("document.getElementById('check_preview_ui').textContent.includes('settings changed')"))
+  })
+
+  # #574 case 1
+  it("checks the colour edited immediately before Check contrast", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "check")
+    app$wait_for_js("Shiny.shinyapp.$inputValues['colours-light_rim'] !== undefined")
+    hold_theme_colour_debounce(app)
+    # This rim colour has low contrast on the light page: the contrast result must list it.
+    app$run_js(paste(
+      "(() => { const field = document.getElementById('colours-light_rim'); field.value = '#f5e6c8';",
+      "field.dispatchEvent(new Event('input', { bubbles: true }));",
+      "document.getElementById('check_contrast').click(); })()"
+    ))
+    app$wait_for_js(paste(
+      "!!document.querySelector('#check_contrast_ui [data-busy-done]') &&",
+      "!document.getElementById('check_contrast').hasAttribute('aria-busy')"
+    ))
+    result <- app$get_js("document.getElementById('check_contrast_ui').textContent")
+    expect_match(result, "hard to see", fixed = TRUE)
+    expect_match(tolower(result), "#f5e6c8", fixed = TRUE)
+    expect_false(grepl("settings changed", result, fixed = TRUE))
+  })
+})
+
+describe("brand samples and immediate copying in the theme view", {
+  it("applies a sample without reporting the server-set brand pickers as edits", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "brand")
+    app$wait_for_js("Shiny.shinyapp.$inputValues.brand_secondary !== undefined")
+    stub_studio_clipboard(app)
+    hold_theme_colour_debounce(app)
+    app$run_js(paste(
+      "window.brandEdits = [];",
+      "$(document).on('shiny:inputchanged.brandEdits', (event) => {",
+      "if (['brand_primary', 'brand_secondary'].includes(event.name)) window.brandEdits.push(event.name); });",
+      "document.querySelector('[data-event=brand_sample][data-value=\"#0f766e,#c2410c\"]').click();"
+    ))
+    app$wait_for_js(paste(
+      "document.getElementById('brand_primary').value === '#0f766e' &&",
+      "document.getElementById('brand_secondary').value === '#c2410c'"
+    ))
+    # Release any debounce the messages started, then Copy also flushes any picker marked as waiting.
+    app$run_js(paste(
+      "window.themeColourDebounce.release();",
+      "document.querySelector('[data-copy=theme_code]').click();"
+    ))
+    app$wait_for_js("window.copied !== null")
+    expect_length(app$get_js("window.brandEdits"), 0L)
+    expect_identical(
+      app$get_js("window.copied"),
+      'mascot("helper", theme = list(body = "#0f766e", rim = "#c2410c"))'
+    )
+    # Returning to the colour held before the sample is a real edit, even without an echo of the sample.
+    studio_colour(app, "brand_primary", "#1f6feb")
+    app$run_js("window.copied = null; document.querySelector('[data-copy=theme_code]').click()")
+    app$wait_for_js("window.copied !== null")
+    expect_match(app$get_js("window.copied"), 'body = "#1f6feb"', fixed = TRUE)
+  })
+
+  # #574 case 2
+  it("copies a sample pair before the pickers can report it back", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "brand")
+    app$wait_for_js("Shiny.shinyapp.$inputValues.brand_secondary !== undefined")
+    stub_studio_clipboard(app)
+    hold_theme_colour_debounce(app)
+    hold_studio_replies(app)
+    app$run_js(paste(
+      "document.querySelector('[data-event=brand_sample][data-value=\"#0f766e,#c2410c\"]').click();",
+      "document.querySelector('[data-copy=theme_code]').click();"
+    ))
+    wait_studio_reply(app, "!!reply.custom?.['studio:copy']")
+    release_theme_replies(app)
+    app$wait_for_js("window.copied !== null")
+    expect_identical(
+      app$get_js("window.copied"),
+      'mascot("helper", theme = list(body = "#0f766e", rim = "#c2410c"))'
+    )
+  })
+})
+
+describe("palette choices while a theme reply is waiting", {
+  it("uses the character's palette options without applying their older selected value", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "colours")
+    app$set_inputs(start_from = "forest")
+    hold_studio_replies(app)
+    app$run_js(paste(
+      "{ const character = document.getElementById('character'); character.value = 'sela';",
+      "$(character).trigger('change'); }"
+    ))
+    wait_studio_reply(app, "reply.inputMessages?.some((item) => item.id === 'start_from' && item.message.options)")
+    app$run_js(paste(
+      "{ const menu = document.getElementById('start_from'); menu.value = 'coral_navy'; $(menu).trigger('change'); }"
+    ))
+    wait_studio_reply(app, "reply.values?.theme_code?.includes('coral_navy')")
+    release_theme_replies(app)
+    app$wait_for_js("document.getElementById('theme_code').textContent.includes('coral_navy')")
+    expect_match(app$get_js("document.getElementById('start_from').options[0].textContent"), "Sela", fixed = TRUE)
+    expect_identical(app$get_js("document.getElementById('start_from').value"), "coral_navy")
+    stub_studio_clipboard(app)
+    app$run_js("document.querySelector('[data-copy=theme_code]').click()")
+    app$wait_for_js("window.copied !== null")
+    expect_match(app$get_js("window.copied"), 'theme = "coral_navy"', fixed = TRUE)
+  })
+
+  it("copies own colours chosen immediately after the server sets the menu to a palette", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "palette")
+    app$click(selector = "label.theme-palette-card:has(input[value=forest])")
+    app$wait_for_js("document.getElementById('start_from').value === 'forest'")
+    stub_studio_clipboard(app)
+    app$run_js(paste(
+      "{ const menu = document.getElementById('start_from'); menu.value = 'original'; $(menu).trigger('change');",
+      "document.querySelector('[data-copy=theme_code]').click(); }"
+    ))
+    app$wait_for_js("window.copied !== null")
+    expect_identical(app$get_js("window.copied"), 'mascot("helper")')
+  })
+
+  # #574 case 3
+  it("keeps the Coral Navy card selected when the reply to Forest from the menu arrives late", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "colours")
+    app$wait_for_js("Shiny.shinyapp.$inputValues.start_from === 'original'")
+    hold_studio_replies(app)
+    app$run_js(paste(
+      "{ const menu = document.getElementById('start_from'); menu.value = 'forest';",
+      "$(menu).trigger('change'); }"
+    ))
+    wait_studio_reply(app, "reply.values?.theme_code?.includes('forest')")
+    open_theme_tab(app, "palette")
+    # Keep replies to Coral Navy held too, so they cannot hide a jump back caused by the Forest reply.
+    after_reply <- app$get_js(paste(
+      "(async () => { document.querySelector('label.theme-palette-card:has(input[value=coral_navy])').click();",
+      "const hold = window.studioReplies;",
+      "for (const message of hold.held.splice(0)) await hold.dispatch(message);",
+      "return document.querySelector('#palette_grid input:checked').value; })()"
+    ))
+    expect_identical(after_reply, "coral_navy")
+  })
+})
+
+describe("colour pickers replaced while an edit is waiting", {
+  choices <- c(
+    menu = "const menu = document.getElementById('start_from'); menu.value = 'forest'; $(menu).trigger('change');",
+    card = "document.querySelector('label.theme-palette-card:has(input[value=forest])').click();",
+    character = "const character = document.getElementById('character'); character.value = 'sela'; $(character).trigger('change');"
+  )
+  for (choice in names(choices)) {
+    it(paste("keeps a colour edited immediately before a", choice, "choice"), {
+      local_shiny_browser()
+      skip_if_not_installed("bslib")
+      app <- theme_driver()
+      open_theme_tab(app, "colours")
+      app$wait_for_js("Shiny.shinyapp.$inputValues['colours-light_body'] !== undefined")
+      stub_studio_clipboard(app)
+      hold_theme_colour_debounce(app)
+      app$run_js(paste(
+        "(() => { const field = document.getElementById('colours-light_body'); window.pickerBeforeChoice = field;",
+        "field.value = '#123456'; field.dispatchEvent(new Event('input', { bubbles: true }));",
+        choices[[choice]],
+        "})()"
+      ))
+      app$wait_for_js(paste(
+        "document.getElementById('colours-light_body') !== window.pickerBeforeChoice &&",
+        "document.getElementById('colours-light_body').value === '#123456'"
+      ))
+      app$run_js("document.querySelector('[data-copy=theme_code]').click()")
+      app$wait_for_js("window.copied !== null")
+      expect_match(app$get_js("window.copied"), 'body = "#123456"', fixed = TRUE)
+      expect_match(
+        app$get_js("window.copied"),
+        if (choice == "character") 'character = "sela"' else 'palette = "forest"',
+        fixed = TRUE
+      )
+    })
+  }
+
+  # #574 case 4
+  it("does not apply an edit from Tessa's old picker to Sela", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "colours")
+    app$wait_for_js("Shiny.shinyapp.$inputValues['colours-light_body'] !== undefined")
+    stub_studio_clipboard(app)
+    hold_theme_colour_debounce(app)
+    hold_studio_replies(app)
+    app$run_js(paste(
+      "window.oldThemePicker = document.getElementById('colours-light_body');",
+      "const character = document.getElementById('character'); character.value = 'sela'; $(character).trigger('change');"
+    ))
+    wait_studio_reply(app, "!!reply.values?.['colours-light']")
+    # The user still sees Tessa's picker while Sela's layout is on its way.
+    app$run_js(paste(
+      "window.oldThemePicker.value = '#123456';",
+      "window.oldThemePicker.dispatchEvent(new Event('input', { bubbles: true }));"
+    ))
+    release_theme_replies(app)
+    app$wait_for_js(paste(
+      "document.getElementById('colours-light_body') !== window.oldThemePicker &&",
+      "document.getElementById('theme_code').textContent.includes('sela')"
+    ))
+    app$run_js(paste(
+      "window.themeColourDebounce.release();",
+      "document.querySelector('[data-copy=theme_code]').click();"
+    ))
+    app$wait_for_js("window.copied !== null")
+    expect_false(grepl("#123456", app$get_js("window.copied"), fixed = TRUE))
+    sela <- mascot_colour_roles("sela")
+    expect_identical(
+      tolower(app$get_js("document.getElementById('colours-light_body').value")),
+      tolower(sela$colour[sela$role == "body"])
+    )
+  })
+})
+
+describe("invalid colour text after a palette redraw", {
+  # #574 case 5
+  it("keeps the warning beside the invalid value that the redraw preserves", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    app$set_inputs(character = "knurl")
+    open_theme_tab(app, "colours")
+    app$wait_for_js("!!document.getElementById('colours-light_shine_translucent')")
+    studio_colour(app, "colours-light_shine_translucent", "rgba(1,2")
+    app$wait_for_js("!!document.getElementById('colours-light_shine_translucent_problem')")
+    app$run_js("window.invalidThemePicker = document.getElementById('colours-light_shine_translucent')")
+    palettes <- mascot_palettes("knurl")
+    app$set_inputs(start_from = palettes$name[palettes$source != "native"][[1]])
+    app$wait_for_js(paste(
+      "(() => { const field = document.getElementById('colours-light_shine_translucent');",
+      "return field && field !== window.invalidThemePicker && field.value === 'rgba(1,2'; })()"
+    ))
+    expect_identical(
+      app$get_js("document.getElementById('colours-light_shine_translucent').getAttribute('aria-invalid')"),
+      "true"
+    )
+    expect_identical(
+      app$get_js("document.getElementById('colours-light_shine_translucent').getAttribute('aria-describedby')"),
+      "colours-light_shine_translucent_problem"
+    )
+    expect_match(
+      app$get_js("document.getElementById('colours-light_shine_translucent_problem')?.textContent ?? ''"),
+      "Not a valid colour yet",
+      fixed = TRUE
+    )
+  })
+})
+
 describe("the theme view in a browser", {
   it("switches tabs, draws the chosen palette, copies its code and links back from the studio", {
     local_shiny_browser()
@@ -266,30 +602,53 @@ describe("the Check tab's slow buttons in a browser", {
       expect_true(app$get_js(sprintf("document.getElementById('%s_ui').textContent.trim().length > 0", case[[1]])))
     }
   })
-  it("keep Show every mood busy until the page inside its frame has loaded", {
+  # #574 case 6
+  it("keep Show every mood busy through a held reply and until its frame loads", {
     local_shiny_browser()
     skip_if_not_installed("bslib")
     app <- theme_driver()
     app$wait_for_js("!!mascot.host.state(document.getElementById('theme_mascot'))")
     open_theme_tab(app, "check")
-    # Given a record of what the page shows at every frame it draws: is the button busy, is there a frame, is its page
-    # loaded (the page marks a frame data-loaded when that happens)
+    # A mutation observer sees each inserted frame before its load event, even when no animation frame falls in that
+    # gap. Holding the server's reply also gives Building a stable state to inspect.
     app$run_js(paste(
-      "window.buttonSamples = [];",
-      "const sample = () => { const frame = document.querySelector('iframe.theme-preview-page');",
-      "  window.buttonSamples.push({ busy: document.getElementById('check_preview').hasAttribute('aria-busy'),",
-      "    frame: !!frame, loaded: frame ? frame.dataset.loaded === 'true' : null });",
-      "  requestAnimationFrame(sample); };",
-      "sample();"
+      "window.loadingButtons = [];",
+      "new MutationObserver(() => { const frame = document.querySelector('#check_preview_ui iframe');",
+      "  if (!frame || frame.dataset.loaded === 'true') return;",
+      "  const button = document.getElementById('check_preview');",
+      "  window.loadingButtons.push({ click: button.dataset.busyClick ?? null,",
+      "    busy: button.getAttribute('aria-busy'), disabled: button.getAttribute('aria-disabled') });",
+      "}).observe(document.getElementById('check_preview_ui'), { childList: true, subtree: true });"
     ))
-    # When it is clicked, once and again
-    for (click in 1:2) {
-      click_studio_busy(app, "check_preview")
+    for (build in 1:2) {
+      hold_studio_replies(app)
+      click <- app$get_js(paste(
+        "(() => { const button = document.getElementById('check_preview'); button.click();",
+        "return button.dataset.busyClick; })()"
+      ))
+      wait_studio_reply(app, "!!reply.values?.check_preview_ui")
+      # The server has answered, but that answer has not been drawn yet.
+      expect_identical(app$get_js("document.getElementById('check_preview').textContent"), "Building\u2026")
+      expect_identical(app$get_js("document.getElementById('check_preview').getAttribute('aria-busy')"), "true")
+      expect_identical(app$get_js("document.getElementById('check_preview').getAttribute('aria-disabled')"), "true")
+      release_theme_replies(app)
+      app$wait_for_js(sprintf(
+        paste(
+          "!!document.querySelector('#check_preview_ui [data-busy-done=\"%s\"]') &&",
+          "!!document.querySelector('#check_preview_ui iframe[data-loaded=true]') &&",
+          "!document.getElementById('check_preview').hasAttribute('aria-busy')"
+        ),
+        click
+      ))
+      expect_true(app$get_js(sprintf(
+        "window.loadingButtons.some((sample) => sample.click === '%s')",
+        click
+      )))
+      expect_identical(app$get_js("document.getElementById('check_preview').textContent"), "Show every mood")
     }
-    # Then no drawn frame showed a frame still loading its page with the button free
-    early <- app$get_js("window.buttonSamples.filter((s) => !s.busy && s.frame && s.loaded === false).length")
-    expect_identical(early, 0L)
-    expect_true(app$get_js("window.buttonSamples.some((s) => s.busy && s.frame && s.loaded === false)"))
+    expect_true(app$get_js(
+      "window.loadingButtons.every((sample) => sample.busy === 'true' && sample.disabled === 'true')"
+    ))
   })
   it("stay busy until the result of their own click is drawn, whatever the server says in between", {
     local_shiny_browser()

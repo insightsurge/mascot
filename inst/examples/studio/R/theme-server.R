@@ -182,13 +182,48 @@ theme_view_server <- function(input, output, session) {
     value <- palette_now()
     if (value %in% studio_palette_choices(character())) value else "original"
   })
-  pick_palette <- function(value) {
-    if (isTRUE(value %in% studio_palette_choices(shiny::isolate(character())))) palette_now(value)
+  palette_revision <- shiny::reactive({
+    if (is.null(input$theme_palette_revision)) 0L else input$theme_palette_revision
+  })
+  sync_palette <- function(id, choices = NULL) {
+    checkmate::assert_string(id, min.chars = 1)
+    checkmate::assert_character(choices, any.missing = FALSE, null.ok = TRUE)
+    update_choice(session, id, palette(), "theme_palette", palette_revision(), choices)
   }
-  shiny::observeEvent(input$palette_grid, pick_palette(input$palette_grid))
-  shiny::observeEvent(input$start_from, pick_palette(input$start_from))
+  pick_palette <- function(value, other) {
+    checkmate::assert_string(value)
+    checkmate::assert_choice(other, c("start_from", "palette_grid"))
+    own <- if (other == "start_from") "palette_grid" else "start_from"
+    revision <- input[[paste0(own, "_revision")]]
+    if (is.null(revision)) {
+      revision <- 0L
+    }
+    if (revision < palette_revision()) {
+      return(invisible(NULL))
+    }
+    if (isTRUE(value %in% studio_palette_choices(shiny::isolate(character())))) {
+      palette_now(value)
+      sync_palette(other)
+    }
+  }
+  shiny::observeEvent(
+    list(input$palette_grid, input$palette_grid_revision),
+    {
+      shiny::req(input$palette_grid)
+      pick_palette(input$palette_grid, "start_from")
+    },
+    priority = 200
+  )
+  shiny::observeEvent(
+    list(input$start_from, input$start_from_revision),
+    {
+      shiny::req(input$start_from)
+      pick_palette(input$start_from, "palette_grid")
+    },
+    priority = 200
+  )
   shiny::observeEvent(character(), {
-    shiny::updateSelectInput(session, "start_from", choices = studio_palette_labels(character()), selected = palette())
+    sync_palette("start_from", studio_palette_labels(character()))
     shiny::updateSelectInput(
       session,
       "mood",
@@ -197,15 +232,15 @@ theme_view_server <- function(input, output, session) {
     )
     palette_now(palette())
   })
-  shiny::observeEvent(palette(), {
-    shiny::updateSelectInput(session, "start_from", selected = palette())
-    shiny::updateRadioButtons(session, "palette_grid", selected = palette())
-  })
   output$palette_grid_ui <- shiny::bindEvent(
     shiny::renderUI(palette_grid(character(), shiny::isolate(palette()))),
     character()
   )
 
+  source <- shiny::reactiveVal("mascot")
+  draft_problems <- shiny::reactive({
+    if (source() == "bslib") base::character() else theme_draft_problems(colours$light(), colours$dark())
+  })
   # Your colours: a picker for every role, light and dark, and the parts that read the CSS variable.
   colours <- colour_roles_server(
     "colours",
@@ -213,44 +248,67 @@ theme_view_server <- function(input, output, session) {
     palette,
     css = theme_css_variable,
     resolved = FALSE,
-    leader = "own colour"
+    leader = "own colour",
+    problems = draft_problems,
+    stamp = shiny::reactive(list(group = "theme_palette", revision = palette_revision()))
   )
   # Brand colours. source is the one record of how the theme is written: "mascot" (palette, your colours, CSS) or
   # "bslib" (a bs_theme(), which replaces them). Only the Brand colours buttons and the stack line change it; opening
   # a tab never does.
-  source <- shiny::reactiveVal("mascot")
   shiny::observeEvent(input$brand_source, {
     if (isTRUE(input$brand_source %in% c("mascot", "bslib"))) source(input$brand_source)
   })
   brand_roles <- shiny::reactive(theme_brand_roles(character()))
-  brand <- shiny::reactive(list(
-    primary = if (is.null(input$brand_primary)) theme_brand_samples[[1]][[1]] else input$brand_primary,
-    secondary = if (is.null(input$brand_secondary)) theme_brand_samples[[1]][[2]] else input$brand_secondary
-  ))
+  brand <- shiny::reactiveVal(list(primary = theme_brand_samples[[1]][[1]], secondary = theme_brand_samples[[1]][[2]]))
+  set_brand <- function(slot, value) {
+    checkmate::assert_choice(slot, c("primary", "secondary"))
+    checkmate::assert_string(value, pattern = "^#[0-9a-fA-F]{6}$")
+    pair <- shiny::isolate(brand())
+    pair[[slot]] <- value
+    brand(pair)
+    for (role in brand_roles()[[slot]]) {
+      for (each in c("light", "dark")) {
+        colours$set(each, role, value)
+      }
+    }
+  }
   # Written as your own colours, a brand colour sets its parts in both modes, as a plain list does. The pickers'
   # starting values set nothing: only a colour the user chooses does.
   for (slot in c("primary", "secondary")) {
     local({
       slot <- slot
+      # Initial picker values describe bs_theme() too, but do not add overrides to the character's own colours.
       shiny::observeEvent(
         input[[paste0("brand_", slot)]],
         {
-          for (role in brand_roles()[[slot]]) {
-            for (each in c("light", "dark")) {
-              colours$set(each, role, input[[paste0("brand_", slot)]])
-            }
-          }
+          pair <- shiny::isolate(brand())
+          pair[[slot]] <- input[[paste0("brand_", slot)]]
+          brand(pair)
         },
-        ignoreInit = TRUE
+        priority = 100
+      )
+      shiny::observeEvent(
+        input[[paste0("brand_", slot)]],
+        {
+          set_brand(slot, input[[paste0("brand_", slot)]])
+        },
+        ignoreInit = TRUE,
+        priority = 50
       )
     })
   }
-  shiny::observeEvent(input$brand_sample, {
-    pair <- strsplit(input$brand_sample, ",", fixed = TRUE)[[1]]
-    shiny::req(length(pair) == 2L, all(grepl("^#[0-9a-fA-F]{6}$", pair)))
-    session$sendInputMessage("brand_primary", list(value = pair[[1]]))
-    session$sendInputMessage("brand_secondary", list(value = pair[[2]]))
-  })
+  shiny::observeEvent(
+    input$brand_sample,
+    {
+      pair <- strsplit(input$brand_sample, ",", fixed = TRUE)[[1]]
+      shiny::req(length(pair) == 2L, all(grepl("^#[0-9a-fA-F]{6}$", pair)))
+      set_brand("primary", pair[[1]])
+      set_brand("secondary", pair[[2]])
+      session$sendInputMessage("brand_primary", list(value = pair[[1]]))
+      session$sendInputMessage("brand_secondary", list(value = pair[[2]]))
+    },
+    priority = 50
+  )
   output$brand_parts <- shiny::renderUI(theme_brand_parts_ui(brand_roles(), mascot::mascot_character(character())$name))
   # "yes" or "no", read by the Brand colours tab's conditionalPanel().
   output$brand_has_parts <- shiny::renderText(if (length(unlist(brand_roles()))) "yes" else "no")
@@ -300,9 +358,6 @@ theme_view_server <- function(input, output, session) {
   })
   # The theme the code, the preview and the checks use: the draft, unless the package rejects one of its colours (a
   # translucent colour typed half way); then the last accepted theme, with a note under each rejected text box.
-  draft_problems <- shiny::reactive({
-    if (source() == "bslib") base::character() else theme_draft_problems(colours$light(), colours$dark())
-  })
   accepted <- shiny::reactiveVal(NULL)
   shiny::observeEvent(list(draft_theme(), draft_problems()), {
     if (!length(draft_problems())) accepted(draft_theme())
@@ -329,7 +384,11 @@ theme_view_server <- function(input, output, session) {
     switch(
       input$stack_clear,
       bslib = source("mascot"),
-      palette = palette_now("original"),
+      palette = {
+        palette_now("original")
+        sync_palette("start_from")
+        sync_palette("palette_grid")
+      },
       colours = {
         colours$reset("light")
         colours$reset("dark")

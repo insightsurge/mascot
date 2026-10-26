@@ -4,7 +4,7 @@
 #
 # What the view's two files use from the rest of the app, and nothing else (test-studio-theme-extended.R checks it):
 # - R/views.R: studio_view_titles, view_character()
-# - R/shared-ui.R: studio_button(), copy_button(), copy_gate()
+# - R/shared-ui.R: studio_button(), copy_button(), copy_gate(), update_choice()
 # - R/shared-data.R: studio_characters(), studio_palette_choices(), studio_palette_labels(), studio_palette_swap
 # - R/shared-help.R: help_page(), help_arg(), html_text(), studio_help_tail(), studio_bslib_experimental()
 # - R/shared-layout.R: sentence_bar(), sentence_words(), window_bar(), window_footer()
@@ -205,12 +205,15 @@ theme_colours_tab <- function(character) {
     ),
     shiny::div(
       class = "theme-colours-head",
-      shiny::selectInput(
-        "start_from",
-        "Start from",
-        studio_palette_labels(character),
-        selected = "original",
-        selectize = FALSE
+      htmltools::tagAppendAttributes(
+        shiny::selectInput(
+          "start_from",
+          "Start from",
+          studio_palette_labels(character),
+          selected = "original",
+          selectize = FALSE
+        ),
+        `data-choice-input` = "theme_palette"
       ),
       shiny::uiOutput("mode_ui")
     ),
@@ -567,6 +570,7 @@ palette_grid <- function(character, selected = "original") {
   shiny::div(
     id = "palette_grid",
     class = "theme-palette-grid shiny-input-radiogroup",
+    `data-choice-input` = "theme_palette",
     role = "radiogroup",
     `aria-label` = "Palettes",
     lapply(cards, function(card) {

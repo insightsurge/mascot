@@ -29,7 +29,8 @@ One test file per R file (`R/moods.R` is tested in `tests/testthat/test-moods.R`
   goes in its extended file.
 - **Helpers** live in `tests/testthat/helper-<name>.R`, which testthat loads before every file: `helper-extended.R`
   (`skip_unless_extended()`), `helper-engine-js.R` (`skip_without_chrome()`), `helper-studio.R` (the studio's pages,
-  drawn once per process). A helper used by one file only stays at the top of that file.
+  drawn once per process, and `hold_studio_inputs()`, `hold_studio_replies()` and the other helpers that hold back
+  what the page sends or the server answers, for "do X, then Y at once" tests). A helper used by one file only stays at the top of that file.
 - **Apps** for shinytest2 are in `tests/testthat/apps/<name>/app.R`.
 
 ## Where each kind runs

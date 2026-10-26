@@ -590,8 +590,9 @@ theme_view_server <- function(input, output, session) {
     )
   })
 
-  # The copy button waits for the server's answer to its click (copy_gate() in R/shared-ui.R); this view holds back no
-  # change, so the answer comes as soon as the click's turn does.
+  # The copy button waits for the server's answer to its click (copy_gate() in R/shared-ui.R). The page sends any
+  # colour still waiting before the click (inputs.js), and this view holds back no change of its own, so the answer
+  # comes as soon as the click's turn does.
   copy_gate(input, session)
   shiny::observeEvent(input$reset_all, session$reload())
   invisible(NULL)

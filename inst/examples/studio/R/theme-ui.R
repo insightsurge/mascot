@@ -2,7 +2,7 @@
 # and the plain R code to copy. This file builds its page; theme-server.R holds its server. The view uses the
 # studio app's shared parts (R/shared-*.R, R/code.R, www/tokens.css, www/inputs.js), never studio.js.
 #
-# What the view's two files use from the rest of the app, and nothing else (test-studio-theme.R checks it):
+# What the view's two files use from the rest of the app, and nothing else (test-studio-theme-extended.R checks it):
 # - R/views.R: studio_view_titles, view_character()
 # - R/shared-ui.R: studio_button(), copy_button(), copy_gate()
 # - R/shared-data.R: studio_characters(), studio_palette_choices(), studio_palette_labels(), studio_palette_swap

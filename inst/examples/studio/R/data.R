@@ -89,7 +89,7 @@ mistakes <- guide_mistake_base
 character_mistakes <- guide_character_mistakes
 
 # Where each argument can be tried: the HTML that must be on the page (an input id), or the reason it
-# has no control. tests/testthat/test-examples.R checks that every exported argument has an entry and
+# has no control. tests/testthat/test-studio-extended.R checks that every exported argument has an entry and
 # that its control is on the page.
 input_id <- function(...) paste0("id=\"", c(...), "\"")
 fixed_arg <- function(reason) list(fixed = reason)

@@ -1,6 +1,7 @@
 # Runs the tests CRAN skips, with NOT_CRAN=true and Chrome, on R release and R 4.1: the browser tests (shinytest2 and
-# chromote, in tests/testthat/test-*-browser.R) and the snapshot tests (test-*-snap.R). R CMD check and the coverage
-# job skip them, as CRAN does. One line per test file as it finishes shows the
+# chromote, in tests/testthat/test-*-browser.R), the snapshot tests (test-*-snap.R) and the detailed tests of the
+# example apps (test-*-extended.R). R CMD check skips all three, as CRAN does; the coverage job runs the extended tests
+# too. One line per test file as it finishes shows the
 # progress while the job runs, and a failing test prints in full. A pull request that changes only documentation
 # starts the jobs and skips their steps (.github/scripts/r-changes.sh).
 # Each R version writes its part of the pull request's CI report (.github/pr-report.json): counts, failing and skipped
@@ -14,7 +15,7 @@ on:
   schedule:
     - cron: "0 5 * * 1"   # Mondays 05:00 UTC, with R-CMD-check: catches a new Chrome or shinytest2
 
-name: browser-tests
+name: off-cran-tests
 
 permissions: read-all
 
@@ -23,23 +24,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  browser:
+  tests:
     runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
-    name: browser (${{ matrix.r }})
+    name: off-cran (${{ matrix.r }})
     timeout-minutes: 150  # about twice the slowest run: 72 min on R 4.1 with a cold cache and a slow package mirror;
     # the tests themselves take 16-27 min in two processes (#502)
 
     strategy:
       fail-fast: false
       matrix:
-        # R 4.1 too: the studio's server code runs only inside the browser tests' apps, so this is where it meets the
-        # oldest R the package supports.
+        # R 4.1 too: the studio's server code runs in the browser tests' apps and the extended tests, so this is where it
+        # meets the oldest R the package supports.
         r: ['release', '4.1']
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      # Run the tests CRAN skips: the browser tests (the runner has Chrome).
+      # Run the tests CRAN skips: the browser tests (the runner has Chrome), the snapshot tests and the extended tests
+      # (NOT_CRAN alone turns those on; the switch says so explicitly, as in the coverage job).
       NOT_CRAN: true
+      MASCOT_EXTENDED_TESTS: true
 
     steps:
       - uses: actions/checkout@v7
@@ -73,18 +76,18 @@ jobs:
         if: github.event_name == 'pull_request' && steps.changes.outputs.r == 'true'
         uses: ./.github/actions/main-baseline
         with:
-          workflow: browser-tests.yaml
-          artifact: browser-timings-${{ matrix.r }}
-          path: ${{ runner.temp }}/browser-baseline
+          workflow: off-cran-tests.yaml
+          artifact: off-cran-timings-${{ matrix.r }}
+          path: ${{ runner.temp }}/off-cran-baseline
 
       - name: Run the tests with Chrome
         if: steps.changes.outputs.r == 'true'
         shell: Rscript {0}
         env:
           R_LABEL: ${{ matrix.r }}
-          OUT: ${{ runner.temp }}/browser-part.md
-          TIMINGS: ${{ runner.temp }}/browser-timings.csv
-          BASELINE_DIR: ${{ runner.temp }}/browser-baseline
+          OUT: ${{ runner.temp }}/off-cran-part.md
+          TIMINGS: ${{ runner.temp }}/off-cran-timings.csv
+          BASELINE_DIR: ${{ runner.temp }}/off-cran-baseline
           BASELINE_FOUND: ${{ steps.baseline.outputs.found }}
           BASELINE_SHA: ${{ steps.baseline.outputs.sha }}
         run: |
@@ -94,18 +97,19 @@ jobs:
           library(testthat)
           library(mascot)
           # The tests CRAN skips, which R CMD check skips too, live in files of their own: browser tests in
-          # test-<name>-browser.R and snapshot tests (expect_snapshot() skips itself on CRAN) in test-<name>-snap.R.
-          # A test in tests/testthat/test-helper-layout.R fails when one of them is anywhere else.
-          files <- list.files("tests/testthat", "^test-.*-(browser|snap)[.]R$")
-          message(length(files), " files with browser or snapshot tests: ", paste(files, collapse = ", "))
+          # test-<name>-browser.R, snapshot tests (expect_snapshot() skips itself on CRAN) in test-<name>-snap.R and the
+          # example apps' detailed tests in test-<name>-extended.R. A test in tests/testthat/test-helper-layout.R fails
+          # when one of them is anywhere else.
+          files <- list.files("tests/testthat", "^test-.*-(browser|snap|extended)[.]R$")
+          message(length(files), " files with browser, snapshot or extended tests: ", paste(files, collapse = ", "))
           # A line per file when it finishes, with its time, and a status line when one starts (update_interval = Inf:
           # no progress spinner in between); failures in full. The reporter also keeps each file's time for the report.
-          source(".github/scripts/browser-report.R")
+          source(".github/scripts/off-cran-report.R")
           reporter <- file_time_reporter$new(show_praise = FALSE)
           reporter$update_interval <- Inf  # testthat's parallel reporter sets 0.05 in its constructor
           results <- testthat::test_dir(
             "tests/testthat",
-            filter = "-(browser|snap)$",
+            filter = "-(browser|snap|extended)$",
             package = "mascot",
             load_package = "installed",
             reporter = reporter,
@@ -116,12 +120,16 @@ jobs:
           skips <- unique(unlist(lapply(results, function(test) {
             vapply(Filter(function(e) inherits(e, "expectation_skip"), test$results), conditionMessage, character(1))
           })))
+          # A browser or extended file starts with its skip, which skips the whole file and reports no test at all, so a
+          # file that reports nothing has skipped too.
+          silent <- setdiff(files, unique(as.data.frame(results)$file))
+          if (length(silent) > 0L) skips <- c(skips, paste("no test ran in", silent))
           if (length(skips) > 0L) message("Skipped: ", paste(skips, collapse = "; "))
           # The report part for the CI report; a fault in the report must not decide the job, the tests do.
-          tryCatch(write_browser_report(results, reporter$seconds(), reporter$elapsed()), error = function(e) {
-            message("::warning::The browser test report failed: ", conditionMessage(e))
+          tryCatch(write_off_cran_report(results, reporter$seconds(), reporter$elapsed()), error = function(e) {
+            message("::warning::The off-CRAN test report failed: ", conditionMessage(e))
             writeLines(
-              sprintf("\u26a0\ufe0f **Browser and snapshot tests, R %s:** the report failed (%s); the job's log has the results.",
+              sprintf("\u26a0\ufe0f **Off-CRAN tests, R %s:** the report failed (%s); the job's log has the results.",
                 Sys.getenv("R_LABEL"), conditionMessage(e)),
               Sys.getenv("OUT")
             )
@@ -136,7 +144,7 @@ jobs:
         if: failure() && steps.changes.outputs.r == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: browser-test-problems-${{ matrix.r }}
+          name: off-cran-test-problems-${{ matrix.r }}
           path: tests/testthat/_problems
           if-no-files-found: ignore
 
@@ -147,47 +155,46 @@ jobs:
           R_STEPS: ${{ steps.changes.outputs.r }}
           R_LABEL: ${{ matrix.r }}
           JOB_STATUS: ${{ job.status }}
-          OUT: ${{ runner.temp }}/browser-part.md
+          OUT: ${{ runner.temp }}/off-cran-part.md
         run: |
           if [ -s "${OUT}" ]; then exit 0; fi
           if [ "${JOB_STATUS}" = "cancelled" ]; then
-            echo "⏹️ **Browser and snapshot tests, R ${R_LABEL}:** the job was cancelled before the tests finished." > "${OUT}"
+            echo "⏹️ **Off-CRAN tests, R ${R_LABEL}:** the job was cancelled before the tests finished." > "${OUT}"
           elif [ "${R_STEPS}" = "false" ]; then
-            echo "⏭️ **Browser and snapshot tests, R ${R_LABEL}:** not run: this pull request changes only documentation." > "${OUT}"
+            echo "⏭️ **Off-CRAN tests, R ${R_LABEL}:** not run: this pull request changes only documentation." > "${OUT}"
           else
-            echo "❌ **Browser and snapshot tests, R ${R_LABEL}:** the job failed before the tests finished (see the run's log)." > "${OUT}"
+            echo "❌ **Off-CRAN tests, R ${R_LABEL}:** the job failed before the tests finished (see the run's log)." > "${OUT}"
           fi
 
       - name: Keep the report
         if: always()
         uses: ./.github/actions/pr-report-part
         with:
-          name: tests-2-browser-${{ matrix.r }}
-          file: ${{ runner.temp }}/browser-part.md
+          name: tests-2-off-cran-${{ matrix.r }}
+          file: ${{ runner.temp }}/off-cran-part.md
 
       # The test times pull requests are compared with.
       - name: Keep main's test times
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
-          name: browser-timings-${{ matrix.r }}
-          path: ${{ runner.temp }}/browser-timings.csv
+          name: off-cran-timings-${{ matrix.r }}
+          path: ${{ runner.temp }}/off-cran-timings.csv
           retention-days: 90
           overwrite: true
 
   # One stable check name that sums up the jobs above (a branch ruleset could require it): it fails unless the job
   # above succeeded on every R version.
-  # Despite the name, it covers the snapshot tests too: they are the other tests CRAN skips.
-  browser-tests:
-    needs: browser
+  off-cran-tests:
+    needs: tests
     if: always()
     runs-on: ubuntu-26.04
-    name: browser-tests
+    name: off-cran-tests
     timeout-minutes: 5  # only reads the matrix result
     steps:
       - name: Require every matrix job to succeed
         env:
-          RESULT: ${{ needs.browser.result }}
+          RESULT: ${{ needs.tests.result }}
         run: |
           echo "Matrix result: ${RESULT}"
           test "${RESULT}" = "success"
@@ -195,7 +202,7 @@ jobs:
   # Rewrites the pull request's CI report comment (.github/actions/pr-report-comment). Pull requests from forks and
   # from Dependabot get the job summaries only: their token can't write to the pull request.
   report:
-    needs: [browser, browser-tests]  # after the summary job too, so the run counts as finished
+    needs: [tests, off-cran-tests]  # after the summary job too, so the run counts as finished
     if: >-
       always() && github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository &&

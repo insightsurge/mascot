@@ -292,8 +292,8 @@ use plain words in help pages:
 
 - **A pyramid.** Most tests are fast unit tests. Above them sit `shiny::testServer()` tests for server logic, and
   above those a small number of shinytest2 tests for what a user sees.
-- **BDD style** (testthat 3rd edition). One test file per R file, plus a `-browser.R` and a `-snap.R` file when it
-  has tests CRAN skips (below). `describe()` names the function or behaviour and
+- **BDD style** (testthat 3rd edition). One test file per R file, plus a `-browser.R`, a `-snap.R` or an
+  `-extended.R` file when it has tests CRAN skips (below). `describe()` names the function or behaviour and
   `it()` states the expected behaviour in plain words, so the test names read as requirements.
 - **Every argument check has a test** showing it fails with a clear message. Every bug fix gets a test.
 - **Snapshots** (`expect_snapshot()`) for printed output and generated HTML. Review every snapshot change in the PR
@@ -305,12 +305,24 @@ use plain words in help pages:
   in `tests/testthat/apps/<name>/app.R`.
 - **Skips.** Every shinytest2 test starts with `skip_on_cran()`, `skip_if_not_installed("shinytest2")` and a skip
   when `chromote::find_chrome()` returns `NULL`, and stops the app with `withr::defer(app$stop())`.
-- **The tests CRAN skips have files of their own.** Browser tests go in `test-<name>-browser.R` and snapshot tests
-  (`expect_snapshot()` skips itself on CRAN) in `test-<name>-snap.R`, and no other test goes in those files. CI's
-  `browser-tests` job runs exactly those files with Chrome and `NOT_CRAN` true, and fails on any skip; R CMD check
-  runs the others, so no test runs twice. A test (`test-helper-layout.R`) reads the test files and fails when a test
-  is in the wrong kind of file. Helpers that a plain file and its `-browser.R` or `-snap.R` file share go in
-  `helper-<name>.R`.
+- **The tests CRAN skips have files of their own.** Browser tests go in `test-<name>-browser.R`, snapshot tests
+  (`expect_snapshot()` skips itself on CRAN) in `test-<name>-snap.R`, and the detailed tests of the example apps in
+  `test-<name>-extended.R`; no other test goes in those files. Browser and extended files start with their skip, so
+  CRAN skips the whole file before any of its code runs (a skip inside each test came after the test had built its
+  characters, which cost about an eighth of the test time on CRAN). Snapshot files keep the skip in each
+  `expect_snapshot()`: a snapshot file skipped as a whole reports no snapshots, and testthat deletes their saved files. CI's `off-cran-tests` job runs exactly those files with Chrome and
+  `NOT_CRAN` true, and fails on any skip; R CMD check runs the others. A test
+  (`test-helper-layout.R`) reads the test files and fails when a test is in the wrong kind of file or a file doesn't
+  start with its skip. Helpers that several files share go in `helper-<name>.R`.
+- **CRAN runs a smoke test of each example app, not all of it.** CRAN asks for examples, vignettes and tests to take
+  under 10 minutes together (the CRAN Cookbook, "Overall checktime"), and lets long tests be optional as long as the
+  rest exercise the package's features (the CRAN Repository Policy). The example apps grow with every exported
+  function and argument (the studio shows all of them), and made up about 60% of the test time CRAN ran, so their
+  detailed tests are extended tests (#568): they run in the coverage job, the off-CRAN job, the gate's `tests` mode
+  and a weekly R CMD check on macOS and Windows. Each app keeps a smoke test on CRAN: its exported function's argument
+  checks, each view builds, the page draws once without duplicate ids, and one server update with its generated
+  code. The package's own functions keep every test on CRAN. R CMD check on Ubuntu with R release fails when the tests
+  take longer than 180 s, which leaves room under CRAN's 10 minutes on its slower machines.
 - **Files.** Tests that write files use `withr::local_tempdir()`.
 - **Coverage is at least 70 percent, measured with covr on R code only.** This is our rule: CRAN's policy and
   `R CMD check` say nothing about coverage. The limit is `Config/cran-gate/coverage` in `DESCRIPTION`. covr does not
@@ -333,7 +345,7 @@ run it:
 |---|---|---|
 | Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; merging a PR (`gh pr merge`) asks for confirmation each time; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
 | The gate (`Rscript tools/cran-gate.R`, section 7.2) | On demand, before a commit or PR | In place |
-| CI | On every PR and push to `main` (the full platform matrix each time), weekly and on demand | In place |
+| CI | On every PR and push to `main`: R CMD check on six platforms, coverage, the off-CRAN tests with Chrome and lint; Mondays and on demand add the extended tests on macOS and Windows (`.github/workflows/README.md`) | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
 framework for now (section 8). A ruleset on `main` blocks force-pushes and deleting the branch; it does not require
@@ -367,7 +379,8 @@ skipped, so the self-test works in any package. A new gate step gets its probe i
 
 ### 7.3 CI workflows
 
-What each workflow runs, and the gate mode that reproduces it locally: `tools/README.md` ("The gate and CI").
+What each workflow runs and when, which test files run where, and the gate mode that reproduces it locally:
+`.github/workflows/README.md`.
 
 Every pull request runs the full matrix (macOS, Windows and four Ubuntu R versions); keep new jobs on Ubuntu unless
 the platform is the point.

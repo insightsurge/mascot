@@ -35,8 +35,9 @@ starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Ex
 - **house:** a helper per argument: each `mascot()` argument takes a plain shortcut or a `mascot_*()` helper; every
   helper starts with `mascot_`.
 - **house:** tests in BDD style (`describe()`/`it()`), one test file per R file (its browser tests in
-  `test-<name>-browser.R`, its snapshot tests in `test-<name>-snap.R`), every checkmate assertion tested,
-  shinytest2 for what a user sees (skipped on CRAN), coverage at least 70%.
+  `test-<name>-browser.R`, its snapshot tests in `test-<name>-snap.R`, an example app's detailed tests in
+  `test-<name>-extended.R`), every checkmate assertion tested, shinytest2 for what a user sees (skipped on CRAN),
+  coverage at least 70%.
 - **house:** the engine is plain, unminified JS/CSS in `inst/www/`, deterministic (seeded, no clock), with status
   text beside every mascot (the mood never carries meaning alone) and `prefers-reduced-motion` honoured.
 - **house:** wording in docs and UI: no hype; "built for GxP work", never "validated" or "GxP compliant"; never name
@@ -79,8 +80,8 @@ lintr or Air yourself. **Which mode when, every option, the exit codes, the run 
   `inst/examples/studio/`: controls (`R/panels.R`), control map (`R/data.R`), code builders (`R/code.R`), studio-only
   guide data (`R/guide.R`) and, where needed, pictures (`R/ui.R`) and server code (`app.R`). Explanations come from
   the help pages (`R/shared-help.R` reads them), so update the roxygen, never copy it into the studio.
-- The completeness tests in `tests/testthat/test-examples.R` catch a missing function or argument; they do not catch
-  a changed default or behaviour, so try the change in the studio before the PR and say so in its checks.
+- The completeness tests in `tests/testthat/test-studio-extended.R` catch a missing function or argument; they do not
+  catch a changed default or behaviour, so try the change in the studio before the PR and say so in its checks.
 
 ## Known users: never break them
 - **Every known user is listed in `docs/consumers.md`**: what it uses, since which version, and how to check it
@@ -107,7 +108,8 @@ articles go in `vignettes/articles/` (website only, not shipped); compress PNGs 
   - the apps, themes and examples users reach through exported functions: the studio (`mascot_studio()`), the
     example apps (`mascot_examples()`, `mascot_example()`), themes and palettes (`mascot_theme()`,
     `mascot_palettes()`);
-  - `docs/consumers.md`, workflow comments, `tools/README.md`, the rules files and CONTRIBUTING;
+  - `docs/consumers.md`, workflow comments, `tools/README.md`, `.github/workflows/README.md`, `tests/README.md`, the
+    rules files and CONTRIBUTING;
   - any other page, app, function or file that describes the behaviour, including ones added after this list.
 
   It works both ways: when you edit an article, guide or example, check that the help page still agrees. Search the

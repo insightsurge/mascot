@@ -77,7 +77,8 @@ option and the exit codes are in [`tools/README.md`](https://github.com/insights
   so keep anything specific to mascot out of it.
 
 CI must be green on every pull request, and `R CMD check` must give 0 errors, 0 warnings and 0 notes. The workflows,
-and the gate mode that reproduces each one locally, are listed in `tools/README.md`. Passing the gate locally does
+and the gate mode that reproduces each one locally, are listed in
+[`.github/workflows/README.md`](https://github.com/insightsurge/mascot/blob/main/.github/workflows/README.md). Passing the gate locally does
 not replace CI.
 
 ## Code in short
@@ -99,8 +100,9 @@ The full list, with reasons, is in [`docs/standards.md`](https://github.com/insi
 - Use testthat 3rd edition in BDD style: `describe()` names the function or behaviour, and `it()` states the expected
   behaviour in plain words.
 - One test file per R file: `R/moods.R` is tested in `tests/testthat/test-moods.R`. Its browser tests go in
-  `test-moods-browser.R` and its snapshot tests in `test-moods-snap.R`, because CRAN skips both kinds; a test fails
-  when one is in the wrong file.
+  `test-moods-browser.R`, which CRAN skips whole, and its snapshot tests in `test-moods-snap.R`, whose
+  `expect_snapshot()` calls skip on CRAN; a test fails when one is in the wrong file. The detailed tests of an example app (the studio and its views) go in a
+  `-extended.R` file, which CRAN skips too; the app's plain file keeps a short smoke test.
 - Cover the happy path, every argument check, edge cases and every bug fix.
 - Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN, so they
   go in the `-browser.R` file.

@@ -1,0 +1,61 @@
+# R CMD check with the extended tests on macOS and Windows, weekly and on demand (.github/workflows/README.md). A
+# workflow of its own, so a failure here leaves R-CMD-check and its badge alone. macOS runs R release only: R 4.1 there
+# has no ready-built packages, and building them from source broke on the runner's OpenSSL.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"   # Mondays 05:00 UTC, with R-CMD-check
+
+name: extended-tests
+
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 120  # as R-CMD-check: installing R 4.1 and building packages from source can be slow
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: 'macos-latest', r: 'release'}
+          - {os: 'windows-latest', r: 'release'}
+          - {os: 'windows-latest', r: '4.1'}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
+        env:
+          _R_CHECK_CRAN_INCOMING_REMOTE_: false
+          # As CRAN, apart from the extended tests: the browser tests skip.
+          NOT_CRAN: false
+          EXTENDED_TESTS: true
+          _R_CHECK_TESTS_NLINES_: 0
+        with:
+          args: 'c("--no-manual", "--as-cran")'
+          # The extended tests make the check slower than CRAN's: only errors and warnings count here.
+          error-on: '"warning"'
+          build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'

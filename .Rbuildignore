@@ -27,3 +27,4 @@
 ^codecov\.yml$
 ^site$
 ^vignettes/articles$
+^tests/README\.md$

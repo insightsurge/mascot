@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("characters in a real Shiny app", {
   it("mounts every built-in through mascot() and changes its mood", {
     local_shiny_browser()

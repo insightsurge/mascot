@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("complete-state browser delivery", {
   protocol_page <- function(env = parent.frame(), motion = TRUE) {
     skip_without_chrome()

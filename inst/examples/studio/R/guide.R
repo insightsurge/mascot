@@ -1,7 +1,7 @@
 # What the studio knows about each exported function that its help page does not: the category,
 # the vignette section to read next and, per argument, the category where it can be tried. The
 # words (description, arguments, details, returns) are read from the help pages at run time, see
-# R/shared-help.R. tests/testthat/test-examples.R fails when an export or an argument has no entry here,
+# R/shared-help.R. tests/testthat/test-studio-extended.R fails when an export or an argument has no entry here,
 # and when this file holds prose. Shiny sources this file before app.R attaches mascot, so it
 # holds plain data only.
 

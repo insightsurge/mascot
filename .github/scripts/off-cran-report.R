@@ -1,7 +1,8 @@
-# Writes the browser-tests part of the pull request's CI report, for one R version: the counts, the failing and
-# skipped tests, the slowest test files and the files that got slower than on main. Sourced by browser-tests.yaml's
-# test step, which runs the tests with file_time_reporter and calls
-# write_browser_report(results, reporter$seconds(), reporter$elapsed()) before it decides whether the job fails.
+# Writes the off-CRAN tests' part of the pull request's CI report, for one R version: the counts (with the tests in
+# browser, snapshot and extended files), the failing and skipped tests, the slowest test files and the files that got
+# slower than on main. Sourced by off-cran-tests.yaml's test step, which runs the tests with file_time_reporter and
+# calls write_off_cran_report(results, reporter$seconds(), reporter$elapsed()) before it decides whether the job
+# fails.
 # Environment: R_LABEL (the matrix's R version), OUT (the Markdown part), TIMINGS (a CSV of seconds per file, kept
 # from main runs), BASELINE_DIR, BASELINE_FOUND and BASELINE_SHA (main's timings, from main-baseline).
 
@@ -95,7 +96,8 @@ details <- function(summary, body, open = FALSE) {
   c(if (open) "<details open>" else "<details>", sprintf("<summary>%s</summary>", summary), "", body, "", "</details>")
 }
 
-write_browser_report <- function(results, timings, elapsed = NA_real_) {
+# `silent`: the selected files that reported no test, which skipped as a whole (a file skipped from its first line).
+write_off_cran_report <- function(results, timings, elapsed = NA_real_, silent = character()) {
   label <- Sys.getenv("R_LABEL")
   frame <- as.data.frame(results)
   utils::write.csv(timings, Sys.getenv("TIMINGS"), row.names = FALSE)
@@ -103,16 +105,24 @@ write_browser_report <- function(results, timings, elapsed = NA_real_) {
   failed <- problem_rows(results, c("expectation_failure", "expectation_error"))
   skipped <- problem_rows(results, "expectation_skip")
   passed <- nrow(frame) - nrow(failed) - nrow(skipped)
-  ok <- nrow(failed) == 0 && nrow(skipped) == 0
+  ok <- nrow(failed) == 0 && nrow(skipped) == 0 && length(silent) == 0
+  # The tests in each kind of file: test-<name>-browser.R, -snap.R and -extended.R.
+  kind <- factor(
+    sub("^.*-(browser|snap|extended)[.]R$", "\\1", frame$file),
+    levels = c("browser", "snap", "extended"),
+    labels = c("browser", "snapshot", "extended")
+  )
+  kinds <- table(kind)
   first <- sprintf(
-    "%s **Browser and snapshot tests, R %s:** %d passed · %d failed · %d skipped%s%s",
+    "%s **Off-CRAN tests, R %s:** %d passed · %d failed · %d skipped%s · %s%s",
     if (ok) "\u2705" else "\u274c",
     label,
     passed,
     nrow(failed),
     nrow(skipped),
     if (is.na(elapsed)) "" else paste0(" · ", duration(elapsed)),
-    if (nrow(skipped) > 0) " (a skip fails this job: these tests must run)" else ""
+    paste0(kinds, " in ", names(kinds), " files", collapse = ", "),
+    if (nrow(skipped) > 0 || length(silent) > 0) " (a skip fails this job: these tests must run)" else ""
   )
   out <- first
   if (nrow(failed) > 0) {
@@ -120,6 +130,17 @@ write_browser_report <- function(results, timings, elapsed = NA_real_) {
   }
   if (nrow(skipped) > 0) {
     out <- c(out, "", details(plural(nrow(skipped), "skipped test"), table_lines(skipped), open = TRUE))
+  }
+  if (length(silent) > 0) {
+    out <- c(
+      out,
+      "",
+      details(
+        sprintf("%d file%s where no test ran", length(silent), if (length(silent) == 1) "" else "s"),
+        sprintf("- `%s`", silent),
+        open = TRUE
+      )
+    )
   }
 
   slowest <- utils::head(timings[order(-timings$seconds), ], 5)

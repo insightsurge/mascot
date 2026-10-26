@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # Synthetic pointer events on a drag target (the canvas or the restore button), as a mouse or finger would send them (pointer id 1, primary button).
 drag_js <- paste(
   "window.press=(target,type,x,y)=>target.dispatchEvent(new PointerEvent(type,",

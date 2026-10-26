@@ -46,18 +46,41 @@ jobs:
 
       - name: Gate (lint mode)
         id: gate
-        run: Rscript tools/cran-gate.R lint
+        # The run folder in a known place, so the report can read the gate's results (gate.json).
+        run: Rscript tools/cran-gate.R lint --out "${RUNNER_TEMP}/gate"
 
       - name: Write the lint report
         if: always()
         env:
           OUTCOME: ${{ steps.gate.outcome }}
+          GATE_DIR: ${{ runner.temp }}/gate
           OUT: ${{ runner.temp }}/lint-part.md
         run: |
           case "${OUTCOME}" in
             success) echo "✅ **Lint:** passed (Air, Biome, lintr, docs in sync, spelling)." > "${OUT}" ;;
             cancelled) echo "⏹️ **Lint:** cancelled before the gate finished." > "${OUT}" ;;
-            failure) echo "❌ **Lint:** failed. lintr's findings are shown inline in Files changed; the gate's FAIL lines in the run's log name the other steps." > "${OUT}" ;;
+            failure)
+              # The gate's failed steps, by name, with the first line of what each found (gate.json in its run folder).
+              json=$(ls "${GATE_DIR}"/*/gate.json 2>/dev/null | head -n 1 || true)
+              failed=""
+              if [ -n "${json}" ]; then
+                failed=$(jq -r '.steps[] | select(.status == "FAIL") | "- `\(.step)`: \(.detail | split("\n")[0] | .[0:200])"' "${json}")
+              fi
+              if [ -n "${failed}" ]; then
+                {
+                  echo "❌ **Lint:** failed: $(jq -r '[.steps[] | select(.status == "FAIL") | .step] | join(", ")' "${json}"). lintr's findings are also shown inline in Files changed."
+                  echo
+                  echo "<details open>"
+                  echo "<summary>What each failed step found</summary>"
+                  echo
+                  echo "${failed}"
+                  echo
+                  echo "</details>"
+                } > "${OUT}"
+              else
+                echo "❌ **Lint:** failed. lintr's findings are shown inline in Files changed; the gate's FAIL lines in the run's log name the other steps." > "${OUT}"
+              fi
+              ;;
             *) echo "❌ **Lint:** did not run: the job failed while setting up (see the run's log)." > "${OUT}" ;;
           esac
 

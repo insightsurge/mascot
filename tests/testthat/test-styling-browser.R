@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("public CSS styling hooks", {
   it("keeps inherited and per-mascot colours above page copies through floating and updates", {
     skip_without_chrome()

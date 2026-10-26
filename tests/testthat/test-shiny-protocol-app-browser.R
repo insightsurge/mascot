@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("latest state over real Shiny transport", {
   it("restores through renderUI, preserves dismissal and delivers repeated lifecycle events", {
     local_shiny_browser()

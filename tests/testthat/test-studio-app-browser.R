@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # The same-origin host runs the real engine in its own viewport and shares one R session.
 studio_driver <- function(width = 1280, height = 720, env = parent.frame()) {
   checkmate::assert_number(width, lower = 1)

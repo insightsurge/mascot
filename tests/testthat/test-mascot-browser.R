@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # A page saved by htmltools, as Quarto, R Markdown and mascot_preview() pages are, opened in Chrome. `extra` is HTML
 # added after the page's own scripts. `strip` removes the scripts' data-mascot-version attributes, as pandoc before
 # 3.7.0.2 does when it embeds scripts in a self-contained page. Returns a function that evaluates JavaScript there;

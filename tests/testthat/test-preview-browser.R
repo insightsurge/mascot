@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # Save only in a test-owned temporary directory; constructing a preview itself writes nothing.
 local_preview_page <- function(page, env = parent.frame()) {
   dir <- withr::local_tempdir(.local_envir = env)

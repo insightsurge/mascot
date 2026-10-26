@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("generic face kits", {
   it("draws every shipped eye, brow and mouth operation and accepts data-named styles", {
     skip_without_chrome()

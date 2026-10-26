@@ -26,6 +26,9 @@ concurrency:
 jobs:
   check:
     runs-on: ${{ matrix.config.os }}
+    outputs:
+      # Whether the R steps ran (false for a pull request that changes only documentation), for the report line.
+      r: ${{ steps.changes.outputs.r }}
     timeout-minutes: 120  # about twice the slowest run: R-devel took 56 min on a slow day (installing R 12-20 min
     # from a slow package mirror, then building packages from source); usually 7-14 min
 
@@ -101,14 +104,19 @@ jobs:
           LIMIT_SECONDS: 180
           OUT: ${{ runner.temp }}/test-time.dcf
         run: |
-          log <- readLines(file.path("check", "mascot.Rcheck", "00check.log"), warn = FALSE)
+          log <- readLines(Sys.glob(file.path("check", "*.Rcheck", "00check.log"))[[1]], warn = FALSE)
           line <- grep("Running .testthat[.]R.", log, value = TRUE)
-          # R CMD check prints "[CPU/elapsed]" (as "123s/61s" or "17m/9m") only when the tests take a while.
-          times <- regmatches(line, regexec("\\[([0-9.]+)([sm])/([0-9.]+)([sm])\\]", line))[[1]]
-          elapsed <- if (length(times) == 5L) as.numeric(times[[4]]) * if (times[[5]] == "m") 60 else 1 else 0
+          if (length(line) == 0L) {
+            stop("00check.log has no \"Running 'testthat.R'\" line: R CMD check did not run the tests.", call. = FALSE)
+          }
+          # R CMD check prints "[CPU/elapsed]" (as "123s/61s", or "17m/9m" from 10 minutes) only when the tests take
+          # 10 s or more (_R_CHECK_TIMINGS_, which --as-cran sets).
+          times <- regmatches(line[[1]], regexec("\\[([0-9.]+)([sm])/([0-9.]+)([sm])\\]", line[[1]]))[[1]]
+          printed <- length(times) == 5L
+          elapsed <- if (printed) as.numeric(times[[4]]) * if (times[[5]] == "m") 60 else 1 else 0
           limit <- as.numeric(Sys.getenv("LIMIT_SECONDS"))
-          write.dcf(data.frame(Elapsed = elapsed, Limit = limit), Sys.getenv("OUT"))
-          message(sprintf("The tests took %g s elapsed; the limit is %g s.", elapsed, limit))
+          write.dcf(data.frame(Elapsed = if (printed) elapsed else "under 10", Limit = limit), Sys.getenv("OUT"))
+          message(sprintf("The tests took %s s elapsed; the limit is %g s.", if (printed) elapsed else "under 10", limit))
           if (elapsed > limit) {
             stop(
               sprintf(
@@ -126,8 +134,9 @@ jobs:
           name: cran-test-time
           path: ${{ runner.temp }}/test-time.dcf
           if-no-files-found: ignore
+          overwrite: true  # a re-run job replaces it
 
-  # Weekly and on demand: R CMD check on macOS and Windows with the extended tests turned on (MASCOT_EXTENDED_TESTS),
+  # Weekly and on demand: R CMD check on macOS and Windows with the extended tests turned on (EXTENDED_TESTS),
   # which the pull requests run only on Ubuntu (the coverage and off-CRAN jobs). The browser tests still skip: they
   # need Chrome. Not part of the R-CMD-check summary: a failure here is a warning to fix before the next release.
   extended:
@@ -167,7 +176,7 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           # As CRAN, apart from the extended tests: the browser tests skip.
           NOT_CRAN: false
-          MASCOT_EXTENDED_TESTS: true
+          EXTENDED_TESTS: true
           _R_CHECK_TESTS_NLINES_: 0
         with:
           args: 'c("--no-manual", "--as-cran")'
@@ -200,9 +209,14 @@ jobs:
       - name: Write the report
         env:
           RESULT: ${{ needs.check.result }}
+          R_STEPS: ${{ needs.check.outputs.r }}
           TIME_FILE: ${{ runner.temp }}/test-time/test-time.dcf
           OUT: ${{ runner.temp }}/check-part.md
         run: |
+          if [ "${R_STEPS}" = "false" ]; then
+            echo "⏭️ **R CMD check (as CRAN):** not run: this pull request changes only documentation." > "${OUT}"
+            exit 0
+          fi
           case "${RESULT}" in
             success) status="✅ **R CMD check (as CRAN):** every platform passed" ;;
             cancelled) status="⏹️ **R CMD check (as CRAN):** cancelled" ;;
@@ -213,7 +227,7 @@ jobs:
             limit=$(sed -n 's/^Limit: *//p' "${TIME_FILE}")
             time=" · tests ${elapsed} s on Ubuntu, R release (limit ${limit} s)"
           else
-            time=" · tests not timed (a documentation-only change, or the check stopped first)"
+            time=" · tests not timed (the check stopped first)"
           fi
           echo "${status}${time}" > "${OUT}"
 

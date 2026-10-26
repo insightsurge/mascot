@@ -108,7 +108,8 @@ articles go in `vignettes/articles/` (website only, not shipped); compress PNGs 
   - the apps, themes and examples users reach through exported functions: the studio (`mascot_studio()`), the
     example apps (`mascot_examples()`, `mascot_example()`), themes and palettes (`mascot_theme()`,
     `mascot_palettes()`);
-  - `docs/consumers.md`, workflow comments, `tools/README.md`, the rules files and CONTRIBUTING;
+  - `docs/consumers.md`, workflow comments, `tools/README.md`, `.github/workflows/README.md`, `tests/README.md`, the
+    rules files and CONTRIBUTING;
   - any other page, app, function or file that describes the behaviour, including ones added after this list.
 
   It works both ways: when you edit an article, guide or example, check that the help page still agrees. Search the

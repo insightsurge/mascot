@@ -5,7 +5,8 @@ paths:
 
 # Tests
 
-Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md`.
+Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md`. How the tests are organised (the
+four kinds of test file, their first lines, where each runs, how to run them): `tests/README.md`.
 
 - **house:** coverage of at least 70% of lines (`Rscript tools/cran-gate.R tests`; the limit is
   `Config/cran-gate/coverage` in `DESCRIPTION`, which CI reads too; CRAN itself does not check coverage); a PR never
@@ -32,7 +33,7 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   any app added later) in `test-<name>-extended.R`. A browser or extended file starts with its skip, as its first
   expression, so CRAN skips the whole file before any of its code runs: `skip_without_chrome()` or
   `skip_unless_extended()` (`helper-extended.R`: the extended tests run where `NOT_CRAN` is true or
-  `MASCOT_EXTENDED_TESTS` is `"true"`). A snapshot file doesn't: skipped as a whole, it reports no snapshots and
+  `EXTENDED_TESTS` is `"true"`). A snapshot file doesn't: skipped as a whole, it reports no snapshots and
   testthat deletes their saved files, so `expect_snapshot()` skips each test instead. The `off-cran-tests` job runs exactly those files and fails on any skip; R CMD
   check runs the rest. `test-helper-layout.R` fails when a test is in the wrong file or a file doesn't start with its
   skip (an argument check inside `expect_error()` may stay in the plain file: it fails before Chrome starts). A
@@ -44,8 +45,8 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   its `-extended.R` file. R CMD check on CI fails when the tests take longer than 180 s on Ubuntu with R release
   (`R-CMD-check.yaml`), so a pull request that makes them slower moves tests or speeds them up.
 - **CRAN:** tests use only declared packages and guard Suggests (`skip_if_not_installed()`); no network; files go
-  to `withr::local_tempdir()`; nothing is left behind; at most 2 cores (`tests/testthat.R` caps `getOption("Ncpus")`,
-  which testthat reads first, at two).
+  to `withr::local_tempdir()`; nothing is left behind; at most 2 cores (`tests/testthat.R` lowers `getOption("Ncpus")`,
+  which testthat reads first, to two when a session has it higher).
 - **house:** keep JS logic small and push decisions into R, where they can be unit-tested.
 - **house:** each test file runs on its own: testthat runs the files in two processes at once
   (`Config/testthat/parallel`), in any order, so a file never relies on what another file set up or left behind.

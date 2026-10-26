@@ -48,12 +48,15 @@ while IFS= read -r workflow; do
     --jq ".jobs[] | select(.name != \"${report_job}\") | [.status, (.conclusion // \"-\")] | @tsv")
   pending=$(printf '%s\n' "${jobs}" | awk -F '\t' '$1 != "" && $1 != "completed"' | wc -l)
   failed=$(printf '%s\n' "${jobs}" | awk -F '\t' '$2 == "failure" || $2 == "timed_out"' | wc -l)
-  if [ "${status}" = "completed" ]; then
-    state=${conclusion}
-  elif [ "${pending}" -gt 0 ]; then
+  cancelled=$(printf '%s\n' "${jobs}" | awk -F '\t' '$2 == "cancelled"' | wc -l)
+  # Read from those jobs, not the run's own conclusion: GitHub cancels a report job that waits behind another (they
+  # share one concurrency group), which would mark a run whose tests passed as cancelled.
+  if [ "${status}" != "completed" ] && [ "${pending}" -gt 0 ]; then
     state="running"
   elif [ "${failed}" -gt 0 ]; then
     state="failure"
+  elif [ "${cancelled}" -gt 0 ]; then
+    state="cancelled"
   else
     state="success"
   fi

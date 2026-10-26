@@ -311,7 +311,7 @@ use plain words in help pages:
   CRAN skips the whole file before any of its code runs (a skip inside each test came after the test had built its
   characters, which cost about an eighth of the test time on CRAN). Snapshot files keep the skip in each
   `expect_snapshot()`: a snapshot file skipped as a whole reports no snapshots, and testthat deletes their saved files. CI's `off-cran-tests` job runs exactly those files with Chrome and
-  `NOT_CRAN` true, and fails on any skip; R CMD check runs the others, so no test runs twice. A test
+  `NOT_CRAN` true, and fails on any skip; R CMD check runs the others. A test
   (`test-helper-layout.R`) reads the test files and fails when a test is in the wrong kind of file or a file doesn't
   start with its skip. Helpers that several files share go in `helper-<name>.R`.
 - **CRAN runs a smoke test of each example app, not all of it.** CRAN asks for examples, vignettes and tests to take
@@ -379,7 +379,8 @@ skipped, so the self-test works in any package. A new gate step gets its probe i
 
 ### 7.3 CI workflows
 
-What each workflow runs, and the gate mode that reproduces it locally: `tools/README.md` ("The gate and CI").
+What each workflow runs and when, which test files run where, and the gate mode that reproduces it locally:
+`.github/workflows/README.md`.
 
 Every pull request runs the full matrix (macOS, Windows and four Ubuntu R versions); keep new jobs on Ubuntu unless
 the platform is the point.

@@ -1,6 +1,7 @@
 # The "Theme a mascot" view of the studio app (mascot_studio(view = "theme"); inst/examples/studio/R/theme-*.R).
 
-# Skips the whole file on CRAN and in R CMD check (helper-extended.R); the smoke tests are in test-studio-theme.R.
+# Skips the whole file on CRAN and in R CMD check, unless the extended tests are on (helper-extended.R);
+# the smoke tests are in test-studio-theme.R.
 skip_unless_extended()
 
 # The view's own files, as parsed expressions by file name.

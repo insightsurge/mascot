@@ -1,4 +1,5 @@
-# Skips the whole file on CRAN and in R CMD check (helper-extended.R); the smoke tests are in test-studio.R.
+# Skips the whole file on CRAN and in R CMD check, unless the extended tests are on (helper-extended.R);
+# the smoke tests are in test-studio.R.
 skip_unless_extended()
 
 describe("studio signature routes", {

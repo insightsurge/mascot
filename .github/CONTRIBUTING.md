@@ -77,7 +77,8 @@ option and the exit codes are in [`tools/README.md`](https://github.com/insights
   so keep anything specific to mascot out of it.
 
 CI must be green on every pull request, and `R CMD check` must give 0 errors, 0 warnings and 0 notes. The workflows,
-and the gate mode that reproduces each one locally, are listed in `tools/README.md`. Passing the gate locally does
+and the gate mode that reproduces each one locally, are listed in
+[`.github/workflows/README.md`](https://github.com/insightsurge/mascot/blob/main/.github/workflows/README.md). Passing the gate locally does
 not replace CI.
 
 ## Code in short

@@ -71,7 +71,7 @@ jobs:
           # As CRAN: setup-r sets NOT_CRAN to true, which would run the browser tests here too.
           NOT_CRAN: false
           # Apart from the extended tests, which CRAN skips: coverage counts them (tests/testthat/helper-extended.R).
-          MASCOT_EXTENDED_TESTS: true
+          EXTENDED_TESTS: true
         run: |
           cov <- covr::package_coverage(
             quiet = FALSE,

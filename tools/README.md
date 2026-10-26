@@ -77,54 +77,9 @@ browser, say) fails many tests with the same message, the line names it once as 
 
 ### The gate and CI
 
-`lint.yaml` and `check-no-suggests.yaml` run the gate itself; the other jobs run R CMD check or covr directly. The last column is the gate
-mode that checks the same thing locally, which is the evidence when CI can't run (no Actions minutes).
-
-| Workflow | What it runs | Locally |
-|---|---|---|
-| `R-CMD-check.yaml` | `R CMD check --as-cran`, failing on any note, with `NOT_CRAN` false (browser, snapshot and extended tests skip, as on CRAN) and the whole test output when a test fails; on Ubuntu with R release it also fails when the tests take longer than 180 s. On every pull request, push to `main`, every Monday and on demand: macOS and Windows (R release) and Ubuntu (R devel, release, previous release and 4.1). Every Monday and on demand, the `extended` job also checks macOS and Windows (R release and 4.1) with `MASCOT_EXTENDED_TESTS: true`, outside the `R-CMD-check` summary check | the `check_full` step of `full` |
-| `test-coverage.yaml` | The tests without Chrome (`NOT_CRAN` false), the extended tests included (`MASCOT_EXTENDED_TESTS: true`), under covr, and the coverage limit from `DESCRIPTION` (on a pull request, the higher of the base branch's limit and the PR's own, so a pull request cannot lower the limit by editing `DESCRIPTION`; changes to this workflow are reviewed like any other change) | `tests` (a superset: it runs the browser tests too, under covr, so its coverage is higher) |
-| `off-cran-tests.yaml` | The test files that hold the tests CRAN skips (the browser tests in `test-*-browser.R`, the snapshot tests in `test-*-snap.R` and the example apps' detailed tests in `test-*-extended.R`), with Chrome and `NOT_CRAN: true`, on Ubuntu with R release and R 4.1, one line per test file as it finishes; fails when a test fails, one of those tests skips or a file reports no test. The `off-cran-tests` check passes only when both R versions pass | `tests` |
-| `check-no-suggests.yaml` | The gate in `nosuggests` mode on a library with only the hard dependencies (plus rcmdcheck, testthat, knitr and rmarkdown): R CMD check with only what the check needs on the library path, so a Suggests package that is installed but not needed stays hidden; a skipped check fails the job | `nosuggests` |
-| `lint.yaml` | The gate in `lint` mode, with Air and Biome at pinned versions | `lint` |
-| `gate-self-test.yaml` | The gate's self-test, when the gate, its self-test, `.lintr`, `air.toml` or `biome.json` change (and on demand) | `Rscript tools/test-cran-gate.R` |
-| `pkgdown.yaml` | `pkgdown::check_pkgdown()` and the site build, from `main` only | `Rscript tools/build-site.R` |
-| `gitleaks.yml` | A scan for committed secrets | |
-| `release.yml` | Started by hand on `main`, after CRAN accepts the version: checks that `DESCRIPTION`, the `NEWS.md` heading and the engine changelog heading agree and the NEWS section has text, then tags `vX.Y.Z` and creates the GitHub release (never on merge) | `bash .github/scripts/test-release-check.sh` |
-
-**Releasing.** The release pull request (version, NEWS, `cran-comments.md`) stays open while CRAN reviews; CRAN's
-comments become commits on it. After CRAN accepts and the pull request is merged, start the workflow by hand: Actions,
-release, Run workflow, branch `main`, and leave the commit empty (the tip of `main`) or give the accepted commit's SHA.
-The workflow's logic is `.github/scripts/release-check.sh`: a commit that is not on `main`, versions or headings that
-disagree, an empty NEWS section or an existing tag on another commit fail before anything is published. A re-run after
-a failed release step creates the missing release from the existing tag; a re-run after success does nothing. Tags
-and releases are never moved or deleted: a fix after publication gets a new version. A development version
-(`X.Y.Z.9000`) is published as a pre-release, with the heading `# mascot (development version)`.
-
-A pull request that changes only documentation (the README, `docs/`, the website's articles and settings, the issue
-forms and the repository's notes) starts the R jobs and skips their steps (`.github/scripts/r-changes.sh`), so every
-check still reports. Dependabot keeps the actions current. The gate's `new_lines` step has
-no CI job: it needs the branch's base, which CI's shallow checkout lacks, so it runs locally.
-
-**The CI report comment.** On a pull request, one comment, rewritten as each workflow finishes, sums up what CI found,
-in a Tests and a Code style section:
-
-- `R-CMD-check.yaml`: whether every platform passed, and how long the tests took on Ubuntu with R release against the
-  180 s limit.
-- `test-coverage.yaml`: the line coverage without the browser tests, the limit from `DESCRIPTION` and the
-  difference from the latest successful run on `main`; the added `R/` lines that the job's tests don't run (a report,
-  not a check: a browser test may run them, and the gate's `new_lines` step is the check); or why nothing was measured.
-- `off-cran-tests.yaml`, per R version: the counts, with the tests in browser, snapshot and extended files, the failing
-  and skipped tests, the slowest test files and the files much slower than on `main` (at least 25% and 10 seconds).
-- `lint.yaml`: passed or failed. lintr's findings show inline in the pull request's "Files changed".
-
-Each job writes its part to its job summary (on the run's page) and keeps it as an artifact; a small `report` job at the
-end of each of those workflows gathers the parts of the pull request's commit into the comment
-(`.github/actions/pr-report-comment`, set up in `.github/pr-report.json`). Pull requests from forks and from
-Dependabot get the job summaries only: their token can't write to the pull request. The figures from `main` are
-artifacts that its runs keep for 90 days; when there is none, the comment says so. A re-run job replaces its part;
-when a re-run job stops before it writes one (a failed checkout, say), the earlier attempt's part stays, and the
-footer's run state (failure, cancelled) is the sign.
+`lint.yaml` and `check-no-suggests.yaml` run the gate itself; the other workflows run R CMD check or covr directly.
+What each workflow runs and when, which gate mode checks the same thing locally (the evidence when CI can't run),
+which test files run where and the CI report comment on a pull request: [`.github/workflows/README.md`](../.github/workflows/README.md).
 
 ### Changing the gate
 

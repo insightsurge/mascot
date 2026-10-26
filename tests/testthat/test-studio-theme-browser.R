@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # How far the mascot's canvas centre is from the preview card's centre, in CSS pixels.
 mascot_offset_js <- paste0(
   "(() => { const c = document.querySelector('#theme_mascot canvas').getBoundingClientRect(); ",

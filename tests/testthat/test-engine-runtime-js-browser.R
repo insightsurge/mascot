@@ -1,6 +1,9 @@
 # A checked format-v1 character mounts and runs in the real host. Characters are built by `runtime_character()` (see
 # helper-runtime.R); every page loads the packaged scripts in the dependency's order.
 
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 # The fixtures are built when a test first uses them, so a run without Chrome (which skips every test here) pays nothing.
 delayedAssign(
   "alpha",

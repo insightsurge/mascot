@@ -1,19 +1,9 @@
-studio_app_parts <- function() {
-  skip_without_studio_packages("studio")
-  app <- shiny::shinyAppDir(system.file("examples", "studio", package = "mascot"))
-  list(
-    env = environment(app$serverFuncSource()),
-    page = as.character(
-      app$httpHandler(
-        list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = "")
-      )$content
-    )
-  )
-}
+# Skips the whole file on CRAN and in R CMD check (helper-extended.R); the smoke tests are in test-studio.R.
+skip_unless_extended()
 
 describe("studio signature routes", {
   it("makes every mascot formal a call chip with an existing function route", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     chip_builder <- get("call_chips", parts$env)
     route <- get("studio_route", parts$env)
     initial <- get("start", parts$env)
@@ -35,7 +25,7 @@ describe("studio signature routes", {
     expect_error(chip_builder(initial, "unknown"), "Assertion on 'style' failed")
   })
   it("gives the click chip one route per kind of click, in the page and in the chip it draws", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     routes <- get("studio_click_routes", parts$env)()
     controls <- get("studio_controls", parts$env)
     expect_named(routes, c("none", "action", "menu"))
@@ -64,14 +54,14 @@ describe("studio signature routes", {
     }
   })
   it("searches every export and formal and keeps each input id unique", {
-    page <- studio_app_parts()$page
+    page <- studio_parts()$page
     for (fn in getNamespaceExports("mascot")) {
       expect_match(page, paste0('data-search-function="', fn, '"'), fixed = TRUE)
       for (arg in names(formals(getExportedValue("mascot", fn)))) {
         expect_match(page, paste0('id="search_', fn, '_', gsub("[.]", "dot", arg), '"'), fixed = TRUE)
       }
     }
-    search <- as.character(get("studio_search", studio_app_parts()$env)())
+    search <- as.character(get("studio_search", studio_parts()$env)())
     expect_length(
       regmatches(search, gregexpr('role="option"', search, fixed = TRUE))[[1]],
       length(getNamespaceExports("mascot"))
@@ -92,7 +82,7 @@ describe("studio signature routes", {
 
 describe("studio demonstration server routes", {
   it("starts the live studio and example source handlers together for either URL view", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     initial <- list(
       character = "tessa",
       mood = "idle",
@@ -158,7 +148,7 @@ describe("studio demonstration server routes", {
     }
   })
   it("filters both character tables and shows update activity inside its inspector", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     expect_match(parts$page, 'id="wiring_log"', fixed = TRUE)
     expect_match(parts$page, 'id="send_many"', fixed = TRUE)
     expect_match(parts$page, 'id="mistake_run"', fixed = TRUE)
@@ -258,7 +248,7 @@ describe("studio demonstration server routes", {
 
 describe("studio code arguments, chips, anchors and menus", {
   it("separates comma-delimited arguments from one-off gesture code", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     chips <- get("call_chips", parts$env)(get("start", parts$env), "short")
     html <- as.character(chips)
     args <- setdiff(names(formals(mascot)), "...")
@@ -313,7 +303,7 @@ describe("studio code arguments, chips, anchors and menus", {
 
 describe("studio sentence controls and overview", {
   it("renders inline sentence words with help-page tooltips and per-argument Rd overviews", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     for (id in c("character", "palette", "mood", "gesture")) {
       expect_match(parts$page, paste0('<select[^>]*aria-label="', tools::toTitleCase(id), '"[^>]*id="', id, '"'))
     }
@@ -355,7 +345,7 @@ describe("studio sentence controls and overview", {
 
 describe("studio inspector rail", {
   it("renders three labelled toolbar buttons and keeps the mobile opener out of the top strip", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     rail <- as.character(get("studio_right_rail", parts$env)())
     expect_match(rail, 'role="toolbar" aria-label="Inspector views"', fixed = TRUE)
     expect_false(grepl('role="tab', rail, fixed = TRUE))
@@ -378,7 +368,7 @@ describe("studio inspector rail", {
 
 describe("studio host choices, reading tabs, dock and examples browser", {
   it("offers two host choices, discoverable functions, editable chips and structured Help", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     page <- parts$page
     expect_match(
       page,
@@ -458,7 +448,7 @@ describe("studio host choices, reading tabs, dock and examples browser", {
 
 describe("the studio's copy buttons and stamped outputs", {
   it("answers a copy ticket only once the server holds nothing back", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     copy_gate <- get("copy_gate", parts$env)
     pending <- shiny::reactiveVal(TRUE)
     answers <- list()
@@ -493,7 +483,7 @@ describe("the studio's copy buttons and stamped outputs", {
     expect_error(copy_gate(list(), list()), "Assertion on 'session' failed")
   })
   it("stamps an output after the flush that sends it", {
-    parts <- studio_app_parts()
+    parts <- studio_parts()
     stamp_output <- get("stamp_output", parts$env)
     stamps <- list()
     shiny::testServer(

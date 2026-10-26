@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("mascot_studio()", {
   it("opens the chosen view and function in Chrome", {
     skip_on_cran()

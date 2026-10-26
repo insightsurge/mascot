@@ -20,26 +20,27 @@ describe("mascot_studio()", {
     before <- options()
     studio <- mascot_studio(fn = "mascot_theme", run = FALSE)
     expect_s3_class(studio, "shiny.appobj")
-    page <- function(app, query = "") {
-      as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
-    }
-    expect_match(page(studio), 'data-initial-function="mascot_theme"', fixed = TRUE)
+    # Each page is drawn once: drawing one takes about a second.
+    page <- app_page(studio)
+    expect_match(page, 'data-initial-function="mascot_theme"', fixed = TRUE)
     # mascot_preview() is an entry of the studio, not a view of its own.
-    expect_match(page(studio), 'data-value="mascot_preview"', fixed = TRUE)
-    expect_match(page(studio), 'id="preview_build"', fixed = TRUE)
-    expect_match(page(studio), 'id="preview_card"', fixed = TRUE)
-    expect_match(page(studio), 'data-full-screen="false"', fixed = TRUE)
-    expect_match(page(studio), 'data-bslib-card-init', fixed = TRUE)
-    expect_match(page(studio), 'id="studio_example_call"', fixed = TRUE)
-    expect_match(page(studio), 'data-copy="studio_example_call"', fixed = TRUE)
+    expect_match(page, 'data-value="mascot_preview"', fixed = TRUE)
+    expect_match(page, 'id="preview_build"', fixed = TRUE)
+    expect_match(page, 'id="preview_card"', fixed = TRUE)
+    expect_match(page, 'data-full-screen="false"', fixed = TRUE)
+    expect_match(page, 'data-bslib-card-init', fixed = TRUE)
+    expect_match(page, 'id="studio_example_call"', fixed = TRUE)
+    expect_match(page, 'data-copy="studio_example_call"', fixed = TRUE)
     examples <- mascot_studio("examples", run = FALSE)
-    expect_match(page(examples), 'id="example_name"', fixed = TRUE)
-    expect_match(page(examples), 'href="?view=studio"', fixed = TRUE)
+    page <- app_page(examples)
+    expect_match(page, 'id="example_name"', fixed = TRUE)
+    expect_match(page, 'href="?view=studio"', fixed = TRUE)
     # Views select the initial host mode; the mounted live engine arrives via renderUI in its iframe.
-    expect_match(page(examples), 'data-initial-mode="examples"', fixed = TRUE)
-    expect_match(page(examples, "view=studio"), 'data-initial-mode="mascot"', fixed = TRUE)
-    expect_match(page(examples, "view=studio"), 'id="example_name"', fixed = TRUE)
-    expect_match(page(examples, "view=studio"), 'id="live_host"', fixed = TRUE)
+    expect_match(page, 'data-initial-mode="examples"', fixed = TRUE)
+    page <- app_page(examples, "view=studio")
+    expect_match(page, 'data-initial-mode="mascot"', fixed = TRUE)
+    expect_match(page, 'id="example_name"', fixed = TRUE)
+    expect_match(page, 'id="live_host"', fixed = TRUE)
     expect_identical(options(), before)
   })
   it("passes its app to Shiny when launched interactively", {
@@ -65,14 +66,11 @@ describe("the studio on older R", {
 describe("mascot_studio() opening on a function", {
   it("asks the page to open the Guide only when a function is named", {
     skip_without_studio_packages("studio")
-    page <- function(app, query = "") {
-      as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
-    }
-    expect_match(page(mascot_studio(fn = "mascot_theme", run = FALSE)), 'data-initial-open="guide"', fixed = TRUE)
-    expect_false(grepl("data-initial-open", page(mascot_studio(run = FALSE)), fixed = TRUE))
+    expect_match(app_page(mascot_studio(fn = "mascot_theme", run = FALSE)), 'data-initial-open="guide"', fixed = TRUE)
+    expect_false(grepl("data-initial-open", app_page(mascot_studio(run = FALSE)), fixed = TRUE))
     expect_false(grepl(
       "data-initial-open",
-      page(mascot_studio("examples", fn = "mascot_theme", run = FALSE)),
+      app_page(mascot_studio("examples", fn = "mascot_theme", run = FALSE)),
       fixed = TRUE
     ))
   })
@@ -115,21 +113,18 @@ describe("studio choices", {
 })
 
 describe("mascot_studio() views", {
-  page <- function(app, query = "") {
-    as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
-  }
   it("opens the theme view on its own page, without the studio's shell", {
     # The test also opens the studio's page.
     skip_without_studio_packages("studio")
     theme <- mascot_studio("theme", character = "sela", run = FALSE)
-    html <- page(theme)
+    html <- app_page(theme)
     expect_match(html, "<title>Theme a mascot</title>", fixed = TRUE)
     expect_match(html, '<div class="mascot" id="theme_mascot"[^>]* data-character="sela"')
     expect_false(grepl('id="studio_shell"', html, fixed = TRUE))
     expect_false(grepl("studio.js", html, fixed = TRUE))
     # A link that names another view still opens it.
-    expect_match(page(theme, "view=studio"), 'id="studio_shell"', fixed = TRUE)
-    expect_match(page(mascot_studio(run = FALSE), "view=theme"), 'id="theme_mascot"', fixed = TRUE)
+    expect_match(app_page(theme, "view=studio"), 'id="studio_shell"', fixed = TRUE)
+    expect_match(app_page(mascot_studio(run = FALSE), "view=theme"), 'id="theme_mascot"', fixed = TRUE)
   })
   it("starts only the server of the view a session serves", {
     skip_if_not_installed("bslib")
@@ -187,5 +182,34 @@ describe("mascot_studio() checked object guidance", {
     expect_length(character_data_ids(), 0)
     bot$name <- "Edited"
     expect_error(mascot_studio(character = bot, run = FALSE), class = "mascot_error_character")
+  })
+})
+
+# The studio app in brief: the tests CRAN runs. Its detailed tests are in test-studio-extended.R,
+# test-studio-app-extended.R and test-studio-shared-extended.R, and its browser tests in test-studio-browser.R and
+# test-studio-app-browser.R.
+describe("the studio app, in brief", {
+  it("draws its page with the main controls and no duplicate ids", {
+    page <- studio_parts()$page
+    for (id in c("mood", "status_text", "bubble_text", "palette", "code_ui")) {
+      expect_match(page, paste0('id="', id, '"'), fixed = TRUE, info = id)
+    }
+    expect_unique_ids(page)
+  })
+  it("sends a mood change to the live mascot and shows it in the generated code", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      envelopes <- list()
+      session$sendCustomMessage <- function(type, message) {
+        if (identical(type, "mascot:update")) envelopes[[length(envelopes) + 1L]] <<- message
+      }
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(mood = "happy")
+      session$flushReact()
+      expect_identical(envelopes[[length(envelopes)]]$state$mood, "happy")
+      expect_match(output$code_ui, 'mood = "happy"', fixed = TRUE)
+    })
   })
 })

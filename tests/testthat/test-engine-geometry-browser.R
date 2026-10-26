@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("character-format geometry and painting", {
   it("expands logical operands for all basic shapes, repeated refs and paths", {
     skip_without_chrome()

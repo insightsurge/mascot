@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("popup menu input contract", {
   it("toggles by pointer and keyboard without clicks and sends each item choice", {
     js <- local_runtime_page(

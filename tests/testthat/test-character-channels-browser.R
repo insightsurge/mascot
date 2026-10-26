@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("format-v1 character channels, recolour, item overrides and swap fallback in JS", {
   it("resolves channel merge order: part defaults -> named pose -> mood channels -> reduced", {
     skip_without_chrome()

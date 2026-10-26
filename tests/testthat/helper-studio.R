@@ -73,3 +73,124 @@ click_studio_busy <- function(app, id) {
   ))
   invisible(click)
 }
+
+# The studio and its guide pages (guide/*.Rmd), loaded the way the tests load pieces of the studio: into an environment
+# under the global one, as the app's own files are, so they find shiny and bslib, attached until the calling test ends.
+# (A helper file's own environment sits below them on the search path.)
+studio_guide_env <- function(frame = parent.frame()) {
+  checkmate::assert_environment(frame)
+  testthat::skip_if_not_installed("bslib")
+  testthat::skip_if_not_installed("knitr")
+  withr::local_package("shiny", .local_envir = frame)
+  withr::local_package("bslib", .local_envir = frame)
+  dir <- dirname(mascot_example("studio", run = FALSE))
+  env <- new.env(parent = globalenv())
+  for (file in c(
+    "guide.R",
+    "shared-help.R",
+    "data.R",
+    "shared-data.R",
+    "shared-ui.R",
+    "code.R",
+    "panels.R",
+    "ui.R",
+    "guide-md.R"
+  )) {
+    sys.source(file.path(dir, "R", file), envir = env)
+  }
+  env
+}
+
+# Until the browser's mount snapshot makes the studio's helper live, calls are kept, not accepted or sent. This
+# snapshot is what the page sends on mount, so the studio's kept calls are accepted and the first state is sent.
+studio_go_live <- function(session) {
+  protocol_ready(list(session = session, id = session$ns("helper")))
+  session$flushReact()
+  invisible(NULL)
+}
+
+# The first value unless it is NULL; base R has `%||%` only from 4.4 and the package supports R 4.1.
+value_or <- function(value, fallback) if (is.null(value)) fallback else value
+
+# The pages of the studio's views, drawn once per R process and only when a test first asks for one: a page takes about
+# a second to draw and is the same in every test file (testthat runs each file in one process). The environments the
+# `*_parts()` functions return are always fresh. A test that needs a page drawn afresh draws its own with app_page().
+studio_page_cache <- new.env(parent = emptyenv())
+
+# The page `draw()` returns, drawn the first time `key` is asked for.
+studio_page <- function(key, draw) {
+  checkmate::assert_string(key)
+  checkmate::assert_function(draw)
+  if (!exists(key, envir = studio_page_cache, inherits = FALSE)) {
+    assign(key, draw(), envir = studio_page_cache)
+  }
+  get(key, envir = studio_page_cache, inherits = FALSE)
+}
+
+# The HTML page `app` serves at `query`, drawn without a browser.
+app_page <- function(app, query = "") {
+  checkmate::assert_class(app, "shiny.appobj")
+  checkmate::assert_string(query)
+  as.character(app$httpHandler(list(PATH_INFO = "/", REQUEST_METHOD = "GET", QUERY_STRING = query))$content)
+}
+
+# The studio app's own environment (its server, data and code builders) and its page, built without a browser.
+studio_parts <- function() {
+  skip_without_studio_packages("studio")
+  app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
+  list(env = environment(app$serverFuncSource()), page = studio_page("studio", function() app_page(app)))
+}
+
+# The studio app's environment where the theme view's functions live, and the theme view's page.
+theme_parts <- function() {
+  skip_without_studio_packages("theme")
+  app_env <- environment(shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))$serverFuncSource())
+  # Shiny loads the files in R/ into an environment of their own, above app.R's.
+  list(
+    env = environment(get("theme_view_server", app_env)),
+    page = studio_page("theme", function() app_page(mascot_studio("theme", run = FALSE)))
+  )
+}
+
+# The value each control starts with on the page, by input id, as the browser first reports it to the server.
+studio_start_values <- function(page) {
+  checkmate::assert_string(page)
+  attribute <- function(tag, name) {
+    checkmate::assert_string(tag)
+    checkmate::assert_string(name)
+    match <- regmatches(tag, regexec(sprintf(' %s="([^"]*)"', name), tag))[[1]]
+    if (length(match)) match[[2]] else NULL
+  }
+  unescape <- function(text) {
+    checkmate::assert_string(text)
+    for (entity in names(entities <- c("&lt;" = "<", "&gt;" = ">", "&quot;" = '"', "&#39;" = "'", "&amp;" = "&"))) {
+      text <- gsub(entity, entities[[entity]], text, fixed = TRUE)
+    }
+    text
+  }
+  tags <- function(pattern) regmatches(page, gregexpr(pattern, page, perl = TRUE))[[1]]
+  values <- list()
+  for (tag in tags('<input class="js-range-slider"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- as.numeric(attribute(tag, "data-from"))
+  }
+  for (tag in tags('<input id="[^"]+" class="form-check-input" type="checkbox"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- grepl(" checked", tag, fixed = TRUE)
+  }
+  for (tag in tags('<input id="[^"]+" type="text"[^>]*>')) {
+    values[[attribute(tag, "id")]] <- attribute(tag, "value")
+  }
+  for (tag in tags('(?s)<textarea id="[^"]+"[^>]*>.*?</textarea>')) {
+    values[[attribute(tag, "id")]] <- unescape(sub("(?s)^<textarea[^>]*>(.*)</textarea>$", "\\1", tag, perl = TRUE))
+  }
+  for (tag in tags('(?s)<div id="[^"]+" class="[^"]*shiny-input-radiogroup.*?</div>\\s*</div>')) {
+    id <- attribute(tag, "id")
+    checked <- regmatches(tag, regexec(sprintf('name="%s" value="([^"]*)" checked', id), tag))[[1]]
+    values[[id]] <- checked[[2]]
+  }
+  for (tag in tags('(?s)<select\\b[^>]*\\bid="[^"]+"[^>]*>.*?</select>')) {
+    options <- regmatches(tag, gregexpr('<option value="[^"]*"( selected)?', tag))[[1]]
+    chosen <- grep("selected", options, fixed = TRUE, value = TRUE)
+    values[[attribute(tag, "id")]] <- unescape(attribute(c(chosen, options)[[1]], "value"))
+  }
+  values
+}

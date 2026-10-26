@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("update_mascot() in a browser", {
   it("changes mood, sets plain status text and returns it to the mood", {
     local_shiny_browser()

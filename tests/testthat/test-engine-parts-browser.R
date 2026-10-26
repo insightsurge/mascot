@@ -1,3 +1,6 @@
+# Skips the whole file on CRAN or without Chrome, before any of its code runs.
+skip_without_chrome()
+
 describe("character-format part transforms", {
   it("filters inherited orientation without moving the world pivot", {
     skip_without_chrome()

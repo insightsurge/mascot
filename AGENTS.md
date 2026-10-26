@@ -77,12 +77,12 @@ lintr or Air yourself. **Which mode when, every option, the exit codes, the run 
 - `inst/examples/studio/` (`mascot_studio()`) demonstrates every exported function and argument, function by
   function, for every character.
 - **Rule: a PR that adds, removes or changes an exported function or an argument (its name, values, default or
-  behaviour) also updates the studio in the same PR.** No studio follow-up PRs. The places to change, in
-  `inst/examples/studio/`: controls (`R/panels.R`), control map (`R/data.R`), code builders (`R/code.R`), studio-only
-  guide data (`R/guide.R`) and, where needed, pictures (`R/ui.R`) and server code (`app.R`). Explanations come from
-  the help pages (`R/shared-help.R` reads them), so update the roxygen, never copy it into the studio.
-- The completeness tests in `tests/testthat/test-studio-extended.R` catch a missing function or argument; they do not
-  catch a changed default or behaviour, so try the change in the studio before the PR and say so in its checks.
+  behaviour) also updates the studio in the same PR.** No studio follow-up PRs. Which files to change, in which
+  order, and which test catches a miss: `docs/examples.md`. Explanations come from the help pages, so update the
+  roxygen, never copy it into the studio.
+- The completeness tests in `tests/testthat/test-studio-extended.R` catch a missing function, argument or control;
+  they do not catch a changed default or behaviour, so try the change in the studio before the PR and say so in its
+  checks.
 
 ## Known users: never break them
 - **Every known user is listed in `docs/consumers.md`**: what it uses, since which version, and how to check it

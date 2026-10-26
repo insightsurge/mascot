@@ -33,7 +33,7 @@ Suggests:
     promises,
     rmarkdown,
     shinytest2 (>= 0.5.0),
-    testthat (>= 3.0.0),
+    testthat (>= 3.2.1),
     withr
 VignetteBuilder: knitr
 Config/cran-gate/coverage: 70

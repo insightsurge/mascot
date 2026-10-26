@@ -264,7 +264,7 @@ widget's rendered output (section 6). Every change in `inst/www/` adds an entry 
   reason (**house**).
 - Call functions as `pkg::fn()`. No `library()` or `require()` in package code (**CRAN**).
 - Optional and development packages use `Suggests`: bslib (>= 0.7.0), chromote, covr, golem, knitr, later, lifecycle,
-  promises, rmarkdown, shinytest2 (>= 0.5.0), testthat (>= 3.0.0) and withr. Optional features check availability
+  promises, rmarkdown, shinytest2 (>= 0.5.0), testthat (>= 3.2.1) and withr. Optional features check availability
   with `requireNamespace()` before use. Tests use `skip_if_not_installed()` (**CRAN**).
 - Avoid `:::` into shiny or bslib: it is fragile, and reviewers flag it (**CRAN** for base packages, house for the
   rest).

@@ -11,6 +11,7 @@
 * GitHub Actions, `R CMD check --as-cran`: macOS and Windows with R release; Ubuntu with R devel, release, the
   previous release and 4.1.0 (the oldest version in `Depends`). 0 errors, 0 warnings, 0 notes on each.
 * win-builder, R devel: RESULT TO ADD.
+* win-builder, R oldrel: RESULT TO ADD.
 * mac-builder, R release: RESULT TO ADD.
 
 ## About the package

@@ -29,7 +29,7 @@ four kinds of test file, their first lines, where each runs, how to run them): `
   between, then checks the action used the change (the rules it tests: `r-code.md`, "Shiny apps"). Example: set a
   colour picker and click Copy in one `app$run_js()` call, then expect the copied code to have the new colour. A test
   that waits for each step to settle can't catch these bugs. To widen the gap, hold back what the page sends or what
-  the server answers (`hold_studio_inputs()`, `hold_studio_replies()` in `test-studio-app-browser.R`).
+  the server answers (the studio tests' `hold_studio_inputs()` and `hold_studio_replies()`).
 - **CRAN:** every shinytest2 or chromote test starts with `testthat::skip_on_cran()`,
   `testthat::skip_if_not_installed("shinytest2")` and a skip when `chromote::find_chrome()` is `NULL`. CRAN has
   asked that no package uses Chrome when tested on CRAN. CI runs them in the `off-cran-tests` job (`NOT_CRAN: true`).

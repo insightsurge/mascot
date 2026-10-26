@@ -65,8 +65,8 @@ that makes a change and fires the action without waiting in between, then checks
 
 - Make both steps in one `app$run_js()` call (for example, set a colour picker and click Copy), or use no
   `app$set_inputs()` between them: it waits for the server.
-- To widen the gap, hold back what the page sends or what the server answers: `hold_studio_inputs()` and
-  `hold_studio_replies()` at the top of `tests/testthat/test-studio-app-browser.R`.
+- To widen the gap, hold back what the page sends or what the server answers, with the studio tests'
+  `hold_studio_inputs()` and `hold_studio_replies()`.
 - The app-side rules these tests check are in `.claude/rules/r-code.md` and `.claude/rules/js-css.md` ("Shiny apps").
 
 ## Adding tests for a new example app

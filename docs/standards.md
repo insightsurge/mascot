@@ -234,11 +234,14 @@ studio's main view had bugs of each kind (#548, fixed in #550), and its theme vi
    once).
 2. An action collects waiting inputs first. A debounced picker holds its value back for a moment; Copy in that moment
    copies the previous colour and says "Copied". Sending the waiting value first, and answering the action only after
-   it, costs nothing when nothing is waiting.
+   it, costs nothing when nothing is waiting. A choice that draws the inputs again (another palette or character)
+   is an action too: an edit still waiting when the pickers are replaced would otherwise be lost (#574).
 3. Never echo the control the user just used. When the server sets the same control back, its answer to the first of
-   two quick choices arrives after the second and undoes it.
+   two quick choices arrives after the second and undoes it. For the same reason a value the server set, or the
+   value a control reports when it is drawn again, is not a choice: either can undo a reset made just before.
 4. A late answer can't undo a newer choice. Updates that reach the page out of step with the user's choices (a slow
    connection, two linked controls) carry the revision of the choice they answer, so the page can drop an old one.
+   Inputs drawn again are numbered the same way, so an edit made on the previous drawing can't change the new one.
 5. Busy means "until my own result is drawn". Shiny's `shiny:value` and idle events come before the value is drawn,
    and an answer to an earlier click or a settings change can look like this click's result (#547, #550). A mark the
    server draws into the result, with the number of the click it answers, says exactly when it is done; a visible

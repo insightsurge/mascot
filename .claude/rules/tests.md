@@ -24,6 +24,12 @@ four kinds of test file, their first lines, where each runs, how to run them): `
   function passed to `AppDriver$new()`; `withr::defer(app$stop())`. Assert on values, DOM state, `data-*`
   attributes, the `role="status"` text and engine state read with `app$get_js()`; screenshots only when nothing
   else can show it.
+- **house:** "do X, then Y at once": every action in a Shiny app the package ships (Copy, Download, Build, Check, a
+  busy button) gets one browser test that changes something and fires the action without waiting for the server in
+  between, then checks the action used the change (the rules it tests: `r-code.md`, "Shiny apps"). Example: set a
+  colour picker and click Copy in one `app$run_js()` call, then expect the copied code to have the new colour. A test
+  that waits for each step to settle can't catch these bugs. To widen the gap, hold back what the page sends or what
+  the server answers (`hold_studio_inputs()`, `hold_studio_replies()` in `test-studio-app-browser.R`).
 - **CRAN:** every shinytest2 or chromote test starts with `testthat::skip_on_cran()`,
   `testthat::skip_if_not_installed("shinytest2")` and a skip when `chromote::find_chrome()` is `NULL`. CRAN has
   asked that no package uses Chrome when tested on CRAN. CI runs them in the `off-cran-tests` job (`NOT_CRAN: true`).

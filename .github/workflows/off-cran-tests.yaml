@@ -128,7 +128,7 @@ jobs:
           if (length(silent) > 0L) skips <- c(skips, paste("no test ran in", silent))
           if (length(skips) > 0L) message("Skipped: ", paste(skips, collapse = "; "))
           # The report part for the CI report; a fault in the report must not decide the job, the tests do.
-          tryCatch(write_off_cran_report(results, reporter$seconds(), reporter$elapsed()), error = function(e) {
+          tryCatch(write_off_cran_report(results, reporter$seconds(), reporter$elapsed(), silent), error = function(e) {
             message("::warning::The off-CRAN test report failed: ", conditionMessage(e))
             writeLines(
               sprintf("\u26a0\ufe0f **Off-CRAN tests, R %s:** the report failed (%s); the job's log has the results.",

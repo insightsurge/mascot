@@ -50,10 +50,10 @@ check still reports. Dependabot keeps the actions current. The gate's `new_lines
 branch's base, which CI's shallow checkout lacks, so it runs locally.
 
 **The time limit.** CRAN asks for examples, vignettes and tests to take under 10 minutes together, and its Windows
-machine has run tests more than twice as slowly as its Debian one. The `check` job on Ubuntu with R release reads the
-tests' elapsed time from `00check.log` and fails above 180 s, so a pull request that makes the tests CRAN runs slower
-moves detailed tests to an `-extended.R` file or speeds them up. R CMD check prints the time only from 10 s; below
-that the report says "under 10 s".
+machine has run tests more than twice as slowly as its Debian one. Every `check` job reads the tests' elapsed time
+from `00check.log` (`.github/scripts/check-times.sh`); on Ubuntu with R release it fails above 180 s, so a pull request
+that makes the tests CRAN runs slower moves detailed tests to an `-extended.R` file or speeds them up. R CMD check
+prints the time only from 10 s; below that the report says "under 0.2 min".
 
 **Releasing.** The release pull request (version, NEWS, `cran-comments.md`) stays open while CRAN reviews; CRAN's
 comments become commits on it. After CRAN accepts and the pull request is merged, start the workflow by hand: Actions,
@@ -69,8 +69,9 @@ and releases are never moved or deleted: a fix after publication gets a new vers
 On a pull request, one comment, rewritten as each workflow finishes, sums up what CI found, in a Tests and a Code
 style section. Each workflow adds one part:
 
-- `R-CMD-check.yaml`: whether every platform passed, and how long the tests took on Ubuntu with R release against the
-  180 s limit; "not run" for a documentation-only change.
+- `R-CMD-check.yaml`: how many platforms passed, how long the tests took on Ubuntu with R release against the limit,
+  and a table with each platform's result, test time and whole check time, in minutes
+  (`.github/scripts/check-times.sh`); "not run" for a documentation-only change.
 - `test-coverage.yaml`: the line coverage without the browser and snapshot tests, the limit from `DESCRIPTION` and the
   difference from the latest successful run on `main`; the added `R/` lines that the job's tests don't run (a report,
   not a check: a browser test may run them, and the gate's `new_lines` step is the check); or why nothing was measured.
@@ -78,16 +79,17 @@ style section. Each workflow adds one part:
   and skipped tests, the slowest test files and the files much slower than on `main` (at least 25% and 10 seconds).
 - `lint.yaml`: passed or failed. lintr's findings show inline in the pull request's "Files changed".
 
-It looks like this (the figures are made up):
+It looks like this (figures from a real run; the ▸ lines are folded tables):
 
 ```
 ## ✅ CI report: passed · `abc1234`
 ### Tests
-✅ R CMD check (as CRAN): every platform passed · tests 129 s on Ubuntu, R release (limit 180 s)
-✅ Coverage: 98.3% of R lines, without the browser and snapshot tests · limit 70% (from `DESCRIPTION`) · +0.0 points from `main`
-✅ Off-CRAN tests, R 4.1: 640 passed · 0 failed · 0 skipped · 27 min · tests in 452 browser, 18 snapshot, 170 extended files
+✅ R CMD check (as CRAN): 6 of 6 platforms passed · tests 2.1 min on ubuntu-26.04, R release (limit 3.0 min)
+   ▸ Time per platform (the tests, and the whole check)
+✅ Coverage: 98.3% of R lines, without the browser and snapshot tests · limit 70% (from `DESCRIPTION`) · +0.0 points from `main` at b469250 (98.3%)
+✅ Off-CRAN tests, R 4.1: 879 passed · 0 failed · 0 skipped · 28.9 min · 570 in browser files, 52 in snapshot files, 257 in extended files
    ▸ Slowest test files, and the files much slower than on `main`
-✅ Off-CRAN tests, R release: …
+✅ Off-CRAN tests, R release: 879 passed · 0 failed · 0 skipped · 19.2 min · …
 ### Code style
 ✅ Lint: passed (Air, Biome, lintr, docs in sync, spelling).
 ```

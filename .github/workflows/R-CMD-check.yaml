@@ -75,6 +75,11 @@ jobs:
           extra-packages: any::rcmdcheck
           needs: check
 
+      - name: Note when the check starts
+        if: steps.changes.outputs.r == 'true'
+        shell: bash
+        run: echo "CHECK_START=$(date +%s)" >> "${GITHUB_ENV}"
+
       - uses: r-lib/actions/check-r-package@v2
         if: steps.changes.outputs.r == 'true'
         env:
@@ -93,46 +98,28 @@ jobs:
           error-on: '"note"'
           build_args: 'c("--no-manual", "--compact-vignettes=gs+qpdf")'
 
-      # The time the tests take as CRAN runs them, against a limit with room for the package to grow: CRAN asks for
-      # examples, vignettes and tests to take under 10 minutes together, and its Windows machine has been more than
-      # twice as slow as its Debian one. Here the tests took 384-503 s before the example apps' detailed tests moved to
-      # -extended.R files (#568). Measured on one runner only, so the figure stays comparable from run to run.
-      - name: Check the tests' time against the limit
-        if: steps.changes.outputs.r == 'true' && matrix.config.os == 'ubuntu-26.04' && matrix.config.r == 'release'
-        shell: Rscript {0}
+      # Each platform's times for the CI report: the tests' elapsed time from 00check.log and the whole check from the
+      # clock (.github/scripts/check-times.sh). On Ubuntu with R release the tests are also held to a limit, with room
+      # for the package to grow: CRAN asks for examples, vignettes and tests to take under 10 minutes together, and
+      # its Windows machine has run tests more than twice as slowly as its Debian one. Here they took 384-503 s before
+      # the example apps' detailed tests moved to -extended.R files (#568). One runner only, so the figure stays
+      # comparable from run to run.
+      - name: Note the check's times
+        if: always() && steps.changes.outputs.r == 'true'
+        shell: bash
         env:
-          LIMIT_SECONDS: 180
-          OUT: ${{ runner.temp }}/test-time.dcf
-        run: |
-          log <- readLines(Sys.glob(file.path("check", "*.Rcheck", "00check.log"))[[1]], warn = FALSE)
-          line <- grep("Running .testthat[.]R.", log, value = TRUE)
-          if (length(line) == 0L) {
-            stop("00check.log has no \"Running 'testthat.R'\" line: R CMD check did not run the tests.", call. = FALSE)
-          }
-          # R CMD check prints "[CPU/elapsed]" (as "123s/61s", or "17m/9m" from 10 minutes) only when the tests take
-          # 10 s or more (_R_CHECK_TIMINGS_, which --as-cran sets).
-          times <- regmatches(line[[1]], regexec("\\[([0-9.]+)([sm])/([0-9.]+)([sm])\\]", line[[1]]))[[1]]
-          printed <- length(times) == 5L
-          elapsed <- if (printed) as.numeric(times[[4]]) * if (times[[5]] == "m") 60 else 1 else 0
-          limit <- as.numeric(Sys.getenv("LIMIT_SECONDS"))
-          write.dcf(data.frame(Elapsed = if (printed) elapsed else "under 10", Limit = limit), Sys.getenv("OUT"))
-          message(sprintf("The tests took %s s elapsed; the limit is %g s.", if (printed) elapsed else "under 10", limit))
-          if (elapsed > limit) {
-            stop(
-              sprintf(
-                "The tests took %g s, over the %g s limit. Move detailed tests of an example app to a -extended.R file (tests/testthat/helper-extended.R) or make them faster.",
-                elapsed, limit
-              ),
-              call. = FALSE
-            )
-          }
+          PLATFORM: ${{ matrix.config.os }}, R ${{ matrix.config.r }}
+          STATUS: ${{ job.status }}
+          LIMIT_SECONDS: ${{ matrix.config.os == 'ubuntu-26.04' && matrix.config.r == 'release' && '180' || '' }}
+          OUT: ${{ runner.temp }}/check-time-${{ strategy.job-index }}.txt
+        run: bash .github/scripts/check-times.sh note
 
-      - name: Keep the tests' time
-        if: always() && steps.changes.outputs.r == 'true' && matrix.config.os == 'ubuntu-26.04' && matrix.config.r == 'release'
+      - name: Keep the check's times
+        if: always() && steps.changes.outputs.r == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: cran-test-time
-          path: ${{ runner.temp }}/test-time.dcf
+          name: check-time-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/check-time-${{ strategy.job-index }}.txt
           if-no-files-found: ignore
           overwrite: true  # a re-run job replaces it
 
@@ -191,45 +178,29 @@ jobs:
     if: always()
     runs-on: ubuntu-26.04
     name: R-CMD-check
-    timeout-minutes: 5  # only reads the matrix result
+    timeout-minutes: 5  # reads the matrix result and the platforms' times
     steps:
       - uses: actions/checkout@v7
         with:
           sparse-checkout: .github
           persist-credentials: false
 
-      - name: Get the tests' time
+      - name: Get the platforms' times
         uses: actions/download-artifact@v8
-        continue-on-error: true  # none when the R steps were skipped or the check stopped before the tests
+        continue-on-error: true  # none when the R steps were skipped or every check stopped first
         with:
-          name: cran-test-time
-          path: ${{ runner.temp }}/test-time
+          pattern: check-time-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/check-times
 
       # Plain shell: this job's runner has no R.
       - name: Write the report
         env:
+          DIR: ${{ runner.temp }}/check-times
           RESULT: ${{ needs.check.result }}
           R_STEPS: ${{ needs.check.outputs.r }}
-          TIME_FILE: ${{ runner.temp }}/test-time/test-time.dcf
           OUT: ${{ runner.temp }}/check-part.md
-        run: |
-          if [ "${R_STEPS}" = "false" ]; then
-            echo "⏭️ **R CMD check (as CRAN):** not run: this pull request changes only documentation." > "${OUT}"
-            exit 0
-          fi
-          case "${RESULT}" in
-            success) status="✅ **R CMD check (as CRAN):** every platform passed" ;;
-            cancelled) status="⏹️ **R CMD check (as CRAN):** cancelled" ;;
-            *) status="❌ **R CMD check (as CRAN):** a platform failed (see the run)" ;;
-          esac
-          if [ -s "${TIME_FILE}" ]; then
-            elapsed=$(sed -n 's/^Elapsed: *//p' "${TIME_FILE}")
-            limit=$(sed -n 's/^Limit: *//p' "${TIME_FILE}")
-            time=" · tests ${elapsed} s on Ubuntu, R release (limit ${limit} s)"
-          else
-            time=" · tests not timed (the check stopped first)"
-          fi
-          echo "${status}${time}" > "${OUT}"
+        run: bash .github/scripts/check-times.sh report
 
       - name: Keep the report
         uses: ./.github/actions/pr-report-part

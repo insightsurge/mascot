@@ -111,17 +111,18 @@ catch a changed default or behaviour that no row covers.
 
 ## Which tests catch what
 
-The tests are split by where they run (the rules are in [`.claude/rules/tests.md`](../.claude/rules/tests.md), the
-CI jobs in [`tools/README.md`](../tools/README.md), section "The gate and CI"):
+The studio's tests come in four kinds, by where they run. How the kinds work is in
+[`tests/README.md`](../tests/README.md); what each CI job runs is in
+[`.github/workflows/README.md`](../.github/workflows/README.md).
 
 | Tests | Files | Where they run | What they catch |
 |---|---|---|---|
-| Completeness and detail | [`test-studio-extended.R`](../tests/testthat/test-studio-extended.R), `test-studio-app-extended.R`, `test-studio-shared-extended.R`, `test-studio-theme-extended.R` | Locally (`NOT_CRAN`), the coverage job and the off-CRAN job; not on CRAN | An export or argument missing from `studio_guide` or `studio_controls`, a mapped control with no update row, a `mascot()` argument missing from `defaults` or with no call chip route, prose in `guide.R`, help text that doesn't come from the help pages, code that doesn't parse, a missing website stub, a theme view that uses a part it doesn't list, a view missing from the `mascot_studio()` guide page |
+| Completeness and detail | [`test-studio-extended.R`](../tests/testthat/test-studio-extended.R), `test-studio-app-extended.R`, `test-studio-shared-extended.R`, `test-studio-theme-extended.R` | Locally, the coverage job, the off-CRAN job and the weekly extended-tests run; not on CRAN or in R CMD check | An export or argument missing from `studio_guide` or `studio_controls`, a mapped control with no update row, a `mascot()` argument missing from `defaults` or with no call chip route, prose in `guide.R`, help text that doesn't come from the help pages, code that doesn't parse, a missing website stub, a theme view that uses a part it doesn't list, a view missing from the `mascot_studio()` guide page |
 | Examples | [`test-examples.R`](../tests/testthat/test-examples.R) | Everywhere, CRAN included | A missing guide page, a file in the studio folder that isn't `app.R`, `R/`, `guide/` or `www/`, a file in `www/` that the app never uses |
 | Smoke | [`test-studio.R`](../tests/testthat/test-studio.R), `test-studio-theme.R` | Everywhere, CRAN included | `mascot_studio()`'s arguments, the routing between views, and that each view's page draws |
-| Browser | `test-studio-browser.R`, `test-studio-app-browser.R`, `test-studio-theme-browser.R` | Locally with Chrome and in the off-CRAN job; never on CRAN | What a user sees and clicks: controls, chips, panels, search, updates of the live mascot |
+| Browser | `test-studio-browser.R`, `test-studio-app-browser.R`, `test-studio-theme-browser.R` | Locally with Chrome and in the off-CRAN job; not on CRAN or in R CMD check | What a user sees and clicks: controls, chips, panels, search, updates of the live mascot |
 
-`Rscript tools/cran-gate.R tests` runs all of them, Chrome permitting.
+`Rscript tools/cran-gate.R tests` and `devtools::test()` run all of them; the browser tests need Chrome.
 
 ## Adding a view
 
@@ -141,5 +142,6 @@ A view is a page of the same app, such as the planned builder. To add one:
 6. If the view gets its own exported launcher (a `mascot_builder()`, say), that function is an export like any
    other: it needs everything in "Changing an exported function or argument".
 7. Add tests: a smoke test in `test-studio-<view>.R`, the detailed tests in `test-studio-<view>-extended.R` and the
-   browser tests in `test-studio-<view>-browser.R`. The routing tests in `test-studio.R` ("mascot_studio() views")
+   browser tests in `test-studio-<view>-browser.R` (see "Adding tests for a new example app" in
+   [`tests/README.md`](../tests/README.md)). The routing tests in `test-studio.R` ("mascot_studio() views")
    may need the new view.

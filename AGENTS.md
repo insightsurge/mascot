@@ -79,8 +79,9 @@ lintr or Air yourself. **Which mode when, every option, the exit codes, the run 
   behaviour) also updates the studio in the same PR.** No studio follow-up PRs. Which files to change, in which
   order, and which test catches a miss: `docs/studio.md`. Explanations come from the help pages, so update the
   roxygen, never copy it into the studio.
-- The tests catch a missing function, argument or control, not a changed default or behaviour, so try the change in
-  the studio before the PR and say so in its checks.
+- The completeness tests in `tests/testthat/test-studio-extended.R` catch a missing function, argument or control;
+  they do not catch a changed default or behaviour, so try the change in the studio before the PR and say so in its
+  checks.
 
 ## Known users: never break them
 - **Every known user is listed in `docs/consumers.md`**: what it uses, since which version, and how to check it

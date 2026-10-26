@@ -197,6 +197,26 @@ describe("brand samples and immediate copying in the theme view", {
 })
 
 describe("palette choices while a theme reply is waiting", {
+  it("does not take the palette cards' own mascots for palette choices", {
+    local_shiny_browser()
+    skip_if_not_installed("bslib")
+    app <- theme_driver()
+    open_theme_tab(app, "palette")
+    # Each card draws a mascot, which is a Shiny input of its own and reports its state as it is drawn.
+    app$wait_for_js(paste(
+      "[...document.querySelectorAll('.theme-card-mascot [data-mascot-id], .theme-card-mascot .shiny-bound-input')]",
+      ".length > 0"
+    ))
+    app$wait_for_js("!!mascot.host.state(document.querySelector('.theme-card-mascot .shiny-bound-input'))")
+    expect_null(app$get_js("Shiny.shinyapp.$inputValues.theme_palette_revision ?? null"))
+    expect_identical(
+      app$get_js(
+        "document.getElementById('colours-light_body').closest('[data-colour-revision]').dataset.colourRevision"
+      ),
+      "1"
+    )
+  })
+
   it("uses the character's palette options without applying their older selected value", {
     local_shiny_browser()
     skip_if_not_installed("bslib")

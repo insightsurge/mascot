@@ -8,8 +8,17 @@
   const choiceRevisions = new Map();
   const receivingChoices = new WeakSet();
   const initialChoices = new WeakMap();
+  // The linked control an input belongs to, when the input is that control itself: the element marked
+  // data-choice-input, or the input it wraps (a select inside its form group). Other inputs inside it, such as the
+  // mascot drawn on each palette card, report their own changes, which are no palette choice.
+  const choiceControl = (el) => {
+    const control = el?.closest?.('[data-choice-input]');
+    if (!control) return null;
+    const own = control.classList.contains('shiny-bound-input') ? control : control.querySelector('.shiny-bound-input');
+    return own === el ? control : null;
+  };
   $(document).on('shiny:bound', (event) => {
-    if (event.bindingType === 'input' && event.target.closest('[data-choice-input]')) {
+    if (event.bindingType === 'input' && choiceControl(event.target)) {
       initialChoices.set(event.target, event.binding.getValue(event.target));
     }
   });
@@ -17,7 +26,7 @@
   // another user choice, including the change event sent by Shiny's native input bindings.
   $(document).on('shiny:inputchanged', (event) => {
     if (event.el?.matches('.pg-colour')) waitingColours.delete(event.el);
-    const control = event.el?.closest('[data-choice-input]');
+    const control = choiceControl(event.el);
     if (control || event.el?.id === 'character') flushColours();
     if (!control) return;
     if (receivingChoices.has(event.el)) {

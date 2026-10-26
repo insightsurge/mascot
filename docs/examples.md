@@ -81,11 +81,11 @@ only. They call mascot as `mascot::` or inside functions that run later.
 | `R/guide-md.R` | Knits one guide page (`guide/<function>.Rmd`) for the studio |
 | `R/shared-help.R` | Reads the package's help pages at run time: descriptions, arguments, return values, examples |
 | `R/shared-data.R` | The characters and palettes the views offer, from mascot's listings |
-| `R/shared-colours.R` | Colour pickers and the colour roles module, for every view |
+| `R/shared-colours.R` | Colour pickers and the colour roles module, for every view. The module numbers each drawing of its pickers, drops an edit from an older drawing or the value a picker reports when it is drawn, and draws a value's warning with its picker |
 | `R/shared-layout.R` | The sentence bar and the window frame around a preview |
 | `R/shared-run.R` | `run_real_call()`: runs a mascot call and reports errors, warnings and messages |
 | `R/shared-check.R` | The contrast check, the palette swap and a folder for built preview pages |
-| `R/shared-ui.R` | Shared buttons (`studio_button()`, `copy_button()`) |
+| `R/shared-ui.R` | Shared buttons (`studio_button()`, `copy_button()`); `copy_gate()`, which answers a Copy click once every waiting input is applied; `stamp_output()`, which marks what an output was drawn for; `update_choice()`, which updates a linked control with the revision of the choice it answers |
 | `R/theme-ui.R`, `R/theme-server.R` | The theme view's page and server; the top of `theme-ui.R` lists every shared part it uses |
 | `guide/<function>.Rmd` | The guide page of each exported function, knitted by the studio and by the website |
 | `guide/guide-helpers.R`, `guide/guide-shared.R` | Helpers for the guide pages, in plain R and htmltools so the website can use them too |
@@ -94,8 +94,23 @@ only. They call mascot as `mascot::` or inside functions that run later.
 | `www/tokens.css`, `www/shared.css` | Colour and spacing tokens, and the styles every view shares |
 | `www/studio.css`, `www/studio.js` | The studio view's styles and browser code (layout, chips, search, the live frame) |
 | `www/theme.css` | The theme view's styles |
-| `www/inputs.js` | The colour picker input, copy buttons and event buttons, for every view |
+| `www/inputs.js` | The colour picker input, copy buttons, event buttons and busy buttons, for every view. It sends any waiting colour before Copy, an action button or a palette or character change (`flushColours()`), keeps the revision counter of linked controls, and lets a view add a step before Copy (`mascotStudioInputs.beforeCopy()`) |
 | `www/mascot-mark.svg` | The logo mark on the rail |
+
+## Keeping the page and the server in step
+
+In a Shiny app the page changes at once and the server answers a moment later, so a quick click can act on an earlier
+state: a debounced colour picker, Copy of code the server writes, a control the server sets back, a frame that loads
+later (#548, #550, #574). Five rules close that gap, and one kind of browser test checks them. They live in one place each; read them
+there:
+
+- the app side, rules 1 to 5: [`.claude/rules/r-code.md`](../.claude/rules/r-code.md), "Shiny apps";
+- the page side: [`.claude/rules/js-css.md`](../.claude/rules/js-css.md), the bullet on the page script of a Shiny app;
+- the reasons: [`docs/standards.md`](standards.md), section 3, "Shiny apps: the page and the server in step";
+- the test: [`tests/README.md`](../tests/README.md), "Testing actions in a Shiny app".
+
+The studio's tools for them, to reuse in any view: `copy_gate()`, `stamp_output()` and `update_choice()` in
+`R/shared-ui.R`, `busy_done_mark()` in `R/shared-check.R`, and `mascotStudioInputs.beforeCopy()` in `www/inputs.js`.
 
 ## Changing an exported function or argument
 
@@ -116,7 +131,8 @@ For a new or changed argument, work through these files in this order:
 5. **Server, `app.R`.** Read the new input inside `studio_server()`: in the observer that sends the live update
    (`send()`), and in `output$code_function`, which prints the selected function's code. `mascot_preview()`'s
    arguments go through `preview_args()` instead. When the server can set the control itself, add its id to the
-   echo list (`echo_to_control()`).
+   echo list (`echo_to_control()`): that is how the server avoids echoing the control the user just used (rule 3 in
+   "Keeping the page and the server in step").
 6. **Pictures, `guide/<function>.Rmd` and `R/ui.R`.** Update the guide page when the argument changes what it shows.
    A live diagram is a function in `R/ui.R`, rendered by an output in `app.R`, that the page shows only `in_studio()`.
 
@@ -149,10 +165,10 @@ The studio's tests come in four kinds, by where they run. How the kinds work is 
 
 | Tests | Files | Where they run | What they catch |
 |---|---|---|---|
-| Completeness and detail | [`test-studio-extended.R`](../tests/testthat/test-studio-extended.R), `test-studio-app-extended.R`, `test-studio-shared-extended.R`, `test-studio-theme-extended.R` | Locally, the coverage job, the off-CRAN job and the weekly extended-tests run; not on CRAN or in R CMD check | An export or argument missing from `studio_guide` or `studio_controls`, a mapped control with no update row, a `mascot()` argument missing from `defaults` or with no call chip route, prose in `guide.R`, help text that doesn't come from the help pages, code that doesn't parse, a missing website stub, a theme view that uses a part it doesn't list, a view missing from the `mascot_studio()` guide page |
+| Completeness and detail | [`test-studio-extended.R`](../tests/testthat/test-studio-extended.R), `test-studio-app-extended.R`, `test-studio-shared-extended.R`, `test-studio-theme-extended.R` | Locally, the coverage job, the off-CRAN job and the weekly extended-tests run; not on CRAN or in R CMD check | An export or argument missing from `studio_guide` or `studio_controls`, a mapped control with no update row, a `mascot()` argument missing from `defaults` or with no call chip route, prose in `guide.R`, help text that doesn't come from the help pages, code that doesn't parse, a missing website stub, a theme view that uses a part it doesn't list, a view missing from the `mascot_studio()` guide page; and in `test-studio-shared-extended.R`, the colour module's timing (an edit before a redraw, the value a picker reports when it is drawn) |
 | Examples | [`test-examples.R`](../tests/testthat/test-examples.R) | Everywhere, CRAN included | A missing guide page, a file in the studio folder that isn't `app.R`, `R/`, `guide/` or `www/`, a file in `www/` that the app never uses |
 | Smoke | [`test-studio.R`](../tests/testthat/test-studio.R), `test-studio-theme.R` | Everywhere, CRAN included | `mascot_studio()`'s arguments, the routing between views, and that each view's page draws |
-| Browser | `test-studio-browser.R`, `test-studio-app-browser.R`, `test-studio-theme-browser.R`, and the studio's narrow layout and palette tests in `test-examples-browser.R` | Locally with Chrome and in the off-CRAN job; not on CRAN or in R CMD check | What a user sees and clicks: controls, chips, panels, search, updates of the live mascot |
+| Browser | `test-studio-browser.R`, `test-studio-app-browser.R`, `test-studio-theme-browser.R`, and the studio's narrow layout and palette tests in `test-examples-browser.R` | Locally with Chrome and in the off-CRAN job; not on CRAN or in R CMD check | What a user sees and clicks: controls, chips, panels, search, updates of the live mascot; and the "do X, then Y at once" tests: a change and an action with no wait between them, held apart with the helpers in `helper-studio.R` (`hold_studio_inputs()`, `hold_studio_replies()` and the rest) |
 
 `Rscript tools/cran-gate.R tests` and `devtools::test()` run all of them; the browser tests need Chrome.
 
@@ -164,7 +180,9 @@ A view is a page of the same app, such as the planned builder. To add one:
    `studio_views()`, in the same order (the function stops when the names differ).
 2. Put its page in `R/<view>-ui.R`, as `<view>_view_ui(query)`, and its server in `R/<view>-server.R`, as
    `<view>_view_server(input, output, session)`. Use the `R/shared-*.R` parts, never `www/studio.js` or the studio's
-   own functions in `app.R`, and list the parts it uses at the top of its UI file, as `R/theme-ui.R` does.
+   own functions in `app.R`, and list the parts it uses at the top of its UI file, as `R/theme-ui.R` does. Two
+   controls that show the same choice are linked: update them with `update_choice()`, which carries the page's
+   revision counter.
 3. Load `tokens.css`, `shared.css`, then its own `www/<view>.css`, and `inputs.js` before any script of its own.
 4. Document the new `view` value in `mascot_studio()`'s roxygen (`R/studio.R`) and in the view table of
    `guide/mascot_studio.Rmd` (a test checks that the page names every view), with a `NEWS.md` bullet.
@@ -175,5 +193,6 @@ A view is a page of the same app, such as the planned builder. To add one:
    other: it needs everything in "Changing an exported function or argument".
 7. Add tests: a smoke test in `test-studio-<view>.R`, the detailed tests in `test-studio-<view>-extended.R` and the
    browser tests in `test-studio-<view>-browser.R` (see "Adding tests for a new example app" in
-   [`tests/README.md`](../tests/README.md)). The routing tests in `test-studio.R` ("mascot_studio() views")
+   [`tests/README.md`](../tests/README.md)). Each action of the view (Copy, Download, Build, Check) gets one "do X,
+   then Y at once" browser test. The routing tests in `test-studio.R` ("mascot_studio() views")
    may need the new view.

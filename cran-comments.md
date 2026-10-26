@@ -6,13 +6,12 @@
 
 ## Test environments
 
-* Local: macOS 26.6 (Apple silicon), R 4.6.1 patched: `R CMD check --as-cran`.
-* GitHub Actions: macOS and Windows with R release; Ubuntu with R devel, release, the previous release and 4.1.0
-  (the oldest version in `Depends`).
-* win-builder: R devel.
-* mac-builder: R release.
-
-All gave 0 errors and 0 warnings; the only note is the new-submission note above.
+* Local: macOS 26.6 (Apple silicon), R 4.6.1 patched, `R CMD check --as-cran`: 0 errors, 0 warnings, 1 note
+  (the new-submission note). The tests took 77 s.
+* GitHub Actions, `R CMD check --as-cran`: macOS and Windows with R release; Ubuntu with R devel, release, the
+  previous release and 4.1.0 (the oldest version in `Depends`). 0 errors, 0 warnings, 0 notes on each.
+* win-builder, R devel: RESULT TO ADD.
+* mac-builder, R release: RESULT TO ADD.
 
 ## About the package
 

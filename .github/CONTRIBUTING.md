@@ -42,11 +42,16 @@ Stacked pull requests are fine. Base the second one on the branch below it, and 
 
 ## Before you open a pull request
 
-Update every text that describes what you changed, in the same pull request: help pages (through roxygen), articles,
-the README, `NEWS.md`; the apps, themes and examples users reach through exported functions (the studio, the example
-apps from `mascot_examples()`, `mascot_theme()`, `mascot_palettes()`); workflow comments, `tools/README.md` and the
-rules files; and any other page, app, function or file that describes the behaviour, including ones added later. It
-works both ways: if you edit an article, guide or example, check that the help page still agrees. Search the
+Update every text that describes what you changed, in the same pull request. That means:
+
+- help pages (written as roxygen2 comments in the R code), articles and vignettes, the README and `NEWS.md`;
+- the apps, themes and examples users reach through exported functions: the studio (`mascot_studio()`), the example
+  apps (`mascot_examples()`, `mascot_example()`), themes and palettes (`mascot_theme()`, `mascot_palettes()`);
+- `docs/consumers.md`, comments in the workflow files, `tools/README.md`, `.github/workflows/README.md`,
+  `tests/README.md` and the contributor rules (`AGENTS.md` and the files in `.claude/rules/` it points to);
+- any other page, app, function or file that describes the behaviour, including ones added later.
+
+It works both ways: if you edit an article, guide or example, check that the help page still agrees. Search the
 repository for the old wording and list the search terms in the pull request.
 
 Run the gate from the package root:

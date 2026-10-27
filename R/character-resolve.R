@@ -62,6 +62,13 @@ character_format_identity <- function(x) {
 #' @noRd
 character_format_canonical <- function(value) {
   checkmate::assert(checkmate::check_list(value, null.ok = TRUE), checkmate::check_atomic(value))
+  character_canonical_node(value)
+}
+
+#' One level of `character_format_canonical()`, recursing into every element
+#' @noRd
+# Per-node helper: callers assert inputs (house exception, r-code.md).
+character_canonical_node <- function(value) {
   if (!is.list(value)) {
     return(if (inherits(value, "json")) unclass(value) else value)
   }
@@ -69,7 +76,7 @@ character_format_canonical <- function(value) {
     value <- value[order(names(value), method = "radix")]
   }
   for (index in seq_along(value)) {
-    value[index] <- list(character_format_canonical(value[[index]]))
+    value[index] <- list(character_canonical_node(value[[index]]))
   }
   value
 }

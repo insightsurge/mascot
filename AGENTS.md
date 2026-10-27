@@ -36,8 +36,8 @@ starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Ex
 - **house:** a helper per argument: each `mascot()` argument takes a plain shortcut or a `mascot_*()` helper; every
   helper starts with `mascot_`.
 - **house:** tests in BDD style (`describe()`/`it()`), one test file per R file (its browser tests in
-  `test-<name>-browser.R`, its snapshot tests in `test-<name>-snap.R`, an example app's detailed tests in
-  `test-<name>-extended.R`), every checkmate assertion tested, shinytest2 for what a user sees (skipped on CRAN),
+  `test-<name>-browser.R`, its snapshot tests in `test-<name>-snap.R`, an example app's detailed tests and checks too slow
+  for CRAN in `test-<name>-extended.R`), every checkmate assertion tested, shinytest2 for what a user sees (skipped on CRAN),
   coverage at least 70%.
 - **house:** the engine is plain, unminified JS/CSS in `inst/www/`, deterministic (seeded, no clock), with status
   text beside every mascot (the mood never carries meaning alone) and `prefers-reduced-motion` honoured.

@@ -5,7 +5,8 @@ How the tests are organised, and where each kind runs. The rules (what to test, 
 
 ## In brief
 
-- CRAN runs the package's own tests in full and a short smoke test of each example app (the studio and its views).
+- CRAN runs the package's own tests in full, apart from checks too slow for it, and a short smoke test of each example
+  app; for the studio's main view, only its argument checks.
 - The tests CRAN skips live in files of their own, by kind: browser, snapshot and extended. CI runs all of them.
 - `tests/testthat/test-helper-layout.R` fails when a test is in the wrong kind of file, so the layout can't drift.
 
@@ -18,7 +19,7 @@ One test file per R file (`R/moods.R` is tested in `tests/testthat/test-moods.R`
 | plain | `test-<name>.R` | the package's functions; an example app's smoke test | (no skip) | always, CRAN included |
 | browser | `test-<name>-browser.R` | anything that starts Chrome (shinytest2, chromote) | `skip_without_chrome()` | `NOT_CRAN` is true and Chrome is found |
 | snapshot | `test-<name>-snap.R` | `expect_snapshot()` tests | (no skip, on purpose) | `NOT_CRAN` is true |
-| extended | `test-<name>-extended.R` | an example app's detailed tests: every control, palette, guide page and server scenario | `skip_unless_extended()` | `NOT_CRAN` is true, or `EXTENDED_TESTS` is `"true"` |
+| extended | `test-<name>-extended.R` | an example app's detailed tests: every control, palette, guide page and server scenario; checks too slow for CRAN | `skip_unless_extended()` | `NOT_CRAN` is true, or `EXTENDED_TESTS` is `"true"` |
 
 - **First lines.** A browser or extended file skips from its first line, so CRAN skips the whole file before any of its
   code runs (a skip inside each test would come after the test had built what it needs). A snapshot file has no such
@@ -26,7 +27,8 @@ One test file per R file (`R/moods.R` is tested in `tests/testthat/test-moods.R`
   `expect_snapshot()` skips itself on CRAN instead.
 - **A smoke test** of an example app checks its exported function's arguments, that each view builds, that the page
   draws once without duplicate ids, and one server update with the code it generates. Everything else about the app
-  goes in its extended file.
+  goes in its extended file. The studio's main view keeps only its argument checks in `test-studio.R`: building its
+  views and drawing its page take several seconds, so its smoke test is in `test-studio-extended.R`.
 - **Helpers** live in `tests/testthat/helper-<name>.R`, which testthat loads before every file: `helper-extended.R`
   (`skip_unless_extended()`), `helper-engine-js.R` (`skip_without_chrome()`), `helper-studio.R` (the studio's pages,
   drawn once per process, and `hold_studio_inputs()`, `hold_studio_replies()` and the other helpers that hold back

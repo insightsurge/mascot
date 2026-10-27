@@ -102,7 +102,9 @@ The full list, with reasons, is in [`docs/standards.md`](https://github.com/insi
 - One test file per R file: `R/moods.R` is tested in `tests/testthat/test-moods.R`. Its browser tests go in
   `test-moods-browser.R`, which CRAN skips whole, and its snapshot tests in `test-moods-snap.R`, whose
   `expect_snapshot()` calls skip on CRAN; a test fails when one is in the wrong file. The detailed tests of an example app (the studio and its views) go in a
-  `-extended.R` file, which CRAN skips too; the app's plain file keeps a short smoke test.
+  `-extended.R` file, which CRAN skips too; the app's plain file keeps a short smoke test (for the studio's main
+  view, only its argument checks: its page takes seconds to draw). Checks too slow for CRAN go in an `-extended.R` file
+  as well.
 - Cover the happy path, every argument check, edge cases and every bug fix.
 - Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN, so they
   go in the `-browser.R` file. Each action in an example app (Copy, Download, Build, Check) also gets a test that

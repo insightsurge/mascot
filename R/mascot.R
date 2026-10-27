@@ -39,7 +39,7 @@
 #'   set either one yourself, a message says so; the defaults give no message.
 #'   With `drag`, visitors can also drag the minimised restore button;
 #'   each drop sets `input$<id>_position` to the corner (`"snap"`) or a list with
-#'   `x` and `y` (`"free"`); saving it between visits is the app's job. See
+#'   `x` and `y` (`"free"`, experimental); saving it between visits is the app's job. See
 #'   [mascot_placement()]. `NULL` is not accepted.
 #' @param theme A palette id string from [mascot_palettes()], a named list of colour roles, a [bslib::bs_theme()] or a
 #'   [mascot_theme()] object. `NULL` (the default) keeps the character's own

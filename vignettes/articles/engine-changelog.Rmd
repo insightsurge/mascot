@@ -43,10 +43,10 @@ the first CRAN release.
   deadline. A swap to another character fades the old one out and the new one in, and is instant with reduced
   motion. Idle, mood change, gestures, swaps, minimising, restoring and panel messages each have their own switch
   (#239, #299, #307).
-* **Character files stay as they are.** Frozen copies of the 0.1.0 character files and face kits live in the tests'
-  golden folder with their checksums: a test fails when a frozen file changes or goes, every frozen character must
-  keep loading, and a shipped face kit can change only on purpose, through a copy for the next version and a NEWS
-  line (#467, #554).
+* **Character files stay as they are.** The tests keep frozen copies of the 0.1.0 character files and face kits (the
+  shared face drawings that characters name) with their checksums. A test fails when a frozen file changes or goes,
+  every frozen character must keep loading, and a shipped face kit can change only on purpose, through a copy for the
+  next version and a NEWS line (#467, #554).
 * **Light on the page.** Layout reads are batched, mascots scrolled off-screen stop drawing, and a page carries each
   built-in character's data once (#295, #497).
 * **Palettes.** R resolves a named palette; the host applies palette colours first, then role overrides, then CSS.

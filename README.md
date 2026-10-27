@@ -2,7 +2,6 @@
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml)
-[![Development stage: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![R code coverage](https://codecov.io/gh/insightsurge/mascot/graph/badge.svg)](https://app.codecov.io/gh/insightsurge/mascot)
 <!-- badges: end -->
 

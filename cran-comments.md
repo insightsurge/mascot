@@ -22,13 +22,13 @@ written for the package; no third-party code ships.
 
 The README and the Get started vignette say the package is "built for GxP work". GxP is the collective name for
 the "good practice" quality rules in regulated industries such as pharmaceuticals (for example Good Clinical
-Practice and Good Manufacturing Practice). The phrase does not claim that the package is validated. It describes design choices that teams working
-under these rules look for: everything ships with the package (nothing is loaded from the internet), the drawing is
-deterministic, a status text sits beside every mascot so its mood never carries meaning alone, and the user's
-reduced-motion setting is honoured.
+Practice and Good Manufacturing Practice). The phrase does not claim that the package is validated. It describes
+design choices that teams working under these rules look for: everything ships with the package (nothing is loaded
+from the internet), the drawing is deterministic (the same state always gives the same picture), a status text sits
+beside every mascot so its mood never carries meaning alone, and the user's reduced-motion setting is honoured.
 
-Tests that need a browser (Chrome through 'chromote' and 'shinytest2') and snapshot tests are skipped on CRAN; they
-run on GitHub Actions.
+Tests that need a browser (Chrome through 'chromote' and 'shinytest2'), snapshot tests and the example apps'
+detailed (extended) tests are skipped on CRAN; they run on GitHub Actions.
 
 ## Reverse dependencies
 

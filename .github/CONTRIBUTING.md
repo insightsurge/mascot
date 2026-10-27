@@ -71,6 +71,9 @@ option and the exit codes are in [`tools/README.md`](https://github.com/insights
   misspelling.
 - The docs step runs `devtools::document()`, so it may rewrite `man/`, `NAMESPACE` or `DESCRIPTION`. If it fails,
   review the regenerated files and commit them; the next run passes.
+- If you edit a built-in character (a file in `inst/format/characters/`) or the character checker, run
+  `Rscript tools/build-sysdata.R` and commit the new `R/sysdata.rda` with your change: the package ships the
+  built-in characters already checked, and `test-character-catalogue-extended.R` fails until the file matches.
 - If you change the gate itself (the script, `.lintr`, `air.toml` or `biome.json`), also run
   `Rscript tools/test-cran-gate.R`. It plants one defect per step in a temporary copy
   of the package and checks that the gate fails for each. The gate is generic (other packages use it as it is),

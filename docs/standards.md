@@ -257,6 +257,12 @@ makes a change and fires the action at once (section 6).
   fonts; they may come with static images and trailers in later releases.
   `inst/COPYRIGHTS` is the file Writing R Extensions names (**CRAN**).
 - Where third parties contributed code, list them with `ctb` or `cph`.
+- The four built-in characters also ship already checked, in `R/sysdata.rda`, written by `tools/build-sysdata.R`
+  (**house**). Checking one takes most of a second on a fast machine and several seconds on CRAN's Windows machines,
+  and listings, `mascot()` and every example need them, so the package reads the stored result instead (#563). After
+  editing a file in `inst/format/characters/` or the character checker, run the script and commit `R/sysdata.rda`
+  with the change. `test-character-catalogue-extended.R` compares each stored character with a fresh check of its
+  file, with a tolerance only on fit bounds and contrast ratios, whose last digit can differ between platforms.
 
 **When fonts are bundled:**
 

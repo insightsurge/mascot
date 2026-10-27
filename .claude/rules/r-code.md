@@ -33,6 +33,9 @@ exception is fine with a comment saying why). Reasons and sources: `docs/standar
   `# nolint: undesirable_function_linter.` and a reason).
 
 ## Dependencies
+- **house:** the built-in characters ship already checked, in `R/sysdata.rda`. After editing a file in
+  `inst/format/characters/` or the character checker (`R/character-*.R`), run `Rscript tools/build-sysdata.R` and
+  commit the new `R/sysdata.rda` with the change; `test-character-catalogue-extended.R` fails until you do.
 - **house:** call other packages as `pkg::fn()`. `@importFrom` only for operators (such as `%||%`), and only in
   `R/mascot-package.R`; never `@import` a whole package.
 - **CRAN:** every package used is declared in `DESCRIPTION` (R CMD check warns otherwise). `Imports` stays

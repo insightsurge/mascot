@@ -87,10 +87,8 @@ describe("mascot_colour_roles(palette =)", {
     }
     data <- character_catalogue_get("tessa")
     data$palettes$coral_navy$light$body <- "rgba(255,229,217,0.5)"
-    # The catalogue is restored after this test, including any caller-owned entries.
-    saved <- character_catalogue_cache$tessa
-    withr::defer(character_catalogue_cache$tessa <- saved)
-    character_catalogue_cache$tessa <- data
+    builtin <- character_catalogue_builtin
+    local_mocked_bindings(character_catalogue_builtin = function(id) if (id == "tessa") data else builtin(id))
     colours <- mascot_colour_roles("tessa", palette = "coral_navy")
     eyelid <- colours$colour[colours$role == "eyelid"]
     expect_match(eyelid, "^rgba\\(")

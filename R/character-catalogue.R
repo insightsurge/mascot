@@ -1,23 +1,12 @@
-character_catalogue_cache <- new.env(parent = emptyenv())
-
-#' Checked data of a shipped character, verified once per R process
+#' Checked data of a shipped character
 #'
-#' Reads the shipped version 1 recipe and checks it with `builtin = TRUE`, the
-#' only caller allowed to do so. The result is cached: the full check takes
-#' most of a second, and listings, [mascot()] and update checks should not pay
-#' for it twice.
+#' Returns the shipped version 1 recipe as checked with `builtin = TRUE`, stored
+#' in `R/sysdata.rda` by `tools/build-sysdata.R`. The full check takes most of a
+#' second, so listings, [mascot()] and update checks read the stored result.
 #' @noRd
 character_catalogue_builtin <- function(id) {
   checkmate::assert_choice(id, builtin_characters()$id)
-  if (is.null(character_catalogue_cache[[id]])) {
-    path <- system.file("format", "characters", paste0(id, ".json"), package = "mascot", mustWork = TRUE)
-    checked <- character_format_check(path, from = "file", builtin = TRUE)
-    if (!identical(checked$id, id)) {
-      character_format_abort("identity", "$.id", checked$id, "Ship each recipe under its own id.")
-    }
-    character_catalogue_cache[[id]] <- checked
-  }
-  character_catalogue_cache[[id]]
+  builtin_checked[[id]]
 }
 
 #' Ids of every character known to this R process, shipped ones first

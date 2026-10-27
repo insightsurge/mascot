@@ -1,5 +1,5 @@
 describe("character_catalogue_builtin()", {
-  it("checks the shipped Tessa recipe once and returns the cached result afterwards", {
+  it("returns the stored check of the shipped Tessa recipe", {
     first <- character_catalogue_builtin("tessa")
     expect_s3_class(first, "mascot_character_data")
     expect_identical(first$id, "tessa")
@@ -97,9 +97,9 @@ describe("character_catalogue_assert()", {
 
 
 describe("Tessa's shipped recipe", {
-  it("passes the format checker with every palette, and her face features reach 4.5:1 on every body colour", {
-    path <- system.file("format", "characters", "tessa.json", package = "mascot", mustWork = TRUE)
-    checked <- character_format_check(path, from = "file", builtin = TRUE)
+  # test-character-catalogue-extended.R checks that the stored recipe matches a fresh check of the shipped file.
+  it("has every palette, and her face features reach 4.5:1 on every body colour", {
+    checked <- character_catalogue_builtin("tessa")
     expect_identical(checked$id, "tessa")
     expect_identical(names(checked$palettes), setdiff(mascot_palettes("tessa")$name, "night_teal"))
     ratio <- function(a, b) {

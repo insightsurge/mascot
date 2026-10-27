@@ -1,3 +1,6 @@
+# Built once for the file and shared: it runs a full character check.
+delayedAssign("visor_probe_wire", protocol_character())
+
 describe("session and static mascot specifications", {
   it("mounts static UI in independent sessions and rejects foreign dynamic defaults", {
     ui <- mascot("shared", bubble = "Static")
@@ -335,9 +338,9 @@ describe("static template recovery", {
     first <- mascot_state_character(wire)
     expect_identical(names(store$builtins), "tessa")
     expect_length(store$characters, 0)
-    custom <- protocol_character()
+    custom <- visor_probe_wire
     for (i in 1:(mascot_character_cache_limit + 2)) {
-      custom$json <- paste0(protocol_character()$json, strrep(" ", i))
+      custom$json <- paste0(visor_probe_wire$json, strrep(" ", i))
       mascot_state_character(custom)
     }
     original <- character_catalogue_get
@@ -363,7 +366,7 @@ describe("static template recovery", {
       list2env(saved, envir = store)
     })
     store$characters <- store$keys <- list()
-    wire <- protocol_character()
+    wire <- visor_probe_wire
     original <- character_format_check
     calls <- new.env(parent = emptyenv())
     calls$n <- 0L

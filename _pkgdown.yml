@@ -93,7 +93,8 @@ reference:
   - title: Helpers
     desc: >
       Knurl and Neer (mascot_character(), mascot_characters()), mascot_read_character(),
-      mascot_check_character(), mascot_theme(css =) and mascot_placement(drag = "free") are experimental.
+      mascot_check_character(), the character format, mascot_theme(css =), which parts a bslib::bs_theme()
+      colours (mascot_theme()) and mascot_placement(drag = "free") are experimental.
     contents:
       - mascot_character
       - mascot_read_character

@@ -53,7 +53,8 @@ object on rather than reading its fields.
 }
 \description{
 This helper plays nothing; use \code{\link[=mascot_gesture]{mascot_gesture()}} to play a movement.
-Idle breathing and blinking stop within five seconds of an action.
+After the mascot appears or changes (a new mood, a gesture or a swap), it breathes and blinks for up to five
+seconds, then rests.
 The visitor's
 \href{https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion}{reduced-motion setting}
 always wins over any \code{TRUE}.

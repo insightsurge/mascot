@@ -13,7 +13,7 @@ four kinds of test file, their first lines, where each runs, how to run them): `
   lowers it. `# nocov` only for code that truly can't run in a test, with the reason beside it.
 - **house:** testthat 3rd edition, BDD style: one test file per R file (`R/moods.R` → `tests/testthat/test-moods.R`),
   plus `test-moods-browser.R` for its browser tests and `test-moods-snap.R` for its snapshot tests when it has them,
-  and `-extended.R` files for an example app's detailed tests (the next bullets); `describe("update_mascot()", { it("changes the mood after the wiggle", { ... }) })`, with
+  and `-extended.R` files for an example app's detailed tests and checks too slow for CRAN (the next bullets); `describe("update_mascot()", { it("changes the mood after the wiggle", { ... }) })`, with
   `describe()` naming the function or behaviour and `it()` stating the expected behaviour in plain words;
   `# Given / # When / # Then` where it helps. Cover the happy path, every checkmate assertion (a test that it fails with a clear message),
   edge cases and every bug fix.
@@ -36,7 +36,8 @@ four kinds of test file, their first lines, where each runs, how to run them): `
 - **house:** the tests CRAN skips live in files of their own, and nothing else does: browser tests (shinytest2,
   chromote, or any helper that starts Chrome) in `test-<name>-browser.R`, snapshot tests (`expect_snapshot()` skips
   itself on CRAN) in `test-<name>-snap.R`, and the detailed tests of the example apps (the studio and its views, and
-  any app added later) in `test-<name>-extended.R`. A browser or extended file starts with its skip, as its first
+  any app added later) and checks too slow for CRAN (such as comparing the stored built-in characters with a fresh
+  check) in `test-<name>-extended.R`. A browser or extended file starts with its skip, as its first
   expression, so CRAN skips the whole file before any of its code runs: `skip_without_chrome()` or
   `skip_unless_extended()` (`helper-extended.R`: the extended tests run where `NOT_CRAN` is true or
   `EXTENDED_TESTS` is `"true"`). A snapshot file doesn't: skipped as a whole, it reports no snapshots and
@@ -49,7 +50,9 @@ four kinds of test file, their first lines, where each runs, how to run them): `
   function's argument checks, each view builds, the page draws once with no duplicate ids, and one server update with
   its generated code. Everything else about an app (every control, palette, guide page and server scenario) goes in
   its `-extended.R` file. R CMD check on CI fails when the tests take longer than 180 s on Ubuntu with R release
-  (`R-CMD-check.yaml`), so a pull request that makes them slower moves tests or speeds them up.
+  (`R-CMD-check.yaml`), so a pull request that makes them slower moves tests or speeds them up. The studio's main
+  view is the exception: building its views and drawing its page take several seconds, so CRAN runs only
+  `mascot_studio()`'s argument checks (`test-studio.R`), and its smoke test is in `test-studio-extended.R` (#563).
 - **CRAN:** tests use only declared packages and guard Suggests (`skip_if_not_installed()`); no network; files go
   to `withr::local_tempdir()`; nothing is left behind; at most 2 cores (`tests/testthat.R` lowers `getOption("Ncpus")`,
   which testthat reads first, to two when a session has it higher).

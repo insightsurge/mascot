@@ -18,6 +18,10 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 - **house:** the built tarball stays under 5 MB (CRAN: under 10 MB if possible); the gate's `full` mode checks the
   size and that every `inst/` file is in the tarball.
 
+- **house:** the built-in characters ship already checked, in `R/sysdata.rda`. After editing a file in
+  `inst/format/characters/` or the character checker (`R/character-*.R`), run `Rscript tools/build-sysdata.R` and
+  commit the new `R/sysdata.rda` with the change; `test-character-catalogue-extended.R` fails until you do.
+
 ## Acceptance checklist for every new shipped file
 - [ ] The file is in the built tarball (`Rscript tools/cran-gate.R full`, step `tarball`).
 - [ ] It is listed in `inst/COPYRIGHTS` with its origin (the engine: Harsh Verma, MIT, first written for the

@@ -7,10 +7,20 @@ Scripts for working on mascot. None of them ship with the package (`tools/` is i
 | `cran-gate.R` | The quality gate: one command that says whether the package would pass CRAN's checks and the house rules |
 | `test-cran-gate.R` | The gate's self-test: plants one defect per check and makes sure the gate catches it |
 | `build-site.R` | Builds the pkgdown site into `site/` |
+| `build-sysdata.R` | Writes `R/sysdata.rda`, the built-in characters already checked (below) |
 | `character-coverage.R` | Line coverage of the character files only, without the full tests run |
 | `stress/` | Shiny apps that try to break the mascot, run by hand in Chrome (see `stress/README.md`) |
 
 Run every script from the package root, for example `Rscript tools/cran-gate.R`.
+
+## The stored built-in characters
+
+The full check of a built-in character takes most of a second on a fast machine and several seconds on CRAN's
+Windows machines, so the package ships the four built-ins already checked, in `R/sysdata.rda`, and reads them from
+there. After editing a file in `inst/format/characters/` or the character checker, run
+`Rscript tools/build-sysdata.R` and commit the new `R/sysdata.rda`. Until you do,
+`tests/testthat/test-character-catalogue-extended.R` fails: it compares each stored character with a fresh check of
+its file (it runs in the gate's `tests` mode and wherever the extended tests run, not on CRAN).
 
 ## The gate in plain words
 

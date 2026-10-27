@@ -10,6 +10,12 @@ history of the browser engine is on the
 <details>
 <summary>Changes at the top of the section</summary>
 
+* The built-in characters ship already checked, in `R/sysdata.rda` (written by `tools/build-sysdata.R`), so listing or drawing them no longer runs the full character check, which took several seconds on CRAN's Windows machines (#563).
+
+* In the main and theme views of `mascot_studio()`, Copy and action buttons send any waiting colour edit first, and a colour edited while the pickers are drawn again for another character no longer changes that character's colours. In the theme view, brand sample pairs apply immediately, palette controls keep the latest choice when an earlier reply arrives, and invalid colour text keeps its warning when the pickers are drawn again (#574).
+
+* `mascot_studio()` shows the package's logo mark on the button that opens the function index, in place of the letter "m" (#469).
+
 * An inline mascot's reserved speech-bubble space lets clicks reach neighbouring page controls, both when no bubble shows and in the empty space around a shown bubble. The bubble's text and close button still take pointer events (#506).
 
 * A floating mascot with `mascot_placement(drag = "snap")` that is taller or wider than the window (less its margins) now snaps to the corner it is dragged to. Before, a drag to the top of a short window, such as a phone held sideways, snapped it back to the bottom (#513).

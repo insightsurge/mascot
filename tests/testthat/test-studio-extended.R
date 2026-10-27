@@ -1,5 +1,5 @@
 # Skips the whole file on CRAN and in R CMD check, unless the extended tests are on (helper-extended.R);
-# the studio's smoke tests are in test-studio.R.
+# the argument checks CRAN runs are in test-studio.R.
 skip_unless_extended()
 
 describe("the studio's guide and help files", {
@@ -3305,5 +3305,150 @@ describe("the studio public character readers", {
     expect_match(check, "Error: ", fixed = TRUE)
     expect_match(check, "format_version", fixed = TRUE)
     expect_match(check, "built-in characters only", fixed = TRUE)
+  })
+})
+
+# The studio as a whole: its apps, views and page, and one server update. Drawing a page takes about a second, so
+# CRAN runs only the argument checks in test-studio.R.
+describe("mascot_studio() apps", {
+  it("returns independent apps with the requested first view and function", {
+    skip_without_studio_packages("studio")
+    before <- options()
+    studio <- mascot_studio(fn = "mascot_theme", run = FALSE)
+    expect_s3_class(studio, "shiny.appobj")
+    # Each page is drawn once: drawing one takes about a second.
+    page <- app_page(studio)
+    expect_match(page, 'data-initial-function="mascot_theme"', fixed = TRUE)
+    # mascot_preview() is an entry of the studio, not a view of its own.
+    expect_match(page, 'data-value="mascot_preview"', fixed = TRUE)
+    expect_match(page, 'id="preview_build"', fixed = TRUE)
+    expect_match(page, 'id="preview_card"', fixed = TRUE)
+    expect_match(page, 'data-full-screen="false"', fixed = TRUE)
+    expect_match(page, 'data-bslib-card-init', fixed = TRUE)
+    expect_match(page, 'id="studio_example_call"', fixed = TRUE)
+    expect_match(page, 'data-copy="studio_example_call"', fixed = TRUE)
+    examples <- mascot_studio("examples", run = FALSE)
+    page <- app_page(examples)
+    expect_match(page, 'id="example_name"', fixed = TRUE)
+    expect_match(page, 'href="?view=studio"', fixed = TRUE)
+    # Views select the initial host mode; the mounted live engine arrives via renderUI in its iframe.
+    expect_match(page, 'data-initial-mode="examples"', fixed = TRUE)
+    page <- app_page(examples, "view=studio")
+    expect_match(page, 'data-initial-mode="mascot"', fixed = TRUE)
+    expect_match(page, 'id="example_name"', fixed = TRUE)
+    expect_match(page, 'id="live_host"', fixed = TRUE)
+    expect_identical(options(), before)
+  })
+})
+
+describe("mascot_studio() opening on a function", {
+  it("asks the page to open the Guide only when a function is named", {
+    skip_without_studio_packages("studio")
+    expect_match(app_page(mascot_studio(fn = "mascot_theme", run = FALSE)), 'data-initial-open="guide"', fixed = TRUE)
+    expect_false(grepl("data-initial-open", app_page(mascot_studio(run = FALSE)), fixed = TRUE))
+    expect_false(grepl(
+      "data-initial-open",
+      app_page(mascot_studio("examples", fn = "mascot_theme", run = FALSE)),
+      fixed = TRUE
+    ))
+  })
+})
+
+describe("mascot_studio() views", {
+  it("opens the theme view on its own page, without the studio's shell", {
+    # The test also opens the studio's page.
+    skip_without_studio_packages("studio")
+    theme <- mascot_studio("theme", character = "sela", run = FALSE)
+    html <- app_page(theme)
+    expect_match(html, "<title>Theme a mascot</title>", fixed = TRUE)
+    expect_match(html, '<div class="mascot" id="theme_mascot"[^>]* data-character="sela"')
+    expect_false(grepl('id="studio_shell"', html, fixed = TRUE))
+    expect_false(grepl("studio.js", html, fixed = TRUE))
+    # A link that names another view still opens it.
+    expect_match(app_page(theme, "view=studio"), 'id="studio_shell"', fixed = TRUE)
+    expect_match(app_page(mascot_studio(run = FALSE), "view=theme"), 'id="theme_mascot"', fixed = TRUE)
+  })
+  it("starts only the server of the view a session serves", {
+    skip_if_not_installed("bslib")
+    app <- shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))
+    env <- environment(app$serverFuncSource())
+    for (view in c("theme", "studio")) {
+      # Given a session whose page was built for this view
+      session <- shiny::MockShinySession$new()
+      session$setInputs(tabs = view)
+      # When the app's server starts it
+      shiny::withReactiveDomain(session, env$server(session$input, session$output, session))
+      # Then only the studio makes its preview folder (one of the studio server's first steps)
+      folder <- file.path(tempdir(), paste0("studio-preview-", session$token))
+      expect_identical(dir.exists(folder), view == "studio", info = view)
+      session$close()
+      expect_false(dir.exists(folder))
+    }
+  })
+  it("reads the view from the address bar first, then from the page", {
+    skip_if_not_installed("bslib")
+    env <- environment(shiny::shinyAppDir(dirname(mascot_example("studio", run = FALSE)))$serverFuncSource())
+    from <- get("view_from_client", env)
+    expect_identical(from("?view=theme", "studio"), "theme")
+    expect_identical(from("?view=examples&character=sela"), "examples")
+    expect_identical(from("?view=unknown", "theme"), "theme")
+    expect_identical(from("", "theme"), "theme")
+    expect_identical(from(NULL, "unknown"), "studio")
+    expect_identical(from(NULL), "studio")
+    expect_error(from(1), "search")
+    expect_error(from("", 1), "routed")
+    expect_identical(names(env$views), names(get("studio_view_titles", env)))
+    expect_error(get("studio_views", env)(function(query) NULL, env$server), "studio_ui")
+  })
+  it("needs knitr only for the studio's own page", {
+    skip_if_not_installed("bslib")
+    dir <- dirname(mascot_example("studio", run = FALSE))
+    top <- vapply(as.list(parse(file.path(dir, "app.R"))), deparse1, character(1))
+    expect_false(any(grepl("knitr", top[!startsWith(top, "studio_view_ui <-")], fixed = TRUE)))
+    env <- environment(shiny::shinyAppDir(dir)$serverFuncSource())
+    expect_match(deparse1(body(env$studio_view_ui)), 'requireNamespace("knitr"', fixed = TRUE)
+    theme_ui <- get("theme_view_ui", env)
+    expect_false(grepl("knitr", deparse1(body(theme_ui)), fixed = TRUE))
+    expect_error(theme_ui("sela"), "query")
+  })
+})
+
+describe("mascot_studio() checked object guidance", {
+  it("verifies objects and points to public previews while the studio uses ids", {
+    local_empty_registry()
+    bot <- mascot_read_character(system.file("examples", "characters", "study_bot.json", package = "mascot"))
+    for (character in list(bot, mascot_character(bot))) {
+      expect_error(mascot_studio(character = character, run = FALSE), "built-in character id", class = "mascot_error")
+    }
+    expect_s3_class(mascot_studio(character = mascot_character("tessa"), run = FALSE), "shiny.appobj")
+    expect_length(character_data_ids(), 0)
+    bot$name <- "Edited"
+    expect_error(mascot_studio(character = bot, run = FALSE), class = "mascot_error_character")
+  })
+})
+
+describe("the studio app, in brief", {
+  it("draws its page with the main controls and no duplicate ids", {
+    page <- studio_parts()$page
+    for (id in c("mood", "status_text", "bubble_text", "palette", "code_ui")) {
+      expect_match(page, paste0('id="', id, '"'), fixed = TRUE, info = id)
+    }
+    expect_unique_ids(page)
+  })
+  it("sends a mood change to the live mascot and shows it in the generated code", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      envelopes <- list()
+      session$sendCustomMessage <- function(type, message) {
+        if (identical(type, "mascot:update")) envelopes[[length(envelopes) + 1L]] <<- message
+      }
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(mood = "happy")
+      session$flushReact()
+      expect_identical(envelopes[[length(envelopes)]]$state$mood, "happy")
+      expect_match(output$code_ui, 'mood = "happy"', fixed = TRUE)
+    })
   })
 })

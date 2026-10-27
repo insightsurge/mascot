@@ -23,13 +23,19 @@ What you get:
 - **Status text beside it:** a visible text line next to the drawing so the face never speaks alone.
 - **Motion:** a short wiggle on mood changes, plus nods and waves that respect reduced-motion settings.
 - **Light and dark mode:** follows your `bslib` colour toggle or Quarto's theme mode.
-- **Your colours:** built-in palettes, custom light and dark colours, or brand colours from `bslib::bs_theme()`.
+- **Your colours:** built-in palettes, custom light and dark colours, or brand colours from `bslib::bs_theme()` (which parts it colours is experimental).
 - **Offline by design:** ships every script and style in the package, and shows a worried face if Shiny disconnects.
 - **A studio to explore:** [`mascot_studio()`](`r paste0(site_url, "articles/guide-mascot_studio.html")`) (experimental) lets you try every function live and copy the R code.
 
-Install the development version of `mascot` from GitHub with `pak`:
+Install the released version of `mascot` from CRAN:
 
 ```{r install, eval=FALSE}
+install.packages("mascot")
+```
+
+Or install the development version from GitHub with `pak`:
+
+```{r install-dev, eval=FALSE}
 # install.packages("pak")
 pak::pak("insightsurge/mascot")
 ```
@@ -145,7 +151,7 @@ While the status line shows the current state, a speech bubble announces a speci
 - Use `duration = Inf` for a message your user must act on so it stays until closed or cleared with `mascot_bubble()`.
 - The timer pauses on hover, on keyboard focus, or while the mascot is minimised.
 - Bubbles stay open across mood changes and character swaps.
-- Plain text is escaped, or you can pass trusted markup with `htmltools::HTML()` or self-contained `htmltools` tags.
+- Plain text is shown as written (any HTML in it is not run), or you can pass trusted markup with `htmltools::HTML()` or self-contained `htmltools` tags.
 
 ```{r bubbles-helpers, results="hide"}
 mascot_bubble("Three rows skipped.")
@@ -236,7 +242,7 @@ On a busy review dashboard where extra movement would distract people, you can q
 - Use [`mascot_motion_settings()`](`r paste0(site_url, "articles/guide-mascot_motion_settings.html")`) to switch `idle`, `mood_change`, `gestures`, `swap`, `minimising`, `restoring` and `messages` on or off individually.
 - Any switch left as `NULL` follows `others` (`TRUE` by default), so `others = FALSE` with `gestures = TRUE` allows only gestures.
 - A user's browser or system reduced-motion preference always wins over `TRUE`.
-- Idle breathing and blinking stop within five seconds of an action, and [`mascot_gesture()`](`r paste0(site_url, "articles/guide-mascot_gesture.html")`) triggers one-off movements when allowed.
+- After the mascot appears or changes (a new mood, a gesture or a swap) it breathes and blinks for up to five seconds, then rests; and [`mascot_gesture()`](`r paste0(site_url, "articles/guide-mascot_gesture.html")`) triggers one-off movements when allowed.
 
 ```{r motion-helpers, results="hide"}
 mascot_motion_settings(idle = FALSE)

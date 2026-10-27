@@ -29,6 +29,14 @@ To remove the bubble, pass `bubble = mascot_bubble()` to `update_mascot()`.
 
 </div>
 
+<div class="pg-callout">
+
+<strong>Hide the space kept for the bubble.</strong>
+An inline mascot keeps room above it for a bubble, even when none shows. On a page that never shows a bubble,
+add `.mascot-bubble-region { display: none; }` to your CSS. See `?mascot_styling` for the classes you can style.
+
+</div>
+
 ```{r mascot_bubble-mistakes, echo = FALSE}
 if (!in_studio()) guide_mistakes_html("mascot_bubble", studio_character)
 ```

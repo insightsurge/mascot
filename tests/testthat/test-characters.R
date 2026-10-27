@@ -4,6 +4,19 @@ describe("mascot_character()", {
     expect_s3_class(mascot_character(), "mascot_character")
     expect_identical(unclass(mascot_character()), list(id = "tessa", name = "Tessa"))
   })
+  it("gives a built-in character's id and name without checking any character file", {
+    local_mocked_bindings(character_catalogue_builtin = function(id) stop("a character file was checked"))
+    for (id in builtin_characters()$id) {
+      expect_identical(unclass(mascot_character(id))$id, id)
+    }
+    expect_identical(unclass(mascot_character("sela")), list(id = "sela", name = "Sela"))
+  })
+  it("keeps the built-in table's names equal to the names in the shipped files", {
+    builtin <- builtin_characters()
+    for (index in seq_len(nrow(builtin))) {
+      expect_identical(jsonlite::fromJSON(character_json(builtin$id[[index]]))$name, builtin$name[[index]])
+    }
+  })
   it("shows the selected id in a recreating call, including registered characters", {
     local_empty_registry()
     plain <- format_recipe("study_bot")

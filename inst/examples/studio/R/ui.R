@@ -361,16 +361,7 @@ function_visual <- function(fn, character = formals(mascot::mascot)$character) {
 }
 
 data_table <- function(df, cells = NULL) {
-  tags$table(
-    class = "table table-sm pg-table",
-    tags$thead(tags$tr(lapply(names(df), tags$th))),
-    tags$tbody(lapply(seq_len(nrow(df)), function(i) {
-      tags$tr(lapply(names(df), function(column) {
-        value <- df[[column]][i]
-        tags$td(if (!is.null(cells[[column]])) cells[[column]](value) else value)
-      }))
-    }))
-  )
+  guide_data_table(df, cells = cells)
 }
 
 size_ruler <- function(pixels, label) {
@@ -388,79 +379,38 @@ size_ruler <- function(pixels, label) {
 }
 
 placement_map <- function(position, minimise, name = mascot::mascot_character()$name) {
-  corner <- function(corner_id) {
-    active <- identical(position, corner_id)
-    tags$span(
-      class = paste("pg-map-corner", paste0("pg-", corner_id), if (active) "is-active"),
-      `data-value` = corner_id,
-      if (active) name
+  checkmate::assert_string(position, min.chars = 1)
+  checkmate::assert_flag(minimise)
+  checkmate::assert_string(name, min.chars = 1)
+  caption <- if (identical(position, "inline")) {
+    "Inline: the mascot sits where mascot() is placed in your UI and scrolls with the page."
+  } else {
+    paste0(
+      "Floating in the ",
+      sub("-", " ", position, fixed = TRUE),
+      " corner of the window",
+      if (minimise) ", with a minimise button" else "",
+      ". Choose a corner in Controls to move it."
     )
   }
-  inline_active <- identical(position, "inline")
-  div(
-    class = "pg-map",
-    div(class = "pg-map-bar"),
-    div(
-      class = "pg-map-page",
-      div(class = "pg-map-line"),
-      tags$span(
-        class = paste("pg-map-inline", if (inline_active) "is-active"),
-        `data-value` = "inline",
-        if (inline_active) paste0(name, ", inline") else "inline"
-      ),
-      div(class = "pg-map-line short"),
-      div(class = "pg-map-line")
-    ),
-    lapply(c("top-left", "top-right", "bottom-left", "bottom-right"), corner),
-    div(
-      class = "pg-muted pg-map-caption",
-      if (inline_active) {
-        "Inline: the mascot sits where mascot() is placed in your UI and scrolls with the page."
-      } else {
-        paste0(
-          "Floating in the ",
-          sub("-", " ", position, fixed = TRUE),
-          " corner of the window",
-          if (minimise) ", with a minimise button" else "",
-          ". Choose a corner in Controls to move it."
-        )
-      }
-    )
-  )
+  guide_placement_map_html(active = position, name = name, interactive = TRUE, caption = caption)
 }
 
 # The table from mascot_colour_roles(character), with swatches and follow arrows.
 roles_table <- function(character, palette = NULL) {
-  checkmate::assert_string(character)
+  checkmate::assert_string(character, min.chars = 1)
   checkmate::assert_string(palette, min.chars = 1, null.ok = TRUE)
-  swatch <- function(colour) {
-    tagList(tags$span(class = "pg-swatch", style = paste0("background:", colour)), tags$code(colour))
-  }
-  follows <- function(value) if (is.na(value)) tags$span(class = "pg-muted", "leader") else paste("\u2190", value)
-  shade <- function(value) if (is.na(value)) "" else value
-  roles <- mascot_colour_roles(character, palette = palette)
   # The outline row points to the dark-mode outline tip under mascot_theme()'s dark argument.
-  outline_text <- roles$description[roles$role == "outline"]
-  description <- function(value) {
-    if (length(outline_text) == 1L && identical(value, outline_text)) {
-      tagList(
-        value,
-        " ",
-        tags$a(
-          href = "#",
-          class = "pg-role-tip",
-          `data-event` = "select_function",
-          `data-value` = "mascot_theme",
-          "Dark-mode outline tip"
-        )
-      )
-    } else {
-      value
-    }
-  }
+  outline_link <- tags$a(
+    href = "#",
+    class = "pg-role-tip",
+    `data-event` = "select_function",
+    `data-value` = "mascot_theme",
+    "Dark-mode outline tip"
+  )
   tagList(
     code_block(format_call("mascot_colour_roles", list(character = character, palette = palette)), "pg-code-small"),
-    data_table(roles, cells = list(colour = swatch, follows = follows, shade = shade, description = description))
+    guide_roles_table_html(character, palette = palette, outline_extra = outline_link)
   )
 }
 

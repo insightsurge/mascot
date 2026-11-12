@@ -91,6 +91,23 @@ describe("watch_mascot()", {
         session$userData$step(2L)
         session$flushReact()
         expect_identical(mascot_server_state("counter")$mood, "celebrating")
+
+        # NULL fields in a list entry are omitted rather than overwriting earlier state.
+        partial_rv <- shiny::reactiveVal("first")
+        watch_mascot(
+          "partial",
+          partial_rv,
+          list(
+            first = list(mood = "thinking", status = "Working"),
+            second = list(mood = "happy", status = NULL)
+          )
+        )
+        session$flushReact()
+        partial_rv("second")
+        session$flushReact()
+        s_partial <- mascot_server_state("partial")
+        expect_identical(s_partial$mood, "happy")
+        expect_identical(s_partial$status, "Working")
       }
     )
   })
@@ -252,8 +269,19 @@ describe("watch_mascot()", {
 
     # Invalid entries inside map fail at setup time.
     expect_error(watch_mascot("helper", src, c(ok = "NotAMood!"), session = session), class = "mascot_error")
+    expect_error(watch_mascot("helper", src, c(ok = ""), session = session), class = "mascot_error")
+    expect_error(watch_mascot("helper", src, c(ok = "{bad}"), session = session), class = "mascot_error")
     expect_error(watch_mascot("helper", src, list(ok = NULL), session = session), class = "mascot_error")
     expect_error(watch_mascot("helper", src, list(ok = 123), session = session), class = "mascot_error")
+    expect_error(watch_mascot("helper", src, list(ok = list("happy")), session = session), class = "mascot_error")
+    expect_error(
+      watch_mascot("helper", src, list(ok = list(mood = "happy", mood = "idle")), session = session),
+      class = "mascot_error"
+    )
+    expect_error(
+      watch_mascot("helper", src, list(ok = list(mood = "{bad}")), session = session),
+      class = "mascot_error"
+    )
     expect_error(
       watch_mascot("helper", src, list(ok = list(unknown_field = "x")), session = session),
       class = "mascot_error"

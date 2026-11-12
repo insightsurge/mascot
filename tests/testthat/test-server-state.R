@@ -139,6 +139,13 @@ describe("mascot_server_state()", {
       state <- mascot_server_state("helper", session = session)
       expect_identical(state$character, "study_bot")
       expect_identical(state$mood, "happy")
+
+      # Custom character object also works as the fallback character on cold updates.
+      update_mascot("cold_bot", mood = "thinking", status = "Checking", session = session)
+      settled_bot <- mascot_server_state("cold_bot", character = bot, session = session)
+      expect_identical(settled_bot$character, "study_bot")
+      expect_identical(settled_bot$mood, "thinking")
+      expect_identical(settled_bot$status, "Checking")
     })
   })
 

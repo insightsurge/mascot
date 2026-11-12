@@ -145,7 +145,7 @@ as_watch_map <- function(map, call = parent.frame()) {
     if ((is.character(entry) && length(entry) == 1L && !is.na(entry)) || inherits(entry, "mascot_mood")) {
       problem <- arg_problem(entry, "mood")
       if (!is.null(problem)) {
-        cli::cli_abort(problem, class = "mascot_error", call = call)
+        cli::cli_abort("{problem}", class = "mascot_error", call = call)
       }
       out[[nm]] <- list(mood = entry)
       next
@@ -165,7 +165,7 @@ as_watch_map <- function(map, call = parent.frame()) {
         for (field in names(entry)) {
           problem <- arg_problem(entry[[field]], field)
           if (!is.null(problem)) {
-            cli::cli_abort(problem, class = "mascot_error", call = call)
+            cli::cli_abort("{problem}", class = "mascot_error", call = call)
           }
         }
       }

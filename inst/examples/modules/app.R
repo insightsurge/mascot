@@ -17,14 +17,15 @@ review_ui <- function(id, title) {
 review_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ready <- reactive(isTRUE(input$ready))
-    observe({
-      # Use the local id here: Shiny adds the namespace once.
-      update_mascot(
-        "helper",
-        mood = if (ready()) "happy" else "worried",
-        status = if (ready()) "Review complete" else "Review still needed"
+    # Use the local id here: Shiny adds the namespace once.
+    watch_mascot(
+      "helper",
+      ready,
+      list(
+        "TRUE" = list(mood = "happy", status = "Review complete"),
+        "FALSE" = list(mood = "worried", status = "Review still needed")
       )
-    })
+    )
     ready # The child returns data; it does not reach into its parent's mascot.
   })
 }
@@ -47,14 +48,15 @@ ui <- page_fluid(
 server <- function(input, output, session) {
   first <- review_server("first")
   second <- review_server("second")
-  observe({
-    complete <- first() && second()
-    update_mascot(
-      "parent",
-      mood = if (complete) "happy" else "worried",
-      status = if (complete) "Both reviews complete" else "Waiting for both reviews"
+  both_complete <- reactive(first() && second())
+  watch_mascot(
+    "parent",
+    both_complete,
+    list(
+      "TRUE" = list(mood = "happy", status = "Both reviews complete"),
+      "FALSE" = list(mood = "worried", status = "Waiting for both reviews")
     )
-  })
+  )
 }
 
 shinyApp(ui, server)

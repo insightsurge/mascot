@@ -28,7 +28,7 @@ studio_categories <- list(
   ),
   wiring = list(
     title = "Wiring it in Shiny",
-    summary = "Where each call goes: mascot() in the UI, update_mascot() in the server, and modules."
+    summary = "Where each call goes: mascot() in the UI, update_mascot() or watch_mascot() in the server, mascot_server_state() in tests, and modules."
   ),
   preview = list(
     title = "Preview page",
@@ -135,6 +135,17 @@ studio_guide <- list(
     try = list(
       id = "wiring",
       character = "look",
+      session = "wiring"
+    )
+  ),
+  watch_mascot = guide_entry(
+    "wiring",
+    "Your first app",
+    c("id", "source", "map", "...", "session"),
+    try = list(
+      id = "wiring",
+      source = "wiring",
+      map = "wiring",
       session = "wiring"
     )
   ),

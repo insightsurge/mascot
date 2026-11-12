@@ -159,9 +159,11 @@ replaces it. Reduced motion skips movement. The latest gesture sent before the
 mascot appears plays once on appearance, after its queued character and mood
 are applied.
 
-\strong{React to your app's state.} Call \code{update_mascot()} from an observer. Shiny
-sends updates when the observer finishes, so for a mood to show while a long
-computation runs, run it as a \link[shiny:ExtendedTask]{shiny::ExtendedTask} and follow its status:
+\strong{React to your app's state.} Call \code{update_mascot()} from an observer, or
+bind a reactive expression directly with \code{\link[=watch_mascot]{watch_mascot()}} (experimental) when
+its discrete values map straight to mascot updates. Shiny sends updates when
+the observer finishes, so for a mood to show while a long computation runs,
+run it as a \link[shiny:ExtendedTask]{shiny::ExtendedTask} and follow its status:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{task <- ExtendedTask$new(function(x) promises::future_promise(fit_model(x)))
 observeEvent(input$run, \{
@@ -279,11 +281,14 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
+\code{\link[=mascot]{mascot()}}, \code{\link[=watch_mascot]{watch_mascot()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}
+
 \code{\link[=mascot]{mascot()}}, \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} for a Shiny example that switches
 idle movement and plays a nod.
 
 Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}},
-\code{\link[=mascot_server_state]{mascot_server_state()}}
+\code{\link[=mascot_server_state]{mascot_server_state()}},
+\code{\link[=watch_mascot]{watch_mascot()}}
 }
 \concept{mascots in Shiny}

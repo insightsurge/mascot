@@ -199,6 +199,13 @@ studio_controls <- list(
     character = input_id("character"),
     session = input_id("server_state_inspect")
   ),
+  watch_mascot = list(
+    id = input_id("watch_state"),
+    source = input_id("watch_state"),
+    map = input_id("watch_state"),
+    ... = input_id("watch_state"),
+    session = input_id("watch_state")
+  ),
   mascot_preview = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     character = input_id("character"),

@@ -1179,6 +1179,30 @@ studio_server <- function(input, output, session) {
     tags$pre(class = "pg-state-pre mt-2 mb-0", tags$code(txt))
   })
 
+  watch_source <- reactiveVal(NULL)
+  watch_mascot(
+    "helper",
+    watch_source,
+    list(
+      idle = list(mood = "idle", status = "Idle"),
+      thinking = list(mood = "thinking", status = "Working"),
+      happy = list(mood = "happy", status = "Done"),
+      worried = list(mood = "worried", status = "Needs attention")
+    ),
+    session = session
+  )
+  observeEvent(
+    input$watch_state,
+    {
+      val <- input$watch_state
+      watch_source(if (is.null(val) || identical(val, "none")) NULL else val)
+      if (!is.null(val) && !identical(val, "none")) {
+        add_log(sprintf('watch_source("%s")', val), "call", "watch_mascot() updated helper")
+      }
+    },
+    ignoreInit = TRUE
+  )
+
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
   # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
@@ -1630,6 +1654,14 @@ studio_server <- function(input, output, session) {
       mascot_server_state = format_call(
         "mascot_server_state",
         list("helper", character = current_character())
+      ),
+      watch_mascot = format_call(
+        "watch_mascot",
+        list(
+          "helper",
+          quote(source),
+          named_call("c", list(idle = "idle", thinking = "thinking", happy = "happy", worried = "worried"))
+        )
       ),
       mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),
       mascot_moods = format_call(fn, list(character = current_character())),

@@ -638,6 +638,11 @@ panel_wiring <- function() {
         actionButton("task_run", "Run a 2-second task", class = "btn-outline-primary btn-sm")
       )
     ),
+    tags$details(
+      open = NA,
+      tags$summary("Activity log: calls, warnings, errors and visitor events"),
+      uiOutput("wiring_log")
+    ),
     fn_heading("mascot_server_state"),
     arg_field("mascot_server_state", "...", NULL),
     arg_field(
@@ -658,11 +663,34 @@ panel_wiring <- function() {
         uiOutput("server_state_out")
       )
     ),
-    tags$details(
-      open = NA,
-      tags$summary("Activity log: calls, warnings, errors and visitor events"),
-      uiOutput("wiring_log")
-    )
+    fn_heading("watch_mascot"),
+    arg_field("watch_mascot", "...", NULL),
+    arg_field(
+      "watch_mascot",
+      "id",
+      code_block("watch_mascot(\"helper\", source, map)", "pg-code-small")
+    ),
+    wiring_links("watch_mascot"),
+    arg_field(
+      "watch_mascot",
+      "source",
+      radioButtons(
+        "watch_state",
+        "Simulated reactive source",
+        c("none" = "none", "idle" = "idle", "thinking" = "thinking", "happy" = "happy", "worried" = "worried"),
+        selected = "none",
+        inline = TRUE
+      )
+    ),
+    arg_field(
+      "watch_mascot",
+      "map",
+      code_block(
+        "list(\n  idle = list(mood = \"idle\", status = \"Idle\"),\n  thinking = list(mood = \"thinking\", status = \"Working\"),\n  happy = list(mood = \"happy\", status = \"Done\"),\n  worried = list(mood = \"worried\", status = \"Needs attention\")\n)",
+        "pg-code-small"
+      )
+    ),
+    arg_field("watch_mascot", "session", NULL)
   )
 }
 

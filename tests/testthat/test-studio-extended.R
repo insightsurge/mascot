@@ -2157,6 +2157,7 @@ describe("each studio control's update, generated code and default", {
       mistake_run = "demonstrates invalid calls, which change nothing",
       task_run = "demonstrates the session argument with a timed task",
       server_state_inspect = "wiring panel server state inspector",
+      watch_state = "wiring panel watch_mascot() simulated source",
       preview_width = "the width the preview page is shown at, not an argument",
       example_name = "the Examples view, not the mascot",
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
@@ -3241,7 +3242,8 @@ describe("experimental labels in the studio", {
       "mascot_characters",
       "mascot_read_character",
       "mascot_check_character",
-      "mascot_server_state"
+      "mascot_server_state",
+      "watch_mascot"
     )) {
       expect_match(notes(fn), "badge text-bg-warning", fixed = TRUE, info = fn)
       card <- as.character(get("function_card", env)(fn))
@@ -3475,5 +3477,30 @@ describe("mascot_server_state in the studio", {
     )
     expect_match(page, "Experimental", fixed = TRUE)
     expect_match(page, "testServer", fixed = TRUE)
+  })
+})
+
+describe("watch_mascot in the studio", {
+  it("drives the live mascot from the wiring panel control and renders its guide page", {
+    skip_without_studio_packages("studio")
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(watch_state = "worried")
+      session$flushReact()
+      snap <- mascot_server_state("helper", session = session)
+      expect_identical(snap$mood, "worried")
+      expect_identical(snap$status, "Needs attention")
+    })
+    env <- studio_guide_env()
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    page <- paste(
+      vapply(env$studio_guide_page("watch_mascot", "tessa", dir), as.character, character(1)),
+      collapse = "\n"
+    )
+    expect_match(page, "Experimental", fixed = TRUE)
+    expect_match(page, "reactiveVal", fixed = TRUE)
   })
 })

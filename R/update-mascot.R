@@ -119,9 +119,11 @@
 #' mascot appears plays once on appearance, after its queued character and mood
 #' are applied.
 #'
-#' **React to your app's state.** Call `update_mascot()` from an observer. Shiny
-#' sends updates when the observer finishes, so for a mood to show while a long
-#' computation runs, run it as a [shiny::ExtendedTask] and follow its status:
+#' **React to your app's state.** Call `update_mascot()` from an observer, or
+#' bind a reactive expression directly with [watch_mascot()] (experimental) when
+#' its discrete values map straight to mascot updates. Shiny sends updates when
+#' the observer finishes, so for a mood to show while a long computation runs,
+#' run it as a [shiny::ExtendedTask] and follow its status:
 #'
 #' ```r
 #' task <- ExtendedTask$new(function(x) promises::future_promise(fit_model(x)))
@@ -223,6 +225,7 @@
 #' ```
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
+#' @seealso [mascot()], [watch_mascot()], [mascot_server_state()]
 #' @seealso [mascot()], [mascot_motion_settings()] for a Shiny example that switches
 #'   idle movement and plays a nod.
 #' @export

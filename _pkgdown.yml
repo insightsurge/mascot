@@ -90,6 +90,7 @@ reference:
     contents:
       - mascot
       - update_mascot
+      - watch_mascot
       - mascot_server_state
   - title: Helpers
     desc: >

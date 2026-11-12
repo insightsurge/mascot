@@ -3246,6 +3246,7 @@ describe("experimental labels in the studio", {
       "mascot_read_character",
       "mascot_check_character",
       "mascot_server_state",
+      "mascot_test_state",
       "watch_mascot",
       "watch_mascot_task",
       "watch_mascot_validator",
@@ -3609,5 +3610,19 @@ describe("watch_mascot_shiny in the studio", {
     )
     expect_match(page, "Experimental", fixed = TRUE)
     expect_match(page, "shiny:busy", fixed = TRUE)
+  })
+})
+
+describe("mascot_test_state in the studio", {
+  it("renders its guide page and studio code example cleanly", {
+    skip_without_studio_packages("studio")
+    env <- studio_guide_env()
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    page <- paste(
+      vapply(env$studio_guide_page("mascot_test_state", "tessa", dir), as.character, character(1)),
+      collapse = "\n"
+    )
+    expect_match(page, "Experimental", fixed = TRUE)
+    expect_match(page, "shinytest2", fixed = TRUE)
   })
 })

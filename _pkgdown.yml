@@ -95,6 +95,7 @@ reference:
       - watch_mascot_validator
       - watch_mascot_shiny
       - mascot_server_state
+      - mascot_test_state
   - title: Helpers
     desc: >
       Knurl and Neer (mascot_character(), mascot_characters()), mascot_read_character(),

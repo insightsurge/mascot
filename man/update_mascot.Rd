@@ -280,7 +280,7 @@ shiny::shinyApp(
 }
 \seealso{
 \code{\link[=mascot]{mascot()}}, \code{\link[=watch_mascot]{watch_mascot()}}, \code{\link[=watch_mascot_task]{watch_mascot_task()}}, \code{\link[=watch_mascot_validator]{watch_mascot_validator()}},
-\code{\link[=watch_mascot_shiny]{watch_mascot_shiny()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}
+\code{\link[=watch_mascot_shiny]{watch_mascot_shiny()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}, \code{\link[=mascot_test_state]{mascot_test_state()}}
 
 \code{\link[=mascot]{mascot()}}, \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} for a Shiny example that switches
 idle movement and plays a nod.
@@ -288,6 +288,7 @@ idle movement and plays a nod.
 Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}},
 \code{\link[=mascot_server_state]{mascot_server_state()}},
+\code{\link[=mascot_test_state]{mascot_test_state()}},
 \code{\link[=watch_mascot]{watch_mascot()}},
 \code{\link[=watch_mascot_shiny]{watch_mascot_shiny()}},
 \code{\link[=watch_mascot_task]{watch_mascot_task()}},

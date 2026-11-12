@@ -146,4 +146,16 @@ describe("watch_mascot_shiny()", {
       expect_identical(msg$shiny_watch$delay_ms, 0)
     })
   })
+
+  it("coalesces repeated calls in one flush and skips sending once closed", {
+    f <- protocol_fixture()
+    protocol_ready(f)
+    protocol_flush(f)
+    before <- length(f$messages$values)
+    watch_mascot_shiny("helper", delay = 0, session = f$session)
+    watch_mascot_shiny("helper", delay = 0.5, session = f$session)
+    f$session$close()
+    f$session$flushReact()
+    expect_length(f$messages$values, before)
+  })
 })

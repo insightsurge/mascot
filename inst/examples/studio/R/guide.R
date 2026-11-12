@@ -138,6 +138,16 @@ studio_guide <- list(
       session = "wiring"
     )
   ),
+  mascot_test_state = guide_entry(
+    "wiring",
+    "Your first app",
+    c("app", "id", "...", "timeout"),
+    try = list(
+      app = "wiring",
+      id = "wiring",
+      timeout = "wiring"
+    )
+  ),
   watch_mascot = guide_entry(
     "wiring",
     "Your first app",

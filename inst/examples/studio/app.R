@@ -1741,6 +1741,10 @@ studio_server <- function(input, output, session) {
         "mascot_server_state",
         list("helper", character = current_character())
       ),
+      mascot_test_state = format_call(
+        "mascot_test_state",
+        list(quote(app), "helper")
+      ),
       watch_mascot = format_call(
         "watch_mascot",
         list(

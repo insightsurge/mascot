@@ -199,6 +199,12 @@ studio_controls <- list(
     character = input_id("character"),
     session = input_id("server_state_inspect")
   ),
+  mascot_test_state = list(
+    app = fixed_arg("Runs inside a shinytest2 browser test against an AppDriver."),
+    id = fixed_arg("Full DOM id such as \"helper\" or \"form-helper\"."),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    timeout = fixed_arg("Maximum milliseconds to wait before failing (default 5000).")
+  ),
   watch_mascot = list(
     id = input_id("watch_state"),
     source = input_id("watch_state"),

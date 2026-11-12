@@ -53,7 +53,7 @@
 #' busy and output error events.
 #' @family mascots in Shiny
 #' @seealso [watch_mascot()], [watch_mascot_task()], [watch_mascot_validator()],
-#'   [update_mascot()], [mascot_server_state()]
+#'   [update_mascot()], [mascot_server_state()], [mascot_test_state()]
 #' @export
 #' @examples
 #' shiny::testServer(

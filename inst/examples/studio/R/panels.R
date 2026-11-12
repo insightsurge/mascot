@@ -781,7 +781,23 @@ panel_wiring <- function() {
       )
     ),
     arg_field("watch_mascot_shiny", "delay", code_block("delay = 1", "pg-code-small")),
-    arg_field("watch_mascot_shiny", "session", NULL)
+    arg_field("watch_mascot_shiny", "session", NULL),
+    fn_heading("mascot_test_state"),
+    arg_field("mascot_test_state", "app", code_block("mascot_test_state(app, \"helper\")", "pg-code-small")),
+    arg_field("mascot_test_state", "id", NULL),
+    arg_field("mascot_test_state", "...", NULL),
+    wiring_links("mascot_test_state"),
+    arg_field(
+      "mascot_test_state",
+      "timeout",
+      tagList(
+        div(
+          class = "pg-hint",
+          "Use in shinytest2 browser tests to wait for settlement and read the displayed mood, status, bubble and minimised state."
+        ),
+        code_block("mascot_test_state(app, \"helper\", timeout = 5000)", "pg-code-small")
+      )
+    )
   )
 }
 

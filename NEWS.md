@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `mascot_test_state()` (*experimental*) waits for a mascot in a running `shinytest2::AppDriver` browser session to settle and returns its displayed `id`, `character`, `mood`, `status`, `bubble`, and `minimised` state (#188).
+
 * `watch_mascot_shiny()` (*experimental*) connects a mascot to Shiny browser events (`shiny:busy`, `shiny:idle`, `shiny:error`, and `shiny:disconnected`) as a temporary visual overlay without overwriting what `update_mascot()` last set on the server (#169, #32, #131).
 
 * `watch_mascot_validator()` (*experimental*) binds a `shinyvalidate::InputValidator` (with `shinyvalidate` in `Suggests`) to `update_mascot()` using built-in defaults and a dynamic failing-field count in `status` (#167, #31, #131).

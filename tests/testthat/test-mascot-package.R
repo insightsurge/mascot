@@ -47,6 +47,7 @@ describe("mascot exports", {
         "watch_mascot_validator",
         "watch_mascot_shiny",
         "mascot_server_state",
+        "mascot_test_state",
         "mascot_preview",
         "mascot_examples",
         "mascot_example",

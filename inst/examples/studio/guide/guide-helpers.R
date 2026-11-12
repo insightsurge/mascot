@@ -253,3 +253,32 @@ guide_each_character <- function(render, id = "guide-character") {
     guide_dependency()
   )
 }
+
+# Static "Use a palette as a base" worked example for the website guide pages.
+guide_palette_base <- function() {
+  sample <- guide_palette_base_spec(formals(mascot::mascot)$character)
+  htmltools::attachDependencies(
+    htmltools::tagList(
+      htmltools::tags$h3(class = "pg-section-title", "Use a palette as a base"),
+      htmltools::tags$p(sample$sentence),
+      guide_each_character(function(ch) {
+        spec <- guide_palette_base_spec(ch)
+        htmltools::tags$pre(htmltools::tags$code(spec$code))
+      })
+    ),
+    guide_dependency()
+  )
+}
+
+# Static "Character swap" worked example for the website guide pages.
+guide_palette_swap <- function() {
+  spec <- guide_palette_swap_spec()
+  htmltools::attachDependencies(
+    htmltools::tagList(
+      htmltools::tags$h3(class = "pg-section-title", "Character swap"),
+      htmltools::tags$p(spec$sentence),
+      htmltools::tags$pre(htmltools::tags$code(spec$code))
+    ),
+    guide_dependency()
+  )
+}

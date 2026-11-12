@@ -199,7 +199,7 @@ studio_controls <- list(
     mood = input_id("preview_mood"),
     status = input_id("preview_status"),
     bubble = input_id("preview_bubble"),
-    size = input_id("preview_size", "preview_width"),
+    size = input_id("preview_size"),
     theme = input_id("preview_theme_source"),
     motion = input_id("preview_motion")
   ),

@@ -300,6 +300,8 @@ studio_server <- function(input, output, session) {
         updateSelectInput(session, "palette", selected = "original")
         updateSelectInput(session, "theme_source", selected = "own")
         updateRadioButtons(session, "theme_mode", selected = "auto")
+        update_switch("bs_primary_on", value = TRUE, session = session)
+        update_switch("bs_secondary_on", value = TRUE, session = session)
         colours$reset()
       },
       motion = {
@@ -536,14 +538,22 @@ studio_server <- function(input, output, session) {
         character_name(),
         ")"
       )
-      div(
-        class = "pg-css",
-        colour_input(
-          paste0("bs_", slot),
-          isolate(input[[paste0("bs_", slot)]]) %||% if (slot == "primary") "#1f6feb" else "#966600",
-          label
-        ),
-        tags$span(label)
+      on_id <- paste0("bs_", slot, "_on")
+      picker_id <- paste0("bs_", slot)
+      tagList(
+        input_switch(on_id, label, isolate(input[[on_id]]) %||% TRUE),
+        conditionalPanel(
+          sprintf("input.%s", on_id),
+          div(
+            class = "pg-css",
+            colour_input(
+              picker_id,
+              isolate(input[[picker_id]]) %||% if (slot == "primary") "#1f6feb" else "#966600",
+              label
+            ),
+            tags$span(paste(tools::toTitleCase(slot), "colour"))
+          )
+        )
       )
     }))
   })
@@ -551,14 +561,16 @@ studio_server <- function(input, output, session) {
 
   # Colours and theme
   theme_with <- function(light, dark) {
+    primary <- if (!isFALSE(input$bs_primary_on)) input$bs_primary %||% "#1f6feb" else NULL
+    secondary <- if (!isFALSE(input$bs_secondary_on)) input$bs_secondary %||% "#966600" else NULL
     code_theme(
       input$theme_source %||% "own",
       light,
       dark,
       input$theme_mode %||% "auto",
       colours$css(),
-      input$bs_primary %||% "#1f6feb",
-      input$bs_secondary %||% "#966600",
+      primary,
+      secondary,
       selected_palette()
     )
   }

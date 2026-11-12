@@ -879,23 +879,12 @@ palette_roles_demo <- function() {
 # These calls use a separate mascot so the sentence and the live host keep their current settings.
 palette_swap_section <- function(character) {
   checkmate::assert_string(character)
-  example <- studio_palette_swap
-  from <- mascot_character(example[["from"]])$name
-  kept <- mascot_character(example[["kept"]])$name
-  dropped <- mascot_character(example[["dropped"]])$name
+  spec <- guide_palette_swap_spec(studio_palette_swap, id = "palette_swap_demo")
+  example <- spec$swap
   initial <- list("palette_swap_demo", character = example[["from"]], theme = example[["palette"]], motion = FALSE)
   tagList(
     tags$h3(class = "pg-section-title", "Character swap"),
-    tags$p(paste(
-      "Both examples start with",
-      from,
-      "in",
-      paste0(example[["palette"]], "."),
-      kept,
-      "keeps the palette;",
-      dropped,
-      "drops it and returns to its own colours."
-    )),
+    tags$p(spec$sentence),
     do.call(mascot, c(initial, list(placement = "inline"))),
     code_block(paste(
       format_call("update_mascot", initial),
@@ -954,18 +943,7 @@ dark_outline_demo <- function(character) {
 
 # Build the example from the selected character's current palette and role listings.
 studio_palette_base <- function(character) {
-  checkmate::assert_string(character, min.chars = 1)
-  palettes <- mascot_palettes(character)$name
-  palette <- palettes[[if (length(palettes) > 1L) 2L else 1L]]
-  roles <- mascot_colour_roles(character, palette = palette)
-  # A role whose change is easy to see; the outline would contradict the table of the live mascot.
-  role <- intersect(c("body", "accessory"), roles$role)[1L]
-  if (is.na(role)) {
-    role <- roles$role[[1L]]
-  }
-  base <- roles$colour[[match(role, roles$role)]]
-  colour <- if (tolower(base) == "#b93664") "#2563eb" else "#b93664"
-  list(palette = palette, role = role, base = base, colour = colour)
+  guide_palette_base_spec(character)
 }
 
 palette_base_demo <- function(character) {
@@ -979,7 +957,7 @@ palette_base_demo <- function(character) {
   div(
     class = "pg-palette-base",
     tags$h3(class = "pg-section-title", "Use a palette as a base"),
-    tags$p("The explicit light role wins over the palette. Other roles keep the palette or follow the changed leader."),
+    tags$p(example$sentence),
     code_block(deparse1(theme)),
     data_table(data.frame(role = example$role, palette = example$base, light = example$colour)),
     mascot(

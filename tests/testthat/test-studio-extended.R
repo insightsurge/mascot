@@ -1469,6 +1469,15 @@ describe("studio guide pages", {
       }
       if (fn == "mascot_palettes") {
         expect_match(html, "data-event", fixed = TRUE)
+        for (text in c(
+          "Use a palette as a base",
+          "The explicit light role wins over the palette.",
+          "mascot_theme(palette =",
+          "Character swap",
+          "drops it and returns to its own colours."
+        )) {
+          expect_match(outside, text, fixed = TRUE)
+        }
       }
       if (fn == "mascot_mood") {
         expect_match(html, "Try moods with the Mood drop-down in the top bar.", fixed = TRUE)
@@ -1595,6 +1604,28 @@ describe("studio guide pages", {
     expect_true(all(kinds[-length(kinds)] == "heading"))
     # The diagram stylesheet travels with the page.
     expect_true("mascot-guide" %in% vapply(htmltools::findDependencies(page), function(d) d$name, character(1)))
+    # Static versions appear for the website when !in_studio().
+    helpers <- new.env(parent = globalenv())
+    helpers$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), helpers)
+    helpers$studio_character <- "tessa"
+    theme_md <- knitr::knit(
+      file.path(guide_dir(), "mascot_theme.Rmd"),
+      output = file.path(withr::local_tempdir(), "theme.md"),
+      envir = helpers,
+      quiet = TRUE
+    )
+    theme_outside <- page_html(env$studio_guide_pieces(paste(readLines(theme_md), collapse = "\n")))
+    expect_false(grepl("data-event|data-mascot", theme_outside))
+    for (text in c(
+      "Use a palette as a base",
+      "The explicit light role wins over the palette.",
+      "mascot_theme(palette =",
+      "Character swap",
+      "drops it and returns to its own colours."
+    )) {
+      expect_match(theme_outside, text, fixed = TRUE)
+    }
     # selected_guide() puts every piece in its own column and keeps the help page and the mistakes.
     guide <- as.character(env$selected_guide("mascot_theme"))
     expect_gte(lengths(regmatches(guide, gregexpr('class="pg-guide-piece', guide, fixed = TRUE))), length(page))
@@ -2156,12 +2187,12 @@ describe("each studio control's update, generated code and default", {
       mistake = "demonstrates invalid calls, which change nothing",
       mistake_run = "demonstrates invalid calls, which change nothing",
       task_run = "demonstrates the session argument with a timed task",
-      preview_width = "the width the preview page is shown at, not an argument",
       example_name = "the Examples view, not the mascot",
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
       example_run = "the Examples view, not the mascot"
     )
     controls <- unlist(get("studio_controls", parts$env))
+    expect_false(any(grepl("preview_width", get("studio_controls", parts$env)$mascot_preview$size, fixed = TRUE)))
     format_call <- get("format_call", parts$env)
     mapped <- unique(gsub('^id="|"$', "", grep("^id=", controls, value = TRUE)))
     events <- unique(gsub(
@@ -2516,6 +2547,23 @@ describe("studio engine behaviours", {
       session$elapse(700)
       expect_identical(updates()$desired$click, list(type = "none"))
       expect_match(last_call(), "click = mascot_action()", fixed = TRUE)
+    })
+  })
+  it("allows switching primary and secondary bs_theme() colours off individually", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(theme_source = "bslib", bs_primary_on = FALSE, bs_secondary_on = TRUE)
+      session$elapse(400)
+      expect_match(output$code_ui, 'bslib::bs_theme(secondary = "#966600")', fixed = TRUE)
+      session$setInputs(bs_primary_on = TRUE, bs_secondary_on = FALSE)
+      session$elapse(400)
+      expect_match(output$code_ui, 'bslib::bs_theme(primary = "#1f6feb")', fixed = TRUE)
+      session$setInputs(bs_primary_on = FALSE, bs_secondary_on = FALSE)
+      session$elapse(400)
+      expect_match(output$code_ui, "theme = bslib::bs_theme()", fixed = TRUE)
     })
   })
 })

@@ -124,3 +124,83 @@ guide_roles_table_html <- function(character, palette = NULL, outline_extra = NU
     coerce = TRUE
   )
 }
+
+# Worked example data for "Use a palette as a base", shared by the studio and website guides.
+guide_palette_base_spec <- function(character) {
+  checkmate::assert_string(character, min.chars = 1)
+  palettes <- mascot::mascot_palettes(character)$name
+  palette <- palettes[[if (length(palettes) > 1L) 2L else 1L]]
+  roles <- mascot::mascot_colour_roles(character, palette = palette)
+  # A role whose change is easy to see; the outline would contradict the table of the live mascot.
+  role <- intersect(c("body", "accessory"), roles$role)[1L]
+  if (is.na(role)) {
+    role <- roles$role[[1L]]
+  }
+  base <- roles$colour[[match(role, roles$role)]]
+  colour <- if (tolower(base) == "#b93664") "#2563eb" else "#b93664"
+  list(
+    palette = palette,
+    role = role,
+    base = base,
+    colour = colour,
+    code = sprintf('mascot_theme(palette = "%s", light = list(%s = "%s"))', palette, role, colour),
+    sentence = paste(
+      "The explicit light role wins over the palette.",
+      "Other roles keep the palette or follow the changed leader."
+    )
+  )
+}
+
+# Finds two characters sharing a non-original palette and one lacking it without hardcoding character ids.
+guide_default_swap <- function(preferred_palette = "coral_navy") {
+  checkmate::assert_string(preferred_palette, min.chars = 1, null.ok = TRUE)
+  ids <- mascot::mascot_characters()$id
+  for (from in ids) {
+    palettes <- setdiff(mascot::mascot_palettes(from)$name, "original")
+    if (!is.null(preferred_palette) && preferred_palette %in% palettes) {
+      palettes <- c(preferred_palette, setdiff(palettes, preferred_palette))
+    }
+    for (palette in palettes) {
+      has_palette <- vapply(ids, function(id) palette %in% mascot::mascot_palettes(id)$name, logical(1))
+      others <- setdiff(ids[has_palette], from)
+      missing <- ids[!has_palette]
+      if (length(others) && length(missing)) {
+        return(c(from = from, kept = others[[1L]], dropped = missing[[1L]], palette = palette))
+      }
+    }
+  }
+  NULL
+}
+
+# Worked example data for "Character swap", shared by the studio and website guides.
+guide_palette_swap_spec <- function(swap = guide_default_swap(), id = "helper") {
+  checkmate::assert_character(swap, names = "named", min.len = 4)
+  checkmate::assert_subset(c("from", "kept", "dropped", "palette"), names(swap))
+  checkmate::assert_string(id, min.chars = 1)
+  from <- mascot::mascot_character(swap[["from"]])$name
+  kept <- mascot::mascot_character(swap[["kept"]])$name
+  dropped <- mascot::mascot_character(swap[["dropped"]])$name
+  palette <- swap[["palette"]]
+  list(
+    swap = swap,
+    from_name = from,
+    kept_name = kept,
+    dropped_name = dropped,
+    sentence = paste(
+      "Both examples start with",
+      from,
+      "in",
+      paste0(palette, "."),
+      kept,
+      "keeps the palette;",
+      dropped,
+      "drops it and returns to its own colours."
+    ),
+    code = paste(
+      sprintf('update_mascot("%s", character = "%s", theme = "%s", motion = FALSE)', id, swap[["from"]], palette),
+      sprintf('update_mascot("%s", character = "%s")', id, swap[["kept"]]),
+      sprintf('update_mascot("%s", character = "%s")', id, swap[["dropped"]]),
+      sep = "\n"
+    )
+  )
+}

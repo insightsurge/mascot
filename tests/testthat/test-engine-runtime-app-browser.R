@@ -54,7 +54,7 @@ describe("a format-v1 character through the Shiny state protocol", {
       }
       shiny::shinyApp(ui, server)
     })
-    app$wait_for_js("window.mascot?.host.state(document.getElementById('helper'))?.snapshot.applied_revision > 0")
+    app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper'))?.snapshot.applied_revision > 0")
     app$run_js(
       "window.gestures = [];
       const mount = mascot.mount;
@@ -139,7 +139,7 @@ describe("a format-v1 character through the Shiny state protocol", {
       }
       shiny::shinyApp(ui, server)
     })
-    app$wait_for_js("window.mascot?.host.state(document.getElementById('helper'))?.snapshot.applied_revision > 0")
+    app$wait_for_js("window.mascot?.host?.state(document.getElementById('helper'))?.snapshot.applied_revision > 0")
     app$run_js(
       sprintf(
         "window.helper = () => document.getElementById('helper');
@@ -250,7 +250,7 @@ describe("a format-v1 character through the Shiny state protocol", {
       shiny::shinyApp(ui, function(input, output, session) inner("outer-inner"))
     })
     app$wait_for_js(
-      "window.mascot?.host.state(document.getElementById('outer-inner-helper'))?.snapshot.applied_revision > 0"
+      "window.mascot?.host?.state(document.getElementById('outer-inner-helper'))?.snapshot.applied_revision > 0"
     )
     app$run_js(
       "window.helper = () => document.getElementById('outer-inner-helper');

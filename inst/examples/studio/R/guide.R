@@ -128,6 +128,16 @@ studio_guide <- list(
       session = "wiring"
     )
   ),
+  mascot_server_state = guide_entry(
+    "wiring",
+    "Your first app",
+    c("id", "...", "character", "session"),
+    try = list(
+      id = "wiring",
+      character = "look",
+      session = "wiring"
+    )
+  ),
   mascot_preview = guide_entry(
     "preview",
     "Check a look before using it",

@@ -163,6 +163,7 @@ guide_mistake_calls <- function(fn, character) {
       'mascot_popup_menu(c(about = "About"), "top")'
     ),
     mascot_preview = 'mascot_preview(size = 10)',
+    mascot_server_state = 'mascot_server_state("has spaces")',
     mascot_example = 'mascot_example("unknown-example", run = FALSE)',
     mascot_studio = 'mascot_studio(view = "unknown-view", run = FALSE)',
     character()

@@ -1160,6 +1160,25 @@ studio_server <- function(input, output, session) {
     nav_select("code_tabs", "Log")
   })
 
+  inspected_state <- reactiveVal(NULL)
+  observeEvent(input$server_state_inspect, {
+    snap <- mascot_server_state("helper", character = current_character(), session = session)
+    inspected_state(snap)
+    add_log(
+      sprintf('mascot_server_state("helper", character = "%s")', current_character()),
+      "call",
+      sprintf("mood = %s", snap$mood %||% "NULL")
+    )
+  })
+  output$server_state_out <- renderUI({
+    snap <- inspected_state()
+    if (is.null(snap)) {
+      return(NULL)
+    }
+    txt <- paste(utils::capture.output(utils::str(snap, max.level = 2L)), collapse = "\n")
+    tags$pre(class = "pg-state-pre mt-2 mb-0", tags$code(txt))
+  })
+
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
   # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
@@ -1608,6 +1627,10 @@ studio_server <- function(input, output, session) {
       fn,
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
       update_mascot = format_call("update_mascot", server_args(reactiveValuesToList(state), style())),
+      mascot_server_state = format_call(
+        "mascot_server_state",
+        list("helper", character = current_character())
+      ),
       mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),
       mascot_moods = format_call(fn, list(character = current_character())),
       mascot_gestures = format_call(fn, list(character = current_character())),

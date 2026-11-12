@@ -283,6 +283,7 @@ shiny::shinyApp(
 idle movement and plays a nod.
 
 Other mascots in Shiny:
-\code{\link[=mascot]{mascot()}}
+\code{\link[=mascot]{mascot()}},
+\code{\link[=mascot_server_state]{mascot_server_state()}}
 }
 \concept{mascots in Shiny}

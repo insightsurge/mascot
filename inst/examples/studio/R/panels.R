@@ -638,6 +638,26 @@ panel_wiring <- function() {
         actionButton("task_run", "Run a 2-second task", class = "btn-outline-primary btn-sm")
       )
     ),
+    fn_heading("mascot_server_state"),
+    arg_field("mascot_server_state", "...", NULL),
+    arg_field(
+      "mascot_server_state",
+      "id",
+      code_block("mascot_server_state(\"helper\")", "pg-code-small")
+    ),
+    wiring_links("mascot_server_state"),
+    arg_field(
+      "mascot_server_state",
+      "session",
+      tagList(
+        div(
+          class = "pg-hint",
+          "Inspects what the server currently knows for this session's mascot (mood, status, bubble, gesture)."
+        ),
+        actionButton("server_state_inspect", "Inspect server state", class = "btn-outline-secondary btn-sm"),
+        uiOutput("server_state_out")
+      )
+    ),
     tags$details(
       open = NA,
       tags$summary("Activity log: calls, warnings, errors and visitor events"),

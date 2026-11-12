@@ -90,6 +90,7 @@ reference:
     contents:
       - mascot
       - update_mascot
+      - mascot_server_state
   - title: Helpers
     desc: >
       Knurl and Neer (mascot_character(), mascot_characters()), mascot_read_character(),

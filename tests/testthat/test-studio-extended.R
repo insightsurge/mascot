@@ -2156,6 +2156,7 @@ describe("each studio control's update, generated code and default", {
       mistake = "demonstrates invalid calls, which change nothing",
       mistake_run = "demonstrates invalid calls, which change nothing",
       task_run = "demonstrates the session argument with a timed task",
+      server_state_inspect = "wiring panel server state inspector",
       preview_width = "the width the preview page is shown at, not an argument",
       example_name = "the Examples view, not the mascot",
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
@@ -3239,7 +3240,8 @@ describe("experimental labels in the studio", {
       "mascot_placement",
       "mascot_characters",
       "mascot_read_character",
-      "mascot_check_character"
+      "mascot_check_character",
+      "mascot_server_state"
     )) {
       expect_match(notes(fn), "badge text-bg-warning", fixed = TRUE, info = fn)
       card <- as.character(get("function_card", env)(fn))
@@ -3450,5 +3452,28 @@ describe("the studio app, in brief", {
       expect_identical(envelopes[[length(envelopes)]]$state$mood, "happy")
       expect_match(output$code_ui, 'mood = "happy"', fixed = TRUE)
     })
+  })
+})
+
+describe("mascot_server_state in the studio", {
+  it("inspects the live server state in the wiring panel and renders its guide page", {
+    skip_without_studio_packages("studio")
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(mood = "happy", server_state_inspect = 1)
+      session$flushReact()
+      expect_match(as.character(output$server_state_out$html), "happy", fixed = TRUE)
+    })
+    env <- studio_guide_env()
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    page <- paste(
+      vapply(env$studio_guide_page("mascot_server_state", "tessa", dir), as.character, character(1)),
+      collapse = "\n"
+    )
+    expect_match(page, "Experimental", fixed = TRUE)
+    expect_match(page, "testServer", fixed = TRUE)
   })
 })

@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `mascot_server_state()` (experimental) reads a mascot's latest server-side state (`id`, `character`, `mood`, `status`, `bubble`, `gesture`) without mutating the session, for use in `shiny::testServer()` unit tests.
+
 # mascot 0.1.0
 
 First CRAN release.

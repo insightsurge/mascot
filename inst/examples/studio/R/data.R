@@ -193,6 +193,12 @@ studio_controls <- list(
     gesture = input_id("gesture", "gesture_play"),
     session = input_id("task_run")
   ),
+  mascot_server_state = list(
+    id = input_id("server_state_inspect"),
+    ... = input_id("server_state_inspect"),
+    character = input_id("character"),
+    session = input_id("server_state_inspect")
+  ),
   mascot_preview = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     character = input_id("character"),

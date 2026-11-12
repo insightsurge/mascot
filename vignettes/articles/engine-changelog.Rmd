@@ -7,6 +7,8 @@ This article records changes to the browser engine in `inst/www/` (`mascot.js`, 
 newest first. User-facing R functions and arguments are
 covered in `NEWS.md`.
 
+# mascot (development version)
+
 # mascot 0.1.0
 
 **mascot-engine 0.1.0; character-format-version 1.** The engine is versioned with the package; this is the engine of

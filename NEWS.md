@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `watch_mascot_task()` (*experimental*) binds a `shiny::ExtendedTask` to `update_mascot()` using built-in defaults and key-wise overrides for `"initial"`, `"running"`, `"success"`, and `"error"` (#168, #131).
+
 * `watch_mascot()` (*experimental*) binds a Shiny reactive expression or `reactiveVal()` directly to `update_mascot()` using a named mood vector or key-wise update list, returning the driving observer so `$destroy()` can stop it (#166, #131).
 
 * `mascot_server_state()` (*experimental*) reads a mascot's latest server-side state (`id`, `character`, `mood`, `status`, `bubble`, `gesture`) without mutating the session, for use in `shiny::testServer()` unit tests (#496).

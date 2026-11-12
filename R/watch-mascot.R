@@ -37,7 +37,7 @@
 #' Shiny module, pass the module's local mascot `id` (the same as in
 #' [update_mascot()]).
 #' @family mascots in Shiny
-#' @seealso [update_mascot()], [mascot_server_state()]
+#' @seealso [update_mascot()], [watch_mascot_task()], [mascot_server_state()]
 #' @export
 #' @examples
 #' shiny::testServer(
@@ -86,13 +86,9 @@ watch_mascot <- function(
   with_mascot_asserts({
     checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
     checkmate::assert_class(source, "reactive")
-    checkmate::assert_false(is.object(map), .var.name = "map")
-    checkmate::assert(
-      checkmate::check_character(map, any.missing = FALSE, names = "unique", min.len = 1),
-      checkmate::check_list(map, names = "unique", min.len = 1)
-    )
     checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"), null.ok = TRUE)
   })
+  assert_watch_map_container(map, environment())
   if (...length() > 0L) {
     abort_dots(
       names(substitute(list(...)))[-1L],
@@ -122,14 +118,78 @@ watch_mascot <- function(
       if (!(key %in% names(entries))) {
         return(invisible())
       }
-      patch <- entries[[key]]
-      if (length(patch) > 0L) {
-        do.call(update_mascot, c(list(id = id, session = session), patch))
-      }
+      watch_mascot_dispatch(id, entries[[key]], session)
     },
     domain = session
   )
   invisible(obs)
+}
+
+#' Assert that a user-supplied watch map is a non-empty unique character vector or list
+#' @noRd
+assert_watch_map_container <- function(map, call = parent.frame()) {
+  checkmate::assert_environment(call)
+  with_mascot_asserts(
+    {
+      checkmate::assert_false(is.object(map), .var.name = "map")
+      checkmate::assert(
+        checkmate::check_character(map, any.missing = FALSE, names = "unique", min.len = 1),
+        checkmate::check_list(map, names = "unique", min.len = 1)
+      )
+    },
+    call = call
+  )
+}
+
+#' Merge wrapper defaults with optional key-wise user overrides
+#' @noRd
+merge_watch_map <- function(defaults, map, fn_name, call = parent.frame()) {
+  checkmate::assert_list(defaults, names = "unique", min.len = 1)
+  checkmate::assert_string(fn_name, min.chars = 1)
+  checkmate::assert_environment(call)
+  if (is.null(map)) {
+    return(defaults)
+  }
+  assert_watch_map_container(map, call = call)
+  unknown <- setdiff(names(map), names(defaults))
+  if (length(unknown) > 0L) {
+    cli::cli_abort(
+      c(
+        "{cli::qty(unknown)}Unknown {.arg map} key{?s} for {.fn {fn_name}}: {.val {unknown}}.",
+        "i" = "Allowed keys: {.val {names(defaults)}}."
+      ),
+      class = "mascot_error",
+      call = call
+    )
+  }
+  overrides <- as_watch_map(map, call = call)
+  out <- defaults
+  for (nm in names(overrides)) {
+    entry <- overrides[[nm]]
+    if (length(entry) == 0L) {
+      # An explicit empty list silences that key completely instead of inheriting defaults.
+      out[[nm]] <- list()
+    } else {
+      base <- out[[nm]]
+      for (field in names(entry)) {
+        base[[field]] <- entry[[field]]
+      }
+      out[[nm]] <- base
+    }
+  }
+  out
+}
+
+#' Apply a resolved mascot update patch if non-empty
+#' @noRd
+watch_mascot_dispatch <- function(id, patch, session) {
+  checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
+  checkmate::assert_list(patch)
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
+  if (length(patch) > 0L) {
+    do.call(update_mascot, c(list(id = id, session = session), patch))
+  }
+  invisible()
 }
 
 #' Validate and normalise a `watch_mascot()` lookup map

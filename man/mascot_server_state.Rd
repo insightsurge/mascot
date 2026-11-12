@@ -92,7 +92,8 @@ shiny::testServer(
 Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}},
 \code{\link[=update_mascot]{update_mascot()}},
-\code{\link[=watch_mascot]{watch_mascot()}}
+\code{\link[=watch_mascot]{watch_mascot()}},
+\code{\link[=watch_mascot_task]{watch_mascot_task()}}
 }
 \concept{mascots in Shiny}
 \section{Experimental}{

@@ -1203,6 +1203,33 @@ studio_server <- function(input, output, session) {
     ignoreInit = TRUE
   )
 
+  studio_task <- ExtendedTask$new(function(fail = FALSE) {
+    if (isTRUE(fail)) {
+      stop("Simulated failure")
+    }
+    "ok"
+  })
+  watch_mascot_task(
+    "helper",
+    studio_task,
+    map = list(initial = list()),
+    session = session
+  )
+  observeEvent(
+    input$watch_task_state,
+    {
+      val <- input$watch_task_state
+      if (identical(val, "succeed")) {
+        studio_task$invoke(FALSE)
+        add_log("studio_task$invoke(FALSE)", "call", "watch_mascot_task() updated helper")
+      } else if (identical(val, "fail")) {
+        studio_task$invoke(TRUE)
+        add_log("studio_task$invoke(TRUE)", "call", "watch_mascot_task() updated helper")
+      }
+    },
+    ignoreInit = TRUE
+  )
+
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
   # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
@@ -1662,6 +1689,10 @@ studio_server <- function(input, output, session) {
           quote(source),
           named_call("c", list(idle = "idle", thinking = "thinking", happy = "happy", worried = "worried"))
         )
+      ),
+      watch_mascot_task = format_call(
+        "watch_mascot_task",
+        list("helper", quote(task))
       ),
       mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),
       mascot_moods = format_call(fn, list(character = current_character())),

@@ -149,6 +149,17 @@ studio_guide <- list(
       session = "wiring"
     )
   ),
+  watch_mascot_task = guide_entry(
+    "wiring",
+    "Your first app",
+    c("id", "task", "...", "map", "session"),
+    try = list(
+      id = "wiring",
+      task = "wiring",
+      map = "wiring",
+      session = "wiring"
+    )
+  ),
   mascot_preview = guide_entry(
     "preview",
     "Check a look before using it",

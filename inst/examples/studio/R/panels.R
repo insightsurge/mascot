@@ -690,7 +690,35 @@ panel_wiring <- function() {
         "pg-code-small"
       )
     ),
-    arg_field("watch_mascot", "session", NULL)
+    arg_field("watch_mascot", "session", NULL),
+    fn_heading("watch_mascot_task"),
+    arg_field("watch_mascot_task", "...", NULL),
+    arg_field(
+      "watch_mascot_task",
+      "id",
+      code_block("watch_mascot_task(\"helper\", task)", "pg-code-small")
+    ),
+    wiring_links("watch_mascot_task"),
+    arg_field(
+      "watch_mascot_task",
+      "task",
+      radioButtons(
+        "watch_task_state",
+        "Simulated ExtendedTask outcome",
+        c("none" = "none", "succeed" = "succeed", "fail" = "fail"),
+        selected = "none",
+        inline = TRUE
+      )
+    ),
+    arg_field(
+      "watch_mascot_task",
+      "map",
+      code_block(
+        "list(\n  initial = list(),\n  running = list(mood = \"thinking\", status = \"Running task\"),\n  success = list(mood = \"happy\", status = \"Task complete\"),\n  error = list(mood = \"worried\", status = \"Task failed\")\n)",
+        "pg-code-small"
+      )
+    ),
+    arg_field("watch_mascot_task", "session", NULL)
   )
 }
 

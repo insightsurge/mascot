@@ -206,6 +206,13 @@ studio_controls <- list(
     ... = input_id("watch_state"),
     session = input_id("watch_state")
   ),
+  watch_mascot_task = list(
+    id = input_id("watch_task_state"),
+    task = input_id("watch_task_state"),
+    ... = input_id("watch_task_state"),
+    map = input_id("watch_task_state"),
+    session = input_id("watch_task_state")
+  ),
   mascot_preview = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     character = input_id("character"),

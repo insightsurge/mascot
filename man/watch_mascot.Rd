@@ -71,12 +71,13 @@ shiny::testServer(
 )
 }
 \seealso{
-\code{\link[=update_mascot]{update_mascot()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}
+\code{\link[=update_mascot]{update_mascot()}}, \code{\link[=watch_mascot_task]{watch_mascot_task()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}
 
 Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}},
 \code{\link[=mascot_server_state]{mascot_server_state()}},
-\code{\link[=update_mascot]{update_mascot()}}
+\code{\link[=update_mascot]{update_mascot()}},
+\code{\link[=watch_mascot_task]{watch_mascot_task()}}
 }
 \concept{mascots in Shiny}
 \section{Experimental}{

@@ -58,7 +58,7 @@ Inline mascots sit in the page flow and ignore \code{minimise} and \code{drag}. 
 set either one yourself, a message says so; the defaults give no message.
 With \code{drag}, visitors can also drag the minimised restore button;
 each drop sets \verb{input$<id>_position} to the corner (\code{"snap"}) or a list with
-\code{x} and \code{y} (\code{"free"}); saving it between visits is the app's job. See
+\code{x} and \code{y} (\code{"free"}, experimental); saving it between visits is the app's job. See
 \code{\link[=mascot_placement]{mascot_placement()}}. \code{NULL} is not accepted.}
 
 \item{theme}{A palette id string from \code{\link[=mascot_palettes]{mascot_palettes()}}, a named list of colour roles, a \code{\link[bslib:bs_theme]{bslib::bs_theme()}} or a

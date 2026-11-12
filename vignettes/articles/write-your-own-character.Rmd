@@ -13,7 +13,8 @@ arguments, results and diagnostics may change in a later release.
 
 Saving and registering characters and palettes are planned for a later release. The mascot
 studio does not take custom characters yet, but you can preview your own
-character offline and use it directly in Shiny apps.
+character offline with `mascot_preview()`, also experimental, and use it directly
+in Shiny apps.
 
 ## Find the example character
 

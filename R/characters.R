@@ -54,6 +54,11 @@ mascot_character <- function(id = "tessa") {
   if (inherits(id, "mascot_character_data")) {
     return(as_character_arg(id, environment()))
   }
+  # A built-in id and name come from the fixed table; its file is checked when a mascot draws it.
+  builtin <- builtin_characters()
+  if (id %in% builtin$id) {
+    return(structure(list(id = id, name = builtin$name[builtin$id == id]), class = "mascot_character"))
+  }
   registry <- mascot_characters()
   if (!id %in% registry$id) {
     abort_choice(id, registry$id, "id", "character", environment())

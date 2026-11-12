@@ -71,6 +71,9 @@ option and the exit codes are in [`tools/README.md`](https://github.com/insights
   misspelling.
 - The docs step runs `devtools::document()`, so it may rewrite `man/`, `NAMESPACE` or `DESCRIPTION`. If it fails,
   review the regenerated files and commit them; the next run passes.
+- If you edit a built-in character (a file in `inst/format/characters/`) or the character checker, run
+  `Rscript tools/build-sysdata.R` and commit the new `R/sysdata.rda` with your change: the package ships the
+  built-in characters already checked, and `test-character-catalogue-extended.R` fails until the file matches.
 - If you change the gate itself (the script, `.lintr`, `air.toml` or `biome.json`), also run
   `Rscript tools/test-cran-gate.R`. It plants one defect per step in a temporary copy
   of the package and checks that the gate fails for each. The gate is generic (other packages use it as it is),
@@ -102,7 +105,9 @@ The full list, with reasons, is in [`docs/standards.md`](https://github.com/insi
 - One test file per R file: `R/moods.R` is tested in `tests/testthat/test-moods.R`. Its browser tests go in
   `test-moods-browser.R`, which CRAN skips whole, and its snapshot tests in `test-moods-snap.R`, whose
   `expect_snapshot()` calls skip on CRAN; a test fails when one is in the wrong file. The detailed tests of an example app (the studio and its views) go in a
-  `-extended.R` file, which CRAN skips too; the app's plain file keeps a short smoke test.
+  `-extended.R` file, which CRAN skips too; the app's plain file keeps a short smoke test (for the studio's main
+  view, only its argument checks: its page takes seconds to draw). Checks too slow for CRAN go in an `-extended.R` file
+  as well.
 - Cover the happy path, every argument check, edge cases and every bug fix.
 - Use shinytest2 for anything a user can see in a Shiny app. These tests need Chrome and are skipped on CRAN, so they
   go in the `-browser.R` file. Each action in an example app (Copy, Download, Build, Check) also gets a test that
@@ -119,9 +124,8 @@ with the function or feature, and end with the issue number:
 * `update_mascot()` gains a `message` argument for a speech bubble (#30).
 ```
 
-Until 0.1.0, bullets go under the heading `# mascot (development version)` at the top of `NEWS.md`; the milestone's
-release PR renames that heading to the milestone's version. Leave out internal changes such as CI, refactors and
-tests.
+Bullets go under the heading `# mascot (development version)` at the top of `NEWS.md`; the release PR renames that
+heading to the release's version. Leave out internal changes such as CI, refactors and tests.
 
 ## Known users
 

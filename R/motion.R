@@ -1,7 +1,8 @@
 #' Choose which parts of the mascot move
 #'
 #' This helper plays nothing; use [mascot_gesture()] to play a movement.
-#' Idle breathing and blinking stop within five seconds of an action.
+#' After the mascot appears or changes (a new mood, a gesture or a swap), it breathes and blinks for up to five
+#' seconds, then rests.
 #' The visitor's
 #' [reduced-motion setting](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)
 #' always wins over any `TRUE`.

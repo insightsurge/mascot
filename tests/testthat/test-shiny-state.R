@@ -1,3 +1,7 @@
+# Built once for the file and shared: each one runs a full character check.
+delayedAssign("visor_probe_wire", protocol_character())
+delayedAssign("other_probe_wire", protocol_character(FALSE, "other_probe"))
+
 describe("R-settled latest mascot state", {
   it("rejects mixed target failures atomically, naming the id", {
     f <- protocol_fixture()
@@ -99,7 +103,7 @@ describe("R-settled latest mascot state", {
     expect_equal(sum(vapply(buckets, function(x) length(x$calls), integer(1))), 3)
     # A different, invalid guard cannot erase a valid predecessor's coupled fields.
     send_update(f$session, "helper", list(mood = "absent", status = list(mode = "custom", text = "Wrong")))
-    state <- mascot_state_defaults(protocol_character())
+    state <- mascot_state_defaults(visor_probe_wire)
     expect_warning(protocol_ready(f, state = state), "absent")
     r <- protocol_record(f)
     expect_identical(r$desired$status$text, "Guard predecessor")
@@ -168,8 +172,8 @@ describe("R-settled latest mascot state", {
   it("settles the prefix against the first valid explicit character and never buffers characters", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
-    x <- protocol_character()
-    y <- protocol_character(FALSE, "other_probe")
+    x <- visor_probe_wire
+    y <- other_probe_wire
     send_update(f$session, "helper", list(mood = "processing", status = list(mode = "custom", text = "Scanning")))
     send_update(
       f$session,
@@ -212,8 +216,8 @@ describe("R-settled latest mascot state", {
     local_mocked_bindings(dev_mode = function() TRUE)
     f <- protocol_fixture()
     withr::defer(f$session$close())
-    x <- protocol_character()
-    y <- protocol_character(FALSE, "other_probe")
+    x <- visor_probe_wire
+    y <- other_probe_wire
     baseline <- mascot_state_defaults(x)
     baseline$theme$palette <- "sea"
     baseline$click <- list(type = "action", label = "Help", tooltip = FALSE, disabled = FALSE)
@@ -308,7 +312,7 @@ describe("R-settled latest mascot state", {
   it("progresses without outcomes, ignores old lifecycle, and coalesces explicit reconciliation", {
     f <- protocol_fixture()
     withr::defer(f$session$close())
-    token <- protocol_ready(f, state = mascot_state_defaults(protocol_character()))
+    token <- protocol_ready(f, state = mascot_state_defaults(visor_probe_wire))
     protocol_flush(f)
     for (i in 1:20) {
       update_mascot("helper", status = as.character(i), session = f$session)
@@ -425,8 +429,8 @@ describe("R-settled latest mascot state", {
     )
     protocol_ready(f, 2)
     expect_null(protocol_flush(f)$gesture)
-    x <- protocol_character()
-    y <- protocol_character(FALSE, "other_probe")
+    x <- visor_probe_wire
+    y <- other_probe_wire
     send_update(f$session, "helper", list(character = x, gesture = "spin"))
     send_update(
       f$session,
@@ -450,8 +454,8 @@ describe("R-settled latest mascot state", {
 
   it("discards an incompatible pending gesture before startup or after an explicit unmounted change", {
     local_mocked_bindings(dev_mode = function() TRUE)
-    x <- protocol_character()
-    y <- protocol_character(FALSE, "other_probe")
+    x <- visor_probe_wire
+    y <- other_probe_wire
     for (mounted in c(FALSE, TRUE)) {
       f <- protocol_fixture()
       withr::defer(f$session$close())
@@ -507,7 +511,7 @@ describe("R-settled latest mascot state", {
 describe("target-specific diagnostics", {
   it("names the invalid value and the checked character's available choices", {
     state <- mascot_state_empty("helper")
-    wire <- protocol_character()
+    wire <- visor_probe_wire
     state <- mascot_state_accept(state, list(character = wire))
     expect_error(mascot_state_prepare(state, list(mood = "hapy")), "processing.*hapy", class = "mascot_error")
     expect_error(mascot_state_prepare(state, list(gesture = "jump")), "spin.*jump", class = "mascot_error")

@@ -6,9 +6,18 @@
 #' @section Public classes:
 #' These classes are styling hooks: `.mascot` (the whole mascot),
 #' `.mascot-status` (status text), `.mascot-bubble` (speech panel),
+#' `.mascot-bubble-region` (the space for the speech panel),
 #' `.mascot-menu` (menu panel) and `.mascot-tooltip` (tooltip panel).
 #' Other classes and all `--_mascot-*` properties are private and may change.
 #' Use [mascot_size()] and [mascot_placement()] for size and position.
+#'
+#' `.mascot-bubble-region` is the space kept for the speech bubble: above an
+#' inline mascot (so a bubble never moves the page) and next to a floating one.
+#' It is kept even while no bubble shows. On a page that never shows a bubble,
+#' hide it with `.mascot-bubble-region { display: none; }`, so an inline mascot
+#' keeps no empty space above it. Hidden, it also stops screen readers from
+#' announcing bubbles. Leave its position, size and pointer events to the
+#' package.
 #'
 #' @section Public custom properties:
 #' Set these on `.mascot`, an individual mascot's id, or an ancestor such as

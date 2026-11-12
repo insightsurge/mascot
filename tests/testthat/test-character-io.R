@@ -1,7 +1,11 @@
+# Checked once for the file and shared: R copies an object as soon as a test changes it, so no test sees another's
+# edits. Verified too, so character_save() recognises it at once.
+delayedAssign("study_bot_checked", character_data_verify(character_check(author_study_bot())))
+
 describe("character_save() and character_read()", {
   it("round-trips the complete small character unchanged", {
     # Given a character built in R and checked
-    checked <- character_check(author_study_bot())
+    checked <- study_bot_checked
     path <- file.path(withr::local_tempdir(), "study_bot.json")
     # When it is saved, read and checked again
     expect_identical(character_save(checked, path), path)
@@ -43,7 +47,7 @@ describe("character_save() and character_read()", {
   })
 
   it("keeps singleton arrays, empty objects and null endpoints in the saved text", {
-    checked <- character_check(author_study_bot())
+    checked <- study_bot_checked
     path <- file.path(withr::local_tempdir(), "study_bot.json")
     character_save(checked, path)
     saved <- jsonlite::fromJSON(path, simplifyVector = FALSE)
@@ -74,7 +78,7 @@ describe("character_save() and character_read()", {
   })
 
   it("refuses to replace an existing file unless asked and leaves it untouched", {
-    checked <- character_check(author_study_bot())
+    checked <- study_bot_checked
     path <- file.path(withr::local_tempdir(), "study_bot.json")
     writeLines("keep me", path)
     error <- tryCatch(character_save(checked, path), mascot_error_file = identity)
@@ -91,7 +95,7 @@ describe("character_save() and character_read()", {
   it("reports a read-only folder with the exact path and leaves nothing in it", {
     skip_on_os("windows")
     skip_if(identical(Sys.info()[["user"]], "root"), "root can write to read-only folders")
-    checked <- character_check(author_study_bot())
+    checked <- study_bot_checked
     folder <- withr::local_tempdir()
     Sys.chmod(folder, "555")
     withr::defer(Sys.chmod(folder, "755"))
@@ -107,13 +111,13 @@ describe("character_save() and character_read()", {
   it("refuses unchecked data and unwritable folders", {
     path <- file.path(withr::local_tempdir(), "study_bot.json")
     expect_error(character_save(unclass(author_study_bot()), path), "class")
-    expect_error(character_save(character_check(author_study_bot()), file.path(path, "missing", "x.json")), "path")
-    expect_error(character_save(character_check(author_study_bot()), path, overwrite = NA), "overwrite")
-    format_problem("unknown_key", "$", character_save(character_check(author_study_bot()), path, "extra"))
+    expect_error(character_save(study_bot_checked, file.path(path, "missing", "x.json")), "path")
+    expect_error(character_save(study_bot_checked, path, overwrite = NA), "overwrite")
+    format_problem("unknown_key", "$", character_save(study_bot_checked, path, "extra"))
   })
 
   it("rejects a hand-edited checked object instead of trusting its class", {
-    checked <- character_check(author_study_bot())
+    checked <- study_bot_checked
     checked$moods$idle$status <- ""
     path <- file.path(withr::local_tempdir(), "study_bot.json")
     expect_error(character_save(checked, path), class = "mascot_error_character")
@@ -122,7 +126,7 @@ describe("character_save() and character_read()", {
 
   it("reads a registered character by id and never guesses between a file and an id", {
     local_empty_registry()
-    checked <- character_check(author_study_bot())
+    checked <- study_bot_checked
     character_data_register(checked)
     expect_identical(character_read("study_bot", from = "id")$id, "study_bot")
     expect_error(character_read("study_bot"), class = "mascot_error_file")
@@ -134,7 +138,7 @@ describe("character_save() and character_read()", {
 
 describe("character_check()", {
   it("accepts a source specification, raw list, JSON text, file and checked data", {
-    checked <- character_check(author_study_bot())
+    checked <- study_bot_checked
     expect_s3_class(checked, "mascot_character_data")
     text <- character_json_write(checked)
     expect_identical(character_check(text, from = "text")$id, "study_bot")

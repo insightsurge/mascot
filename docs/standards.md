@@ -257,6 +257,12 @@ makes a change and fires the action at once (section 6).
   fonts; they may come with static images and trailers in later releases.
   `inst/COPYRIGHTS` is the file Writing R Extensions names (**CRAN**).
 - Where third parties contributed code, list them with `ctb` or `cph`.
+- The four built-in characters also ship already checked, in `R/sysdata.rda`, written by `tools/build-sysdata.R`
+  (**house**). Checking one takes most of a second on a fast machine and several seconds on CRAN's Windows machines,
+  and listings, `mascot()` and every example need them, so the package reads the stored result instead (#563). After
+  editing a file in `inst/format/characters/` or the character checker, run the script and commit `R/sysdata.rda`
+  with the change. `test-character-catalogue-extended.R` compares each stored character with a fresh check of its
+  file, with a tolerance only on fit bounds and contrast ratios, whose last digit can differ between platforms.
 
 **When fonts are bundled:**
 
@@ -296,7 +302,7 @@ makes a change and fires the action at once (section 6).
   reason (**house**).
 - Call functions as `pkg::fn()`. No `library()` or `require()` in package code (**CRAN**).
 - Optional and development packages use `Suggests`: bslib (>= 0.7.0), chromote, covr, golem, knitr, later, lifecycle,
-  promises, rmarkdown, shinytest2 (>= 0.5.0), testthat (>= 3.0.0) and withr. Optional features check availability
+  promises, rmarkdown, shinytest2 (>= 0.5.0), testthat (>= 3.2.1) and withr. Optional features check availability
   with `requireNamespace()` before use. Tests use `skip_if_not_installed()` (**CRAN**).
 - Avoid `:::` into shiny or bslib: it is fragile, and reviewers flag it (**CRAN** for base packages, house for the
   rest).
@@ -339,7 +345,7 @@ use plain words in help pages:
   when `chromote::find_chrome()` returns `NULL`, and stops the app with `withr::defer(app$stop())`.
 - **The tests CRAN skips have files of their own.** Browser tests go in `test-<name>-browser.R`, snapshot tests
   (`expect_snapshot()` skips itself on CRAN) in `test-<name>-snap.R`, and the detailed tests of the example apps in
-  `test-<name>-extended.R`; no other test goes in those files. Browser and extended files start with their skip, so
+  `test-<name>-extended.R` with the few checks too slow for CRAN; no other test goes in those files. Browser and extended files start with their skip, so
   CRAN skips the whole file before any of its code runs (a skip inside each test came after the test had built its
   characters, which cost about an eighth of the test time on CRAN). Snapshot files keep the skip in each
   `expect_snapshot()`: a snapshot file skipped as a whole reports no snapshots, and testthat deletes their saved files. CI's `off-cran-tests` job runs exactly those files with Chrome and
@@ -353,7 +359,9 @@ use plain words in help pages:
   detailed tests are extended tests (#568): they run in the coverage job, the off-CRAN job, the gate's `tests` mode
   and a weekly R CMD check on macOS and Windows. Each app keeps a smoke test on CRAN: its exported function's argument
   checks, each view builds, the page draws once without duplicate ids, and one server update with its generated
-  code. The package's own functions keep every test on CRAN. R CMD check on Ubuntu with R release fails when the tests
+  code; for the studio's main view, whose views and page take several seconds to build on a fast machine, only
+  `mascot_studio()`'s argument checks run on CRAN (#563). The package's own functions keep every test on CRAN, apart
+  from a check too slow for it: the comparison of the stored built-in characters with a fresh check of their files. R CMD check on Ubuntu with R release fails when the tests
   take longer than 180 s, which leaves room under CRAN's 10 minutes on its slower machines.
 - **"Do X, then Y at once."** Every action in a Shiny app the package ships (Copy, Download, Build, Check, a busy
   button) gets one browser test that makes a change and fires the action without waiting for the server in between,

@@ -220,6 +220,13 @@ studio_controls <- list(
     map = input_id("watch_validator_state"),
     session = input_id("watch_validator_state")
   ),
+  watch_mascot_shiny = list(
+    id = input_id("watch_shiny_state"),
+    ... = input_id("watch_shiny_state"),
+    map = input_id("watch_shiny_state"),
+    delay = input_id("watch_shiny_state"),
+    session = input_id("watch_shiny_state")
+  ),
   mascot_preview = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     character = input_id("character"),

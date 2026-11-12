@@ -93,6 +93,7 @@ reference:
       - watch_mascot
       - watch_mascot_task
       - watch_mascot_validator
+      - watch_mascot_shiny
       - mascot_server_state
   - title: Helpers
     desc: >

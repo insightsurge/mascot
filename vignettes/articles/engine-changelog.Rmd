@@ -9,6 +9,12 @@ covered in `NEWS.md`.
 
 # mascot (development version)
 
+* **Browser event overlay for `watch_mascot_shiny()` (#169, #32).** `mascot-host.js` accepts an optional `shiny_watch`
+  overlay configuration on complete-state and `kind: "shiny-watch"` envelopes. Watched mascots track `shiny:busy`
+  (with configurable delay), `shiny:idle`, `shiny:error` / `shiny:value`, and `shiny:disconnected` as non-destructive
+  visual overlays over the server state without overwriting `record.mood` or `record.status`, and skip mood updates
+  when the displayed mood is unchanged. Unwatched mascots retain the existing connection-loss behaviour unchanged.
+
 # mascot 0.1.0
 
 **mascot-engine 0.1.0; character-format-version 1.** The engine is versioned with the package; this is the engine of

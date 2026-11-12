@@ -1,0 +1,42 @@
+```{r setup-watch_mascot_shiny, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r watch_mascot_shiny-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("watch_mascot_shiny")
+```
+
+```{r watch_mascot_shiny-experimental, echo = FALSE}
+htmltools::div(
+  class = "pg-note",
+  htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
+  " Its arguments, default map and return value may change in a later release."
+)
+```
+
+### React to Shiny browser events
+
+`watch_mascot_shiny()` connects a mascot to Shiny browser events
+(`shiny:busy`, `shiny:idle`, `shiny:error`, and `shiny:disconnected`) as a
+temporary overlay over whatever `update_mascot()` or `mascot()` last set on the
+server:
+
+```{r watch_mascot_shiny-call, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'mascot::watch_mascot_shiny(\n',
+  '  "helper",\n',
+  '  map = list(busy = list(status = "Running analysis")),\n',
+  '  delay = 1\n',
+  ')'
+)))
+```
+
+`delay` sets how many seconds Shiny must stay busy before showing `"busy"`, so
+quick updates do not flicker. Passing `list()` for a key silences that event.
+Because overlays live in the browser, `mascot_server_state()` continues to
+report the last state set from R. Inside a Shiny module, pass the module's
+local mascot id, the same as in `update_mascot()`.
+
+```{r watch_mascot_shiny-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("watch_mascot_shiny", studio_character)
+```

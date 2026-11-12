@@ -55,6 +55,9 @@ mascot_session <- function(session) {
     owner$problems <- list()
     owner$problem_scheduled <- list()
     owner$problem_sent <- list()
+    owner$shiny_watchers <- list()
+    owner$shiny_watch_scheduled <- list()
+    owner$shiny_watch_sent <- list()
     owner$templates <- character()
     owner$closed <- FALSE
     session$userData$mascot_protocol <- owner
@@ -69,6 +72,9 @@ mascot_session <- function(session) {
       owner$problems <- list()
       owner$problem_scheduled <- list()
       owner$problem_sent <- list()
+      owner$shiny_watchers <- list()
+      owner$shiny_watch_scheduled <- list()
+      owner$shiny_watch_sent <- list()
       rm(list = ls(owner$states, all.names = TRUE), envir = owner$states)
       session$userData$mascot_protocol <- NULL
       mascot_template_trim()

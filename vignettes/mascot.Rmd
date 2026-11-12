@@ -312,7 +312,7 @@ review_server <- function(id) {
 }
 ```
 
-When a reactive value maps straight to a fixed set of moods and statuses, you can replace the observer with [`watch_mascot()`](`r paste0(site_url, "reference/watch_mascot.html")`) (experimental), wire a `shiny::ExtendedTask` with [`watch_mascot_task()`](`r paste0(site_url, "reference/watch_mascot_task.html")`) (experimental), bind a `shinyvalidate` form validator with [`watch_mascot_validator()`](`r paste0(site_url, "reference/watch_mascot_validator.html")`) (experimental), and read back server state in `shiny::testServer()` unit tests with [`mascot_server_state()`](`r paste0(site_url, "reference/mascot_server_state.html")`) (experimental).
+When a reactive value maps straight to a fixed set of moods and statuses, you can replace the observer with [`watch_mascot()`](`r paste0(site_url, "reference/watch_mascot.html")`) (experimental), wire a `shiny::ExtendedTask` with [`watch_mascot_task()`](`r paste0(site_url, "reference/watch_mascot_task.html")`) (experimental), bind a `shinyvalidate` form validator with [`watch_mascot_validator()`](`r paste0(site_url, "reference/watch_mascot_validator.html")`) (experimental), show temporary overlays for Shiny busy cycles, output errors and disconnects with [`watch_mascot_shiny()`](`r paste0(site_url, "reference/watch_mascot_shiny.html")`) (experimental), and read back server state in `shiny::testServer()` unit tests with [`mascot_server_state()`](`r paste0(site_url, "reference/mascot_server_state.html")`) (experimental).
 
 ## Quarto pages
 

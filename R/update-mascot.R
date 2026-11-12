@@ -147,6 +147,10 @@
 #' })
 #' ```
 #'
+#' To let a mascot reflect Shiny busy cycles, output errors and
+#' disconnections as temporary browser overlays without overwriting server
+#' updates, call [watch_mascot_shiny()] (experimental).
+#'
 #' **Queued updates.** Updates sent before a mascot appears are kept for the
 #' session, also when the first mascot is created by [shiny::renderUI()] or
 #' [shiny::insertUI()]. Each call is checked as a whole before its latest values
@@ -219,7 +223,8 @@
 #' ```
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
-#' @seealso [mascot()], [watch_mascot()], [watch_mascot_task()], [watch_mascot_validator()], [mascot_server_state()]
+#' @seealso [mascot()], [watch_mascot()], [watch_mascot_task()], [watch_mascot_validator()],
+#'   [watch_mascot_shiny()], [mascot_server_state()]
 #' @seealso [mascot()], [mascot_motion_settings()] for a Shiny example that switches
 #'   idle movement and plays a nod.
 #' @export

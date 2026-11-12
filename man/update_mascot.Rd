@@ -185,6 +185,10 @@ are valid yourself and set the mood from it:
 \})
 }\if{html}{\out{</div>}}
 
+To let a mascot reflect Shiny busy cycles, output errors and
+disconnections as temporary browser overlays without overwriting server
+updates, call \code{\link[=watch_mascot_shiny]{watch_mascot_shiny()}} (experimental).
+
 \strong{Queued updates.} Updates sent before a mascot appears are kept for the
 session, also when the first mascot is created by \code{\link[shiny:renderUI]{shiny::renderUI()}} or
 \code{\link[shiny:insertUI]{shiny::insertUI()}}. Each call is checked as a whole before its latest values
@@ -275,7 +279,8 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=watch_mascot]{watch_mascot()}}, \code{\link[=watch_mascot_task]{watch_mascot_task()}}, \code{\link[=watch_mascot_validator]{watch_mascot_validator()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=watch_mascot]{watch_mascot()}}, \code{\link[=watch_mascot_task]{watch_mascot_task()}}, \code{\link[=watch_mascot_validator]{watch_mascot_validator()}},
+\code{\link[=watch_mascot_shiny]{watch_mascot_shiny()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}
 
 \code{\link[=mascot]{mascot()}}, \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} for a Shiny example that switches
 idle movement and plays a nod.
@@ -284,6 +289,7 @@ Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}},
 \code{\link[=mascot_server_state]{mascot_server_state()}},
 \code{\link[=watch_mascot]{watch_mascot()}},
+\code{\link[=watch_mascot_shiny]{watch_mascot_shiny()}},
 \code{\link[=watch_mascot_task]{watch_mascot_task()}},
 \code{\link[=watch_mascot_validator]{watch_mascot_validator()}}
 }

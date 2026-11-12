@@ -451,7 +451,8 @@ mascot_state_schedule <- function(session, key) {
         gesture_watermark = record$gesture_watermark,
         bubble_revision = record$bubble_revision,
         restore = record$restore,
-        problem = owner$problems[[key]]
+        problem = owner$problems[[key]],
+        shiny_watch = owner$shiny_watchers[[key]]
       )
       record$sent <- list(
         revision = record$revision,
@@ -465,7 +466,56 @@ mascot_state_schedule <- function(session, key) {
         revision = record$revision,
         problem = envelope$problem
       )
+      owner$shiny_watch_sent[[key]] <- list(
+        generation = record$generation,
+        config = envelope$shiny_watch
+      )
       session$sendCustomMessage("mascot:update", envelope)
+    },
+    once = TRUE
+  )
+  mascot_request_flush(session)
+  invisible(NULL)
+}
+
+#' Coalesce browser event watcher configuration separately from server state
+#' @noRd
+mascot_shiny_watch <- function(session, key, config) {
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
+  checkmate::assert_string(key)
+  checkmate::assert_list(config, names = "unique", null.ok = TRUE)
+  owner <- mascot_session(session)
+  owner$shiny_watchers[[key]] <- config
+  if (isTRUE(owner$shiny_watch_scheduled[[key]])) {
+    return(invisible(NULL))
+  }
+  owner$shiny_watch_scheduled[[key]] <- TRUE
+  session$onFlushed(
+    function() {
+      if (owner$closed) {
+        return(invisible(NULL))
+      }
+      owner$shiny_watch_scheduled[[key]] <- NULL
+      record <- owner$states[[key]]
+      current <- owner$shiny_watchers[[key]]
+      if (!is.null(record) && record$live) {
+        sent <- list(generation = record$generation, config = current)
+        if (record$scheduled || identical(owner$shiny_watch_sent[[key]], sent)) {
+          return(invisible(NULL))
+        }
+        owner$shiny_watch_sent[[key]] <- sent
+        session$sendCustomMessage(
+          "mascot:update",
+          list(
+            version = 1L,
+            kind = "shiny-watch",
+            id = key,
+            generation = record$generation,
+            revision = record$revision,
+            shiny_watch = current
+          )
+        )
+      }
     },
     once = TRUE
   )
@@ -509,6 +559,51 @@ mascot_problem <- function(session, key, text) {
             generation = record$generation,
             revision = record$revision,
             problem = problem
+          )
+        )
+      }
+    },
+    once = TRUE
+  )
+  mascot_request_flush(session)
+  invisible(NULL)
+}
+
+#' Coalesce browser event watcher configuration separately from server state
+#' @noRd
+mascot_shiny_watch <- function(session, key, config) {
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
+  checkmate::assert_string(key)
+  checkmate::assert_list(config, names = "unique", null.ok = TRUE)
+  owner <- mascot_session(session)
+  owner$shiny_watchers[[key]] <- config
+  if (isTRUE(owner$shiny_watch_scheduled[[key]])) {
+    return(invisible(NULL))
+  }
+  owner$shiny_watch_scheduled[[key]] <- TRUE
+  session$onFlushed(
+    function() {
+      if (owner$closed) {
+        return(invisible(NULL))
+      }
+      owner$shiny_watch_scheduled[[key]] <- NULL
+      record <- owner$states[[key]]
+      current <- owner$shiny_watchers[[key]]
+      if (!is.null(record) && record$live) {
+        sent <- list(generation = record$generation, config = current)
+        if (record$scheduled || identical(owner$shiny_watch_sent[[key]], sent)) {
+          return(invisible(NULL))
+        }
+        owner$shiny_watch_sent[[key]] <- sent
+        session$sendCustomMessage(
+          "mascot:update",
+          list(
+            version = 1L,
+            kind = "shiny-watch",
+            id = key,
+            generation = record$generation,
+            revision = record$revision,
+            shiny_watch = current
           )
         )
       }
@@ -692,6 +787,8 @@ mascot_snapshot <- function(data, session, name) {
   untouched <- data$lifecycle == "resume" && !length(record$owned) && is.null(record$pending)
   if (record$live && data$lifecycle != "error" && !untouched && (newer || behind)) {
     mascot_state_schedule(session, name)
+  } else if (record$live && untouched && !is.null(owner$shiny_watchers[[name]])) {
+    mascot_shiny_watch(session, name, owner$shiny_watchers[[name]])
   }
   data
 }

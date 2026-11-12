@@ -1265,6 +1265,30 @@ studio_server <- function(input, output, session) {
     ignoreInit = TRUE
   )
 
+  studio_shiny_watch_active <- FALSE
+  observeEvent(
+    input$watch_shiny_state,
+    {
+      val <- input$watch_shiny_state
+      if (is.null(val) || identical(val, "none")) {
+        return()
+      }
+      if (!studio_shiny_watch_active) {
+        studio_shiny_watch_active <<- TRUE
+        watch_mascot_shiny("helper", session = session)
+      }
+      add_log(sprintf('watch_shiny_state("%s")', val), "call", "watch_mascot_shiny() observing Shiny events")
+    },
+    ignoreInit = TRUE
+  )
+  output$watch_shiny_out <- renderText({
+    val <- input$watch_shiny_state
+    if (identical(val, "error")) {
+      stop("Simulated output error", call. = FALSE)
+    }
+    ""
+  })
+
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
   # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
@@ -1732,6 +1756,10 @@ studio_server <- function(input, output, session) {
       watch_mascot_validator = format_call(
         "watch_mascot_validator",
         list("helper", quote(validator))
+      ),
+      watch_mascot_shiny = format_call(
+        "watch_mascot_shiny",
+        list("helper")
       ),
       mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),
       mascot_moods = format_call(fn, list(character = current_character())),

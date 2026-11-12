@@ -3,11 +3,11 @@
 \docType{package}
 \name{mascot-package}
 \alias{mascot-package}
-\title{mascot: Live Mood-Driven Mascots for 'Shiny' Apps and 'Quarto' Sites}
+\title{mascot: Live Mood-Driven Mascots for 'shiny' Apps and 'Quarto' Sites}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Adds a character drawn in code to 'Shiny' apps and 'Quarto' sites. The character shows a mood with status text beside it and animates when the mood changes; a 'Shiny' server can change its mood, status, speech bubble and gestures, and a click can run an action or open a menu. It follows light and dark mode and takes its colours from built-in palettes or custom colours. Custom characters can be described in 'JSON' and checked before use, and an interactive app demonstrates every function.
+Adds a character drawn in code to 'shiny' apps and 'Quarto' sites. The character shows a mood with status text beside it and animates when the mood changes; a 'shiny' server can change its mood, status, speech bubble and gestures, and a click can run an action or open a menu. It follows light and dark mode and takes its colours from built-in palettes or custom colours. Custom characters can be described in JSON and checked before use, and an interactive app demonstrates every function.
 }
 \section{Conditions}{
 
@@ -45,6 +45,7 @@ Useful links:
 \itemize{
   \item \url{https://insightsurge.github.io/mascot/}
   \item \url{https://github.com/insightsurge/mascot}
+  \item \url{https://insightsurge.r-universe.dev/mascot}
   \item Report bugs at \url{https://github.com/insightsurge/mascot/issues}
 }
 

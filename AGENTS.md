@@ -31,8 +31,7 @@ starts** (all of them apply to you). Each rule is **CRAN** (policy, Writing R Ex
   may reuse caller-checked inputs as specified in `r-code.md` (top-level helpers need a comment; inner closures
   may reuse the enclosing function's checked inputs). Other messages and errors use cli; call other packages as
   `pkg::fn()`; no `library()`, `print()` or `cat()` in package code.
-- **CRAN/house:** roxygen2 with markdown; every export has `@returns` and offline `@examples`; never edit `man/` or
-  `NAMESPACE` by hand.
+- **CRAN/house:** roxygen2 with markdown; every export has `@returns` and offline `@examples`.
 - **house:** a helper per argument: each `mascot()` argument takes a plain shortcut or a `mascot_*()` helper; every
   helper starts with `mascot_`.
 - **house:** tests in BDD style (`describe()`/`it()`), one test file per R file (its browser tests in
@@ -62,7 +61,7 @@ Run the gate, `Rscript tools/cran-gate.R [fast|tests|full|lint|nosuggests]`, ins
 lintr or Air yourself. **Which mode when, every option, the exit codes, the run folder and what each CI job runs:
 `tools/README.md`.** In short: `fast` before every commit, `tests` before a PR that touches `R/` or `tests/`.
 - `tests` fails when a runnable line the branch adds in `R/` is run by no test (`new_lines`). Test the line, or mark a
-  justified one `# nocov` with a comment saying why. The 70% total stays as well.
+  justified one `# nocov` with a comment saying why.
 - **Evidence** is a `tests` (or `full`) run that exits 0. Runs marked PARTIAL (`--steps`, `--filter`,
   `--no-coverage`) are not; exit code 3 (every failing test passed on its re-run: a probable flake) is not either,
   unless the package creator accepts it.
@@ -99,11 +98,15 @@ light and dark. Link to files in `docs/` with full GitHub URLs (they aren't part
 articles go in `vignettes/articles/` (website only, not shipped); compress PNGs and prefer SVG for diagrams.
 
 ## Workflow
-- **Every change starts with an issue** (goal and a "done when" checklist), opened with one of the issue forms.
+- **Every change starts with an issue** (goal and a "done when" checklist), opened with one of the issue forms: one
+  issue per piece of work. When a decision changes the plan (scope, a rename, a dropped item), edit the issue
+  description so it says the current plan; add dated comments for progress and other updates.
 - One branch per issue, from `main`. Conventional Commits, short messages.
 - The PR description starts with **"In brief"**: one plain sentence on what it does and why, then a few bullets for a
   reader with no context; then `Closes #<n>` and the template's sections (delete those that do not apply). Its checks
-  list only checks anyone can re-run from the repo. Stacked PRs are fine (base on the branch below).
+  list only checks anyone can re-run from the repo, pasted as their summary lines without local paths (home folder,
+  R library, temporary files). Your PR ticks the boxes it delivers; when it closes an issue, say in one line which
+  boxes stay open and where they went. Stacked PRs are fine (base on the branch below).
 - **Docs follow behaviour:** a change to how something works updates, in the same PR, every text that describes it:
   - help pages (through roxygen), articles and vignettes, README and NEWS;
   - the apps, themes and examples users reach through exported functions: the studio (`mascot_studio()`), the
@@ -120,16 +123,9 @@ articles go in `vignettes/articles/` (website only, not shipped); compress PNGs 
 - CI green, then **the package creator merges**. Changes reach `main` only through pull requests; a ruleset blocks
   force-pushes to `main` and its deletion. Pull requests are squash-merged, so the PR title becomes the commit message.
 
-## Issues and pull requests
-- One issue per piece of work. When a decision changes the plan (scope, a rename, a dropped item), edit the issue
-  description so it says the current plan; add dated comments for progress and other updates.
-- Your PR ticks the boxes it delivers. When it closes an issue, say in one line which boxes stay open and where they
-  went.
-- Paste check results as their summary lines, without local paths (home folder, R library, temporary files).
-
 ## Working as an agent
 - Work only in the worktree or branch you were given. Don't commit, push, merge or open PRs unless the task says
-  so; never force-push.
+  so.
 - Before the first commit, check `git config user.name` and `user.email`: if they name an AI tool, stop and say so.
 - Before you report done, run the gate and paste its summary lines: `Rscript tools/cran-gate.R` (fast) and the same
   command with `tests` (coverage at least 70%, not lower than before your change). Say plainly what you did not run

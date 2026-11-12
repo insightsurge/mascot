@@ -1,3 +1,7 @@
+# Checked once for the file and shared: R copies an object as soon as a test changes it, so no test sees another's
+# edits. Verified too, so the functions that verify their input recognise it at once.
+delayedAssign("study_bot_checked", character_data_verify(mascot_check_character(format_recipe("study_bot"))))
+
 describe("character authoring arguments and internal helpers", {
   it("keeps register and save internal and supplies argument conditions", {
     fns <- c("mascot_register_character", "mascot_save_character")
@@ -160,7 +164,7 @@ describe("mascot_read_character() and mascot_check_character()", {
   })
 
   it("refuses valid edits and invalid edits to checked data at every consumer boundary", {
-    bot <- mascot_check_character(format_recipe("study_bot"))
+    bot <- study_bot_checked
     bot$name <- "Edited but valid"
     for (fn in list(
       mascot_check_character,
@@ -189,7 +193,7 @@ describe("mascot_read_character() and mascot_check_character()", {
     }
     expect_false(grepl('"format_version"', text, fixed = TRUE))
     local_empty_registry()
-    object <- mascot_check_character(format_recipe("study_bot"))
+    object <- study_bot_checked
     expect_match(paste(capture.output(print(object)), collapse = "\n"), "From: object", fixed = TRUE)
     mascot_register_character(object)
     registered <- character_data_get("study_bot")
@@ -227,7 +231,7 @@ describe("mascot_register_character()", {
   it("registers idempotently by resolved content, lists snapshots, and rejects conflicts", {
     local_empty_registry()
     plain <- format_recipe("study_bot")
-    bot <- mascot_check_character(plain)
+    bot <- study_bot_checked
     registered <- withVisible(mascot_register_character(bot))
     expect_false(registered$visible)
     expect_identical(registered$value, "study_bot")
@@ -263,7 +267,7 @@ describe("mascot_register_character()", {
 
   it("refuses registration in an active Shiny domain and recommends passing the object", {
     local_empty_registry()
-    bot <- mascot_check_character(format_recipe("study_bot"))
+    bot <- study_bot_checked
     shiny::testServer(function(input, output, session) {}, {
       error <- tryCatch(mascot_register_character(bot), error = identity)
       expect_s3_class(error, "mascot_error_character")
@@ -280,7 +284,7 @@ describe("mascot_register_character()", {
 describe("mascot_save_character()", {
   it("round-trips resolved identity, metadata and palette sources, invisibly", {
     path <- file.path(withr::local_tempdir(), "bot.json")
-    bot <- mascot_check_character(format_recipe("study_bot"))
+    bot <- study_bot_checked
     saved <- withVisible(mascot_save_character(bot, path))
     expect_false(saved$visible)
     expect_identical(saved$value, path)
@@ -296,7 +300,7 @@ describe("mascot_save_character()", {
     dir <- withr::local_tempdir()
     path <- file.path(dir, "bot.json")
     writeLines("original", path)
-    bot <- mascot_check_character(format_recipe("study_bot"))
+    bot <- study_bot_checked
     error <- tryCatch(mascot_save_character(bot, path), error = identity)
     expect_s3_class(error, "mascot_error_file")
     expect_s3_class(error, "mascot_error")
@@ -320,7 +324,7 @@ describe("mascot_save_character()", {
     dir <- withr::local_tempdir()
     path <- file.path(dir, "bot.json")
     writeLines("original", path)
-    bot <- mascot_check_character(format_recipe("study_bot"))
+    bot <- study_bot_checked
     testthat::local_mocked_bindings(character_json_write = function(x) "{}")
     expect_error(mascot_save_character(bot, path, overwrite = TRUE), class = "mascot_error_character")
     expect_identical(readLines(path), "original")
@@ -331,7 +335,7 @@ describe("mascot_save_character()", {
     dir <- withr::local_tempdir()
     path <- file.path(dir, "bot.json")
     writeLines("original", path)
-    bot <- mascot_check_character(format_recipe("study_bot"))
+    bot <- study_bot_checked
     other <- format_recipe("study_bot")
     other$name <- "Different valid content"
     text <- character_json_write(mascot_check_character(other))
@@ -344,7 +348,7 @@ describe("mascot_save_character()", {
   })
 
   it("classifies output path failures as file problems", {
-    bot <- mascot_check_character(format_recipe("study_bot"))
+    bot <- study_bot_checked
     path <- file.path(withr::local_tempdir(), "missing", "out.json")
     error <- tryCatch(mascot_save_character(bot, path), error = identity)
     expect_s3_class(error, "mascot_error_file")
@@ -431,7 +435,7 @@ describe("one character resolver at all authoring consumers", {
 
 describe("printing a checked character", {
   it("formats compactly and wraps print assertion failures", {
-    x <- mascot_check_character(format_recipe("study_bot"))
+    x <- study_bot_checked
     text <- format(x)
     expect_type(text, "character")
     expect_length(text, 5)

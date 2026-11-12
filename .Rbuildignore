@@ -19,6 +19,7 @@
 ^renv$
 ^renv\.lock$
 ^\.Rprofile$
+^\.Rhistory$
 ^.*\.Rcheck$
 ^mascot_.*\.tar\.gz$
 ^tools$

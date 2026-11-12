@@ -60,6 +60,10 @@ inst/format/characters/neer.json
     Source: Neer's complete version 1 character data, written for this package.
     Copyright (c) Harsh Verma. Licence: MIT.
 
+R/sysdata.rda
+    Source: the four characters above as checked by the package, written by tools/build-sysdata.R.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
 inst/format/kits/classic.json
 inst/format/kits/screen.json
     Source: complete version 1 face-kit authoring snapshots written for this package.
@@ -71,6 +75,13 @@ inst/format/policy-v1.json
 
 tests/testthat/fixtures/format/invalid/*.json
     Source: deliberately malformed character-format reference inputs written for this package.
+    Copyright (c) Harsh Verma. Licence: MIT.
+
+tests/testthat/fixtures/golden/checksums.txt
+tests/testthat/fixtures/golden/0.1.0/*.json
+tests/testthat/fixtures/golden/0.1.0/kits/*.json
+    Source: frozen copies of the character files and face kits that 0.1.0 ships, with their checksums, kept so the
+    tests can check that later versions still load them.
     Copyright (c) Harsh Verma. Licence: MIT.
 
 inst/examples/characters/study_bot.json

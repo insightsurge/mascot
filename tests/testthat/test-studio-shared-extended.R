@@ -1,7 +1,7 @@
 # The parts that every view of the studio app shares (inst/examples/studio/R/shared-*.R), tested without a browser.
 
 # Skips the whole file on CRAN and in R CMD check, unless the extended tests are on (helper-extended.R);
-# the smoke tests are in test-studio.R.
+# the argument checks CRAN runs are in test-studio.R.
 skip_unless_extended()
 
 # The shared files on their own, as a new view would load them.

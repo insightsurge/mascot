@@ -1,8 +1,7 @@
 Frozen copies of the character files and face kits of each released version. Never edit or delete a file in a
 recorded folder: `checksums.txt` lists every file in those folders with its MD5 checksum, and
 `test-character-check.R` fails when a listed file changes or goes, or an unlisted file appears in a listed folder.
-Until the 0.1.0 release the 0.1.0 folder is provisional: refresh it and its lines in `checksums.txt` at the release
-if anything in it changed.
+The 0.1.0 folder is final: CRAN accepted 0.1.0.
 
 ## Adding a release folder
 

@@ -1,6 +1,6 @@
 #' List the bundled example apps
 #'
-#' Start with the studio: every exported function and argument, live, with
+#' Start with the studio (experimental): every exported function and argument, live, with
 #' explanations and the code to copy. `"theme"` is a page of the same app that
 #' themes one character and gives the code to copy. The other examples show one
 #' scenario each. All work offline. Some need optional packages: the studio,

@@ -3,6 +3,9 @@
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml)
 [![R code coverage](https://codecov.io/gh/insightsurge/mascot/graph/badge.svg)](https://app.codecov.io/gh/insightsurge/mascot)
+[![CRAN status](https://www.r-pkg.org/badges/version/mascot)](https://CRAN.R-project.org/package=mascot)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/mascot)](https://CRAN.R-project.org/package=mascot)
+[![CRAN checks](https://badges.cranchecks.info/worst/mascot.svg)](https://cran.r-project.org/web/checks/check_results_mascot.html)
 <!-- badges: end -->
 
 Live, mood-driven mascots for Shiny apps and Quarto sites. A character drawn in code shows a mood and gives a short

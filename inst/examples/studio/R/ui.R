@@ -661,7 +661,7 @@ studio_search <- function() {
         `aria-label` = "Search results",
         lapply(names(studio_guide), function(fn) {
           args <- names(formals(getExportedValue("mascot", fn)))
-          tags$li(
+          row <- tags$li(
             id = paste0("search_", fn, "_function"),
             role = "option",
             `aria-selected` = "false",
@@ -694,6 +694,28 @@ studio_search <- function() {
               tags$span(class = "pg-search-more", hidden = NA)
             )
           )
+          if (identical(fn, "mascot_theme")) {
+            styling_summary <- first_sentence(html_text(help_page("mascot_styling")$description))
+            topic <- tags$li(
+              id = "search_mascot_styling_topic",
+              role = "option",
+              `aria-selected` = "false",
+              `data-search-function` = "mascot_styling",
+              `data-search-open` = "mascot_theme",
+              `data-search-details` = "mascot_styling_details",
+              `data-search-title` = styling_summary,
+              `data-search-group` = studio_categories[["colours"]]$title,
+              tags$code("?mascot_styling"),
+              tags$small(styling_summary),
+              div(
+                class = "pg-search-matches",
+                hidden = NA,
+                tags$span(class = "pg-search-more", hidden = NA)
+              )
+            )
+            return(tagList(row, topic))
+          }
+          row
         })
       )
     )

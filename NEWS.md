@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `mascot_studio()` (*Experimental*): search now includes the `?mascot_styling` topic and opens its styling section under `mascot_theme()` (#394).
+
 # mascot 0.1.0
 
 First CRAN release.

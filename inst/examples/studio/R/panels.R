@@ -483,6 +483,7 @@ panel_colours <- function() {
     inspector_function(
       "mascot_theme",
       tags$details(
+        id = "mascot_styling_details",
         tags$summary("Styling panels and the restore button with CSS"),
         div(
           class = "pg-help",

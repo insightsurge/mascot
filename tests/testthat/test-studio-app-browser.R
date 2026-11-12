@@ -79,7 +79,7 @@ describe("studio overlays and live controls", {
     app$click(selector = "#open_search")
     expect_identical(
       app$get_js("document.getElementById('search_count').textContent"),
-      paste(length(getNamespaceExports("mascot")), "functions")
+      paste(length(getNamespaceExports("mascot")), "functions, 1 topic")
     )
     app$run_js(
       "window.queryStudio = q => {const input=document.getElementById('function_search'); input.value=q; input.dispatchEvent(new Event('input',{bubbles:true}));}; queryStudio('update_mascot')"
@@ -141,6 +141,42 @@ describe("studio overlays and live controls", {
     app$wait_for_js(
       "document.getElementById('action_tooltip').getClientRects().length>0 && document.getElementById('action_tooltip').contains(document.activeElement)"
     )
+  })
+
+  it("finds the mascot_styling topic and opens its details box in mascot_theme()", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    app$click(selector = "#open_search")
+    app$run_js(
+      "const input = document.getElementById('function_search'); input.value = 'restore'; input.dispatchEvent(new Event('input', {bubbles: true}));"
+    )
+    expect_identical(app$get_js("document.getElementById('search_count').textContent"), "1 topic")
+    expect_identical(
+      app$get_js("document.getElementById('function_search').getAttribute('aria-activedescendant')"),
+      "search_mascot_styling_topic"
+    )
+    app$run_js(
+      "document.getElementById('function_search').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}))"
+    )
+    app$wait_for_js(paste0(
+      "document.getElementById('studio_search').hidden && ",
+      "!document.getElementById('inspector_sidebar').hidden && ",
+      "!document.querySelector('[data-function=mascot_theme]').hidden && ",
+      "document.getElementById('mascot_styling_details').open && ",
+      "document.querySelector('#mascot_styling_details summary') === document.activeElement"
+    ))
+    app$run_js("document.getElementById('mascot_styling_details').open = false;")
+    app$click(selector = "#open_search")
+    app$run_js(
+      "const input = document.getElementById('function_search'); input.value = 'panel'; input.dispatchEvent(new Event('input', {bubbles: true}));"
+    )
+    expect_false(app$get_js("document.getElementById('search_mascot_styling_topic').hidden"))
+    app$click(selector = "#search_mascot_styling_topic")
+    app$wait_for_js("document.getElementById('mascot_styling_details').open")
+    expect_true(app$get_js(
+      "document.querySelector('#mascot_styling_details summary') === document.activeElement"
+    ))
   })
 
   it("keeps search modal, routes argument results, and moves one mounted chip editor", {

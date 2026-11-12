@@ -6,6 +6,7 @@
 [![CRAN status](https://www.r-pkg.org/badges/version/mascot)](https://CRAN.R-project.org/package=mascot)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/mascot)](https://CRAN.R-project.org/package=mascot)
 [![CRAN checks](https://badges.cranchecks.info/worst/mascot.svg)](https://cran.r-project.org/web/checks/check_results_mascot.html)
+[![R-universe version](https://insightsurge.r-universe.dev/mascot/badges/version)](https://insightsurge.r-universe.dev/mascot)
 <!-- badges: end -->
 
 Live, mood-driven mascots for Shiny apps and Quarto sites. A character drawn in code shows a mood and gives a short
@@ -29,6 +30,15 @@ mascot needs R 4.1.0 or later. Install the released version from CRAN:
 
 ```r
 install.packages("mascot")
+```
+
+Or install the development version, built by [R-universe](https://insightsurge.r-universe.dev/mascot):
+
+```r
+install.packages(
+  "mascot",
+  repos = c("https://insightsurge.r-universe.dev", "https://cloud.r-project.org")
+)
 ```
 
 Or install the development version from GitHub:

@@ -26,7 +26,7 @@ claim about the package's status.
 | The licence is in CRAN's licence database; for MIT use `MIT + file LICENSE` with the YEAR and COPYRIGHT HOLDER stub | CRAN | COOK |
 | Title in Title Case, without "in R" or "A package for", and without a final full stop | CRAN | COOK |
 | Description has two or more sentences and does not start with the package name or "This package" | CRAN | COOK, CHK |
-| Software names in single quotes ('Shiny', 'Quarto', 'JavaScript'); functions written `foo()`; URLs in `<...>` | CRAN | COOK, CHK |
+| Package, software and API names in single quotes, written exactly as the package is named ('shiny', 'Quarto', 'JavaScript'; package names are case-sensitive), and file formats such as JSON not quoted; functions written `foo()`; URLs in `<...>` | CRAN | COOK, CHK |
 | Acronyms such as GxP are explained (in `cran-comments.md` if not in the text) | CRAN | COOK |
 | `URL` and `BugReports` resolve (the repository is public before submission) | CRAN | CHK |
 | `Language: en-GB`, and the text is spelt in British English | house | - |

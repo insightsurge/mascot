@@ -1,19 +1,20 @@
 Package: mascot
-Title: Live Mood-Driven Mascots for 'Shiny' Apps and 'Quarto' Sites
+Title: Live Mood-Driven Mascots for 'shiny' Apps and 'Quarto' Sites
 Version: 0.1.0.9000
 Authors@R: 
     person("Harsh", "Verma", email = "analyticswithharsh@gmail.com", role = c("aut", "cre", "cph"))
-Description: Adds a character drawn in code to 'Shiny' apps and 'Quarto'
+Description: Adds a character drawn in code to 'shiny' apps and 'Quarto'
     sites. The character shows a mood with status text beside it and
-    animates when the mood changes; a 'Shiny' server can change its mood,
+    animates when the mood changes; a 'shiny' server can change its mood,
     status, speech bubble and gestures, and a click can run an action or
     open a menu. It follows light and dark mode and takes its colours from
     built-in palettes or custom colours. Custom characters can be described
-    in 'JSON' and checked before use, and an interactive app demonstrates
+    in JSON and checked before use, and an interactive app demonstrates
     every function.
 License: MIT + file LICENSE
-URL: https://insightsurge.github.io/mascot/, https://github.com/insightsurge/mascot
+URL: https://insightsurge.github.io/mascot/, https://github.com/insightsurge/mascot, https://insightsurge.r-universe.dev/mascot
 BugReports: https://github.com/insightsurge/mascot/issues
+X-schema.org-keywords: animation, mascot, quarto, r, r-package, shiny
 Depends: 
     R (>= 4.1.0)
 Imports: 

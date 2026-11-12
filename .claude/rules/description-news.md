@@ -11,8 +11,9 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 
 ## DESCRIPTION
 - **CRAN:** Title in Title Case, no final full stop, not "A package for" or "in R"; Description of two or more
-  sentences that doesn't start with the package name or "This package"; software, package and API names in single
-  quotes ('Shiny', 'Quarto', 'JavaScript'); functions as `fn()`; URLs in `<...>`.
+  sentences that doesn't start with the package name or "This package"; package, software and API names in single
+  quotes, written exactly as the package is named ('shiny', 'Quarto', 'JavaScript'; package names are case-sensitive),
+  and file formats such as JSON not quoted; functions as `fn()`; URLs in `<...>`.
 - **CRAN:** `Authors@R` names every copyright holder: Harsh Verma (`aut`, `cre`, `cph`), and one `cph` entry with a
   `comment` for each third party whose files ship (for example the font projects), plus `ctb` for contributors.
 - **house:** `Language: en-GB` (British spelling in the docs); `License: MIT + file LICENSE` (the CRAN stub, never

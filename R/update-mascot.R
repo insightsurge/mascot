@@ -132,8 +132,9 @@
 #' watch_mascot_task("helper", task)
 #' ```
 #'
-#' For form validation, observe whether the inputs are valid (yourself, or with a
-#' validation package such as `shinyvalidate`) and set the mood from it:
+#' For form validation with `shinyvalidate`, bind an `InputValidator` with
+#' [watch_mascot_validator()] (experimental), or observe whether the inputs
+#' are valid yourself and set the mood from it:
 #'
 #' ```r
 #' observe({
@@ -218,7 +219,7 @@
 #' ```
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
-#' @seealso [mascot()], [watch_mascot()], [watch_mascot_task()], [mascot_server_state()]
+#' @seealso [mascot()], [watch_mascot()], [watch_mascot_task()], [watch_mascot_validator()], [mascot_server_state()]
 #' @seealso [mascot()], [mascot_motion_settings()] for a Shiny example that switches
 #'   idle movement and plays a nod.
 #' @export

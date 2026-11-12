@@ -1230,6 +1230,41 @@ studio_server <- function(input, output, session) {
     ignoreInit = TRUE
   )
 
+  studio_validator_obs <- NULL
+  observeEvent(
+    input$watch_validator_state,
+    {
+      val <- input$watch_validator_state
+      if (is.null(val) || identical(val, "none")) {
+        return()
+      }
+      if (!requireNamespace("shinyvalidate", quietly = TRUE)) {
+        add_log(
+          "watch_mascot_validator()",
+          "note",
+          "Install shinyvalidate to run watch_mascot_validator() live"
+        )
+        return()
+      }
+      if (is.null(studio_validator_obs)) {
+        studio_iv <- shinyvalidate::InputValidator$new()
+        studio_iv$add_rule("watch_validator_field_a", function(x) {
+          if (input$watch_validator_state %in% c("invalid_1", "invalid_2")) "Required"
+        })
+        studio_iv$add_rule("watch_validator_field_b", function(x) {
+          if (identical(input$watch_validator_state, "invalid_2")) "Required"
+        })
+        studio_iv$condition(function() {
+          !identical(input$watch_validator_state %||% "none", "none")
+        })
+        studio_iv$enable()
+        studio_validator_obs <<- watch_mascot_validator("helper", studio_iv, session = session)
+      }
+      add_log(sprintf('watch_validator_state("%s")', val), "call", "watch_mascot_validator() updated helper")
+    },
+    ignoreInit = TRUE
+  )
+
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
   # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
@@ -1693,6 +1728,10 @@ studio_server <- function(input, output, session) {
       watch_mascot_task = format_call(
         "watch_mascot_task",
         list("helper", quote(task))
+      ),
+      watch_mascot_validator = format_call(
+        "watch_mascot_validator",
+        list("helper", quote(validator))
       ),
       mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),
       mascot_moods = format_call(fn, list(character = current_character())),

@@ -171,8 +171,9 @@ observeEvent(input$run, task$invoke(data()))
 watch_mascot_task("helper", task)
 }\if{html}{\out{</div>}}
 
-For form validation, observe whether the inputs are valid (yourself, or with a
-validation package such as \code{shinyvalidate}) and set the mood from it:
+For form validation with \code{shinyvalidate}, bind an \code{InputValidator} with
+\code{\link[=watch_mascot_validator]{watch_mascot_validator()}} (experimental), or observe whether the inputs
+are valid yourself and set the mood from it:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{observe(\{
   valid <- grepl("@", input$email, fixed = TRUE)
@@ -274,7 +275,7 @@ shiny::shinyApp(
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=mascot]{mascot()}}, \code{\link[=watch_mascot]{watch_mascot()}}, \code{\link[=watch_mascot_task]{watch_mascot_task()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}
+\code{\link[=mascot]{mascot()}}, \code{\link[=watch_mascot]{watch_mascot()}}, \code{\link[=watch_mascot_task]{watch_mascot_task()}}, \code{\link[=watch_mascot_validator]{watch_mascot_validator()}}, \code{\link[=mascot_server_state]{mascot_server_state()}}
 
 \code{\link[=mascot]{mascot()}}, \code{\link[=mascot_motion_settings]{mascot_motion_settings()}} for a Shiny example that switches
 idle movement and plays a nod.
@@ -283,6 +284,7 @@ Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}},
 \code{\link[=mascot_server_state]{mascot_server_state()}},
 \code{\link[=watch_mascot]{watch_mascot()}},
-\code{\link[=watch_mascot_task]{watch_mascot_task()}}
+\code{\link[=watch_mascot_task]{watch_mascot_task()}},
+\code{\link[=watch_mascot_validator]{watch_mascot_validator()}}
 }
 \concept{mascots in Shiny}

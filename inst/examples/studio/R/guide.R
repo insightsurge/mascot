@@ -160,6 +160,17 @@ studio_guide <- list(
       session = "wiring"
     )
   ),
+  watch_mascot_validator = guide_entry(
+    "wiring",
+    "Your first app",
+    c("id", "validator", "...", "map", "session"),
+    try = list(
+      id = "wiring",
+      validator = "wiring",
+      map = "wiring",
+      session = "wiring"
+    )
+  ),
   mascot_preview = guide_entry(
     "preview",
     "Check a look before using it",

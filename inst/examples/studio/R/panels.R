@@ -718,7 +718,35 @@ panel_wiring <- function() {
         "pg-code-small"
       )
     ),
-    arg_field("watch_mascot_task", "session", NULL)
+    arg_field("watch_mascot_task", "session", NULL),
+    fn_heading("watch_mascot_validator"),
+    arg_field("watch_mascot_validator", "...", NULL),
+    arg_field(
+      "watch_mascot_validator",
+      "id",
+      code_block("watch_mascot_validator(\"helper\", validator)", "pg-code-small")
+    ),
+    wiring_links("watch_mascot_validator"),
+    arg_field(
+      "watch_mascot_validator",
+      "validator",
+      radioButtons(
+        "watch_validator_state",
+        "Simulated InputValidator result",
+        c("none" = "none", "valid" = "valid", "1 invalid" = "invalid_1", "2 invalid" = "invalid_2"),
+        selected = "none",
+        inline = TRUE
+      )
+    ),
+    arg_field(
+      "watch_mascot_validator",
+      "map",
+      code_block(
+        "list(\n  valid = list(mood = \"happy\", status = \"All fields look good\"),\n  invalid = list(mood = \"worried\")\n)",
+        "pg-code-small"
+      )
+    ),
+    arg_field("watch_mascot_validator", "session", NULL)
   )
 }
 

@@ -1,5 +1,7 @@
 # mascot (development version)
 
+* `watch_mascot_validator()` (*experimental*) binds a `shinyvalidate::InputValidator` (with `shinyvalidate` in `Suggests`) to `update_mascot()` using built-in defaults and a dynamic failing-field count in `status` (#167, #31, #131).
+
 * `watch_mascot_task()` (*experimental*) binds a `shiny::ExtendedTask` to `update_mascot()` using built-in defaults and key-wise overrides for `"initial"`, `"running"`, `"success"`, and `"error"` (#168, #131).
 
 * `watch_mascot()` (*experimental*) binds a Shiny reactive expression or `reactiveVal()` directly to `update_mascot()` using a named mood vector or key-wise update list, returning the driving observer so `$destroy()` can stop it (#166, #131).

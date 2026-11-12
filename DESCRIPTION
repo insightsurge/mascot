@@ -34,6 +34,7 @@ Suggests:
     promises,
     rmarkdown,
     shinytest2 (>= 0.5.0),
+    shinyvalidate,
     testthat (>= 3.2.1),
     withr
 VignetteBuilder: knitr

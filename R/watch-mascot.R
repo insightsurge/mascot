@@ -37,7 +37,7 @@
 #' Shiny module, pass the module's local mascot `id` (the same as in
 #' [update_mascot()]).
 #' @family mascots in Shiny
-#' @seealso [update_mascot()], [watch_mascot_task()], [mascot_server_state()]
+#' @seealso [update_mascot()], [watch_mascot_task()], [watch_mascot_validator()], [mascot_server_state()]
 #' @export
 #' @examples
 #' shiny::testServer(

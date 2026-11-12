@@ -1,0 +1,45 @@
+```{r setup-watch_mascot_validator, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r watch_mascot_validator-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("watch_mascot_validator")
+```
+
+```{r watch_mascot_validator-experimental, echo = FALSE}
+htmltools::div(
+  class = "pg-note",
+  htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
+  " Its arguments, default map and return value may change in a later release."
+)
+```
+
+### Watch a form InputValidator
+
+`watch_mascot_validator()` binds a `shinyvalidate::InputValidator` to a mascot
+with built-in defaults for `"valid"` and `"invalid"` (including `"1 field
+needs attention"` or `"<n> fields need attention"` when `map$invalid` omits
+`status`). Pass `map` only for the keys or fields you want to change:
+
+```{r watch_mascot_validator-call, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'iv <- shinyvalidate::InputValidator$new()\n',
+  'iv$add_rule("email", shinyvalidate::sv_required())\n',
+  'iv$enable()\n',
+  'obs <- mascot::watch_mascot_validator(\n',
+  '  "helper",\n',
+  '  iv,\n',
+  '  map = list(invalid = list(bubble = mascot_bubble("Check the form.")))\n',
+  ')\n',
+  '# Call obs$destroy() if you need to stop watching before the session ends.'
+)))
+```
+
+Validators with no registered rules leave the mascot unchanged. Passing an empty
+`list()` for `"valid"` or `"invalid"` also leaves that state unchanged. Inside a
+Shiny module, pass the module's local mascot id, the same as in
+`update_mascot()`.
+
+```{r watch_mascot_validator-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("watch_mascot_validator", studio_character)
+```

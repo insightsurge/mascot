@@ -44,6 +44,7 @@ describe("mascot exports", {
         "update_mascot",
         "watch_mascot",
         "watch_mascot_task",
+        "watch_mascot_validator",
         "mascot_server_state",
         "mascot_preview",
         "mascot_examples",
@@ -72,7 +73,7 @@ describe("mascot exports", {
       )
     )
     expect_true(all(startsWith(
-      setdiff(exports, c("mascot", "update_mascot", "watch_mascot", "watch_mascot_task")),
+      setdiff(exports, c("mascot", "update_mascot", "watch_mascot", "watch_mascot_task", "watch_mascot_validator")),
       "mascot_"
     )))
   })

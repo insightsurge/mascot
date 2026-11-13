@@ -1,7 +1,7 @@
 # mascot
 
-Rules for everyone working in this repository, person or AI. Codex and Antigravity (agy) read this file
-directly; Claude reads it through the `@AGENTS.md` import at the top of `CLAUDE.md`. Edit the rules here.
+Rules for everyone working in this repository, person or AI. Antigravity (agy) reads this file directly;
+Claude reads it through the `@AGENTS.md` import at the top of `CLAUDE.md`. Edit the rules here.
 
 An R package for **live, mood-driven mascots** in Shiny apps and Quarto sites: a character drawn in code shows a
 mood and animates when the mood changes (a short wiggle, then the new face). Scope, target users and releases:

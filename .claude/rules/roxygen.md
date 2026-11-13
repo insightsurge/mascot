@@ -25,6 +25,5 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
 - **CRAN:** titles in sentence case without a final full stop; package, software and API names in single quotes in
   DESCRIPTION, written exactly as the package is named ('shiny', 'Quarto'; package names are case-sensitive), and file
   formats such as JSON not quoted; in backticks or links in Rd.
-- **house:** wording: plain, British English; "built for GxP work", never "validated" or "GxP compliant"; never an
-  employer, client or internal system; no unmeasured numbers. New words the spell check doesn't know go into
-  `inst/WORDLIST` only after the package creator agrees they're real.
+- **house:** wording follows "Rules that always apply" in `AGENTS.md` (plain, British English, "built for GxP work");
+  new spelling words go into `inst/WORDLIST` only after the package creator agrees they're real.

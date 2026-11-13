@@ -89,13 +89,7 @@ guide_timeline <- function(...) {
 guide_table <- function(df, wrap = NULL) {
   checkmate::assert_data_frame(df)
   checkmate::assert_string(wrap, min.chars = 1, null.ok = TRUE)
-  table <- htmltools::tags$table(
-    class = "table table-sm pg-table",
-    htmltools::tags$thead(htmltools::tags$tr(lapply(names(df), htmltools::tags$th))),
-    htmltools::tags$tbody(lapply(seq_len(nrow(df)), function(i) {
-      htmltools::tags$tr(lapply(names(df), function(column) htmltools::tags$td(as.character(df[[column]][i]))))
-    }))
-  )
+  table <- guide_data_table(df, coerce = TRUE)
   htmltools::attachDependencies(if (is.null(wrap)) table else htmltools::div(class = wrap, table), guide_dependency())
 }
 
@@ -124,60 +118,18 @@ guide_gesture_cards <- function(gestures) {
 
 # Static placement overview, with the package's default corner emphasised.
 guide_placement_map <- function() {
-  corners <- c("top-left", "top-right", "bottom-left", "bottom-right")
-  default <- formals(mascot::mascot_placement)$position
-  htmltools::attachDependencies(
-    htmltools::div(
-      class = "pg-map",
-      htmltools::div(class = "pg-map-bar"),
-      htmltools::div(
-        class = "pg-map-page",
-        htmltools::div(class = "pg-map-line"),
-        htmltools::tags$span(class = "pg-map-inline", "inline"),
-        htmltools::div(class = "pg-map-line short"),
-        htmltools::div(class = "pg-map-line")
-      ),
-      lapply(corners, function(corner) {
-        htmltools::tags$span(
-          class = paste("pg-map-corner", paste0("pg-", corner), if (identical(corner, default)) "is-active"),
-          corner
-        )
-      })
-    ),
-    guide_dependency()
-  )
+  htmltools::attachDependencies(guide_placement_map_html(interactive = FALSE), guide_dependency())
 }
 
 # Same columns as the live roles table; the website points to the outline tip without a studio link.
 guide_roles_table <- function(character) {
   checkmate::assert_string(character, min.chars = 1)
-  roles <- mascot::mascot_colour_roles(character)
   htmltools::attachDependencies(
     htmltools::tagList(
       htmltools::tags$pre(htmltools::tags$code(sprintf('mascot_colour_roles("%s")', character))),
-      htmltools::tags$table(
-        class = "table table-sm pg-table",
-        htmltools::tags$thead(htmltools::tags$tr(lapply(names(roles), htmltools::tags$th))),
-        htmltools::tags$tbody(lapply(seq_len(nrow(roles)), function(i) {
-          htmltools::tags$tr(lapply(names(roles), function(column) {
-            value <- roles[[column]][i]
-            cell <- if (column == "colour") {
-              htmltools::tagList(
-                htmltools::tags$span(class = "pg-swatch", style = paste0("background:", value)),
-                htmltools::tags$code(value)
-              )
-            } else if (column == "follows") {
-              if (is.na(value)) htmltools::tags$span(class = "pg-muted", "leader") else paste("\u2190", value)
-            } else if (column == "shade" && is.na(value)) {
-              ""
-            } else if (column == "description" && roles$role[i] == "outline") {
-              paste(value, "See the dark-mode outline tip on the mascot_theme page.")
-            } else {
-              as.character(value)
-            }
-            htmltools::tags$td(cell)
-          }))
-        }))
+      guide_roles_table_html(
+        character,
+        outline_extra = "See the dark-mode outline tip on the mascot_theme page."
       )
     ),
     guide_dependency()
@@ -297,6 +249,49 @@ guide_each_character <- function(render, id = "guide-character") {
       class = "pg-character-tabs",
       tags$ul(class = "nav nav-tabs", role = "tablist", nav),
       tags$div(class = "tab-content", panes)
+    ),
+    guide_dependency()
+  )
+}
+
+# Static "Use a palette as a base" worked example for the website guide pages.
+guide_palette_base <- function() {
+  sample <- guide_palette_base_spec(formals(mascot::mascot)$character)
+  htmltools::attachDependencies(
+    htmltools::tagList(
+      htmltools::tags$h3(class = "pg-section-title", "Use a palette as a base"),
+      htmltools::tags$p(sample$sentence),
+      guide_each_character(function(ch) {
+        spec <- guide_palette_base_spec(ch)
+        htmltools::tags$pre(htmltools::tags$code(spec$code))
+      })
+    ),
+    guide_dependency()
+  )
+}
+
+# Static "Character swap" worked example for the website guide pages.
+guide_palette_swap <- function() {
+  spec <- guide_palette_swap_spec()
+  htmltools::attachDependencies(
+    htmltools::tagList(
+      htmltools::tags$h3(class = "pg-section-title", "Character swap"),
+      htmltools::tags$p(spec$sentence),
+      htmltools::tags$pre(htmltools::tags$code(spec$code))
+    ),
+    guide_dependency()
+  )
+}
+
+# The worried-mascot example for the update_mascot() guide page: the call and the status text it shows.
+guide_devmode_worried <- function() {
+  spec <- guide_devmode_worried_spec()
+  htmltools::attachDependencies(
+    htmltools::tagList(
+      htmltools::tags$h3(class = "pg-section-title", spec$title),
+      htmltools::tags$p(spec$sentence),
+      htmltools::tags$pre(htmltools::tags$code(spec$code)),
+      htmltools::tags$p("The mascot then says:", htmltools::tags$code(spec$status))
     ),
     guide_dependency()
   )

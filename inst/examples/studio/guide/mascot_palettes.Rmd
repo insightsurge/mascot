@@ -24,7 +24,7 @@ guide_each_character(function(ch) guide_table(mascot::mascot_palettes(ch), wrap 
 ```
 
 ```{r mascot_palettes-base-demo, echo = FALSE}
-if (in_studio()) palette_base_demo(studio_character)
+if (in_studio()) palette_base_demo(studio_character) else guide_palette_base()
 ```
 
 ```{r mascot_palettes-outline-demo, echo = FALSE}
@@ -36,7 +36,7 @@ if (in_studio()) palette_roles_demo()
 ```
 
 ```{r mascot_palettes-swap-demo, echo = FALSE}
-if (in_studio()) palette_swap_section(studio_character)
+if (in_studio()) palette_swap_section(studio_character) else guide_palette_swap()
 ```
 
 ```{r mascot_palettes-mistakes, echo = FALSE}

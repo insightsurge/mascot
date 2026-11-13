@@ -483,6 +483,7 @@ panel_colours <- function() {
     inspector_function(
       "mascot_theme",
       tags$details(
+        id = "mascot_styling_details",
         tags$summary("Styling panels and the restore button with CSS"),
         div(
           class = "pg-help",
@@ -848,26 +849,25 @@ panel_preview <- function(moods = mascot_moods()) {
     arg_field(
       fn,
       "size",
-      tagList(
-        sliderInput(
-          "preview_size",
-          "Pixels",
-          min = 24,
-          max = 240,
-          value = formals(mascot::mascot_preview)$size,
-          step = 8
-        ),
-        radioButtons(
-          "preview_width",
-          "Show the page at",
-          c("Full width" = "full", "Phone width (375 px)" = "phone"),
-          inline = TRUE
-        )
+      sliderInput(
+        "preview_size",
+        "Pixels",
+        min = 24,
+        max = 240,
+        value = formals(mascot::mascot_preview)$size,
+        step = 8
       ),
-      note = div(
-        class = "pg-note",
-        "Comparison columns are 160, 96 and 24 px. Phone width narrows the page; the mascot pixel size stays unchanged."
-      )
+      note = div(class = "pg-note", "Comparison columns are 160, 96 and 24 px.")
+    ),
+    div(
+      class = "pg-field",
+      radioButtons(
+        "preview_width",
+        "Show the page at",
+        c("Full width" = "full", "Phone width (375 px)" = "phone"),
+        inline = TRUE
+      ),
+      div(class = "pg-note", "Phone width narrows the page; the mascot pixel size stays unchanged.")
     ),
     arg_field(
       fn,

@@ -1,5 +1,9 @@
 # mascot (development version)
 
+* `mascot_studio()` (*Experimental*):
+  * Search now includes the `?mascot_styling` topic and opens its styling section under `mascot_theme()` (#394).
+  * `bs_theme()` controls allow switching primary and secondary colours off individually, `preview_width` is separate from `mascot_preview(size = )`, and and website guides gain static "Use a palette as a base" and "Character swap" examples and the call and status text behind the worried mascot of development mode (#396).
+
 # mascot 0.1.0
 
 First CRAN release.

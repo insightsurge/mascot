@@ -65,8 +65,11 @@ describe("studio signature routes", {
     search <- as.character(get("studio_search", studio_parts()$env)())
     expect_length(
       regmatches(search, gregexpr('role="option"', search, fixed = TRUE))[[1]],
-      length(getNamespaceExports("mascot"))
+      length(getNamespaceExports("mascot")) + 1L
     )
+    expect_match(search, 'id="search_mascot_styling_topic"', fixed = TRUE)
+    expect_match(search, 'data-search-open="mascot_theme"', fixed = TRUE)
+    expect_match(search, 'data-search-details="mascot_styling_details"', fixed = TRUE)
     for (fn in getNamespaceExports("mascot")) {
       expect_match(search, paste0('id="search_', fn, '_function"'), fixed = TRUE)
       for (arg in names(formals(getExportedValue("mascot", fn)))) {

@@ -130,7 +130,7 @@ studio_guide <- list(
   ),
   mascot_server_state = guide_entry(
     "wiring",
-    "Your first app",
+    "Shiny modules",
     c("id", "...", "character", "session"),
     try = list(
       id = "wiring",
@@ -140,7 +140,7 @@ studio_guide <- list(
   ),
   watch_mascot = guide_entry(
     "wiring",
-    "Your first app",
+    "Shiny modules",
     c("id", "source", "map", "...", "session"),
     try = list(
       id = "wiring",
@@ -151,7 +151,7 @@ studio_guide <- list(
   ),
   watch_mascot_task = guide_entry(
     "wiring",
-    "Your first app",
+    "Shiny modules",
     c("id", "task", "...", "map", "session"),
     try = list(
       id = "wiring",
@@ -162,12 +162,13 @@ studio_guide <- list(
   ),
   watch_mascot_validator = guide_entry(
     "wiring",
-    "Your first app",
-    c("id", "validator", "...", "map", "session"),
+    "Shiny modules",
+    c("id", "validator", "...", "map", "delay", "session"),
     try = list(
       id = "wiring",
       validator = "wiring",
       map = "wiring",
+      delay = "wiring",
       session = "wiring"
     )
   ),

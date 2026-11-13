@@ -21,12 +21,26 @@
 #'   and `"invalid"`. Provided keys merge field-by-field onto the defaults; pass
 #'   an empty `list()` for a key (for example `list(valid = list())`) to leave
 #'   the mascot unchanged in that state.
+#' @param delay Seconds to wait after the last change before the mascot
+#'   reacts, a number of at least 0. The default, `0`, reacts at once, which
+#'   suits choices made in one click (a select, a checkbox). For typed fields
+#'   with a format rule (an email, a sample id, a date typed by hand), a value
+#'   such as `1` waits until the person pauses typing, so the mascot does not
+#'   turn worried at the first letter.
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.
 #' @returns Invisibly returns the [shiny::observe()] observer that drives the
 #'   updates. Call `$destroy()` on it to stop watching early.
 #' @details
 #' `watch_mascot_validator()` requires the suggested package `shinyvalidate`.
+#'
+#' The first result is not shown: an empty form opens with the mood and status
+#' the mascot starts with in [mascot()], and the mascot reacts from the first
+#' change in the number of failing fields. After that, an update is sent only
+#' when that number changes, so typing in a field that stays valid sends
+#' nothing. To watch several forms, combine their validators into one with
+#' `shinyvalidate`'s `add_validator()` and watch the parent: two watchers on one
+#' mascot would overwrite each other.
 #'
 #' Each time `validator$validate()` evaluates:
 #'
@@ -41,7 +55,7 @@
 #'   attention"` or `"<n> fields need attention"`.
 #'
 #' Overrides in `map` apply per key and per field. Passing
-#' `c(invalid = "sad")` keeps the dynamic failing-field count in `status` while
+#' `c(invalid = "thinking")` keeps the dynamic failing-field count in `status` while
 #' replacing only `mood`. Passing `list(invalid = list(status = "Fix errors"))`
 #' overrides the dynamic count while keeping `mood = "worried"`.
 #'
@@ -75,6 +89,7 @@ watch_mascot_validator <- function(
   validator,
   ...,
   map = NULL,
+  delay = 0,
   session = shiny::getDefaultReactiveDomain()
 ) {
   if (missing(id)) {
@@ -94,13 +109,15 @@ watch_mascot_validator <- function(
   }
   with_mascot_asserts({
     checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
+    checkmate::assert_class(validator, "InputValidator")
+    checkmate::assert_number(delay, lower = 0, finite = TRUE)
     checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"), null.ok = TRUE)
   })
   if (...length() > 0L) {
     abort_dots(
       names(substitute(list(...)))[-1L],
       ...length(),
-      "map, session",
+      "map, delay, session",
       environment()
     )
   }
@@ -120,23 +137,20 @@ watch_mascot_validator <- function(
       class = "mascot_error"
     )
   }
-  # nocov start
-  # Reaching InputValidator assertions and live observation requires shinyvalidate in Suggests.
-  with_mascot_asserts({
-    checkmate::assert_class(validator, "InputValidator")
-  })
   force(id)
   force(validator)
   force(session)
-  obs <- shiny::observe(
-    {
-      patch <- validator_resolve_patch(validator$validate(), entries)
-      watch_mascot_dispatch(id, patch, session)
-    },
-    domain = session
+  results <- shiny::reactive(validator$validate(), domain = session)
+  if (delay > 0) {
+    results <- shiny::debounce(results, delay * 1000, domain = session)
+  }
+  obs <- watch_mascot_observe(
+    function() validator_resolve(results(), entries),
+    id,
+    session,
+    skip_first = TRUE
   )
   invisible(obs)
-  # nocov end
 }
 
 #' Check whether the optional `shinyvalidate` package is installed
@@ -163,19 +177,19 @@ validator_invalid_status <- function(n) {
 
 #' Resolve an `InputValidator$validate()` list into a mascot update patch
 #' @noRd
-validator_resolve_patch <- function(results, entries) {
+validator_resolve <- function(results, entries) {
   checkmate::assert_list(results)
   checkmate::assert_list(entries, names = "unique")
   if (length(results) == 0L) {
-    return(list())
+    return(NULL)
   }
   n_invalid <- sum(!vapply(results, is.null, logical(1), USE.NAMES = FALSE))
   if (n_invalid == 0L) {
-    return(entries[["valid"]] %||% list())
+    return(list(key = 0L, patch = if (is.null(entries$valid)) list() else entries$valid))
   }
-  patch <- entries[["invalid"]] %||% list()
+  patch <- if (is.null(entries$invalid)) list() else entries$invalid
   if (length(patch) > 0L && !("status" %in% names(patch))) {
     patch$status <- validator_invalid_status(n_invalid)
   }
-  patch
+  list(key = n_invalid, patch = patch)
 }

@@ -121,7 +121,8 @@ mascot_server_state <- function(
       gesture = NULL
     ))
   }
-  if (is.null(record$context) && !is.null(fallback_character)) {
+  fallback_used <- is.null(record$context) && !is.null(fallback_character)
+  if (fallback_used) {
     wire <- list(
       id = fallback_character$id,
       name = fallback_character$name,
@@ -134,6 +135,10 @@ mascot_server_state <- function(
     record <- mascot_state_coalesce_cold(record)
   }
   desired <- record$desired
+  if (fallback_used && !"mood" %in% record$owned) {
+    # The fallback character's default mood was never requested: report no mood, as for an unmounted mascot.
+    desired$mood <- NULL
+  }
   status <- if (identical(desired$status$mode, "custom")) desired$status$text else NULL
   bubble <- if (is.null(desired$bubble) || isTRUE(desired$bubble$clear)) {
     NULL

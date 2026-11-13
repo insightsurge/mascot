@@ -512,3 +512,107 @@ describe("the studio's copy buttons and stamped outputs", {
     expect_error(stamp_output(new.env(), "shown", 1), "Assertion on 'stamp' failed")
   })
 })
+
+describe("studio watch_mascot() demo", {
+  it("keeps the studio's mood, status, controls and code in step when the watcher updates the mascot", {
+    parts <- studio_parts()
+    initial <- list(
+      character = "tessa",
+      mood = "idle",
+      status_text = "",
+      code_style = "short",
+      bubble_text = "Hello",
+      bubble_html = FALSE,
+      bubble_forever = FALSE,
+      bubble_duration = 5,
+      bubble_closable = TRUE,
+      theme_source = "own",
+      theme_mode = "auto",
+      `colours-css_roles` = character(),
+      `colours-css_value` = "#123456",
+      position = "inline",
+      minimise = TRUE,
+      drag = "none",
+      size_unit = "px",
+      size_px = 160,
+      small_mode = "auto",
+      small_px = 72,
+      idle = "follow",
+      mood_change = "follow",
+      gestures = "follow",
+      swap = "follow",
+      minimising = "follow",
+      restoring = "follow",
+      messages = "follow",
+      others = TRUE,
+      action_on = FALSE,
+      menu_on = FALSE,
+      menu_items = "",
+      menu_direction = "auto",
+      mistake = "Misspell an argument"
+    )
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, initial)
+      # When the simulated source changes
+      session$setInputs(watch_state = "worried")
+      # Then the studio state and generated code follow what the watcher sent
+      expect_identical(eval(state$mood$short), "worried")
+      expect_identical(eval(state$status$short), "Needs attention")
+      expect_match(output$code_server, 'mood = "worried"', fixed = TRUE)
+      expect_identical(mascot_server_state("helper")$mood, "worried")
+      # And the pinned code shows the same map the demo runs
+      session$setInputs(select_function = "watch_mascot")
+      expect_match(output$code_function, 'worried = list(mood = "worried", status = "Needs attention")', fixed = TRUE)
+    })
+  })
+
+  it("shows the validator demo's first choice at once and keeps the studio's state in step", {
+    skip_if_not_installed("shinyvalidate")
+    parts <- studio_parts()
+    initial <- list(
+      character = "tessa",
+      mood = "idle",
+      status_text = "",
+      code_style = "short",
+      bubble_text = "Hello",
+      bubble_html = FALSE,
+      bubble_forever = FALSE,
+      bubble_duration = 5,
+      bubble_closable = TRUE,
+      theme_source = "own",
+      theme_mode = "auto",
+      `colours-css_roles` = character(),
+      `colours-css_value` = "#123456",
+      position = "inline",
+      minimise = TRUE,
+      drag = "none",
+      size_unit = "px",
+      size_px = 160,
+      small_mode = "auto",
+      small_px = 72,
+      idle = "follow",
+      mood_change = "follow",
+      gestures = "follow",
+      swap = "follow",
+      minimising = "follow",
+      restoring = "follow",
+      messages = "follow",
+      others = TRUE,
+      action_on = FALSE,
+      menu_on = FALSE,
+      menu_items = "",
+      menu_direction = "auto",
+      mistake = "Misspell an argument"
+    )
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, initial)
+      session$setInputs(watch_validator_state = "invalid_2")
+      expect_identical(mascot_server_state("helper")$mood, "worried")
+      expect_identical(mascot_server_state("helper")$status, "2 fields need attention")
+      expect_identical(eval(state$status$short), "2 fields need attention")
+      session$setInputs(watch_validator_state = "valid")
+      expect_identical(mascot_server_state("helper")$mood, "happy")
+      expect_identical(eval(state$mood$short), "happy")
+    })
+  })
+})

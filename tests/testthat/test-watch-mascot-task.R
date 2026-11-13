@@ -17,9 +17,10 @@ describe("watch_mascot_task()", {
       {
         expect_s3_class(session$userData$obs, "Observer")
         session$flushReact()
+        # Before the task first runs, the mascot keeps the face it starts with.
         state <- mascot_server_state("helper")
-        expect_identical(state$mood, "idle")
-        expect_identical(state$status, "Ready")
+        expect_null(state$mood)
+        expect_null(state$status)
 
         session$userData$task$invoke(FALSE)
         session$flushReact()
@@ -66,7 +67,7 @@ describe("watch_mascot_task()", {
       },
       {
         session$flushReact()
-        expect_identical(mascot_server_state("helper")$mood, "idle")
+        expect_null(mascot_server_state("helper")$mood)
 
         session$userData$task$invoke()
         session$flushReact()
@@ -122,7 +123,7 @@ describe("watch_mascot_task()", {
         expect_null(mascot_server_state("field_override")$mood)
         expect_null(mascot_server_state("field_override")$status)
         expect_identical(mascot_server_state("char_override")$mood, "happy")
-        expect_identical(mascot_server_state("char_override")$status, "Ready")
+        expect_null(mascot_server_state("char_override")$status)
 
         session$userData$task_a$invoke(FALSE)
         while (!later::loop_empty()) {
@@ -181,7 +182,7 @@ describe("watch_mascot_task()", {
         session$flushReact()
         state <- mascot_server_state("helper", session = session)
         expect_identical(state$id, "proxy1-helper")
-        expect_identical(state$mood, "idle")
+        expect_null(state$mood)
 
         update_mascot("helper", mood = "thinking", status = "Manual override", session = session)
         expect_identical(mascot_server_state("helper", session = session)$status, "Manual override")

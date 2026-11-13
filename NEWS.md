@@ -1,10 +1,10 @@
 # mascot (development version)
 
-* `watch_mascot_validator()` (*experimental*) binds a `shinyvalidate::InputValidator` (with `shinyvalidate` in `Suggests`) to `update_mascot()` using built-in defaults and a dynamic failing-field count in `status` (#167, #31, #131).
+* `watch_mascot_validator()` (*experimental*) binds a `shinyvalidate::InputValidator` (with `shinyvalidate` in `Suggests`) to `update_mascot()` using built-in defaults and a dynamic failing-field count in `status`. An empty form opens quietly, and `delay` waits for typing to pause (#167, #31, #131).
 
-* `watch_mascot_task()` (*experimental*) binds a `shiny::ExtendedTask` to `update_mascot()` using built-in defaults and key-wise overrides for `"initial"`, `"running"`, `"success"`, and `"error"` (#168, #131).
+* `watch_mascot_task()` (*experimental*) binds a `shiny::ExtendedTask` to `update_mascot()` using built-in defaults and key-wise overrides for `"initial"`, `"running"`, `"success"`, and `"error"`; the mascot keeps its starting face until the task first runs (#168, #131).
 
-* `watch_mascot()` (*experimental*) binds a Shiny reactive expression or `reactiveVal()` directly to `update_mascot()` using a named mood vector or key-wise update list, returning the driving observer so `$destroy()` can stop it (#166, #131).
+* `watch_mascot()` (*experimental*) binds a Shiny reactive expression or `reactiveVal()` directly to `update_mascot()` using a named mood vector or key-wise update list, sending an update only when the watched value changes, and returning the driving observer so `$destroy()` can stop it (#166, #131).
 
 * `mascot_server_state()` (*experimental*) reads a mascot's latest server-side state (`id`, `character`, `mood`, `status`, `bubble`, `gesture`) without mutating the session, for use in `shiny::testServer()` unit tests (#496).
 

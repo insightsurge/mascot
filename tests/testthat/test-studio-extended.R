@@ -1428,6 +1428,62 @@ describe("studio guide pages", {
     }
     expect_error(helpers$guide_roles_table(1), "string")
   })
+  it("shows the website the same character-swap example as the studio", {
+    env <- studio_guide_env()
+    # The website finds its example in the character list; the studio names it. They must not drift apart.
+    expect_identical(env$guide_default_swap(), env$studio_palette_swap)
+    expect_identical(
+      env$guide_palette_swap_spec(env$studio_palette_swap)$sentence,
+      env$guide_palette_swap_spec()$sentence
+    )
+  })
+  it("describes the worried mascot of development mode in the update_mascot() guide, in the studio and on the website", {
+    env <- studio_guide_env()
+    spec <- env$guide_devmode_worried_spec()
+    # The status is the text a real invalid call gives, so the example cannot drift from the package.
+    expect_identical(spec$status, paste0("mascot: helper: ", arg_problem(-5, "size")))
+    live <- page_html(env$studio_guide_page("update_mascot", "tessa", guide_dir()))
+    expect_match(live, spec$title, fixed = TRUE)
+    expect_match(live, "until the next valid update", fixed = TRUE)
+    expect_false(grepl("<(input|select|textarea)\\b|data-mascot", live, perl = TRUE))
+    helpers <- new.env(parent = globalenv())
+    helpers$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), helpers)
+    helpers$studio_character <- "tessa"
+    md <- knitr::knit(
+      file.path(guide_dir(), "update_mascot.Rmd"),
+      output = file.path(withr::local_tempdir(), "update_mascot.md"),
+      envir = helpers,
+      quiet = TRUE
+    )
+    site <- page_html(env$studio_guide_pieces(paste(readLines(md), collapse = "\n")))
+    for (text in c(spec$title, spec$code, "until the next valid update")) {
+      expect_match(site, text, fixed = TRUE)
+    }
+    expect_false(grepl("data-event|data-mascot", site))
+    expect_error(env$guide_devmode_worried_spec(""), "id")
+  })
+  it("checks the arguments of the helpers the studio and the website guide share", {
+    env <- studio_guide_env()
+    expect_error(env$guide_data_table(1), "df")
+    expect_error(env$guide_data_table(data.frame(a = 1), cells = list(identity)), "cells")
+    expect_error(env$guide_data_table(data.frame(a = 1), coerce = "yes"), "coerce")
+    expect_error(env$guide_placement_map_html(active = 1), "active")
+    expect_error(env$guide_placement_map_html(name = ""), "name")
+    expect_error(env$guide_placement_map_html(interactive = NA), "interactive")
+    expect_error(env$guide_placement_map_html(caption = 1), "caption")
+    expect_error(env$guide_roles_table_html(""), "character")
+    expect_error(env$guide_roles_table_html("tessa", palette = 1), "palette")
+    expect_error(env$guide_roles_table_html("tessa", outline_extra = 1), "outline_extra")
+    expect_error(env$guide_palette_base_spec(""), "character")
+    expect_error(env$guide_default_swap(1), "preferred_palette")
+    expect_error(env$guide_palette_swap_spec(c("tessa", "sela", "knurl", "orbit")), "swap")
+    expect_error(env$guide_palette_swap_spec(env$studio_palette_swap, id = ""), "id")
+    expect_error(env$placement_map(1, FALSE), "position")
+    expect_error(env$placement_map("inline", NA), "minimise")
+    expect_error(env$placement_map("inline", FALSE, name = ""), "name")
+    expect_error(env$roles_table(""), "character")
+  })
   for (fn in data_pages) {
     it(paste("knits", fn, "with its data, headings and guarded widgets"), {
       env <- studio_guide_env()
@@ -1469,6 +1525,15 @@ describe("studio guide pages", {
       }
       if (fn == "mascot_palettes") {
         expect_match(html, "data-event", fixed = TRUE)
+        for (text in c(
+          "Use a palette as a base",
+          "The explicit light role wins over the palette.",
+          "mascot_theme(palette =",
+          "Character swap",
+          "drops it and returns to its own colours."
+        )) {
+          expect_match(outside, text, fixed = TRUE)
+        }
       }
       if (fn == "mascot_mood") {
         expect_match(html, "Try moods with the Mood drop-down in the top bar.", fixed = TRUE)
@@ -1595,6 +1660,28 @@ describe("studio guide pages", {
     expect_true(all(kinds[-length(kinds)] == "heading"))
     # The diagram stylesheet travels with the page.
     expect_true("mascot-guide" %in% vapply(htmltools::findDependencies(page), function(d) d$name, character(1)))
+    # Static versions appear for the website when !in_studio().
+    helpers <- new.env(parent = globalenv())
+    helpers$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), helpers)
+    helpers$studio_character <- "tessa"
+    theme_md <- knitr::knit(
+      file.path(guide_dir(), "mascot_theme.Rmd"),
+      output = file.path(withr::local_tempdir(), "theme.md"),
+      envir = helpers,
+      quiet = TRUE
+    )
+    theme_outside <- page_html(env$studio_guide_pieces(paste(readLines(theme_md), collapse = "\n")))
+    expect_false(grepl("data-event|data-mascot", theme_outside))
+    for (text in c(
+      "Use a palette as a base",
+      "The explicit light role wins over the palette.",
+      "mascot_theme(palette =",
+      "Character swap",
+      "drops it and returns to its own colours."
+    )) {
+      expect_match(theme_outside, text, fixed = TRUE)
+    }
     # selected_guide() puts every piece in its own column and keeps the help page and the mistakes.
     guide <- as.character(env$selected_guide("mascot_theme"))
     expect_gte(lengths(regmatches(guide, gregexpr('class="pg-guide-piece', guide, fixed = TRUE))), length(page))
@@ -2160,12 +2247,12 @@ describe("each studio control's update, generated code and default", {
       watch_state = "wiring panel watch_mascot() simulated source",
       watch_task_state = "wiring panel watch_mascot_task() simulated ExtendedTask",
       watch_validator_state = "wiring panel watch_mascot_validator() simulated InputValidator",
-      preview_width = "the width the preview page is shown at, not an argument",
       example_name = "the Examples view, not the mascot",
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
       example_run = "the Examples view, not the mascot"
     )
     controls <- unlist(get("studio_controls", parts$env))
+    expect_false(any(grepl("preview_width", get("studio_controls", parts$env)$mascot_preview$size, fixed = TRUE)))
     format_call <- get("format_call", parts$env)
     mapped <- unique(gsub('^id="|"$', "", grep("^id=", controls, value = TRUE)))
     events <- unique(gsub(
@@ -2520,6 +2607,23 @@ describe("studio engine behaviours", {
       session$elapse(700)
       expect_identical(updates()$desired$click, list(type = "none"))
       expect_match(last_call(), "click = mascot_action()", fixed = TRUE)
+    })
+  })
+  it("allows switching primary and secondary bs_theme() colours off individually", {
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(theme_source = "bslib", bs_primary_on = FALSE, bs_secondary_on = TRUE)
+      session$elapse(400)
+      expect_match(output$code_ui, 'bslib::bs_theme(secondary = "#966600")', fixed = TRUE)
+      session$setInputs(bs_primary_on = TRUE, bs_secondary_on = FALSE)
+      session$elapse(400)
+      expect_match(output$code_ui, 'bslib::bs_theme(primary = "#1f6feb")', fixed = TRUE)
+      session$setInputs(bs_primary_on = FALSE, bs_secondary_on = FALSE)
+      session$elapse(400)
+      expect_match(output$code_ui, "theme = bslib::bs_theme()", fixed = TRUE)
     })
   })
 })

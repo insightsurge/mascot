@@ -618,4 +618,51 @@ describe("studio watch_mascot() demo", {
       expect_identical(eval(state$mood$short), "happy")
     })
   })
+
+  it("starts the watch_mascot_shiny() overlay on a choice and removes it with $destroy() on off", {
+    parts <- studio_parts()
+    initial <- list(
+      character = "tessa",
+      mood = "idle",
+      status_text = "",
+      code_style = "short",
+      bubble_text = "Hello",
+      bubble_html = FALSE,
+      bubble_forever = FALSE,
+      bubble_duration = 5,
+      bubble_closable = TRUE,
+      theme_source = "own",
+      theme_mode = "auto",
+      `colours-css_roles` = character(),
+      `colours-css_value` = "#123456",
+      position = "inline",
+      minimise = TRUE,
+      drag = "none",
+      size_unit = "px",
+      size_px = 160,
+      small_mode = "auto",
+      small_px = 72,
+      idle = "follow",
+      mood_change = "follow",
+      gestures = "follow",
+      swap = "follow",
+      minimising = "follow",
+      restoring = "follow",
+      messages = "follow",
+      others = TRUE,
+      action_on = FALSE,
+      menu_on = FALSE,
+      menu_items = "",
+      menu_direction = "auto",
+      mistake = "Misspell an argument"
+    )
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, initial)
+      session$setInputs(watch_shiny_state = "ok")
+      expect_type(studio_shiny_watcher()$destroy, "closure")
+      session$setInputs(watch_shiny_state = "none")
+      expect_null(studio_shiny_watcher())
+      expect_null(session$userData$mascot_protocol$shiny_watchers[["helper"]])
+    })
+  })
 })

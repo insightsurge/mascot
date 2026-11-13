@@ -1,5 +1,9 @@
 # mascot (development version)
 
+* `mascot_test_state()` (*experimental*) waits for a mascot in a running `shinytest2::AppDriver` browser session to settle, including any mood change still under way, and returns its displayed `id`, `character`, `mood`, `status`, `bubble`, and `minimised` state (#188).
+
+* `watch_mascot_shiny()` (*experimental*) connects a mascot to Shiny browser events (`shiny:busy`, `shiny:idle`, `shiny:error`, and `shiny:disconnected`) as a temporary visual overlay without overwriting what `update_mascot()` last set on the server. `req()` and `validate()` messages are not treated as errors (an optional `validation` entry reacts to them), and `$destroy()` on the returned value removes the overlay (#169, #32, #131).
+
 * `watch_mascot_validator()` (*experimental*) binds a `shinyvalidate::InputValidator` (with `shinyvalidate` in `Suggests`) to `update_mascot()` using built-in defaults and a dynamic failing-field count in `status`. An empty form opens quietly, and `delay` waits for typing to pause (#167, #31, #131).
 
 * `watch_mascot_task()` (*experimental*) binds a `shiny::ExtendedTask` to `update_mascot()` using built-in defaults and key-wise overrides for `"initial"`, `"running"`, `"success"`, and `"error"`; the mascot keeps its starting face until the task first runs (#168, #131).

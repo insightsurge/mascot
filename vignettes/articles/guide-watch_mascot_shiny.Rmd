@@ -1,0 +1,13 @@
+---
+title: "watch_mascot_shiny()"
+---
+
+The studio guide for [`watch_mascot_shiny()`](../reference/watch_mascot_shiny.html). The same page is read in the mascot studio.
+
+```{r setup, include = FALSE}
+guide_dir <- system.file("examples", "studio", "guide", package = "mascot")
+sys.source(file.path(guide_dir, "guide-helpers.R"), envir = knitr::knit_global())
+```
+
+```{r child = file.path(guide_dir, "watch_mascot_shiny.Rmd")}
+```

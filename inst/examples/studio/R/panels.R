@@ -753,7 +753,59 @@ panel_wiring <- function() {
         "fields with a format rule, such as an email, so the mascot reacts when typing pauses."
       )
     ),
-    arg_field("watch_mascot_validator", "session", NULL)
+    arg_field("watch_mascot_validator", "session", NULL),
+    fn_heading("watch_mascot_shiny"),
+    arg_field("watch_mascot_shiny", "...", NULL),
+    arg_field(
+      "watch_mascot_shiny",
+      "id",
+      code_block("watch_mascot_shiny(\"helper\")", "pg-code-small")
+    ),
+    wiring_links("watch_mascot_shiny"),
+    arg_field(
+      "watch_mascot_shiny",
+      "map",
+      tagList(
+        radioButtons(
+          "watch_shiny_state",
+          "Simulated browser event",
+          c("off ($destroy())" = "none", "ok" = "ok", "error" = "error"),
+          selected = "none",
+          inline = TRUE
+        ),
+        textOutput("watch_shiny_out"),
+        code_block(
+          paste0(
+            "list(\n",
+            "  busy = list(mood = \"thinking\", status = \"Working...\"),\n",
+            "  idle = list(),\n",
+            "  error = list(mood = \"worried\", status = \"An error occurred\"),\n",
+            "  validation = list(),\n",
+            "  disconnected = list(mood = \"worried\", status = \"Connection lost. Reload the page to continue.\")\n",
+            ")"
+          ),
+          "pg-code-small"
+        )
+      )
+    ),
+    arg_field("watch_mascot_shiny", "delay", code_block("delay = 1", "pg-code-small")),
+    arg_field("watch_mascot_shiny", "session", NULL),
+    fn_heading("mascot_test_state"),
+    arg_field("mascot_test_state", "app", code_block("mascot_test_state(app, \"helper\")", "pg-code-small")),
+    arg_field("mascot_test_state", "id", NULL),
+    arg_field("mascot_test_state", "...", NULL),
+    wiring_links("mascot_test_state"),
+    arg_field(
+      "mascot_test_state",
+      "timeout",
+      tagList(
+        div(
+          class = "pg-hint",
+          "Use in shinytest2 browser tests to wait for settlement and read the displayed mood, status, bubble and minimised state."
+        ),
+        code_block("mascot_test_state(app, \"helper\", timeout = 5000)", "pg-code-small")
+      )
+    )
   )
 }
 

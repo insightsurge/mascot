@@ -158,17 +158,34 @@
     warn(error);
   }
 
+  function baselineStatusText(record, snapshot) {
+    return record.status.mode === 'mood'
+      ? record.descriptions.get(snapshot.character)?.moods[snapshot.mood]?.status || label(snapshot.mood)
+      : record.status.text;
+  }
+
+  function overlayStatusText(record, snapshot, overlay) {
+    if (!overlay.status || overlay.status.mode === 'mood') {
+      return record.descriptions.get(snapshot.character)?.moods[snapshot.mood]?.status || label(snapshot.mood);
+    }
+    return overlay.status.text;
+  }
+
   function show(record, snapshot) {
     if (updating.has(record)) return;
     record.el.dataset.shownCharacter = snapshot.character;
     record.el.dataset.shownMood = snapshot.mood;
     record.el.dataset.swapping = String(snapshot.swapping);
-    const shownStatus = disconnected
-      ? disconnectStatus
-      : record.problem ||
-        (record.status.mode === 'mood'
-          ? record.descriptions.get(snapshot.character)?.moods[snapshot.mood]?.status || label(snapshot.mood)
-          : record.status.text);
+    const overlay = activeWatchOverlay(record);
+    const watchDisconnect = disconnected && Boolean(record.shinyWatch);
+    const shownStatus = watchDisconnect
+      ? overlay
+        ? overlayStatusText(record, snapshot, overlay)
+        : record.problem || baselineStatusText(record, snapshot)
+      : disconnected
+        ? disconnectStatus
+        : record.problem ||
+          (overlay ? overlayStatusText(record, snapshot, overlay) : baselineStatusText(record, snapshot));
     const accessibleLabel = `${record.names.get(snapshot.character)}, ${shownStatus}`;
     record.canvas.setAttribute('aria-label', accessibleLabel);
     if (record.button) {
@@ -202,17 +219,130 @@
       }
   }
 
+  let shinyBusy = false;
+  // Mascots with a watch_mascot_shiny() overlay. Kept apart from `live`: the overlay can arrive with the first
+  // state, before the mascot is live, and the busy and idle events around it must still reach it.
+  const watched = new Set();
+
+  function activeWatchOverlay(record) {
+    const watch = record.shinyWatch;
+    const state = record.watchState;
+    if (!watch || !state) return null;
+    if (disconnected) return watch.map.disconnected || null;
+    if (state.errors.size > 0 && watch.map.error) return watch.map.error;
+    if (state.validations.size > 0 && watch.map.validation) return watch.map.validation;
+    if (state.busyShown && watch.map.busy) return watch.map.busy;
+    if (state.idleActive && watch.map.idle) return watch.map.idle;
+    return null;
+  }
+
+  function resolveWatchMood(record, overlay) {
+    if (!overlay || typeof overlay.mood !== 'string') return record.mood;
+    const description = record.descriptions.get(record.character);
+    if (description && has(description.moods, overlay.mood)) return overlay.mood;
+    return record.mood;
+  }
+
+  function clearWatchTimers(record) {
+    if (record.watchState?.busyTimer !== null && record.watchState?.busyTimer !== undefined) {
+      window.clearTimeout(record.watchState.busyTimer);
+      record.watchState.busyTimer = null;
+    }
+  }
+
+  function syncWatchOverlay(record, forceReduced = false) {
+    if (!records.has(record.el)) return;
+    if (disconnected && !record.shinyWatch) {
+      forceConnectionMood(record);
+      show(record, record.controller.current());
+      return;
+    }
+    const overlay = activeWatchOverlay(record);
+    const current = record.controller.current();
+    const isDisconnectOverlay = disconnected && Boolean(record.shinyWatch?.map?.disconnected);
+    const targetMood = isDisconnectOverlay
+      ? resolveWatchMood(record, record.shinyWatch.map.disconnected)
+      : record.problem
+        ? (current.target ?? current.mood)
+        : overlay
+          ? resolveWatchMood(record, overlay)
+          : record.mood;
+    if (isDisconnectOverlay) {
+      record.controller.update({ mood: targetMood, gestures: false, reduced: true, swap: false });
+      if (record.motion.gestures) record.controller.update({ gestures: true });
+    } else if (targetMood !== (current.target ?? current.mood)) {
+      // Compare with the mood the face is moving to, not the one still visible mid-wiggle: a busy period shorter
+      // than the wiggle must still turn back. Omit mood when unchanged so repeated ticks don't re-wiggle.
+      const patch = { mood: targetMood, swap: false };
+      if (forceReduced) patch.reduced = true;
+      record.controller.update(patch);
+    }
+    show(record, record.controller.current());
+  }
+
+  function scheduleBusyWatch(record) {
+    const watch = record.shinyWatch;
+    const state = record.watchState;
+    if (!watch || !state) return;
+    clearWatchTimers(record);
+    if (!watch.map.busy) return;
+    const delayMs = Number(watch.delay_ms) || 0;
+    if (delayMs <= 0) {
+      state.busyShown = true;
+      state.idleActive = false;
+      syncWatchOverlay(record, false);
+      return;
+    }
+    state.busyTimer = window.setTimeout(
+      () => {
+        state.busyTimer = null;
+        if (!shinyBusy || !records.has(record.el) || record.watchState !== state) return;
+        state.busyShown = true;
+        state.idleActive = false;
+        syncWatchOverlay(record, false);
+      },
+      Math.min(delayMs, 2147483647),
+    );
+  }
+
+  function installShinyWatch(record, config) {
+    // A removed watcher arrives as null or as an empty object (R's NULL); either removes the overlay.
+    const next = config?.map ? config : null;
+    if (sameValue(record.shinyWatch, next)) return;
+    clearWatchTimers(record);
+    const previous = record.watchState;
+    record.shinyWatch = next;
+    if (next) watched.add(record);
+    else watched.delete(record);
+    record.watchState = next
+      ? {
+          busyTimer: null,
+          busyShown: Boolean(shinyBusy && previous?.busyShown && next.map.busy),
+          idleActive: Boolean(previous?.idleActive && next.map.idle),
+          updatedDuringBusy: Boolean(previous?.updatedDuringBusy),
+          errors: previous?.errors || new Set(),
+          validations: previous?.validations || new Set(),
+        }
+      : null;
+    if (next && shinyBusy && !record.watchState.busyShown) scheduleBusyWatch(record);
+    syncWatchOverlay(record, true);
+  }
+
   function setDisconnected(value) {
     if (disconnected === value) return;
     disconnected = value;
     for (const record of live) {
       record.el.toggleAttribute('data-disconnected', value);
-      if (value) {
-        forceConnectionMood(record);
+      if (record.shinyWatch) {
+        syncWatchOverlay(record, true);
       } else {
-        record.controller.update({ mood: record.mood, reduced: true, swap: false });
+        if (value) {
+          forceConnectionMood(record);
+        } else {
+          record.controller.update({ mood: record.mood, reduced: true, swap: false });
+        }
+        show(record, record.controller.current());
       }
-      show(record, record.controller.current());
     }
   }
 
@@ -227,13 +357,88 @@
     if (record.motion.gestures) record.controller.update({ gestures: true });
   }
 
+  const busyHandler = () => {
+    shinyBusy = true;
+    for (const record of watched) {
+      if (record.shinyWatch) {
+        if (record.watchState) record.watchState.updatedDuringBusy = false;
+        scheduleBusyWatch(record);
+      }
+    }
+  };
+  const idleHandler = () => {
+    shinyBusy = false;
+    for (const record of watched) {
+      if (!record.shinyWatch || !record.watchState) continue;
+      clearWatchTimers(record);
+      const wasBusy = record.watchState.busyShown;
+      record.watchState.busyShown = false;
+      if (wasBusy && !record.watchState.updatedDuringBusy && record.shinyWatch.map.idle) {
+        record.watchState.idleActive = true;
+      }
+      record.watchState.updatedDuringBusy = false;
+      syncWatchOverlay(record, false);
+    }
+  };
+  const errorHandler = (event) => {
+    const errorKey =
+      typeof event?.name === 'string' && event.name.length
+        ? event.name
+        : typeof event?.detail?.name === 'string' && event.detail.name.length
+          ? event.detail.name
+          : '__unnamed__';
+    // req() and validate(need()) send silent errors: they are not failures. A validate() message (it has text)
+    // shows the optional validation overlay; req() (no text) shows nothing.
+    const types = Array.isArray(event?.error?.type) ? event.error.type : [event?.error?.type];
+    const silent = types.includes('shiny.silent.error');
+    const validation = silent && types.includes('validation') && Boolean(event?.error?.message);
+    for (const record of watched) {
+      if (!record.shinyWatch || !record.watchState) continue;
+      const state = record.watchState;
+      if (silent) state.errors.delete(errorKey);
+      else state.errors.add(errorKey);
+      if (validation) state.validations.add(errorKey);
+      else state.validations.delete(errorKey);
+      syncWatchOverlay(record, false);
+    }
+  };
+  const valueHandler = (event) => {
+    const valueKey =
+      typeof event?.name === 'string' && event.name.length
+        ? event.name
+        : typeof event?.detail?.name === 'string' && event.detail.name.length
+          ? event.detail.name
+          : null;
+    for (const record of watched) {
+      if (!record.shinyWatch || !record.watchState) continue;
+      if (valueKey) {
+        for (const set of [record.watchState.errors, record.watchState.validations]) {
+          set.delete(valueKey);
+          set.delete('__unnamed__');
+        }
+      } else {
+        record.watchState.errors.clear();
+        record.watchState.validations.clear();
+      }
+      syncWatchOverlay(record, false);
+    }
+  };
+
   const disconnectedHandler = () => setDisconnected(true);
   const connectedHandler = () => setDisconnected(false);
   document.addEventListener('shiny:disconnected', disconnectedHandler);
   document.addEventListener('shiny:connected', connectedHandler);
+  document.addEventListener('shiny:busy', busyHandler);
+  document.addEventListener('shiny:idle', idleHandler);
+  document.addEventListener('shiny:error', errorHandler);
+  document.addEventListener('shiny:value', valueHandler);
   if (typeof window.jQuery === 'function') {
     window.jQuery(document).on('shiny:disconnected.mascot-host', disconnectedHandler);
     window.jQuery(document).on('shiny:connected.mascot-host', connectedHandler);
+    window.jQuery(document).on('shiny:busy.mascot-host', busyHandler);
+    window.jQuery(document).on('shiny:idle.mascot-host', idleHandler);
+    window.jQuery(document).on('shiny:error.mascot-host', errorHandler);
+    window.jQuery(document).on('shiny:value.mascot-host', valueHandler);
   }
 
   // After a reconnect Shiny can bind the same page to a NEW server session (allowReconnect on Shiny Server or
@@ -251,6 +456,10 @@
     ledger.resumed = true;
     record.revision = 0;
     record.recoverySent = false;
+    if (record.watchState) {
+      record.watchState.errors.clear();
+      record.watchState.validations.clear();
+    }
     publish(record, 'resume');
   }
 
@@ -2120,6 +2329,8 @@
       status: { mode: el.dataset.status, text: el.dataset.status === 'custom' ? statusEl.textContent : null },
       problem: null,
       problemMood: null,
+      shinyWatch: null,
+      watchState: null,
       bubbleEl,
       bubbleText: bubbleEl.querySelector('.mascot-bubble-text'),
       bubble: bubbleEl.hidden
@@ -2311,8 +2522,10 @@
       // Establish initial queued state before its gesture, without a mood transition or swap.
       const initial = allowThemeDrop && (prepared.changed || has(enginePatch, 'mood'));
       if (initial) Object.assign(enginePatch, { reduced: true, swap: false });
+      else if (record.shinyWatch && (disconnected || activeWatchOverlay(record))) enginePatch.reduced = true;
       if (Object.keys(enginePatch).length) record.controller.update(enginePatch);
-      if (initial) record.controller.update(prepared.motion || record.motion);
+      if (initial || (record.shinyWatch && (disconnected || activeWatchOverlay(record))))
+        record.controller.update(prepared.motion || record.motion);
     } catch (error) {
       warn(error);
       return;
@@ -2332,6 +2545,10 @@
     }
     if (has(enginePatch, 'mood')) record.mood = enginePatch.mood;
     record.status = status;
+    if (record.watchState && (has(enginePatch, 'mood') || has(patch, 'status'))) {
+      record.watchState.idleActive = false;
+      if (shinyBusy) record.watchState.updatedDuringBusy = true;
+    }
     if (prepared.click) replaceClick(record, prepared.click, false);
     if (prepared.motion) {
       record.motion = prepared.motion;
@@ -2382,8 +2599,14 @@
       } else record.controller.gesture(patch.gesture);
     }
     if (disconnected) {
-      forceConnectionMood(record);
-      show(record, record.controller.current());
+      if (record.shinyWatch) {
+        syncWatchOverlay(record, true);
+      } else {
+        forceConnectionMood(record);
+        show(record, record.controller.current());
+      }
+    } else if (record.shinyWatch && activeWatchOverlay(record)) {
+      syncWatchOverlay(record, true);
     }
     return true;
   }
@@ -2607,6 +2830,8 @@
     if (!record) return;
     // Terminal notice is emitted while the binding/ledger still exist, before
     // Shiny tears down the element. The explicit event route is repeatable.
+    clearWatchTimers(record);
+    watched.delete(record);
     stopTimer(record);
     record.ledger.bubble = record.bubble ? { ...record.bubble } : null;
     record.ledger.live = false;
@@ -2729,6 +2954,10 @@
         apply(record.el, { problem: message.problem });
       return;
     }
+    if (message.kind === 'shiny-watch') {
+      if (message.revision >= ledger.applied_revision) installShinyWatch(record, message.shiny_watch ?? null);
+      return;
+    }
     // Unknown additive kinds are optional extensions, not state candidates.
     if (message.kind != null && message.kind !== 'state') return;
     if (message.revision <= ledger.applied_revision) return;
@@ -2813,6 +3042,7 @@
         record.installing = false;
       }
       if (message.problem) apply(record.el, { problem: message.problem });
+      if (has(message, 'shiny_watch')) installShinyWatch(record, message.shiny_watch ?? null);
       record.completeState = message.state;
       ledger.applied_revision = message.revision;
       ledger.resumed = false;

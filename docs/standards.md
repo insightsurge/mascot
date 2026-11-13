@@ -328,7 +328,8 @@ use plain words in help pages:
 
 **Experimental in the development version:**
 - `watch_mascot()`, `watch_mascot_task()` and `watch_mascot_validator()`
-- `mascot_server_state()`
+- `watch_mascot_shiny()`
+- `mascot_server_state()` and `mascot_test_state()`
 
 ## 6. Testing
 

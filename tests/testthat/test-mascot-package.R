@@ -45,7 +45,9 @@ describe("mascot exports", {
         "watch_mascot",
         "watch_mascot_task",
         "watch_mascot_validator",
+        "watch_mascot_shiny",
         "mascot_server_state",
+        "mascot_test_state",
         "mascot_preview",
         "mascot_examples",
         "mascot_example",
@@ -73,7 +75,17 @@ describe("mascot exports", {
       )
     )
     expect_true(all(startsWith(
-      setdiff(exports, c("mascot", "update_mascot", "watch_mascot", "watch_mascot_task", "watch_mascot_validator")),
+      setdiff(
+        exports,
+        c(
+          "mascot",
+          "update_mascot",
+          "watch_mascot",
+          "watch_mascot_task",
+          "watch_mascot_validator",
+          "watch_mascot_shiny"
+        )
+      ),
       "mascot_"
     )))
   })
@@ -120,7 +132,9 @@ describe("experimental help topic badges", {
       "watch_mascot",
       "watch_mascot_task",
       "watch_mascot_validator",
-      "mascot_server_state"
+      "watch_mascot_shiny",
+      "mascot_server_state",
+      "mascot_test_state"
     )
     root <- test_path("..", "..")
     db <- if (dir.exists(file.path(root, "man"))) {

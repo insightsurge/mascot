@@ -1,0 +1,39 @@
+```{r setup-mascot_test_state, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_test_state-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_test_state")
+```
+
+```{r mascot_test_state-experimental, echo = FALSE}
+htmltools::div(
+  class = "pg-note",
+  htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
+  " Its name, arguments and return structure may change in a later release."
+)
+```
+
+### Read settled browser state in `shinytest2`
+
+`mascot_test_state()` waits for a mascot element in a `shinytest2` browser
+session to mount and finish any active transition, then returns the displayed
+`id`, `character`, `mood`, `status`, `bubble` and `minimised` state:
+
+```{r mascot_test_state-call, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'app <- shinytest2::AppDriver$new(app_dir)\n',
+  'app$click("save")\n',
+  'state <- mascot::mascot_test_state(app, "helper")\n',
+  'testthat::expect_identical(state$mood, "happy")'
+)))
+```
+
+Unlike `mascot_server_state()`, which reads queued session state without a
+browser, `mascot_test_state()` reads what the visitor actually sees (including
+active `watch_mascot_shiny()` overlays) and takes the full DOM id (such as
+`"form-helper"` inside a `"form"` module).
+
+```{r mascot_test_state-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_test_state", studio_character)
+```

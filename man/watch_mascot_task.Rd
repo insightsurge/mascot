@@ -99,8 +99,10 @@ shiny::testServer(
 Other mascots in Shiny:
 \code{\link[=mascot]{mascot()}},
 \code{\link[=mascot_server_state]{mascot_server_state()}},
+\code{\link[=mascot_test_state]{mascot_test_state()}},
 \code{\link[=update_mascot]{update_mascot()}},
 \code{\link[=watch_mascot]{watch_mascot()}},
+\code{\link[=watch_mascot_shiny]{watch_mascot_shiny()}},
 \code{\link[=watch_mascot_validator]{watch_mascot_validator()}}
 }
 \concept{mascots in Shiny}

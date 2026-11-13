@@ -138,6 +138,16 @@ studio_guide <- list(
       session = "wiring"
     )
   ),
+  mascot_test_state = guide_entry(
+    "wiring",
+    "Your first app",
+    c("app", "id", "...", "timeout"),
+    try = list(
+      app = "wiring",
+      id = "wiring",
+      timeout = "wiring"
+    )
+  ),
   watch_mascot = guide_entry(
     "wiring",
     "Shiny modules",
@@ -167,6 +177,17 @@ studio_guide <- list(
     try = list(
       id = "wiring",
       validator = "wiring",
+      map = "wiring",
+      delay = "wiring",
+      session = "wiring"
+    )
+  ),
+  watch_mascot_shiny = guide_entry(
+    "wiring",
+    "Your first app",
+    c("id", "...", "map", "delay", "session"),
+    try = list(
+      id = "wiring",
       map = "wiring",
       delay = "wiring",
       session = "wiring"

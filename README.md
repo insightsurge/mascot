@@ -109,7 +109,7 @@ is planned for 0.2.0.
 
 Tessa and Sela are stable. The following are experimental and may change in a later release: Knurl and Neer,
 `mascot_studio()`, `mascot_preview()`, `mascot_theme(css =)`, `drag = "free"`, the mapping of `bslib::bs_theme()`
-colours to character parts, `watch_mascot()`, `watch_mascot_task()`, `watch_mascot_validator()`, `mascot_server_state()`, and the character file format.
+colours to character parts, `watch_mascot()`, `watch_mascot_task()`, `watch_mascot_validator()`, `watch_mascot_shiny()`, `mascot_server_state()`, `mascot_test_state()`, and the character file format.
 
 You can read a local JSON character file with `mascot_read_character()` or check JSON text or a parsed list with
 `mascot_check_character()`. Both functions are experimental; their arguments, results and diagnostics may change

@@ -215,6 +215,12 @@ studio_controls <- list(
     character = input_id("character"),
     session = fixed_arg("The studio's own Shiny session.")
   ),
+  mascot_test_state = list(
+    app = fixed_arg("Runs inside a shinytest2 browser test against an AppDriver."),
+    id = fixed_arg("Full DOM id such as \"helper\" or \"form-helper\"."),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    timeout = fixed_arg("Maximum milliseconds to wait before failing (default 5000).")
+  ),
   watch_mascot = list(
     id = fixed_arg("The studio's mascot, \"helper\"."),
     source = input_id("watch_state"),
@@ -235,6 +241,13 @@ studio_controls <- list(
     ... = fixed_arg("Must be empty: optional arguments are named."),
     map = fixed_arg("The default map shown above."),
     delay = fixed_arg("0 here: a choice made in one click needs no wait. Use 1 for a typed field."),
+    session = fixed_arg("The studio's own Shiny session.")
+  ),
+  watch_mascot_shiny = list(
+    id = fixed_arg("The studio's mascot, \"helper\"."),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    map = input_id("watch_shiny_state"),
+    delay = fixed_arg("1 second: a quick update never shows the busy face."),
     session = fixed_arg("The studio's own Shiny session.")
   ),
   mascot_preview = list(

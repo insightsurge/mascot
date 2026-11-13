@@ -2247,6 +2247,7 @@ describe("each studio control's update, generated code and default", {
       watch_state = "wiring panel watch_mascot() simulated source",
       watch_task_state = "wiring panel watch_mascot_task() simulated ExtendedTask",
       watch_validator_state = "wiring panel watch_mascot_validator() simulated InputValidator",
+      watch_shiny_state = "wiring panel watch_mascot_shiny() simulated browser events",
       example_name = "the Examples view, not the mascot",
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
       example_run = "the Examples view, not the mascot"
@@ -3349,9 +3350,11 @@ describe("experimental labels in the studio", {
       "mascot_read_character",
       "mascot_check_character",
       "mascot_server_state",
+      "mascot_test_state",
       "watch_mascot",
       "watch_mascot_task",
-      "watch_mascot_validator"
+      "watch_mascot_validator",
+      "watch_mascot_shiny"
     )) {
       expect_match(notes(fn), "badge text-bg-warning", fixed = TRUE, info = fn)
       card <- as.character(get("function_card", env)(fn))
@@ -3683,5 +3686,47 @@ describe("watch_mascot_validator in the studio", {
       expect_identical(snap$mood, "happy")
       expect_identical(snap$status, "All fields look good")
     })
+  })
+})
+
+describe("watch_mascot_shiny in the studio", {
+  it("registers browser event watching from the wiring panel and renders its guide page", {
+    skip_without_studio_packages("studio")
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      before <- mascot_server_state("helper", session = session)
+      session$setInputs(watch_shiny_state = "ok")
+      session$flushReact()
+      watcher <- session$userData$mascot_protocol$shiny_watchers[[session$ns("helper")]]
+      expect_type(watcher, "list")
+      expect_identical(watcher$delay_ms, 1000)
+      expect_identical(watcher$map$busy$mood, "thinking")
+      expect_identical(mascot_server_state("helper", session = session)$mood, before$mood)
+    })
+    env <- studio_guide_env()
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    page <- paste(
+      vapply(env$studio_guide_page("watch_mascot_shiny", "tessa", dir), as.character, character(1)),
+      collapse = "\n"
+    )
+    expect_match(page, "Experimental", fixed = TRUE)
+    expect_match(page, "shiny:busy", fixed = TRUE)
+  })
+})
+
+describe("mascot_test_state in the studio", {
+  it("renders its guide page and studio code example cleanly", {
+    skip_without_studio_packages("studio")
+    env <- studio_guide_env()
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    page <- paste(
+      vapply(env$studio_guide_page("mascot_test_state", "tessa", dir), as.character, character(1)),
+      collapse = "\n"
+    )
+    expect_match(page, "Experimental", fixed = TRUE)
+    expect_match(page, "shinytest2", fixed = TRUE)
   })
 })

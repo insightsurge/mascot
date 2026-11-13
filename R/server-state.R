@@ -54,7 +54,7 @@
 #' gestures or theme roles then emit the same `mascot_update_ignored` warning
 #' as on mount and leave the settled state unchanged.
 #' @family mascots in Shiny
-#' @seealso [update_mascot()]
+#' @seealso [update_mascot()], [watch_mascot_shiny()], [mascot_test_state()]
 #' @export
 #' @examples
 #' shiny::testServer(

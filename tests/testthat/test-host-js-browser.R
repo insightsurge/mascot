@@ -3997,3 +3997,220 @@ describe("disabled menu activation", {
     expect_true(result$closed)
   })
 })
+
+describe("watch_mascot_shiny overlays", {
+  it("shows busy after delay, cancels fast busy before delay, keeps error until shiny:value, and never overwrites server mood", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => {
+      const el = document.getElementById('a');
+      const cfg = {
+        delay_ms: 200,
+        map: {
+          busy: { mood: 'thinking', status: { mode: 'custom', text: 'Working...' } },
+          idle: null,
+          error: { mood: 'worried', status: { mode: 'custom', text: 'An error occurred' } },
+          disconnected: { mood: 'worried', status: { mode: 'custom', text: 'Lost connection' } }
+        }
+      };
+      mascot.host.receive({
+        id: 'a', kind: 'shiny-watch', version: 1,
+        generation: mascot.host.state(el).snapshot.generation, revision: 0, shiny_watch: cfg
+      });
+      mascot.host.receive({ id: 'a', patch: { mood: 'happy', status: { mode: 'custom', text: 'Saved' } } });
+
+      // Intercept setTimeout for busy delay so the test stays deterministic with zero sleep.
+      const realSetTimeout = window.setTimeout, realClearTimeout = window.clearTimeout;
+      const timers = new Map(); let nextId = 1;
+      window.setTimeout = (fn, ms) => { const id = nextId++; timers.set(id, { fn, ms }); return id; };
+      window.clearTimeout = (id) => { timers.delete(id); };
+
+      // Fast busy -> idle before delay cancels without changing face.
+      document.dispatchEvent(new Event('shiny:busy'));
+      const scheduledDelay = [...timers.values()][0]?.ms;
+      document.dispatchEvent(new Event('shiny:idle'));
+      const afterFastIdle = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent, timers: timers.size };
+
+      // Long busy -> delay fires -> thinking overlay; server state underneath stays happy / Saved.
+      document.dispatchEvent(new Event('shiny:busy'));
+      const fire = [...timers.values()][0].fn; timers.clear(); fire();
+      const duringBusy = {
+        shown: el.dataset.shownMood,
+        status: el.querySelector('.mascot-status').textContent,
+        serverMood: mascot.host.state(el).mood,
+        serverStatus: mascot.host.state(el).status.text
+      };
+
+      // Returning to idle restores happy / Saved without overwriting server state.
+      document.dispatchEvent(new Event('shiny:idle'));
+      const afterBusyIdle = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+
+      // Output error persists across shiny:idle and clears on shiny:value for that output.
+      const errEvt = new CustomEvent('shiny:error', { detail: { name: 'plot_a' } });
+      document.dispatchEvent(errEvt);
+      document.dispatchEvent(new Event('shiny:idle'));
+      const duringError = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+
+      // Second error while already worried updates status without calling controller.update(mood).
+      mascot.host.receive({ id: 'a', kind: 'shiny-watch', version: 1,
+        generation: mascot.host.state(el).snapshot.generation, revision: 0, shiny_watch: {
+        ...cfg,
+        map: { ...cfg.map, error: { mood: 'worried', status: { mode: 'custom', text: 'Two errors' } } }
+      }});
+      document.dispatchEvent(new CustomEvent('shiny:error', { detail: { name: 'plot_b' } }));
+      const twoErrors = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+
+      document.dispatchEvent(new CustomEvent('shiny:value', { detail: { name: 'plot_b' } }));
+      const afterOneClear = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+      document.dispatchEvent(new CustomEvent('shiny:value', { detail: { name: 'plot_a' } }));
+      const afterClearAll = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+
+      // Custom disconnect text on watched mascot while unwatched mascot retains default disconnectStatus.
+      document.dispatchEvent(new Event('shiny:disconnected'));
+      const onDisconnect = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+      document.dispatchEvent(new Event('shiny:connected'));
+      const afterReconnect = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+
+      window.setTimeout = realSetTimeout; window.clearTimeout = realClearTimeout;
+      return { scheduledDelay, afterFastIdle, duringBusy, afterBusyIdle, duringError, twoErrors, afterOneClear, afterClearAll, onDisconnect, afterReconnect };
+    })()"
+    )
+    expect_equal(result$scheduledDelay, 200)
+    expect_identical(result$afterFastIdle$shown, "happy")
+    expect_identical(result$afterFastIdle$status, "Saved")
+    expect_identical(result$afterFastIdle$timers, 0L)
+    expect_identical(result$duringBusy$shown, "thinking")
+    expect_identical(result$duringBusy$status, "Working...")
+    expect_identical(result$duringBusy$serverMood, "happy")
+    expect_identical(result$duringBusy$serverStatus, "Saved")
+    expect_identical(result$afterBusyIdle$shown, "happy")
+    expect_identical(result$afterBusyIdle$status, "Saved")
+    expect_identical(result$duringError$shown, "worried")
+    expect_identical(result$duringError$status, "An error occurred")
+    expect_identical(result$twoErrors$shown, "worried")
+    expect_identical(result$twoErrors$status, "Two errors")
+    expect_identical(result$afterOneClear$shown, "worried")
+    expect_identical(result$afterClearAll$shown, "happy")
+    expect_identical(result$afterClearAll$status, "Saved")
+    expect_identical(result$onDisconnect$shown, "worried")
+    expect_identical(result$onDisconnect$status, "Lost connection")
+    expect_identical(result$afterReconnect$shown, "happy")
+    expect_identical(result$afterReconnect$status, "Saved")
+  })
+
+  it("ignores req(FALSE) silent errors and keeps the face when the disconnected overlay is switched off", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => {
+      const el = document.getElementById('a');
+      mascot.host.receive({
+        id: 'a', kind: 'shiny-watch', version: 1,
+        generation: mascot.host.state(el).snapshot.generation, revision: 0,
+        shiny_watch: {
+          delay_ms: 0,
+          map: {
+            busy: { mood: 'thinking', status: { mode: 'custom', text: 'Busy' } },
+            idle: null,
+            error: { mood: 'worried', status: { mode: 'custom', text: 'Error' } },
+            disconnected: null
+          }
+        }
+      });
+      mascot.host.receive({ id: 'a', patch: { mood: 'happy', status: { mode: 'custom', text: 'Ready' } } });
+
+      // req(FALSE) produces shiny.silent.error with empty message -> stays happy.
+      const silent = new Event('shiny:error');
+      silent.name = 'out';
+      silent.error = { message: '', type: ['shiny.silent.error', 'validation'] };
+      document.dispatchEvent(silent);
+      const afterReq = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+
+      // Disconnecting when disconnected overlay is silenced (null) leaves mascot on baseline happy.
+      document.dispatchEvent(new Event('shiny:disconnected'));
+      const silentDisconnect = { shown: el.dataset.shownMood, status: el.querySelector('.mascot-status').textContent };
+      document.dispatchEvent(new Event('shiny:connected'));
+      return { afterReq, silentDisconnect };
+    })()"
+    )
+    expect_identical(result$afterReq$shown, "happy")
+    expect_identical(result$afterReq$status, "Ready")
+    expect_identical(result$silentDisconnect$shown, "happy")
+    expect_identical(result$silentDisconnect$status, "Ready")
+  })
+
+  it("ignores validate() messages by default, shows the opt-in validation overlay, and removes the overlay", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => {
+      const el = document.getElementById('a');
+      const status = () => el.querySelector('.mascot-status').textContent;
+      const watch = (map) => mascot.host.receive({
+        id: 'a', kind: 'shiny-watch', version: 1,
+        generation: mascot.host.state(el).snapshot.generation, revision: 0,
+        shiny_watch: map === undefined ? null : { delay_ms: 0, map }
+      });
+      const errorMap = { error: { mood: 'worried', status: { mode: 'custom', text: 'Error' } } };
+      watch(errorMap);
+      mascot.host.receive({ id: 'a', patch: { mood: 'happy', status: { mode: 'custom', text: 'Ready' } } });
+      const need = () => {
+        const event = new Event('shiny:error');
+        event.name = 'out';
+        event.error = { message: 'Please upload a file', type: ['shiny.silent.error', 'validation'] };
+        document.dispatchEvent(event);
+      };
+      need();
+      const byDefault = { mood: mascot.host.state(el).current.target, status: status() };
+
+      watch({ ...errorMap, validation: { mood: 'thinking', status: { mode: 'custom', text: 'Waiting for a file' } } });
+      need();
+      const optedIn = { mood: mascot.host.state(el).current.target, status: status() };
+
+      // A removed watcher arrives as null, or as {} when R sends NULL; both give the server's face back.
+      watch();
+      const removed = { mood: mascot.host.state(el).current.target, status: status() };
+      watch(errorMap);
+      mascot.host.receive({ id: 'a', kind: 'shiny-watch', version: 1,
+        generation: mascot.host.state(el).snapshot.generation, revision: 0, shiny_watch: {} });
+      const fail = new Event('shiny:error');
+      fail.name = 'plot';
+      fail.error = { message: 'boom', type: ['error'] };
+      document.dispatchEvent(fail);
+      const emptyObject = { mood: mascot.host.state(el).current.target, status: status() };
+      return { byDefault, optedIn, removed, emptyObject };
+    })()"
+    )
+    expect_identical(result$byDefault, list(mood = "happy", status = "Ready"))
+    expect_identical(result$optedIn, list(mood = "thinking", status = "Waiting for a file"))
+    expect_identical(result$removed, list(mood = "happy", status = "Ready"))
+    expect_identical(result$emptyObject, list(mood = "happy", status = "Ready"))
+  })
+
+  it("changes the face at once under reduced motion and with a wiggle otherwise", {
+    skip_without_chrome()
+    run <- function(reduced) {
+      js <- local_host_page(reduced = reduced)
+      js(
+        "(() => {
+        const el = document.getElementById('a');
+        mascot.host.receive({
+          id: 'a', kind: 'shiny-watch', version: 1,
+          generation: mascot.host.state(el).snapshot.generation, revision: 0,
+          shiny_watch: { delay_ms: 0, map: { busy: { mood: 'thinking', status: { mode: 'custom', text: 'Busy' } } } }
+        });
+        document.dispatchEvent(new Event('shiny:busy'));
+        const cur = mascot.host.state(el).current;
+        // A busy period shorter than the wiggle still turns the face back.
+        document.dispatchEvent(new Event('shiny:idle'));
+        return { mood: cur.mood, target: cur.target, afterIdle: mascot.host.state(el).current.target };
+      })()"
+      )
+    }
+    # Reduced motion: the overlay's face shows in the same moment, with no wiggle.
+    expect_identical(run(TRUE), list(mood = "thinking", target = "thinking", afterIdle = "idle"))
+    # Full motion: the face is still moving to the overlay's mood, and idle sends it back.
+    expect_identical(run(FALSE), list(mood = "idle", target = "thinking", afterIdle = "idle"))
+  })
+})

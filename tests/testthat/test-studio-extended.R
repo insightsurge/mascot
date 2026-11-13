@@ -699,17 +699,6 @@ describe("studio state and built previews", {
       expect_false(grepl("<(button|input|select|textarea)\\b|data-event=", output$placement_map$html, perl = TRUE))
       expect_identical(shiny::reactiveValuesToList(state), unchanged)
       expect_length(Filter(function(x) startsWith(x$type, "mascot:"), custom_messages), 0)
-      modal_messages <- list()
-      session$sendModal <- function(type, message) {
-        modal_messages[[length(modal_messages) + 1L]] <<- list(type = type, message = message)
-      }
-      session$setInputs(open_guide = "mascot_mood")
-      expect_identical(modal_messages[[1]]$type, "show")
-      expect_match(modal_messages[[1]]$message$html, 'id="close_guide"', fixed = TRUE)
-      session$setInputs(close_guide = 1)
-      expect_identical(modal_messages[[2]]$type, "remove")
-      session$setInputs(close_guide = "escape")
-      expect_identical(modal_messages[[3]]$type, "remove")
     })
   })
   it("shows the call that built the preview and rebuilds it after a pause", {

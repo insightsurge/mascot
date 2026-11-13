@@ -262,20 +262,6 @@ studio_server <- function(input, output, session) {
     req(input$select_function %in% names(studio_guide))
     selected_function(input$select_function)
   })
-  observeEvent(input$open_guide, {
-    selected_function(input$open_guide)
-    showModal(tagAppendAttributes(
-      modalDialog(
-        title = paste0("Guide: ", input$open_guide, "()"),
-        uiOutput("guide"),
-        size = "l",
-        easyClose = TRUE,
-        footer = actionButton("close_guide", "Close", class = "btn-primary")
-      ),
-      class = "pg-guide-modal"
-    ))
-  })
-  observeEvent(input$close_guide, removeModal())
   observeEvent(input$reset_all, session$reload())
   observeEvent(input$chip_reset, {
     arg <- input$chip_reset

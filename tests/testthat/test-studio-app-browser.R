@@ -2174,6 +2174,50 @@ describe("the controls and the server's echo of a change it applied", {
     wait_studio_js(app, "live.querySelector('.mascot-bubble')?.textContent.includes('abc')")
     expect_identical(app$get_js("document.getElementById('bubble_text').value"), "abc")
   })
+  it("switches the primary and secondary bslib colours off one at a time, and keeps a colour that was chosen", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_theme")
+    app$set_inputs(theme_source = "bslib")
+    # The code is the result the switches change: each wait names the call the server has drawn, with no fixed pause.
+    wait_code <- function(call) {
+      app$wait_for_js(sprintf(
+        "document.getElementById('code_ui').textContent.split(/\\s+/).join(' ').includes(%s)",
+        jsonlite::toJSON(call, auto_unbox = TRUE)
+      ))
+    }
+    shown <- function(id) app$wait_for_js(sprintf("!!document.getElementById('%s')?.offsetParent", id))
+    hidden <- function(id) {
+      app$wait_for_js(sprintf("document.getElementById('%s') && !document.getElementById('%s').offsetParent", id, id))
+    }
+    # Given both brand colours are on, each switch and its picker have a name of their own
+    shown("bs_primary")
+    shown("bs_secondary")
+    wait_code('bslib::bs_theme(primary = "#1f6feb", secondary = "#966600")')
+    names <- unlist(app$get_js(paste(
+      "['bs_primary_on', 'bs_primary', 'bs_secondary_on', 'bs_secondary'].map((id) => {",
+      "const el = document.getElementById(id);",
+      "return el.getAttribute('aria-label') || document.querySelector(`label[for=${id}]`)?.textContent.trim(); })"
+    )))
+    expect_length(unique(names), 4L)
+    # When the primary colour is chosen, then switched off and on again, the chosen colour comes back
+    studio_colour(app, "bs_primary", "#336699")
+    wait_code('bslib::bs_theme(primary = "#336699", secondary = "#966600")')
+    click_now(app, "#bs_primary_on")
+    hidden("bs_primary")
+    wait_code('bslib::bs_theme(secondary = "#966600")')
+    expect_false(grepl("primary", app$get_js("document.getElementById('code_ui').textContent"), fixed = TRUE))
+    click_now(app, "#bs_primary_on")
+    shown("bs_primary")
+    wait_code('bslib::bs_theme(primary = "#336699", secondary = "#966600")')
+    # And with both switched off, the call has no brand colour at all
+    click_now(app, "#bs_primary_on")
+    click_now(app, "#bs_secondary_on")
+    hidden("bs_primary")
+    hidden("bs_secondary")
+    wait_code("theme = bslib::bs_theme()")
+  })
 })
 
 describe("the copy buttons", {
@@ -2221,6 +2265,29 @@ describe("the copy buttons", {
     app$wait_for_js("window.copied !== null")
     expect_match(app$get_js("window.copied"), 'status = "Draft ready"', fixed = TRUE)
     expect_identical(app$get_js("window.copied"), app$get_js("document.getElementById('code_ui').textContent"))
+  })
+  it("copies the bs_theme() code without the brand colour switched off just before", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_theme")
+    app$set_inputs(theme_source = "bslib")
+    app$wait_for_js(paste(
+      "document.getElementById('code_ui').textContent.split(/\\s+/).join(' ')",
+      ".includes('bslib::bs_theme(primary = \"#1f6feb\", secondary = \"#966600\")')"
+    ))
+    stub_studio_clipboard(app)
+    # When the secondary colour is switched off and Copy is clicked at once, in one script
+    app$run_js(paste(
+      "(() => { document.getElementById('bs_secondary_on').click();",
+      "document.querySelector('#studio_dock [data-copy=code_ui]').click(); })()"
+    ))
+    # Then the copied code has the primary colour only
+    app$wait_for_js("window.copied !== null")
+    copied <- app$get_js("window.copied")
+    expect_match(gsub("\\s+", " ", copied), 'bslib::bs_theme(primary = "#1f6feb")', fixed = TRUE)
+    expect_false(grepl("secondary", copied, fixed = TRUE))
+    expect_identical(copied, app$get_js("document.getElementById('code_ui').textContent"))
   })
   it("copies the code of the example just picked, not the one before", {
     local_shiny_browser()

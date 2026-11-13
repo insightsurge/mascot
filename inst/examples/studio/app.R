@@ -549,7 +549,8 @@ studio_server <- function(input, output, session) {
             colour_input(
               picker_id,
               isolate(input[[picker_id]]) %||% if (slot == "primary") "#1f6feb" else "#966600",
-              label
+              # A name of its own: the switch above carries the longer label, and two controls must not share one.
+              paste(tools::toTitleCase(slot), "colour")
             ),
             tags$span(paste(tools::toTitleCase(slot), "colour"))
           )

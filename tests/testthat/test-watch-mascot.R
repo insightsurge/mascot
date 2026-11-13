@@ -301,3 +301,113 @@ describe("watch_mascot()", {
     expect_error(watch_mascot("helper", src, c(ok = "happy"), typo = 1, session = session), class = "mascot_error_dots")
   })
 })
+
+describe("watch_mascot() acts only when the watched value changes", {
+  it("keeps a manual update and plays a gesture once while the source re-runs with the same value", {
+    shiny::testServer(
+      function(input, output, session) {
+        # A reactive re-runs on every keystroke even when its result stays the same.
+        valid <- shiny::reactive({
+          input$email
+          "ok"
+        })
+        watch_mascot("helper", valid, list(ok = list(mood = "happy", gesture = "nod")))
+      },
+      {
+        # Given the watcher has applied its entry once
+        session$setInputs(email = "a")
+        expect_identical(mascot_server_state("helper", character = "tessa")$gesture, "nod")
+        expect_identical(mascot_server_state("helper")$mood, "happy")
+
+        # When the app sets the mascot by hand and the source re-runs with the same value
+        update_mascot("helper", mood = "worried", status = "Saved")
+        session$setInputs(email = "ab")
+        session$setInputs(email = "abc")
+
+        # Then the manual update stays and the gesture is not queued again
+        state <- mascot_server_state("helper", character = "tessa")
+        expect_identical(state$mood, "worried")
+        expect_identical(state$status, "Saved")
+      }
+    )
+  })
+
+  it("applies the entry again after the value changes away and back, or after a gap with no value", {
+    shiny::testServer(
+      function(input, output, session) {
+        src <- shiny::reactiveVal("ok")
+        session$userData$src <- src
+        watch_mascot("helper", src, c(ok = "happy", bad = "worried"))
+      },
+      {
+        src <- session$userData$src
+        session$flushReact()
+        expect_identical(mascot_server_state("helper")$mood, "happy")
+        src("bad")
+        session$flushReact()
+        expect_identical(mascot_server_state("helper")$mood, "worried")
+        src("ok")
+        session$flushReact()
+        expect_identical(mascot_server_state("helper")$mood, "happy")
+
+        # A missing value (NA) sends nothing, but the next real value counts as a change.
+        update_mascot("helper", mood = "thinking")
+        src(NA_character_)
+        session$flushReact()
+        expect_identical(mascot_server_state("helper")$mood, "thinking")
+        src("ok")
+        session$flushReact()
+        expect_identical(mascot_server_state("helper")$mood, "happy")
+      }
+    )
+  })
+})
+
+describe("watch_mascot() map checks", {
+  it("names the expected shapes when map is a classed object such as mascot_mood()", {
+    shiny::testServer(function(input, output, session) NULL, {
+      expect_error(
+        watch_mascot("helper", shiny::reactive("ok"), mascot_mood("happy")),
+        "named character vector or a plain named list",
+        class = "mascot_error"
+      )
+    })
+  })
+
+  it("rejects a theme entry that is not a palette id when the watcher is built", {
+    shiny::testServer(function(input, output, session) NULL, {
+      expect_error(
+        watch_mascot("helper", shiny::reactive("ok"), list(ok = list(theme = "NotAPalette!"))),
+        "palette id",
+        class = "mascot_error"
+      )
+      expect_s3_class(
+        watch_mascot("helper", shiny::reactive("ok"), list(ok = list(theme = "sea_green"))),
+        "Observer"
+      )
+    })
+  })
+})
+
+describe("watch_mascot_observe()", {
+  it("checks its arguments", {
+    shiny::testServer(function(input, output, session) NULL, {
+      expect_error(watch_mascot_observe("x", "helper", session), "resolve")
+      expect_error(watch_mascot_observe(function() NULL, "has space", session), "id")
+      expect_error(watch_mascot_observe(function() NULL, "helper", "session"), "session")
+    })
+  })
+})
+
+describe("assert_watch_map_container()", {
+  it("checks its call argument", {
+    expect_error(assert_watch_map_container(c(a = "happy"), call = "nope"), "call")
+  })
+})
+
+describe("watch_theme_problem()", {
+  it("returns NULL for a palette id and the problem text otherwise", {
+    expect_null(watch_theme_problem("ocean"))
+    expect_match(watch_theme_problem("Bad Id"), "palette id")
+  })
+})

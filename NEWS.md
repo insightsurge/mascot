@@ -1,6 +1,6 @@
 # mascot (development version)
 
-* `watch_mascot()` (*experimental*) binds a Shiny reactive expression or `reactiveVal()` directly to `update_mascot()` using a named mood vector or key-wise update list, returning the driving observer so `$destroy()` can stop it (#166, #131).
+* `watch_mascot()` (*experimental*) binds a Shiny reactive expression or `reactiveVal()` directly to `update_mascot()` using a named mood vector or key-wise update list, sending an update only when the watched value changes, and returning the driving observer so `$destroy()` can stop it (#166, #131).
 
 * `mascot_server_state()` (*experimental*) reads a mascot's latest server-side state (`id`, `character`, `mood`, `status`, `bubble`, `gesture`) without mutating the session, for use in `shiny::testServer()` unit tests (#496).
 

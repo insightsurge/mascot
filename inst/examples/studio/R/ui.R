@@ -176,8 +176,15 @@ function_index <- function() {
 
 wiring_links <- function(fn) {
   shared <- setdiff(names(formals(getExportedValue("mascot", fn))), c("id", "...", "session"))
+  helpers <- vapply(
+    shared,
+    function(arg) switch(arg, motion = "mascot_motion_settings", click = "mascot_action", paste0("mascot_", arg)),
+    character(1)
+  )
+  # Only arguments that have a helper get a link (watch_mascot()'s source and map have none).
+  shared <- shared[helpers %in% getNamespaceExports("mascot")]
   lapply(shared, function(arg) {
-    helper <- switch(arg, motion = "mascot_motion_settings", click = "mascot_action", paste0("mascot_", arg))
+    helper <- helpers[[arg]]
     arg_field(
       fn,
       arg,

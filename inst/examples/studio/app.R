@@ -538,27 +538,33 @@ studio_server <- function(input, output, session) {
       last_gesture(eval(pairs$gesture$short))
     }
     if (ok && remember) {
-      for (field in intersect(names(pairs), names(defaults))) {
-        state[[field]] <- pairs[[field]]
-        if (field %in% c("click", "bubble")) {
-          live_demo[[field]] <- pairs[[field]]
-        }
-        if (field == "mood") {
-          echo_to_control("mood", eval(pairs[[field]]$short), function(value) {
-            updateSelectInput(session, "mood", selected = value)
-          })
-        }
-        if (field == "bubble") {
-          sync_bubble_controls(pairs[[field]])
-        }
-        if (field == "status") {
-          echo_to_control("status_text", eval(pairs[[field]]$helper)$text %||% "", function(value) {
-            updateTextInput(session, "status_text", value = value)
-          })
-        }
-      }
+      remember_pairs(pairs)
     }
     invisible(ok)
+  }
+
+  # Keeps the studio's state, its controls and the generated code in step with settings that reached the
+  # mascot, whether send() sent them or a watcher did (the watch_mascot() demo).
+  remember_pairs <- function(pairs) {
+    for (field in intersect(names(pairs), names(defaults))) {
+      state[[field]] <- pairs[[field]]
+      if (field %in% c("click", "bubble")) {
+        live_demo[[field]] <- pairs[[field]]
+      }
+      if (field == "mood") {
+        echo_to_control("mood", eval(pairs[[field]]$short), function(value) {
+          updateSelectInput(session, "mood", selected = value)
+        })
+      }
+      if (field == "bubble") {
+        sync_bubble_controls(pairs[[field]])
+      }
+      if (field == "status") {
+        echo_to_control("status_text", eval(pairs[[field]]$helper)$text %||% "", function(value) {
+          updateTextInput(session, "status_text", value = value)
+        })
+      }
+    }
   }
 
   # Clicks on buttons that carry data-event and data-value arrive as input$<event>.
@@ -1180,17 +1186,8 @@ studio_server <- function(input, output, session) {
   })
 
   watch_source <- reactiveVal(NULL)
-  watch_mascot(
-    "helper",
-    watch_source,
-    list(
-      idle = list(mood = "idle", status = "Idle"),
-      thinking = list(mood = "thinking", status = "Working"),
-      happy = list(mood = "happy", status = "Done"),
-      worried = list(mood = "worried", status = "Needs attention")
-    ),
-    session = session
-  )
+  watch_demo_map <- eval(watch_demo_map_code)
+  watch_mascot("helper", watch_source, watch_demo_map, session = session)
   observeEvent(
     input$watch_state,
     {
@@ -1198,6 +1195,8 @@ studio_server <- function(input, output, session) {
       watch_source(if (is.null(val) || identical(val, "none")) NULL else val)
       if (!is.null(val) && !identical(val, "none")) {
         add_log(sprintf('watch_source("%s")', val), "call", "watch_mascot() updated helper")
+        entry <- watch_demo_map[[val]]
+        remember_pairs(list(mood = code_mood(entry$mood), status = code_status(entry$status)))
       }
     },
     ignoreInit = TRUE
@@ -1660,7 +1659,7 @@ studio_server <- function(input, output, session) {
         list(
           "helper",
           quote(source),
-          named_call("c", list(idle = "idle", thinking = "thinking", happy = "happy", worried = "worried"))
+          watch_demo_map_code
         )
       ),
       mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),

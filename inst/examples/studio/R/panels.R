@@ -685,10 +685,7 @@ panel_wiring <- function() {
     arg_field(
       "watch_mascot",
       "map",
-      code_block(
-        "list(\n  idle = list(mood = \"idle\", status = \"Idle\"),\n  thinking = list(mood = \"thinking\", status = \"Working\"),\n  happy = list(mood = \"happy\", status = \"Done\"),\n  worried = list(mood = \"worried\", status = \"Needs attention\")\n)",
-        "pg-code-small"
-      )
+      code_block(format_expr(watch_demo_map_code), "pg-code-small")
     ),
     arg_field("watch_mascot", "session", NULL)
   )

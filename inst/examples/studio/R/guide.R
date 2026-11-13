@@ -130,7 +130,7 @@ studio_guide <- list(
   ),
   mascot_server_state = guide_entry(
     "wiring",
-    "Your first app",
+    "Shiny modules",
     c("id", "...", "character", "session"),
     try = list(
       id = "wiring",
@@ -140,7 +140,7 @@ studio_guide <- list(
   ),
   watch_mascot = guide_entry(
     "wiring",
-    "Your first app",
+    "Shiny modules",
     c("id", "source", "map", "...", "session"),
     try = list(
       id = "wiring",

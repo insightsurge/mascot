@@ -32,6 +32,16 @@
 #' so on). Values that are `NULL`, `NA`, non-scalar, non-atomic, or absent from
 #' `map` leave the mascot unchanged.
 #'
+#' The watcher sends an update only when the looked-up value changes. A
+#' reactive expression re-runs whenever its inputs change, even when its
+#' result stays the same (a form that stays valid while someone types), and
+#' then nothing is sent: a gesture plays and a bubble shows once per change,
+#' and an update you sent yourself in between stays in place. A value that
+#' cannot be looked up (`NULL`, `NA`) counts as no value, so the next value is
+#' always applied. To react only after typing pauses, wrap the source in
+#' [shiny::debounce()], for example `watch_mascot("helper",
+#' shiny::debounce(ready, 1000), map)`.
+#'
 #' Updates are dispatched via [update_mascot()], so manual `update_mascot()`
 #' calls and watchers follow the same path: whichever runs last wins. Inside a
 #' Shiny module, pass the module's local mascot `id` (the same as in
@@ -86,13 +96,9 @@ watch_mascot <- function(
   with_mascot_asserts({
     checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
     checkmate::assert_class(source, "reactive")
-    checkmate::assert_false(is.object(map), .var.name = "map")
-    checkmate::assert(
-      checkmate::check_character(map, any.missing = FALSE, names = "unique", min.len = 1),
-      checkmate::check_list(map, names = "unique", min.len = 1)
-    )
     checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"), null.ok = TRUE)
   })
+  assert_watch_map_container(map, environment())
   if (...length() > 0L) {
     abort_dots(
       names(substitute(list(...)))[-1L],
@@ -112,24 +118,75 @@ watch_mascot <- function(
   force(id)
   force(read_source)
   force(session)
-  obs <- shiny::observe(
-    {
+  obs <- watch_mascot_observe(
+    function() {
       val <- read_source()
       if (is.null(val) || !is.atomic(val) || length(val) != 1L || is.na(val)) {
-        return(invisible())
+        return(NULL)
       }
       key <- as.character(val)
-      if (!(key %in% names(entries))) {
+      list(key = key, patch = if (key %in% names(entries)) entries[[key]] else list())
+    },
+    id,
+    session
+  )
+  invisible(obs)
+}
+
+#' Observe a watcher's source and send its update only when the watched value changes
+#'
+#' `resolve()` returns `NULL` for "no value" or a list with `key` (what counts as a change) and `patch` (the
+#' `update_mascot()` fields to send). A reactive re-runs whenever its inputs change, even when its result is the
+#' same, so the last key is kept here: an unchanged key sends nothing, which keeps a manual update in place and
+#' plays a gesture or shows a bubble once per change, not once per keystroke.
+#' @noRd
+watch_mascot_observe <- function(resolve, id, session) {
+  checkmate::assert_function(resolve, nargs = 0)
+  checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
+  seen <- new.env(parent = emptyenv())
+  seen$key <- NULL
+  shiny::observe(
+    {
+      resolved <- resolve()
+      key <- if (is.null(resolved)) NULL else resolved$key
+      if (identical(key, seen$key)) {
         return(invisible())
       }
-      patch <- entries[[key]]
-      if (length(patch) > 0L) {
-        do.call(update_mascot, c(list(id = id, session = session), patch))
+      seen$key <- key
+      if (length(resolved$patch) > 0L) {
+        do.call(update_mascot, c(list(id = id, session = session), resolved$patch))
       }
     },
     domain = session
   )
-  invisible(obs)
+}
+
+#' Assert that a user-supplied watch map is a non-empty, uniquely named character vector or plain list
+#' @noRd
+assert_watch_map_container <- function(map, call = parent.frame()) {
+  checkmate::assert_environment(call)
+  if (is.object(map)) {
+    cli::cli_abort(
+      c(
+        "{.arg map} must be a named character vector or a plain named list, not {.obj_type_friendly {map}}.",
+        "i" = paste(
+          "For one mood, write {.code c(ok = \"happy\")};",
+          "for more fields, {.code list(ok = list(mood = \"happy\"))}."
+        )
+      ),
+      class = "mascot_error",
+      call = call
+    )
+  }
+  with_mascot_asserts(
+    checkmate::assert(
+      checkmate::check_character(map, any.missing = FALSE, names = "unique", min.len = 1),
+      checkmate::check_list(map, names = "unique", min.len = 1),
+      .var.name = "map"
+    ),
+    call = call
+  )
 }
 
 #' Validate and normalise a `watch_mascot()` lookup map
@@ -163,7 +220,7 @@ as_watch_map <- function(map, call = parent.frame()) {
         )
         entry <- Filter(Negate(is.null), entry)
         for (field in names(entry)) {
-          problem <- arg_problem(entry[[field]], field)
+          problem <- if (field == "theme") watch_theme_problem(entry$theme) else arg_problem(entry[[field]], field)
           if (!is.null(problem)) {
             cli::cli_abort("{problem}", class = "mascot_error", call = call)
           }
@@ -182,4 +239,17 @@ as_watch_map <- function(map, call = parent.frame()) {
     )
   }
   out
+}
+
+#' A theme entry's problem, including the palette id syntax that `arg_problem()` leaves to the browser
+#' @noRd
+watch_theme_problem <- function(theme) {
+  # theme is any user value; its problem is the result, so it is not asserted here.
+  tryCatch(
+    {
+      as_theme_arg(theme, environment())
+      NULL
+    },
+    error = function(error) conditionMessage(error)
+  )
 }

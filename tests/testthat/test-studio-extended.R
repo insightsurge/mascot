@@ -1428,6 +1428,36 @@ describe("studio guide pages", {
     }
     expect_error(helpers$guide_roles_table(1), "string")
   })
+  it("shows the website the same character-swap example as the studio", {
+    env <- studio_guide_env()
+    # The website finds its example in the character list; the studio names it. They must not drift apart.
+    expect_identical(env$guide_default_swap(), env$studio_palette_swap)
+    expect_identical(
+      env$guide_palette_swap_spec(env$studio_palette_swap)$sentence,
+      env$guide_palette_swap_spec()$sentence
+    )
+  })
+  it("checks the arguments of the helpers the studio and the website guide share", {
+    env <- studio_guide_env()
+    expect_error(env$guide_data_table(1), "df")
+    expect_error(env$guide_data_table(data.frame(a = 1), cells = list(identity)), "cells")
+    expect_error(env$guide_data_table(data.frame(a = 1), coerce = "yes"), "coerce")
+    expect_error(env$guide_placement_map_html(active = 1), "active")
+    expect_error(env$guide_placement_map_html(name = ""), "name")
+    expect_error(env$guide_placement_map_html(interactive = NA), "interactive")
+    expect_error(env$guide_placement_map_html(caption = 1), "caption")
+    expect_error(env$guide_roles_table_html(""), "character")
+    expect_error(env$guide_roles_table_html("tessa", palette = 1), "palette")
+    expect_error(env$guide_roles_table_html("tessa", outline_extra = 1), "outline_extra")
+    expect_error(env$guide_palette_base_spec(""), "character")
+    expect_error(env$guide_default_swap(1), "preferred_palette")
+    expect_error(env$guide_palette_swap_spec(c("tessa", "sela", "knurl", "orbit")), "swap")
+    expect_error(env$guide_palette_swap_spec(env$studio_palette_swap, id = ""), "id")
+    expect_error(env$placement_map(1, FALSE), "position")
+    expect_error(env$placement_map("inline", NA), "minimise")
+    expect_error(env$placement_map("inline", FALSE, name = ""), "name")
+    expect_error(env$roles_table(""), "character")
+  })
   for (fn in data_pages) {
     it(paste("knits", fn, "with its data, headings and guarded widgets"), {
       env <- studio_guide_env()

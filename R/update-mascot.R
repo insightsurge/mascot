@@ -123,24 +123,18 @@
 #' bind a reactive expression directly with [watch_mascot()] (experimental) when
 #' its discrete values map straight to mascot updates. Shiny sends updates when
 #' the observer finishes, so for a mood to show while a long computation runs,
-#' run it as a [shiny::ExtendedTask] and follow its status:
+#' run it as a [shiny::ExtendedTask] and wire it with [watch_mascot_task()]
+#' (experimental):
 #'
 #' ```r
 #' task <- ExtendedTask$new(function(x) promises::future_promise(fit_model(x)))
-#' observeEvent(input$run, {
-#'   update_mascot("helper", mood = "thinking", status = "Fitting the model")
-#'   task$invoke(data())
-#' })
-#' observe({
-#'   switch(task$status(),
-#'     success = update_mascot("helper", mood = "happy", status = "Model ready"),
-#'     error = update_mascot("helper", mood = "worried", status = "The model failed")
-#'   )
-#' })
+#' observeEvent(input$run, task$invoke(data()))
+#' watch_mascot_task("helper", task)
 #' ```
 #'
-#' For form validation, observe whether the inputs are valid (yourself, or with a
-#' validation package such as `shinyvalidate`) and set the mood from it:
+#' For form validation with `shinyvalidate`, bind an `InputValidator` with
+#' [watch_mascot_validator()] (experimental), or observe whether the inputs
+#' are valid yourself and set the mood from it:
 #'
 #' ```r
 #' observe({
@@ -225,7 +219,7 @@
 #' ```
 #' @returns Called for its side effect; returns `NULL` invisibly.
 #' @family mascots in Shiny
-#' @seealso [mascot()], [watch_mascot()], [mascot_server_state()]
+#' @seealso [mascot()], [watch_mascot()], [watch_mascot_task()], [watch_mascot_validator()], [mascot_server_state()]
 #' @seealso [mascot()], [mascot_motion_settings()] for a Shiny example that switches
 #'   idle movement and plays a nod.
 #' @export

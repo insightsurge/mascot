@@ -1,0 +1,46 @@
+```{r setup-watch_mascot_task, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r watch_mascot_task-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("watch_mascot_task")
+```
+
+```{r watch_mascot_task-experimental, echo = FALSE}
+htmltools::div(
+  class = "pg-note",
+  htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
+  " Its arguments, default map and return value may change in a later release."
+)
+```
+
+### Watch a Shiny ExtendedTask
+
+`watch_mascot_task()` binds a `shiny::ExtendedTask` to a mascot with built-in
+defaults for `"initial"`, `"running"`, `"success"`, and `"error"`. Pass `map`
+only for the keys or fields you want to change:
+
+```{r watch_mascot_task-call, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'review <- shiny::ExtendedTask$new(slow_review)\n',
+  'obs <- mascot::watch_mascot_task(\n',
+  '  "helper",\n',
+  '  review,\n',
+  '  map = list(\n',
+  '    running = list(status = "Reviewing sample"),\n',
+  '    error = list(bubble = mascot_bubble("Check the input.", duration = Inf))\n',
+  '  )\n',
+  ')\n',
+  '# Call obs$destroy() if you need to stop watching before the session ends.'
+)))
+```
+
+Before the task first runs (`"initial"`), the mascot keeps the mood and status
+it starts with. An update is sent only when the task's status changes. An
+empty `list()` for a key leaves the mascot unchanged in that state. Inside a
+Shiny module, pass the module's local mascot id, the same as in
+`update_mascot()`.
+
+```{r watch_mascot_task-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("watch_mascot_task", studio_character)
+```

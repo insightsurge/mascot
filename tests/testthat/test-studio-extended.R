@@ -2245,6 +2245,8 @@ describe("each studio control's update, generated code and default", {
       task_run = "demonstrates the session argument with a timed task",
       server_state_inspect = "wiring panel server state inspector",
       watch_state = "wiring panel watch_mascot() simulated source",
+      watch_task_state = "wiring panel watch_mascot_task() simulated ExtendedTask",
+      watch_validator_state = "wiring panel watch_mascot_validator() simulated InputValidator",
       example_name = "the Examples view, not the mascot",
       list_family = "filters the listings view (mascot_characters(family =)), not the mascot",
       example_run = "the Examples view, not the mascot"
@@ -3347,7 +3349,9 @@ describe("experimental labels in the studio", {
       "mascot_read_character",
       "mascot_check_character",
       "mascot_server_state",
-      "watch_mascot"
+      "watch_mascot",
+      "watch_mascot_task",
+      "watch_mascot_validator"
     )) {
       expect_match(notes(fn), "badge text-bg-warning", fixed = TRUE, info = fn)
       card <- as.character(get("function_card", env)(fn))
@@ -3606,5 +3610,78 @@ describe("watch_mascot in the studio", {
     )
     expect_match(page, "Experimental", fixed = TRUE)
     expect_match(page, "reactiveVal", fixed = TRUE)
+  })
+})
+
+describe("watch_mascot_task in the studio", {
+  it("drives the live mascot from the wiring panel control and renders its guide page", {
+    skip_without_studio_packages("studio")
+    skip_if_not_installed("later")
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(watch_task_state = "succeed")
+      while (!later::loop_empty()) {
+        later::run_now()
+      }
+      session$flushReact()
+      snap <- mascot_server_state("helper", session = session)
+      expect_identical(snap$mood, "happy")
+      expect_identical(snap$status, "Task complete")
+
+      suppressWarnings({
+        session$setInputs(watch_task_state = "fail")
+        while (!later::loop_empty()) {
+          later::run_now()
+        }
+      })
+      session$flushReact()
+      snap <- mascot_server_state("helper", session = session)
+      expect_identical(snap$mood, "worried")
+      expect_identical(snap$status, "Task failed")
+    })
+    env <- studio_guide_env()
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    page <- paste(
+      vapply(env$studio_guide_page("watch_mascot_task", "tessa", dir), as.character, character(1)),
+      collapse = "\n"
+    )
+    expect_match(page, "Experimental", fixed = TRUE)
+    expect_match(page, "ExtendedTask", fixed = TRUE)
+  })
+})
+
+describe("watch_mascot_validator in the studio", {
+  it("renders its guide page and validates live when shinyvalidate is installed", {
+    skip_without_studio_packages("studio")
+    env <- studio_guide_env()
+    dir <- file.path(dirname(mascot_example("studio", run = FALSE)), "guide")
+    page <- paste(
+      vapply(env$studio_guide_page("watch_mascot_validator", "tessa", dir), as.character, character(1)),
+      collapse = "\n"
+    )
+    expect_match(page, "Experimental", fixed = TRUE)
+    expect_match(page, "InputValidator", fixed = TRUE)
+
+    skip_if_not_installed("shinyvalidate")
+    parts <- studio_parts()
+    start <- studio_start_values(parts$page)
+    shiny::testServer(get("studio_server", parts$env), {
+      do.call(session$setInputs, start)
+      studio_go_live(session)
+      session$setInputs(watch_validator_state = "invalid_2")
+      session$flushReact()
+      snap <- mascot_server_state("helper", session = session)
+      expect_identical(snap$mood, "worried")
+      expect_identical(snap$status, "2 fields need attention")
+
+      session$setInputs(watch_validator_state = "valid")
+      session$flushReact()
+      snap <- mascot_server_state("helper", session = session)
+      expect_identical(snap$mood, "happy")
+      expect_identical(snap$status, "All fields look good")
+    })
   })
 })

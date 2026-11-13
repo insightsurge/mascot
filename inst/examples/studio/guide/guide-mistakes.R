@@ -165,6 +165,8 @@ guide_mistake_calls <- function(fn, character) {
     mascot_preview = 'mascot_preview(size = 10)',
     mascot_server_state = 'mascot_server_state("has spaces")',
     watch_mascot = 'watch_mascot("helper", "not_reactive", c(ok = "happy"))',
+    watch_mascot_task = 'watch_mascot_task("helper", "not_a_task")',
+    watch_mascot_validator = 'watch_mascot_validator("helper", list(), map = c(unknown = "happy"))',
     mascot_example = 'mascot_example("unknown-example", run = FALSE)',
     mascot_studio = 'mascot_studio(view = "unknown-view", run = FALSE)',
     character()

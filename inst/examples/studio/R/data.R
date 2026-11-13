@@ -12,6 +12,14 @@ watch_demo_map_code <- quote(list(
   worried = list(mood = "worried", status = "Needs attention")
 ))
 
+# The default map of watch_mascot_task(), as the studio's panel shows it.
+task_demo_map <- list(
+  initial = list(),
+  running = list(mood = "thinking", status = "Running task"),
+  success = list(mood = "happy", status = "Task complete"),
+  error = list(mood = "worried", status = "Task failed")
+)
+
 corners <- c("top-left", "top-right", "bottom-left", "bottom-right")
 
 bubble_examples <- list(
@@ -212,6 +220,21 @@ studio_controls <- list(
     source = input_id("watch_state"),
     map = fixed_arg("The map shown above; each value sets a mood and a status."),
     ... = fixed_arg("Must be empty: optional arguments are named."),
+    session = fixed_arg("The studio's own Shiny session.")
+  ),
+  watch_mascot_task = list(
+    id = fixed_arg("The studio's mascot, \"helper\"."),
+    task = input_id("watch_task_state"),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    map = fixed_arg("The default map shown above."),
+    session = fixed_arg("The studio's own Shiny session.")
+  ),
+  watch_mascot_validator = list(
+    id = fixed_arg("The studio's mascot, \"helper\"."),
+    validator = input_id("watch_validator_state"),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    map = fixed_arg("The default map shown above."),
+    delay = fixed_arg("0 here: a choice made in one click needs no wait. Use 1 for a typed field."),
     session = fixed_arg("The studio's own Shiny session.")
   ),
   mascot_preview = list(

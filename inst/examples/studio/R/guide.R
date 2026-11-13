@@ -149,6 +149,29 @@ studio_guide <- list(
       session = "wiring"
     )
   ),
+  watch_mascot_task = guide_entry(
+    "wiring",
+    "Shiny modules",
+    c("id", "task", "...", "map", "session"),
+    try = list(
+      id = "wiring",
+      task = "wiring",
+      map = "wiring",
+      session = "wiring"
+    )
+  ),
+  watch_mascot_validator = guide_entry(
+    "wiring",
+    "Shiny modules",
+    c("id", "validator", "...", "map", "delay", "session"),
+    try = list(
+      id = "wiring",
+      validator = "wiring",
+      map = "wiring",
+      delay = "wiring",
+      session = "wiring"
+    )
+  ),
   mascot_preview = guide_entry(
     "preview",
     "Check a look before using it",

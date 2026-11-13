@@ -327,7 +327,7 @@ use plain words in help pages:
 - the character file format
 
 **Experimental in the development version:**
-- `watch_mascot()`
+- `watch_mascot()`, `watch_mascot_task()` and `watch_mascot_validator()`
 - `mascot_server_state()`
 
 ## 6. Testing

@@ -48,25 +48,23 @@ server <- function(input, output, session) {
   review <- ExtendedTask$new(slow_review) |> bind_task_button("start")
 
   observeEvent(input$start, {
-    update_mascot("helper", mood = "thinking", status = "Reviewing the sample", bubble = mascot_bubble())
     review$invoke(isTRUE(input$fail))
   })
 
-  # React to the task's result: happy when it succeeds, worried with a lasting message when it fails.
-  observe({
-    status <- review$status()
-    if (status == "success") {
-      update_mascot("helper", mood = "happy", status = "Review complete")
-    }
-    if (status == "error") {
-      update_mascot(
-        "helper",
-        mood = "worried",
+  # React to task status transitions: empty initial keeps the startup label; running clears any prior error bubble.
+  watch_mascot_task(
+    "helper",
+    review,
+    map = list(
+      initial = list(),
+      running = list(status = "Reviewing the sample", bubble = mascot_bubble()),
+      success = list(status = "Review complete"),
+      error = list(
         status = "Review needs attention",
         bubble = mascot_bubble("Check the source data and try again.", duration = Inf)
       )
-    }
-  })
+    )
+  )
 
   output$result <- renderText({
     switch(

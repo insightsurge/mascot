@@ -688,7 +688,72 @@ panel_wiring <- function() {
       "map",
       code_block(format_expr(watch_demo_map_code), "pg-code-small")
     ),
-    arg_field("watch_mascot", "session", NULL)
+    arg_field("watch_mascot", "session", NULL),
+    fn_heading("watch_mascot_task"),
+    arg_field("watch_mascot_task", "...", NULL),
+    arg_field(
+      "watch_mascot_task",
+      "id",
+      code_block("watch_mascot_task(\"helper\", task)", "pg-code-small")
+    ),
+    wiring_links("watch_mascot_task"),
+    arg_field(
+      "watch_mascot_task",
+      "task",
+      radioButtons(
+        "watch_task_state",
+        "Simulated ExtendedTask outcome",
+        c("none" = "none", "succeed" = "succeed", "fail" = "fail"),
+        selected = "none",
+        inline = TRUE
+      )
+    ),
+    arg_field(
+      "watch_mascot_task",
+      "map",
+      code_block(
+        "list(\n  initial = list(),\n  running = list(mood = \"thinking\", status = \"Running task\"),\n  success = list(mood = \"happy\", status = \"Task complete\"),\n  error = list(mood = \"worried\", status = \"Task failed\")\n)",
+        "pg-code-small"
+      )
+    ),
+    arg_field("watch_mascot_task", "session", NULL),
+    fn_heading("watch_mascot_validator"),
+    arg_field("watch_mascot_validator", "...", NULL),
+    arg_field(
+      "watch_mascot_validator",
+      "id",
+      code_block("watch_mascot_validator(\"helper\", validator)", "pg-code-small")
+    ),
+    wiring_links("watch_mascot_validator"),
+    arg_field(
+      "watch_mascot_validator",
+      "validator",
+      radioButtons(
+        "watch_validator_state",
+        "Simulated InputValidator result",
+        c("none" = "none", "valid" = "valid", "1 invalid" = "invalid_1", "2 invalid" = "invalid_2"),
+        selected = "none",
+        inline = TRUE
+      )
+    ),
+    arg_field(
+      "watch_mascot_validator",
+      "map",
+      code_block(
+        "list(\n  valid = list(mood = \"happy\", status = \"All fields look good\"),\n  invalid = list(mood = \"worried\")\n)",
+        "pg-code-small"
+      )
+    ),
+    arg_field(
+      "watch_mascot_validator",
+      "delay",
+      div(
+        class = "pg-hint",
+        "Seconds to wait after the last change. Keep 0 for choices made in one click; use about 1 for typed ",
+        "fields with a format rule, such as an email, so the mascot reacts when typing pauses."
+      )
+    ),
+    arg_field("watch_mascot_validator", "session", NULL)
   )
 }
 

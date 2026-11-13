@@ -911,6 +911,75 @@ studio_server <- function(input, output, session) {
     ignoreInit = TRUE
   )
 
+  studio_task <- ExtendedTask$new(function(fail = FALSE) {
+    if (isTRUE(fail)) {
+      stop("Simulated failure")
+    }
+    "ok"
+  })
+  watch_mascot_task("helper", studio_task, session = session)
+  # The task's outcome arrives later, so the studio's state follows the task status, as the watcher does.
+  observe({
+    entry <- task_demo_map[[studio_task$status()]]
+    if (length(entry)) {
+      remember_pairs(list(mood = code_mood(entry$mood), status = code_status(entry$status)))
+    }
+  })
+  observeEvent(
+    input$watch_task_state,
+    {
+      val <- input$watch_task_state
+      if (identical(val, "succeed")) {
+        studio_task$invoke(FALSE)
+        add_log("studio_task$invoke(FALSE)", "call", "watch_mascot_task() updated helper")
+      } else if (identical(val, "fail")) {
+        studio_task$invoke(TRUE)
+        add_log("studio_task$invoke(TRUE)", "call", "watch_mascot_task() updated helper")
+      }
+    },
+    ignoreInit = TRUE
+  )
+
+  # The validator exists from the start: watch_mascot_validator() keeps its first result as the starting point
+  # (an empty form opens quietly), so the first choice in the panel already shows a change.
+  if (requireNamespace("shinyvalidate", quietly = TRUE)) {
+    studio_iv <- shinyvalidate::InputValidator$new()
+    studio_iv$add_rule("watch_validator_field_a", function(x) {
+      if (isTRUE(input$watch_validator_state %in% c("invalid_1", "invalid_2"))) "Required"
+    })
+    studio_iv$add_rule("watch_validator_field_b", function(x) {
+      if (identical(input$watch_validator_state, "invalid_2")) "Required"
+    })
+    studio_iv$enable()
+    watch_mascot_validator("helper", studio_iv, session = session)
+  }
+  observeEvent(
+    input$watch_validator_state,
+    {
+      val <- input$watch_validator_state
+      if (is.null(val) || identical(val, "none")) {
+        return()
+      }
+      if (!requireNamespace("shinyvalidate", quietly = TRUE)) {
+        add_log("watch_mascot_validator()", "note", "Install shinyvalidate to run watch_mascot_validator() live")
+        return()
+      }
+      add_log(sprintf('watch_validator_state("%s")', val), "call", "watch_mascot_validator() updated helper")
+      failing <- switch(val, invalid_1 = 1L, invalid_2 = 2L, 0L)
+      remember_pairs(
+        if (failing == 0L) {
+          list(mood = code_mood("happy"), status = code_status("All fields look good"))
+        } else {
+          list(
+            mood = code_mood("worried"),
+            status = code_status(paste(failing, if (failing == 1L) "field needs" else "fields need", "attention"))
+          )
+        }
+      )
+    },
+    ignoreInit = TRUE
+  )
+
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
   # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
@@ -1370,6 +1439,14 @@ studio_server <- function(input, output, session) {
           quote(source),
           watch_demo_map_code
         )
+      ),
+      watch_mascot_task = format_call(
+        "watch_mascot_task",
+        list("helper", quote(task))
+      ),
+      watch_mascot_validator = format_call(
+        "watch_mascot_validator",
+        list("helper", quote(validator))
       ),
       mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),
       mascot_moods = format_call(fn, list(character = current_character())),

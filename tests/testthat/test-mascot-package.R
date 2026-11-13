@@ -43,6 +43,8 @@ describe("mascot exports", {
         "mascot",
         "update_mascot",
         "watch_mascot",
+        "watch_mascot_task",
+        "watch_mascot_validator",
         "mascot_server_state",
         "mascot_preview",
         "mascot_examples",
@@ -70,7 +72,10 @@ describe("mascot exports", {
         "mascot_palettes"
       )
     )
-    expect_true(all(startsWith(setdiff(exports, c("mascot", "update_mascot", "watch_mascot")), "mascot_")))
+    expect_true(all(startsWith(
+      setdiff(exports, c("mascot", "update_mascot", "watch_mascot", "watch_mascot_task", "watch_mascot_validator")),
+      "mascot_"
+    )))
   })
 })
 describe("condition reference", {
@@ -113,6 +118,8 @@ describe("experimental help topic badges", {
       "mascot_check_character",
       "mascot_character_format",
       "watch_mascot",
+      "watch_mascot_task",
+      "watch_mascot_validator",
       "mascot_server_state"
     )
     root <- test_path("..", "..")

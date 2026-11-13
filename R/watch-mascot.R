@@ -47,7 +47,7 @@
 #' Shiny module, pass the module's local mascot `id` (the same as in
 #' [update_mascot()]).
 #' @family mascots in Shiny
-#' @seealso [update_mascot()], [mascot_server_state()]
+#' @seealso [update_mascot()], [watch_mascot_task()], [watch_mascot_validator()], [mascot_server_state()]
 #' @export
 #' @examples
 #' shiny::testServer(
@@ -138,14 +138,17 @@ watch_mascot <- function(
 #' `resolve()` returns `NULL` for "no value" or a list with `key` (what counts as a change) and `patch` (the
 #' `update_mascot()` fields to send). A reactive re-runs whenever its inputs change, even when its result is the
 #' same, so the last key is kept here: an unchanged key sends nothing, which keeps a manual update in place and
-#' plays a gesture or shows a bubble once per change, not once per keystroke.
+#' plays a gesture or shows a bubble once per change, not once per keystroke. With `skip_first`, the first value
+#' only sets the starting point and sends nothing.
 #' @noRd
-watch_mascot_observe <- function(resolve, id, session) {
+watch_mascot_observe <- function(resolve, id, session, skip_first = FALSE) {
   checkmate::assert_function(resolve, nargs = 0)
   checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
   checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
+  checkmate::assert_flag(skip_first)
   seen <- new.env(parent = emptyenv())
   seen$key <- NULL
+  seen$waiting <- skip_first
   shiny::observe(
     {
       resolved <- resolve()
@@ -154,9 +157,15 @@ watch_mascot_observe <- function(resolve, id, session) {
         return(invisible())
       }
       seen$key <- key
-      if (length(resolved$patch) > 0L) {
-        do.call(update_mascot, c(list(id = id, session = session), resolved$patch))
+      if (is.null(resolved)) {
+        return(invisible())
       }
+      if (seen$waiting) {
+        # The first result only sets the starting point (a form that opens empty stays quiet).
+        seen$waiting <- FALSE
+        return(invisible())
+      }
+      watch_mascot_dispatch(id, resolved$patch, session)
     },
     domain = session
   )
@@ -187,6 +196,57 @@ assert_watch_map_container <- function(map, call = parent.frame()) {
     ),
     call = call
   )
+}
+
+#' Merge wrapper defaults with optional key-wise user overrides
+#' @noRd
+merge_watch_map <- function(defaults, map, fn_name, call = parent.frame()) {
+  checkmate::assert_list(defaults, names = "unique", min.len = 1)
+  checkmate::assert_string(fn_name, min.chars = 1)
+  checkmate::assert_environment(call)
+  if (is.null(map)) {
+    return(defaults)
+  }
+  assert_watch_map_container(map, call = call)
+  unknown <- setdiff(names(map), names(defaults))
+  if (length(unknown) > 0L) {
+    cli::cli_abort(
+      c(
+        "{cli::qty(unknown)}Unknown {.arg map} key{?s} for {.fn {fn_name}}: {.val {unknown}}.",
+        "i" = "Allowed keys: {.val {names(defaults)}}."
+      ),
+      class = "mascot_error",
+      call = call
+    )
+  }
+  overrides <- as_watch_map(map, call = call)
+  out <- defaults
+  for (nm in names(overrides)) {
+    entry <- overrides[[nm]]
+    if (length(entry) == 0L) {
+      # An explicit empty list silences that key completely instead of inheriting defaults.
+      out[[nm]] <- list()
+    } else {
+      base <- out[[nm]]
+      for (field in names(entry)) {
+        base[[field]] <- entry[[field]]
+      }
+      out[[nm]] <- base
+    }
+  }
+  out
+}
+
+#' Apply a resolved mascot update patch if non-empty
+#' @noRd
+watch_mascot_dispatch <- function(id, patch, session) {
+  checkmate::assert_string(id, min.chars = 1, pattern = "^\\S+$")
+  checkmate::assert_list(patch)
+  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
+  if (length(patch) > 0L) {
+    do.call(update_mascot, c(list(id = id, session = session), patch))
+  }
+  invisible()
 }
 
 #' Validate and normalise a `watch_mascot()` lookup map

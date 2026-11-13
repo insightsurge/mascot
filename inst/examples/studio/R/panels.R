@@ -643,7 +643,52 @@ panel_wiring <- function() {
       open = NA,
       tags$summary("Activity log: calls, warnings, errors and visitor events"),
       uiOutput("wiring_log")
-    )
+    ),
+    fn_heading("mascot_server_state"),
+    arg_field("mascot_server_state", "...", NULL),
+    arg_field(
+      "mascot_server_state",
+      "id",
+      code_block("mascot_server_state(\"helper\")", "pg-code-small")
+    ),
+    wiring_links("mascot_server_state"),
+    arg_field(
+      "mascot_server_state",
+      "session",
+      tagList(
+        div(
+          class = "pg-hint",
+          "Inspects what the server currently knows for this session's mascot (mood, status, bubble, gesture)."
+        ),
+        actionButton("server_state_inspect", "Inspect server state", class = "btn-outline-secondary btn-sm"),
+        uiOutput("server_state_out")
+      )
+    ),
+    fn_heading("watch_mascot"),
+    arg_field("watch_mascot", "...", NULL),
+    arg_field(
+      "watch_mascot",
+      "id",
+      code_block("watch_mascot(\"helper\", source, map)", "pg-code-small")
+    ),
+    wiring_links("watch_mascot"),
+    arg_field(
+      "watch_mascot",
+      "source",
+      radioButtons(
+        "watch_state",
+        "Simulated reactive source",
+        c("none" = "none", "idle" = "idle", "thinking" = "thinking", "happy" = "happy", "worried" = "worried"),
+        selected = "none",
+        inline = TRUE
+      )
+    ),
+    arg_field(
+      "watch_mascot",
+      "map",
+      code_block(format_expr(watch_demo_map_code), "pg-code-small")
+    ),
+    arg_field("watch_mascot", "session", NULL)
   )
 }
 

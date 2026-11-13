@@ -312,6 +312,8 @@ review_server <- function(id) {
 }
 ```
 
+When a reactive value maps straight to a fixed set of moods and statuses, you can replace the observer with [`watch_mascot()`](`r paste0(site_url, "articles/guide-watch_mascot.html")`) (experimental), and read back server state in `shiny::testServer()` unit tests with [`mascot_server_state()`](`r paste0(site_url, "articles/guide-mascot_server_state.html")`) (experimental).
+
 ## Quarto pages
 
 You can also place [`mascot()`](`r paste0(site_url, "articles/guide-mascot.html")`) in a rendered Quarto document with no Shiny server to show a fixed mood and status line.

@@ -4,6 +4,14 @@
 # Base R has %||% only from R 4.4; the package supports R 4.1, so the studio keeps its own copy.
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+# The map the watch_mascot() demo runs and shows, kept as code so the Code pane prints exactly what runs.
+watch_demo_map_code <- quote(list(
+  idle = list(mood = "idle", status = "Idle"),
+  thinking = list(mood = "thinking", status = "Working"),
+  happy = list(mood = "happy", status = "Done"),
+  worried = list(mood = "worried", status = "Needs attention")
+))
+
 corners <- c("top-left", "top-right", "bottom-left", "bottom-right")
 
 bubble_examples <- list(
@@ -192,6 +200,19 @@ studio_controls <- list(
     ... = input_id("mistake", "mistake_run"),
     gesture = input_id("gesture", "gesture_play"),
     session = input_id("task_run")
+  ),
+  mascot_server_state = list(
+    id = input_id("server_state_inspect"),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    character = input_id("character"),
+    session = fixed_arg("The studio's own Shiny session.")
+  ),
+  watch_mascot = list(
+    id = fixed_arg("The studio's mascot, \"helper\"."),
+    source = input_id("watch_state"),
+    map = fixed_arg("The map shown above; each value sets a mood and a status."),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    session = fixed_arg("The studio's own Shiny session.")
   ),
   mascot_preview = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),

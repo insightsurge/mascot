@@ -37,7 +37,8 @@ dark mode, and palette presets.
 
 The experimental features are Knurl and Neer, `mascot_studio()`, `mascot_preview()`, `mascot_theme(css =)`,
 `drag = "free"`, the mapping of `bs_theme()` colours to character parts, `mascot_read_character()`,
-`mascot_check_character()` and the character file format. The format's compatibility promise is in the
+`mascot_check_character()`, the character file format and, in the development version, `watch_mascot()` and
+`mascot_server_state()`. The format's compatibility promise is in the
 [engineering standards](https://github.com/insightsurge/mascot/blob/main/docs/standards.md#9-releases).
 
 ## Who it is for

@@ -202,6 +202,8 @@ shiny::shinyApp(
 \code{\link[=update_mascot]{update_mascot()}}
 
 Other mascots in Shiny:
-\code{\link[=update_mascot]{update_mascot()}}
+\code{\link[=mascot_server_state]{mascot_server_state()}},
+\code{\link[=update_mascot]{update_mascot()}},
+\code{\link[=watch_mascot]{watch_mascot()}}
 }
 \concept{mascots in Shiny}

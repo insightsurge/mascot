@@ -1,0 +1,41 @@
+```{r setup-mascot_server_state, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r mascot_server_state-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("mascot_server_state")
+```
+
+```{r mascot_server_state-experimental, echo = FALSE}
+htmltools::div(
+  class = "pg-note",
+  htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
+  " Its name, arguments and return structure may change in a later release."
+)
+```
+
+### Read a mascot's state in `testServer()`
+
+`mascot_server_state()` returns the latest `id`, `character`, `mood`, `status`,
+`bubble` and `gesture` recorded for a mascot on the Shiny server, without mutating
+the session. Use it in `shiny::testServer()` unit tests where no browser mounts:
+
+```{r mascot_server_state-call, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'shiny::testServer(app_server, {\n',
+  '  session$setInputs(save = 1)\n',
+  '  state <- mascot::mascot_server_state("helper", character = "',
+  studio_character,
+  '")\n',
+  '  testthat::expect_equal(state$mood, "happy")\n',
+  '})'
+)))
+```
+
+Before any update has been sent for `id`, `mascot_server_state()` returns `id`
+and `NULL` for all other fields. Pass `character` when no UI has mounted so
+queued character-specific mood, gesture or theme updates can be checked.
+
+```{r mascot_server_state-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("mascot_server_state", studio_character)
+```

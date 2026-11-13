@@ -1,0 +1,43 @@
+```{r setup-watch_mascot, include = FALSE, echo = FALSE}
+studio_character <- if (exists("studio_character")) studio_character else formals(mascot::mascot)$character
+```
+
+```{r watch_mascot-try-live, echo = FALSE}
+if (!in_studio()) guide_try_live("watch_mascot")
+```
+
+```{r watch_mascot-experimental, echo = FALSE}
+htmltools::div(
+  class = "pg-note",
+  htmltools::tags$span(class = "badge text-bg-warning", "Experimental"),
+  " Its arguments, map structure and return value may change in a later release."
+)
+```
+
+### Bind a reactive source to a mascot
+
+`watch_mascot()` subscribes to a Shiny reactive expression or `reactiveVal()`
+and forwards matching values to `update_mascot()`. Use a named character vector
+when only moods change, or a named list for key-wise field overrides:
+
+```{r watch_mascot-call, echo = FALSE}
+htmltools::tags$pre(htmltools::tags$code(paste0(
+  'ready <- shiny::reactive(isTRUE(input$ready))\n',
+  'obs <- mascot::watch_mascot(\n',
+  '  "helper",\n',
+  '  ready,\n',
+  '  list(\n',
+  '    "TRUE" = list(mood = "happy", status = "Ready"),\n',
+  '    "FALSE" = list(mood = "worried", status = "Missing required fields")\n',
+  '  )\n',
+  ')\n',
+  '# Call obs$destroy() if you need to stop watching before the session ends.'
+)))
+```
+
+Unmatched, `NA`, `NULL` and non-scalar values leave the mascot unchanged. Inside
+a Shiny module, pass the local id just as in `update_mascot()`.
+
+```{r watch_mascot-mistakes, echo = FALSE}
+if (!in_studio()) guide_mistakes_html("watch_mascot", studio_character)
+```

@@ -234,27 +234,33 @@ studio_server <- function(input, output, session) {
       last_gesture(eval(pairs$gesture$short))
     }
     if (ok && remember) {
-      for (field in intersect(names(pairs), names(defaults))) {
-        state[[field]] <- pairs[[field]]
-        if (field %in% c("click", "bubble")) {
-          live_demo[[field]] <- pairs[[field]]
-        }
-        if (field == "mood") {
-          echo_to_control("mood", eval(pairs[[field]]$short), function(value) {
-            updateSelectInput(session, "mood", selected = value)
-          })
-        }
-        if (field == "bubble") {
-          sync_bubble_controls(pairs[[field]])
-        }
-        if (field == "status") {
-          echo_to_control("status_text", eval(pairs[[field]]$helper)$text %||% "", function(value) {
-            updateTextInput(session, "status_text", value = value)
-          })
-        }
-      }
+      remember_pairs(pairs)
     }
     invisible(ok)
+  }
+
+  # Keeps the studio's state, its controls and the generated code in step with settings that reached the
+  # mascot, whether send() sent them or a watcher did (the watch_mascot() demo).
+  remember_pairs <- function(pairs) {
+    for (field in intersect(names(pairs), names(defaults))) {
+      state[[field]] <- pairs[[field]]
+      if (field %in% c("click", "bubble")) {
+        live_demo[[field]] <- pairs[[field]]
+      }
+      if (field == "mood") {
+        echo_to_control("mood", eval(pairs[[field]]$short), function(value) {
+          updateSelectInput(session, "mood", selected = value)
+        })
+      }
+      if (field == "bubble") {
+        sync_bubble_controls(pairs[[field]])
+      }
+      if (field == "status") {
+        echo_to_control("status_text", eval(pairs[[field]]$helper)$text %||% "", function(value) {
+          updateTextInput(session, "status_text", value = value)
+        })
+      }
+    }
   }
 
   # Clicks on buttons that carry data-event and data-value arrive as input$<event>.
@@ -869,6 +875,42 @@ studio_server <- function(input, output, session) {
     nav_select("code_tabs", "Log")
   })
 
+  inspected_state <- reactiveVal(NULL)
+  observeEvent(input$server_state_inspect, {
+    snap <- mascot_server_state("helper", character = current_character(), session = session)
+    inspected_state(snap)
+    add_log(
+      sprintf('mascot_server_state("helper", character = "%s")', current_character()),
+      "call",
+      sprintf("mood = %s", snap$mood %||% "NULL")
+    )
+  })
+  output$server_state_out <- renderUI({
+    snap <- inspected_state()
+    if (is.null(snap)) {
+      return(NULL)
+    }
+    txt <- paste(utils::capture.output(utils::str(snap, max.level = 2L)), collapse = "\n")
+    tags$pre(class = "pg-state-pre mt-2 mb-0", tags$code(txt))
+  })
+
+  watch_source <- reactiveVal(NULL)
+  watch_demo_map <- eval(watch_demo_map_code)
+  watch_mascot("helper", watch_source, watch_demo_map, session = session)
+  observeEvent(
+    input$watch_state,
+    {
+      val <- input$watch_state
+      watch_source(if (is.null(val) || identical(val, "none")) NULL else val)
+      if (!is.null(val) && !identical(val, "none")) {
+        add_log(sprintf('watch_source("%s")', val), "call", "watch_mascot() updated helper")
+        entry <- watch_demo_map[[val]]
+        remember_pairs(list(mood = code_mood(entry$mood), status = code_status(entry$status)))
+      }
+    },
+    ignoreInit = TRUE
+  )
+
   # mascot_preview(): its arguments are the Controls panel's (the character is the studio's own
   # selection). While the host mode is "Preview page" the canvas shows the page the call returns, in place
   # of the live mascot, and the Preview tab of the Code tray shows the call that built it. A change
@@ -1317,6 +1359,18 @@ studio_server <- function(input, output, session) {
       fn,
       mascot = format_call("mascot", ui_args(reactiveValuesToList(state), style())),
       update_mascot = format_call("update_mascot", server_args(reactiveValuesToList(state), style())),
+      mascot_server_state = format_call(
+        "mascot_server_state",
+        list("helper", character = current_character())
+      ),
+      watch_mascot = format_call(
+        "watch_mascot",
+        list(
+          "helper",
+          quote(source),
+          watch_demo_map_code
+        )
+      ),
       mascot_colour_roles = format_call(fn, list(character = current_character(), palette = selected_palette())),
       mascot_moods = format_call(fn, list(character = current_character())),
       mascot_gestures = format_call(fn, list(character = current_character())),

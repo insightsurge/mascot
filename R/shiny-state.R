@@ -359,9 +359,10 @@ mascot_state_buffer <- function(record, patch) {
 
 #' Settle the bounded retained prefix against one declared startup context
 #' @noRd
-mascot_state_settle <- function(record, session = NULL) {
+mascot_state_settle <- function(record, session = NULL, dev_overlay = TRUE) {
   checkmate::assert_list(record, names = "unique")
   checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"), null.ok = TRUE)
+  checkmate::assert_flag(dev_overlay)
   calls <- unlist(lapply(record$cold, function(bucket) unname(bucket$calls)), recursive = FALSE)
   if (length(calls)) {
     calls <- calls[order(vapply(calls, function(call) call$sequence, numeric(1)))]
@@ -369,7 +370,7 @@ mascot_state_settle <- function(record, session = NULL) {
       record <- tryCatch(mascot_state_accept(record, call$patch), error = function(error) {
         warning_id <- if (is.null(session)) record$id else substring(record$id, nchar(session$ns("")) + 1L)
         mascot_update_warning(warning_id, conditionMessage(error))
-        if (dev_mode() && !is.null(session)) {
+        if (dev_overlay && dev_mode() && !is.null(session)) {
           mascot_problem(session, record$id, paste0("mascot: ", warning_id, ": ", conditionMessage(error)))
         }
         record

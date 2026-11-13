@@ -42,6 +42,8 @@ describe("mascot exports", {
       c(
         "mascot",
         "update_mascot",
+        "watch_mascot",
+        "mascot_server_state",
         "mascot_preview",
         "mascot_examples",
         "mascot_example",
@@ -68,7 +70,7 @@ describe("mascot exports", {
         "mascot_palettes"
       )
     )
-    expect_true(all(startsWith(setdiff(exports, c("mascot", "update_mascot")), "mascot_")))
+    expect_true(all(startsWith(setdiff(exports, c("mascot", "update_mascot", "watch_mascot")), "mascot_")))
   })
 })
 describe("condition reference", {
@@ -99,7 +101,7 @@ describe("condition reference", {
 
 describe("experimental help topic badges", {
   it("shows the experimental badge on each experimental help topic", {
-    # Keep this list in step with "Experimental in 0.1.0" in docs/standards.md.
+    # Keep this list in step with the "Experimental" lists in docs/standards.md.
     topics <- c(
       "mascot_studio",
       "mascot_preview",
@@ -109,7 +111,9 @@ describe("experimental help topic badges", {
       "mascot_characters",
       "mascot_read_character",
       "mascot_check_character",
-      "mascot_character_format"
+      "mascot_character_format",
+      "watch_mascot",
+      "mascot_server_state"
     )
     root <- test_path("..", "..")
     db <- if (dir.exists(file.path(root, "man"))) {

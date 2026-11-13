@@ -764,7 +764,12 @@
       list.append(option);
     }
     searchIndex = 0;
-    byId('search_count').textContent = `${results.length} ${results.length === 1 ? 'function' : 'functions'}`;
+    const topicCount = results.filter((option) => option.dataset.searchDetails).length;
+    const fnCount = results.length - topicCount;
+    const parts = [];
+    if (fnCount || !topicCount) parts.push(`${fnCount} ${fnCount === 1 ? 'function' : 'functions'}`);
+    if (topicCount) parts.push(`${topicCount} ${topicCount === 1 ? 'topic' : 'topics'}`);
+    byId('search_count').textContent = parts.join(', ');
     searchSelection();
   }
   function searchSelection() {
@@ -790,12 +795,21 @@
   }
   function chooseResult(option) {
     close('studio_search', false);
+    const detailsId = option.dataset.searchDetails;
     selectFunction(
-      option.dataset.searchFunction,
+      option.dataset.searchOpen || option.dataset.searchFunction,
       option.dataset.searchInput,
       option.dataset.searchArgument,
-      !!option.dataset.searchArgument,
+      !detailsId && !!option.dataset.searchArgument,
     );
+    if (detailsId) {
+      const details = byId(detailsId);
+      if (details) {
+        details.open = true;
+        details.querySelector('summary')?.focus({ preventScroll: true });
+        requestAnimationFrame(() => details.scrollIntoView({ block: 'nearest' }));
+      }
+    }
   }
 
   // Move bound containers, never a function panel or a clone of its inputs.

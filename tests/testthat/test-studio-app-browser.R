@@ -79,7 +79,7 @@ describe("studio overlays and live controls", {
     app$click(selector = "#open_search")
     expect_identical(
       app$get_js("document.getElementById('search_count').textContent"),
-      paste(length(getNamespaceExports("mascot")), "functions")
+      paste(length(getNamespaceExports("mascot")), "functions, 1 topic")
     )
     app$run_js(
       "window.queryStudio = q => {const input=document.getElementById('function_search'); input.value=q; input.dispatchEvent(new Event('input',{bubbles:true}));}; queryStudio('update_mascot')"
@@ -141,6 +141,42 @@ describe("studio overlays and live controls", {
     app$wait_for_js(
       "document.getElementById('action_tooltip').getClientRects().length>0 && document.getElementById('action_tooltip').contains(document.activeElement)"
     )
+  })
+
+  it("finds the mascot_styling topic and opens its details box in mascot_theme()", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    app$click(selector = "#open_search")
+    app$run_js(
+      "const input = document.getElementById('function_search'); input.value = 'restore'; input.dispatchEvent(new Event('input', {bubbles: true}));"
+    )
+    expect_identical(app$get_js("document.getElementById('search_count').textContent"), "1 topic")
+    expect_identical(
+      app$get_js("document.getElementById('function_search').getAttribute('aria-activedescendant')"),
+      "search_mascot_styling_topic"
+    )
+    app$run_js(
+      "document.getElementById('function_search').dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}))"
+    )
+    app$wait_for_js(paste0(
+      "document.getElementById('studio_search').hidden && ",
+      "!document.getElementById('inspector_sidebar').hidden && ",
+      "!document.querySelector('[data-function=mascot_theme]').hidden && ",
+      "document.getElementById('mascot_styling_details').open && ",
+      "document.querySelector('#mascot_styling_details summary') === document.activeElement"
+    ))
+    app$run_js("document.getElementById('mascot_styling_details').open = false;")
+    app$click(selector = "#open_search")
+    app$run_js(
+      "const input = document.getElementById('function_search'); input.value = 'panel'; input.dispatchEvent(new Event('input', {bubbles: true}));"
+    )
+    expect_false(app$get_js("document.getElementById('search_mascot_styling_topic').hidden"))
+    app$click(selector = "#search_mascot_styling_topic")
+    app$wait_for_js("document.getElementById('mascot_styling_details').open")
+    expect_true(app$get_js(
+      "document.querySelector('#mascot_styling_details summary') === document.activeElement"
+    ))
   })
 
   it("keeps search modal, routes argument results, and moves one mounted chip editor", {
@@ -2138,6 +2174,50 @@ describe("the controls and the server's echo of a change it applied", {
     wait_studio_js(app, "live.querySelector('.mascot-bubble')?.textContent.includes('abc')")
     expect_identical(app$get_js("document.getElementById('bubble_text').value"), "abc")
   })
+  it("switches the primary and secondary bslib colours off one at a time, and keeps a colour that was chosen", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_theme")
+    app$set_inputs(theme_source = "bslib")
+    # The code is the result the switches change: each wait names the call the server has drawn, with no fixed pause.
+    wait_code <- function(call) {
+      app$wait_for_js(sprintf(
+        "document.getElementById('code_ui').textContent.split(/\\s+/).join(' ').includes(%s)",
+        jsonlite::toJSON(call, auto_unbox = TRUE)
+      ))
+    }
+    shown <- function(id) app$wait_for_js(sprintf("!!document.getElementById('%s')?.offsetParent", id))
+    hidden <- function(id) {
+      app$wait_for_js(sprintf("document.getElementById('%s') && !document.getElementById('%s').offsetParent", id, id))
+    }
+    # Given both brand colours are on, each switch and its picker have a name of their own
+    shown("bs_primary")
+    shown("bs_secondary")
+    wait_code('bslib::bs_theme(primary = "#1f6feb", secondary = "#966600")')
+    names <- unlist(app$get_js(paste(
+      "['bs_primary_on', 'bs_primary', 'bs_secondary_on', 'bs_secondary'].map((id) => {",
+      "const el = document.getElementById(id);",
+      "return el.getAttribute('aria-label') || document.querySelector(`label[for=${id}]`)?.textContent.trim(); })"
+    )))
+    expect_length(unique(names), 4L)
+    # When the primary colour is chosen, then switched off and on again, the chosen colour comes back
+    studio_colour(app, "bs_primary", "#336699")
+    wait_code('bslib::bs_theme(primary = "#336699", secondary = "#966600")')
+    click_now(app, "#bs_primary_on")
+    hidden("bs_primary")
+    wait_code('bslib::bs_theme(secondary = "#966600")')
+    expect_false(grepl("primary", app$get_js("document.getElementById('code_ui').textContent"), fixed = TRUE))
+    click_now(app, "#bs_primary_on")
+    shown("bs_primary")
+    wait_code('bslib::bs_theme(primary = "#336699", secondary = "#966600")')
+    # And with both switched off, the call has no brand colour at all
+    click_now(app, "#bs_primary_on")
+    click_now(app, "#bs_secondary_on")
+    hidden("bs_primary")
+    hidden("bs_secondary")
+    wait_code("theme = bslib::bs_theme()")
+  })
 })
 
 describe("the copy buttons", {
@@ -2185,6 +2265,29 @@ describe("the copy buttons", {
     app$wait_for_js("window.copied !== null")
     expect_match(app$get_js("window.copied"), 'status = "Draft ready"', fixed = TRUE)
     expect_identical(app$get_js("window.copied"), app$get_js("document.getElementById('code_ui').textContent"))
+  })
+  it("copies the bs_theme() code without the brand colour switched off just before", {
+    local_shiny_browser()
+    app <- studio_driver()
+    wait_studio_mood(app, "idle")
+    studio_select_function(app, "mascot_theme")
+    app$set_inputs(theme_source = "bslib")
+    app$wait_for_js(paste(
+      "document.getElementById('code_ui').textContent.split(/\\s+/).join(' ')",
+      ".includes('bslib::bs_theme(primary = \"#1f6feb\", secondary = \"#966600\")')"
+    ))
+    stub_studio_clipboard(app)
+    # When the secondary colour is switched off and Copy is clicked at once, in one script
+    app$run_js(paste(
+      "(() => { document.getElementById('bs_secondary_on').click();",
+      "document.querySelector('#studio_dock [data-copy=code_ui]').click(); })()"
+    ))
+    # Then the copied code has the primary colour only
+    app$wait_for_js("window.copied !== null")
+    copied <- app$get_js("window.copied")
+    expect_match(gsub("\\s+", " ", copied), 'bslib::bs_theme(primary = "#1f6feb")', fixed = TRUE)
+    expect_false(grepl("secondary", copied, fixed = TRUE))
+    expect_identical(copied, app$get_js("document.getElementById('code_ui').textContent"))
   })
   it("copies the code of the example just picked, not the one before", {
     local_shiny_browser()

@@ -50,7 +50,7 @@ on the page request.
 
 | View | What it shows | Page | Server |
 |---|---|---|---|
-| `studio` | One function at a time: controls, help, guide and code | `studio_view_ui()` and `studio_page()` in `app.R` | `studio_server()` and `examples_server()` in `app.R` |
+| `studio` | One function at a time: controls, help, guide and code | `studio_view_ui()` in `app.R` and `studio_page()` in `R/page.R` | `studio_server()` and `examples_server()` in `app.R` |
 | `examples` | The same page, opened on the bundled examples instead of the live mascot | the same page | the same server |
 | `theme` | One character, themed with live feedback | `theme_view_ui()` in `R/theme-ui.R` | `theme_view_server()` in `R/theme-server.R` |
 
@@ -71,7 +71,8 @@ only. They call mascot as `mascot::` or inside functions that run later.
 
 | File | What it holds |
 |---|---|
-| `app.R` | The studio page (`studio_page()`), its server (`studio_server()`, `examples_server()`), the starting state and the routing |
+| `app.R` | The studio servers (`studio_server()`, `examples_server()`), the starting state and the routing |
+| `R/page.R` | The studio page (`studio_page()`) and its section builders (`studio_canvas()`, `studio_inspector()`, ...) |
 | `R/views.R` | The list of views and the routing helpers |
 | `R/guide.R` | `studio_guide`: per exported function, its category, the vignette section to read next and its arguments; `studio_categories` |
 | `R/data.R` | `defaults` (the starting value of each `mascot()` argument), `studio_controls` (for every exported argument, the input ids that try it or the reason it has none), bubble examples, the starting menu |

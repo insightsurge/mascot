@@ -17,7 +17,7 @@
 #' @param map Optional overrides for the default browser event map, given as a
 #'   named character vector of mood ids or a named list of overlay entries with
 #'   `mood` and `status` (same entry format as [watch_mascot()]). Allowed keys
-#'   are `"busy"`, `"idle"`, `"error"`, and `"disconnected"`. Provided keys
+#'   are `"busy"`, `"idle"`, `"error"`, `"validation"` and `"disconnected"`. Provided keys
 #'   merge field-by-field onto the defaults; pass an empty `list()` for a key
 #'   (for example `list(error = list())`) to ignore that event.
 #' @param delay Non-negative finite number of seconds Shiny must stay busy
@@ -26,8 +26,9 @@
 #'   show `"busy"` immediately on `shiny:busy`.
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.
-#' @returns Called for its side effect in the browser; returns `NULL`
-#'   invisibly.
+#' @returns Invisibly, a list with one function, `destroy()`. Call
+#'   `$destroy()` on it to remove the overlay: the mascot then shows what the
+#'   server last set and ignores busy and error events from Shiny again.
 #' @details
 #' By default, `watch_mascot_shiny()` maps Shiny browser events as:
 #'
@@ -37,13 +38,19 @@
 #'   overlay so whatever [update_mascot()] or [mascot()] last set shows again
 #' - `"error"` (`shiny:error`): `mood = "worried"`,
 #'   `status = "An error occurred"` (stays active until every failed output
-#'   produces a value again via `shiny:value`)
+#'   produces a value again via `shiny:value`). The messages of [shiny::req()]
+#'   and [shiny::validate()] are not errors and do not count.
+#' - `"validation"` (an output showing a [shiny::validate()] message, such as
+#'   "Please upload a file"): empty `list()`, so nothing changes. Set it, for
+#'   example `map = list(validation = list(mood = "thinking"))`, to react.
 #' - `"disconnected"` (`shiny:disconnected`): `mood = "worried"`,
 #'   `status = "Connection lost. Reload the page to continue."`
 #'
 #' When events overlap, overlays take priority in the order
-#' `"disconnected"`, `"error"`, `"busy"`, `"idle"`, over the mascot's
-#' server-side state. Because overlays are applied purely in the browser,
+#' `"disconnected"`, `"error"`, `"validation"`, `"busy"`, `"idle"`, over the mascot's
+#' server-side state. An overlay mood the character does not have leaves the
+#' face as the server set it, while the status text of the overlay still shows.
+#' Because overlays are applied purely in the browser,
 #' [mascot_server_state()] continues to reflect what R sent via
 #' [update_mascot()].
 #'
@@ -67,6 +74,8 @@
 #'   {
 #'     session$flushReact()
 #'     mascot_server_state("helper")$id
+#'     watcher <- watch_mascot_shiny("helper")
+#'     watcher$destroy()
 #'   }
 #' )
 watch_mascot_shiny <- function(
@@ -128,7 +137,10 @@ watch_mascot_shiny <- function(
       map = wire_map
     )
   )
-  invisible(NULL)
+  invisible(list(destroy = function() {
+    mascot_shiny_watch(session, key, NULL)
+    invisible(NULL)
+  }))
 }
 
 #' Default event-to-overlay map for `watch_mascot_shiny()`
@@ -138,6 +150,7 @@ shiny_default_map <- function() {
     busy = list(mood = "thinking", status = "Working..."),
     idle = list(),
     error = list(mood = "worried", status = "An error occurred"),
+    validation = list(),
     disconnected = list(mood = "worried", status = "Connection lost. Reload the page to continue.")
   )
 }

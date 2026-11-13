@@ -4,6 +4,22 @@
 # Base R has %||% only from R 4.4; the package supports R 4.1, so the studio keeps its own copy.
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+# The map the watch_mascot() demo runs and shows, kept as code so the Code pane prints exactly what runs.
+watch_demo_map_code <- quote(list(
+  idle = list(mood = "idle", status = "Idle"),
+  thinking = list(mood = "thinking", status = "Working"),
+  happy = list(mood = "happy", status = "Done"),
+  worried = list(mood = "worried", status = "Needs attention")
+))
+
+# The default map of watch_mascot_task(), as the studio's panel shows it.
+task_demo_map <- list(
+  initial = list(),
+  running = list(mood = "thinking", status = "Running task"),
+  success = list(mood = "happy", status = "Task complete"),
+  error = list(mood = "worried", status = "Task failed")
+)
+
 corners <- c("top-left", "top-right", "bottom-left", "bottom-right")
 
 bubble_examples <- list(
@@ -195,9 +211,9 @@ studio_controls <- list(
   ),
   mascot_server_state = list(
     id = input_id("server_state_inspect"),
-    ... = input_id("server_state_inspect"),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
     character = input_id("character"),
-    session = input_id("server_state_inspect")
+    session = fixed_arg("The studio's own Shiny session.")
   ),
   mascot_test_state = list(
     app = fixed_arg("Runs inside a shinytest2 browser test against an AppDriver."),
@@ -206,32 +222,33 @@ studio_controls <- list(
     timeout = fixed_arg("Maximum milliseconds to wait before failing (default 5000).")
   ),
   watch_mascot = list(
-    id = input_id("watch_state"),
+    id = fixed_arg("The studio's mascot, \"helper\"."),
     source = input_id("watch_state"),
-    map = input_id("watch_state"),
-    ... = input_id("watch_state"),
-    session = input_id("watch_state")
+    map = fixed_arg("The map shown above; each value sets a mood and a status."),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    session = fixed_arg("The studio's own Shiny session.")
   ),
   watch_mascot_task = list(
-    id = input_id("watch_task_state"),
+    id = fixed_arg("The studio's mascot, \"helper\"."),
     task = input_id("watch_task_state"),
-    ... = input_id("watch_task_state"),
-    map = input_id("watch_task_state"),
-    session = input_id("watch_task_state")
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    map = fixed_arg("The default map shown above."),
+    session = fixed_arg("The studio's own Shiny session.")
   ),
   watch_mascot_validator = list(
-    id = input_id("watch_validator_state"),
+    id = fixed_arg("The studio's mascot, \"helper\"."),
     validator = input_id("watch_validator_state"),
-    ... = input_id("watch_validator_state"),
-    map = input_id("watch_validator_state"),
-    session = input_id("watch_validator_state")
+    ... = fixed_arg("Must be empty: optional arguments are named."),
+    map = fixed_arg("The default map shown above."),
+    delay = fixed_arg("0 here: a choice made in one click needs no wait. Use 1 for a typed field."),
+    session = fixed_arg("The studio's own Shiny session.")
   ),
   watch_mascot_shiny = list(
-    id = input_id("watch_shiny_state"),
-    ... = input_id("watch_shiny_state"),
+    id = fixed_arg("The studio's mascot, \"helper\"."),
+    ... = fixed_arg("Must be empty: optional arguments are named."),
     map = input_id("watch_shiny_state"),
-    delay = input_id("watch_shiny_state"),
-    session = input_id("watch_shiny_state")
+    delay = fixed_arg("1 second: a quick update never shows the busy face."),
+    session = fixed_arg("The studio's own Shiny session.")
   ),
   mascot_preview = list(
     ... = fixed_arg("Must be empty: optional arguments are named."),

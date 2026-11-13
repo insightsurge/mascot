@@ -4099,7 +4099,7 @@ describe("watch_mascot_shiny overlays", {
     expect_identical(result$afterReconnect$status, "Saved")
   })
 
-  it("ignores req(FALSE) silent validation errors and omits unchanged mood patches on repeated error ticks", {
+  it("ignores req(FALSE) silent errors and keeps the face when the disconnected overlay is switched off", {
     skip_without_chrome()
     js <- local_host_page()
     result <- js(
@@ -4138,5 +4138,79 @@ describe("watch_mascot_shiny overlays", {
     expect_identical(result$afterReq$status, "Ready")
     expect_identical(result$silentDisconnect$shown, "happy")
     expect_identical(result$silentDisconnect$status, "Ready")
+  })
+
+  it("ignores validate() messages by default, shows the opt-in validation overlay, and removes the overlay", {
+    skip_without_chrome()
+    js <- local_host_page()
+    result <- js(
+      "(() => {
+      const el = document.getElementById('a');
+      const status = () => el.querySelector('.mascot-status').textContent;
+      const watch = (map) => mascot.host.receive({
+        id: 'a', kind: 'shiny-watch', version: 1,
+        generation: mascot.host.state(el).snapshot.generation, revision: 0,
+        shiny_watch: map === undefined ? null : { delay_ms: 0, map }
+      });
+      const errorMap = { error: { mood: 'worried', status: { mode: 'custom', text: 'Error' } } };
+      watch(errorMap);
+      mascot.host.receive({ id: 'a', patch: { mood: 'happy', status: { mode: 'custom', text: 'Ready' } } });
+      const need = () => {
+        const event = new Event('shiny:error');
+        event.name = 'out';
+        event.error = { message: 'Please upload a file', type: ['shiny.silent.error', 'validation'] };
+        document.dispatchEvent(event);
+      };
+      need();
+      const byDefault = { mood: mascot.host.state(el).current.target, status: status() };
+
+      watch({ ...errorMap, validation: { mood: 'thinking', status: { mode: 'custom', text: 'Waiting for a file' } } });
+      need();
+      const optedIn = { mood: mascot.host.state(el).current.target, status: status() };
+
+      // A removed watcher arrives as null, or as {} when R sends NULL; both give the server's face back.
+      watch();
+      const removed = { mood: mascot.host.state(el).current.target, status: status() };
+      watch(errorMap);
+      mascot.host.receive({ id: 'a', kind: 'shiny-watch', version: 1,
+        generation: mascot.host.state(el).snapshot.generation, revision: 0, shiny_watch: {} });
+      const fail = new Event('shiny:error');
+      fail.name = 'plot';
+      fail.error = { message: 'boom', type: ['error'] };
+      document.dispatchEvent(fail);
+      const emptyObject = { mood: mascot.host.state(el).current.target, status: status() };
+      return { byDefault, optedIn, removed, emptyObject };
+    })()"
+    )
+    expect_identical(result$byDefault, list(mood = "happy", status = "Ready"))
+    expect_identical(result$optedIn, list(mood = "thinking", status = "Waiting for a file"))
+    expect_identical(result$removed, list(mood = "happy", status = "Ready"))
+    expect_identical(result$emptyObject, list(mood = "happy", status = "Ready"))
+  })
+
+  it("changes the face at once under reduced motion and with a wiggle otherwise", {
+    skip_without_chrome()
+    run <- function(reduced) {
+      js <- local_host_page(reduced = reduced)
+      js(
+        "(() => {
+        const el = document.getElementById('a');
+        mascot.host.receive({
+          id: 'a', kind: 'shiny-watch', version: 1,
+          generation: mascot.host.state(el).snapshot.generation, revision: 0,
+          shiny_watch: { delay_ms: 0, map: { busy: { mood: 'thinking', status: { mode: 'custom', text: 'Busy' } } } }
+        });
+        document.dispatchEvent(new Event('shiny:busy'));
+        const cur = mascot.host.state(el).current;
+        // A busy period shorter than the wiggle still turns the face back.
+        document.dispatchEvent(new Event('shiny:idle'));
+        return { mood: cur.mood, target: cur.target, afterIdle: mascot.host.state(el).current.target };
+      })()"
+      )
+    }
+    # Reduced motion: the overlay's face shows in the same moment, with no wiggle.
+    expect_identical(run(TRUE), list(mood = "thinking", target = "thinking", afterIdle = "idle"))
+    # Full motion: the face is still moving to the overlay's mood, and idle sends it back.
+    expect_identical(run(FALSE), list(mood = "idle", target = "thinking", afterIdle = "idle"))
   })
 })

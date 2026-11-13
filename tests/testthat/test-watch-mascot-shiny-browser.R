@@ -90,4 +90,46 @@ describe("watch_mascot_shiny() in a browser", {
     expect_identical(mascot_test_state(app, "helper")$status, "Saved")
     expect_identical(mascot_test_state(app, "unwatched")$status, "Still steady")
   })
+
+  it("treats validate() messages as no error and reads a settled face right after a real error", {
+    skip_if_not_installed("shinytest2")
+    local_shiny_browser()
+
+    app <- app_driver(function() {
+      library(mascot)
+      shiny::shinyApp(
+        shiny::fluidPage(
+          mascot("helper"),
+          shiny::actionButton("fail", "Fail"),
+          shiny::textOutput("upload"),
+          shiny::textOutput("result")
+        ),
+        function(input, output, session) {
+          watch_mascot_shiny("helper", delay = 0)
+          output$upload <- shiny::renderText(shiny::validate(shiny::need(FALSE, "Please upload a file")))
+          output$result <- shiny::renderText({
+            if (isTRUE(input$fail > 0)) {
+              stop("Real failure", call. = FALSE)
+            }
+            "OK"
+          })
+        }
+      )
+    })
+
+    # Given an output that shows a validate() message
+    app$wait_for_js("document.getElementById('upload')?.textContent.includes('upload')")
+    app$wait_for_idle()
+    # Then the mascot does not report an error
+    state <- mascot_test_state(app, "helper")
+    expect_identical(state$mood, "idle")
+    expect_false(identical(state$status, "An error occurred"))
+
+    # When a real error follows, the reader waits until the face has reached the overlay's mood
+    app$click("fail")
+    app$wait_for_js("document.querySelector('#helper .mascot-status').textContent === 'An error occurred'")
+    state <- mascot_test_state(app, "helper")
+    expect_identical(state$mood, "worried")
+    expect_identical(state$status, "An error occurred")
+  })
 })

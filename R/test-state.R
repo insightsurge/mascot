@@ -118,7 +118,8 @@ mascot_test_state <- function(
     id_json,
     "); ",
     "const st = el && window.mascot && window.mascot.host ? window.mascot.host.state(el) : null; ",
-    "return Boolean(st && st.character && (!st.current || !st.current.swapping)); })()"
+    "const cur = st && st.current; ",
+    "return Boolean(st && st.character && (!cur || (!cur.swapping && cur.mood === cur.target))); })()"
   )
   tryCatch(
     app$wait_for_js(wait_script, timeout = timeout),

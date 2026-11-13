@@ -538,27 +538,33 @@ studio_server <- function(input, output, session) {
       last_gesture(eval(pairs$gesture$short))
     }
     if (ok && remember) {
-      for (field in intersect(names(pairs), names(defaults))) {
-        state[[field]] <- pairs[[field]]
-        if (field %in% c("click", "bubble")) {
-          live_demo[[field]] <- pairs[[field]]
-        }
-        if (field == "mood") {
-          echo_to_control("mood", eval(pairs[[field]]$short), function(value) {
-            updateSelectInput(session, "mood", selected = value)
-          })
-        }
-        if (field == "bubble") {
-          sync_bubble_controls(pairs[[field]])
-        }
-        if (field == "status") {
-          echo_to_control("status_text", eval(pairs[[field]]$helper)$text %||% "", function(value) {
-            updateTextInput(session, "status_text", value = value)
-          })
-        }
-      }
+      remember_pairs(pairs)
     }
     invisible(ok)
+  }
+
+  # Keeps the studio's state, its controls and the generated code in step with settings that reached the
+  # mascot, whether send() sent them or a watcher did (the watch_mascot() demo).
+  remember_pairs <- function(pairs) {
+    for (field in intersect(names(pairs), names(defaults))) {
+      state[[field]] <- pairs[[field]]
+      if (field %in% c("click", "bubble")) {
+        live_demo[[field]] <- pairs[[field]]
+      }
+      if (field == "mood") {
+        echo_to_control("mood", eval(pairs[[field]]$short), function(value) {
+          updateSelectInput(session, "mood", selected = value)
+        })
+      }
+      if (field == "bubble") {
+        sync_bubble_controls(pairs[[field]])
+      }
+      if (field == "status") {
+        echo_to_control("status_text", eval(pairs[[field]]$helper)$text %||% "", function(value) {
+          updateTextInput(session, "status_text", value = value)
+        })
+      }
+    }
   }
 
   # Clicks on buttons that carry data-event and data-value arrive as input$<event>.
@@ -1180,17 +1186,8 @@ studio_server <- function(input, output, session) {
   })
 
   watch_source <- reactiveVal(NULL)
-  watch_mascot(
-    "helper",
-    watch_source,
-    list(
-      idle = list(mood = "idle", status = "Idle"),
-      thinking = list(mood = "thinking", status = "Working"),
-      happy = list(mood = "happy", status = "Done"),
-      worried = list(mood = "worried", status = "Needs attention")
-    ),
-    session = session
-  )
+  watch_demo_map <- eval(watch_demo_map_code)
+  watch_mascot("helper", watch_source, watch_demo_map, session = session)
   observeEvent(
     input$watch_state,
     {
@@ -1198,6 +1195,8 @@ studio_server <- function(input, output, session) {
       watch_source(if (is.null(val) || identical(val, "none")) NULL else val)
       if (!is.null(val) && !identical(val, "none")) {
         add_log(sprintf('watch_source("%s")', val), "call", "watch_mascot() updated helper")
+        entry <- watch_demo_map[[val]]
+        remember_pairs(list(mood = code_mood(entry$mood), status = code_status(entry$status)))
       }
     },
     ignoreInit = TRUE
@@ -1209,12 +1208,14 @@ studio_server <- function(input, output, session) {
     }
     "ok"
   })
-  watch_mascot_task(
-    "helper",
-    studio_task,
-    map = list(initial = list()),
-    session = session
-  )
+  watch_mascot_task("helper", studio_task, session = session)
+  # The task's outcome arrives later, so the studio's state follows the task status, as the watcher does.
+  observe({
+    entry <- task_demo_map[[studio_task$status()]]
+    if (length(entry)) {
+      remember_pairs(list(mood = code_mood(entry$mood), status = code_status(entry$status)))
+    }
+  })
   observeEvent(
     input$watch_task_state,
     {
@@ -1230,7 +1231,19 @@ studio_server <- function(input, output, session) {
     ignoreInit = TRUE
   )
 
-  studio_validator_obs <- NULL
+  # The validator exists from the start: watch_mascot_validator() keeps its first result as the starting point
+  # (an empty form opens quietly), so the first choice in the panel already shows a change.
+  if (requireNamespace("shinyvalidate", quietly = TRUE)) {
+    studio_iv <- shinyvalidate::InputValidator$new()
+    studio_iv$add_rule("watch_validator_field_a", function(x) {
+      if (isTRUE(input$watch_validator_state %in% c("invalid_1", "invalid_2"))) "Required"
+    })
+    studio_iv$add_rule("watch_validator_field_b", function(x) {
+      if (identical(input$watch_validator_state, "invalid_2")) "Required"
+    })
+    studio_iv$enable()
+    watch_mascot_validator("helper", studio_iv, session = session)
+  }
   observeEvent(
     input$watch_validator_state,
     {
@@ -1239,43 +1252,42 @@ studio_server <- function(input, output, session) {
         return()
       }
       if (!requireNamespace("shinyvalidate", quietly = TRUE)) {
-        add_log(
-          "watch_mascot_validator()",
-          "note",
-          "Install shinyvalidate to run watch_mascot_validator() live"
-        )
+        add_log("watch_mascot_validator()", "note", "Install shinyvalidate to run watch_mascot_validator() live")
         return()
       }
-      if (is.null(studio_validator_obs)) {
-        studio_iv <- shinyvalidate::InputValidator$new()
-        studio_iv$add_rule("watch_validator_field_a", function(x) {
-          if (input$watch_validator_state %in% c("invalid_1", "invalid_2")) "Required"
-        })
-        studio_iv$add_rule("watch_validator_field_b", function(x) {
-          if (identical(input$watch_validator_state, "invalid_2")) "Required"
-        })
-        studio_iv$condition(function() {
-          !identical(input$watch_validator_state %||% "none", "none")
-        })
-        studio_iv$enable()
-        studio_validator_obs <<- watch_mascot_validator("helper", studio_iv, session = session)
-      }
       add_log(sprintf('watch_validator_state("%s")', val), "call", "watch_mascot_validator() updated helper")
+      failing <- switch(val, invalid_1 = 1L, invalid_2 = 2L, 0L)
+      remember_pairs(
+        if (failing == 0L) {
+          list(mood = code_mood("happy"), status = code_status("All fields look good"))
+        } else {
+          list(
+            mood = code_mood("worried"),
+            status = code_status(paste(failing, if (failing == 1L) "field needs" else "fields need", "attention"))
+          )
+        }
+      )
     },
     ignoreInit = TRUE
   )
 
-  studio_shiny_watch_active <- FALSE
+  # "none" removes the overlay with the watcher's $destroy(); any other choice starts it again.
+  studio_shiny_watcher <- reactiveVal(NULL)
   observeEvent(
     input$watch_shiny_state,
     {
       val <- input$watch_shiny_state
+      watcher <- isolate(studio_shiny_watcher())
       if (is.null(val) || identical(val, "none")) {
+        if (!is.null(watcher)) {
+          watcher$destroy()
+          studio_shiny_watcher(NULL)
+          add_log("watcher$destroy()", "call", "watch_mascot_shiny() overlay removed")
+        }
         return()
       }
-      if (!studio_shiny_watch_active) {
-        studio_shiny_watch_active <<- TRUE
-        watch_mascot_shiny("helper", session = session)
+      if (is.null(watcher)) {
+        studio_shiny_watcher(watch_mascot_shiny("helper", session = session))
       }
       add_log(sprintf('watch_shiny_state("%s")', val), "call", "watch_mascot_shiny() observing Shiny events")
     },
@@ -1750,7 +1762,7 @@ studio_server <- function(input, output, session) {
         list(
           "helper",
           quote(source),
-          named_call("c", list(idle = "idle", thinking = "thinking", happy = "happy", worried = "worried"))
+          watch_demo_map_code
         )
       ),
       watch_mascot_task = format_call(

@@ -685,10 +685,7 @@ panel_wiring <- function() {
     arg_field(
       "watch_mascot",
       "map",
-      code_block(
-        "list(\n  idle = list(mood = \"idle\", status = \"Idle\"),\n  thinking = list(mood = \"thinking\", status = \"Working\"),\n  happy = list(mood = \"happy\", status = \"Done\"),\n  worried = list(mood = \"worried\", status = \"Needs attention\")\n)",
-        "pg-code-small"
-      )
+      code_block(format_expr(watch_demo_map_code), "pg-code-small")
     ),
     arg_field("watch_mascot", "session", NULL),
     fn_heading("watch_mascot_task"),
@@ -746,6 +743,15 @@ panel_wiring <- function() {
         "pg-code-small"
       )
     ),
+    arg_field(
+      "watch_mascot_validator",
+      "delay",
+      div(
+        class = "pg-hint",
+        "Seconds to wait after the last change. Keep 0 for choices made in one click; use about 1 for typed ",
+        "fields with a format rule, such as an email, so the mascot reacts when typing pauses."
+      )
+    ),
     arg_field("watch_mascot_validator", "session", NULL),
     fn_heading("watch_mascot_shiny"),
     arg_field("watch_mascot_shiny", "...", NULL),
@@ -762,7 +768,7 @@ panel_wiring <- function() {
         radioButtons(
           "watch_shiny_state",
           "Simulated browser event",
-          c("none" = "none", "ok" = "ok", "error" = "error"),
+          c("off ($destroy())" = "none", "ok" = "ok", "error" = "error"),
           selected = "none",
           inline = TRUE
         ),
@@ -773,6 +779,7 @@ panel_wiring <- function() {
             "  busy = list(mood = \"thinking\", status = \"Working...\"),\n",
             "  idle = list(),\n",
             "  error = list(mood = \"worried\", status = \"An error occurred\"),\n",
+            "  validation = list(),\n",
             "  disconnected = list(mood = \"worried\", status = \"Connection lost. Reload the page to continue.\")\n",
             ")"
           ),

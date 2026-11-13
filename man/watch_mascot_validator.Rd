@@ -9,6 +9,7 @@ watch_mascot_validator(
   validator,
   ...,
   map = NULL,
+  delay = 0,
   session = shiny::getDefaultReactiveDomain()
 )
 }
@@ -30,6 +31,13 @@ and \code{"invalid"}. Provided keys merge field-by-field onto the defaults; pass
 an empty \code{list()} for a key (for example \code{list(valid = list())}) to leave
 the mascot unchanged in that state.}
 
+\item{delay}{Seconds to wait after the last change before the mascot
+reacts, a number of at least 0. The default, \code{0}, reacts at once, which
+suits choices made in one click (a select, a checkbox). For typed fields
+with a format rule (an email, a sample id, a date typed by hand), a value
+such as \code{1} waits until the person pauses typing, so the mascot does not
+turn worried at the first letter.}
+
 \item{session}{A Shiny session, defaulting to the current reactive domain.
 Must be named when supplied. \code{NULL} outside a server or module is an error.}
 }
@@ -44,6 +52,14 @@ updates the mascot automatically through \code{\link[=update_mascot]{update_masc
 \details{
 \code{watch_mascot_validator()} requires the suggested package \code{shinyvalidate}.
 
+The first result is not shown: an empty form opens with the mood and status
+the mascot starts with in \code{\link[=mascot]{mascot()}}, and the mascot reacts from the first
+change in the number of failing fields. After that, an update is sent only
+when that number changes, so typing in a field that stays valid sends
+nothing. To watch several forms, combine their validators into one with
+\code{shinyvalidate}'s \code{add_validator()} and watch the parent: two watchers on one
+mascot would overwrite each other.
+
 Each time \code{validator$validate()} evaluates:
 \itemize{
 \item If the validator has no rules yet (returns an empty \code{list()}), the mascot
@@ -55,7 +71,7 @@ is left unchanged.
 }
 
 Overrides in \code{map} apply per key and per field. Passing
-\code{c(invalid = "sad")} keeps the dynamic failing-field count in \code{status} while
+\code{c(invalid = "thinking")} keeps the dynamic failing-field count in \code{status} while
 replacing only \code{mood}. Passing \code{list(invalid = list(status = "Fix errors"))}
 overrides the dynamic count while keeping \code{mood = "worried"}.
 

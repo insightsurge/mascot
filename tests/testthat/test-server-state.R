@@ -163,4 +163,16 @@ describe("mascot_server_state()", {
     expect_error(mascot_server_state("helper", "tessa", session = session), class = "mascot_error_dots")
     expect_error(mascot_server_state("helper", typo = 1, session = session), class = "mascot_error_dots")
   })
+
+  it("reports no mood when the fallback character's default mood was never requested or was rejected", {
+    shiny::testServer(function(input, output, session) update_mascot("helper", status = "Checking"), {
+      state <- mascot_server_state("helper", character = "tessa")
+      expect_null(state$mood)
+      expect_identical(state$status, "Checking")
+    })
+    shiny::testServer(function(input, output, session) update_mascot("helper", mood = "bogus"), {
+      expect_warning(state <- mascot_server_state("helper", character = "tessa"), class = "mascot_update_ignored")
+      expect_null(state$mood)
+    })
+  })
 })

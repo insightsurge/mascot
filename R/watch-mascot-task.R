@@ -21,7 +21,7 @@
 #'   lists (same entry format as [watch_mascot()]). Allowed keys are
 #'   `"initial"`, `"running"`, `"success"`, and `"error"`. Provided keys merge
 #'   field-by-field onto the defaults; pass an empty `list()` for a key (for
-#'   example `list(initial = list())`) to leave the mascot unchanged in that
+#'   example `list(error = list())`) to leave the mascot unchanged in that
 #'   state.
 #' @param session A Shiny session, defaulting to the current reactive domain.
 #'   Must be named when supplied. `NULL` outside a server or module is an error.
@@ -30,7 +30,9 @@
 #' @details
 #' By default, `watch_mascot_task()` maps `task$status()` as:
 #'
-#' - `"initial"`: `mood = "idle"`, `status = "Ready"`
+#' - `"initial"`: nothing, so the mood and status the mascot starts with in
+#'   [mascot()] stay until the task first runs (set `map = c(initial = "idle")`
+#'   to choose one)
 #' - `"running"`: `mood = "thinking"`, `status = "Running task"`
 #' - `"success"`: `mood = "happy"`, `status = "Task complete"`
 #' - `"error"`: `mood = "worried"`, `status = "Task failed"`
@@ -39,6 +41,9 @@
 #' `c(success = "celebrating")` changes only the mood on success while keeping
 #' `status = "Task complete"`; passing `list(running = list(status = "Fitting"))`
 #' changes only the status text while keeping `mood = "thinking"`.
+#'
+#' An update is sent only when `task$status()` changes, so a task that runs
+#' again moves through `"running"` and back each time.
 #'
 #' Updates are dispatched via [update_mascot()], so manual `update_mascot()`
 #' calls and watchers follow the same path: whichever runs last wins. Inside a
@@ -117,14 +122,16 @@ watch_mascot_task <- function(
   force(id)
   force(task)
   force(session)
-  obs <- shiny::observe(
-    {
+  obs <- watch_mascot_observe(
+    function() {
       status <- task$status()
-      if (is.character(status) && length(status) == 1L && !is.na(status) && status %in% names(entries)) {
-        watch_mascot_dispatch(id, entries[[status]], session)
+      if (!is.character(status) || length(status) != 1L || is.na(status) || !status %in% names(entries)) {
+        return(NULL)
       }
+      list(key = status, patch = entries[[status]])
     },
-    domain = session
+    id,
+    session
   )
   invisible(obs)
 }
@@ -133,7 +140,7 @@ watch_mascot_task <- function(
 #' @noRd
 task_default_map <- function() {
   list(
-    initial = list(mood = "idle", status = "Ready"),
+    initial = list(),
     running = list(mood = "thinking", status = "Running task"),
     success = list(mood = "happy", status = "Task complete"),
     error = list(mood = "worried", status = "Task failed")

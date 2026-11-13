@@ -28,7 +28,7 @@ character vector of mood ids or a named list of \code{\link[=update_mascot]{upda
 lists (same entry format as \code{\link[=watch_mascot]{watch_mascot()}}). Allowed keys are
 \code{"initial"}, \code{"running"}, \code{"success"}, and \code{"error"}. Provided keys merge
 field-by-field onto the defaults; pass an empty \code{list()} for a key (for
-example \code{list(initial = list())}) to leave the mascot unchanged in that
+example \code{list(error = list())}) to leave the mascot unchanged in that
 state.}
 
 \item{session}{A Shiny session, defaulting to the current reactive domain.
@@ -46,7 +46,9 @@ automatically through \code{\link[=update_mascot]{update_mascot()}}.
 \details{
 By default, \code{watch_mascot_task()} maps \code{task$status()} as:
 \itemize{
-\item \code{"initial"}: \code{mood = "idle"}, \code{status = "Ready"}
+\item \code{"initial"}: nothing, so the mood and status the mascot starts with in
+\code{\link[=mascot]{mascot()}} stay until the task first runs (set \code{map = c(initial = "idle")}
+to choose one)
 \item \code{"running"}: \code{mood = "thinking"}, \code{status = "Running task"}
 \item \code{"success"}: \code{mood = "happy"}, \code{status = "Task complete"}
 \item \code{"error"}: \code{mood = "worried"}, \code{status = "Task failed"}
@@ -56,6 +58,9 @@ Overrides in \code{map} apply per key and per field. Passing
 \code{c(success = "celebrating")} changes only the mood on success while keeping
 \code{status = "Task complete"}; passing \code{list(running = list(status = "Fitting"))}
 changes only the status text while keeping \code{mood = "thinking"}.
+
+An update is sent only when \code{task$status()} changes, so a task that runs
+again moves through \code{"running"} and back each time.
 
 Updates are dispatched via \code{\link[=update_mascot]{update_mascot()}}, so manual \code{update_mascot()}
 calls and watchers follow the same path: whichever runs last wins. Inside a

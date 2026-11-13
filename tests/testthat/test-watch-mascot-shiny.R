@@ -54,7 +54,7 @@ describe("watch_mascot_shiny()", {
           ),
           delay = 0.25
         )
-        expect_null(ret)
+        expect_type(ret$destroy, "closure")
         session$userData$ret <- ret
       },
       {
@@ -86,6 +86,8 @@ describe("watch_mascot_shiny()", {
         expect_null(env$shiny_watch$map$idle)
         expect_null(env$shiny_watch$map$disconnected)
         expect_identical(env$shiny_watch$map$error$mood, "worried")
+        # validate() messages change nothing unless the map asks for it.
+        expect_null(env$shiny_watch$map$validation)
 
         state <- mascot_server_state("helper")
         expect_identical(state$mood, "happy")
@@ -105,6 +107,20 @@ describe("watch_mascot_shiny()", {
         expect_identical(watch_msg$shiny_watch$delay_ms, 0)
         expect_identical(watch_msg$shiny_watch$map$busy$mood, "celebrating")
         expect_identical(watch_msg$shiny_watch$map$busy$status, list(mode = "mood"))
+
+        # $destroy() removes the overlay in the browser and leaves server state alone.
+        expect_null(session$userData$ret$destroy())
+        session$flushReact()
+        removed <- messages[[length(messages)]]$message
+        expect_identical(removed$kind, "shiny-watch")
+        expect_null(removed$shiny_watch)
+        expect_identical(mascot_server_state("helper")$mood, "happy")
+
+        # An opt-in validation entry reaches the browser.
+        watch_mascot_shiny("helper", map = list(validation = list(mood = "thinking", status = "Waiting for input")))
+        session$flushReact()
+        opted <- messages[[length(messages)]]$message
+        expect_identical(opted$shiny_watch$map$validation$mood, "thinking")
       }
     )
   })

@@ -569,51 +569,6 @@ mascot_problem <- function(session, key, text) {
   invisible(NULL)
 }
 
-#' Coalesce browser event watcher configuration separately from server state
-#' @noRd
-mascot_shiny_watch <- function(session, key, config) {
-  checkmate::assert_multi_class(session, c("ShinySession", "session_proxy", "MockShinySession"))
-  checkmate::assert_string(key)
-  checkmate::assert_list(config, names = "unique", null.ok = TRUE)
-  owner <- mascot_session(session)
-  owner$shiny_watchers[[key]] <- config
-  if (isTRUE(owner$shiny_watch_scheduled[[key]])) {
-    return(invisible(NULL))
-  }
-  owner$shiny_watch_scheduled[[key]] <- TRUE
-  session$onFlushed(
-    function() {
-      if (owner$closed) {
-        return(invisible(NULL))
-      }
-      owner$shiny_watch_scheduled[[key]] <- NULL
-      record <- owner$states[[key]]
-      current <- owner$shiny_watchers[[key]]
-      if (!is.null(record) && record$live) {
-        sent <- list(generation = record$generation, config = current)
-        if (record$scheduled || identical(owner$shiny_watch_sent[[key]], sent)) {
-          return(invisible(NULL))
-        }
-        owner$shiny_watch_sent[[key]] <- sent
-        session$sendCustomMessage(
-          "mascot:update",
-          list(
-            version = 1L,
-            kind = "shiny-watch",
-            id = key,
-            generation = record$generation,
-            revision = record$revision,
-            shiny_watch = current
-          )
-        )
-      }
-    },
-    once = TRUE
-  )
-  mascot_request_flush(session)
-  invisible(NULL)
-}
-
 #' Validate safe counters without accepting fractional or infinite values
 #' @noRd
 mascot_safe_counter <- function(value) {

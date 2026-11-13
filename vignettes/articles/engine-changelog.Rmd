@@ -13,7 +13,12 @@ covered in `NEWS.md`.
   overlay configuration on complete-state and `kind: "shiny-watch"` envelopes. Watched mascots track `shiny:busy`
   (with configurable delay), `shiny:idle`, `shiny:error` / `shiny:value`, and `shiny:disconnected` as non-destructive
   visual overlays over the server state without overwriting `record.mood` or `record.status`, and skip mood updates
-  when the displayed mood is unchanged. Unwatched mascots retain the existing connection-loss behaviour unchanged.
+  when the mood the face is moving to is unchanged (so a busy period shorter than the wiggle still turns the face
+  back). `req()` and `validate()` messages are not errors; a `validate()` message shows the optional `validation`
+  overlay. A watcher removed from R (`$destroy()`) arrives as `null` or `{}` and removes the overlay. Unwatched mascots
+  keep the existing connection-loss behaviour.
+* **The face's target mood (#188).** The player's `controller.current()` also reports `target`, the mood the face is
+  moving to, so `mascot_test_state()` waits until the face has reached it.
 
 # mascot 0.1.0
 

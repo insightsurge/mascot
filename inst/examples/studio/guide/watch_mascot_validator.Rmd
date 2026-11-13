@@ -35,6 +35,13 @@ htmltools::tags$pre(htmltools::tags$code(paste0(
 )))
 ```
 
+The first result only sets the starting point, so an empty form opens with the
+mascot's own mood and status; the mascot reacts from the first change in the
+number of failing fields. For typed fields with a format rule, such as an
+email, pass `delay = 1` so the mascot reacts when typing pauses, not at the
+first letter. To watch several forms, combine their validators with
+`add_validator()` and watch the parent.
+
 Validators with no registered rules leave the mascot unchanged. Passing an empty
 `list()` for `"valid"` or `"invalid"` also leaves that state unchanged. Inside a
 Shiny module, pass the module's local mascot id, the same as in

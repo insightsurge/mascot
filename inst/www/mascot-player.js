@@ -1537,7 +1537,13 @@
       /** The displayed state: { character: id, mood, swapping }. Readable at the final frame after destroy(). */
       current() {
         const visible = shown(frame);
-        return { character: visible.entry.source.id, mood: visible.mood, swapping: visible.swapping };
+        // target is the mood the face is moving to; it equals mood once a change has finished.
+        return {
+          character: visible.entry.source.id,
+          mood: visible.mood,
+          swapping: visible.swapping,
+          target: state.mood,
+        };
       },
     };
     drawFrame();

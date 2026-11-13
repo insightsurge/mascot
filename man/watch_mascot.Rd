@@ -42,6 +42,15 @@ Each time \code{source()} evaluates to a non-\code{NA}, length-1 atomic value,
 so on). Values that are \code{NULL}, \code{NA}, non-scalar, non-atomic, or absent from
 \code{map} leave the mascot unchanged.
 
+The watcher sends an update only when the looked-up value changes. A
+reactive expression re-runs whenever its inputs change, even when its
+result stays the same (a form that stays valid while someone types), and
+then nothing is sent: a gesture plays and a bubble shows once per change,
+and an update you sent yourself in between stays in place. A value that
+cannot be looked up (\code{NULL}, \code{NA}) counts as no value, so the next value is
+always applied. To react only after typing pauses, wrap the source in
+\code{\link[shiny:debounce]{shiny::debounce()}}, for example \code{watch_mascot("helper", shiny::debounce(ready, 1000), map)}.
+
 Updates are dispatched via \code{\link[=update_mascot]{update_mascot()}}, so manual \code{update_mascot()}
 calls and watchers follow the same path: whichever runs last wins. Inside a
 Shiny module, pass the module's local mascot \code{id} (the same as in

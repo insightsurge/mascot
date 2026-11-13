@@ -220,6 +220,9 @@
   }
 
   let shinyBusy = false;
+  // Mascots with a watch_mascot_shiny() overlay. Kept apart from `live`: the overlay can arrive with the first
+  // state, before the mascot is live, and the busy and idle events around it must still reach it.
+  const watched = new Set();
 
   function activeWatchOverlay(record) {
     const watch = record.shinyWatch;
@@ -227,6 +230,7 @@
     if (!watch || !state) return null;
     if (disconnected) return watch.map.disconnected || null;
     if (state.errors.size > 0 && watch.map.error) return watch.map.error;
+    if (state.validations.size > 0 && watch.map.validation) return watch.map.validation;
     if (state.busyShown && watch.map.busy) return watch.map.busy;
     if (state.idleActive && watch.map.idle) return watch.map.idle;
     return null;
@@ -259,15 +263,16 @@
     const targetMood = isDisconnectOverlay
       ? resolveWatchMood(record, record.shinyWatch.map.disconnected)
       : record.problem
-        ? current.mood
+        ? (current.target ?? current.mood)
         : overlay
           ? resolveWatchMood(record, overlay)
           : record.mood;
     if (isDisconnectOverlay) {
       record.controller.update({ mood: targetMood, gestures: false, reduced: true, swap: false });
       if (record.motion.gestures) record.controller.update({ gestures: true });
-    } else if (targetMood !== current.mood) {
-      // Omit mood when unchanged so repeated ticks update status without re-wiggling.
+    } else if (targetMood !== (current.target ?? current.mood)) {
+      // Compare with the mood the face is moving to, not the one still visible mid-wiggle: a busy period shorter
+      // than the wiggle must still turn back. Omit mood when unchanged so repeated ticks don't re-wiggle.
       const patch = { mood: targetMood, swap: false };
       if (forceReduced) patch.reduced = true;
       record.controller.update(patch);
@@ -301,18 +306,22 @@
   }
 
   function installShinyWatch(record, config) {
-    const next = config || null;
+    // A removed watcher arrives as null or as an empty object (R's NULL); either removes the overlay.
+    const next = config?.map ? config : null;
     if (sameValue(record.shinyWatch, next)) return;
     clearWatchTimers(record);
     const previous = record.watchState;
     record.shinyWatch = next;
+    if (next) watched.add(record);
+    else watched.delete(record);
     record.watchState = next
       ? {
           busyTimer: null,
-          busyShown: Boolean(previous?.busyShown && next.map.busy),
+          busyShown: Boolean(shinyBusy && previous?.busyShown && next.map.busy),
           idleActive: Boolean(previous?.idleActive && next.map.idle),
           updatedDuringBusy: Boolean(previous?.updatedDuringBusy),
           errors: previous?.errors || new Set(),
+          validations: previous?.validations || new Set(),
         }
       : null;
     if (next && shinyBusy && !record.watchState.busyShown) scheduleBusyWatch(record);
@@ -350,7 +359,7 @@
 
   const busyHandler = () => {
     shinyBusy = true;
-    for (const record of live) {
+    for (const record of watched) {
       if (record.shinyWatch) {
         if (record.watchState) record.watchState.updatedDuringBusy = false;
         scheduleBusyWatch(record);
@@ -359,7 +368,7 @@
   };
   const idleHandler = () => {
     shinyBusy = false;
-    for (const record of live) {
+    for (const record of watched) {
       if (!record.shinyWatch || !record.watchState) continue;
       clearWatchTimers(record);
       const wasBusy = record.watchState.busyShown;
@@ -378,12 +387,18 @@
         : typeof event?.detail?.name === 'string' && event.detail.name.length
           ? event.detail.name
           : '__unnamed__';
-    const silentReq =
-      Array.isArray(event?.error?.type) && event.error.type.includes('shiny.silent.error') && !event.error.message;
-    for (const record of live) {
+    // req() and validate(need()) send silent errors: they are not failures. A validate() message (it has text)
+    // shows the optional validation overlay; req() (no text) shows nothing.
+    const types = Array.isArray(event?.error?.type) ? event.error.type : [event?.error?.type];
+    const silent = types.includes('shiny.silent.error');
+    const validation = silent && types.includes('validation') && Boolean(event?.error?.message);
+    for (const record of watched) {
       if (!record.shinyWatch || !record.watchState) continue;
-      if (silentReq) record.watchState.errors.delete(errorKey);
-      else record.watchState.errors.add(errorKey);
+      const state = record.watchState;
+      if (silent) state.errors.delete(errorKey);
+      else state.errors.add(errorKey);
+      if (validation) state.validations.add(errorKey);
+      else state.validations.delete(errorKey);
       syncWatchOverlay(record, false);
     }
   };
@@ -394,13 +409,16 @@
         : typeof event?.detail?.name === 'string' && event.detail.name.length
           ? event.detail.name
           : null;
-    for (const record of live) {
+    for (const record of watched) {
       if (!record.shinyWatch || !record.watchState) continue;
       if (valueKey) {
-        record.watchState.errors.delete(valueKey);
-        record.watchState.errors.delete('__unnamed__');
+        for (const set of [record.watchState.errors, record.watchState.validations]) {
+          set.delete(valueKey);
+          set.delete('__unnamed__');
+        }
       } else {
         record.watchState.errors.clear();
+        record.watchState.validations.clear();
       }
       syncWatchOverlay(record, false);
     }
@@ -438,7 +456,10 @@
     ledger.resumed = true;
     record.revision = 0;
     record.recoverySent = false;
-    if (record.watchState) record.watchState.errors.clear();
+    if (record.watchState) {
+      record.watchState.errors.clear();
+      record.watchState.validations.clear();
+    }
     publish(record, 'resume');
   }
 
@@ -2810,6 +2831,7 @@
     // Terminal notice is emitted while the binding/ledger still exist, before
     // Shiny tears down the element. The explicit event route is repeatable.
     clearWatchTimers(record);
+    watched.delete(record);
     stopTimer(record);
     record.ledger.bubble = record.bubble ? { ...record.bubble } : null;
     record.ledger.live = false;

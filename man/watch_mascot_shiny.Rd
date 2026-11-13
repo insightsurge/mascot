@@ -23,7 +23,7 @@ typo fails instead of matching silently.}
 \item{map}{Optional overrides for the default browser event map, given as a
 named character vector of mood ids or a named list of overlay entries with
 \code{mood} and \code{status} (same entry format as \code{\link[=watch_mascot]{watch_mascot()}}). Allowed keys
-are \code{"busy"}, \code{"idle"}, \code{"error"}, and \code{"disconnected"}. Provided keys
+are \code{"busy"}, \code{"idle"}, \code{"error"}, \code{"validation"} and \code{"disconnected"}. Provided keys
 merge field-by-field onto the defaults; pass an empty \code{list()} for a key
 (for example \code{list(error = list())}) to ignore that event.}
 
@@ -36,8 +36,9 @@ show \code{"busy"} immediately on \code{shiny:busy}.}
 Must be named when supplied. \code{NULL} outside a server or module is an error.}
 }
 \value{
-Called for its side effect in the browser; returns \code{NULL}
-invisibly.
+Invisibly, a list with one function, \code{destroy()}. Call
+\verb{$destroy()} on it to remove the overlay: the mascot then shows what the
+server last set and ignores busy and error events from Shiny again.
 }
 \description{
 Connect a mascot in the UI to Shiny browser events so busy cycles,
@@ -53,14 +54,20 @@ By default, \code{watch_mascot_shiny()} maps Shiny browser events as:
 overlay so whatever \code{\link[=update_mascot]{update_mascot()}} or \code{\link[=mascot]{mascot()}} last set shows again
 \item \code{"error"} (\code{shiny:error}): \code{mood = "worried"},
 \code{status = "An error occurred"} (stays active until every failed output
-produces a value again via \code{shiny:value})
+produces a value again via \code{shiny:value}). The messages of \code{\link[shiny:req]{shiny::req()}}
+and \code{\link[shiny:validate]{shiny::validate()}} are not errors and do not count.
+\item \code{"validation"} (an output showing a \code{\link[shiny:validate]{shiny::validate()}} message, such as
+"Please upload a file"): empty \code{list()}, so nothing changes. Set it, for
+example \code{map = list(validation = list(mood = "thinking"))}, to react.
 \item \code{"disconnected"} (\code{shiny:disconnected}): \code{mood = "worried"},
 \code{status = "Connection lost. Reload the page to continue."}
 }
 
 When events overlap, overlays take priority in the order
-\code{"disconnected"}, \code{"error"}, \code{"busy"}, \code{"idle"}, over the mascot's
-server-side state. Because overlays are applied purely in the browser,
+\code{"disconnected"}, \code{"error"}, \code{"validation"}, \code{"busy"}, \code{"idle"}, over the mascot's
+server-side state. An overlay mood the character does not have leaves the
+face as the server set it, while the status text of the overlay still shows.
+Because overlays are applied purely in the browser,
 \code{\link[=mascot_server_state]{mascot_server_state()}} continues to reflect what R sent via
 \code{\link[=update_mascot]{update_mascot()}}.
 
@@ -81,6 +88,8 @@ shiny::testServer(
   {
     session$flushReact()
     mascot_server_state("helper")$id
+    watcher <- watch_mascot_shiny("helper")
+    watcher$destroy()
   }
 )
 }

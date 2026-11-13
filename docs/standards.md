@@ -326,6 +326,11 @@ use plain words in help pages:
 - `mascot_read_character()` and `mascot_check_character()`
 - the character file format
 
+**Experimental in the development version:**
+- `watch_mascot()`, `watch_mascot_task()` and `watch_mascot_validator()`
+- `watch_mascot_shiny()`
+- `mascot_server_state()` and `mascot_test_state()`
+
 ## 6. Testing
 
 - **A pyramid.** Most tests are fast unit tests. Above them sit `shiny::testServer()` tests for server logic, and

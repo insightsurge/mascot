@@ -27,7 +27,6 @@ htmltools::tags$pre(htmltools::tags$code(paste0(
   '  "helper",\n',
   '  review,\n',
   '  map = list(\n',
-  '    initial = list(),\n',
   '    running = list(status = "Reviewing sample"),\n',
   '    error = list(bubble = mascot_bubble("Check the input.", duration = Inf))\n',
   '  )\n',
@@ -36,7 +35,9 @@ htmltools::tags$pre(htmltools::tags$code(paste0(
 )))
 ```
 
-An empty `list()` for a key leaves the mascot unchanged in that state. Inside a
+Before the task first runs (`"initial"`), the mascot keeps the mood and status
+it starts with. An update is sent only when the task's status changes. An
+empty `list()` for a key leaves the mascot unchanged in that state. Inside a
 Shiny module, pass the module's local mascot id, the same as in
 `update_mascot()`.
 

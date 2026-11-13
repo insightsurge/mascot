@@ -282,3 +282,17 @@ guide_palette_swap <- function() {
     guide_dependency()
   )
 }
+
+# The worried-mascot example for the update_mascot() guide page: the call and the status text it shows.
+guide_devmode_worried <- function() {
+  spec <- guide_devmode_worried_spec()
+  htmltools::attachDependencies(
+    htmltools::tagList(
+      htmltools::tags$h3(class = "pg-section-title", spec$title),
+      htmltools::tags$p(spec$sentence),
+      htmltools::tags$pre(htmltools::tags$code(spec$code)),
+      htmltools::tags$p("The mascot then says:", htmltools::tags$code(spec$status))
+    ),
+    guide_dependency()
+  )
+}

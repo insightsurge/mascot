@@ -54,6 +54,10 @@ produces an error.
 - The click count (`input$<id>_click`) continues across changes of the click.
 - Bubbles survive mood changes and character swaps.
 
+```{r update_mascot-devmode-demo, echo = FALSE}
+guide_devmode_worried()
+```
+
 ### Condition classes
 
 The classes are documented in `?"mascot-package"`. Errors carry `mascot_error`, warnings `mascot_warning` and messages `mascot_message`; the specific classes below come in addition.

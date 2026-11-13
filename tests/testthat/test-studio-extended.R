@@ -1437,6 +1437,32 @@ describe("studio guide pages", {
       env$guide_palette_swap_spec()$sentence
     )
   })
+  it("describes the worried mascot of development mode in the update_mascot() guide, in the studio and on the website", {
+    env <- studio_guide_env()
+    spec <- env$guide_devmode_worried_spec()
+    # The status is the text a real invalid call gives, so the example cannot drift from the package.
+    expect_identical(spec$status, paste0("mascot: helper: ", arg_problem(-5, "size")))
+    live <- page_html(env$studio_guide_page("update_mascot", "tessa", guide_dir()))
+    expect_match(live, spec$title, fixed = TRUE)
+    expect_match(live, "until the next valid update", fixed = TRUE)
+    expect_false(grepl("<(input|select|textarea)\\b|data-mascot", live, perl = TRUE))
+    helpers <- new.env(parent = globalenv())
+    helpers$guide_dir <- guide_dir()
+    sys.source(file.path(guide_dir(), "guide-helpers.R"), helpers)
+    helpers$studio_character <- "tessa"
+    md <- knitr::knit(
+      file.path(guide_dir(), "update_mascot.Rmd"),
+      output = file.path(withr::local_tempdir(), "update_mascot.md"),
+      envir = helpers,
+      quiet = TRUE
+    )
+    site <- page_html(env$studio_guide_pieces(paste(readLines(md), collapse = "\n")))
+    for (text in c(spec$title, spec$code, "until the next valid update")) {
+      expect_match(site, text, fixed = TRUE)
+    }
+    expect_false(grepl("data-event|data-mascot", site))
+    expect_error(env$guide_devmode_worried_spec(""), "id")
+  })
   it("checks the arguments of the helpers the studio and the website guide share", {
     env <- studio_guide_env()
     expect_error(env$guide_data_table(1), "df")

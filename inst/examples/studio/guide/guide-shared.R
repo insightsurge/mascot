@@ -204,3 +204,23 @@ guide_palette_swap_spec <- function(swap = guide_default_swap(), id = "helper") 
     )
   )
 }
+
+# Worked example for the worried mascot that Shiny development mode shows after an invalid update_mascot() call: the
+# call and the status text it produces. Shown the same in the studio and on the website; this guide page has no live
+# widgets, so the mascot itself is not drawn.
+guide_devmode_worried_spec <- function(id = "helper") {
+  checkmate::assert_string(id, min.chars = 1)
+  list(
+    title = "The worried mascot in development mode",
+    sentence = paste(
+      "An invalid value leaves the mascot unchanged. In Shiny development mode the mascot also shows worried, with the",
+      "problem as its status, until the next valid update."
+    ),
+    code = sprintf('update_mascot("%s", size = -5)', id),
+    status = paste0(
+      "mascot: ",
+      id,
+      ": `size` must be a finite number of pixels at least 24 or a positive percentage such as \"20%\"; got -5."
+    )
+  )
+}

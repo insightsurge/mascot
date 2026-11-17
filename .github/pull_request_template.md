@@ -37,18 +37,18 @@ Delete if the sections above cover it. -->
 <!-- For each command you ran, report its result, exit code and any FAIL or SKIP summary lines.
 Name checks you did not run and why. Do not mark an unrun check as passed.
 Only repeatable checks belong in the table; one-off observations go in Notes below.
-Run Rscript tools/cran-gate.R (fast mode) before every commit: format, docs in sync, lint, returns, spelling, pkgdown index,
+Run the gate's fast mode before every commit: format, docs in sync, lint, returns, spelling, pkgdown index,
 R CMD check without tests: 0 errors, 0 warnings, 0 notes.
-Rscript tools/cran-gate.R tests is required before a PR touching R/ or tests/: coverage at least 70%,
+The gate's tests mode is required before a PR touching R/ or tests/: coverage at least 70%,
 not lower than main, and every added runnable R line covered. PARTIAL runs are not merge evidence;
 exit code 3 needs the package creator's decision. Merge evidence is a tests or full run exiting 0.
-See tools/README.md.
+See tools/README.md (the gate is launchR's quality gate).
 The package creator handles release checks, including full mode; a contribution does not require a release. -->
 
 | Command | Result and exit code, or not run and why |
 | --- | --- |
-| `Rscript tools/cran-gate.R` | |
-| `Rscript tools/cran-gate.R tests` (if `R/` or `tests/` changed) | |
+| Gate `fast` | |
+| Gate `tests` (if `R/` or `tests/` changed) | |
 
 <!-- Keep applicable items. Check only completed items; leave pending work unchecked.
 For labels you cannot apply, list the suggested labels in Notes so the package creator can apply them. -->
@@ -63,7 +63,6 @@ For labels you cannot apply, list the suggested labels in Notes so the package c
 - [ ] JS/CSS changes keep status text and honour reduced motion; the changed visual behaviour has been tried with reduced motion on and off.
 - [ ] New `inst/` files have the required licence and `inst/COPYRIGHTS` entries; their presence in the built tarball has been checked using the gate's `full` mode.
 - [ ] Docs, exports or examples changed: `Rscript tools/build-site.R` and `pkgdown::check_pkgdown()` have been run locally, and the site has been viewed in light and dark. Site CI runs from `main` only.
-- [ ] Gate or formatter configuration changed: `Rscript tools/test-cran-gate.R` ends with `All probes behaved as expected`; new checks have a probe.
 - [ ] Every text that describes the changed behaviour is updated: help pages, articles, NEWS; apps like the studio, themes and other examples reached through `mascot_examples()` or other exported functions; `docs/consumers.md`, workflow comments, `tools/README.md`, `.github/workflows/README.md`, `tests/README.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/CONTRIBUTING.md`; and any other page, app, function or file that describes it, including ones added later. Instruction files (`AGENTS.md`, `CLAUDE.md`, `.claude/`) hold only guidance for contributors: no personal setup or private notes. Search terms used for the old wording: 
 
 Notes: <!-- One-off observations, browser/OS versions, screenshots, studio and affected-user results,

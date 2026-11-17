@@ -27,7 +27,7 @@ concurrency:
 jobs:
   release:
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-26.04  # pinned, like gitleaks
+    runs-on: ubuntu-26.04  # pinned
     timeout-minutes: 10  # checks, then tags and creates a GitHub release (a run takes under a minute)
     permissions:
       contents: write  # creates the tag and the release

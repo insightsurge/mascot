@@ -10,6 +10,8 @@
 ^docs$
 ^air\.toml$
 ^\.lintr$
+^\.launchr$
+^\.gitleaksignore$
 ^_pkgdown\.yml$
 ^pkgdown$
 ^cran-comments\.md$

@@ -1,0 +1,23 @@
+# R CMD check with the extended tests on macOS and Windows, weekly and by hand. A workflow of its own, so a failure here
+# leaves R-CMD-check and its badge alone. macOS runs R release only: R 4.1 there has no ready-built packages. The check
+# itself is launchR's; this file says when and where it runs (README.md in this folder).
+name: r-cmd-check-extended
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"   # Mondays 05:00 UTC, with R-CMD-check
+  workflow_dispatch:   # adds a "Run workflow" button on GitHub
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: insightsurge/launchR/.github/workflows/r-cmd-check-extended.yaml@v0.0.19
+    with:
+      platforms: macos/release, windows/release, windows/4.1
+      timeout-minutes: 120   # installing R 4.1 and building packages from source can be slow

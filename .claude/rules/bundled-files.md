@@ -23,7 +23,7 @@ Labels as in `r-code.md` (CRAN / house). Reasons and sources: `docs/standards.md
   commit the new `R/sysdata.rda` with the change; `test-character-catalogue-extended.R` fails until you do.
 
 ## Acceptance checklist for every new shipped file
-- [ ] The file is in the built tarball (`Rscript tools/cran-gate.R full`, step `tarball`).
+- [ ] The file is in the built tarball (the gate's `full` mode, step `tarball`).
 - [ ] It is listed in `inst/COPYRIGHTS` with its origin (the engine: Harsh Verma, MIT, first written for the
       R Engineering Playbook site), holder and licence; third parties have `cph`/`ctb` entries.
 - [ ] It loads offline from the installed package (no network, no CDN).

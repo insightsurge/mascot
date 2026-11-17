@@ -1,119 +1,26 @@
-# Runs the gate's lint mode (tools/cran-gate.R): Air formatting, Biome on JS/CSS in inst/, docs in
-# sync with roxygen, lintr, \value on exported functions, spelling. R CMD check doesn't cover these.
-# lintr's findings show inline in a pull request's "Files changed"; the result is the Code style part of the pull
-# request's CI report (.github/pr-report.json).
-on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
-
+# Style, docs in sync and spelling: the quality gate's lint mode. Linux only. The check itself is launchR's; this file
+# says when it runs (README.md in this folder).
 name: lint
 
-permissions: read-all
+on:
+  pull_request:   # every pull request, also one stacked on another branch
+  push:
+    branches: [main]
+  workflow_dispatch:   # adds a "Run workflow" button on GitHub
 
+permissions:
+  contents: read
+  actions: read   # lets CI read the other checks' results for its report
+  pull-requests: write   # lets CI post its report on the PR
+
+# A new push to a pull request stops this check's older run for it, to save minutes; pushes and weekly runs always
+# finish.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  lint:
-    runs-on: ubuntu-26.04  # pinned, like the repo's other workflows
-    timeout-minutes: 45  # Air, Biome and lintr (about 2-4 min), plus room for a slow package mirror (installing R
-    # alone once took 15 min)
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: posit-dev/setup-air@cf390573ff4fe0f198f35df3a642b1409328d859 # v1.0.1
-        with:
-          version: "0.11.0"   # keep in step with the local install (air --version)
-
-      - uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51 # v2.7.1
-        with:
-          version: "2.5.14"   # keep in step with biome.json's $schema
-
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::devtools, any::roxygen2, any::lintr, any::spelling, any::checkmate, any::cli
-          needs: lint
-
-      - name: Gate (lint mode)
-        id: gate
-        # The run folder in a known place, so the report can read the gate's results (gate.json).
-        run: Rscript tools/cran-gate.R lint --out "${RUNNER_TEMP}/gate"
-
-      - name: Write the lint report
-        if: always()
-        env:
-          OUTCOME: ${{ steps.gate.outcome }}
-          GATE_DIR: ${{ runner.temp }}/gate
-          OUT: ${{ runner.temp }}/lint-part.md
-        run: |
-          case "${OUTCOME}" in
-            success) echo "✅ **Lint:** passed (Air, Biome, lintr, docs in sync, spelling)." > "${OUT}" ;;
-            cancelled) echo "⏹️ **Lint:** cancelled before the gate finished." > "${OUT}" ;;
-            failure)
-              # The gate's failed steps, by name, with the first line of what each found (gate.json in its run folder).
-              json=$(ls "${GATE_DIR}"/*/gate.json 2>/dev/null | head -n 1 || true)
-              failed=""
-              if [ -n "${json}" ]; then
-                failed=$(jq -r '.steps[] | select(.status == "FAIL") | "- `\(.step)`: \(.detail | split("\n")[0] | .[0:200])"' "${json}")
-              fi
-              if [ -n "${failed}" ]; then
-                {
-                  echo "❌ **Lint:** failed: $(jq -r '[.steps[] | select(.status == "FAIL") | .step] | join(", ")' "${json}"). lintr's findings are also shown inline in Files changed."
-                  echo
-                  echo "<details open>"
-                  echo "<summary>What each failed step found</summary>"
-                  echo
-                  echo "${failed}"
-                  echo
-                  echo "</details>"
-                } > "${OUT}"
-              else
-                echo "❌ **Lint:** failed. lintr's findings are shown inline in Files changed; the gate's FAIL lines in the run's log name the other steps." > "${OUT}"
-              fi
-              ;;
-            *) echo "❌ **Lint:** did not run: the job failed while setting up (see the run's log)." > "${OUT}" ;;
-          esac
-
-      - name: Keep the lint report
-        if: always()
-        uses: ./.github/actions/pr-report-part
-        with:
-          name: style-1-lint
-          file: ${{ runner.temp }}/lint-part.md
-
-  # Rewrites the pull request's CI report comment (.github/actions/pr-report-comment). Pull requests from forks and
-  # from Dependabot get the job summary only: their token can't write to the pull request.
-  report:
-    needs: lint
-    if: >-
-      always() && github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ubuntu-26.04
-    timeout-minutes: 10  # a few API calls
-    permissions:
-      actions: read
-      contents: read
-      pull-requests: write
-    # One report job at a time per pull request, across the workflows that write the comment.
-    concurrency:
-      group: pr-report-${{ github.event.pull_request.number }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          sparse-checkout: .github
-          persist-credentials: false
-      - uses: ./.github/actions/pr-report-comment
-        with:
-          config: .github/pr-report.json
+  check:
+    uses: insightsurge/launchR/.github/workflows/lint.yaml@v0.0.19
+    with:
+      ci-report: true

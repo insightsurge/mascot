@@ -2,8 +2,7 @@
 
 ## Supported versions
 
-Until mascot is on CRAN, only the development version on `main` gets fixes. After that, the latest CRAN release
-does.
+The latest CRAN release gets security fixes. A fix lands on `main` first and reaches CRAN in the next release.
 
 ## Reporting a vulnerability
 

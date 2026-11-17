@@ -1,8 +1,7 @@
 # Shiny stress apps
 
-Run from this checkout's root with `RENV_CONFIG_AUTOLOADER_ENABLED=FALSE` and `R_LIBS`
-set to your existing development library.
-Do not restore renv or install packages to run these apps.
+Run from the package root, with the R library you use for mascot's development packages
+(`.github/CONTRIBUTING.md`, "Setup"). The apps need nothing beyond those packages.
 
 ```sh
 Rscript tools/stress/run-stress.R

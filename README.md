@@ -1,7 +1,7 @@
 # mascot <img src="man/figures/logo.png" align="right" height="139" alt="" />
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/insightsurge/mascot/actions/workflows/r-cmd-check.yaml/badge.svg)](https://github.com/insightsurge/mascot/actions/workflows/r-cmd-check.yaml)
 [![R code coverage](https://codecov.io/gh/insightsurge/mascot/graph/badge.svg)](https://app.codecov.io/gh/insightsurge/mascot)
 [![CRAN status](https://www.r-pkg.org/badges/version/mascot)](https://CRAN.R-project.org/package=mascot)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/mascot)](https://CRAN.R-project.org/package=mascot)

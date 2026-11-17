@@ -10,8 +10,9 @@ a character drawn in code shows a mood and animates when the mood changes. What 
 - **Dev packages**: from the package root, run `pak::local_install_dev_deps()` (or `devtools::install_dev_deps()`).
 - **Air**, the formatter for R code: <https://posit-dev.github.io/air/>. Use version 0.11.0, the one CI uses.
 - **Biome**, the formatter and linter for JavaScript and CSS in `inst/`: <https://biomejs.dev>. Use version 2.5.14.
-- **The gate's packages**: devtools, roxygen2, lintr, spelling and jsonlite; also covr, callr and withr for the
-  `tests` mode, and rcmdcheck, pkgbuild and processx for `full`. If one is missing, the gate stops and names it.
+- **The gate's packages**: checkmate, cli, devtools, roxygen2, lintr, spelling and jsonlite; also covr, callr, withr
+  and testthat for the `tests` mode, and rcmdcheck, pkgbuild, processx and pkgdown for `full`. If one is missing, the
+  gate stops and names it.
 - **Google Chrome or Chromium**, for the shinytest2 tests.
 - **Git worktrees**: if you use renv, it keeps a package project's library outside the repository, so in a worktree
   set `R_LIBS` to the path that `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout.
@@ -54,16 +55,16 @@ Update every text that describes what you changed, in the same pull request. Tha
 It works both ways: if you edit an article, guide or example, check that the help page still agrees. Search the
 repository for the old wording and list the search terms in the pull request.
 
-Run the gate from the package root:
+Run the gate from the package root. The gate is [launchR](https://github.com/insightsurge/launchR)'s quality gate,
+the same one CI runs; [`tools/README.md`](https://github.com/insightsurge/mascot/blob/main/tools/README.md) says how to
+start it (written `<gate>` below), which mode to run when, every option and the exit codes. It needs the packages
+listed under Setup.
 
 ```sh
-Rscript tools/cran-gate.R          # fast: before every commit
-Rscript tools/cran-gate.R tests    # tests and coverage: before a pull request that touches R/ or tests/
-Rscript tools/cran-gate.R full     # everything, including the built tarball: before a release
+<gate> fast     # before every commit
+<gate> tests    # tests and coverage: before a pull request that touches R/ or tests/
+<gate> full     # everything, including the built tarball: before a release
 ```
-
-The gate is a plain R script in `tools/`; it needs the packages listed under Setup. Which mode to run when, every
-option and the exit codes are in [`tools/README.md`](https://github.com/insightsurge/mascot/blob/main/tools/README.md).
 
 - `fast` checks formatting (Air and Biome), that `man/` and `NAMESPACE` match the roxygen2 comments, lint, that every
   export has `@returns`, spelling, and `R CMD check --as-cran` without the tests.
@@ -79,10 +80,8 @@ option and the exit codes are in [`tools/README.md`](https://github.com/insights
 - If you edit a built-in character (a file in `inst/format/characters/`) or the character checker, run
   `Rscript tools/build-sysdata.R` and commit the new `R/sysdata.rda` with your change: the package ships the
   built-in characters already checked, and `test-character-catalogue-extended.R` fails until the file matches.
-- If you change the gate itself (the script, `.lintr`, `air.toml` or `biome.json`), also run
-  `Rscript tools/test-cran-gate.R`. It plants one defect per step in a temporary copy
-  of the package and checks that the gate fails for each. The gate is generic (other packages use it as it is),
-  so keep anything specific to mascot out of it.
+- The gate and the CI checks live in launchR, not here: to change a check, open an issue in launchR. mascot's own
+  settings for them are `Config/quality-gate/*` in `DESCRIPTION`, `.lintr`, `air.toml` and `biome.json`.
 
 CI must be green on every pull request, and `R CMD check` must give 0 errors, 0 warnings and 0 notes. The workflows,
 and the gate mode that reproduces each one locally, are listed in

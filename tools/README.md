@@ -4,14 +4,13 @@ Scripts for working on mascot. None of them ship with the package (`tools/` is i
 
 | File or folder | What it is |
 |---|---|
-| `cran-gate.R` | The quality gate: one command that says whether the package would pass CRAN's checks and the house rules |
-| `test-cran-gate.R` | The gate's self-test: plants one defect per check and makes sure the gate catches it |
 | `build-site.R` | Builds the pkgdown site into `site/` |
 | `build-sysdata.R` | Writes `R/sysdata.rda`, the built-in characters already checked (below) |
 | `character-coverage.R` | Line coverage of the character files only, without the full tests run |
 | `stress/` | Shiny apps that try to break the mascot, run by hand in Chrome (see `stress/README.md`) |
 
-Run every script from the package root, for example `Rscript tools/cran-gate.R`.
+Run every script from the package root, for example `Rscript tools/build-site.R`. The quality gate is not here: it is
+launchR's (below).
 
 ## The stored built-in characters
 
@@ -22,7 +21,22 @@ there. After editing a file in `inst/format/characters/` or the character checke
 `tests/testthat/test-character-catalogue-extended.R` fails: it compares each stored character with a fresh check of
 its file (it runs in the gate's `tests` mode and wherever the extended tests run, not on CRAN).
 
-## The gate in plain words
+## The quality gate
+
+The gate is [launchR](https://github.com/insightsurge/launchR)'s quality gate, the same one CI runs: one command that
+says whether the package would pass CRAN's checks and the house rules. mascot keeps no copy. Run it at the version the
+workflows use (the `@v...` in `.github/workflows/r-cmd-check.yaml`), from the package root, in R:
+
+```r
+gate <- tempfile(fileext = ".R")
+download.file("https://raw.githubusercontent.com/insightsurge/launchR/v0.0.19/quality-gate/quality-gate.R", gate)
+system2(file.path(R.home("bin"), "Rscript"), c(gate, "fast"))
+```
+
+In a clone of launchR, `Rscript <launchR>/cli/launchr.R gate fast` does the same. It needs checkmate, cli, devtools,
+jsonlite, spelling, roxygen2, lintr, callr, covr, withr, testthat, pkgbuild, processx, rcmdcheck and pkgdown, plus
+[Air](https://posit-dev.github.io/air/) and [Biome](https://biomejs.dev) at the versions in
+`.github/CONTRIBUTING.md`. Below, `<gate>` stands for either command.
 
 The gate runs a fixed list of checks and prints one line per check, then a verdict:
 
@@ -39,7 +53,7 @@ to re-run the gate just to find out what failed.
 
 ### Which mode when
 
-`Rscript tools/cran-gate.R <mode>`
+`<gate> <mode>`
 
 | Mode | Run it | What it checks |
 |---|---|---|
@@ -59,7 +73,7 @@ In short: `fast` while working, `tests` before a PR, `full` before a release.
 | `--filter studio` | Run only the test files whose names match, while fixing one test | No: PARTIAL |
 | `--no-coverage` | Run the tests without covr, more quickly | No: PARTIAL |
 | `--no-retry` | Skip the re-run of failing test files, to see the raw failure | Yes |
-| `--out <folder>` | Put the run folder somewhere else (or set `CRAN_GATE_OUT`) | Yes |
+| `--out <folder>` | Put the run folder somewhere else (or set `QUALITY_GATE_OUT`) | Yes |
 | `--list` | Show each mode's checks and which ones this package skips | Nothing runs |
 | `--help` | Show every option and the exit codes | Nothing runs |
 | `--update-wordlist` | Add the unknown words to `inst/WORDLIST`, only after the package creator agrees to them | Yes |
@@ -87,16 +101,13 @@ browser, say) fails many tests with the same message, the line names it once as 
 
 ### The gate and CI
 
-`lint.yaml` and `check-no-suggests.yaml` run the gate itself and `gate-self-test.yaml` its self-test;
-`off-cran-tests.yaml` runs testthat directly, and the other test workflows run R CMD check or covr.
+CI's `lint.yaml` and `no-suggests.yaml` run the gate itself; `full-tests.yaml` runs testthat directly, and the other
+test workflows run R CMD check or covr.
 What each workflow runs and when, which gate mode checks the same thing locally (the evidence when CI can't run),
 which test files run where and the CI report comment on a pull request: [`.github/workflows/README.md`](../.github/workflows/README.md).
 
 ### Changing the gate
 
-After changing the gate, `.lintr`, `air.toml` or `biome.json`, run the self-test:
-`Rscript tools/test-cran-gate.R` (`unit` alone takes seconds). A new check needs a probe that plants its defect. The
-self-test also fails when this README misses a mode or an option that `--help` lists.
-
-Details: `Rscript tools/cran-gate.R --help`. Rules: the "Quality gate" section of `AGENTS.md` and
-`.claude/rules/ci.md`.
+The gate is changed in launchR, never here: open an issue there. mascot's own settings for it are
+`Config/quality-gate/*` in `DESCRIPTION` (the coverage limit and `extra-dirs: tools`), `.lintr`, `air.toml` and
+`biome.json`. Details: `<gate> --help`. Rules: the "Quality gate" section of `AGENTS.md` and `.claude/rules/ci.md`.

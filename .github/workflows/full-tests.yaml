@@ -1,0 +1,30 @@
+# Every test file with nothing skipped: the browser, snapshot and extended tests CRAN skips, with Chrome. The check
+# itself is launchR's; this file says when and where it runs (README.md in this folder).
+name: full-tests
+
+on:
+  pull_request:   # every pull request, also one stacked on another branch
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 5 * * 1"   # Mondays 05:00 UTC: catches changes in R-devel, Chrome and the dependencies
+  workflow_dispatch:   # adds a "Run workflow" button on GitHub
+
+permissions:
+  contents: read
+  actions: read   # lets CI read the other checks' results for its report
+  pull-requests: write   # lets CI post its report on the PR
+
+# A new push to a pull request stops this check's older run for it, to save minutes; pushes and weekly runs always
+# finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    uses: insightsurge/launchR/.github/workflows/full-tests.yaml@v0.0.19
+    with:
+      ci-report: true
+      platforms: ubuntu/release, ubuntu/4.1
+      timeout-minutes: 150   # about twice the slowest run: 72 min on R 4.1 with a cold cache and a slow package mirror

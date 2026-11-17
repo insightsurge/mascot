@@ -1,0 +1,27 @@
+# R CMD check without the Suggests packages, as CRAN also checks. Linux only. The check itself is launchR's; this file
+# says when it runs (README.md in this folder).
+name: no-suggests
+
+on:
+  pull_request:   # every pull request, also one stacked on another branch
+  push:
+    branches: [main]
+  workflow_dispatch:   # adds a "Run workflow" button on GitHub
+
+permissions:
+  contents: read
+  actions: read   # lets CI read the other checks' results for its report
+  pull-requests: write   # lets CI post its report on the PR
+
+# A new push to a pull request stops this check's older run for it, to save minutes; pushes and weekly runs always
+# finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    uses: insightsurge/launchR/.github/workflows/no-suggests.yaml@v0.0.19
+    with:
+      ci-report: true
+      timeout-minutes: 0   # launchR's default: 90

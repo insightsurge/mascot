@@ -57,9 +57,10 @@ Tracked files, commits, branch names, issues, pull requests and comments are pub
   "authorised to …" don't belong in an issue.
 
 ## Quality gate
-Run the gate, `Rscript tools/cran-gate.R [fast|tests|full|lint|nosuggests]`, instead of calling `devtools::check()`,
-lintr or Air yourself. **Which mode when, every option, the exit codes, the run folder and what each CI job runs:
-`tools/README.md`.** In short: `fast` before every commit, `tests` before a PR that touches `R/` or `tests/`.
+Run the gate, launchR's quality gate (`<gate> [fast|tests|full|lint|nosuggests]`; how to start it is in
+`tools/README.md`), instead of calling `devtools::check()`, lintr or Air yourself. **Which mode when, every option, the
+exit codes, the run folder and what each CI job runs: `tools/README.md`.** In short: `fast` before every commit,
+`tests` before a PR that touches `R/` or `tests/`.
 - `tests` fails when a runnable line the branch adds in `R/` is run by no test (`new_lines`). Test the line, or mark a
   justified one `# nocov` with a comment saying why.
 - **Evidence** is a `tests` (or `full`) run that exits 0. Runs marked PARTIAL (`--steps`, `--filter`,
@@ -67,8 +68,9 @@ lintr or Air yourself. **Which mode when, every option, the exit codes, the run 
   unless the package creator accepts it.
 - Format R code with Air before you commit (the version is in `.github/CONTRIBUTING.md`); the gate and CI check it.
   JS and CSS in `inst/` are formatted and linted with Biome.
-- The gate is generic (any R package can use it as it is): keep anything mascot-specific out of it. After changing
-  the gate, `.lintr`, `air.toml` or `biome.json`, run `Rscript tools/test-cran-gate.R`; a new check needs a probe.
+- The gate and the CI checks are launchR's (<https://github.com/insightsurge/launchR>): mascot keeps no copy. A
+  change to a check or a gate step goes to launchR as an issue; mascot's own settings are `Config/quality-gate/*` in
+  `DESCRIPTION`, `.lintr`, `air.toml` and `biome.json`.
 - CI must be green. Never `continue-on-error` or weaken a check to get green.
 - Never force-push, push to `main`, use `--no-verify`, or edit `NAMESPACE`, `man/`, `renv/` or `LICENSE` by hand.
 
@@ -127,10 +129,10 @@ articles go in `vignettes/articles/` (website only, not shipped); compress PNGs 
 - Work only in the worktree or branch you were given. Don't commit, push, merge or open PRs unless the task says
   so.
 - Before the first commit, check `git config user.name` and `user.email`: if they name an AI tool, stop and say so.
-- Before you report done, run the gate and paste its summary lines: `Rscript tools/cran-gate.R` (fast) and the same
-  command with `tests` (coverage at least 70%, not lower than before your change). Say plainly what you did not run
-  and why. A self-reported pass never counts: the gate and CI are the evidence (and screenshots for visual work).
-- In a git worktree, set `R_LIBS` to what `Rscript -e 'cat(.libPaths()[1])'` prints in the main checkout (renv
-  keeps a package project's library outside the repo).
+- Before you report done, run the gate and paste its summary lines: `<gate> fast` and `<gate> tests` (coverage at
+  least 70%, not lower than before your change). Say plainly what you did not run and why. A self-reported pass
+  never counts: the gate and CI are the evidence (and screenshots for visual work).
+- In a git worktree, use the same R library as the main checkout: if you use renv, set `R_LIBS` to what
+  `Rscript -e 'cat(.libPaths()[1])'` prints there (renv keeps a package project's library outside the repo).
 - Never add words to `inst/WORDLIST` yourself: list unknown words in your report.
 - Don't patch installed packages or mock dependencies to make a check pass.

@@ -348,15 +348,15 @@ use plain words in help pages:
   `test-<name>-extended.R` with the few checks too slow for CRAN; no other test goes in those files. Browser and extended files start with their skip, so
   CRAN skips the whole file before any of its code runs (a skip inside each test came after the test had built its
   characters, which cost about an eighth of the test time on CRAN). Snapshot files keep the skip in each
-  `expect_snapshot()`: a snapshot file skipped as a whole reports no snapshots, and testthat deletes their saved files. CI's `off-cran-tests` job runs exactly those files with Chrome and
-  `NOT_CRAN` true, and fails on any skip; R CMD check runs the others. A test
+  `expect_snapshot()`: a snapshot file skipped as a whole reports no snapshots, and testthat deletes their saved files. CI's `full-tests` job runs every test file, these included, with Chrome
+  and `NOT_CRAN` true, and fails on any skip; R CMD check runs only the plain ones. A test
   (`test-helper-layout.R`) reads the test files and fails when a test is in the wrong kind of file or a file doesn't
   start with its skip. Helpers that several files share go in `helper-<name>.R`.
 - **CRAN runs a smoke test of each example app, not all of it.** CRAN asks for examples, vignettes and tests to take
   under 10 minutes together (the CRAN Cookbook, "Overall checktime"), and lets long tests be optional as long as the
   rest exercise the package's features (the CRAN Repository Policy). The example apps grow with every exported
   function and argument (the studio shows all of them), and made up about 60% of the test time CRAN ran, so their
-  detailed tests are extended tests (#568): they run in the coverage job, the off-CRAN job, the gate's `tests` mode
+  detailed tests are extended tests (#568): they run in the coverage job, the full-tests job, the gate's `tests` mode
   and a weekly R CMD check on macOS and Windows. Each app keeps a smoke test on CRAN: its exported function's argument
   checks, each view builds, the page draws once without duplicate ids, and one server update with its generated
   code; for the studio's main view, whose views and page take several seconds to build on a fast machine, only
@@ -369,27 +369,27 @@ use plain words in help pages:
   passes with the bugs of section 3, "Shiny apps", still in place. How: `tests/README.md`.
 - **Files.** Tests that write files use `withr::local_tempdir()`.
 - **Coverage is at least 70 percent, measured with covr on R code only.** This is our rule: CRAN's policy and
-  `R CMD check` say nothing about coverage. The limit is `Config/cran-gate/coverage` in `DESCRIPTION`. covr does not
+  `R CMD check` say nothing about coverage. The limit is `Config/quality-gate/coverage` in `DESCRIPTION`. covr does not
   see JS, so JS is covered by the shinytest2 behaviour tests. A PR never lowers coverage. `# nocov` is only for code
   that cannot run in a test, with a comment saying why. The coverage job also sends
   the figure to Codecov for the README badge; Codecov only reports (no pull request comments, informational
   statuses), and the job itself enforces the limit.
 - **No jest or vitest for now.** If pure JS functions grow (colour maths, easing), `node --test` needs no dependency.
-- **Guardrails are tested too.** Each gate step has a probe in the gate's self-test that plants a defect and
-  expects the step to fail, and a clean copy must pass (section 7.2).
+- **Guardrails are tested too.** Each gate step has a probe in launchR's self-test for the gate that plants a defect
+  and expects the step to fail, and a clean copy must pass (section 7.2).
 
 ## 7. The quality pipeline
 
 ### 7.1 One rule, three places
 
-Each rule is written once, in git (`air.toml`, `.lintr`, `biome.json`, the gate script, the workflows). Three layers
+Each rule is written once, in git (`air.toml`, `.lintr`, `biome.json`, the workflows, and the gate and checks in launchR). Three layers
 run it:
 
 | Layer | When it runs | Status |
 |---|---|---|
 | Editor settings (`.claude/settings.json`) | While an assistant works in the repo: permission rules deny force-push, pushes to `main`, `--no-verify` and hand edits to `NAMESPACE`, `man/`, `renv/`, `LICENSE`; merging a PR (`gh pr merge`) asks for confirmation each time; attribution lines are off. Formatting is a one-line instruction (`air format .`) | In place |
-| The gate (`Rscript tools/cran-gate.R`, section 7.2) | On demand, before a commit or PR | In place |
-| CI | On every PR and push to `main`: R CMD check on six platforms, coverage, the off-CRAN tests with Chrome and lint; Mondays and on demand add the extended tests on macOS and Windows (`.github/workflows/README.md`) | In place |
+| The gate (launchR's quality gate, section 7.2) | On demand, before a commit or PR | In place |
+| CI | On every PR and push to `main`: R CMD check on six platforms, coverage, the full tests with Chrome, the check without Suggests, lint and a secret scan; Mondays and on demand add the extended tests on macOS and Windows (`.github/workflows/README.md`) | In place |
 
 The editor settings are a guard rail rather than enforcement. CI is the gate. There is no pre-commit
 framework for now (section 8). A ruleset on `main` blocks force-pushes and deleting the branch; it does not require
@@ -397,37 +397,39 @@ passing checks, so the rule is: CI green, then ask before merging.
 
 ### 7.2 The gate
 
-How to run it, which mode when, every option, the exit codes and the run folder: `tools/README.md` (and
-`Rscript tools/cran-gate.R --help`; `--list` shows each mode's steps). This section keeps the reasons.
+How to run it, which mode when, every option, the exit codes and the run folder: `tools/README.md` (and the gate's
+`--help`; `--list` shows each mode's steps). This section keeps the reasons.
 
-**The gate is a generic, self-contained script.** `tools/cran-gate.R` and its self-test `tools/test-cran-gate.R`
-name nothing about mascot, so another R package can copy them as they are. What is specific to a package is kept
-out of the script:
+**The gate is launchR's, and mascot keeps no copy.** The gate began in mascot as a generic, self-contained script
+and moved to [launchR](https://github.com/insightsurge/launchR), which keeps it and its self-test for every R package
+it sets up (#591). The CI checks are launchR's reusable workflows, run at a release tag, and the local gate is the
+same script at the same tag, so a fix is made once and CI and the local run agree. What is specific to a package is
+kept out of the script:
 
 - CRAN checks always run. Style checks run when the package has the tool's settings file (`air.toml`, `.lintr`,
   `biome.json`) and are skipped with a reason otherwise. mascot has all three.
-- Settings are `Config/cran-gate/*` fields in `DESCRIPTION`: `coverage` (default 70, which mascot uses), `tarball-mb`
-  (default 5, at most 9 because CRAN's limit is 10; mascot keeps 5) and `extra-dirs` (more folders to format-check
-  and lint; mascot lists `tools`, which holds the gate itself).
+- Settings are `Config/quality-gate/*` fields in `DESCRIPTION`: `coverage` (default 70, which mascot uses),
+  `tarball-mb` (default 5, at most 9 because CRAN's limit is 10; mascot keeps 5) and `extra-dirs` (more folders to
+  format-check and lint; mascot lists `tools`).
 
 A missing tool stops the gate, never a silent skip. The gate writes to the repository in two deliberate cases only:
 `document()` may rewrite `man/`, `NAMESPACE` and `DESCRIPTION` (the step then fails and names the files), and
 `--update-wordlist` rewrites `inst/WORDLIST`, which is never run without showing the words first (see 7.4).
 
-**The gate's self-test.** A check that cannot fail protects nothing, so the gate has its own test,
-`tools/test-cran-gate.R`. Each probe copies the package (or a tiny generated one) to `tempdir()`, plants one defect
-(an unformatted file, code with lints, a misspelt word, a failing test, untested code, a check note, a file in `inst/`
-that the build leaves out, a missing tool) and runs the gate on the copy; the probe passes when the gate fails that
-step. A clean copy must pass, and the repository is never changed. Probes for steps a package does not use are
-skipped, so the self-test works in any package. A new gate step gets its probe in the same pull request.
+**The gate's self-test.** A check that cannot fail protects nothing, so the gate has its own test in launchR. Each
+probe copies a package to a temporary folder, plants one defect (an unformatted file, code with lints, a misspelt
+word, a failing test, untested code, a check note, a file in `inst/` that the build leaves out, a missing tool) and
+runs the gate on the copy; the probe passes when the gate fails that step. A new gate step gets its probe in the same
+launchR pull request.
 
 ### 7.3 CI workflows
 
 What each workflow runs and when, which test files run where, and the gate mode that reproduces it locally:
 `.github/workflows/README.md`.
 
-Every pull request runs the full matrix (macOS, Windows and four Ubuntu R versions); keep new jobs on Ubuntu unless
-the platform is the point.
+The workflows here are short callers of launchR's reusable workflows, pinned to a release tag; each says only when
+and where its check runs. Every pull request runs the full matrix (macOS, Windows and four Ubuntu R versions); keep
+new checks on Ubuntu unless the platform is the point.
 
 The site is built from `main` only, never on pull requests (#127): a site build may need packages that outside
 contributors' pull requests can't install. Ubuntu runners are pinned (`ubuntu-26.04`; macOS and Windows use
@@ -437,8 +439,9 @@ superseded runs (except a release, and secret scans on `main`). The tests run in
 limit. Every job has a `timeout-minutes`, a few times its
 longest recent run, so a hung step can't hold a runner for hours. Actions from `actions/` and `r-lib/` are pinned by
 major tag; other third-party actions by full commit SHA with a `# vX.Y.Z` comment, because a tag can be moved and a
-SHA cannot. Dependabot updates both kinds and rewrites the version comment. Keep the Air and Biome versions in
-`lint.yaml` and `gate-self-test.yaml` in step with the local installs and with `biome.json`.
+SHA cannot. Dependabot updates both kinds and rewrites the version comment. launchR's lint check pins Air and
+reads Biome's version from `biome.json`'s `$schema`; keep the local installs at the same versions
+(`.github/CONTRIBUTING.md`).
 
 ### 7.4 Tools
 

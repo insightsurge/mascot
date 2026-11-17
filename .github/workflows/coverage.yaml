@@ -1,0 +1,30 @@
+# Test coverage against the limit in DESCRIPTION (Config/quality-gate/coverage), and the figure for Codecov's badge.
+# The check itself is launchR's; this file says when it runs (README.md in this folder).
+name: coverage
+
+on:
+  pull_request:   # every pull request, also one stacked on another branch
+  push:
+    branches: [main]
+  workflow_dispatch:   # adds a "Run workflow" button on GitHub
+
+permissions:
+  contents: read
+  actions: read   # lets CI read the other checks' results for its report
+  pull-requests: write   # lets CI post its report on the PR
+
+# A new push to a pull request stops this check's older run for it, to save minutes; pushes and weekly runs always
+# finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    uses: insightsurge/launchR/.github/workflows/coverage.yaml@v0.0.19
+    # Forks and Dependabot have no CODECOV_TOKEN; launchR then skips the upload, and the limit still holds.
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      ci-report: true
+      timeout-minutes: 0   # launchR's default: 60

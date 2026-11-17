@@ -7,5 +7,12 @@ updates:
     commit-message:
       prefix: "ci"
     groups:
+      # launchR's checks (the `@v...` in the caller workflows) come in a pull request of their own.
+      launchr:
+        patterns: ["insightsurge/launchR*"]
       actions:
         patterns: ["*"]
+    ignore:
+      # launchR patch releases arrive with the next minor release.
+      - dependency-name: "insightsurge/launchR*"
+        update-types: ["version-update:semver-patch"]

@@ -1,0 +1,32 @@
+# R CMD check as CRAN runs it; any error, warning or note fails. The check itself is launchR's; this file says when
+# and where it runs (README.md in this folder).
+name: R-CMD-check
+
+on:
+  pull_request:   # every pull request, also one stacked on another branch
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 5 * * 1"   # Mondays 05:00 UTC: catches changes in R-devel, Chrome and the dependencies
+  workflow_dispatch:   # adds a "Run workflow" button on GitHub
+
+permissions:
+  contents: read
+  actions: read   # lets CI read the other checks' results for its report
+  pull-requests: write   # lets CI post its report on the PR
+
+# A new push to a pull request stops this check's older run for it, to save minutes; pushes and weekly runs always
+# finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    uses: insightsurge/launchR/.github/workflows/r-cmd-check.yaml@v0.0.19
+    with:
+      ci-report: true
+      # R 4.1 is the oldest R that DESCRIPTION allows.
+      platforms: macos/release, windows/release, ubuntu/devel, ubuntu/release, ubuntu/oldrel-1, ubuntu/4.1
+      timeout-minutes: 120   # about twice the slowest run: R-devel took 56 min on a slow day
+      test-time-limit: 180   # the tests on Linux with R release, in seconds
